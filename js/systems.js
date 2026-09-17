@@ -470,9 +470,7 @@ function equipFromBag(idx, slot){
     if(player.twoHanded){ log('Both hands are on the '+player.weapon.name+'.','c-info'); return; }
     /* 2026-09-17: the weapon itself goes into the off hand, keeping its tier, upgrades, enchantment, curse and identity */
     var old=player.off, d=it.data;
-    d.weapon=true; d.block=0; d.eva=5; d.note='off-hand weapon; parry';
-    var tr=typeof TIER_OFF!=='undefined' && TIER_OFF.offdagger, tn=typeof tierNum==='function' ? tierNum(d) : 1;
-    d.bonusStrike = tr ? tr.base[tn] + tr.per*Math.max(0, d.plus||0) : 0.15;
+    offHandWeapon(d);
     player.off=d;
     player.bag.splice(idx,1); if(old && old!==EMPTY_OFF) addBag('\u26E8', gearName(old), {kind:'off', data:old});
     derive(player); log('You take the <b>'+it.data.name+'</b> in your off hand.','c-good'); endTurn();

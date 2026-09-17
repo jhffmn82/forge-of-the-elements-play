@@ -29,7 +29,6 @@ var TIER_BLOCK = { buckler:[0.08,0.10,0.14,0.18], kite:[0.15,0.20,0.25,0.30], pe
 var TIER_OFF = {
   tome:     {field:'manaPct',     base:[0.10,0.15,0.20,0.25], per:0.04},
   holy:     {field:'divine',      base:[0.10,0.15,0.20,0.25], per:0.04},
-  offdagger:{field:'eva', base:[2,3,4,6], per:0.5}
 };
 /* caster items: tier value + per upgrade level (tierOf reads these by tier number) */
 FOCUS_BONUS = { staff:{base:[0.20,0.25,0.35,0.45], per:0.08}, wand:{base:[0.03,0.05,0.08,0.12], per:0.03},
@@ -46,7 +45,7 @@ var TIER_REQ = {
   longsword:{any:['mig'], v:[0,13,16,21]}, axe:{any:['mig'], v:[0,13,16,21]},
   mace:     {any:['mig'], v:[0,12,15,20]}, spear:{any:['mig'], v:[0,12,15,20]},
   sword:    {any:['mig','agi'], v:[0,11,14,18]},
-  dagger:   {any:['agi'], v:[0,12,16,21]}, offdagger:{any:['agi'], v:[0,12,16,21]},   /* a tier 3 dagger wants 21 Agility */
+  dagger:   {any:['agi'], v:[0,12,16,21]},   /* a tier 3 dagger wants 21 Agility, in either hand */
   bow:      {any:['agi'], v:[0,11,14,18]},
   staff:    {any:['foc'], v:[0,12,15,21]},
   wand:     {any:['foc'], v:[0,11,14,18]}, orb:{any:['foc'], v:[0,11,14,18]}, tome:{any:['foc'], v:[0,11,14,18]},
@@ -62,7 +61,6 @@ function itemKey(it){
   if(!it || it===EMPTY_OFF || it.unarmed || it.joke || it.kind==='ring' || it.kind==='amulet' || it.name==='Loud Shirt') return null;
   if(it.key) return it.key;
   var k=null;
-  if(it.kind==='off' && it.weapon) k='offdagger';
   var tables=[['off',OFFHANDS],['armor',ARMORS],['weapon',WEAPONS]];
   for(var i=0;i<tables.length && !k;i++){ var T=tables[i][1]; for(var n in T){ if(T[n].name===it.name && (!it.kind || it.kind===tables[i][0] || tables[i][0]==='weapon')){ k=n; break; } } }
   if(!k){ var ic=(it.icon||'').replace(/^item-/,''); if(WEAPONS[ic]||ARMORS[ic]||OFFHANDS[ic]) k=ic; }
@@ -186,7 +184,7 @@ bagCard = function(it){
       if(TIER_BLOCK[k]) extra+='<div class="row"><span>Block</span><b>'+Math.round((d.block+TIER_BLOCK.per*(d.plus||0))*100)+'%</b></div>';
       if(k==='tome') extra+='<div class="row"><span>Max mana</span><b>+'+Math.round(d.manaPct*100)+'%</b></div>';
       if(k==='holy') extra+='<div class="row"><span>Invoke strength</span><b>+'+Math.round(d.divine*100)+'%</b></div>';
-      if(k==='offdagger') extra+='<div class="row"><span>Off-hand strike</span><b>60% damage, own procs</b></div>';
+      if(d.kind==='off' && d.weapon) extra+='<div class="row"><span>Off-hand strike</span><b>60% damage, own procs</b></div>';
     }
     h=tierTint(h, d)+extra+reqRow(d);
   }

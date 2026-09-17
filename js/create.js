@@ -10,6 +10,17 @@ var NAMES = {
   fae:{m:['Pip','Thistle','Corrin','Wisp'], f:['Nerissa','Ilka','Briar','Sylph']},
   gloomling:{m:['Vesk','Hollow','Mortis'], f:['Vess','Nyx','Pale Anna']}
 };
+/* an off-hand kit slot may name a weapon: these two helpers are what classes.js and the creation screen
+   ask, now that there is no separate off-hand dagger item (2026-09-17) */
+function offKitItem(key){ return OFFHANDS[key] || WEAPONS[key] || null; }
+/* turn a light weapon into an off-hand weapon: it keeps its damage, tier, upgrades and enchantment */
+function offHandWeapon(d){
+  d.kind='off'; d.weapon=true; d.block=0;
+  d.eva=3 + 0.5*Math.max(0, d.plus||0);
+  d.note='off-hand: a second strike every melee attack, with its own on-hit effects';
+  return d;
+}
+
 function lookFor(c){ var s=RACES[c.race].sexes[c.sex]; return c.race==='fae' ? s.replace('%s', c.court) : s; }
 function statsFor(c){
   var s={mig:10,agi:10,vit:10,foc:10}, rm=RACES[c.race].mods, cm=CLASSES[c.cls].mods;
@@ -57,7 +68,7 @@ function renderCreate(){
     h+='</div>';
   }
   var st=statsFor(c), C2=CLASSES[c.cls], kit=C2.kit;
-  var kitNames=[kit.main&&WEAPONS[kit.main].name, kit.alt&&WEAPONS[kit.alt].name, kit.armor&&ARMORS[kit.armor].name, kit.off&&OFFHANDS[kit.off].name].filter(Boolean);
+  var kitNames=[kit.main&&WEAPONS[kit.main].name, kit.alt&&WEAPONS[kit.alt].name, kit.armor&&ARMORS[kit.armor].name, kit.off&&offKitItem(kit.off).name].filter(Boolean);
   if(c.cls==='cleric' && c.god==='grom') kitNames=['Fists (Grom forbids weapons)','Cloth Robe','Holy Symbol'];
   h+='<div class="summary"><div class="big" id="bigPort"></div><div>'+
      '<div class="step" style="margin-top:0">3 &middot; Name</div><input id="cname" type="text" maxlength="24" value="'+c.name.replace(/"/g,'')+'"> <button id="reroll">Random</button>'+
@@ -92,11 +103,18 @@ function newRun(seed, choice){
   if($('bReveal')) $('bReveal').textContent='Reveal: off';
   var c=choice, C=CLASSES[c.cls], kit=C.kit;
   function gear(table, key){ if(!key) return null; var g=clone(table[key]); g.tier='Rusty'; g.plus=0; return g; }
+  /* an off-hand kit slot names either an off-hand item (shield, orb) or a light weapon (two daggers) */
+  function offKitGear(key){
+    if(!key) return EMPTY_OFF;
+    if(OFFHANDS[key]) return gear(OFFHANDS, key) || EMPTY_OFF;
+    var w=gear(WEAPONS, key); if(!w) return EMPTY_OFF;
+    return offHandWeapon(w);
+  }
   var p = {id:0, ch:'@', x:2, y:2, t:0, st:{}, foe:false, buffs:{},
     race:c.race, cls:c.cls, sex:c.sex, court:c.court, look:lookFor(c), name:(c.name||'Adventurer').trim()||'Adventurer',
     stats:statsFor(c), level:1, xp:0, xpNext:90, points:0, blurCd:0, fortCd:0, hidden:0,
     essence: c.cls==='tourist' ? 30 : 0, motes:{}, aff:{}, primary:null, keys:{iron:0, crystal:0}, hunger:1200,
-    sets:[gear(WEAPONS,kit.main), gear(WEAPONS,kit.alt)], activeSet:0, armorItem:gear(ARMORS,kit.armor), off:gear(OFFHANDS,kit.off)||EMPTY_OFF,
+    sets:[gear(WEAPONS,kit.main), gear(WEAPONS,kit.alt)], activeSet:0, armorItem:gear(ARMORS,kit.armor), off:offKitGear(kit.off),
     bag:[], hotbar:null, god:null, piety:0, favor:0, amusement:40, levitate:0, face:'south' };
   if(c.cls==='cleric' && c.god==='grom'){ p.sets=[null,null]; p.armorItem=gear(ARMORS,'robe'); }
   var R=RACES[c.race];

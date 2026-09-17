@@ -59,7 +59,9 @@ var OFFHANDS = {
   orb:     {name:'Orb', block:0, spell:0.10, note:'spell critical hits', icon:'item-orb', kind:'off'},
   tome:    {name:'Tome', block:0, manaPct:0.15, note:'+15% max mana', icon:'item-tome', kind:'off'},
   holy:    {name:'Holy Symbol', block:0, divine:0.15, note:'+15% Invoke and prayer strength', icon:'item-holy', kind:'off'},
-  offdagger:{name:'Dagger', block:0, weapon:true, eva:3, dmg:[3,6], acc:10, light:true, note:'off-hand: a second strike every melee attack, and its own on-hit effects', icon:'item-dagger', kind:'off'},
+  /* 2026-09-17: there is no separate off-hand dagger any more. Any light one-handed weapon goes in the off
+     hand (see equipFromBag in systems.js), so a plain Dagger from WEAPONS is what the kits hand out and
+     what drops. Old saves holding the retired item still work: itemKey resolves it to 'dagger' by name. */
   camera:  {name:'Camera', block:0, note:'takes a lovely picture. does nothing else.', icon:'item-holy', kind:'off', joke:true}
 };
 function clone(o){ return JSON.parse(JSON.stringify(o)); }
@@ -80,7 +82,7 @@ var CLASSES = {
   scoundrel:{name:'Scoundrel', mods:{agi:4}, ability:'sap',
              passive:'Sneaky: surprise attacks +50% damage; spots traps more easily.',
              blurb:'Bow and dagger. Sap knocks a target out, and a knocked-out target takes a surprise attack.',
-             kit:{main:'dagger', alt:'bow', armor:'leather', off:'offdagger'}},
+             kit:{main:'dagger', alt:'bow', armor:'leather', off:'dagger'}},
   tourist:  {name:'Tourist', mods:{}, ability:null,
              passive:'Well-Traveled: +1 extra stat point every 2 levels.',
              blurb:'No training, a loud shirt and a camera that does nothing. Grows faster than anyone.',

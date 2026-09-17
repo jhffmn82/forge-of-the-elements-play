@@ -391,7 +391,7 @@ function randomGear(){
   var it;
   if(roll<0.5){ var k=pick(['sword','dagger','mace','longsword','axe','bow','staff','wand','spear']); it={kind:'weapon', it:clone(WEAPONS[k])}; }
   else if(roll<0.8){ var a=pick(['leather','chain','plate','robe']); it={kind:'armor', it:clone(ARMORS[a])}; }
-  else { var o=pick(['buckler','kite','orb','tome','holy','offdagger']); it={kind:'off', it:clone(OFFHANDS[o])}; }
+  else { var o=pick(['buckler','kite','orb','tome','holy']); it={kind:'off', it:clone(OFFHANDS[o])}; }   /* daggers drop as weapons and can be worn in either hand */
   var tierRoll=rng();
   if(floorNo>=3 && tierRoll<0.25){ it.it.tier='Trusty'; } else it.it.tier='Rusty';
   if(it.kind!=='off'){

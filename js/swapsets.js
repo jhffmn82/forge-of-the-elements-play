@@ -53,8 +53,7 @@ function equipStowOff(bi){
   if(b.kind==='weapon'){
     if(d.hands===2 || !d.light){ log('Only a light weapon, shield or focus fits an off hand.','c-info'); return; }
     if(typeof reqBlock==='function' && reqBlock(tierNormalize(d))) return;
-    d.weapon=true; d.block=0; d.eva=5; d.note='off-hand weapon; parry';
-    var tr=TIER_OFF.offdagger; d.eva=tr.base[tierNum(d)]+tr.per*Math.max(0,d.plus||0);
+    offHandWeapon(d);
   } else if(b.kind==='off'){
     if(typeof reqBlock==='function' && reqBlock(tierNormalize(d))) return;
   } else { log('That does not go in an off hand.','c-info'); return; }

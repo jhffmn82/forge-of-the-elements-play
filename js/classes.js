@@ -31,7 +31,7 @@ var CLERIC_KITS = {
   vellum:  {main:'staff',  armor:'robe'}
 };
 var SCOUNDREL_KITS = {
-  melee:  {main:'dagger', armor:'leather', off:'offdagger', label:'Knife work', d:'Two daggers, leather armor'},
+  melee:  {main:'dagger', armor:'leather', off:'dagger', label:'Knife work', d:'Two daggers, leather armor'},
   ranged: {main:'bow',    armor:'leather', label:'Bowman', d:'Short bow and leather armor'}
 };
 function kitFor(c){
@@ -45,7 +45,7 @@ function kitNames(c){
   out.push(k.main ? WEAPONS[k.main].name : 'Fists');
   if(k.alt) out.push(WEAPONS[k.alt].name);
   if(k.armor) out.push(ARMORS[k.armor].name);
-  if(k.off) out.push(OFFHANDS[k.off].name);
+  if(k.off) out.push(offKitItem(k.off).name);
   return out;
 }
 
@@ -87,7 +87,10 @@ newRun = function(seed, choice){
   function item(table, key){ if(!key) return null; var g=clone(table[key]); g.key=key; g.tier=0; g.plus=0; return g; }
   player.sets=[item(WEAPONS,k.main), item(WEAPONS,k.alt)]; player.activeSet=0;
   player.armorItem=item(ARMORS,k.armor) || item(ARMORS,'robe');
-  player.off=item(OFFHANDS,k.off) || EMPTY_OFF;
+  /* an off-hand kit slot may name a light weapon now that there is no separate off-hand dagger */
+  player.off = k.off ? (OFFHANDS[k.off] ? item(OFFHANDS, k.off)
+                        : (WEAPONS[k.off] ? offHandWeapon(item(WEAPONS, k.off)) : EMPTY_OFF))
+                     : EMPTY_OFF;
   player.kit=c.kit;
   if(c.cls==='tourist') player.points=(player.points||0)+1;
   player.cds={}; player.xpNext=xpToNext(1);
