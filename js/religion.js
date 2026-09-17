@@ -132,9 +132,8 @@ var _attackRel = attack;
 attack = function(att, def, mult, label){
   var hp0 = def ? def.hp : 0;
   _attackRel(att, def, mult, label);
-  if(att===player && def && def.hp<hp0 && hasGod('grom') && player.weapon && player.weapon.unarmed){
-    var fav=player.favor; gainPiety(1); player.favor=fav;   /* piety only; favor still comes from kills */
-  }
+  /* 2026-09-17: Grom's piety is paid per unarmed KILL in godOnKill now (2, 15 for an elite). Paying per
+     hit as well put him a whole biome ahead of every other god. */
 };
 var _usePrayerRel = usePrayer;
 usePrayer = function(pid){

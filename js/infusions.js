@@ -54,7 +54,7 @@ enchantItem = function(slot, el){
   if(!(player.motes[el]>0)){ log('You have no '+el+' mote.','c-info'); return; }
   player.motes[el]--; if(player.motes[el]<=0) delete player.motes[el];
   var was=item.cursed; item.enchant=el;
-  if(player.god==='anvil') gainPiety(5);
+  if(player.god==='anvil') gainPiety(20);
   godConductEquip('off', item);
   if(was) breakCurse(item);
   derive(player);

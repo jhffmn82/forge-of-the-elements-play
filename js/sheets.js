@@ -25,15 +25,16 @@
     '.arow[draggable=true]{cursor:grab} .arow.locked{opacity:.45}',
     '.res{display:grid;grid-template-columns:repeat(2,1fr);gap:4px 12px;font-size:11.5px}',
     '.res span{display:flex;justify-content:space-between;color:var(--ash)} .res b{font-variant-numeric:tabular-nums}',
-    '.gearwrap{display:grid;grid-template-columns:minmax(160px,0.8fr) minmax(250px,1.25fr) minmax(170px,1fr);gap:14px 20px;align-items:start}',
+    '.gearwrap{display:grid;grid-template-columns:minmax(150px,0.7fr) minmax(300px,1.5fr) minmax(200px,1.15fr);gap:14px 20px;align-items:start}',
     '@media (max-width:640px){.gearwrap{grid-template-columns:1fr} .gearwrap>.gcol-worn{order:-1}}',
     '.gearwrap .kv{font-size:11px;gap:1px 8px} .gearwrap .res{grid-template-columns:1fr 1fr;gap:1px 10px;font-size:11px}',
     '.gearwrap .sec{margin:9px 0 4px}',
     '.keychip{display:inline-flex;align-items:center;gap:5px} .keychip .kart{width:18px;height:18px;display:inline-block}',
-    '.gearwrap .invgrid{grid-template-columns:repeat(4,minmax(38px,1fr))}',
-    '.gdoll{display:grid;grid-template-columns:64px 1fr 64px;grid-template-rows:repeat(3,64px);gap:10px 12px;align-items:center;justify-items:center}',
-    '.gdoll .art{grid-column:2;grid-row:1/4;align-self:stretch;justify-self:stretch;border:1px dashed var(--edge);border-radius:8px;background:radial-gradient(#2A221C,#141110);display:flex;align-items:flex-end;justify-content:center;overflow:hidden;min-height:200px}',
-    '.gslot{position:relative;width:60px;height:60px;border:2px solid var(--edge);border-radius:6px;background:#161210;display:flex;align-items:center;justify-content:center;cursor:pointer}',
+    '.gearwrap .invgrid{grid-template-columns:repeat(5,minmax(0,1fr));gap:7px}',
+    '.gearwrap .invgrid .cell{max-width:104px;justify-self:stretch}',
+    '.gdoll{display:grid;grid-template-columns:72px minmax(110px,1fr) 72px;grid-template-rows:repeat(3,72px);gap:12px 16px;align-items:center;justify-items:center}',
+    '.gdoll .art{grid-column:2;grid-row:1/4;align-self:stretch;justify-self:stretch;border:1px dashed var(--edge);border-radius:8px;background:radial-gradient(#2A221C,#141110);display:flex;align-items:flex-end;justify-content:center;overflow:hidden;min-height:250px}',
+    '.gslot{position:relative;width:68px;height:68px;border:2px solid var(--edge);border-radius:6px;background:#161210;display:flex;align-items:center;justify-content:center;cursor:pointer}',
     '.gslot .lab{position:absolute;bottom:-14px;left:-10px;right:-10px;text-align:center;font-size:8px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);pointer-events:none}',
     '.gslot.empty{border-style:dashed;opacity:.55;cursor:copy}',
     '.gslot.cursed{box-shadow:0 0 0 1px #D0605A inset}',
@@ -224,7 +225,8 @@ function slotCard(key){
   return bagCard({kind:'off', data:it}) + (player.block?'<div class="row"><span>Block</span><b>'+Math.round(player.block*100)+'%</b></div>':'') + (player.parry?'<div class="row"><span>Parry</span><b>'+Math.round(player.parry*100)+'%</b></div>':'');
 }
 function wireEquip(root){
-  if(typeof paintDoll==='function') paintDoll($('dollArt'), 160); else paintArt($('dollArt'),'cast',player.look,160);
+  /* the doll box is wider now, so the figure is drawn bigger to match (2026-09-17) */
+  if(typeof paintDoll==='function') paintDoll($('dollArt'), 210); else paintArt($('dollArt'),'cast',player.look,210);
   root.querySelectorAll('[data-mote]').forEach(function(e){ paintArt(e,'items','mote-'+e.getAttribute('data-mote'),16); });
   root.querySelectorAll('[data-kicon]').forEach(function(e){ paintArt(e,'items',e.getAttribute('data-kicon'),18); });
   root.querySelectorAll('[data-gicon]').forEach(function(e){ var n=e.getAttribute('data-gicon'); if(n) e.appendChild(iconCanvas(n, 42, '?')); });

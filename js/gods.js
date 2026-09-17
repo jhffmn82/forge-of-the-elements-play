@@ -67,7 +67,7 @@ function spellConduct(A){
   if(g==='vellum'){
     player.castTurn=turn;
     player.manaSpent=(player.manaSpent||0)+costOf(A);
-    while(player.manaSpent>=20){ player.manaSpent-=20; gainPiety(1); }
+    while(player.manaSpent>=25){ player.manaSpent-=25; gainPiety(1); }
     if(godRank()>=3 && costOf(A)>0 && rng()<(godRank()>=5?0.35:0.2)){ player.mp=Math.min(player.maxmp, player.mp+costOf(A)); log('<b>Spell Echo.</b> The mana comes back to you.','c-good'); }
   }
 }
@@ -78,18 +78,30 @@ function sigilConduct(use){
   if(g==='murk' && (use==='heal'||use==='mapping')) pietyViolation('a light sigil', 10);
   return true;
 }
+/* Old Anvil has no kills to count: what he wants is essence, so every 5 spent anywhere - a Forge upgrade,
+   an enchantment, a toll, an offering - is a point of piety. Measured against the 3,900 essence lying on
+   floors 1-20 (plus what recycling pays), a smith who spends what he finds reaches rank 5 in biome 4,
+   the same as every other devoted follower. (2026-09-17) */
+function spendEssence(n){
+  n=Math.max(0, Math.round(n||0));
+  player.essence -= n;
+  if(player.god==='anvil' && n>0){
+    player.essenceSpent=(player.essenceSpent||0)+n;
+    while(player.essenceSpent>=5){ player.essenceSpent-=5; gainPiety(1); }
+  }
+}
 function godOnKill(e, by){
   var g=player.god; if(!g) return;
   var byPlayer = by===player, byAlly = by && by.ally, big = e.elite || e.base.elite || e.base.boss, r=godRank();
   var aware = e.state!=='asleep' && !(e.st.stun) && !(e.st.frozen);
-  if(g==='grom'){ if(byPlayer && player.weapon.unarmed) gainPiety(big?8:3); }
-  else if(g==='grumbok'){ if(byPlayer||byAlly) gainPiety((e.base.spellcaster||e.base.el?4:1)+(big?5:0)); if(r>=3 && e.base.spellcaster && byPlayer){ var h=Math.round(player.maxhp*0.1); player.hp=Math.min(player.maxhp,player.hp+h); } }
-  else if(g==='glimmer'){ if(byPlayer||byAlly) gainPiety((e.base.undead||e.base.shadowy?4:1)+(big?5:0)); }
-  else if(g==='murk'){ if(byAlly && by.undeadServant) gainPiety(3+(big?5:0)); else if((byPlayer||byAlly) && !e.base.undead) gainPiety(1+(big?5:0));
+  if(g==='grom'){ if(byPlayer && player.weapon.unarmed) gainPiety(big?15:2); }
+  else if(g==='grumbok'){ if(byPlayer||byAlly) gainPiety((e.base.spellcaster||e.base.el?5:2)+(big?15:0)); if(r>=3 && e.base.spellcaster && byPlayer){ var h=Math.round(player.maxhp*0.1); player.hp=Math.min(player.maxhp,player.hp+h); } }
+  else if(g==='glimmer'){ if(byPlayer||byAlly) gainPiety((e.base.undead||e.base.shadowy?4:2)+(big?15:0)); }
+  else if(g==='murk'){ if(byAlly && by.undeadServant) gainPiety(4+(big?15:0)); else if((byPlayer||byAlly) && !e.base.undead) gainPiety(2+(big?15:0));
     if((byPlayer||byAlly) && r>0){ player.hp=Math.min(player.maxhp, player.hp+r); } }
-  else if(g==='reginald'){ if(byPlayer && aware) gainPiety(2+(big?6:0)); }
-  else if(g==='vellum'){ if(byPlayer) gainPiety((player.castTurn===turn?3:0)+(big?5:0)); }
-  else if(g==='wobbles'){ gainPiety(big?15:3); }
+  else if(g==='reginald'){ if(byPlayer && aware) gainPiety(2+(big?15:0)); }
+  else if(g==='vellum'){ if(byPlayer) gainPiety((player.castTurn===turn?2:0)+(big?15:0)); }
+  else if(g==='wobbles'){ gainPiety(big?15:2); }
 }
 function godTick(seesFoe){
   if(player.wrath){
@@ -146,7 +158,7 @@ function usePrayer(pid){
   if(!canPray(pid)){ log('You cannot offer that prayer right now.','c-info'); sfx('ui-error'); return; }
   var P=PRAYERS[pid], div=1+((player.weapon.divine||0)+((player.off&&player.off.divine)||0));
   if(P.favor) player.favor-=P.favor;
-  if(P.essence) player.essence-=P.essence;
+  if(P.essence) spendEssence(P.essence);
   if(P.amusement) player.amusement-=P.amusement;
   sfx('pray'); setClip(player,'cast'); ringFx(player.x,player.y,GODS[player.god].color,2.5);
   var r=godRank();
@@ -161,7 +173,7 @@ function usePrayer(pid){
   else if(pid==='laststand'){ player.buffs.laststand=10; log('Last Stand: you take 35% less damage.','c-good'); }
   else if(pid==='rally'){ var h3=Math.round(player.maxhp*0.25*div); player.hp=Math.min(player.maxhp,player.hp+h3); clearBad(); player.buffs.rally=10; derive(player); floatText(player.x,player.y,'+'+h3,'heal'); log('Rally!','c-good'); }
   else if(pid==='offering'){ var atShrine = at(player.x,player.y-1)===SHRINE||at(player.x,player.y+1)===SHRINE||at(player.x-1,player.y)===SHRINE||at(player.x+1,player.y)===SHRINE;
-    gainPiety(atShrine?20:10); log('Old Anvil accepts your offering'+(atShrine?' gladly at his shrine':'')+'.','c-good'); sfx('forge-open'); }
+    gainPiety(Math.max(atShrine?20:10, Math.round((P.essence||0)/(atShrine?5:10)))); log('Old Anvil accepts your offering'+(atShrine?' gladly at his shrine':'')+'.','c-good'); sfx('forge-open'); }
   else if(pid==='reforge'){ player.weapon.plus=(player.weapon.plus||0)+1; derive(player); log('Reforge: your '+gearName(player.weapon)+' is permanently improved.','c-kill'); sfx('forge-enchant'); }
   else if(pid==='rolldice2'){ wobblesIntervention(true); }
   else if(pid==='manatide'){ var mt=Math.round(player.maxmp*0.5*div); player.mp=Math.min(player.maxmp, player.mp+mt); floatText(player.x,player.y,'+'+mt+' mp','magic'); sparkleFx(player.x,player.y,'water',30); log('Mana Tide: +'+mt+' mana.','c-good'); }
@@ -204,7 +216,7 @@ function openShrine(){
     else html+='<p class="c-info">You have already prayed here.</p>';
   }
   if(!mine && !floorMeta.shrineTithed) buttons.push({label:'Tithe 20 essence for a blessing', disabled:player.essence<20, fn:function(){
-    player.essence-=20; floorMeta.shrineTithed=true; player.blessed=120; player.buffs.rally=40; derive(player);
+    spendEssence(20); floorMeta.shrineTithed=true; player.blessed=120; player.buffs.rally=40; derive(player);
     log('The shrine blesses you: +10 accuracy for a while.','c-good'); sfx('pray'); closeModal(); updateUI(); }});
   buttons.push({label:'Leave', fn:closeModal});
   openModal('Shrine', html, buttons);

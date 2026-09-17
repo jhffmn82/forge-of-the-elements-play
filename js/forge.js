@@ -51,7 +51,7 @@ function enchantItem(slot, el){
   if(!item || item.unarmed){ log('Nothing to enchant there.','c-info'); return; }
   player.motes[el]--; if(player.motes[el]<=0) delete player.motes[el];
   item.enchant=el;
-  if(player.god==='anvil') gainPiety(5);
+  if(player.god==='anvil') gainPiety(20);
   godConductEquip(slot==='weapon'?'weapon':'armor', item);
   derive(player);
   log('The Forge sets <b>'+el+'</b> into your '+gearName(item)+': '+ENCHANT_TEXT[slot][el]+' (&times;'+enchantScale(el).toFixed(1)+' from your affinity).','c-kill');

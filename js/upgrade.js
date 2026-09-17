@@ -123,11 +123,11 @@ function allUpgradeTargets(){
 function upgradeItem(it){
   var cost=upgradeCost(it); if(cost===null){ log('That is as strong as the Forge can make it.','c-info'); return; }
   if(player.essence<cost){ log('You need '+cost+' essence.','c-info'); sfx('ui-error'); return; }
-  player.essence-=cost;
+  spendEssence(cost);
   if(it.cursed){ it.cursed=false; it.unid=false; it.plus = it.kind==='ring' ? 0 : Math.max(0, it.plus||0); log('The Forge burns the curse out of your <b>'+gearName(it)+'</b>.','c-kill'); }
   else { it.plus=(it.plus||0)+1; it.unid=false; log('The Forge hammers your <b>'+gearName(it)+'</b> stronger.','c-kill'); }
   if(it.kind==='ring') RUN.ringKnown[it.ring]=true;
-  if(player.god==='anvil') gainPiety(3);
+  if(player.god==='anvil') gainPiety(10);
   derive(player); refreshBagNames(); sfx('forge-enchant'); sparkleFx(player.x,player.y,'fire',30);
   updateUI(); renderForge();
 }

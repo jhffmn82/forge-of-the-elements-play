@@ -163,7 +163,7 @@ function bumpProp(p){
     }
     var fee=50+floorNo*5;
     confirmBox('Elemental lock', 'The lock wants a <b>'+p.element+' mote</b>. It will also accept <b>'+fee+' essence</b> (you have '+player.essence+').', player.essence>=fee?'Pay '+fee+' essence':null, function(){
-      player.essence-=fee; p.opened=true; setT(p.door.x,p.door.y,OPEN); log('The lock grudgingly accepts the essence.','c-kill'); sfx('puzzle-solved'); computeFOV(); endTurn();
+      spendEssence(fee); p.opened=true; setT(p.door.x,p.door.y,OPEN); log('The lock grudgingly accepts the essence.','c-kill'); sfx('puzzle-solved'); computeFOV(); endTurn();
     }); return true;
   }
   if(p.lever){
@@ -565,6 +565,9 @@ function computeFOV(radius){
 function descend(fell){
   if(floorNo>=LAST_FLOOR) return;
   floorNo++; worldSeed=(worldSeed*1664525+1013904223)>>>0;
+  /* carrying your god deeper is itself devotion, and it is worth more the further down you are. This is the
+     term that lands a devoted follower of ANY god at rank 5 during biome 4 (2026-09-17). */
+  if(player.god && typeof gainPiety==='function') gainPiety(5 + floorNo);
   player.keys={iron:0, crystal:0};
   ents=ents.filter(function(e){ return !e.ally; });
   if(!fell) sfx('stairs');
