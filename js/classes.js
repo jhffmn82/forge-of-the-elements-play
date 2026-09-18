@@ -209,24 +209,11 @@ applyDamage = function(target, amount, type, source){
   return d;
 };
 
-/* ---------------------------------------------------------------- Magic Missile riders */
-var _spellOnHitCls = spellOnHit;
-spellOnHit = function(f, d, crit, A){
-  _spellOnHitCls(f, d, crit, A);
-  if(A!==ABILITIES.missile || !f || f.hp<=0) return;
-  for(var el in player.aff){
-    var pts=player.aff[el]||0; if(pts<1 || rng()>=0.25+0.05*pts) continue;
-    if(el==='fire') applyStatus(f,'burn',3,Math.max(1,Math.round((2+pts)*spellPower(A))));
-    else if(el==='water') addChill(f);
-    else if(el==='earth') applyStatus(f,'root',2);
-    else if(el==='light') applyStatus(f,'blind',2);
-    else if(el==='shadow') applyStatus(f,'fear',2);
-    else if(el==='air'){
-      var o=ents.filter(function(e){ return e.foe && e!==f && e.hp>0 && dist(e,f)<=3 && vis[idxOf(e.x,e.y)]; }).sort(function(a,b){ return dist(a,f)-dist(b,f); })[0];
-      if(o){ var ad=applyDamage(o, Math.max(1,Math.round(d*0.5)), 'lightning', player); boltFx(f.x,f.y,o.x,o.y,'lightning'); floatText(o.x,o.y,String(ad),'lightning'); if(o.hp<=0) kill(o,player); }
-    }
-  }
-};
+/* Magic Missile used to roll its own rider for every affinity point (25% + 5% per point to Burn, Chill,
+   Root, Blind, Fear or chain a bolt). Weapon enchantments proc on spells now (js/spellench.js), so that
+   second, invisible chance is gone: what your missiles do to a target is what your focus is enchanted with.
+   Magic Missile keeps what makes it Magic Missile - it always hits, nothing resists it, and its damage still
+   grows with every affinity point. (2026-09-17) */
 
 /* ---------------------------------------------------------------- stealth: everyone has a stealth score */
 function stealthScore(){

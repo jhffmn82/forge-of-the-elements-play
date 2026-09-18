@@ -15,7 +15,7 @@ var ENCH_LIVE = {
   weapon: {
     fire:  function(){ var p=ePts('fire'); return '+'+ePct(0.10+0.03*p)+' of each hit as fire' + (p ? ', '+ePct(0.05*p)+' chance to set Burning' : ''); },
     water: function(){ return ePct(0.15+0.05*ePts('water'))+' chance to Chill'; },
-    air:   function(){ return ePct(Math.max(0.05, 0.05*ePts('air')))+' chance of an instant extra attack'; },
+    air:   function(){ return ePct(Math.max(0.05, 0.05*ePts('air')))+' chance of an instant extra attack, or a spell landing twice'; },
     earth: function(){ return ePct(0.15*eSc('earth'))+' chance to Root for 2 turns'; },
     light: function(){ return '+'+Math.round(10*eSc('light'))+' accuracy, +25% damage to undead and shadow'; },
     shadow:function(){ return ePct(Math.max(0.05, 0.05*ePts('shadow')))+' chance of +25% dark damage and Corrupt; +1 damage to Hollowed'; }

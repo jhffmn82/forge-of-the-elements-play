@@ -292,7 +292,7 @@ function attack(att, def, mult, label){
     crit = !(def===player && hasP('bulwark')) && rng() < 0.05;
   }
   if(crit) base *= 1.6;
-  if(blocked) base *= 0.25;
+  if(blocked){ if(typeof onShieldBlock==='function') onShieldBlock(att, def, base); base *= 0.25; }
   if(def===player && hasP('fortitude') && player.fortCd<=0){ player.fortCd=15; base *= 0.5; log('Fortitude blunts the blow.','c-good'); }
   LAST_HIT={att:att, def:def, crit:crit, surprise:surprise, melee:!ranged};
   var phys=applyDamage(def, base, 'phys', att), extra=0, note='', el=null;

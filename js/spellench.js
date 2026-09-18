@@ -4,8 +4,8 @@
    Wand of Shadow did nothing at all for a mage who casts. Now the same enchantment procs on spell hits, at
    the same rates and off the spell's own damage, so the enchant on your focus is worth having whichever way
    you fight.
-   Air is the exception: its proc is an instant extra weapon attack, which has no spell equivalent, so an Air
-   weapon still only helps in melee.
+   Air reads the same way on both sides: the gust that gives a melee weapon an instant extra swing (and a bow
+   an extra shot) makes a spell land a second time.
    ===================================================================== */
 (function(){
   if(typeof spellOnHit!=='function') return;
@@ -25,6 +25,14 @@
     }
     if(ench==='water' && rng() < 0.15 + 0.05*pts){ addChill(f); note=' chilled'; }
     if(ench==='earth' && rng() < 0.15*sc){ applyStatus(f, 'root', 2); note=' rooted'; }
+    if(ench==='air' && rng() < Math.max(0.05, 0.05*pts)){
+      /* the gust that gives a melee weapon an extra swing makes a spell land twice */
+      var t2 = (typeof elemToType==='function' && A && A.el) ? elemToType(A.el) : 'magic';
+      var d2 = applyDamage(f, d, t2, player);
+      floatText(f.x, f.y, String(d2), t2, true);
+      log('<b>Gust.</b> The spell strikes twice &mdash; <b>'+d2+'</b> more.','c-good');
+      if(f.hp<=0){ kill(f, player); return r; }
+    }
     if(ench==='light' && (f.base.undead || f.base.shadowy)) extra += Math.round(d*0.25);
     if(ench==='shadow'){
       if(f.st.hollow) extra += 1;
