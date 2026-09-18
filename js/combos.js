@@ -18,7 +18,7 @@ var COMBOS = {
   'air/shadow':  {name:'Windwalker',    d:'When an enemy hits you in melee, you step 1 tile away at once (every 5 turns).'},
   'air/water':   {name:'Riptide',       d:'Your weapon hits push enemies 1 tile; slammed into a wall or creature, they are Chilled.'},
   'air/light':   {name:'Glint',         d:'Your critical hits Blind the target for 1 turn.'},
-  'earth/fire':  {name:'Molten Orbs',   d:'Every 50 turns a molten orb forms (max 3). An orb absorbs the next attack on you (10 + Focus above 10), then bursts for that much fire to adjacent enemies.'},
+  'earth/fire':  {name:'Forge Heat',    d:'Every blow you land stokes the heat: +2 damage and +2 armour per stack, up to 5. The heat fades three turns after you stop swinging.'},
   'earth/light': {name:'Radiant Roots', d:'Rooted enemies are also Blinded.'},
   'earth/shadow':{name:'Blight',        d:'Poisoned enemies deal 20% less damage.'},
   'earth/water': {name:'Silt Shield',   d:'Max Ice Armor +3 per Earth point, refilling twice as fast out of combat.'},
@@ -83,14 +83,6 @@ applyDamage = function(target, amount, type, source){
   /* Blight: poisoned enemies hit softer */
   if(source && source.foe && source.st && source.st.poison && combo('earth','shadow')) amount*=0.8;
   if(target!==player) return _applyDamageCombo(target, amount, type, source);
-  /* Molten Orbs absorb the next attack */
-  if(player.orbs>0 && source && source.foe && amount>0){
-    var cap=Math.max(5, 10+(player.stats.foc-10)), soak=Math.min(cap, amount);
-    amount-=soak; player.orbs--;
-    log('A molten orb bursts, soaking '+Math.round(soak)+'.','c-good'); burst(player.x,player.y,'fire',24,0.06);
-    ents.slice().forEach(function(o){ if(o.foe && dist(o,player)<=1){ var od=_applyDamageCombo(o, cap, 'fire', player); floatText(o.x,o.y,String(od),'fire'); if(o.hp<=0) kill(o,player); } });
-    if(amount<=0) return 0;
-  }
   var ice0=player.iceArmor||0;
   var d=_applyDamageCombo(target, amount, type, source);
   /* Clear Waters */
@@ -174,6 +166,43 @@ kill = function(e, by){
   if(smolder){ player.hidden=Math.max(player.hidden||0, 3); log('Smolder: you vanish into the smoke.','c-good'); }
 };
 
+/* ---------------------------------------------------------------- Forge Heat (earth/fire)
+   2026-09-18: replaces Molten Orbs, which formed one orb every 50 turns that any single attack ate the
+   turn after it appeared - about 25 damage absorbed per 50 turns, against per-hit or per-turn effects on
+   every other 3/3 combo. Now every blow that LANDS stokes the heat: +2 damage and +2 armour a stack, five
+   stacks maximum, and the whole lot cools three turns after you stop swinging. A dual-wielder reaches the
+   cap in under two turns, a two-hander in five; the ceiling is the same either way. */
+var FORGE_HEAT_MAX = 5, FORGE_HEAT_TURNS = 3;
+function forgeHeatStacks(){ return (player && player.forgeHeat) ? player.forgeHeat.n : 0; }
+function stokeForgeHeat(){
+  if(!combo('earth','fire')) return;
+  var was = forgeHeatStacks();
+  player.forgeHeat = {n: Math.min(FORGE_HEAT_MAX, was+1), t: FORGE_HEAT_TURNS};
+  if(player.forgeHeat.n !== was){
+    derive(player);
+    if(player.forgeHeat.n === FORGE_HEAT_MAX && was === FORGE_HEAT_MAX-1)
+      log('<b>The forge heat is white-hot.</b> +'+(2*FORGE_HEAT_MAX)+' damage and armour.','c-good');
+  }
+}
+var _deriveHeat = derive;
+derive = function(p){
+  var r = _deriveHeat(p);
+  if(p===player && player.forgeHeat && player.forgeHeat.n>0){
+    var n = player.forgeHeat.n;
+    p.armor = (p.armor||0) + 2*n;
+    if(p.dmg){ p.dmg = [p.dmg[0] + 2*n, p.dmg[1] + 2*n]; }
+  }
+  return r;
+};
+var _attackHeat = attack;
+attack = function(att, def, mult, label){
+  if(att !== player) return _attackHeat(att, def, mult, label);
+  var before = def && def.hp;
+  var r = _attackHeat(att, def, mult, label);
+  if(def && before !== undefined && def.hp < before) stokeForgeHeat();   /* only a blow that lands */
+  return r;
+};
+
 /* ---------------------------------------------------------------- the turn: orbs, Silt Shield, Permafrost, Holy Water, Shadow Gust */
 var _deriveCombo = derive;
 derive = function(p){
@@ -192,9 +221,9 @@ endTurn = function(){
   if(stepped) player.freeStep=false;
   if(!player || player.hp<=0 || turn===before) return;
   var fighting=ents.some(function(e){ return e.foe && e.state==='hunt' && vis[idxOf(e.x,e.y)]; });
-  if(combo('earth','fire')){
-    player.orbT=(player.orbT||0)+1;
-    if((player.orbs||0)<3 && player.orbT>=50){ player.orbT=0; player.orbs=(player.orbs||0)+1; log('A molten orb forms and circles you ('+player.orbs+').','c-good'); }
+  /* Forge Heat cools three turns after the last blow landed */
+  if(player.forgeHeat){
+    if(--player.forgeHeat.t <= 0){ player.forgeHeat=null; derive(player); log('The forge heat fades.','c-info'); }
   }
   if(combo('earth','water') && !fighting && player.iceArmor<player.iceArmorMax) player.iceArmor=Math.min(player.iceArmorMax, player.iceArmor+0.25);
   if(combo('water','earth')) ents.slice().forEach(function(e){ if(e.foe && e.hp>0 && e.st.root) addChill(e); });
