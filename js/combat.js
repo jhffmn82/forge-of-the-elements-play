@@ -325,7 +325,13 @@ function attack(att, def, mult, label){
       if(ench==='water' && (typeof pRoll==='function' ? pRoll(0.15+0.05*pts) : rng()<(0.15+0.05*pts))){ addChill(def); note=' chilled'; }
       if(ench==='earth' && (typeof pRoll==='function' ? pRoll(0.15*sc) : rng()<(0.15*sc))){ applyStatus(def,'root',2); note=' rooted'; }
       if(ench==='light' && (def.base.undead||def.base.shadowy)) extra+=Math.round(base*0.25);
-      if(ench==='shadow'){ if(def.st.hollow) extra+=1; if((typeof pRoll==='function' ? pRoll(Math.max(0.05,0.05*pts)) : rng()<(Math.max(0.05,0.05*pts)))){ extra+=Math.round(base*0.25); applyStatus(def,'corrupt',3); note=' <span style="color:#B58BFF">corrupted</span>'; } }
+      if(ench==='shadow'){ if(def.st.hollow) extra+=1;
+        if((typeof pRoll==='function' ? pRoll(Math.max(0.05,0.05*pts)) : rng()<(Math.max(0.05,0.05*pts)))){
+          extra+=Math.round(base*0.25); applyStatus(def,'corrupt',3); note=' <span style="color:#B58BFF">corrupted</span>';
+          /* the enchant's bite IS this build's dark damage, so at Shadow 6 it is what stacks Hollow.
+             Spells stack it through the applyDamage wrapper in elements.js; this is the melee half. */
+          if(typeof aff==='function' && aff('shadow')>=6) addHollow(def, 1);
+        } }
       if(ench==='air' && (typeof pRoll==='function' ? pRoll(Math.max(0.05,0.05*pts)) : rng()<(Math.max(0.05,0.05*pts))) && !label && def.hp>0){ note=' (gust: extra attack)'; pendingExtra=def; }
     }
     if(player.aff.fire){ el = el || 'fire'; extra += player.aff.fire; }
@@ -400,7 +406,16 @@ function addChill(e){
   if(n>=3){ delete e.st.chill; applyStatus(e,'frozen',2); if(e!==player) e.st.imm_frozen={t:5}; sfx('status-freeze'); floatText(e.x,e.y,'frozen','ice'); }
   else e.st.chill={t:4, n:n};
 }
-function addHollow(e, n){ var h=e.st.hollow; if(!h && !n) return; }
+/* Hollowing (Shadow 6): n stacks are added, n=0 only refreshes a stack the target already carries - a
+   melee shadow build keeps its own Hollow alive by swinging. 5 stacks, 5 turns; each is +5% damage taken
+   (elements.js) and -1 armor (armorOf, above). 2026-09-18: this was an empty stub, so every call did
+   nothing and a melee shadow build never saw a single stack. */
+function addHollow(e, n){
+  if(!e || !e.st) return;
+  var h=e.st.hollow;
+  if(!h && !n) return;
+  e.st.hollow = {t:5, n: Math.min(5, (h?h.n:0) + (n||0))};
+}
 function tickStatus(e){
   var s=e.st;
   if(at(e.x,e.y)===WATER){ if(s.burn){ delete s.burn; floatText(e.x,e.y,'hiss','ice'); } s.wet={t:3}; }
