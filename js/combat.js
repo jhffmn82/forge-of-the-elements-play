@@ -237,11 +237,12 @@ function hitSfx(att, def, crit, blocked){
   return 'hit-flesh';
 }
 var LAST_HIT=null;
-/* Light mastery's smite: a flat 3-6. Scaling it with Light points was tried on 2026-09-18 and reverted
-   the same day - it pushed the Light 6 Glimmer dagger build to 150 damage a turn, 64% clear of anything
-   else. The affinity buys the proc CHANCE (10% per point); the hit itself stays small on purpose.
-   combos.js's light-air double smite uses this too. */
-function smiteDamage(){ return roll(3,6); }
+/* Light mastery's smite: 3-6 plus one per Light point. Briefly reverted on 2026-09-18 when the Light 6
+   Glimmer dagger build looked like a runaway at 150 damage a turn - but that was measured against a
+   SKELETON, and skeletons are undead: light damage takes x1.5 against them and Consecration doubles to 18
+   a turn. Against living targets the same build is last in the table. The scaling is back. combos.js's
+   light-air double smite uses this too. */
+function smiteDamage(){ return roll(3,6) + ((player.aff && player.aff.light) || 0); }
 
 function attack(att, def, mult, label){
   mult = mult || 1;

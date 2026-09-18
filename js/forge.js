@@ -7,7 +7,7 @@ var T1_TEXT = {
   water:'Ice Armor: absorbs 3 damage per point, recharges out of combat',
   air:'+10% movement speed per point',
   earth:'Stone Skin: -1 physical damage per hit, per point',
-  light:'10% chance per point that your hits Smite for 3-6 light damage',
+  light:'10% chance per point that your hits Smite: 3-6 light damage, +1 per Light point',
   shadow:'+5% crit chance per point against enemies that can\'t see you'
 };
 var ENCHANT_TEXT = {
