@@ -13,21 +13,23 @@ function elemToType(el){ return EL_DMG[el] || 'phys'; }
 function cap(s){ return s ? s.charAt(0).toUpperCase()+s.slice(1) : s; }
 
 /* ---------------------------------------------------------------- races */
+/* Races give bonuses only: the -1 and -2 penalties were a mistake and came out on 2026-09-17, so no
+   starting stat is below 10. */
 var RACES = {
   human:    {name:'Human', mods:{mig:0,agi:0,vit:0,foc:0}, speed:100,
              blurb:'Adaptable and devout. +1 stat point every 3 levels, piety +25%, and once per biome survives a killing blow at 1 HP.',
              sexes:{m:'human-m', f:'human-f'}},
-  elf:      {name:'Elf', mods:{mig:-1,agi:1,vit:-2,foc:2}, speed:110,
+  elf:      {name:'Elf', mods:{agi:1, foc:2}, speed:110,
              blurb:'Quick and arcane. +10% speed, spells cost 15% less, +1 range on every ranged attack and spell.',
              sexes:{m:'elf-m', f:'elf-f'}},
-  dwarf:    {name:'Dwarf', mods:{mig:1,agi:-2,vit:2,foc:-1}, speed:100,
+  dwarf:    {name:'Dwarf', mods:{mig:1, vit:2}, speed:100,
              blurb:'Sturdy masters of the forge. Weapons and armor count as +1, and heavy armor costs no evasion.',
              sexes:{m:'dwarf-m', f:'dwarf-f'}},
-  fae:      {name:'Fae', mods:{mig:-2,agi:2,vit:-1,foc:1}, speed:100, locked:true, capBonus:1,
+  fae:      {name:'Fae', mods:{agi:2, foc:1}, speed:100, locked:true, capBonus:1,
              blurb:'Born of one court\'s element: starts with 1 affinity in it and can hold one more affinity point than other races.',
              courts:{fire:'Ember Court', water:'Tide Court', air:'Gale Court', earth:'Stone Court'},
              sexes:{m:'fae-%s-m', f:'fae-%s-f'}},
-  gloomling:{name:'Gloomling', mods:{mig:-1,agi:-2,vit:2,foc:1}, speed:100, locked:'shadow', capBonus:1,
+  gloomling:{name:'Gloomling', mods:{vit:2, foc:1}, speed:100, locked:'shadow', capBonus:1,
              blurb:'Pale things that walk with shadow. Start with Shadow 1, +1 affinity cap, 20% less hunger. Light healing hurts them.',
              sexes:{m:'gloomling-m', f:'gloomling-f'}}
 };
