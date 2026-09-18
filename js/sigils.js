@@ -132,7 +132,9 @@ useSigil = function(use){
     var land=(!occupied(g2.x,g2.y) && walkable(g2.x,g2.y)) ? g2 : nearFree(g2.x,g2.y,2);
     if(land){ sparkleFx(player.x,player.y,'lightning',20); player.x=land.x; player.y=land.y; player._lx=undefined; seen[idxOf(g2.x,g2.y)]=1; sparkleFx(player.x,player.y,'lightning',20); computeFOV(); log('The wind lifts you and sets you down by the way onward.','c-good'); } }
   else if(use==='aegis'){ giveWard(player.maxhp*0.5, 15); applyStatus(player,'stone',15); ringFx(player.x,player.y,'#F6E7B0',2.5); log('A shining aegis settles around you ('+player.ward+').','c-good'); }
-  else if(use==='wisdom'){ var need=Math.max(1, player.xpNext-player.xp); gainXP(need); log('Understanding floods in.','c-kill'); }
+  /* 2026-09-18: read the requirement from xpToNext(), not from player.xpNext - gainXP()'s wrapper resets
+     xpNext to xpToNext(level) before spending anything, so a stale xpNext made this sigil a no-op. */
+  else if(use==='wisdom'){ var need=Math.max(1, (typeof xpToNext==='function' ? xpToNext(player.level) : player.xpNext) - player.xp); gainXP(need); log('Understanding floods in.','c-kill'); }
   else if(use==='ascension'){ sigilUpgradePicker(); }
   updateUI();
   return true;
