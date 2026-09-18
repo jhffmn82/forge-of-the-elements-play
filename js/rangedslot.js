@@ -128,3 +128,35 @@ swapWeapon = function(){
   }
   window.addEventListener('load', function(){ setTimeout(hideSwap, 400); });
 })();
+
+/* ---------------------------------------------------------------- clicking: the bow is for what is out of reach
+   Two things went wrong once the bow moved to its own slot and stopped costing a turn to draw:
+
+   1. clickIntent offered 'shoot' for anything inside the bow's range, an adjacent enemy included. Standing
+      next to something and clicking it fired one arrow at the bow's up-close penalty (x0.7 to hit) instead of
+      swinging - and skipped the off-hand strike entirely, so a dual-wielder lost half their attack. The
+      cursor showed the bow glyph too. Next to you is melee; the bow answers what you cannot reach.
+   2. game.js's shootAt() labels the log line with player.weapon.name, which it reads before the bow is
+      swapped in - so every shot was logged under the name of whatever melee weapon was in your main hand
+      ("Dagger: You hit the Goblin"). It names the weapon that actually looses the arrow now. */
+if(typeof clickIntent === 'function'){
+  var _clickIntentRanged = clickIntent;
+  clickIntent = function(x, y){
+    var it = _clickIntentRanged(x, y);
+    if(it && it.kind === 'shoot' && it.foe && dist(player, it.foe) <= 1) return {kind:'attack', foe:it.foe};
+    return it;
+  };
+}
+if(typeof shootAt === 'function'){
+  shootAt = function(e){
+    if(!e) return false;
+    if(dist(player, e) <= 1){                       /* the canvas click reaches here on its own path too */
+      var dx = Math.sign(e.x - player.x), dy = Math.sign(e.y - player.y);
+      lastDir = [dx, dy]; tryMove(dx, dy); return true;
+    }
+    if(player.range <= 1 || dist(player, e) > player.range || !vis[e.y*MW + e.x]) return false;
+    var w = isRangedWeapon(player.ranged) ? player.ranged : player.weapon;
+    attack(player, e, 1, w.name);
+    player.hidden = 0; endTurn(); return true;
+  };
+}
