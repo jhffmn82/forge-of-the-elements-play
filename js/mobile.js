@@ -216,11 +216,8 @@
     var SLOTS = [['main','Main hand','&#9876;'], ['off','Off hand','&#9960;'],
                  ['armor','Armor','&#9960;'],    ['amulet','Amulet','&#9765;'],
                  ['ring0','Ring','&#9675;'],     ['ring1','Ring','&#9675;'],
-                 ['stow','Alt primary','&#8646;'], ['stowoff','Alt secondary','&#8646;']];
-    function wornItem(key){
-      if(key==='stowoff') return (typeof stowedOff==='function') ? stowedOff() : null;
-      return (typeof slotItem==='function') ? slotItem(key) : null;
-    }
+                 ['stow','Ranged','&#127993;']];
+    function wornItem(key){ return (typeof slotItem==='function') ? slotItem(key) : null; }
     function tile(key, label, ph){
       var it = wornItem(key);
       var both = key==='off' && player.twoHanded;

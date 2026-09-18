@@ -180,7 +180,7 @@ function slotHTML(key, label, it, placeholder){
   return '<div class="gslot'+(it.cursed && !it.unid?' cursed':'')+'" data-slot="'+key+'" style="border-color:'+col+'"><span class="icon" data-gicon="'+(it.icon||'')+'"></span>'+ench+'<span class="lab">'+label+'</span></div>';
 }
 function equipHTML(){
-  var w=player.weapon, off=player.twoHanded?null:player.off, ar=player.armorItem, r=player.rings||[null,null], stow=player.sets[1-player.activeSet];
+  var w=player.weapon, off=player.twoHanded?null:player.off, ar=player.armorItem, r=player.rings||[null,null], stow=player.ranged;
   var hr=hitRange(), h='<div class="gearwrap">';
   /* left: totals */
   h+='<div><div class="sec">Offense</div>'+kv([['Damage per hit',hr[0]+'&ndash;'+hr[1]],['Crit',Math.round(player.crit*100)+'%'],['Accuracy',player.acc],['Range',player.range],['Attack time',actCost(player)],['Spell power','&times;'+spellPower({}).toFixed(2)]]);
@@ -192,7 +192,7 @@ function equipHTML(){
      slotHTML('main','Main hand', w && !w.unarmed ? w : null, '&#9876;')+'<div class="art" id="dollArt"></div>'+slotHTML('off', player.twoHanded?'Both hands':'Off hand', off, '&#9960;')+
      slotHTML('armor','Armor', ar, '&#9960;')+slotHTML('amulet','Amulet', player.amulet, '&#9765;')+
      slotHTML('ring0','Ring', r[0], '&#9675;')+slotHTML('ring1','Ring', r[1], '&#9675;')+'</div>'+
-     '<div class="stowrow">'+slotHTML('stow','Stowed', stow, '&#8646;')+'<span class="c-info" style="font-size:11px">'+(stow?'Click to draw '+gearName(stow)+' (x)':'No second weapon set')+'</span></div></div>';
+     '<div class="stowrow">'+slotHTML('stow','Ranged', stow, '&#127993;')+'<span class="c-info" style="font-size:11px">'+(stow?'Fires by itself at anything more than a tile away.':'A bow here fires without swapping.')+'</span></div></div>';
   /* right: bag and pouch */
   var cells=player.bag.map(function(it,idx){ return '<div class="cell" data-b="'+idx+'" draggable="true">'+(it.n>1?'<b>'+it.n+'</b>':'')+'</div>'; });
   while(cells.length<BAG_MAX) cells.push('<div class="cell empty"></div>');
@@ -212,12 +212,12 @@ function slotItem(key){
   if(key==='amulet') return player.amulet;
   if(key==='ring0') return (player.rings||[])[0];
   if(key==='ring1') return (player.rings||[])[1];
-  if(key==='stow') return player.sets[1-player.activeSet];
+  if(key==='stow') return player.ranged;
   return null;
 }
 function slotCard(key){
   var it=slotItem(key);
-  var empty={main:'Main hand: drag a weapon here.', off:'Off hand: a shield, focus, or light weapon.', armor:'Armor.', amulet:'Amulet: activated from the hotbar; kills build charges.', ring0:'Ring: works passively while worn.', ring1:'Ring: works passively while worn.', stow:'Your second weapon set. Swap with x.'};
+  var empty={main:'Main hand: drag a weapon here.', off:'Off hand: a shield, focus, or light weapon.', armor:'Armor.', amulet:'Amulet: activated from the hotbar; kills build charges.', ring0:'Ring: works passively while worn.', ring1:'Ring: works passively while worn.', stow:'Ranged: a bow here shoots anything out of reach, with no swapping.'};
   if(!it) return '<div class="nm">'+(key==='off' && player.twoHanded ? 'Both hands on the '+player.weapon.name : 'Empty')+'</div><div class="hint">'+empty[key]+'</div>';
   if(key==='main' || key==='stow') return weaponCard(it, key==='main');
   if(key==='armor') return armorCard(it, true);
@@ -235,13 +235,14 @@ function wireEquip(root){
     hoverCard(el, function(){ return slotCard(key); });
     el.onclick=function(){
       hideCard();
-      if(key==='stow'){ if(slotItem('stow')) swapWeapon(); }
+      if(key==='stow'){ if(typeof unequipRanged==='function') unequipRanged(); }
       else if(key==='amulet'){ if(player.amulet) takeOffAmulet(); }
       else if(key==='ring0' || key==='ring1'){ if(slotItem(key)) takeOffRing(key==='ring0'?0:1); }
       updateUI(); refreshSheet();
     };
     if(key==='main' && slotItem('main')) dragSource(el, 'weapons');
-    if(key!=='stow' && key!=='stowoff') dropTarget(el, function(tag){ var bi=bagIndexFromTag(tag); if(bi<0) return; hideCard(); equipFromBag(bi, key==='ring0'||key==='ring1'||key==='amulet' ? key : key); updateUI(); refreshSheet(); });
+    dropTarget(el, function(tag){ var bi=bagIndexFromTag(tag); if(bi<0) return; hideCard();
+      equipFromBag(bi, key==='stow' ? 'ranged' : key); updateUI(); refreshSheet(); });
   });
   root.querySelectorAll('.cell[data-b]').forEach(function(cel){
     var bi=+cel.getAttribute('data-b'), it=player.bag[bi];

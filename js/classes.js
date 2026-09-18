@@ -85,7 +85,11 @@ newRun = function(seed, choice){
   _newRunCls(seed, choice);
   var c=window.LAST_CHOICE || choice || CHOICE, k=kitFor(c);
   function item(table, key){ if(!key) return null; var g=clone(table[key]); g.key=key; g.tier=0; g.plus=0; return g; }
-  player.sets=[item(WEAPONS,k.main), item(WEAPONS,k.alt)]; player.activeSet=0;
+  /* the alt weapon goes in the ranged slot if it has reach, else into the bag (js/rangedslot.js) */
+  player.sets=[item(WEAPONS,k.main), null]; player.activeSet=0;
+  var alt=item(WEAPONS,k.alt);
+  player.ranged = (alt && (alt.range||0)>1) ? alt : null;
+  if(alt && !player.ranged && typeof addBag==='function') addBag('⚔', gearName(alt), {kind:'weapon', data:alt});
   player.armorItem=item(ARMORS,k.armor) || item(ARMORS,'robe');
   /* an off-hand kit slot may name a light weapon now that there is no separate off-hand dagger */
   player.off = k.off ? (OFFHANDS[k.off] ? item(OFFHANDS, k.off)

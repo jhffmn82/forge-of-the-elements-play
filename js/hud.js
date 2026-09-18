@@ -57,7 +57,7 @@ function hotbarCard(i){
     return '<div class="nm">'+P.name+'</div><div class="row"><span>Cost</span><b>'+prayerCost(s.key)+'</b></div><div class="row"><span>Needs</span><b>rank '+P.rank+'</b></div><div class="hint">'+P.desc+'</div><div class="hint">Key '+(i+1)+'</div>';
   }
   if(s.type==='amulet') return player.amulet && typeof trinketCard==='function' ? trinketCard(player.amulet) : '<div class="nm">Amulet</div>';
-  if(s.type==='swap'){ var stow=player.sets[1-player.activeSet]; return '<div class="nm">Swap weapons</div><div class="hint">'+(stow?'Draw your '+gearName(stow)+'.':'Nothing stowed.')+' Costs a turn.</div>'; }
+  if(s.type==='swap'){ return '<div class="nm">Nothing here</div><div class="hint">Weapon swapping is gone: a bow in your ranged slot fires by itself at anything out of reach.</div>'; }
   if(s.ref) return bagCard(s.ref)+'<div class="hint">Key '+(i+1)+'</div>';
   return '';
 }

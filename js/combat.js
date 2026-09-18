@@ -241,10 +241,13 @@ function attack(att, def, mult, label){
   mult = mult || 1;
   LAST_HIT=null;
   if(!def || def.hp<=0) return;
-  var ranged = (att.base && att.base.range>1 && dist(att,def)>1) || (att===player && player.range>1 && dist(att,def)>1);
+  /* 2026-09-17: ask the weapon in hand, not the player's best range. With a dedicated bow slot the bow only
+     occupies player.weapon while a shot is being taken (js/rangedslot.js), so a sword swing is never
+     treated as a shot and never eats the bow's up-close penalty. */
+  var ranged = (att.base && att.base.range>1 && dist(att,def)>1) || (att===player && ((player.weapon&&player.weapon.range)||1)>1 && dist(att,def)>1);
   var ch=hitChance(accOf(att), evaOf(def) * (att===player && hasP('keenAim') ? 0.75 : 1));
   if(att===player) player.lastAttack=true;
-  if(att===player && player.range>1 && dist(att,def)<=1) ch *= 0.7;
+  if(att===player && ((player.weapon&&player.weapon.range)||1)>1 && dist(att,def)<=1) ch *= 0.7;
   if(att.st && att.st.blind) ch *= 0.6;
   if(def.st && (def.st.frozen || def.st.stun)) ch = 1;
   var who = att===player ? 'You' : att.name;

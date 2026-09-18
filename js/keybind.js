@@ -7,7 +7,7 @@
 var BIND_ACTIONS = [
   ['up','Move up','w'],['down','Move down','s'],['left','Move left','a'],['right','Move right','d'],
   ['ul','Move up-left','q'],['ur','Move up-right','e'],['dl','Move down-left','z'],['dr','Move down-right','c'],
-  ['wait','Wait a turn','.'],['rest','Rest','r'],['search','Search','f'],['grab','Pick up','g'],['swap','Swap weapons','x'],
+  ['wait','Wait a turn','.'],['rest','Rest','r'],['search','Search','f'],['grab','Pick up','g'],
   ['stairs','Take the stairs','>'],['upstairs','Climb the stairs','<'],['close','Close a door','C'],
   ['h1','Hotbar 1','1'],['h2','Hotbar 2','2'],['h3','Hotbar 3','3'],['h4','Hotbar 4','4'],['h5','Hotbar 5','5'],['h6','Hotbar 6','6'],['h7','Hotbar 7','7'],['h8','Hotbar 8','8'],
   ['char','Character','Tab'],['gear','Equipment','i'],['faith','Faith','p'],['map','Map overlay','v'],['mute','Sound on/off','m'],['music','Music on/off','n']

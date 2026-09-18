@@ -114,7 +114,8 @@ function newRun(seed, choice){
     race:c.race, cls:c.cls, sex:c.sex, court:c.court, look:lookFor(c), name:(c.name||'Adventurer').trim()||'Adventurer',
     stats:statsFor(c), level:1, xp:0, xpNext:90, points:0, blurCd:0, fortCd:0, hidden:0,
     essence: c.cls==='tourist' ? 30 : 0, motes:{}, aff:{}, primary:null, keys:{iron:0, crystal:0}, hunger:1200,
-    sets:[gear(WEAPONS,kit.main), gear(WEAPONS,kit.alt)], activeSet:0, armorItem:gear(ARMORS,kit.armor), off:offKitGear(kit.off),
+    sets:[gear(WEAPONS,kit.main), null], activeSet:0, ranged:(function(){ var a=gear(WEAPONS,kit.alt); return (a && (a.range||0)>1) ? a : null; })(),
+    armorItem:gear(ARMORS,kit.armor), off:offKitGear(kit.off),
     bag:[], hotbar:null, god:null, piety:0, favor:0, amusement:40, levitate:0, face:'south' };
   if(c.cls==='cleric' && c.god==='grom'){ p.sets=[null,null]; p.armorItem=gear(ARMORS,'robe'); }
   var R=RACES[c.race];
