@@ -36,7 +36,7 @@ var RANK_TEXT = {
   3:{fire:'Searing: Burning enemies take 15% more damage from you. Immune to Burning.',
      water:'Shatter: Frozen enemies take a further +50% physical damage. Immune to Chill and Freeze.',
      air:'Arc: 5% per Air point that any hit or spell arcs to a nearby enemy for 50%. Immune to Stun.',
-     earth:'Venom: your hits and spells poison rooted enemies (10% of max HP a turn for 3 turns; half on elites and bosses). Immune to Root.',
+     earth:'Venom: anything you Root is poisoned as it is pinned (10% of max HP a turn for 3 turns; half on elites and bosses). Immune to Root.',
      light:'Radiance: heal 1 HP per Light point whenever you deal light damage. Immune to Blind.',
      shadow:'Fade: after 50 turns out of combat you are fully hidden. Immune to Fear.'},
   6:{fire:'Wildfire: when a Burning enemy dies its fire leaps to the nearest enemy within 3. Fire spells leave flames for 3 turns. Immune to fire.',
@@ -91,7 +91,12 @@ applyStatus = function(e, key, turns, extra){
   if(e!==player && key==='root' && aff('earth')>=6 && e.st.root && !(e.stoneImm>turn)){
     e.st.stone={t:2}; e.stoneImm=turn+4; floatText(e.x,e.y,'stone','earth'); log(e.name+' turns to stone.','c-good'); sfx('earth-cast');
   }
-  return _applyStatusEl(e, key, turns, extra);
+  var r = _applyStatusEl(e, key, turns, extra);
+  /* 2026-09-18: Venom answers the ROOT, not a later hit on something already rooted. Earth Root poisons the
+     moment it lands, and so does the earth weapon enchant's root and Earth 6's root ground - you no longer
+     have to spend a second turn hitting what you just pinned. */
+  if(e!==player && key==='root' && aff('earth')>=3 && e.st && e.st.root && !e.st.poison) applyPoison(e, true);
+  return r;
 };
 addChill = function(e){
   if(!e || e.hp<=0) return;
@@ -130,7 +135,6 @@ applyDamage = function(target, amount, type, source){
   if(type==='dark' && aff('shadow')>=6 && target.hp>0){ var h=target.st.hollow; target.st.hollow={t:5, n:Math.min(5,(h?h.n:0)+1)}; }
   if(type==='light' && aff('light')>=3){ player.hp=Math.min(player.maxhp, player.hp+aff('light')); }
   if(type==='lightning' && aff('air')>=6 && target.hp>0 && rng()<0.15) applyStatus(target,'stun',1);
-  if(aff('earth')>=3 && target.hp>0 && target.st.root && !target.st.poison) applyPoison(target, true);
   if(aff('air')>=3 && !ARCING && rng()<0.05*aff('air')){
     var o=ents.filter(function(e){ return e.foe && e!==target && e.hp>0 && dist(e,target)<=3 && vis[idxOf(e.x,e.y)]; }).sort(function(a,b){ return dist(a,target)-dist(b,target); })[0];
     if(o){ ARCING=true; var ad=applyDamage(o, Math.max(1,Math.round(d*0.5)), 'lightning', player); ARCING=false; boltFx(target.x,target.y,o.x,o.y,'lightning'); floatText(o.x,o.y,String(ad),'lightning'); if(o.hp<=0) kill(o,player); }
