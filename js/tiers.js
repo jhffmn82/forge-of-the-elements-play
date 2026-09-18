@@ -221,12 +221,13 @@ derive = function(p){
   if(w && !w.unarmed && itemKey(w) && p.race==='dwarf'){ var per=tierPer(w); p.dmg=[p.dmg[0]+per[0]-1, p.dmg[1]+per[1]-1]; }
   var arm=p.armorItem;
   if(arm && itemKey(arm) && arm.armor===0) p.armor += Math.max(0, itemPlus(arm));
-  /* shields: tier block + 2% per level + 1% per point of Might above 10 (Might braces the shield, 2026-09-17),
+  /* shields: tier block + 2% per level + 2% per point of Might above 10 (Might braces the shield, 2026-09-17;
+     stats cap at 25, so a maxed Might is +30% and a real shield build blocks nearly everything),
      60% cap. This is the live formula - combat.js sets p.block first and this wrapper runs after it. */
   var o=p.off, sh = o && o!==EMPTY_OFF && o.block>0 && !p.twoHanded;
   p.block = sh ? Math.min(0.75, o.block + TIER_BLOCK.per*(o.plus||0)
                               + (p.cls==='fighter' && typeof FIGHTER_NO_BLOCK==='undefined' ? 0.15 : 0)
-                              + 0.01*Math.max(0, (p.stats&&p.stats.mig||10)-10)) : 0;
+                              + 0.02*Math.max(0, (p.stats&&p.stats.mig||10)-10)) : 0;
   /* tomes carry their own per-level mana; undo upgrade.js's older +5%/level */
   if(o && o!==EMPTY_OFF && !p.twoHanded && o.manaPct && (o.plus||0)) p.maxmp=Math.round(p.maxmp/(1+0.05*o.plus));
   if(arm && itemKey(arm)==='robe') p.maxmp=Math.round(p.maxmp*(1+TIER_ROBE.mana[tierNum(arm)]));

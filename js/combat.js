@@ -98,7 +98,7 @@ function derive(p){
   var shield = p.off && p.off.block>0 && !p.twoHanded;
   /* Might braces a shield: +1% block per point above 10 (2026-09-17). Needs a shield - it is about holding
      one, not about being strong in general. */
-  p.block = shield ? Math.min(0.6, p.off.block + (p.cls==='fighter'?0.15:0) + 0.01*Math.max(0, s.mig-10)) : 0;
+  p.block = shield ? Math.min(0.75, p.off.block + (p.cls==='fighter'?0.15:0) + 0.02*Math.max(0, s.mig-10)) : 0;
   p.parry = (p.twoHanded || !p.off || !p.off.weapon) ? 0 : (0.08 + s.agi/300);
   p.rangeBonus = p.race==='elf' ? 1 : 0;
   p.range = p.weapon.range ? p.weapon.range + p.rangeBonus : 1;
@@ -273,9 +273,9 @@ function attack(att, def, mult, label){
   if(att===player){
     var melee = !ranged;
     /* two pools: gear bonuses add together, stat + ability bonuses add together, then the pools multiply */
-    /* 2026-09-17: Might is 4% per point above 10, to mirror Focus's 4% spell damage, and it is melee only -
-       a bow is Agility's business. */
-    var gearPool = 0, statPool = melee ? 0.04*(player.stats.mig-10) : 0;
+    /* 2026-09-17: Might is 4% per point above 10, mirroring Focus's 4% spell damage. It covers every weapon
+       attack, bows included - drawing a heavy bow is strength, not nimbleness. Spells stay with Focus. */
+    var gearPool = 0, statPool = 0.04*(player.stats.mig-10);
     if(player.weapon.executioner && def.hp <= def.maxhp/2) gearPool += player.weapon.executioner;
     if(melee && hasP('heavyHands')) statPool += 0.10;
     if(melee && hasP('unstoppable')) statPool += 0.20;
