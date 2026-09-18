@@ -13,8 +13,10 @@
   M.gravebeetle= {name:'Grave Beetle', sprite:'m-grave-beetle', col:'#3E5A3A', ch:'b', hp:18, dmg:[4,6], acc:62, eva:12, armor:3, speed:100, range:1, xp:20,
                   band:[6,8], w:18, fumes:true, living:true, art:0.8, sfx:'slime'};
   M.skeleton.band=[6,10]; M.skeleton.w=18; M.skeleton.boneType=true; M.skeleton.sprite='m-crypt-skeleton';   /* Justin's Crypt sprite set, 2026-09-17 */
+  /* 2026-09-17: their arrows are grave-tipped. A 4-7 shot was nothing to a mage with Magic Barrier (-5 from
+     ranged) or anyone in real armour, so the threat is the poison rather than the hit. */
   M.bonearcher = {name:'Bone Archer', sprite:'m-bone-archer', col:'#D8CEBC', ch:'a', hp:16, dmg:[4,7], acc:64, eva:16, armor:1, speed:100, range:6, xp:26,
-                  band:[7,10], w:14, undead:true, reloads:true, art:0.95, sfx:'skeleton'};
+                  band:[7,10], w:14, undead:true, reloads:true, poisons:0.45, art:0.95, sfx:'skeleton'};
   M.shade      = {name:'Shade', sprite:'m-shade', col:'#5A3E7A', ch:'S', hp:20, dmg:[5,8], acc:66, eva:26, armor:0, speed:100, range:1, xp:30,
                   band:[7,10], w:10, undead:true, shadowy:true, phases:true, el:'shadow', art:0.95, sfx:'elementaling'};
   M.gravebloat = {name:'Grave Bloat', sprite:'m-grave-bloat', col:'#9FBF7A', ch:'B', hp:44, dmg:[7,11], acc:58, eva:4, armor:2, speed:100, range:1, xp:38,
@@ -81,6 +83,18 @@ gatherLights = function(now, prp){
 };
 
 /* ---------------------------------------------------------------- special rooms speak the Crypt's language */
+/* base.poisons is the chance a hit from this creature poisons you. The Bone Archer is the one that has it:
+   its damage alone stopped mattering once you had armour or Magic Barrier (2026-09-17). */
+var _applyDamageCryptPoison = applyDamage;
+applyDamage = function(target, amount, type, source){
+  var d = _applyDamageCryptPoison(target, amount, type, source);
+  if(target===player && d>0 && source && source.base && source.base.poisons && !player.st.poison
+     && rng() < source.base.poisons && !(typeof aff==='function' && aff('earth')>=6)){
+    applyStatus(player, 'poison', 4, Math.max(2, sDMG ? sDMG(2) : 2));
+    log('The arrow is grave-tipped: <b>you are poisoned</b>.','c-you');
+  }
+  return d;
+};
 var CRYPT_SWAP = {rat:'gravebeetle', bat:'shambler', goblin:'shambler', archer:'bonearcher', brute:'gravebloat'};
 var _spawnCrypt = spawn;
 spawn = function(kind, x, y){ if(inCrypt() && CRYPT_SWAP[kind]) kind=CRYPT_SWAP[kind]; return _spawnCrypt(kind, x, y); };

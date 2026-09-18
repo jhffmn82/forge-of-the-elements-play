@@ -63,8 +63,11 @@ function craftSigil(key){
   var s=SIGILS[key], need={};
   s.motes.forEach(function(m){ need[m]=(need[m]||0)+1; });
   for(var m in need) if((player.motes[m]||0)<need[m]){ log('You need '+s.motes.join(' + ')+' motes.','c-info'); return; }
+  var ess = (typeof sigilEssence==='function') ? sigilEssence(key) : 0;
+  if(ess > (player.essence||0)){ log('Carving a <b>'+s.name+'</b> takes <b>'+ess+' essence</b>; you have '+(player.essence||0)+'.','c-info'); sfx('ui-error'); return; }
   if(player.bag.length>=BAG_MAX && !player.bag.some(function(b){ return b.uid==='sigil:'+key; })){ log('Your bag is full.','c-info'); return; }
   for(var m2 in need){ player.motes[m2]-=need[m2]; if(player.motes[m2]<=0) delete player.motes[m2]; }
+  if(ess){ if(typeof spendEssence==='function') spendEssence(ess); else player.essence-=ess; }
   sigilKnown[key]=true;
   player.bag.forEach(function(b){ if(b.kind==='sigil' && b.data.use===key) b.name=s.name; });
   addBag('\u2726', s.name, {kind:'sigil', data:{use:key}, uid:'sigil:'+key});
@@ -111,12 +114,16 @@ function renderForge(){
       h+='</div>';
     });
   } else {
-    h+='<p class="c-info">Carve motes into sigils. Crafted sigils are always identified.</p>';
+    h+='<p class="c-info">Carve motes into sigils. Crafted sigils are always identified. The carving costs essence as well as motes: 100 for one mote, 200 for two, 500 for Ascension, 1000 for Wisdom.</p>';
     Object.keys(SIGILS).forEach(function(k){
       var s=SIGILS[k], need={}, ok=true; s.motes.forEach(function(m){ need[m]=(need[m]||0)+1; });
       for(var m in need) if((player.motes[m]||0)<need[m]) ok=false;
+      var ess=(typeof sigilEssence==='function') ? sigilEssence(k) : 0;
+      if(ess > (player.essence||0)) ok=false;
       h+='<div class="frow">'+s.motes.map(function(m){ return '<span class="dot" style="background:'+AFF_COL[m]+'"></span>'; }).join('')+
-         '<div class="ftext"><b>'+s.name+'</b><div class="d">'+s.desc+'</div></div><button data-craft="'+k+'" '+(ok?'':'disabled')+'>Craft</button></div>';
+         '<div class="ftext"><b>'+s.name+'</b><div class="d">'+s.desc+'</div></div>'+
+         '<span class="val" style="white-space:nowrap">'+ess+' essence</span>'+
+         '<button data-craft="'+k+'" '+(ok?'':'disabled')+'>Craft</button></div>';
     });
   }
   body.innerHTML=h+'</div>';

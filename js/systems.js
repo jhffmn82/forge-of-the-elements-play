@@ -3,7 +3,7 @@
    inventory, hunger, the turn loop, floors, death and victory.
    ========================================================================== */
 
-var BAG_MAX = 16;
+var BAG_MAX = 20;   /* 2026-09-17: 16 was too tight once sigils, keys and a ranged weapon compete for it */
 
 /* ---------------------------------------------------------------- movement */
 function tryMove(dx,dy){

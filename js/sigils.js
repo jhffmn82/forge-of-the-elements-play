@@ -38,7 +38,10 @@ var SIGIL_ORDER = {
   };
   for(var k in add) S[k]=add[k];
   S.identify.name='Water sigil'; S.identify.motes=['water'];
-  S.identify.desc='Identify every sigil you carry and every piece of gear you wear or carry, and put out every fire within 3 tiles.';
+  /* 2026-09-17: identifying the entire pack made every unknown drop pointless - the single sigil now reads
+     what you are actually wearing (and your sigils); the + version is what identifies the whole bag. */
+  S.identify.desc='Identify every sigil you carry and every piece of gear you are wearing or wielding, and put out every fire within 3 tiles.';
+  S.identify.wornOnly=true;
   S.mana.name='Sigil of the Deep Well'; S.mana.motes=['water','shadow'];
   S.mana.desc='Restore 50% of your mana, and mana returns twice as fast for 20 turns.';
   S.mapping.motes=['light','earth'];
@@ -49,6 +52,16 @@ var SIGIL_ORDER = {
   for(var k2 in S) if(!ordered[k2]) ordered[k2]=S[k2];
   SIGILS=ordered;
 })();
+/* 2026-09-17: motes alone made sigils feel free, so carving one costs essence by grade:
+   100 a single-element sigil, 200 anything needing two motes (including the doubles and the Aegis),
+   500 the Ascension (a free upgrade) and 1000 the Wisdom (a free level). */
+var SIGIL_ESSENCE = {common:100, uncommon:200, upgrade:500, levelup:1000};
+function sigilEssence(key){
+  if(key==='ascension') return SIGIL_ESSENCE.upgrade;
+  if(key==='wisdom') return SIGIL_ESSENCE.levelup;
+  var s=SIGILS[key];
+  return (s && s.motes && s.motes.length>1) ? SIGIL_ESSENCE.uncommon : SIGIL_ESSENCE.common;
+}
 SIGIL_LOOKS = ['ashen','coiled','cracked','weeping','humming','bone','tarnished','woven','gilded',
   'frosted','scorched','mossy','starry','inked','rusted','crystal','feathered','veined','charred',
   'pearl','ivory','runed','sunlit','moonlit','thorned','salted','bloodied','hollow','glass'];

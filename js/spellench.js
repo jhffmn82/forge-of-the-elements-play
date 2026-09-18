@@ -4,6 +4,8 @@
    Wand of Shadow did nothing at all for a mage who casts. Now the same enchantment procs on spell hits, at
    the same rates and off the spell's own damage, so the enchant on your focus is worth having whichever way
    you fight.
+   Only a spell focus does this: a staff or a wand (anything with a spell bonus). A melee weapon's enchant
+   stays on its swings and a bow's on its shots.
    Air reads the same way on both sides: the gust that gives a melee weapon an instant extra swing (and a bow
    an extra shot) makes a spell land a second time.
    ===================================================================== */
@@ -14,6 +16,11 @@
     var r = _spellOnHitEnch(f, d, crit, A);
     var w = player.weapon, ench = w && w.enchant;
     if(!ench || !f || f.hp<=0 || !d) return r;
+    /* 2026-09-17: only a spell focus carries its enchantment into a spell. A sword of Shadow buffing your
+       magic was wrong: melee enchants are for melee, a bow's for its shots (the bow holds this slot only
+       while it fires, see js/rangedslot.js), and a staff or wand's for what you cast. */
+    var k = (typeof itemKey==='function') ? itemKey(w) : null;
+    if(!(k==='staff' || k==='wand' || w.spell)) return r;
 
     var pts = (player.aff && player.aff[ench]) || 0;
     var sc = enchantScale(ench);

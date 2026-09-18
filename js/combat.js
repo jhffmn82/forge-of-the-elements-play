@@ -44,7 +44,7 @@ function itemPlus(it){ return (it && it.plus||0) + (it && it.tier==='Trusty' ? 1
 function gearName(it){
   if(!it) return 'nothing';
   var n=(it.tier && it.tier!=='Rusty' ? it.tier+' ' : '') + it.name;
-  if(it.plus) n+=' +'+it.plus;
+  if(it.plus) n+=(it.plus<0 ? ' −'+Math.abs(it.plus) : ' +'+it.plus);   /* a cursed item is -3, never "+-3" */
   if(it.enchant) n+=' of '+cap(it.enchant);
   return n;
 }

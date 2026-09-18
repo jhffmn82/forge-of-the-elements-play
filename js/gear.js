@@ -156,7 +156,11 @@ bagCard = function(it){
 };
 
 /* ---------------------------------------------------------------- identification */
+/* nothing but a curse gives an item a negative upgrade level, so treat one as proof of the other: a
+   Masterwork staff reading -3 with no curse on it was the tell that this could drift apart (2026-09-17) */
+function fixNegativePlus(it){ if(it && (it.plus||0)<0 && !it.cursed) it.cursed=true; return it; }
 function identifyGear(it, quiet){
+  fixNegativePlus(it);
   if(!it || !it.unid) return false;
   it.unid=false;
   if(it.kind==='ring') RUN.ringKnown[it.ring]=true;
@@ -417,15 +421,18 @@ abilityBar = function(){
 var _useSigilBase = useSigil;
 useSigil = function(use){
   var r=_useSigilBase(use);
-  if(r!==false && use==='identify'){
-    var list=wornGear().concat(player.bag.filter(function(b){ return b.data && b.data.unid; }).map(function(b){ return b.data; }));
+  if(r!==false && (use==='identify' || use==='identify2')){
+    /* 2026-09-17: the single sigil reads only what you are wearing or wielding. Identifying the whole pack
+       made every unknown drop a non-decision; that is what the Water sigil+ is for. */
+    var list = wornGear();
+    if(use==='identify2') list = list.concat(player.bag.filter(function(b){ return b.data && b.data.unid; }).map(function(b){ return b.data; }));
     var n=0; list.forEach(function(it){ if(identifyGear(it, true)) n++; });
     refreshBagNames();
-    log(n ? 'The sigil lays bare <b>'+n+'</b> piece'+(n>1?'s':'')+' of your gear.' : 'Your gear holds no secrets.','c-kill');
+    log(n ? 'The sigil lays bare <b>'+n+'</b> piece'+(n>1?'s':'')+' of your gear'+(use==='identify'?' (what you carry stays a mystery)':'')+'.' : 'Your gear holds no secrets.','c-kill');
   }
   return r;
 };
-if(SIGILS.identify) SIGILS.identify.desc='Identify every sigil you carry and every piece of gear you wear or carry.';
+if(SIGILS.identify) SIGILS.identify.desc='Identify every sigil you carry and every piece of gear you are wearing or wielding.';
 
 /* ---------------------------------------------------------------- breaking curses */
 /* enchanting an item at the Forge burns a curse out of it */

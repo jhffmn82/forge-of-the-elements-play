@@ -102,10 +102,15 @@ addChill = function(e){
   if(n>=need && !(e.st.imm_frozen)){ delete e.st.chill; applyStatus(e,'frozen',2); if(e!==player) e.st.imm_frozen={t:5}; sfx('status-freeze'); floatText(e.x,e.y,'frozen','ice'); }
   else e.st.chill={t:4, n:Math.min(n, need-1)};
 };
-function applyPoison(e){
+function applyPoison(e, announce){
   if(!e || e.hp<=0 || e===player) return;
   var big=e.elite || e.base.elite || e.base.boss;
+  /* 3 turns of its own: once it is in, the root wearing off does not stop it (2026-09-17) */
   e.st.poison={t:3, d:Math.max(1, Math.round(e.maxhp*0.10*(big?0.5:1)))};
+  if(announce){
+    if(typeof floatText==='function') floatText(e.x, e.y, 'poisoned', 'poison');
+    if(typeof log==='function' && vis[idxOf(e.x,e.y)]) log('<b>Venom.</b> The rooted '+e.name+' is poisoned: '+e.st.poison.d+' a turn for 3 turns.','c-good');
+  }
 }
 
 /* ---------------------------------------------------------------- damage: immunities, Searing, Hollow, Venom, Arc, Radiance, Reflexes */
@@ -125,7 +130,7 @@ applyDamage = function(target, amount, type, source){
   if(type==='dark' && aff('shadow')>=6 && target.hp>0){ var h=target.st.hollow; target.st.hollow={t:5, n:Math.min(5,(h?h.n:0)+1)}; }
   if(type==='light' && aff('light')>=3){ player.hp=Math.min(player.maxhp, player.hp+aff('light')); }
   if(type==='lightning' && aff('air')>=6 && target.hp>0 && rng()<0.15) applyStatus(target,'stun',1);
-  if(aff('earth')>=3 && target.hp>0 && target.st.root && !target.st.poison) applyPoison(target);
+  if(aff('earth')>=3 && target.hp>0 && target.st.root && !target.st.poison) applyPoison(target, true);
   if(aff('air')>=3 && !ARCING && rng()<0.05*aff('air')){
     var o=ents.filter(function(e){ return e.foe && e!==target && e.hp>0 && dist(e,target)<=3 && vis[idxOf(e.x,e.y)]; }).sort(function(a,b){ return dist(a,target)-dist(b,target); })[0];
     if(o){ ARCING=true; var ad=applyDamage(o, Math.max(1,Math.round(d*0.5)), 'lightning', player); ARCING=false; boltFx(target.x,target.y,o.x,o.y,'lightning'); floatText(o.x,o.y,String(ad),'lightning'); if(o.hp<=0) kill(o,player); }

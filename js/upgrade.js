@@ -110,7 +110,9 @@ function upgradeCost(it){
   var base = it.kind==='ring' ? RING_RANK_COST : UPGRADE_COST[Math.max(0,plus)];
   return Math.round(base * (player.race==='dwarf' ? 0.75 : 1));
 }
-function upgradeable(it){ return it && (it.kind==='ring' || it.kind==='weapon' || it.kind==='armor' || it.kind==='off' || (it.dmg && !it.unarmed) || it.armor!==undefined || it.block!==undefined) && it!==EMPTY_OFF && !it.unarmed && !it.joke; }
+/* 2026-09-17: an unidentified piece cannot be upgraded - you would be paying essence for a bonus you
+   cannot see, on something that might be cursed. The Forge lists it, greyed, saying why. */
+function upgradeable(it){ return it && (it.kind==='ring' || it.kind==='weapon' || it.kind==='armor' || it.kind==='off' || (it.dmg && !it.unarmed) || it.armor!==undefined || it.block!==undefined) && it!==EMPTY_OFF && !it.unarmed && !it.joke && !it.unid; }
 function allUpgradeTargets(){
   var out=[];
   function add(it, where){ if(upgradeable(it) && out.every(function(o){ return o.it!==it; })) out.push({it:it, where:where}); }
@@ -121,6 +123,7 @@ function allUpgradeTargets(){
   return out;
 }
 function upgradeItem(it){
+  if(it && it.unid){ log('The Forge will not work metal you do not know. <b>Identify it first.</b>','c-info'); sfx('ui-error'); return; }
   var cost=upgradeCost(it); if(cost===null){ log('That is as strong as the Forge can make it.','c-info'); return; }
   if(player.essence<cost){ log('You need '+cost+' essence.','c-info'); sfx('ui-error'); return; }
   spendEssence(cost);
