@@ -318,21 +318,27 @@ function attack(att, def, mult, label){
   if(att===player){
     var ench = player.weapon.enchant;
     if(ench){
-      /* weapon infusions (review step 5): chances are 5% per point in the element unless noted */
+      /* weapon infusions (review step 5): chances are 5% per point in the element unless noted.
+         2026-09-18: only the earth line read enchantScale(), so Old Anvil's "enchantments 10% stronger per
+         rank" quietly applied to one element out of six - an earth weapon got +50% root chance at rank 5 and
+         a fire, water, shadow or air weapon got nothing. `am` is his multiplier on its own, applied to every
+         line; the affinity curves themselves are untouched, so nothing changes for anyone else. */
       var sc=enchantScale(ench), pts=(player.aff[ench]||0);
+      var am = (player.god==='anvil' ? 1 + 0.10*godRank() : 1);
+      var roll1 = function(c){ return (typeof pRoll==='function' ? pRoll(c) : rng()<c); };
       el=ench;
-      if(ench==='fire'){ extra+=Math.round(base*(0.10+0.03*pts)); if((typeof pRoll==='function' ? pRoll(0.05*pts) : rng()<(0.05*pts))){ applyStatus(def,'burn',3,burnDmg()); note=' <span class="c-fire">burning</span>'; } }
-      if(ench==='water' && (typeof pRoll==='function' ? pRoll(0.15+0.05*pts) : rng()<(0.15+0.05*pts))){ addChill(def); note=' chilled'; }
-      if(ench==='earth' && (typeof pRoll==='function' ? pRoll(0.15*sc) : rng()<(0.15*sc))){ applyStatus(def,'root',2); note=' rooted'; }
-      if(ench==='light' && (def.base.undead||def.base.shadowy)) extra+=Math.round(base*0.25);
+      if(ench==='fire'){ extra+=Math.round(base*(0.10+0.03*pts)*am); if(roll1(0.05*pts*am)){ applyStatus(def,'burn',3,burnDmg()); note=' <span class="c-fire">burning</span>'; } }
+      if(ench==='water' && roll1((0.15+0.05*pts)*am)){ addChill(def); note=' chilled'; }
+      if(ench==='earth' && roll1(0.15*sc)){ applyStatus(def,'root',2); note=' rooted'; }
+      if(ench==='light' && (def.base.undead||def.base.shadowy)) extra+=Math.round(base*0.25*am);
       if(ench==='shadow'){ if(def.st.hollow) extra+=1;
-        if((typeof pRoll==='function' ? pRoll(Math.max(0.05,0.05*pts)) : rng()<(Math.max(0.05,0.05*pts)))){
-          extra+=Math.round(base*0.25); applyStatus(def,'corrupt',3); note=' <span style="color:#B58BFF">corrupted</span>';
+        if(roll1(Math.max(0.05,0.05*pts)*am)){
+          extra+=Math.round(base*0.25*am); applyStatus(def,'corrupt',3); note=' <span style="color:#B58BFF">corrupted</span>';
           /* the enchant's bite IS this build's dark damage, so at Shadow 6 it is what stacks Hollow.
              Spells stack it through the applyDamage wrapper in elements.js; this is the melee half. */
           if(typeof aff==='function' && aff('shadow')>=6) addHollow(def, 1);
         } }
-      if(ench==='air' && (typeof pRoll==='function' ? pRoll(Math.max(0.05,0.05*pts)) : rng()<(Math.max(0.05,0.05*pts))) && !label && def.hp>0){ note=' (gust: extra attack)'; pendingExtra=def; }
+      if(ench==='air' && roll1(Math.max(0.05,0.05*pts)*am) && !label && def.hp>0){ note=' (gust: extra attack)'; pendingExtra=def; }
     }
     if(player.aff.fire){ el = el || 'fire'; extra += player.aff.fire; }
     if(player.aff.light && rng() < 0.10*player.aff.light + (typeof smiteBonus==='function' ? smiteBonus() : 0)){

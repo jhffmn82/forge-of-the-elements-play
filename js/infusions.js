@@ -133,7 +133,10 @@ endTurn = function(){
 var _playerShieldInf = playerShield;
 playerShield = function(){ return _playerShieldInf() + Math.max(0, Math.floor(player.mward||0)); };
 /* Shadow armor: stealth */
-function stealthExtra(){ var a=player.armorItem; return (a && a.enchant==='shadow') ? 0.05*Math.max(1,affPts('shadow')) : 0; }
+/* the one armor enchant that did not read enchantScale, so Old Anvil skipped it too (2026-09-18) */
+function stealthExtra(){ var a=player.armorItem; if(!a || a.enchant!=='shadow') return 0;
+  var am = (player.god==='anvil' ? 1 + 0.10*godRank() : 1);
+  return 0.05*Math.max(1,affPts('shadow'))*am; }
 
 /* item cards show the infusion */
 var _bagCardInf = bagCard;
