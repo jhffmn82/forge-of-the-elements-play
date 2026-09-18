@@ -225,7 +225,8 @@ var PLANE_ROSTER = {
 };
 (function(){
   var M=MONSTERS;
-  function mk(o){ o.band=[0,0]; o.w=0; o.speed=o.speed||100; o.range=o.range||1; return o; }
+  /* fixed: these are tuned for the plane they guard, so spawn() does not put the dungeon floor curve on top */
+  function mk(o){ o.band=[0,0]; o.w=0; o.speed=o.speed||100; o.range=o.range||1; o.fixed=true; return o; }
   /* Light (Justin's creatures, 2026-09-17) */
   M.dawnsentinel = mk({name:'Dawn Sentinel', sprite:'m-dawn-sentinel', col:'#F6E7B0', ch:'D', hp:32, dmg:[6,9], acc:66, eva:12, armor:5, xp:42, reflects:true, art:1.05});
   M.halowisp     = mk({name:'Halo Wisp', sprite:'m-halo-wisp', col:'#FFE08A', ch:'w', hp:14, dmg:[2,4], acc:60, eva:34, armor:0, xp:30, healer:true, flying:true, el:'light', art:0.75});
@@ -238,7 +239,10 @@ var PLANE_ROSTER = {
   M.burrower     = mk({name:'Burrower', sprite:'m-burrower', col:'#8A6A4A', ch:'b', hp:28, dmg:[6,9], acc:64, eva:10, armor:3, xp:38, burrows:true, art:0.95});
   M.crystalgolem = mk({name:'Crystal Golem', sprite:'m-crystal-golem', col:'#9A8AC0', ch:'G', hp:40, dmg:[7,11], acc:60, eva:4, armor:10, xp:46, shatters:true, el:'earth', art:1.05});
   M.mosstroll    = mk({name:'Moss Troll', sprite:'m-moss-troll', col:'#6F8A44', ch:'T', hp:44, dmg:[7,12], acc:62, eva:8, armor:2, xp:46, regenerates:true, living:true, art:1.1});
-  M.mountainheart= mk({name:'Heart of the Mountain', sprite:'m-mountain-heart', col:'#C08A40', ch:'M', hp:180, dmg:[10,15], acc:68, eva:0, armor:6, xp:320, elite:true, big:2, still:true, el:'earth', art:1.9});
+  /* 2026-09-17: 180 HP and 10-15 was an attrition fight a level 9 character could not win - builds are not
+     online yet at that depth. 110 and 8-12 keeps him lethal if you stand there and finishes in a reasonable
+     number of exchanges. */
+  M.mountainheart= mk({name:'Heart of the Mountain', sprite:'m-mountain-heart', col:'#C08A40', ch:'M', hp:110, dmg:[8,12], acc:68, eva:0, armor:6, xp:320, elite:true, big:2, still:true, el:'earth', art:1.9});
   M.crystalnode  = mk({name:'Crystal Node', sprite:'m-crystal-golem', col:'#C8A0FF', ch:'*', hp:30, dmg:[0,0], acc:0, eva:0, armor:3, xp:20, object:true, art:0.6});
   ['dawnsentinel','halowisp','prismscarab','radiantwarden','stalker','gloommoth','umbralhound','nightwarden','burrower','crystalgolem','mosstroll','mountainheart','crystalnode'].forEach(function(k){ DROPS[k]=DROPS[k]||{chance:0.3, table:{essence:8, sigil:2, gear:3}}; });
 })();

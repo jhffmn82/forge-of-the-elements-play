@@ -713,9 +713,12 @@ function rollRare(){
 }
 function spawn(kind,x,y){
   var b=MONSTERS[kind];
-  var hpScale = 1 + (floorNo-1)*0.08;
+  /* the plane creatures are tuned by hand for the plane they guard (js/portals.js), so the floor curve that
+     grows dungeon monsters does not apply to them - it was turning a 110 HP boss into 207 (2026-09-17) */
+  var hpScale = b.fixed ? 1 : 1 + (floorNo-1)*0.08;
+  var dmgScale = b.fixed ? 1 : 1 + (floorNo-1)*0.05;
   var e={id:nextId++, kind:kind, name:b.name, ch:b.ch, col:b.col, x:x, y:y,
          hp:sHP(b.hp*hpScale), maxhp:sHP(b.hp*hpScale), base:b, t:(typeof player!=='undefined' && player && player.t) ? player.t : 0, state:'asleep', st:{}, foe:true,
-         dmg:[sDMG(b.dmg[0]*(1+(floorNo-1)*0.05)), sDMG(b.dmg[1]*(1+(floorNo-1)*0.05))], castCd:ri(1,3)};
+         dmg:[sDMG(b.dmg[0]*dmgScale), sDMG(b.dmg[1]*dmgScale)], castCd:ri(1,3)};
   ents.push(e); return e;
 }
