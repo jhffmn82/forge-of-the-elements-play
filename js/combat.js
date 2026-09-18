@@ -237,6 +237,11 @@ function hitSfx(att, def, crit, blocked){
   return 'hit-flesh';
 }
 var LAST_HIT=null;
+/* Light mastery's smite: 3-6 plus a point of light damage per Light point (2026-09-18). The flat 3-6 was
+   the same hit at Light 1 as at Light 6, so an affinity you kept pouring points into stopped paying for
+   itself - the chance rose but the hit never did. combos.js's light-air double smite uses this too. */
+function smiteDamage(){ return roll(3,6) + ((player.aff && player.aff.light) || 0); }
+
 function attack(att, def, mult, label){
   mult = mult || 1;
   LAST_HIT=null;
@@ -325,7 +330,7 @@ function attack(att, def, mult, label){
     }
     if(player.aff.fire){ el = el || 'fire'; extra += player.aff.fire; }
     if(player.aff.light && rng() < 0.10*player.aff.light + (typeof smiteBonus==='function' ? smiteBonus() : 0)){
-      var sm=applyDamage(def, roll(3,6), 'light', player); applied+=sm; el = el || 'light';
+      var sm=applyDamage(def, smiteDamage(), 'light', player); applied+=sm; el = el || 'light';
       note+=' <span style="color:#FFF1B8">smite</span>';
       if(typeof onSmiteProc==='function') applied+=onSmiteProc(def)||0;
       if(rng()<0.10*player.aff.light) applyStatus(def,'blind',2); sparkleFx(def.x,def.y,'light',10);

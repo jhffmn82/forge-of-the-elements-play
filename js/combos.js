@@ -162,7 +162,7 @@ function onSmiteProc(def){
   var extra=0;
   if(def.hp>0 && combo('light','fire')) _applyStatusCombo(def,'burn',3,burnDmg());
   if(def.hp>0 && combo('light','earth') && (def.base.range>1 || def.base.caster)) _applyStatusCombo(def,'root',1);
-  if(def.hp>0 && combo('light','air')){ extra=applyDamage(def, roll(3,6), 'light', player); sparkleFx(def.x,def.y,'light',10); }
+  if(def.hp>0 && combo('light','air')){ extra=applyDamage(def, smiteDamage(), 'light', player); sparkleFx(def.x,def.y,'light',10); }
   return extra;
 }
 
