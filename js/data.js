@@ -69,23 +69,23 @@ var OFFHANDS = {
 function clone(o){ return JSON.parse(JSON.stringify(o)); }
 
 var CLASSES = {
-  fighter:  {name:'Fighter', mods:{mig:2,vit:2}, ability:'double',
+  fighter:  {name:'Fighter', mods:{mig:2,vit:2}, ability:'double', icon:'cls-fighter',
              passive:'Shield Training: +15% block while carrying a shield.',
              blurb:'Sword and board. Double Strike, and a shield that actually stops things.',
              kit:{main:'sword', alt:'longsword', armor:'chain', off:'kite'}},
-  cleric:   {name:'Cleric', mods:{foc:2,vit:2}, ability:'invoke',
+  cleric:   {name:'Cleric', mods:{foc:2,vit:2}, ability:'invoke', icon:'cls-cleric',
              passive:'Starts sworn to a god of your choice (rank 1, 20 piety).',
              blurb:'Chooses a god at the start. Invoke is that god\'s everyday miracle.',
              kit:{main:'mace', alt:'staff', armor:'leather', off:'holy'}},
-  mage:     {name:'Mage', mods:{foc:3,vit:1}, ability:'missile',
+  mage:     {name:'Mage', mods:{foc:3,vit:1}, ability:'missile', icon:'cls-mage',
              passive:'Deep Reserves: +30% max mana.',
              blurb:'Magic Missile: always hits, nothing resists it, grows with every affinity point.',
              kit:{main:'wand', alt:'staff', armor:'robe', off:'orb'}},
-  scoundrel:{name:'Scoundrel', mods:{agi:4}, ability:'sap',
+  scoundrel:{name:'Scoundrel', mods:{agi:4}, ability:'sap', icon:'cls-scoundrel',
              passive:'Sneaky: surprise attacks +50% damage; spots traps more easily.',
              blurb:'Bow and dagger. Sap knocks a target out, and a knocked-out target takes a surprise attack.',
              kit:{main:'dagger', alt:'bow', armor:'leather', off:'dagger'}},
-  tourist:  {name:'Tourist', mods:{}, ability:null,
+  tourist:  {name:'Tourist', mods:{}, ability:null, icon:'cls-tourist',
              passive:'Well-Traveled: +1 extra stat point every 2 levels.',
              blurb:'No training, a loud shirt and a camera that does nothing. Grows faster than anyone.',
              kit:{main:'dagger', alt:null, armor:'shirt', off:'camera'}, extraFood:2}
