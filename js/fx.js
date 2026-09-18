@@ -46,7 +46,8 @@ var SHAKE=0;
 /* projectiles: queued in order with everything else via fxAt */
 function boltFx(ax,ay,bx,by,type,opts){
   var d=Math.max(1, Math.max(Math.abs(bx-ax), Math.abs(by-ay)));
-  var dur=110+55*d;
+  /* an arrow is loosed, not lobbed: about a third of the flight time of a spell bolt (2026-09-18) */
+  var dur=(opts && opts.arrow) ? 45+18*d : 110+55*d;
   var el = type==='phys' && opts && opts.arrow ? 'arrow' : type;
   fx.push({k:'p', ax:ax, ay:ay, bx:bx, by:by, type:type, arrow: !!(opts&&opts.arrow), t0:fxAt(dur, dur*0.85), dur:dur, hit:false, sfxHit: opts&&opts.sfxHit});
 }
@@ -104,16 +105,31 @@ function drawFX(){
       ctx.fillStyle=f.col; ctx.fillText(f.text, px, py+TS*0.45-rise); ctx.lineWidth=1;
       ctx.globalAlpha=1;
     } else if(f.k==='p'){
-      var ease = f.type==='lightning' ? p : p*p*(3-2*p)*0.35 + p*0.65;
+      var ease = (f.arrow || f.type==='lightning') ? p : p*p*(3-2*p)*0.35 + p*0.65;
       var cx=f.ax+(f.bx-f.ax)*ease, cy=f.ay+(f.by-f.ay)*ease;
       var t=TRAIL[f.type]||TRAIL.phys;
       if(f.arrow){
         var ang=Math.atan2(f.by-f.ay, f.bx-f.ax), ao=objArt('items','item-arrow');
-        ctx.save(); ctx.translate((cx-camX+0.5)*TS,(cy-camY+0.5)*TS); ctx.rotate(ang - Math.PI/4);
-        if(ao){ var s2=TS*0.55/Math.max(ao.sw,ao.sh); ctx.imageSmoothingEnabled=true; ctx.drawImage(ao.img,ao.sx,ao.sy,ao.sw,ao.sh,-ao.sw*s2/2,-ao.sh*s2/2,ao.sw*s2,ao.sh*s2); }
-        else { ctx.fillStyle='#D8CFC0'; ctx.fillRect(-TS*0.25,-1,TS*0.5,2); }
+        var hx=(cx-camX+0.5)*TS, hy=(cy-camY+0.5)*TS;
+        /* a light streak behind the point, fading back along the flight line */
+        var tail=TS*1.25, txp=hx-Math.cos(ang)*tail, typ=hy-Math.sin(ang)*tail;
+        var g=ctx.createLinearGradient(txp,typ,hx,hy);
+        g.addColorStop(0,'rgba(255,240,200,0)');
+        g.addColorStop(0.65,'rgba(255,238,190,0.28)');
+        g.addColorStop(1,'rgba(255,250,225,0.85)');
+        ctx.save(); ctx.globalCompositeOperation='lighter';
+        ctx.strokeStyle=g; ctx.lineWidth=Math.max(1.5, TS*0.07); ctx.lineCap='round';
+        ctx.beginPath(); ctx.moveTo(txp,typ); ctx.lineTo(hx,hy); ctx.stroke();
         ctx.restore();
-        if(Math.random()<0.5) particle(cx+0.5,cy+0.5,{life:180,col:'rgba(220,210,190,.5)',size:1.2});
+        /* the sprite is drawn pointing up, so +90 degrees aims it along the flight */
+        ctx.save(); ctx.translate(hx,hy); ctx.rotate(ang + Math.PI/2);
+        if(ao){ var s2=TS*0.55/Math.max(ao.sw,ao.sh); ctx.imageSmoothingEnabled=true; ctx.drawImage(ao.img,ao.sx,ao.sy,ao.sw,ao.sh,-ao.sw*s2/2,-ao.sh*s2/2,ao.sw*s2,ao.sh*s2); }
+        else { ctx.fillStyle='#D8CFC0'; ctx.fillRect(-1,-TS*0.25,2,TS*0.5); }
+        ctx.restore();
+        for(var sp=0; sp<2; sp++)
+          particle(cx+0.5-Math.cos(ang)*0.25, cy+0.5-Math.sin(ang)*0.25,
+            {vx:-Math.cos(ang)*0.01, vy:-Math.sin(ang)*0.01, life:150+Math.random()*90,
+             col:'rgba(255,244,210,.65)', size:1.3, glow:true});
       } else if(f.type==='lightning'){
         ctx.save(); ctx.globalCompositeOperation='lighter'; ctx.strokeStyle='#FFF6B0'; ctx.lineWidth=2.2; ctx.beginPath();
         var sx=(f.ax-camX+0.5)*TS, sy=(f.ay-camY+0.5)*TS, ex=(cx-camX+0.5)*TS, ey=(cy-camY+0.5)*TS;
