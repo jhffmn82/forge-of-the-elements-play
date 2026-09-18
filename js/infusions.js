@@ -52,6 +52,8 @@ enchantItem = function(slot, el){
   var kind=offKind(), item=player.off;
   if(!kind){ log('Only an orb or tome in your off hand can be infused.','c-info'); return; }
   if(!(player.motes[el]>0)){ log('You have no '+el+' mote.','c-info'); return; }
+  /* infusing the same element again does nothing at all, so refuse rather than eat the mote (2026-09-17) */
+  if(item.enchant===el){ log('Your '+gearName(item)+' already carries '+el+'. A second mote would change nothing.','c-info'); sfx('ui-error'); return; }
   player.motes[el]--; if(player.motes[el]<=0) delete player.motes[el];
   var was=item.cursed; item.enchant=el;
   if(player.god==='anvil') gainPiety(20);

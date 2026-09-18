@@ -278,10 +278,23 @@ function generateOnce(seed){
     }
   }
   if(floorMeta.vault && !floorMeta.keyHolder){
-    var cands=ents.filter(function(e){ return e.foe && !e.base.boss && (e.kind==='goblin'||e.kind==='archer'||e.kind==='brute'); });
-    var holder = cands.length ? pick(cands) : null;
-    if(!holder){ var hs=pick(open); if(walkable(hs.x,hs.y)&&!occupied(hs.x,hs.y)) holder=spawn('goblin',hs.x,hs.y); }
+    /* 2026-09-17: the key must be OUTSIDE the door it opens. The holder used to be picked from every foe on
+       the floor, so one sleeping in the vault locked the floor for good (16% of vault floors), and on later
+       biomes the goblin/archer/brute list was empty so no holder spawned at all. Now: reachable foes only,
+       any kind, and if there are none the key is simply left on the floor where you can walk to it. */
+    var freeSide = keyReachable();
+    var cands=ents.filter(function(e){ return e.foe && !e.base.boss && freeSide[idxOf(e.x,e.y)]; });
+    var pref=cands.filter(function(e){ return e.kind==='goblin'||e.kind==='archer'||e.kind==='brute'; });
+    var holder = pref.length ? pick(pref) : (cands.length ? pick(cands) : null);
     if(holder){ holder.keyholder=true; holder.name=holder.name+' (key holder)'; floorMeta.keyHolder=true; }
+    else {
+      for(var kt=0; kt<80 && !floorMeta.keyHolder; kt++){
+        var hs=pick(open);
+        if(!freeSide[idxOf(hs.x,hs.y)] || !walkable(hs.x,hs.y) || occupied(hs.x,hs.y) || itemAt(hs.x,hs.y)) continue;
+        items.push({x:hs.x, y:hs.y, kind:'key', key:'iron'});
+        floorMeta.keyHolder=true;
+      }
+    }
   }
   if(rng() < 0.30 + 0.05*floorNo && !floorMeta.boss){
     var rk=rollRare();
@@ -469,6 +482,27 @@ function lootRoom(r, rich){
              : roll<0.7 ? {x:p.x,y:p.y,kind:'essence',n:ri(12,25)+floorNo*3}
              : roll<0.93 ? {x:p.x,y:p.y,kind:'mote',el:pick(ELEMENTS)} : {x:p.x,y:p.y,kind:'sigil',use:randomSigilUse()});
   }
+}
+/* which cells you can reach from where you start without opening an iron door: the iron key, and whoever
+   carries it, has to be on this side of it (2026-09-17) */
+function keyReachable(){
+  var ok=new Uint8Array(MW*MH), q=[idxOf(player.x, player.y)];
+  if(!walkable(player.x, player.y)){
+    q.length=0;
+    for(var i0=0;i0<map.length;i0++){ if(map[i0]!==LOCKED && walkable(i0%MW,(i0/MW)|0)){ q.push(i0); break; } }
+  }
+  while(q.length){
+    var i=q.pop(); if(ok[i]) continue;
+    var x=i%MW, y=(i/MW)|0, t=map[i];
+    if(t===LOCKED) continue;                       /* the door itself is the wall for this test */
+    if(!walkable(x,y) && !isDoorish(t)) continue;
+    ok[i]=1;
+    if(x>0) q.push(i-1);
+    if(x<MW-1) q.push(i+1);
+    if(y>0) q.push(i-MW);
+    if(y<MH-1) q.push(i+MW);
+  }
+  return ok;
 }
 function buildLockedVault(){
   var pk=carvePocket(3,3,5,4); if(!pk) return;

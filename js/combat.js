@@ -590,6 +590,8 @@ function castRaiseDead(x,y,A){
   sk.maxhp=sk.hp=Math.round((form.hp + 2*player.level)*boost);
   sk.dmg=[Math.round((form.dmg[0]+Math.floor(player.level/3))*boost), Math.round((form.dmg[1]+Math.floor(player.level/3))*boost)];
   sk.life=Math.round(A.life*boost); sk.taunt=!!form.taunt; sk.lifesteal=!!form.lifesteal; sk.big=form.taunt;
+  sk.castSpell=form.caster||null; sk.castCd=0;
+  if(form.sprite) sk.base=Object.assign({}, sk.base, {sprite:form.sprite, name:form.name, art:form.art||sk.base.art});
   log('Mother Murk answers. A <b>'+form.name+'</b> claws its way up out of the floor.','c-good');
   sfx('summon'); sparkleFx(x,y,'dark',24);
   endTurn(); return true;
@@ -808,6 +810,24 @@ function stepEnt(e,dx,dy){
     return;
   }
 }
+/* An ally following you used to take a greedy step toward your tile (stepToward), which walks straight into
+   a wall whenever you are round a corner - get separated and your servant never finds you again. PDIST is
+   the BFS distance field from the player that the monster AI already uses, so allies walk down it. */
+function allyFollowStep(e){
+  if(!PDIST) refreshPlayerDistance();
+  var here=PDIST[idxOf(e.x,e.y)];
+  if(here===undefined || here<0){ stepToward(e, player.x, player.y); return; }   /* not connected: do what it can */
+  var nb=[[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]], best=null, bd=here;
+  for(var i=0;i<nb.length;i++){
+    var nx=e.x+nb[i][0], ny=e.y+nb[i][1];
+    if(!inb(nx,ny) || occupied(nx,ny)) continue;
+    if(!walkable(nx,ny) && at(nx,ny)!==DOOR) continue;
+    var d=PDIST[idxOf(nx,ny)];
+    if(d>=0 && d<bd){ bd=d; best=nb[i]; }
+  }
+  if(best) stepEnt(e, best[0], best[1]);
+  else stepToward(e, player.x, player.y);
+}
 function allyAct(e){
   if(!tickStatus(e)) return;
   if(e.life!==undefined && !e.shade){
@@ -817,9 +837,31 @@ function allyAct(e){
   if(e.st.stun || e.st.frozen){ e.t+=actCost(e); return; }
   var target=null, best=99;
   ents.forEach(function(o){ if(!o.foe || !vis[idxOf(o.x,o.y)]) return; var d=dist(e,o); if(d<best && d<=8){ best=d; target=o; } });
+  /* a raised Lich is a caster, not a brawler: it throws shadow bolts from range and backs away when
+     something closes on it (2026-09-17 - the form's caster field was never wired up before) */
+  if(target && e.castSpell && best>=2 && best<=6){
+    e.castCd=(e.castCd||0)-1;
+    if(e.castCd<=0){
+      e.castCd=2; setClip(e,'attack');
+      if(typeof boltFx==='function') boltFx(e.x, e.y, target.x, target.y, 'shadow');
+      var ld=applyDamage(target, roll(e.dmg[0], e.dmg[1]), 'dark', e);
+      floatText(target.x, target.y, String(ld), 'dark');
+      log('Your '+e.name+' hurls a shadow bolt &mdash; <b>'+ld+'</b> dark.','c-good');
+      if(target.hp<=0) kill(target, e);
+      e.t+=actCost(e); return;
+    }
+  }
+  if(target && e.castSpell && best<=1 && !e.st.root){ fleeStep(e); e.t+=actCost(e); return; }
   if(target && best<=1){ attack(e, target); }
-  else if(target && !e.st.root){ stepToward(e, target.x, target.y); }
-  else if(dist(e,player)>2 && !e.st.root){ stepToward(e, player.x, player.y); }
+  else if(target && !e.st.root){
+    var ox=e.x, oy=e.y;
+    if(dist(e,player)>7) allyFollowStep(e);            /* left too far behind: catch up first */
+    else {
+      stepToward(e, target.x, target.y);
+      if(e.x===ox && e.y===oy) allyFollowStep(e);      /* the direct step was blocked: path instead */
+    }
+  }
+  else if(dist(e,player)>2 && !e.st.root){ allyFollowStep(e); }
   e.t+=actCost(e);
 }
 function actCost(e){

@@ -49,6 +49,7 @@ function enchantItem(slot, el){
   if(!(player.motes[el]>0)){ log('You have no '+el+' mote.','c-info'); return; }
   var item = slot==='weapon' ? player.weapon : player.armorItem;
   if(!item || item.unarmed){ log('Nothing to enchant there.','c-info'); return; }
+  if(item.enchant===el){ log('Your '+gearName(item)+' already carries '+el+'. A second mote would change nothing.','c-info'); sfx('ui-error'); return; }
   player.motes[el]--; if(player.motes[el]<=0) delete player.motes[el];
   item.enchant=el;
   if(player.god==='anvil') gainPiety(20);

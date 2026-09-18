@@ -282,7 +282,7 @@ var DROPS = {
 /* summoned forms for Mother Murk's Raise Dead, by piety rank */
 var UNDEAD_FORMS = [
   {rank:1, kind:'skeleton', name:'Risen Skeleton', hp:14, dmg:[3,6]},
-  {rank:3, kind:'skeleton', name:'Zombie Bruiser', hp:30, dmg:[4,7], taunt:true},
+  {rank:3, kind:'skeleton', name:'Zombie Bruiser', hp:30, dmg:[4,7], taunt:true, sprite:'m-zombie-bruiser', art:1.05},
   {rank:4, kind:'skeleton', name:'Vampire', hp:22, dmg:[5,9], lifesteal:true},
-  {rank:5, kind:'skeleton', name:'Lich', hp:18, dmg:[2,4], caster:'shadowbolt'}
+  {rank:5, kind:'skeleton', name:'Lich', hp:26, dmg:[5,9], caster:'shadowbolt', sprite:'m-lich', art:1.0}   /* casts at range 6; must out-do the Bruiser */
 ];

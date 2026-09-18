@@ -480,7 +480,7 @@ function weaponCard(w, worn){
     '<div class="row"><span>Accuracy</span><b>'+(w.acc>=0?'+':'')+(w.acc||0)+'</b></div>'+
     '<div class="row"><span>Hands</span><b>'+(w.hands||1)+'</b></div>'+
     (w.range?'<div class="row"><span>Range</span><b>'+(w.range+(player.rangeBonus||0))+'</b></div>':'')+
-    (w.enchant?'<div class="row"><span>Enchant</span><b style="color:'+AFF_COL[w.enchant]+'">'+cap(w.enchant)+'</b></div><div class="hint">'+ENCHANT_TEXT.weapon[w.enchant]+'</div>':'')+
+    (w.enchant?'<div class="row"><span>Enchant</span><b style="color:'+AFF_COL[w.enchant]+'">'+cap(w.enchant)+'</b></div><div class="hint">'+(typeof enchantLive==='function' ? enchantLive('weapon', w.enchant) : ENCHANT_TEXT.weapon[w.enchant])+'</div>':'')+
     '<div class="hint">'+(w.note||'')+(worn?'':' &middot; click to equip')+'</div>';
 }
 function armorCard(a, worn){
@@ -488,7 +488,7 @@ function armorCard(a, worn){
   return '<div class="nm">'+gearName(a)+'</div>'+
     '<div class="row"><span>Armor</span><b>'+(a.armor+(a.armor>0?itemPlus(a):0))+'</b></div>'+
     '<div class="row"><span>Evasion</span><b>'+((a.eva||0)>=0?'+':'')+(a.eva||0)+'</b></div>'+
-    (a.enchant?'<div class="row"><span>Enchant</span><b style="color:'+AFF_COL[a.enchant]+'">'+cap(a.enchant)+'</b></div><div class="hint">'+ENCHANT_TEXT.armor[a.enchant]+'</div>':'')+
+    (a.enchant?'<div class="row"><span>Enchant</span><b style="color:'+AFF_COL[a.enchant]+'">'+cap(a.enchant)+'</b></div><div class="hint">'+(typeof enchantLive==='function' ? enchantLive('armor', a.enchant) : ENCHANT_TEXT.armor[a.enchant])+'</div>':'')+
     '<div class="hint">'+(a.note||'')+'</div>';
 }
 function bagCard(it){
