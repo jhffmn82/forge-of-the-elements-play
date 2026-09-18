@@ -175,7 +175,6 @@ var PRAYERS = {
   trollblood: {name:'Trollblood', favor:25, rank:4, desc:'Heal 40% of max HP and remove all statuses.'},
   consecrate: {name:'Consecrate', favor:10, rank:2, desc:'Cleanse your statuses; undead and shadow creatures within 3 take 8 light damage and flee.'},
   sanctuary:  {name:'Sanctuary', favor:25, rank:4, desc:'Every enemy within 5 is Feared for 4 turns.'},
-  unholyaura: {name:'Unholy Aura', favor:10, rank:2, desc:'For 8 turns, enemies within 2 take 3 dark damage each turn and you heal a little.'},
   corpsefeast:{name:'Corpse Feast', favor:25, rank:4, desc:'Heal 30% of max HP; your undead are fully restored.'},
   laststand:  {name:'Last Stand', favor:10, rank:2, desc:'Take 35% less damage for 10 turns.'},
   rally:      {name:'Rally', favor:25, rank:4, desc:'Heal 25% of max HP, remove statuses, +10 accuracy for 10 turns.'},

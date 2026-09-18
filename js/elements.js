@@ -302,7 +302,7 @@ var _castAtEl = castAt;
 castAt = function(x,y){
   if(!aiming || !AIM_KINDS[aiming.A.kind]) return _castAtEl(x,y);
   var A=aiming.A, cf=faceOf(x-player.x, y-player.y); if(cf) player.face=cf;
-  if(!inRange(x,y)){ log('Out of range.','c-info'); sfx('ui-error'); return false; }
+  if(!inRange(x,y)){ log(((revealAll||vis[idxOf(x,y)]) ? 'Out of range.' : 'You cannot see that tile.'),'c-info'); sfx('ui-error'); return false; }
   var f=foeAt(x,y);
   if(A.kind==='blast'){
     beginCast(A); boltFx(player.x,player.y,x,y,'fire'); explosionFx(x,y);

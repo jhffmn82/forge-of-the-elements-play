@@ -572,7 +572,8 @@ function castAt(x,y){
   var cf=faceOf(x-player.x, y-player.y); if(cf) player.face=cf;
   if(!aiming) return false;
   var A=aiming.A, key=player.abilities[aiming.i];
-  if(!inRange(x,y)){ log('Out of range.','c-info'); sfx('ui-error'); return false; }
+  /* 2026-09-18: inRange() folds distance, bounds and line of sight together; say which one failed. */
+  if(!inRange(x,y)){ log(((revealAll||vis[idxOf(x,y)]) ? 'Out of range.' : 'You cannot see that tile.'),'c-info'); sfx('ui-error'); return false; }
   if(A.kind==='summon') return castRaiseDead(x,y,A);
   var path=boltPath(player.x,player.y,x,y), end=path.length?path[path.length-1]:{x:x,y:y};
   var f=ents.filter(function(e){ return e.foe && e.x===end.x && e.y===end.y; })[0];

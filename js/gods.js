@@ -161,7 +161,6 @@ function usePrayer(pid){
   if(P.essence) spendEssence(P.essence);
   if(P.amusement) player.amusement-=P.amusement;
   sfx('pray'); setClip(player,'cast'); ringFx(player.x,player.y,GODS[player.god].color,2.5);
-  var r=godRank();
   if(pid==='ironhide'){ player.buffs.ironhide=12; derive(player); log('Iron Hide: +5 armor.','c-good'); }
   else if(pid==='pummel'){ player.pummel=3; log('Pummel: your next three unarmed hits deal double and stun.','c-good'); }
   else if(pid==='rampage'){ player.buffs.rampage=10; derive(player); log('Rampage! +40% melee damage and speed.','c-good'); }
@@ -177,7 +176,6 @@ function usePrayer(pid){
   else if(pid==='reforge'){ player.weapon.plus=(player.weapon.plus||0)+1; derive(player); log('Reforge: your '+gearName(player.weapon)+' is permanently improved.','c-kill'); sfx('forge-enchant'); }
   else if(pid==='rolldice2'){ wobblesIntervention(true); }
   else if(pid==='manatide'){ var mt=Math.round(player.maxmp*0.5*div); player.mp=Math.min(player.maxmp, player.mp+mt); floatText(player.x,player.y,'+'+mt+' mp','magic'); sparkleFx(player.x,player.y,'water',30); log('Mana Tide: +'+mt+' mana.','c-good'); }
-  else if(pid==='unbound'){ player.buffs.unbound=6; log('<b>Unbound.</b> For 6 turns your magic costs nothing.','c-good'); sparkleFx(player.x,player.y,'magic',40); }
   if(pid==='consecrate'){ updateUI(); draw(); return; }   /* instant: cleansing yourself does not cost the turn */
   endTurn();
 }
