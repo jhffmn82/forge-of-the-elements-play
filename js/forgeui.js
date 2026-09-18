@@ -53,9 +53,15 @@ function enchantPanelHTML(){
   if(!forgeMote) return h+'<p class="c-info">You have no motes to set.</p>';
   var el=forgeMote;
   h+='<div class="enchcards">'+enchantTargets().map(function(t, i){
-    var can=!!t.text && !t.it.unarmed, cur=t.it.enchant && !t.it.unid ? t.it.enchant : null;
-    var now = cur ? '<div class="now">Now: <span style="color:'+AFF_COL[cur]+'">'+cap(cur)+'</span> &mdash; '+(t.text ? t.text[cur] : '')+'</div>' : '<div class="now">Not enchanted</div>';
-    var nu = can ? '<div class="new">'+(cur===el ? 'Already '+el : 'With '+el+': '+t.text[el])+'</div>' : '<div class="now c-info">'+(t.slot==='off' ? 'Only an orb, tome or holy symbol takes an enchantment here.' : 'Cannot be enchanted.')+'</div>';
+    /* 2026-09-18: an unidentified piece may already hold an enchantment you cannot see, and setting a mote
+       would quietly destroy it. The Forge refuses it the same way it refuses to upgrade one. */
+    var can=!!t.text && !t.it.unarmed && !t.it.unid, cur=t.it.enchant && !t.it.unid ? t.it.enchant : null;
+    var now = cur ? '<div class="now">Now: <span style="color:'+AFF_COL[cur]+'">'+cap(cur)+'</span> &mdash; '+(t.text ? t.text[cur] : '')+'</div>'
+                  : '<div class="now">'+(t.it.unid ? 'Unidentified' : 'Not enchanted')+'</div>';
+    var why = t.it.unid ? 'The Forge will not work metal you do not know. Identify it first.'
+            : t.slot==='off' ? 'A weapon, shield, orb, tome or holy symbol takes an enchantment here. This does not.'
+            : 'Cannot be enchanted.';
+    var nu = can ? '<div class="new">'+(cur===el ? 'Already '+el : 'With '+el+': '+t.text[el])+'</div>' : '<div class="now c-info">'+why+'</div>';
     return '<div class="enchcard'+(can && cur!==el ? '' : ' off')+'" data-etarget="'+i+'"><span class="ic" data-eicon="'+(t.it.icon||'')+'"></span>'+
       '<div><div class="s">'+t.label+'</div><div class="t">'+gearName(t.it)+'</div>'+now+nu+'</div></div>';
   }).join('')+'</div>';
