@@ -115,7 +115,10 @@ function buildSigilRoom(kind){
     pzLoot(cells, 3);
   } else if(kind==='spikes'){
     var loot=cells.slice(0,3);
-    pzCells(room).forEach(function(p){ if(!loot.some(function(l){ return l.x===p.x&&l.y===p.y; }) && at(p.x,p.y)===FLOOR) feats.push({x:p.x,y:p.y,kind:'spikes',found:true,puzzle:true}); });
+    /* 2026-09-18: the gauntlet used to lay every spike out in the open, so the room read as a tiled pattern
+       rather than a threat. They are hidden like any other trap now - searching (F) finds them, the floor
+       note still warns you the room is out there, and stone skin, Earth 3 or levitation still walk it. */
+    pzCells(room).forEach(function(p){ if(!loot.some(function(l){ return l.x===p.x&&l.y===p.y; }) && at(p.x,p.y)===FLOOR) feats.push({x:p.x,y:p.y,kind:'spikes',found:false,puzzle:true}); });
     pzLoot(loot, 3);
   } else if(kind==='sentinels'){
     pzLoot(cells.slice(0,3), 3);
