@@ -48,7 +48,7 @@ if(typeof derive==='function'){
   derive = function(p){
     var r=_deriveSh(p);
     if(p===player && p.block && p.off && p.off.enchant==='earth' && p.off.block>0 && !p.twoHanded){
-      p.block = Math.min(0.6, p.block + 0.05*(p.aff && p.aff.earth || 0));
+      p.block = Math.min(0.75, p.block + 0.05*(p.aff && p.aff.earth || 0));
     }
     return r;
   };

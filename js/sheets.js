@@ -59,7 +59,7 @@ function resHTML(){
 /* what one weapon hit does before the target's armor: weapon dice with Might, melee passives and fire affinity */
 function hitRange(){
   var melee = !(player.range>1);
-  var mult = 1 + 0.03*(player.stats.mig-10) + (melee && hasP('heavyHands')?0.10:0) + (melee && hasP('unstoppable')?0.20:0) + (melee && buff('rampage')?0.40:0);
+  var mult = 1 + (melee ? 0.04*(player.stats.mig-10) : 0) + (melee && hasP('heavyHands')?0.10:0) + (melee && hasP('unstoppable')?0.20:0) + (melee && buff('rampage')?0.40:0);
   mult = Math.max(0.1, mult);
   var fire = (player.aff && player.aff.fire) || 0;
   return [Math.max(1,Math.round(player.dmg[0]*mult))+fire, Math.max(1,Math.round(player.dmg[1]*mult))+fire];
