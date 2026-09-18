@@ -43,7 +43,7 @@ var RANK_TEXT = {
      water:'Deep Freeze: two Chills freeze. Ice spells leave icy ground that Chills for 3 turns. Immune to ice.',
      air:'Lightning Reflexes: 15% of your attacks and spells take no time; lightning damage has a 15% stun chance. Immune to lightning.',
      earth:'Petrify: rooting a rooted enemy turns it to stone for 2 turns. Earth spells leave grasping roots for 3 turns. Immune to poison.',
-     light:'Consecration: Light spells sanctify the ground for 3 turns, burning enemies on it (undead double). Immune to light.',
+     light:'Consecration: your Light spells and your Smite sanctify the ground for 3 turns, burning enemies on it (undead double). Immune to light.',
      shadow:'Hollowing: your dark damage stacks Hollow (max 5, 5 turns): +5% damage taken and -1 armor per stack. Immune to dark.'}
 };
 var STATUS_EL = {burn:'fire', chill:'water', frozen:'water', stun:'air', root:'earth', blind:'light', fear:'shadow'};

@@ -334,6 +334,12 @@ function attack(att, def, mult, label){
       /* the light-air combo fires a second smite, so count it before the log line is written: what the
          note reports is the whole smite, not just the first half of it (2026-09-18) */
       if(typeof onSmiteProc==='function'){ var sm2=onSmiteProc(def)||0; applied+=sm2; sm+=sm2; }
+      /* Light 6 Consecration used to fire off light SPELLS only, which made it the one rank 6 capstone a
+         melee build could not use - and Light 6 is the one most likely to be reached by a melee build,
+         since Glimmer's free Light point (religion.js) gets a normal race there a biome early. The smite
+         sanctifies the ground it strikes now, so the capstone answers a swing as well as a spell. */
+      if(typeof holyG!=='undefined' && holyG && typeof aff==='function' && aff('light')>=6 && inb(def.x,def.y))
+        holyG[idxOf(def.x,def.y)]=3;
       note+=' <span style="color:#FFF1B8">smite '+sm+'</span>';
       if(rng()<0.10*player.aff.light) applyStatus(def,'blind',2); sparkleFx(def.x,def.y,'light',10);
     }
