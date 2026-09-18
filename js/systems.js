@@ -181,7 +181,7 @@ function bumpProp(p){
     else { m.state='hunt'; log('The prisoner lunges at you!','c-you'); }
     sfx('door-open'); endTurn(); return true;
   }
-  if(p.drink){ var h=Math.round(player.maxhp*0.1); player.hp=Math.min(player.maxhp,player.hp+h); p.drink=false; log('You drink from the fountain. +'+h+' HP.','c-good'); floatText(player.x,player.y,'+'+h,'heal'); sfx('step-water'); endTurn(); return true; }
+  if(p.drink){ var h=Math.round(player.maxhp*0.1); healPlayer(h); p.drink=false; log('You drink from the fountain. +'+h+' HP.','c-good'); floatText(player.x,player.y,'+'+h,'heal'); sfx('step-water'); endTurn(); return true; }
   if(p.br){ setClip(player,'melee'); lungeFx(player,p.x,p.y); damageProp(p, player, 'phys'); endTurn(); return true; }
   if(p.b){ log('The '+p.name.replace(/-/g,' ')+' is in the way.','c-info'); return true; }
   return false;
@@ -380,7 +380,7 @@ function useSigil(use){
   else if(use==='stoneskin'){ applyStatus(player,'stone',15); log('Your skin turns to stone.','c-good'); }
   else if(use==='heal'){ var q=Math.round(player.maxhp*0.35*(hasGod('glimmer')?1+0.10*godRank():1));
     if(player.race==='gloomling'){ var hd=applyDamage(player,Math.round(q/2),'light',null); floatText(player.x,player.y,String(hd),'light'); log('The Light sigil burns you! Gloomlings are hurt by holy light.','c-you'); if(player.hp<=0) death(); }
-    else { player.hp=Math.min(player.maxhp,player.hp+q); floatText(player.x,player.y,'+'+q,'heal'); sparkleFx(player.x,player.y,'heal',24); log('Light mends you. +'+q+' HP.','c-good'); } }
+    else { healPlayer(q); floatText(player.x,player.y,'+'+q,'heal'); sparkleFx(player.x,player.y,'heal',24); log('Light mends you. +'+q+' HP.','c-good'); } }
   else if(use==='vanish'){ player.hidden=6; ents.forEach(function(e){ if(e.foe && e.state==='hunt'){ e.state='wander'; e.lastSeen=null; } }); log('Shadows swallow you.','c-good'); sfx('vanish'); }
   else if(use==='identify'){ Object.keys(SIGILS).forEach(function(k){ if(player.bag.some(function(b){ return b.kind==='sigil' && b.data.use===k; })) identifySigil(k); }); }
   else if(use==='mapping'){ for(var i=0;i<seen.length;i++) if(map[i]!==WALL || true) seen[i]=1; log('The shape of the whole floor settles into your mind.','c-good'); }
@@ -455,7 +455,7 @@ function useBagItem(idx){
   }
   if(it.kind==='food'){
     var fd=FOODS[it.data.food]; player.hunger=Math.min(HUNGER_MAX, player.hunger+fd.nutrition);
-    if(fd.heal){ var h=Math.round(player.maxhp*fd.heal*(hasGod('glimmer')?1+0.10*godRank():1)); player.hp=Math.min(player.maxhp,player.hp+h); floatText(player.x,player.y,'+'+h,'heal'); }
+    if(fd.heal){ var h=Math.round(player.maxhp*fd.heal*(hasGod('glimmer')?1+0.10*godRank():1)); healPlayer(h); floatText(player.x,player.y,'+'+h,'heal'); }
     consume(idx); log('You eat the '+fd.name.toLowerCase()+'.','c-good'); sfx('eat'); endTurn(); return;
   }
   if(it.kind==='sigil'){ if(useSigil(it.data.use)===false) return; consume(idx); endTurn(); return; }
@@ -544,7 +544,7 @@ function endTurn(){
   if(seesFoe) hpRate=0;                                                 /* wounds do not close while something hunts you */
   var scale=cost/100;
   player.mp = Math.min(player.maxmp, player.mp + player.maxmp*mpRate*scale);
-  player.hp = Math.min(player.maxhp, player.hp + player.maxhp*hpRate*scale);
+  healPlayer(player.maxhp*hpRate*scale);
   if(!seesFoe && player.iceArmor<player.iceArmorMax) player.iceArmor=Math.min(player.iceArmorMax, player.iceArmor+0.25);
   spotTraps();
   if(!floorMeta.boss) wanderingSpawn();

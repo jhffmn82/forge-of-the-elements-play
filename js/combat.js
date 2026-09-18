@@ -423,6 +423,19 @@ function addHollow(e, n){
   if(!h && !n) return;
   e.st.hollow = {t:5, n: Math.min(5, (h?h.n:0) + (n||0))};
 }
+/* ---------------------------------------------------------------- healing
+   2026-09-18: every heal used to be written inline as player.hp = Math.min(maxhp, hp + n), which threw the
+   overflow away. Holy Water (light/water) wanted that overflow, so it had been reverse-engineering it by
+   intercepting floatText and parsing the "+N" string against a mark updated in endTurn - it worked, but any
+   heal that did not draw a float silently skipped the combo. healPlayer() is the single path now: it clamps,
+   and it RETURNS the part that did not fit. Callers keep their own float text. */
+function healPlayer(n){
+  if(!player || !(n > 0)) return 0;
+  var before = player.hp;
+  player.hp = Math.min(player.maxhp, player.hp + n);
+  return Math.max(0, n - (player.hp - before));
+}
+
 function tickStatus(e){
   var s=e.st;
   if(at(e.x,e.y)===WATER){ if(s.burn){ delete s.burn; floatText(e.x,e.y,'hiss','ice'); } s.wet={t:3}; }
@@ -436,7 +449,7 @@ function tickStatus(e){
   }
   if(s.poison){ var pd=s.poison.d||2; e.hp-=pd; floatText(e.x,e.y,String(pd),'poison'); s.poison.t--; if(s.poison.t<=0) delete s.poison; if(e.hp<=0){ if(e===player){ heroicResolve(); if(player.hp<=0){ kill(e,null); return false; } } else { kill(e,null); return false; } } }
   if(s.aura && e===player){
-    ents.forEach(function(o){ if(o.foe && dist(o,player)<=2){ var ad=applyDamage(o,s.aura.d||3,'dark',player); floatText(o.x,o.y,String(ad),'dark'); player.hp=Math.min(player.maxhp,player.hp+1); if(o.hp<=0) kill(o,player); } });
+    ents.forEach(function(o){ if(o.foe && dist(o,player)<=2){ var ad=applyDamage(o,s.aura.d||3,'dark',player); floatText(o.x,o.y,String(ad),'dark'); healPlayer(1); if(o.hp<=0) kill(o,player); } });
   }
   for(var k in s){
     if(k==='burn'||k==='poison') continue;
@@ -528,9 +541,9 @@ function castSelf(key, A){
   if(key==='ironbody'){ player.buffs.ironbody=6; derive(player); log('Iron Body: your skin turns hard as iron.','c-good'); sfx('earth-cast'); sparkleFx(player.x,player.y,'earth',20); }
   else if(key==='bellow'){ player.mp-=costOf(A); setClip(player,'melee'); sfx('warchief-roar');
     ents.forEach(function(e){ if(e.foe && dist(e,player)<=3) applyStatus(e,'stun',1); });
-    var h=Math.round(player.maxhp*0.10*div); player.hp=Math.min(player.maxhp,player.hp+h); floatText(player.x,player.y,'+'+h,'heal'); ringFx(player.x,player.y,'#B8453A',3.5);
+    var h=Math.round(player.maxhp*0.10*div); healPlayer(h); floatText(player.x,player.y,'+'+h,'heal'); ringFx(player.x,player.y,'#B8453A',3.5);
     log('You bellow. Everything nearby reels.','c-good'); }
-  else if(key==='heal'){ var hh=Math.round(player.maxhp*(0.25+0.05*r)*div*(1+0.10*r)); player.hp=Math.min(player.maxhp,player.hp+hh);
+  else if(key==='heal'){ var hh=Math.round(player.maxhp*(0.25+0.05*r)*div*(1+0.10*r)); healPlayer(hh);
     floatText(player.x,player.y,'+'+hh,'heal'); sparkleFx(player.x,player.y,'heal',30); sfx('heal');
     if(player.race==='gloomling'){ /* refused, but just in case */ }
     log('Saint Glimmer mends you. +'+hh+' HP.','c-good'); }

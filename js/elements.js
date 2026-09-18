@@ -133,7 +133,7 @@ applyDamage = function(target, amount, type, source){
   var d=_applyDamageEl(target, amount, type, source);
   if(!target || target===player || !byPlayer || d<=0) return d;
   if(type==='dark' && aff('shadow')>=6 && target.hp>0){ var h=target.st.hollow; target.st.hollow={t:5, n:Math.min(5,(h?h.n:0)+1)}; }
-  if(type==='light' && aff('light')>=3){ player.hp=Math.min(player.maxhp, player.hp+aff('light')); }
+  if(type==='light' && aff('light')>=3){ healPlayer(aff('light')); }
   if(type==='lightning' && aff('air')>=6 && target.hp>0 && rng()<0.15) applyStatus(target,'stun',1);
   if(aff('air')>=3 && !ARCING && rng()<0.05*aff('air')){
     var o=ents.filter(function(e){ return e.foe && e!==target && e.hp>0 && dist(e,target)<=3 && vis[idxOf(e.x,e.y)]; }).sort(function(a,b){ return dist(a,target)-dist(b,target); })[0];
@@ -384,7 +384,7 @@ castAt = function(x,y){
       beginCast(A);
       log('<b>Glacial Tomb.</b> Ice closes over you.','c-good'); sfx('status-freeze');
       player.tombed=true;
-      for(var r=0;r<3 && player.hp>0;r++){ player.hp=Math.min(player.maxhp, player.hp+player.maxhp*0.05); player.movedThisTurn=false; endTurn(); }
+      for(var r=0;r<3 && player.hp>0;r++){ healPlayer(player.maxhp*0.05); player.movedThisTurn=false; endTurn(); }
       player.tombed=false; log('The tomb melts away.','c-info');
       return true;
     }

@@ -93,7 +93,7 @@ function spellOnHit(f, d, crit, A){
   }
   if(f.hp<=0 && infusion('tome')==='shadow'){
     var h=Math.max(1, Math.round(player.maxhp*0.01*Math.max(1,affPts('shadow'))));
-    player.hp=Math.min(player.maxhp, player.hp+h); floatText(player.x,player.y,'+'+h,'heal');
+    healPlayer(h); floatText(player.x,player.y,'+'+h,'heal');
   }
 }
 

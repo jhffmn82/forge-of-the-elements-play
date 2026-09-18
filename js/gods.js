@@ -95,10 +95,10 @@ function godOnKill(e, by){
   var byPlayer = by===player, byAlly = by && by.ally, big = e.elite || e.base.elite || e.base.boss, r=godRank();
   var aware = e.state!=='asleep' && !(e.st.stun) && !(e.st.frozen);
   if(g==='grom'){ if(byPlayer && player.weapon.unarmed) gainPiety(big?15:2); }
-  else if(g==='grumbok'){ if(byPlayer||byAlly) gainPiety((e.base.spellcaster||e.base.el?5:2)+(big?15:0)); if(r>=3 && e.base.spellcaster && byPlayer){ var h=Math.round(player.maxhp*0.1); player.hp=Math.min(player.maxhp,player.hp+h); } }
+  else if(g==='grumbok'){ if(byPlayer||byAlly) gainPiety((e.base.spellcaster||e.base.el?5:2)+(big?15:0)); if(r>=3 && e.base.spellcaster && byPlayer){ var h=Math.round(player.maxhp*0.1); healPlayer(h); } }
   else if(g==='glimmer'){ if(byPlayer||byAlly) gainPiety((e.base.undead||e.base.shadowy?4:2)+(big?15:0)); }
   else if(g==='murk'){ if(byAlly && by.undeadServant) gainPiety(4+(big?15:0)); else if((byPlayer||byAlly) && !e.base.undead) gainPiety(2+(big?15:0));
-    if((byPlayer||byAlly) && r>0){ player.hp=Math.min(player.maxhp, player.hp+r); } }
+    if((byPlayer||byAlly) && r>0){ healPlayer(r); } }
   else if(g==='reginald'){ if(byPlayer && aware) gainPiety(2+(big?15:0)); }
   else if(g==='vellum'){ if(byPlayer) gainPiety((player.castTurn===turn?2:0)+(big?15:0)); }
   else if(g==='wobbles'){ gainPiety(big?15:2); }
@@ -164,13 +164,13 @@ function usePrayer(pid){
   if(pid==='ironhide'){ player.buffs.ironhide=12; derive(player); log('Iron Hide: +5 armor.','c-good'); }
   else if(pid==='pummel'){ player.pummel=3; log('Pummel: your next three unarmed hits deal double and stun.','c-good'); }
   else if(pid==='rampage'){ player.buffs.rampage=10; derive(player); log('Rampage! +40% melee damage and speed.','c-good'); }
-  else if(pid==='trollblood'){ var h=Math.round(player.maxhp*0.4*div); player.hp=Math.min(player.maxhp,player.hp+h); clearBad(); floatText(player.x,player.y,'+'+h,'heal'); log('Trollblood: +'+h+' HP.','c-good'); }
+  else if(pid==='trollblood'){ var h=Math.round(player.maxhp*0.4*div); healPlayer(h); clearBad(); floatText(player.x,player.y,'+'+h,'heal'); log('Trollblood: +'+h+' HP.','c-good'); }
   else if(pid==='consecrate'){ clearBad(); ents.forEach(function(e){ if(e.foe && dist(e,player)<=3 && (e.base.undead||e.base.shadowy)){ var d=applyDamage(e,Math.round(8*div),'light',player); floatText(e.x,e.y,String(d),'light'); applyStatus(e,'fear',3); if(e.hp<=0) kill(e,player); } }); sparkleFx(player.x,player.y,'light',40); log('Holy ground flares around you.','c-good'); }
   else if(pid==='sanctuary'){ ents.forEach(function(e){ if(e.foe && dist(e,player)<=5) applyStatus(e,'fear',4); }); sparkleFx(player.x,player.y,'light',50); log('Sanctuary: nothing dares approach.','c-good'); }
   else if(pid==='unholyaura'){ player.st.aura={t:8}; sparkleFx(player.x,player.y,'dark',40); log('An unholy aura seeps from you.','c-good'); }
-  else if(pid==='corpsefeast'){ var h2=Math.round(player.maxhp*0.3*div); player.hp=Math.min(player.maxhp,player.hp+h2); ents.forEach(function(e){ if(e.ally) e.hp=e.maxhp; }); floatText(player.x,player.y,'+'+h2,'heal'); log('Corpse Feast: you and your dead are restored.','c-good'); }
+  else if(pid==='corpsefeast'){ var h2=Math.round(player.maxhp*0.3*div); healPlayer(h2); ents.forEach(function(e){ if(e.ally) e.hp=e.maxhp; }); floatText(player.x,player.y,'+'+h2,'heal'); log('Corpse Feast: you and your dead are restored.','c-good'); }
   else if(pid==='laststand'){ player.buffs.laststand=10; log('Last Stand: you take 35% less damage.','c-good'); }
-  else if(pid==='rally'){ var h3=Math.round(player.maxhp*0.25*div); player.hp=Math.min(player.maxhp,player.hp+h3); clearBad(); player.buffs.rally=10; derive(player); floatText(player.x,player.y,'+'+h3,'heal'); log('Rally!','c-good'); }
+  else if(pid==='rally'){ var h3=Math.round(player.maxhp*0.25*div); healPlayer(h3); clearBad(); player.buffs.rally=10; derive(player); floatText(player.x,player.y,'+'+h3,'heal'); log('Rally!','c-good'); }
   else if(pid==='offering'){ var atShrine = at(player.x,player.y-1)===SHRINE||at(player.x,player.y+1)===SHRINE||at(player.x-1,player.y)===SHRINE||at(player.x+1,player.y)===SHRINE;
     gainPiety(Math.max(atShrine?20:10, Math.round((P.essence||0)/(atShrine?5:10)))); log('Old Anvil accepts your offering'+(atShrine?' gladly at his shrine':'')+'.','c-good'); sfx('forge-open'); }
   else if(pid==='reforge'){ player.weapon.plus=(player.weapon.plus||0)+1; derive(player); log('Reforge: your '+gearName(player.weapon)+' is permanently improved.','c-kill'); sfx('forge-enchant'); }

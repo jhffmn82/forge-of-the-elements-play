@@ -127,7 +127,7 @@ useSigil = function(use){
     foes.slice(0,3).forEach(function(e){ var wet=isWet(e); hurt(e, Math.round((10+F)*(wet?1.5:1)), 'lightning'); if(e.hp>0 && rng()<0.5) applyStatus(e,'stun',1); burst(e.x,e.y,'lightning',16,0.06); });
     foes.forEach(function(e){ if(e.hp>0){ e.st.wet={t:5}; } }); log('Thunder cracks and rain hammers down.','c-good'); }
   else if(use==='mire'){ ents.forEach(function(e){ if(e.foe && dist(e,player)<=3){ applyStatus(e,'root',3); e.st.wet={t:6}; burst(e.x,e.y,'earth',8,0.04); } }); log('The ground turns to sucking mud.','c-good'); }
-  else if(use==='purify'){ cleanseAll(); var ph=Math.round(player.maxhp*0.2); if(player.race!=='gloomling'){ player.hp=Math.min(player.maxhp,player.hp+ph); floatText(player.x,player.y,'+'+ph,'heal'); }
+  else if(use==='purify'){ cleanseAll(); var ph=Math.round(player.maxhp*0.2); if(player.race!=='gloomling'){ healPlayer(ph); floatText(player.x,player.y,'+'+ph,'heal'); }
     var broke=0; wornGear().forEach(function(it){ if(breakCurse(it)) broke++; }); log('Clear water washes over you'+(broke?' and your gear':'')+'.','c-good'); }
   else if(use==='recall'){ var g2=null; for(var j=0;j<map.length;j++){ if(map[j]===STAIRS || (map[j]===EXIT && floorMeta.exitOpen)){ g2={x:j%MW, y:(j/MW)|0}; break; } }
     var land=(!occupied(g2.x,g2.y) && walkable(g2.x,g2.y)) ? g2 : nearFree(g2.x,g2.y,2);

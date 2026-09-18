@@ -232,7 +232,7 @@ endTurn = function(){
     (player.rings||[]).forEach(function(r){ useCount(r, 'ring'); });
     if(player.off && player.off!==EMPTY_OFF && ents.some(function(e){ return e.foe && e.state==='hunt' && vis[idxOf(e.x,e.y)]; })) useCount(player.off, 'off');
     /* mending ring: a little extra regen; sustenance ring: give back part of the hunger this turn will cost */
-    var mend=ringVal('mending'); if(mend && player.hunger>0 && !player.st.poison){ player.hp=Math.min(player.maxhp, player.hp + player.maxhp*0.0033*mend); }
+    var mend=ringVal('mending'); if(mend && player.hunger>0 && !player.st.poison){ healPlayer(player.maxhp*0.0033*mend); }
     var sus=ringVal('sustenance'); if(sus){ player.hunger=Math.min(HUNGER_MAX, player.hunger + (player.movedThisTurn?moveCost():actCost(player))/100*sus); }
   }
   _endTurnBase();
@@ -358,7 +358,7 @@ function useAmulet(){
   if(a.cursed && rng()<0.25){ log('The '+gearName(a)+' sputters and goes dark. Nothing happens.','c-you'); sfx('no-mana'); endTurn(); return; }
   var k=a.amulet, pw=1+0.1*(a.plus||0);
   setClip(player,'cast'); sfx('sigil-use');
-  if(k==='mending'){ var h=Math.round(player.maxhp*0.30*pw*(hasGod('glimmer')?1+0.10*godRank():1)); player.hp=Math.min(player.maxhp,player.hp+h); floatText(player.x,player.y,'+'+h,'heal'); sparkleFx(player.x,player.y,'heal',30); }
+  if(k==='mending'){ var h=Math.round(player.maxhp*0.30*pw*(hasGod('glimmer')?1+0.10*godRank():1)); healPlayer(h); floatText(player.x,player.y,'+'+h,'heal'); sparkleFx(player.x,player.y,'heal',30); }
   else if(k==='warding'){ player.buffs.arcaneward=10; player.ward=Math.round(player.maxhp*0.30*pw); ringFx(player.x,player.y,'#9FD8FF',2); log('A ward of '+player.ward+' settles over you.','c-good'); }
   else if(k==='fury'){ player.buffs.rampage=8; derive(player); ringFx(player.x,player.y,'#B8453A',2.5); }
   else if(k==='thunder' || k==='embers'){

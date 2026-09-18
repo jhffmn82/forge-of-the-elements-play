@@ -59,7 +59,7 @@ endTurn = function(){
     }
     if(gained && infusion('holy')==='light'){
       var h=Math.max(1, Math.round(player.maxhp*0.03*infScale('light')*gained));
-      if(player.race!=='gloomling'){ player.hp=Math.min(player.maxhp, player.hp+h); floatText(player.x,player.y,'+'+h,'heal'); }
+      if(player.race!=='gloomling'){ healPlayer(h); floatText(player.x,player.y,'+'+h,'heal'); }
     }
   }
   _endTurnHoly();

@@ -87,13 +87,12 @@ applyDamage = function(target, amount, type, source){
   var d=_applyDamageCombo(target, amount, type, source);
   /* Clear Waters */
   var soaked=ice0-(player.iceArmor||0);
-  if(soaked>0 && combo('water','light')){ var h=Math.max(1,Math.round(soaked*0.25)); player.hp=Math.min(player.maxhp, player.hp+h); }
+  if(soaked>0 && combo('water','light')){ var h=Math.max(1,Math.round(soaked*0.25)); healPlayer(h); }
   /* Magma Answer: ranged attackers and casters */
   if(d>0 && source && source.foe && source.hp>0 && combo('fire','earth') && (dist(source,player)>1 || type!=='phys')){
     _applyStatusCombo(source,'root',1); _applyStatusCombo(source,'burn',3,burnDmg());
     burst(source.x,source.y,'fire',18,0.06); log('Lava erupts under '+source.name+'.','c-fire');
   }
-  player._hpMark=player.hp;
   return d;
 };
 
@@ -227,18 +226,17 @@ endTurn = function(){
   }
   if(combo('earth','water') && !fighting && player.iceArmor<player.iceArmorMax) player.iceArmor=Math.min(player.iceArmorMax, player.iceArmor+0.25);
   if(combo('water','earth')) ents.slice().forEach(function(e){ if(e.foe && e.hp>0 && e.st.root) addChill(e); });
-  player._hpMark=player.hp;
 };
 /* Holy Water: overheal becomes Ice Armor. Heals report themselves as "+N" heal numbers. */
-var _floatTextCombo = floatText;
-floatText = function(x, y, text, type, big){
-  if(type==='heal' && player && x===player.x && y===player.y && combo('light','water')){
-    var n=parseInt(String(text).replace('+',''),10), gained=player.hp-(player._hpMark===undefined?player.hp:player._hpMark);
-    var over=n-gained;
-    if(over>0 && player.iceArmor<player.iceArmorMax){ player.iceArmor=Math.min(player.iceArmorMax, player.iceArmor+over); }
-    player._hpMark=player.hp;
+/* Holy Water: overheal becomes Ice Armor. healPlayer() hands back exactly the part that did not fit, so
+   this no longer has to parse a "+N" float against a mark kept in endTurn (2026-09-18). */
+var _healPlayerCombo = healPlayer;
+healPlayer = function(n){
+  var over = _healPlayerCombo(n);
+  if(over > 0 && combo('light','water') && player.iceArmor < player.iceArmorMax){
+    player.iceArmor = Math.min(player.iceArmorMax, player.iceArmor + over);
   }
-  return _floatTextCombo(x, y, text, type, big);
+  return over;
 };
 
 /* ---------------------------------------------------------------- the character sheet */
