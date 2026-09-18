@@ -421,18 +421,15 @@ abilityBar = function(){
 var _useSigilBase = useSigil;
 useSigil = function(use){
   var r=_useSigilBase(use);
-  if(r!==false && (use==='identify' || use==='identify2')){
-    /* 2026-09-17: the single sigil reads only what you are wearing or wielding. Identifying the whole pack
-       made every unknown drop a non-decision; that is what the Water sigil+ is for. */
-    var list = wornGear();
-    if(use==='identify2') list = list.concat(player.bag.filter(function(b){ return b.data && b.data.unid; }).map(function(b){ return b.data; }));
-    var n=0; list.forEach(function(it){ if(identifyGear(it, true)) n++; });
-    refreshBagNames();
-    log(n ? 'The sigil lays bare <b>'+n+'</b> piece'+(n>1?'s':'')+' of your gear'+(use==='identify'?' (what you carry stays a mystery)':'')+'.' : 'Your gear holds no secrets.','c-kill');
+  if(r!==false && use==='identify'){
+    /* 2026-09-17: one piece of your choosing, worn or carried - you need to know about a curse BEFORE you
+       put the thing on, and reading the whole pack made every unknown drop a non-decision. The Water
+       sigil+ is the one that reads everything. */
+    if(typeof knowPicker==='function') knowPicker();
   }
   return r;
 };
-if(SIGILS.identify) SIGILS.identify.desc='Identify every sigil you carry and every piece of gear you are wearing or wielding.';
+if(SIGILS.identify) SIGILS.identify.desc='Identify every sigil you carry, and read one piece of gear of your choice.';
 
 /* ---------------------------------------------------------------- breaking curses */
 /* enchanting an item at the Forge burns a curse out of it */

@@ -40,8 +40,7 @@ var SIGIL_ORDER = {
   S.identify.name='Water sigil'; S.identify.motes=['water'];
   /* 2026-09-17: identifying the entire pack made every unknown drop pointless - the single sigil now reads
      what you are actually wearing (and your sigils); the + version is what identifies the whole bag. */
-  S.identify.desc='Identify every sigil you carry and every piece of gear you are wearing or wielding, and put out every fire within 3 tiles.';
-  S.identify.wornOnly=true;
+  S.identify.desc='Identify every sigil you carry, read one piece of gear of your choice (worn or carried), and put out every fire within 3 tiles.';
   S.mana.name='Sigil of the Deep Well'; S.mana.motes=['water','shadow'];
   S.mana.desc='Restore 50% of your mana, and mana returns twice as fast for 20 turns.';
   S.mapping.motes=['light','earth'];
@@ -236,6 +235,26 @@ drawTelegraphs = function(now){
 };
 
 /* Rot: choose a cursed worn item to destroy */
+function knowPicker(){
+  var list=[];
+  wornGear().forEach(function(it){ if(it && it.unid) list.push({it:it, where:'worn'}); });
+  player.bag.forEach(function(b){ if(b.data && b.data.unid) list.push({it:b.data, where:'in your bag'}); });
+  if(!list.length){ log('Nothing you carry or wear is a mystery.','c-info'); return; }
+  if(list.length===1){ identifyGear(list[0].it); refreshBagNames(); updateUI(); refreshSheet && refreshSheet(); return; }
+  var done=false;
+  var html='<p class="c-info">Clear water runs over one piece. Choose what to read - a curse shows before you put it on.</p>'+
+    list.map(function(o,i){ return '<div class="frow"><div class="ftext"><b>'+(o.it.name||'Unknown')+'</b> <span class="c-info">('+o.where+')</span></div>'+
+      '<button data-know="'+i+'">Read it</button></div>'; }).join('');
+  openModal('Water sigil', html, [{label:'Keep the sigil', fn:function(){
+    if(!done){ done=true; addBag('✦', SIGILS.identify.name, {kind:'sigil', data:{use:'identify'}, uid:'sigil:identify'}); log('You set the sigil aside.','c-info'); }
+    closeModal(); updateUI(); }}]);
+  document.querySelectorAll('[data-know]').forEach(function(b){ b.onclick=function(){
+    if(done) return; done=true;
+    var o=list[+b.getAttribute('data-know')];
+    identifyGear(o.it); refreshBagNames();
+    sfx('identify'); closeModal(); updateUI(); if(typeof refreshSheet==='function') refreshSheet();
+  }; });
+}
 function rotPicker(){
   var slots=[];
   var main=player.sets[player.activeSet]; if(main) slots.push({it:main, where:'main hand', gone:function(){ player.sets[player.activeSet]=null; }});
