@@ -500,4 +500,6 @@ kill = function(e, by){
   if(e && e.elite && floorMeta && floorMeta.plane && e.id===floorMeta.eliteId){ floorMeta.eliteDead=true; setTimeout(function(){ log('The guardian of '+PLANE_TITLE[floorMeta.plane]+' falls. The treasure grotto lies open.','c-kill'); }, 0); }
   return _killPlane(e, by);
 };
-/* TODO(2x2 art): the Heart is still drawn on one tile; draw it across all four when its final sprite exists */
+/* The Heart's sprite already draws at TS * art(1.9) * big(1.25), so it spills well past its tile. What it
+   does not have is a 2x2 FOOTPRINT: `big:2` is read by the renderer for scale and by the lightmap, but
+   nothing uses it for collision or targeting, so it occupies one tile. Left as is deliberately. */
