@@ -32,7 +32,7 @@ GODS.vellum.boons = ['Deep Well: +8% max mana and +8% spell damage per rank.',
                      'Spell Echo: a spell you cast has a 20% chance to refund its mana.',
                      'Grand Magus: spells cost 25% less mana, and Spell Echo triggers 35% of the time.'];
 GODS.wobbles.prayers = ['rolldice2'];
-GODS.wobbles.boons[0] = 'Amused: occasional gifts (and pranks) when things get dramatic. Roll the Dice leans good: 60%, +1% per Focus above 10. Never kills you directly.';
+GODS.wobbles.boons[0] = "Lady Luck's Blessing: +3% to your combat effects per rank - and occasional gifts (and pranks) when things get dramatic. Roll the Dice leans good: 60%, +1% per Focus above 10. Never kills you directly.";
 
 PRAYERS.ironhide.desc = '+5 armor for 12 turns, and a shield of 5 + 2 per rank.';
 PRAYERS.rampage.desc = '+40% melee damage and 20% faster attacks for 10 turns.';

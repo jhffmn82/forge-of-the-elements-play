@@ -249,6 +249,7 @@ function attack(att, def, mult, label){
   if(att===player) player.lastAttack=true;
   if(att===player && ((player.weapon&&player.weapon.range)||1)>1 && dist(att,def)<=1) ch *= 0.7;
   if(att.st && att.st.blind) ch *= 0.6;
+  if(def===player && typeof luckBonus==='function') ch -= luckBonus();   /* Lady Luck's Blessing: blows slide off */
   if(def.st && (def.st.frozen || def.st.stun)) ch = 1;
   var who = att===player ? 'You' : att.name;
   var foe = def===player ? 'you' : def.name;
@@ -310,12 +311,12 @@ function attack(att, def, mult, label){
       /* weapon infusions (review step 5): chances are 5% per point in the element unless noted */
       var sc=enchantScale(ench), pts=(player.aff[ench]||0);
       el=ench;
-      if(ench==='fire'){ extra+=Math.round(base*(0.10+0.03*pts)); if(rng()<0.05*pts){ applyStatus(def,'burn',3,burnDmg()); note=' <span class="c-fire">burning</span>'; } }
-      if(ench==='water' && rng()<0.15+0.05*pts){ addChill(def); note=' chilled'; }
-      if(ench==='earth' && rng()<0.15*sc){ applyStatus(def,'root',2); note=' rooted'; }
+      if(ench==='fire'){ extra+=Math.round(base*(0.10+0.03*pts)); if((typeof pRoll==='function' ? pRoll(0.05*pts) : rng()<(0.05*pts))){ applyStatus(def,'burn',3,burnDmg()); note=' <span class="c-fire">burning</span>'; } }
+      if(ench==='water' && (typeof pRoll==='function' ? pRoll(0.15+0.05*pts) : rng()<(0.15+0.05*pts))){ addChill(def); note=' chilled'; }
+      if(ench==='earth' && (typeof pRoll==='function' ? pRoll(0.15*sc) : rng()<(0.15*sc))){ applyStatus(def,'root',2); note=' rooted'; }
       if(ench==='light' && (def.base.undead||def.base.shadowy)) extra+=Math.round(base*0.25);
-      if(ench==='shadow'){ if(def.st.hollow) extra+=1; if(rng()<Math.max(0.05,0.05*pts)){ extra+=Math.round(base*0.25); applyStatus(def,'corrupt',3); note=' <span style="color:#B58BFF">corrupted</span>'; } }
-      if(ench==='air' && rng()<Math.max(0.05,0.05*pts) && !label && def.hp>0){ note=' (gust: extra attack)'; pendingExtra=def; }
+      if(ench==='shadow'){ if(def.st.hollow) extra+=1; if((typeof pRoll==='function' ? pRoll(Math.max(0.05,0.05*pts)) : rng()<(Math.max(0.05,0.05*pts)))){ extra+=Math.round(base*0.25); applyStatus(def,'corrupt',3); note=' <span style="color:#B58BFF">corrupted</span>'; } }
+      if(ench==='air' && (typeof pRoll==='function' ? pRoll(Math.max(0.05,0.05*pts)) : rng()<(Math.max(0.05,0.05*pts))) && !label && def.hp>0){ note=' (gust: extra attack)'; pendingExtra=def; }
     }
     if(player.aff.fire){ el = el || 'fire'; extra += player.aff.fire; }
     if(player.aff.light && rng() < 0.10*player.aff.light + (typeof smiteBonus==='function' ? smiteBonus() : 0)){

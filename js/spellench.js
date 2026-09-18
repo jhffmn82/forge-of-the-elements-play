@@ -28,11 +28,11 @@
 
     if(ench==='fire'){
       extra += Math.round(d*(0.10 + 0.03*pts));
-      if(rng() < 0.05*pts){ applyStatus(f, 'burn', 3, burnDmg()); note=' burning'; }
+      if(pRoll(0.05*pts)){ applyStatus(f, 'burn', 3, burnDmg()); note=' burning'; }
     }
-    if(ench==='water' && rng() < 0.15 + 0.05*pts){ addChill(f); note=' chilled'; }
-    if(ench==='earth' && rng() < 0.15*sc){ applyStatus(f, 'root', 2); note=' rooted'; }
-    if(ench==='air' && rng() < Math.max(0.05, 0.05*pts)){
+    if(ench==='water' && pRoll(0.15 + 0.05*pts)){ addChill(f); note=' chilled'; }
+    if(ench==='earth' && pRoll(0.15*sc)){ applyStatus(f, 'root', 2); note=' rooted'; }
+    if(ench==='air' && pRoll(Math.max(0.05, 0.05*pts))){
       /* the gust that gives a melee weapon an extra swing makes a spell land twice */
       var t2 = (typeof elemToType==='function' && A && A.el) ? elemToType(A.el) : 'magic';
       var d2 = applyDamage(f, d, t2, player);
@@ -43,7 +43,7 @@
     if(ench==='light' && (f.base.undead || f.base.shadowy)) extra += Math.round(d*0.25);
     if(ench==='shadow'){
       if(f.st.hollow) extra += 1;
-      if(rng() < Math.max(0.05, 0.05*pts)){ extra += Math.round(d*0.25); applyStatus(f, 'corrupt', 3); note=' corrupted'; }
+      if(pRoll(Math.max(0.05, 0.05*pts))){ extra += Math.round(d*0.25); applyStatus(f, 'corrupt', 3); note=' corrupted'; }
     }
 
     if(extra > 0){

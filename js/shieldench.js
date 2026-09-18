@@ -64,12 +64,12 @@ function onShieldBlock(att, def, raw){
     var burn=Math.max(1, Math.round(raw*(0.25+0.08*pts)));
     var fd=applyDamage(att, burn, 'fire', player);
     floatText(att.x, att.y, String(fd), 'fire');
-    if(rng()<0.15+0.05*pts && att.hp>0) applyStatus(att,'burn',2,typeof burnDmg==='function'?burnDmg():2);
+    if(pRoll(0.15+0.05*pts) && att.hp>0) applyStatus(att,'burn',2,typeof burnDmg==='function'?burnDmg():2);
     log('Your shield throws the blow back as fire &mdash; <b>'+fd+'</b>.','c-good');
     if(att.hp<=0) kill(att, player);
   }
-  else if(el==='water' && rng()<0.25+0.10*pts){ addChill(att); log('The blocked attacker is chilled.','c-good'); }
-  else if(el==='air' && rng()<0.10+0.05*pts){
+  else if(el==='water' && pRoll(0.25+0.10*pts)){ addChill(att); log('The blocked attacker is chilled.','c-good'); }
+  else if(el==='air' && pRoll(0.10+0.05*pts)){
     applyStatus(att,'stun',1);
     if(typeof knockback==='function') knockback(att, att.x-player.x, att.y-player.y, 1);
     log('A thunderclap off your shield staggers it.','c-good');
@@ -78,5 +78,5 @@ function onShieldBlock(att, def, raw){
     var h=Math.min(player.maxhp-player.hp, 1+pts);
     if(h>0){ player.hp+=h; floatText(player.x, player.y, '+'+h, 'heal'); }
   }
-  else if(el==='shadow' && rng()<0.15+0.05*pts){ applyStatus(att,'corrupt',3); log('The blocked attacker is corrupted.','c-good'); }
+  else if(el==='shadow' && pRoll(0.15+0.05*pts)){ applyStatus(att,'corrupt',3); log('The blocked attacker is corrupted.','c-good'); }
 }
