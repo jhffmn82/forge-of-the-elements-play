@@ -87,8 +87,25 @@
       'body.touch .stowrow{margin-top:16px;gap:8px}',
       'body.touch .stowrow span{display:none}',                            /* the caption does not fit a 150px column */
       'body.touch .invgrid{grid-template-columns:repeat(auto-fill,minmax(38px,1fr))}',
+      /* 2026-09-18: the tile tooltip followed the pointer, which on a touch screen means it lands exactly
+         where the finger is - covering the tile you are trying to walk to. On touch it is pinned to the
+         bottom-left corner of the map instead (game.js sets left/top inline, hence !important). */
+      'body.touch #tip{left:8px!important;top:auto!important;bottom:8px!important;right:auto!important;',
+      '  max-width:min(78%,340px)!important;background:rgba(10,9,8,.93);backdrop-filter:blur(2px);padding:9px 11px!important}',
+      /* pinned in a corner it is not fighting for room any more, so the type can come up a notch */
+      'body.touch #tip .nm{font-size:16px!important}',
+      'body.touch #tip .row{font-size:13px!important}',
+      'body.touch #tip .odds{font-size:13.5px!important}',
+      '@media (orientation:landscape){ body.touch #tip{bottom:8px!important;left:8px!important} }',
       /* the touch targets in the top bar, and room for them: the game title is not needed mid-run */
-      'body.touch #top button{min-height:44px}',
+      /* 2026-09-18: the menu tabs were too small to hit reliably with a finger. 52px tall, 60px minimum
+         width, real padding between them - and the row scrolls sideways on a narrow phone rather than
+         shrinking the targets back down. */
+      'body.touch #top{min-height:52px!important}',
+      'body.touch #tabs{gap:4px!important;overflow-x:auto;scrollbar-width:none;flex:1 1 auto;justify-content:flex-end}',
+      'body.touch #tabs::-webkit-scrollbar{display:none}',
+      'body.touch #tabs button{min-height:52px!important;min-width:60px;padding:0 16px!important;font-size:13.5px!important;flex:0 0 auto}',
+      'body.touch #top button{min-height:48px;padding:8px 12px;font-size:13px}',
       'body.touch #brand h1{display:none}',
       /* the chips (fed, essence, motes, faith) stay one row and scroll sideways if there are too many:
          wrapped, they were taking three lines out of the map */

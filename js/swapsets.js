@@ -75,5 +75,3 @@ function unstow(which){
    that fires without swapping, and this block was still pasting its own STOWED / STOWED OFF row over the
    new sheet - which is why a bow in the ranged slot showed as an empty stowed set.
    The equip, swap and stow helpers above are kept only so old saves still load. */
-  });
-};
