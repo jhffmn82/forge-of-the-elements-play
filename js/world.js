@@ -74,9 +74,21 @@ function biomePlan(b){
     var pool = b===1 ? ['light','shadow','earth'] : ['fire','air','water'];
     planeEl = pool[Math.floor(r()*pool.length)];
   }
-  var gods=Object.keys(GODS).filter(function(g){ return g!==RUN.shrineGod; });
-  RUN.biomes[b] = {forge:forge, shrine:b<=3 ? shrine : null, motes:motes, portal:portal, plane:planeEl, god:gods[Math.floor(r()*gods.length)]};
+  RUN.biomes[b] = {forge:forge, shrine:b<=3 ? shrine : null, motes:motes, portal:portal, plane:planeEl, god:godDeal()[b]};
   return RUN.biomes[b];
+}
+
+/* ---------------------------------------------------------------- the shrine gods: four, all different
+   2026-09-18: each biome used to draw its god at random from everyone but the first shrine's, independently,
+   so 39% of runs repeated one - you could walk past a god you did not want and be offered the same god again
+   two biomes later, and the odds of finding the one you wanted never improved as the run went on. One
+   shuffle, four cards off the top. Old saves rebuild the same deal from their own seed. */
+function godDeal(){
+  if(RUN.godDeal) return RUN.godDeal;
+  var r = mulberry32(((RUN.seed||0) ^ 0x6f5a1c3d)>>>0), ids = Object.keys(GODS);
+  for(var i=ids.length-1;i>0;i--){ var j=Math.floor(r()*(i+1)); var t=ids[i]; ids[i]=ids[j]; ids[j]=t; }
+  RUN.godDeal = ids.slice(0, 4);
+  return RUN.godDeal;
 }
 
 /* ---- run state ---- */
@@ -94,6 +106,7 @@ function newRunState(seed){
     motePlan: {1:[els[0]], 2:[els[1],els[2]], 3:[els[3]], 4:[els[4],els[5]], 5:[]},
     resolveUsed: false, victory: false, bossDead: false, turns: 0, kills: 0
   };
+  RUN.shrineGod = godDeal()[0];                    /* the first card of the four-god deal */
   if(RUN.shrineFloor===RUN.forgeFloor && r()<0.5) RUN.shrineFloor = RUN.forgeFloor===3 ? 2 : 1;
   return RUN;
 }

@@ -25,7 +25,15 @@ function amuletKillsNeeded(a){ return Math.max(2, Math.round(AMULETS[a.amulet].k
 function amuletSync(a){ if(a.charges===undefined){ a.charges=1; a.progress=0; } a.charge = a.charges>0 ? 0 : Math.max(1, amuletKillsNeeded(a)-(a.progress||0)); }
 makeAmulet = function(type, cursed){
   ensureTrinketLooks();
-  type = type || pick(Object.keys(AMULETS));
+  /* 2026-09-18: one of each per run. Every drop rolled from the full list independently, so a run could hand
+     you three Amulets of Plenty and never show you the Hook. Once all nine have turned up the list opens
+     again, so a very long run still drops something. */
+  if(!type){
+    RUN.amuletsSeen = RUN.amuletsSeen || {};
+    var all = Object.keys(AMULETS), fresh = all.filter(function(k){ return !RUN.amuletsSeen[k]; });
+    type = pick(fresh.length ? fresh : all);
+    RUN.amuletsSeen[type] = 1;
+  }
   var plus = cursed ? 0 : (rng()<0.3 ? 1 : 0);
   return {kind:'amulet', amulet:type, name:AMULETS[type].name, plus:plus, cursed:!!cursed, unid:true, charges:1, progress:0, charge:0, uses:0, icon:'item-amulet-'+RUN.amuletLook[type]};
 };
