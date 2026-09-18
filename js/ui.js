@@ -503,10 +503,12 @@ function bagCard(it){
 
 /* ---------------------------------------------------------------- inspect */
 var TILE_NAMES = {0:'Wall',1:'Floor',2:'Closed door',3:'Stairs down',4:'Chest',5:'Elemental Forge',6:'Rubble',7:'Open door',8:'Chasm',9:'Locked iron door',
-  10:'Shrine',11:'Ice-sealed door',12:'Thorn-choked doorway',13:'The gate onward',14:'Spiked door',15:'Wall',16:'Shallow water',17:'Bridge',18:'Sealed door'};
+  10:'Shrine',11:'Ice-sealed door',12:'Thorn-choked doorway',13:'The gate onward',14:'Spiked door',15:'Wall',16:'Shallow water',17:'Bridge',18:'Sealed door',
+  19:'Stairs up',20:'Portal'};
 var TILE_HINTS = {5:'Bump it to fuse motes, enchant gear or craft sigils.',9:'Needs this floor\'s iron key.',10:'Bump it to learn about the god.',11:'Fire melts it. Blows crack it slowly.',
   12:'Fire clears it; pushing through hurts.',14:'Costs half your current HP to pass. Real treasure behind.',16:'Slows you. Puts out fire. Lightning hurts more here.',
-  8:'A sheer drop. Float across or find a bridge.',18:'Opened by a mechanism nearby.',3:'Step on it to descend.',13:'Opens when the Warchief falls.'};
+  8:'A sheer drop. Float across or find a bridge.',18:'Opened by a mechanism nearby.',3:'Step on it to descend.',13:'Opens when the Warchief falls.',
+  19:'Step on it to climb back to the floor above.',20:'Step in to cross into the plane beyond. Its guardian holds a treasure grotto.'};
 function inspectHTML(mx,my){
   if(!inb(mx,my) || !(revealAll||seen[idxOf(mx,my)])) return '';
   var e=ents.filter(function(o){ return o.x===mx && o.y===my && o!==player; })[0];
@@ -544,6 +546,7 @@ function inspectHTML(mx,my){
   var t=at(mx,my), g=gAt(mx,my);
   var label=TILE_NAMES[t]||'Floor';
   if(t===SHRINE) label='Shrine to '+GODS[RUN.shrineGod].name;
+  if(typeof PORTAL!=='undefined' && t===PORTAL && floorMeta.portal && typeof PLANE_TITLE!=='undefined') label='Portal to '+PLANE_TITLE[floorMeta.portal];
   var gname={1:'Tall grass: blocks sight, burns fast',2:'Trampled grass',3:'Ash',4:'Puddle',5:'Blood',6:'Scorch mark',7:'Moss',8:'Scattered bones',9:'Ice',10:'Uneven stones: a draft blows here',11:'Web'}[g];
   if(typeof cryptShrooms==='function' && cryptShrooms() && (g===1||g===2)) gname = g===1 ? 'Glowing mushrooms: squash underfoot, burn fast' : 'Squashed mushrooms';
   return '<div class="nm">'+label+'</div>'+(gname?'<div class="row"><span>'+gname+'</span></div>':'')+
