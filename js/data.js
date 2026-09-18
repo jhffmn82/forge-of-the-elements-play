@@ -141,7 +141,7 @@ var ABILITIES = {
             desc:'Always hits. Magic damage that nothing resists. +1 damage for every affinity point you hold.'},
   sap:     {name:'Sap', cost:7, tech:true, kind:'bolt', range:1, useWeaponRange:true, type:'phys', base:[2,4], status:{stun:3}, icon:'ic-sap',
             desc:'Melee or ranged: knocks the target out for 3 turns (6 if it was unaware). A knocked-out target takes surprise attacks.'},
-  /* elements, tier 2 (12 mana, range 6 except Earth Root and Smite at 4) */
+  /* elements, tier 2 (12 mana, range 6 except Earth Root and Lightfall at 4) */
   firebolt:  {name:'Firebolt', cost:12, kind:'bolt', range:6, type:'fire', base:[9,15], status:{burn:3}, icon:'ic-firebolt', el:'fire',
               desc:'Fire damage and sets the target Burning. Ignites grass and burns thorns.'},
   frostshard:{name:'Frost Shard', cost:12, kind:'bolt', range:6, type:'ice', base:[9,15], status:{chill:3}, icon:'ic-frost-shard', el:'water',
@@ -150,7 +150,7 @@ var ABILITIES = {
               desc:'Lightning damage with a 35% chance to stun. +50% against targets standing in water.'},
   root:      {name:'Earth Root', cost:12, kind:'bolt', range:4, type:'phys', base:[9,15], status:{root:2}, icon:'ic-earth-root', el:'earth',
               desc:'Rock spell: Physical damage and roots the target for 2 turns.'},
-  smite:     {name:'Smite', cost:12, kind:'bolt', range:4, type:'light', base:[9,15], blindChance:0.5, icon:'ic-smite', el:'light',
+  smite:     {name:'Lightfall', cost:12, kind:'bolt', range:4, type:'light', base:[9,15], blindChance:0.5, icon:'ic-smite', el:'light',
               desc:'Light damage with a 50% chance to Blind. +50% against undead and shadow creatures.'},
   shadowbolt:{name:'Shadow Bolt', cost:12, kind:'bolt', range:6, type:'dark', base:[9,15], status:{fear:2}, icon:'ic-shadow-bolt', el:'shadow',
               desc:'Dark damage and the target flees in Fear.'},

@@ -237,10 +237,11 @@ function hitSfx(att, def, crit, blocked){
   return 'hit-flesh';
 }
 var LAST_HIT=null;
-/* Light mastery's smite: 3-6 plus a point of light damage per Light point (2026-09-18). The flat 3-6 was
-   the same hit at Light 1 as at Light 6, so an affinity you kept pouring points into stopped paying for
-   itself - the chance rose but the hit never did. combos.js's light-air double smite uses this too. */
-function smiteDamage(){ return roll(3,6) + ((player.aff && player.aff.light) || 0); }
+/* Light mastery's smite: a flat 3-6. Scaling it with Light points was tried on 2026-09-18 and reverted
+   the same day - it pushed the Light 6 Glimmer dagger build to 150 damage a turn, 64% clear of anything
+   else. The affinity buys the proc CHANCE (10% per point); the hit itself stays small on purpose.
+   combos.js's light-air double smite uses this too. */
+function smiteDamage(){ return roll(3,6); }
 
 function attack(att, def, mult, label){
   mult = mult || 1;
