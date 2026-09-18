@@ -89,6 +89,9 @@ PROPS['rune-stone-light']={b:1}; PROPS['rune-stone-shadow']={b:1}; PROPS['rune-s
 PROPS['stepping-stone']={flat:1};
 
 function enterPlane(el){
+  /* 2026-09-18: a plane is only enterable once it has a roster. Guards against a portal being pointed at an
+     element whose creatures have not been built yet - that used to throw on PLANE_ROSTER[el].rune. */
+  if(!el || !PLANE_ROSTER[el]){ log('The portal flickers and will not hold. Nothing lies beyond it yet.','c-info'); sfx('ui-error'); return false; }
   closeModal && modalOpen && closeModal();
   var from={x:player.x, y:player.y}, fromFloor=floorNo;
   floorMeta.portalUsed=true;

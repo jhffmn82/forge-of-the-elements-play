@@ -71,8 +71,19 @@ function biomePlan(b){
   var planeEl=null;
   if(b===1 || b===3){
     do { portal=base+1+Math.floor(r()*4); } while(portal===forge);
-    var pool = b===1 ? ['light','shadow','earth'] : ['fire','air','water'];
-    planeEl = pool[Math.floor(r()*pool.length)];
+    /* 2026-09-18: biome 3 used to draw from a hardcoded ['fire','air','water']. None of those three are
+       built - PLANE_ROSTER and the terrain tables define light, shadow and earth only - so its portal
+       pointed at a plane that threw on an undefined roster the moment you stepped through. The pool is read
+       from PLANE_ROSTER now, so a plane becomes reachable the moment it has a roster and not before, and
+       the later portal avoids whatever the first one offered. */
+    var built = (typeof PLANE_ROSTER!=='undefined') ? Object.keys(PLANE_ROSTER) : ['light','shadow','earth'];
+    var pool = built;
+    if(b===3){
+      var first = (RUN.biomes && RUN.biomes[1]) ? RUN.biomes[1].plane : null;
+      if(first && built.length>1) pool = built.filter(function(e){ return e!==first; });
+    }
+    planeEl = pool.length ? pool[Math.floor(r()*pool.length)] : null;
+    if(!planeEl) portal = null;                       /* nothing built: no portal rather than a broken one */
   }
   RUN.biomes[b] = {forge:forge, shrine:b<=3 ? shrine : null, motes:motes, portal:portal, plane:planeEl, god:godDeal()[b]};
   return RUN.biomes[b];
