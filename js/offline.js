@@ -39,7 +39,13 @@
     var have = {};
     (await cache.keys()).forEach(function(req){ have[req.url] = 1; });
     var todo = list.filter(function(p){ return !have[stripQuery(p)]; });
-    if(!todo.length) return;
+    if(!todo.length){
+      /* the worker's own install precache may have got there first - still confirm it, so a device can be
+         handed over knowing it will play with no signal */
+      window.OFFLINE_READY = {files: list.length, failed: 0, total: list.length};
+      say('Offline copy ready — this device can play with no signal', true);
+      return;
+    }
     var done = 0, failed = 0;
     say('Storing the game for offline play… 0%');
     for(var i=0; i<todo.length; i+=BATCH){
