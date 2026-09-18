@@ -299,14 +299,30 @@ var _applyDamagePlane = applyDamage;
 applyDamage = function(target, amount, type, source){
   var b=target && target.base;
   if(b && target!==player){
-    if(target.parent){ return applyDamage(target.parent, amount, type, source); }                                   /* the Heart's other tiles */
+    if(target.parent){
+      if(source===player) target.parent._provoked=true;
+      var pd = applyDamage(target.parent, amount, type, source);
+      /* the caller checks the tile it hit, and a limb never drops below 9999, so the body has to be
+         finished off here or it walks around at 0 HP (2026-09-17) */
+      if(target.parent.hp<=0 && ents.indexOf(target.parent)>=0) kill(target.parent, source);
+      return pd;
+    }
     if(b.big && (floorMeta.heartNodes||[]).some(function(id){ return ents.some(function(o){ return o.id===id && o.hp>0; }); })){
-      if(source===player && vis[idxOf(target.x,target.y)] && !target._immuneMsg){ target._immuneMsg=turn; log('The <b>Heart of the Mountain</b> drinks strength from its crystal nodes. Break them first.','c-info'); }
+      if(source===player){
+        target._provoked=true;
+        var left=(floorMeta.heartNodes||[]).filter(function(id){ return ents.some(function(o){ return o.id===id && o.hp>0; }); }).length;
+        floatText(target.x, target.y, 'immune', 'miss');
+        if(target._immuneMsg!==turn){
+          target._immuneMsg=turn;
+          log('The <b>Heart of the Mountain</b> drinks strength from '+left+' crystal node'+(left===1?'':'s')+'. Break '+(left===1?'it':'them')+' first.','c-info');
+        }
+      }
       return 0;
     }
     if(b.moonbound && !inMoonlight(target)){ if(source===player) log('Your blow passes through shadow: the <b>Night Warden</b> can only be hurt in the crystals\' light.','c-info'); return 0; }
     if(b.burrows && target.burrowed) return 0;
     if(b.blocksFirst && target._blockTurn!==turn && amount>0){ target._blockTurn=turn; floatText(target.x,target.y,'block','miss'); if(vis[idxOf(target.x,target.y)]) log('The <b>Zealot Knight</b> takes the blow on its shield.','c-info'); return 0; }
+    if(b.big && source===player) target._provoked=true;
     if(b.regenerates && (type==='fire' || (target.st && target.st.burn))) target._burnedAt=turn;
     if(b.reflects && source===player && (type!=='phys' || dist(target,player)>1) && amount>1){
       var back=Math.round(amount*0.5); amount-=back;
@@ -389,8 +405,29 @@ aiAct = function(e){
     }
   }
   if(b.still){
-    if(e.state!=='hunt'){ if(see && d<=6){ e.state='hunt'; log('<b>'+e.name+'</b> wakes with a rumble.','c-you'); SHAKE=6; } e.t+=actCost(e); return; }
-    if(heartTouching(e)){ attack(e,player); }
+    if(e.state!=='hunt'){
+      /* dormant until struck or stood next to: a boss that cannot chase you should not start the fight
+         either, so you get to clear its crystal nodes and its escort first (2026-09-17) */
+      if(e._provoked || heartTouching(e)){ e.state='hunt'; log('<b>'+e.name+'</b> wakes with a rumble.','c-you'); SHAKE=6; }
+      e.t+=actCost(e); return;
+    }
+    if(heartTouching(e)){ attack(e,player); e.t+=actCost(e); return; }
+    /* anything of yours standing against it gets hit too - it used to ignore a summoned servant entirely */
+    var near=ents.filter(function(o){ return o.ally && o.hp>0 && [[0,0],[1,0],[0,1],[1,1]].some(function(q){
+      return Math.max(Math.abs(e.x+q[0]-o.x), Math.abs(e.y+q[1]-o.y))<=1; }); })[0];
+    if(near){ attack(e, near); e.t+=actCost(e); return; }
+    /* it cannot follow you, so it reaches: stone spikes every third turn at anything it can see within 6 */
+    e.spikeCd=(e.spikeCd||0)-1;
+    if(see && d<=6 && e.spikeCd<=0){
+      e.spikeCd=3; setClip(e,'attack'); SHAKE=4;
+      if(typeof burst==='function') burst(player.x, player.y, 'earth', 20, 0.06);
+      var sd=applyDamage(player, roll(6,10)+Math.floor(floorNo/2), 'phys', e);
+      floatText(player.x, player.y, String(sd), 'phys');
+      log('<b>'+e.name+'</b> drives stone spikes up through the floor &mdash; <b>'+sd+'</b>.','c-you');
+      if(rng()<0.35) applyStatus(player,'root',2);
+      if(player.hp<=0) kill(player, e);
+      e.t+=actCost(e); return;
+    }
     e.t+=actCost(e); return;
   }
   return _aiActPlane(e);
@@ -418,10 +455,25 @@ function setupHeart(h){
     var p=propAt(x,y); if(p) removeProp(p);
     var limb=spawn('crystalnode', x, y); limb.parent=h; limb.name=h.name; limb.noXp=true; limb.state='hunt'; limb.hp=limb.maxhp=9999;
   });
-  /* its crystal nodes around the chamber */
+  /* its crystal nodes around the chamber. They are what makes the Heart mortal, so each one has to sit on
+     ground you can reach: 11 of 29 used to land inside the rock, which left the Heart immune for good
+     (2026-09-17). Whatever cannot be placed is simply one node fewer, never an unbreakable one. */
   floorMeta.heartNodes=[];
+  var reach = (typeof bfsFrom==='function') ? bfsFrom(player.x, player.y) : null;
+  function nodeSpot(){
+    for(var t=0; t<400; t++){
+      var rad = 3 + Math.floor(t/50);
+      var c = nearFree(h.x+ri(-rad,rad), h.y+ri(-rad,rad), 2);
+      if(!c) continue;
+      if(Math.abs(c.x-h.x)<=1 && Math.abs(c.y-h.y)<=1) continue;                 /* not under the body */
+      if(reach && !(reach[idxOf(c.x,c.y)]>=0)) continue;                          /* must be walkable-to */
+      if(occupied(c.x,c.y)) continue;
+      return c;
+    }
+    return null;
+  }
   for(var i=0;i<3;i++){
-    var c=nearFree(h.x+ri(-5,5), h.y+ri(-4,4), 3); if(!c) continue;
+    var c=nodeSpot(); if(!c) break;
     var n=spawn('crystalnode', c.x, c.y); n.state='hunt'; floorMeta.heartNodes.push(n.id);
   }
 }
