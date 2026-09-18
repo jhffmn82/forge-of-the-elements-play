@@ -117,9 +117,14 @@ swapWeapon = function(){
   }
   var _newRunRanged = newRun;
   newRun = function(seed, choice){ var r=_newRunRanged(seed, choice); migrateRangedSlot(); derive(player); hideSwap(); return r; };
-  if(typeof loadSlot==='function'){
-    var _loadSlotRanged = loadSlot;
-    loadSlot = function(){ var r=_loadSlotRanged.apply(this, arguments); if(player){ migrateRangedSlot(); derive(player); hideSwap(); } return r; };
+  if(typeof saveApply==='function'){
+    var _saveApplyRanged = saveApply;
+    saveApply = function(data){ var r=_saveApplyRanged(data); if(typeof player!=='undefined' && player){ migrateRangedSlot(); derive(player); hideSwap(); } return r; };
+  }
+  /* belt and braces: a floor change is a cheap place to catch anything that slipped through */
+  if(typeof generate==='function'){
+    var _generateRanged = generate;
+    generate = function(seed){ var r=_generateRanged(seed); if(typeof player!=='undefined' && player && player.sets && player.sets[1]){ migrateRangedSlot(); derive(player); } return r; };
   }
   window.addEventListener('load', function(){ setTimeout(hideSwap, 400); });
 })();

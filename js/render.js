@@ -524,6 +524,7 @@ function gatherLights(now, prp){
   }
   props.forEach(function(pp){ if(pp.light && pp.x>=x0 && pp.x<=x1 && pp.y>=y0 && pp.y<=y1 && (revealAll||seen[idxOf(pp.x,pp.y)])) add(pp.x, pp.y, pp.light, pp.dim?2.8:4.8, (pp.dim?0.55:1.0)*fl(pp.x*5+pp.y)); });
   items.forEach(function(it){ if(it.kind==='mote' && (revealAll||vis[idxOf(it.x,it.y)])) add(it.x, it.y, AFF_COL[it.el]||'#FFFFFF', 2.2, 0.55*fl(it.x+it.y)); });
+  items.forEach(function(it){ if(it.kind==='key' && (revealAll||seen[idxOf(it.x,it.y)])) add(it.x, it.y, it.key==='crystal' ? '#A0E6FF' : '#78BEFF', 2.6, 0.6*fl(it.x+it.y*3)); });
   ents.forEach(function(e){ if(e.base && e.base.glow && (revealAll||vis[idxOf(e.x,e.y)])){ var rp=renderPos(e); add(rp.x, rp.y, e.base.glow, 3, 0.8, [e.x,e.y]); } });
   /* spells and arrows in flight carry their light along the path */
   fx.forEach(function(f){
@@ -827,6 +828,18 @@ function draw(){
     var ipx=(it.x-camX)*TS, ipy=(it.y-camY)*TS, ia=(revealAll||vis[idxOf(it.x,it.y)])?1:0.45;
     var shw=(ITEM_FIT[it.kind]||0.5)*0.42; ctx.globalAlpha=0.35*ia; ctx.fillStyle='#000'; ctx.beginPath(); ctx.ellipse(ipx+TS/2,ipy+TS*0.76,TS*shw,TS*shw*0.35,0,0,7); ctx.fill(); ctx.globalAlpha=1;
     var bob = ANIM.reduce ? 0 : Math.sin(now/400 + it.x*2 + it.y)*TS*0.03;
+    if(it.kind==='key'){
+      /* 2026-09-17: a key on a stone floor was almost impossible to spot, and missing one locks the vault
+         for the rest of the floor. It sits in a blue glow that breathes. */
+      var kp = ANIM.reduce ? 1 : 0.75 + 0.25*Math.sin(now/420 + it.x + it.y);
+      var kc = it.key==='crystal' ? '160,230,255' : '120,190,255';
+      var kg = ctx.createRadialGradient(ipx+TS/2, ipy+TS*0.58, TS*0.05, ipx+TS/2, ipy+TS*0.58, TS*0.62);
+      kg.addColorStop(0, 'rgba('+kc+','+(0.55*kp*ia)+')');
+      kg.addColorStop(0.55, 'rgba('+kc+','+(0.18*kp*ia)+')');
+      kg.addColorStop(1, 'rgba('+kc+',0)');
+      ctx.fillStyle=kg; ctx.beginPath(); ctx.arc(ipx+TS/2, ipy+TS*0.58, TS*0.62, 0, 7); ctx.fill();
+      if(!ANIM.reduce && Math.random()<0.10) sparkleFx(it.x, it.y, 'ice', 1);
+    }
     if(it.kind==='heart' || it.kind==='managlobe'){ drawGlobe(it, ipx, ipy+bob, ia, now); return; }
     var o=spriteOn ? (objArt('items', itemArtName(it))) : null;
     if(o) drawObj(o, ipx, ipy+TS*0.08+bob, {fit: ITEM_FIT[it.kind]||0.5, alpha:ia});

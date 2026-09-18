@@ -71,29 +71,9 @@ function unstow(which){
 }
 
 /* ---------------------------------------------------------------- the Equipment sheet's stowed row */
-var _equipHTMLSwap = equipHTML;
-equipHTML = function(){
-  ensureOffSets();
-  var h=_equipHTMLSwap(), sm=stowedMain(), so=stowedOff();
-  var row='<div class="stowrow">'+slotHTML('stow','Stowed', sm, '&#8646;')+slotHTML('stowoff','Stowed off', so, '&#9960;')+
-    '<span class="c-info" style="font-size:11px">Your second set. Drag from the bag to load it, right-click to empty a slot, click to swap (x).</span></div>';
-  return h.replace(/<div class="stowrow">[\s\S]*?<span class="c-info"[\s\S]*?<\/span><\/div>/, row);
-};
-var _slotItemSwap = slotItem;
-slotItem = function(key){ if(key==='stowoff') return stowedOff(); return _slotItemSwap(key); };
-var _slotCardSwap = slotCard;
-slotCard = function(key){
-  if(key==='stowoff'){ var it=stowedOff(); return it ? bagCard({kind: it.kind==='weapon' ? 'weapon' : 'off', data:it}) : '<div class="nm">Empty</div><div class="hint">Off hand for your second set: a shield, focus or light weapon.</div>'; }
-  if(key==='stow' && !stowedMain()) return '<div class="nm">Empty</div><div class="hint">Main hand for your second set. Swap with x, even with nothing here (fists).</div>';
-  return _slotCardSwap(key);
-};
-var _wireEquipSwap = wireEquip;
-wireEquip = function(root){
-  _wireEquipSwap(root);
-  root.querySelectorAll('.gslot[data-slot="stow"],.gslot[data-slot="stowoff"]').forEach(function(el){
-    var key=el.getAttribute('data-slot');
-    el.onclick=function(){ hideCard(); swapWeapon(); updateUI(); refreshSheet(); };
-    el.oncontextmenu=function(ev){ ev.preventDefault(); hideCard(); unstow(key==='stow'?'main':'off'); derive(player); updateUI(); refreshSheet(); };
-    dropTarget(el, function(tag){ var bi=bagIndexFromTag(tag); if(bi<0) return; hideCard(); if(key==='stow') equipStowMain(bi); else equipStowOff(bi); derive(player); updateUI(); refreshSheet(); });
+/* 2026-09-17: the two-weapon-set UI is retired. js/rangedslot.js turned the second slot into a bow slot
+   that fires without swapping, and this block was still pasting its own STOWED / STOWED OFF row over the
+   new sheet - which is why a bow in the ranged slot showed as an empty stowed set.
+   The equip, swap and stow helpers above are kept only so old saves still load. */
   });
 };
