@@ -303,7 +303,12 @@ function attack(att, def, mult, label){
   if(blocked){ if(typeof onShieldBlock==='function') onShieldBlock(att, def, base); base *= 0.25; }
   if(def===player && hasP('fortitude') && player.fortCd<=0){ player.fortCd=15; base *= 0.5; log('Fortitude blunts the blow.','c-good'); }
   LAST_HIT={att:att, def:def, crit:crit, surprise:surprise, melee:!ranged};
-  var phys=applyDamage(def, base, 'phys', att), extra=0, note='', el=null;
+  /* 2026-09-18: two different kinds of number used to share one variable. `extra` is damage still to be
+     taken off at the end of the block; `applied` is damage applyDamage has ALREADY taken off (the Light
+     mastery smite, and the light-air combo). Mixing them meant a smite proc was subtracted twice on any
+     weapon that was not light-enchanted, while a light-enchanted weapon skipped the subtraction entirely
+     and silently dropped the fire-affinity bonus and the enchant's own +25% against undead. */
+  var phys=applyDamage(def, base, 'phys', att), extra=0, applied=0, note='', el=null;
   sfx(hitSfx(att,def,crit,blocked), {at:def._hit});
   if(att===player){
     var ench = player.weapon.enchant;
@@ -320,13 +325,14 @@ function attack(att, def, mult, label){
     }
     if(player.aff.fire){ el = el || 'fire'; extra += player.aff.fire; }
     if(player.aff.light && rng() < 0.10*player.aff.light + (typeof smiteBonus==='function' ? smiteBonus() : 0)){
-      var sm=applyDamage(def, roll(3,6), 'light', player); extra+=sm; note+=' <span style="color:#FFF1B8">smite</span>';
-      if(typeof onSmiteProc==='function') extra+=onSmiteProc(def)||0;
+      var sm=applyDamage(def, roll(3,6), 'light', player); applied+=sm; el = el || 'light';
+      note+=' <span style="color:#FFF1B8">smite</span>';
+      if(typeof onSmiteProc==='function') applied+=onSmiteProc(def)||0;
       if(rng()<0.10*player.aff.light) applyStatus(def,'blind',2); sparkleFx(def.x,def.y,'light',10);
     }
     if(player.aff.shadow && def.hp>0) addHollow(def, 0);
     if(player.weapon.unarmed && hasGod('grom') && def.hp>0 && rng() < (buff('ironbody')?0.3:0) + (godRank()>=3?0.15:0)){ applyStatus(def,'stun',1); note+=' staggered'; }
-    if(extra>0 && el!=='light') { def.hp -= extra; }
+    if(extra>0) { def.hp -= extra; }
   }
   if(att!==player && att.base && att.base.el){
     el = att.base.el;
@@ -342,9 +348,10 @@ function attack(att, def, mult, label){
     def.hp -= add; extra=add;
   }
   if(att.lifesteal && att.ally){ att.hp=Math.min(att.maxhp, att.hp+Math.round(phys*0.3)); }
-  var total=phys+extra;
-  var elTxt = extra>0 ? ' <span class="c-fire">+'+extra+' '+(el||'')+'</span>' : '';
-  floatText(def.x, def.y, String(total), extra>0 && el ? elemToType(el) : 'phys', crit);
+  var total=phys+extra+applied;
+  var bonus=extra+applied;
+  var elTxt = bonus>0 ? ' <span class="c-fire">+'+bonus+(el?' '+el:'')+'</span>' : '';
+  floatText(def.x, def.y, String(total), bonus>0 && el ? elemToType(el) : 'phys', crit);
   log((label?label+': ':'')+who+' hit '+foe+' <span class="roll">('+Math.round(ch*100)+'%'
       +(crit?', crit':'')+(surprise?', surprise':'')+(blocked?', blocked':'')+')</span> &mdash; <b>'+total+'</b>'+elTxt+note,
       att===player?'c-hit':'c-you');
