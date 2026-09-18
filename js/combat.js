@@ -331,8 +331,10 @@ function attack(att, def, mult, label){
     if(player.aff.fire){ el = el || 'fire'; extra += player.aff.fire; }
     if(player.aff.light && rng() < 0.10*player.aff.light + (typeof smiteBonus==='function' ? smiteBonus() : 0)){
       var sm=applyDamage(def, smiteDamage(), 'light', player); applied+=sm; el = el || 'light';
-      note+=' <span style="color:#FFF1B8">smite</span>';
-      if(typeof onSmiteProc==='function') applied+=onSmiteProc(def)||0;
+      /* the light-air combo fires a second smite, so count it before the log line is written: what the
+         note reports is the whole smite, not just the first half of it (2026-09-18) */
+      if(typeof onSmiteProc==='function'){ var sm2=onSmiteProc(def)||0; applied+=sm2; sm+=sm2; }
+      note+=' <span style="color:#FFF1B8">smite '+sm+'</span>';
       if(rng()<0.10*player.aff.light) applyStatus(def,'blind',2); sparkleFx(def.x,def.y,'light',10);
     }
     if(player.aff.shadow && def.hp>0) addHollow(def, 0);
