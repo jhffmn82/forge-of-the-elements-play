@@ -130,6 +130,40 @@ function deepSolid(wx, wy, style, salt){
   return sld;
 }
 
+/* ---------------------------------------------------------------- cave rock colours (2026-09-19)
+   Per region: the lit / mid / shaded planes of the rock top, its edge, the cliff face from lip to foot, and what runs
+   through the seams - glowing lava in the basalt, pale web strands on the spider-cave cliffs. */
+var DEEP_ROCK = {
+  1: {topHi:[108,100,126], top:[76,70,92], topLo:[44,40,58], edge:[20,18,28], lip:[150,142,170], face:[62,56,78], faceLo:[22,20,30], seam:[186,180,200], seamOn:'face', soft:1},
+  2: {topHi:[112,94,86], top:[70,59,55], topLo:[34,27,27], edge:[16,11,11], lip:[128,100,84], face:[50,42,40], faceLo:[20,14,14], seam:[255,118,40], seamHot:[255,206,110], seamOn:'both', soft:0}
+};
+DEEP_ROCK[0]=DEEP_ROCK[1];
+function deepMix(a, b, t){ return [a[0]+(b[0]-a[0])*t, a[1]+(b[1]-a[1])*t, a[2]+(b[2]-a[2])*t]; }
+function deepRockCol(rgn, wx, wy, salt, part, depth, lip){
+  var M=DEEP_ROCK[rgn]||DEEP_ROCK[1], col;
+  if(part==='face'){
+    if(lip) return M.lip;
+    var cf=ptVor(wx*2.2, wy*0.55, 0.55, salt+21), shade=0.86+0.2*hash2(cf.ix,cf.iy,salt+22);
+    col=deepMix(M.face, M.faceLo, Math.min(1, depth*1.25)); col=[col[0]*shade, col[1]*shade, col[2]*shade];
+    if(cf.d2-cf.d1<0.03) col=deepMix(col, M.faceLo, 0.35);
+    if(M.seamOn){   /* seams: web strands hang down the spider cliffs; lava glows in the basalt's cracks */
+      var fv=ptVor(wx*1.6, wy*0.9, 0.9, salt+23), mk=ptVal(wx*0.3, wy*0.3, salt+20);
+      if(mk>(M.soft?0.62:0.5) && fv.d2-fv.d1<(M.soft?0.012:0.02)) col=deepMix(col, M.seamHot && fv.d2-fv.d1<0.007 ? M.seamHot : M.seam, M.soft?0.5:0.85);
+    }
+    return col;
+  }
+  var f=ptVor(wx, wy, M.soft?1.9:1.4, salt+11), ang=Math.atan2(wy-f.sy, wx-f.sx), turn=hash2(f.ix,f.iy,salt+13)*6.28;
+  var facet=Math.floor(((ang+turn)%6.2832+6.2832)%6.2832/1.2566), fa=facet*1.2566-turn+0.628, lit=-(Math.cos(fa)*0.7+Math.sin(fa)*0.7);
+  col = M.soft ? deepMix(M.topLo, M.topHi, 0.5+lit*0.35) : (lit>0.35 ? M.topHi : lit>-0.35 ? M.top : M.topLo);
+  var mot=(ptVal(wx*3.2, wy*3.2, salt+15)-0.5)*9 + (ptVal(wx*7.5, wy*7.5, salt+16)-0.5)*5;
+  col=[col[0]+mot, col[1]+mot, col[2]+mot*1.05];
+  if(f.d2-f.d1<0.03){
+    if(M.seamOn==='both' && ptVal(wx*0.4, wy*0.4, salt+24)>0.3) col=deepMix(col, f.d2-f.d1<0.012 ? (M.seamHot||M.seam) : M.seam, 0.8);   /* lava in the cracks */
+    else col=deepMix(col, M.topLo, 0.55);
+  }
+  return col;
+}
+
 /* ---------------------------------------------------------------- one baked cell (64 px) */
 var DEEP_RF = 32;
 var DEEP_TOP_DIM = 0.72;   /* cave rock tops sit a little darker than the floor, so a cave reads as a hollow in the rock */          /* the outline is worked out at 32 px a cell, the colour at 64 */
@@ -173,16 +207,23 @@ function deepCellRaster(x, y){
         if(style==='rect'){
           q=deepTexel(T.face, (x+o2)*64+U, 64-Math.min(64,e)); r=T.face.d[q]; gg=T.face.d[q+1]; b=T.face.d[q+2];
         } else {
-          /* cave cliff: the region's own rock, drawn down the face, darkening to its foot, a pale lip on top */
-          q=deepTexel(T.top, (x+o3)*64+U, (y+o4)*64+Math.floor(V*0.6)); r=T.top.d[q]; gg=T.top.d[q+1]; b=T.top.d[q+2];
-          sh = e<=4 ? 0.34 : 0.5;                          /* one steady tone down the face (a gradient striped jagged edges), a dark foot */
-          if(mv>0 ? (dn[(mv-1)*RF+mu]===0) : e>=62) sh=1.3;  /* the lip where the rock top turns down, catching the light */
+          /* 2026-09-19: Justin - "are there walls in the fire area?" The rock sampled from the wall-top texture read as
+             darker floor. Cave rock is now drawn the Caverns' way (planeterrain.js ptCellRaster): a cliff of tall
+             narrow facets, pale at the lip, deepening to the foot, in the region's own rock colours */
+          var cc=deepRockCol(rgn, x+U/64, y+V/64, salt, 'face', e/64, mv>0 ? (dn[(mv-1)*RF+mu]===0) : e>=62);
+          r=cc[0]; gg=cc[1]; b=cc[2];
         }
       } else {
-        q=deepTexel(T.top, (x+o3)*64+U, (y+o4)*64+V); r=T.top.d[q]; gg=T.top.d[q+1]; b=T.top.d[q+2];
-        if(style!=='rect') sh=DEEP_TOP_DIM;
-        if(!K(mu-1,mv) || !K(mu+1,mv) || !K(mu,mv-1)) sh=0.4;
-        else if(!K(mu-2,mv) || !K(mu+2,mv) || !K(mu,mv-2)) sh*=0.85;
+        if(style!=='rect'){
+          /* the top of the rock: big angular masses, each plane lit by which way it faces (the Caverns' look) */
+          var ct=deepRockCol(rgn, x+U/64, y+V/64, salt, 'top', 0, false);
+          r=ct[0]; gg=ct[1]; b=ct[2];
+          if(!K(mu-1,mv) || !K(mu+1,mv) || !K(mu,mv-1)){ var E=DEEP_ROCK[rgn].edge; r=r*0.45+E[0]*0.55; gg=gg*0.45+E[1]*0.55; b=b*0.45+E[2]*0.55; }
+        } else {
+          q=deepTexel(T.top, (x+o3)*64+U, (y+o4)*64+V); r=T.top.d[q]; gg=T.top.d[q+1]; b=T.top.d[q+2];
+          if(!K(mu-1,mv) || !K(mu+1,mv) || !K(mu,mv-1)) sh=0.4;
+          else if(!K(mu-2,mv) || !K(mu+2,mv) || !K(mu,mv-2)) sh*=0.85;
+        }
       }
     }
     D[p]=Math.min(255,r*sh); D[p+1]=Math.min(255,gg*sh); D[p+2]=Math.min(255,b*sh); D[p+3]=255;
