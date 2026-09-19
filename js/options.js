@@ -28,6 +28,21 @@ draw = function(){ speedFxList(); return _drawOpt.apply(this, arguments); };
 var _newRunOpt = newRun;
 newRun = function(seed, choice){ var r=_newRunOpt(seed, choice); speedFxList(); return r; };
 
+/* ---------------------------------------------------------------- map zoom (2026-09-18)
+   A multiplier on however many tiles the current view wants (desktop, phone portrait or landscape), so it
+   stacks with the layout's own choice instead of replacing it. Closer = fewer, bigger tiles. */
+var MAP_ZOOM_MUL = {far:1.3, normal:1, close:0.8, closest:0.65}, MAP_ZOOM='normal';
+try { MAP_ZOOM = localStorage.getItem('fote-map-zoom') || 'normal'; } catch(e){}
+if(!MAP_ZOOM_MUL[MAP_ZOOM]) MAP_ZOOM='normal';
+var _resizeOpt = resize;
+resize = function(){
+  var m=MAP_ZOOM_MUL[MAP_ZOOM]||1, k=ZOOM[zoomKey] ? zoomKey : 'normal', z0=ZOOM[k];
+  if(m===1 || !z0) return _resizeOpt.apply(this, arguments);
+  ZOOM[k]=[Math.max(7, Math.round(z0[0]*m)), Math.max(6, Math.round(z0[1]*m))];
+  try { return _resizeOpt.apply(this, arguments); } finally { ZOOM[k]=z0; }
+};
+window.addEventListener('resize', function(){ resize(); });   /* game.js listens with the unwrapped resize */
+
 /* ---------------------------------------------------------------- the sheet */
 (function(){
   var st=document.createElement('style');
@@ -63,6 +78,7 @@ function optionsHTML(){
      '<div class="optrow"><span>Effects volume</span><input type="range" id="volSfx" min="0" max="100" value="'+Math.round((AUDIO.vol.sfx||0)*100)+'"></div>'+
      '<div class="optrow"><span>Music volume</span><input type="range" id="volMusic" min="0" max="100" value="'+Math.round((AUDIO.vol.music||0)*100)+'"></div>'+
      '<div class="sec">Display</div>'+
+     '<div class="optrow"><span>Map zoom</span>'+segHTML('mapzoom', [['far','Far'],['normal','Normal'],['close','Close'],['closest','Closest']], MAP_ZOOM)+'</div>'+
      '<div class="optrow"><span>Dynamic lighting</span>'+segHTML('light', [['on','On'],['off','Off']], lightOn?'on':'off')+'</div>'+
      '<div class="optrow"><span>Motion (sway, flicker, bob)</span>'+segHTML('motion', [['auto','Auto'],['on','On'],['off','Off']], ANIM.mode)+'</div>'+
      '<div class="optrow"><span>Animation speed</span>'+segHTML('speed', [[1,'1&times;'],[1.5,'1.5&times;'],[2,'2&times;'],[3,'3&times;']], ANIM_SPEED)+'</div>'+
@@ -82,6 +98,7 @@ function wireOptions(root){
       if(id==='music'){ audioInit(); if((v==='1')!==AUDIO.musicOn) toggleMusic(); if(typeof syncAudioButtons==='function') syncAudioButtons(); }
       if(id==='light'){ try{ localStorage.setItem('fote-light', v); }catch(e){} var bl=$('bLight'); if(bl) bl.textContent='Lighting: '+v; draw(); }
       if(id==='motion'){ if(typeof setMotion==='function') setMotion(v); }
+      if(id==='mapzoom'){ MAP_ZOOM=v; try{ localStorage.setItem('fote-map-zoom', v); }catch(e){} resize(); }
       if(id==='speed'){ ANIM_SPEED=parseFloat(v)||1; try{ localStorage.setItem('fote-anim-speed', String(ANIM_SPEED)); }catch(e){} applyAnimSpeed(); }
       sfx('ui-click'); refreshSheet();
     }; });
