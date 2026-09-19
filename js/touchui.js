@@ -301,11 +301,11 @@
     }
     if(hmSwallow) setTimeout(function(){ hmSwallow=false; }, 350);    /* some browsers send no click after a long hold */
   }, true); });
-  /* ---------------- Gear + hotbar together. While Gear is open on touch, the strip shows only the hotbar and the
+  /* ---------------- Gear, Char and Faith + hotbar together. While one is open on touch, the strip shows only the hotbar and the
      sheet stops just above it. Hold a bag item (its card shows, as before) and then drag it: it lifts, and let
-     go over a hotbar slot to put it there. The worn amulet can be dragged down the same way. */
+     go over a hotbar slot to put it there. The worn amulet, abilities (Char) and prayers (Faith) drag the same way. */
   function gearMode(){
-    var on = touch() && typeof openSheet!=='undefined' && openSheet==='Equip';
+    var on = touch() && typeof openSheet!=='undefined' && (openSheet==='Equip' || openSheet==='Char' || openSheet==='Faith');
     document.body.classList.toggle('gearopen', on);
     if(typeof resize==='function') resize();
     var st=document.getElementById('strip');
@@ -319,6 +319,8 @@
   function bagEntry(el){
     if(el.matches('.cell[data-b]')){ var it=player.bag[+el.getAttribute('data-b')]; return it ? {type:'item', ref:it} : null; }
     if(el.matches('.gslot[data-slot="amulet"]')) return player.amulet ? {type:'amulet'} : null;
+    var ab=el.getAttribute('data-ab'); if(ab && player.abilities.indexOf(ab)>=0) return {type:'ability', key:ab};
+    var pr=el.getAttribute('data-pr'); if(pr && el.getAttribute('draggable')==='true') return {type:'prayer', key:pr};
     return null;
   }
   function endBL(){
@@ -336,7 +338,7 @@
   }
   document.addEventListener('pointerdown', function(ev){
     if(!touch() || !document.body.classList.contains('gearopen') || ev.clientX<0) return;
-    var src=ev.target.closest && ev.target.closest('.tgear .cell[data-b], .tgear .gslot[data-slot="amulet"]'); if(!src) return;
+    var src=ev.target.closest && ev.target.closest('.tgear .cell[data-b], .tgear .gslot[data-slot="amulet"], #shade [data-ab], #shade [data-pr]'); if(!src) return;
     var e0=bagEntry(src); if(!e0) return;
     var x=ev.clientX, y=ev.clientY;
     clearTimeout(blTimer); endBL();
@@ -351,7 +353,7 @@
     ev.preventDefault();
     if(!bl.moved){
       bl.moved=true; hideCards();
-      var r=bl.src.getBoundingClientRect(), g=document.createElement('div');
+      var hs=document.querySelector('#hotbar .slot'), r=(hs||bl.src).getBoundingClientRect(), g=document.createElement('div');   /* slot-sized, even from a wide row */
       g.id='hotGhost'; g.className='slot'; g.style.width=r.width+'px'; g.style.height=r.height+'px';
       var src=bl.src.querySelector('canvas');
       if(src){ var c=document.createElement('canvas'); c.width=src.width; c.height=src.height; c.getContext('2d').drawImage(src,0,0);
@@ -376,7 +378,7 @@
   document.addEventListener('touchmove', function(ev){ if((bl && bl.moved) || (lift && lift.moved) || bl || lift) ev.preventDefault(); }, {passive:false});
 
   /* no native drag on the touch hotbar */
-  document.addEventListener('dragstart', function(ev){ if(touch() && ev.target.closest && ev.target.closest('#hotbar')) ev.preventDefault(); }, true);
+  document.addEventListener('dragstart', function(ev){ if(touch() && ev.target.closest && ev.target.closest('#hotbar, #shade')) ev.preventDefault(); }, true);
   var _abilityBarTouch = abilityBar;
   abilityBar = function(){
     var r=_abilityBarTouch.apply(this, arguments);
