@@ -129,6 +129,7 @@ damageProp = function(p, src, type){
   if(!p || !p.bush) return _damagePropBush.apply(this, arguments);
   removeProp(p); sfx('step-grass');
   if(typeof burst==='function') burst(p.x, p.y, 'heal', 14, 0.05);
+  (floorMeta.regrow=floorMeta.regrow||[]).push({x:p.x, y:p.y, at:turn+VEG_REGROW.bush});
   if(type==='fire'){ setG(p.x,p.y,G_ASH); return; }
   if(rng()<(p.loot||0.25)){
     var it = rng()<0.6 ? {kind:'heart'} : {kind:'essence', n:ri(2,5)+floorNo};
@@ -136,3 +137,42 @@ damageProp = function(p, src, type){
     log(it.kind==='heart' ? 'A heart was tucked under the bush.' : 'Something glints among the cut leaves.','c-good');
   }
 };
+
+/* ---------------------------------------------------------------- regrowth (2026-09-19, Justin: the food clock stops
+   anyone farming it forever). Cut bushes grow back, trampled tall grass stands up again and burned ground greens
+   over - only where you cannot see it happen, and never under a creature or an item. */
+var VEG_REGROW = {bush:150, tall:100, burnt:200};
+function vegRemember(){
+  if(!ground || !vegSet()) return;
+  var o={}; for(var i=0;i<ground.length;i++){ if(ground[i]===G_GRASS) o[i]='G'; else if(ground[i]===G_SHORT) o[i]='s'; }
+  floorMeta.vegOrig=o; floorMeta.vegSeen={};
+}
+var _generateRegrow = generate;
+generate = function(seed){ var r=_generateRegrow.apply(this, arguments); try{ vegRemember(); }catch(e){} return r; };
+function vegRegrowTick(){
+  if(!floorMeta || !ground || !vegSet() || !player) return;
+  var hidden=function(x,y){ var i=idxOf(x,y); return !vis[i] && !ents.some(function(e){ return e.hp>0 && e.x===x && e.y===y; }) && !items.some(function(it){ return it.x===x && it.y===y; }) && !(player.x===x && player.y===y); };
+  /* bushes */
+  if(floorMeta.regrow && floorMeta.regrow.length){
+    floorMeta.regrow=floorMeta.regrow.filter(function(r){
+      if(turn<r.at) return true;
+      if(!hidden(r.x,r.y) || propAt(r.x,r.y) || at(r.x,r.y)!==FLOOR) return true;   /* try again later */
+      addProp(r.x, r.y, 'bush'); return false;
+    });
+  }
+  /* grass, every 10 turns: a trampled or burned tile that was grass notes when it changed, and recovers later */
+  if(turn%10 || !floorMeta.vegOrig) return;
+  var O=floorMeta.vegOrig, S=floorMeta.vegSeen||(floorMeta.vegSeen={});
+  for(var k in O){
+    var i=+k, g=ground[i], want=O[k], x=i%MW, y=(i/MW)|0;
+    var ok = (want==='G' && g===G_SHORT) || ((want==='G'||want==='s') && (g===G_ASH || g===G_SCORCH || !g));
+    if(!ok){ delete S[k]; continue; }
+    if(S[k]===undefined){ S[k]=turn; continue; }
+    var wait = (g===G_ASH || g===G_SCORCH) ? VEG_REGROW.burnt : VEG_REGROW.tall;
+    if(turn-S[k] < wait || !hidden(x,y)) continue;
+    ground[i] = (g===G_SHORT || want==='s') ? (want==='G' ? G_GRASS : G_SHORT) : G_SHORT;   /* burned ground comes back short first */
+    S[k]=turn;
+  }
+}
+var _endTurnRegrow = endTurn;
+endTurn = function(){ var r=_endTurnRegrow.apply(this, arguments); try{ vegRegrowTick(); }catch(e){} return r; };
