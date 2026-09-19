@@ -34,14 +34,6 @@ newRun = function(seed, choice){ var r=_newRunOpt(seed, choice); speedFxList(); 
 var MAP_ZOOM_MUL = {far:1.3, normal:1, close:0.8, closest:0.65}, MAP_ZOOM='normal';
 try { MAP_ZOOM = localStorage.getItem('fote-map-zoom') || 'normal'; } catch(e){}
 if(!MAP_ZOOM_MUL[MAP_ZOOM]) MAP_ZOOM='normal';
-var _resizeOpt = resize;
-resize = function(){
-  var m=MAP_ZOOM_MUL[MAP_ZOOM]||1, k=ZOOM[zoomKey] ? zoomKey : 'normal', z0=ZOOM[k];
-  if(m===1 || !z0) return _resizeOpt.apply(this, arguments);
-  ZOOM[k]=[Math.max(7, Math.round(z0[0]*m)), Math.max(6, Math.round(z0[1]*m))];
-  try { return _resizeOpt.apply(this, arguments); } finally { ZOOM[k]=z0; }
-};
-window.addEventListener('resize', function(){ resize(); });   /* game.js listens with the unwrapped resize */
 
 /* ---------------------------------------------------------------- the sheet */
 (function(){

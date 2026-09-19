@@ -53,7 +53,7 @@ derive = function(p){
    upgrades and enchantment all apply to the shot, for free. */
 var _attackRanged = attack;
 attack = function(att, def, mult, label){
-  if(att !== player || !def || !isRangedWeapon(player.ranged) || dist(player, def) <= 1)
+  if(att !== player || !def || !isRangedWeapon(player.ranged) || dist(player, def) <= 1 || player._reaching)   /* reach.js: the spear's own hit */
     return _attackRanged(att, def, mult, label);
   var mainW = player.weapon, mainDmg = player.dmg;
   player.weapon = player.ranged;

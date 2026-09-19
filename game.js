@@ -469,6 +469,10 @@ function resize(){
   var W=Math.max(140, box.width), H=Math.max(110, box.height);
   /* how many tiles we try to show across and down - fewer tiles, bigger tiles */
   var z=ZOOM[zoomKey]||ZOOM.normal;
+  /* Opts > Map zoom (options.js) scales that. It lives here, not in a wrapper, because the map's
+     ResizeObserver below holds this function itself - a wrapper was skipped whenever a sheet closed. */
+  var zm=(typeof MAP_ZOOM_MUL!=='undefined' && MAP_ZOOM_MUL[MAP_ZOOM]) || 1;
+  if(zm!==1) z=[Math.max(7, Math.round(z[0]*zm)), Math.max(6, Math.round(z[1]*zm))];
   TS = clamp(Math.floor(Math.min(W/z[0], H/z[1])), 14, 72);
   viewW = clamp(Math.floor(W/TS), 8, MW);
   viewH = clamp(Math.floor(H/TS), 6, MH);
