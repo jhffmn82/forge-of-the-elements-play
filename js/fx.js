@@ -153,7 +153,7 @@ function drawFX(){
       var x=(f.ax+(f.bx-f.ax)*p-camX+0.5)*TS, y=(f.ay+(f.by-f.ay)*p-camY+0.5)*TS;
       ctx.fillStyle=f.col; ctx.fillRect(x-TS*0.1, y-TS*0.1, TS*0.2, TS*0.2);
     } else if(f.k==='ring'){
-      ctx.save(); ctx.globalAlpha=(1-p)*0.8; ctx.strokeStyle=f.col; ctx.lineWidth=3;
+      ctx.save(); ctx.globalAlpha=(1-p)*(f.a||0.8); ctx.strokeStyle=f.col; ctx.lineWidth=f.w||3;
       ctx.beginPath(); ctx.arc((f.x-camX+0.5)*TS,(f.y-camY+0.5)*TS, TS*f.r*p, 0, 7); ctx.stroke(); ctx.restore();
     }
   }
@@ -176,7 +176,7 @@ function drawFX(){
 function hitSfxFor(type){
   return {phys:'arrow-hit', fire:'fire-hit', ice:'ice-hit', lightning:'lightning-hit', poison:'earth-hit', earth:'earth-hit', light:'light-hit', dark:'shadow-hit', magic:'magic-missile-hit'}[type] || 'hit-flesh';
 }
-function ringFx(x,y,col,r){ fx.push({k:'ring', x:x, y:y, col:col||'#FFF', r:r||2, t0:performance.now(), dur:450}); }
+function ringFx(x,y,col,r,o){ fx.push({k:'ring', x:x, y:y, col:col||'#FFF', r:r||2, t0:performance.now(), dur:(o&&o.dur)||450, a:o&&o.a, w:o&&o.w}); }
 
 /* keep frames coming while particles live */
 function fxTick(t){

@@ -7,9 +7,12 @@
    ===================================================================== */
 
 /* the sweep: a ring at the search radius, dust at the player's feet, and glints walking outward */
-function searchSweepFx(){
+function searchSweepFx(quiet){
   if(typeof ANIM!=='undefined' && ANIM.reduce) return;
   var x=player.x, y=player.y;
+  /* the d-pad's wait searches too (touchui.js, quiet), so every waited turn would flash the full sweep:
+     that one gets a single faint ring and nothing else (2026-09-18) */
+  if(quiet){ if(typeof ringFx==='function') ringFx(x, y, '#E8D9A8', 2.4, {a:0.22, w:1.5, dur:600}); return; }
   if(typeof ringFx==='function') ringFx(x, y, '#E8D9A8', 2.6);
   if(typeof burst==='function') burst(x, y, 'magic', 8, 0.02);
   /* a glint on each ring of tiles, the near ones first, so the sweep reads as moving outward */
@@ -38,7 +41,7 @@ if(typeof searchAround==='function'){
     var secretsBefore = 0, i;
     if(typeof map!=='undefined') for(i=0;i<map.length;i++) if(map[i]===SECRET) secretsBefore++;
 
-    if(!resting) searchSweepFx();   /* no new sound: there is no search sample, and the finds have their own */
+    if(!resting) searchSweepFx(quiet);   /* no new sound: there is no search sample, and the finds have their own */
 
     var r = _searchAroundFx(resting, quiet);
 
