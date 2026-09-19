@@ -23,13 +23,31 @@ function vegSway(x, y, now, bend){
   return (Math.sin(t*0.9 + x*0.45 + y*0.2)*0.5 + Math.sin(t*2.3 + x*1.3 + y*0.7)*0.18)*0.16 + (bend||0);
 }
 /* draw a plant: its bottom centre at (cx, base), sheared by `shear` (top moves shear*height sideways) */
+/* 2026-09-19: Justin - the pack's greens were jarringly bright on the grey stone. Each plant is baked once into a
+   darker, less saturated copy (a canvas filter per draw is slow, and older iPads lack ctx.filter), and grass is
+   drawn part-transparent so the floor shows through it. VEG_DIM per set: how far toward the set's shadow colour. */
+var VEG_DIM = {dungeon:[0.38,'#2A2E1C'], caverns:[0.25,'#14222A'], earth:[0.2,'#23261A']}, VEG_GRASS_A = 0.78, VEG_BAKE = {};
+function vegBaked(o){
+  var set=vegSet(), d=VEG_DIM[set]; if(!d) return null;
+  var k=set+':'+o.sx+','+o.sy+','+o.sw+','+o.sh+':'+(o.img.src||'').slice(-24);
+  if(VEG_BAKE[k]!==undefined) return VEG_BAKE[k];
+  if(!o.img.complete || !o.img.naturalWidth) return null;
+  var c=document.createElement('canvas'); c.width=o.sw; c.height=o.sh; var g=c.getContext('2d');
+  g.drawImage(o.img, o.sx, o.sy, o.sw, o.sh, 0, 0, o.sw, o.sh);
+  /* pull the colours toward grey first (a desaturating grey wash), then darken toward the set's shadow */
+  g.globalCompositeOperation='source-atop';
+  g.globalAlpha=0.22; g.fillStyle='#6E6A60'; g.fillRect(0,0,o.sw,o.sh);
+  g.globalAlpha=d[0]; g.fillStyle=d[1]; g.fillRect(0,0,o.sw,o.sh);
+  return (VEG_BAKE[k]=c);
+}
 function vegDraw(o, cx, base, scale, shear, alpha, flip){
   if(!o) return;
-  var s=TS/64*scale, w=o.sw*s, h=o.sh*s;
+  var s=TS/64*scale, w=o.sw*s, h=o.sh*s, b=vegBaked(o);
   ctx.save(); ctx.globalAlpha=alpha; ctx.imageSmoothingEnabled=false;
   ctx.translate(cx, base); ctx.transform(1, 0, -shear, 1, 0, 0);
   if(flip) ctx.scale(-1,1);
-  ctx.drawImage(o.img, o.sx, o.sy, o.sw, o.sh, -w/2, -h, w, h);
+  if(b) ctx.drawImage(b, 0, 0, o.sw, o.sh, -w/2, -h, w, h);
+  else ctx.drawImage(o.img, o.sx, o.sy, o.sw, o.sh, -w/2, -h, w, h);
   ctx.restore();
 }
 function vegBody(x, y){
@@ -43,6 +61,7 @@ function vegBend(x, y){ var b=vegBody(x,y); if(!b) return 0; var rp=renderPos(b)
 var _drawGrassTileVeg = drawGrassTile;
 drawGrassTile = function(x, y, px, py, alpha, layer, now){
   var set=vegSet(); if(!set) return _drawGrassTileVeg.apply(this, arguments);
+  alpha*=VEG_GRASS_A;
   now=now||performance.now();
   var bend=vegBend(x,y), sw=vegSway(x,y,now,bend), flip=hash2(x,y,51)<0.5;
   if(layer==='front'){
@@ -59,7 +78,7 @@ var _drawGroundDecalVeg = drawGroundDecal;
 drawGroundDecal = function(gv, x, y, px, py, alpha, now){
   var set=vegSet();
   if(gv===G_SHORT && set){
-    now=now||performance.now();
+    now=now||performance.now(); alpha*=VEG_GRASS_A;
     var sw=vegSway(x,y,now,vegBend(x,y))*0.8;
     vegDraw(vegPick(set,'grass-front',3,x,y,66), px+TS*(0.05+0.9*hash2(x,y,67)), py+TS*(0.4+0.2*hash2(x,y,68)), 0.85, sw, alpha*0.9, hash2(x,y,69)<0.5);
     vegDraw(vegPick(set,'grass-front',3,x,y,61), px+TS*(0.1+0.8*hash2(x,y,62)), py+TS*(0.72+0.2*hash2(x,y,63)), 1.1, sw, alpha, hash2(x,y,64)<0.5);

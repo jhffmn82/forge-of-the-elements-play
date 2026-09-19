@@ -646,12 +646,12 @@ function buildSpecial(kind, r){
     place(e,['weapon-rack','weapon-rack','banner-stand'],3);
     put(randomGear()); put(randomGear());
   } else if(kind==='nest'){
-    place(inner,['bones','bed-straw','bones'],3);
+    place(inner,['bones','bones'],2);   /* 2026-09-19: the straw bedding looked bad - gone */
     put({kind:'essence',n:ri(10,20)});
     r.nest=true;
   } else if(kind==='prison'){
     place(e,['cage','cage','chains'],3);
-    place(inner,['bed-straw','bones','chains'],3);
+    place(inner,['bones','chains'],2);
     var cages=props.filter(function(p){ return p.name==='cage' && roomAt(p.x,p.y)===r; });
     if(cages.length) cages[0].prisoner=pick(['goblin','archer']);
   } else if(kind==='zoo'){
@@ -677,7 +677,7 @@ function buildSpecial(kind, r){
     put(randomGear()); put({kind:'essence',n:ri(20,35)});
     place(e,['torch-stand','torch-stand'],2);
   } else if(kind==='barracks'){
-    place(e,['bed-straw','bed-straw','weapon-rack','table-candle'],4);
+    place(e,['weapon-rack','table-candle','crate','barrel'],4);
     r.barracks=true;
   } else if(kind==='traps'){
     r.trapRoom=true;
