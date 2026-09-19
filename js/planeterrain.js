@@ -195,7 +195,7 @@ function ptCellRaster(x, y){
       var jd=sl.d2-sl.d1;
       if(jd<0.035 && hash2(sl.ix*7+sl.iy, sl.iy*3-sl.ix, salt+35)<0.5) col=ptMix(col, M.jointCol, M.joint*(1-jd/0.035));
       /* broad regions: cool lavender mineral, pearlescent sheen, exposed mineral bands */
-      var cool=ptVal(wx*0.11, wy*0.11, salt+36), ca0=floorMeta.centerAt, ringNear=ca0 ? Math.max(0, 1-Math.abs(Math.hypot(wx-(ca0.x+1), wy-(ca0.y+1))-4.2)/2.6) : 0;
+      var cool=ptVal(wx*0.11, wy*0.11, salt+36), ca0=floorMeta.centerAt, ringNear=ca0 ? Math.max(0, 1-Math.abs(Math.hypot(wx-(ca0.x+1), wy-(ca0.y+1.5))-4.2)/2.6) : 0;
       var coolT=Math.max((cool-0.52)*2.4, ringNear*(ptVal(wx*0.3, wy*0.3, salt+46)-0.35)*1.2);
       if(coolT>0) col=ptMix(col, M.mineralCool, Math.min(0.45, coolT));
       var pearl=ptVal(wx*0.19+7, wy*0.19, salt+37); if(pearl>0.66) col=ptMix(col, M.pearl, Math.min(0.5, (pearl-0.66)*3));
@@ -216,7 +216,8 @@ function ptCellRaster(x, y){
       /* around the sun dais: a broken circular inlay, gold fragments, radial veins fading outward */
       var ca=floorMeta.centerAt;
       if(ca){
-        var ddx=wx-(ca.x+1), ddy=(wy-(ca.y+1.1))/0.85, rr2=Math.sqrt(ddx*ddx+ddy*ddy), an=Math.atan2(ddy,ddx);
+        var ddx=wx-(ca.x+1), ddy=(wy-(ca.y+1.5))/0.85,   /* 2026-09-19: centred on the drum's base, not its 2x2 block (the art sits low) */
+         rr2=Math.sqrt(ddx*ddx+ddy*ddy), an=Math.atan2(ddy,ddx);
         if(rr2<1.5) col=ptMix(col, M.polish, 0.7);
         else if(rr2<2.6){
           var segs=16, sgf=((an+Math.PI)/(Math.PI*2))*segs, sg=Math.floor(sgf), ring=rr2<2.05 ? 0 : 1;
@@ -264,7 +265,7 @@ function ptCellRaster(x, y){
         else if(pf<0.42) col=ptMix(M.poolShallow, M.poolEdge, (pf-0.3)/0.12);                                 /* pale turquoise shallows */
         else col=ptMix(M.poolEdge, M.pool, Math.max(0,deep));
         var caus=Math.sin(wx*9.1+Math.sin(wy*7.3)*1.4)+Math.sin(wy*8.3+Math.sin(wx*6.1)*1.2);
-        if(pf>0.45 && caus>1.6 && hash2(Math.floor(wx*R/2), Math.floor(wy*R/2), salt+72)<0.5) col=ptMix(col, M.poolRim, 0.5);
+        if(pf>0.45 && caus>1.6 && floorMeta.plane!=='shadow' && hash2(Math.floor(wx*R/2), Math.floor(wy*R/2), salt+72)<0.5) col=ptMix(col, M.poolRim, 0.5);
         if(pf<0.325 && ptVal(wx*3.4, wy*3.4, salt+74)>0.62 && hash2(Math.floor(wx*R), Math.floor(wy*R), salt+73)<0.5) col=ptMix(col, M.poolRim, 0.7);   /* intermittent waterline highlights */
       } else if(pf>0.18){
         var sh2=ptVal(wx*2.4, wy*2.4, salt+71);
@@ -1005,3 +1006,28 @@ drawGrassTile = function(x, y, px, py, alpha, layer, now){
   if(layer==='front') return;                                  /* blades never cover a creature */
   ctx.globalAlpha=alpha; ptGrassBlades(x, y, now||performance.now()); ctx.globalAlpha=1;
 };
+
+/* ---------------------------------------------------------------- the Shadow pool bubbles (2026-09-19)
+   Justin: the still violet pool read as splotches; it should move, like the Crypt's ooze. Its caustic specks are gone
+   from the ground and violet bubbles swell and pop across it instead, each on its own clock, with a slow sheen. */
+function ptPoolBubbles(){
+  var P=floorMeta && floorMeta.plane==='shadow' && floorMeta.ptPool; if(!P) return;
+  var t=(typeof ANIM!=='undefined' && ANIM.reduce) ? 0 : performance.now()/1000;
+  for(var y=camY-1; y<=camY+viewH+1; y++) for(var x=camX-1; x<=camX+viewW+1; x++){
+    if(!inb(x,y)) continue; var i=idxOf(x,y); if(!P[i] || !(revealAll||vis[i])) continue;
+    var sh=(t*0.1 + hash2(x,y,141))%1;
+    if(sh<0.7){ ctx.globalAlpha=0.12*Math.sin(sh/0.7*Math.PI); ctx.fillStyle='#D8C4FF'; ctx.beginPath(); ctx.ellipse((x-camX+sh*1.2)*TS, (y-camY+0.35+0.3*hash2(x,y,143))*TS, TS*0.24, TS*0.05, -0.25, 0, 7); ctx.fill(); }
+    var nb = hash2(x,y,149)<0.45 ? 1 : 2;
+    for(var b=0;b<nb;b++){
+      var ph=(t*0.45 + hash2(x,y,131+b)*7)%1, bx=(x-camX+0.2+0.6*hash2(x,y,111+b))*TS, by=(y-camY+0.2+0.6*hash2(x,y,121+b))*TS, r=TS*0.075*Math.sin(ph*Math.PI);
+      if(r<0.8) continue;
+      ctx.globalAlpha=1;
+      ctx.fillStyle='rgba(110,70,190,0.55)'; ctx.beginPath(); ctx.arc(bx,by,r,0,7); ctx.fill();
+      ctx.strokeStyle='rgba(200,170,255,0.85)'; ctx.lineWidth=1; ctx.beginPath(); ctx.arc(bx,by,r,0,7); ctx.stroke();
+      ctx.fillStyle='rgba(240,228,255,0.95)'; ctx.fillRect(bx-r*0.45, by-r*0.55, Math.max(1,r*0.4), Math.max(1,r*0.4));
+    }
+  }
+  ctx.globalAlpha=1;
+}
+var _drawSurfaceDecoPool = drawSurfaceDeco;
+drawSurfaceDeco = function(){ var r=_drawSurfaceDecoPool.apply(this, arguments); ptPoolBubbles(); return r; };
