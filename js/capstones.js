@@ -79,7 +79,7 @@ upgradeCost = function(it){
   if(!it) return null;
   var mw = capstone('anvil');
   if(mw && !it.cursed && (it.plus||0)===3){
-    return Math.round((it.kind==='ring' ? RING_RANK_COST : 3000*tierCostMult(it)) * 0.7 * (player.race==='dwarf' ? 0.75 : 1));
+    return Math.round((it.kind==='ring' ? RING_RANK_COST[RING_RANK_COST.length-1] : 3000*tierCostMult(it)) * 0.7 * (player.race==='dwarf' ? 0.75 : 1));
   }
   var c=_upgradeCostCap(it);
   return c===null ? null : Math.round(c * (mw ? 0.7 : 1));

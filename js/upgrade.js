@@ -3,7 +3,7 @@
    - Essence found is worth more in deeper biomes (x1, x2.5, x4.5, x6, x8),
      so one +1 is reachable by the end of biome 1 and full +3 gear by the end.
    - The Forge's Upgrade tab raises weapons, armor, off-hands and rings, to +3.
-     Rings cost as much as the last step of an item at every rank. Dwarves pay 25% less.
+     Rings cost 500 / 1000 / 2000 for +1 / +2 / +3. Dwarves pay 25% less.
    - Upgrading a cursed item breaks the curse (rings go to +0).
    - Rings: +0 gives the base effect, each rank adds a step; cursed rings are -1..-3.
    - Amulets are not bought up: they level with use (hidden count) - 10 uses to
@@ -12,7 +12,7 @@
    ===================================================================== */
 
 var UPGRADE_COST = [150, 400, 900];     /* to +1, +2, +3 (2026-09-17: was 600/1200/2000; a full biome 1 gave ~700) */
-var RING_RANK_COST = 500;
+var RING_RANK_COST = [500, 1000, 2000];   /* to +1, +2, +3 (2026-09-18, Justin: was a flat 500 a rank) */
 var ESSENCE_BIOME_MULT = [1, 2.5, 4.5, 6, 8];
 function essenceMult(){ return ESSENCE_BIOME_MULT[Math.min(ESSENCE_BIOME_MULT.length-1, Math.floor((floorNo-1)/5))]; }
 
@@ -110,7 +110,7 @@ function upgradeCost(it){
   var plus=it.plus||0;
   if(it.cursed) plus=-1;
   if(plus>=3) return null;
-  var base = it.kind==='ring' ? RING_RANK_COST : UPGRADE_COST[Math.max(0,plus)] * tierCostMult(it);
+  var base = it.kind==='ring' ? RING_RANK_COST[Math.max(0,plus)] : UPGRADE_COST[Math.max(0,plus)] * tierCostMult(it);
   return Math.round(base * (player.race==='dwarf' ? 0.75 : 1));
 }
 /* 2026-09-17: an unidentified piece cannot be upgraded - you would be paying essence for a bonus you
@@ -140,7 +140,7 @@ function upgradeItem(it){
 function upgradePanelHTML(){
   var list=allUpgradeTargets();
   var h='<p class="c-info">Spend essence to strengthen gear, up to +3. Worn or carried, it all counts. '+
-        'Rings cost '+RING_RANK_COST+' a rank. Fine gear costs 1.5x, Masterwork 2x. Upgrading a cursed item breaks the curse. Deeper biomes yield more essence.'+
+        'Rings cost '+RING_RANK_COST.join(' / ')+' to reach +1 / +2 / +3. Fine gear costs 1.5x, Masterwork 2x. Upgrading a cursed item breaks the curse. Deeper biomes yield more essence.'+
         (player.race==='dwarf'?' <b>Dwarven smithing: 25% cheaper.</b>':'')+'</p>';
   if(!list.length) return h+'<p class="c-info">Nothing to upgrade.</p>';
   list.forEach(function(o, i){
