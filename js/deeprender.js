@@ -550,7 +550,9 @@ mossRaster = function(x, y){ if(inDeep()) return null; return _mossRasterDeep.ap
    Justin: "it's just so dark, i can't make out the walls in the lava biome, needs lava to give off some dull red
    light". The lightmap's ambient is per biome; here it is per region, so the volcanic rock sits in a dull red glow
    from the lava under it, the temple in a cold near-black, the spider caves a shade above that. */
-var DEEP_AMB = [[0.24,0.20,0.23], [0.22,0.21,0.27], [0.38,0.235,0.19]];
+/* 2026-09-19: Justin - "the level needs a tiny bit of ambient red glow... spider area needs ambient purple glow".
+   The open cave carries its region's colour; the rock still takes the falloff below, so walls stay dark. */
+var DEEP_AMB = [[0.25,0.20,0.23], [0.27,0.20,0.36], [0.46,0.235,0.175]];
 var DEEP_AMB_MAP = {key:null, v:null};
 function deepAmbBuild(){
   var key=floorNo+':'+(floorMeta.seed||0)+':'+MW+'x'+MH;
