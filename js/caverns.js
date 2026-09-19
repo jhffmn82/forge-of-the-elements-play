@@ -65,7 +65,9 @@ addProp = function(x, y, name, extra){
    The three biome-1 creatures game.js had placed in the Caverns too (rat, bat, rock slime) are tagged again, so
    floors 11-14 are populated before the Caverns bestiary lands. (rosterFor itself throws on a monster without a
    biome list, so the same rule is written out here.) */
-(function(){ ['rat','bat','slime'].forEach(function(k){ if(MONSTERS[k] && !MONSTERS[k].biome) MONSTERS[k].biome=[0,2]; }); })();
+/* 2026-09-19 (merge): the Caverns have their own bat and slime now (js/cavernmobs.js), and Dungeon rats in packs
+   swamped floors 11-13, so the biome-1 three stay in biome 1. */
+(function(){ ['rat','bat','slime'].forEach(function(k){ if(MONSTERS[k] && !MONSTERS[k].biome) MONSTERS[k].biome=[0]; }); })();
 function caveRoster(){
   var bi=bidx(), bf=bfloor(), out=[];
   for(var k in MONSTERS){

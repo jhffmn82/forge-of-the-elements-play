@@ -33,6 +33,7 @@ function inCaverns(){ return typeof bidx==='function' && bidx()===2 && !(floorMe
   /* the Dungeon's bat and slime, in their Caverns bands (their own entries stay on floors 1-5) */
   M.cavebat       = Object.assign({}, M.bat, {band:[11,12], w:8});
   M.caveslime     = Object.assign({}, M.slime, {band:[11,15], w:10});
+  delete M.cavebat.biome; delete M.caveslime.biome;   /* absolute floor bands like the rest of this table (the Dungeon originals are tagged biome 1) */
   /* The Deep Maw: tuned by hand for floor 15, so no floor curve (fixed, like the plane elites) */
   M.deepmaw       = {name:'The Deep Maw', sprite:'m-deep-maw', col:'#B07A4A', ch:'W', hp:240, dmg:[10,15], acc:70, eva:0, armor:4, speed:100, range:1, xp:600,
                      band:[15,15], w:0, boss:true, elite:true, big:2, fixed:true, living:true, art:2.0, artLeft:true, sfx:'brute'};
@@ -52,8 +53,8 @@ function inCaverns(){ return typeof bidx==='function' && bidx()===2 && !(floorMe
 
 /* special rooms and fallbacks ask for Dungeon kinds by name; in the Caverns they get Caverns ones */
 var CAVE_SWAP = {bat:'sparkjelly', goblin:'stormbeetle', archer:'sparkjelly', brute:'stormbeetle', shaman:'myconid'};
-var _spawnCave = spawn;
-spawn = function(kind, x, y){ if(CAVE_SWAP[kind] && inCaverns()) kind=CAVE_SWAP[kind]; return _spawnCave(kind, x, y); };
+var _spawnCaveMobs = spawn;
+spawn = function(kind, x, y){ if(CAVE_SWAP[kind] && inCaverns()) kind=CAVE_SWAP[kind]; return _spawnCaveMobs(kind, x, y); };
 
 /* ---------------------------------------------------------------- helpers */
 function caveVis(x,y){ return !!(revealAll || (vis && vis[idxOf(x,y)])); }
@@ -285,8 +286,8 @@ function eelPlacement(){
     e.state = rng()<0.5 ? 'asleep' : 'wander'; e.t=player ? player.t : 0; placed++;
   });
 }
-var _generateCave = generate;
-generate = function(seed){ var r=_generateCave.apply(this, arguments); try{ eelPlacement(); }catch(err){ } return r; };
+var _generateCaveMobs = generate;
+generate = function(seed){ var r=_generateCaveMobs.apply(this, arguments); try{ eelPlacement(); }catch(err){ } return r; };
 var _endTurnCaveEels = endTurn;
 endTurn = function(){ _endTurnCaveEels(); try{ eelPlacement(); }catch(err){ } };
 
@@ -403,7 +404,7 @@ function mawErupt(M){
   if(ents.indexOf(e)<0) ents.push(e);
   M.limbs=[];
   [[1,0],[0,1],[1,1]].forEach(function(o){
-    var l=_spawnCave('mawlimb', s.x+o[0], s.y+o[1]); l.parent=e; l.name=e.name; l.noXp=true; l.state='hunt'; l.t=player.t; M.limbs.push(l);
+    var l=_spawnCaveMobs('mawlimb', s.x+o[0], s.y+o[1]); l.parent=e; l.name=e.name; l.noXp=true; l.state='hunt'; l.t=player.t; M.limbs.push(l);
   });
   /* anything standing where the body comes up is thrown clear */
   ents.slice().forEach(function(t){
@@ -455,7 +456,7 @@ function mawAct(e){
   if(tgt){ setClip(e,'attack'); attack(e, tgt); }
   e.t+=actCost(e);
 }
-var _killCave = kill;
+var _killCaveMobs = kill;
 kill = function(e, by){
   if(e && e.kind==='deepmaw'){
     var M=floorMeta && floorMeta.maw;
@@ -464,11 +465,11 @@ kill = function(e, by){
     if(ents.indexOf(e)<0) ents.push(e);                                          /* the base kill() only removes what is in the world */
     ents=ents.filter(function(o){ return o.parent!==e; });
     SHAKE=12; burst(e.x+1, e.y+1, 'earth', 60, 0.1);
-    var r=_killCave(e, by);
+    var r=_killCaveMobs(e, by);
     log('<b>The Deep Maw</b> shudders, groans, and goes still. The Caverns fall quiet.','c-kill');
     if(typeof caveBossDown==='function') caveBossDown();
     return r;
   }
   if(e && e.kind==='shockeel' || e && e.kind==='sparkjelly'){ if(floorMeta && floorMeta.marks) floorMeta.marks=floorMeta.marks.filter(function(k){ return k.kind!=='eel'+e.id; }); }
-  return _killCave(e, by);
+  return _killCaveMobs(e, by);
 };
