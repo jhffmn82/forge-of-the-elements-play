@@ -56,6 +56,10 @@ var BIOME_NAMES = ['Dungeon', 'Crypt', 'Caverns', 'Temple', 'Realm of Chaos'];
 function bidx(n){ return Math.floor(((n||floorNo)-1)/5); }
 function bfloor(n){ return ((n||floorNo)-1)%5+1; }
 function biomeName(n){ return BIOME_NAMES[Math.min(BIOME_NAMES.length-1, bidx(n))]; }
+/* which elemental planes each biome's portal may open onto, by biome index (DESIGN.md section 17). A biome
+   that is not listed here never rolls a portal. The two branches are deliberately disjoint: one run can reach
+   at most one plane from each. */
+var BIOME_PLANES = {1:['light','shadow','earth'], 3:['fire','water','air']};
 /* each biome's Forge, shrine, portal and mote floors, rolled once per run (biome 1 keeps its original fields) */
 function biomePlan(b){
   if(b===undefined) b=bidx();
@@ -69,21 +73,17 @@ function biomePlan(b){
   var els=ELEMENTS.slice(); for(var i=els.length-1;i>0;i--){ var j=Math.floor(r()*(i+1)); var t=els[i]; els[i]=els[j]; els[j]=t; }
   var motes={}; motes[base+1]=[els[0]]; motes[base+2]=[els[1],els[2]]; motes[base+3]=[els[3]]; motes[base+4]=[els[4],els[5]]; motes[base+5]=[];
   var planeEl=null;
-  if(b===1 || b===3){
+  if(BIOME_PLANES[b]){
     do { portal=base+1+Math.floor(r()*4); } while(portal===forge);
-    /* 2026-09-18: biome 3 used to draw from a hardcoded ['fire','air','water']. None of those three are
-       built - PLANE_ROSTER and the terrain tables define light, shadow and earth only - so its portal
-       pointed at a plane that threw on an undefined roster the moment you stepped through. The pool is read
-       from PLANE_ROSTER now, so a plane becomes reachable the moment it has a roster and not before, and
-       the later portal avoids whatever the first one offered. */
-    var built = (typeof PLANE_ROSTER!=='undefined') ? Object.keys(PLANE_ROSTER) : ['light','shadow','earth'];
-    var pool = built;
-    if(b===3){
-      var first = (RUN.biomes && RUN.biomes[1]) ? RUN.biomes[1].plane : null;
-      if(first && built.length>1) pool = built.filter(function(e){ return e!==first; });
-    }
+    /* 2026-09-19: the two branches are now written down rather than inferred. The pool used to be every plane
+       with a roster minus whatever the Crypt had offered, which was the only way to keep them apart while only
+       three planes existed; with all six built that would let the Crypt send you to Fire and the Underdark to
+       Light. DESIGN.md: the Crypt (biome 1) offers Light, Shadow or Earth; biome 4 offers Fire, Air or Water.
+       A plane only enters the pool once it has a roster, so a half-built one is skipped rather than opened
+       onto an undefined roster, and an empty pool means no portal rather than a broken one. */
+    var pool = BIOME_PLANES[b].filter(function(e){ return typeof PLANE_ROSTER!=='undefined' && !!PLANE_ROSTER[e]; });
     planeEl = pool.length ? pool[Math.floor(r()*pool.length)] : null;
-    if(!planeEl) portal = null;                       /* nothing built: no portal rather than a broken one */
+    if(!planeEl) portal = null;
   }
   RUN.biomes[b] = {forge:forge, shrine:b<=3 ? shrine : null, motes:motes, portal:portal, plane:planeEl, god:godDeal()[b]};
   return RUN.biomes[b];

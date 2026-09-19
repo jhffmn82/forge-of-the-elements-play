@@ -26,7 +26,10 @@ function mapviewGo(reroll){
   if(/^plane:/.test(v)){
     var el=v.slice(6);
     if(typeof buildPlaneFloor!=='function' || typeof PLANE_ROSTER==='undefined' || !PLANE_ROSTER[el]){ log('That plane is not built yet.','c-info'); return; }
-    floorNo=Math.max(6, Math.min(10, floorNo));   /* planes hang off the Crypt */
+    /* 2026-09-19: a plane hangs off the biome whose portal opens it, and its creatures and hazards read the
+       floor number, so Fire/Water/Air have to be looked at from the Underdark's depth, not the Crypt's. */
+    var host=(typeof BIOME_PLANES!=='undefined' && BIOME_PLANES[3] && BIOME_PLANES[3].indexOf(el)>=0) ? [16,20] : [6,10];
+    floorNo=Math.max(host[0], Math.min(host[1], floorNo));
     buildPlaneFloor(el, seed);
   } else {
     floorNo=parseInt(v,10)||1; worldSeed=seed; generate(worldSeed);
@@ -43,7 +46,7 @@ function mapviewGo(reroll){
     var rv=$('bReveal'); if(!rv || $('bMapMode')) return !!rv;
     var field=rv.closest('.field');
     var opts=''; for(var f=1; f<=(typeof LAST_FLOOR!=='undefined'?LAST_FLOOR:10); f++){ var b=Math.floor((f-1)/5); opts+='<option value="'+f+'">Floor '+f+' &middot; '+(BIOME_NAMES[b]||'')+'</option>'; }
-    ['light','shadow','earth'].forEach(function(el){ opts+='<option value="plane:'+el+'">Plane of '+el.charAt(0).toUpperCase()+el.slice(1)+'</option>'; });
+    ['light','shadow','earth','fire','water','air'].forEach(function(el){ opts+='<option value="plane:'+el+'">Plane of '+el.charAt(0).toUpperCase()+el.slice(1)+'</option>'; });
     field.insertAdjacentHTML('afterend', '<div class="field"><label>Map mode</label><button id="bMapMode">Map mode: off</button></div>'+
       '<div class="field"><label for="mvDepth">Depth</label><select id="mvDepth">'+opts+'</select> <button id="bMvGo">Go</button> <button id="bMvReroll">Reroll</button></div>');
     $('bMapMode').onclick=function(){ mapviewSetOn(!MAPVIEW.on); };

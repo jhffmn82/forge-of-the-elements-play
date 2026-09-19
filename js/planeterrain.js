@@ -53,6 +53,47 @@ var PT_MAT = {
     crystal:['#E8F2C8','#C6DC94','#94AE62','#6E8C46'], crystalGold:'#8CA84E', crystalLight:'#D8F0A0', fill:'#D8C79A',
     moss:[[70,104,44],[92,126,54],[54,84,38],[112,142,68]],
     rockHi:'#C8B48C', rockMid:'#A8926A', rockLo:'#7A6648', rockEdge:'#3A3022', motif:'leaf'
+  },
+  /* 2026-09-19: the Underdark's side branch - Fire, Water and Air (js/planesfwa.js). Same fields as the three
+     above; only the palette changes, so the whole terrain renderer comes across unaltered.
+     Fire is the only one with `jag` (the Caverns' broken rock edges): basalt fractures, it does not wobble. */
+  fire: {
+    /* black basalt, ash-grey dust, lava in every seam; the "pool" colours are a lava pool, not water */
+    floor:[62,54,54], floorLav:[52,45,46], jointCol:[28,24,26], joint:0.52, grain:0.03, occ:[26,21,22],
+    mineralCool:[78,68,64], pearl:[120,108,100], band:[86,74,68],
+    top:[58,50,51], topHi:[110,97,90], topLo:[33,28,30], topLav:[70,56,52], edge:[14,12,14],
+    face:[52,44,45], faceLo:[26,22,24], faceH:0.8, lip:[126,110,100],
+    void:[6,3,3], voidEdge:[30,15,10],
+    vein:[255,118,38], veinHot:[255,234,166], veinDark:[112,34,14], inlay:[92,82,78], inlayJoint:[42,36,34], polish:[98,86,80],
+    pool:[198,48,10], poolEdge:[255,138,38], poolRim:[255,240,184], poolShelf:[72,58,52], poolShallow:[255,188,78], poolShelfDry:[88,76,70], poolWet:[40,34,34], poolLight:'#FF8A3A',
+    crystal:['#FFE2A8','#FFA24A','#D8541E','#7A2A12'], crystalGold:'#FF8A3A', crystalLight:'#FFB066', fill:'#FF9A50',
+    rockHi:'#6E625E', rockMid:'#4A4244', rockLo:'#2C2628', rockEdge:'#100C10', motif:'sun', jag:0.8
+  },
+  water: {
+    /* wet blue-grey stone, foam-white waterlines, deep blue pools and bioluminescent cyan in the veins;
+       `moss` is the coral that creeps out of the water (seeded on G_MOSS by planesfwa.js) */
+    floor:[98,118,134], floorLav:[87,107,127], jointCol:[52,68,84], joint:0.46, grain:0.02, occ:[48,64,80],
+    mineralCool:[112,136,152], pearl:[166,192,202], band:[106,128,146],
+    top:[86,106,124], topHi:[136,160,176], topLo:[54,70,88], topLav:[94,110,136], edge:[20,30,44],
+    face:[76,96,114], faceLo:[40,54,70], faceH:0.8, lip:[170,198,210],
+    void:[3,7,14], voidEdge:[16,30,48],
+    vein:[80,226,218], veinHot:[226,255,252], veinDark:[20,92,104], inlay:[150,176,186], inlayJoint:[70,88,102], polish:[162,188,198],
+    pool:[16,52,110], poolEdge:[40,120,180], poolShallow:[92,186,210], poolRim:[236,252,255], poolShelf:[88,106,122], poolShelfDry:[106,124,138], poolWet:[64,82,98], poolLight:'#7CC8FF',
+    crystal:['#EAFFFF','#A8F0EC','#5CC8D8','#2E86A8'], crystalGold:'#39D8C8', crystalLight:'#9FF0E8', fill:'#7CC8FF',
+    moss:[[150,86,96],[178,112,118],[108,58,72],[214,150,150]],       /* coral, kept muted: it encrusts the stone, it does not shout */
+    rockHi:'#A8BECC', rockMid:'#7A94A8', rockLo:'#4E667C', rockEdge:'#1C2A3A', motif:'moon'
+  },
+  air: {
+    /* pale cloud-stone, silver joints, gold veins and sky-blue water: the brightest of the six on purpose */
+    floor:[206,215,229], floorLav:[190,202,224], jointCol:[158,170,190], joint:0.36, grain:0.014, occ:[150,164,188],
+    mineralCool:[180,196,224], pearl:[238,242,251], band:[196,208,228],
+    top:[198,208,224], topHi:[238,244,252], topLo:[156,170,194], topLav:[184,198,226], edge:[104,120,148],
+    face:[182,194,214], faceLo:[132,148,174], faceH:0.7, lip:[246,249,254],
+    void:[10,14,24], voidEdge:[46,58,82],
+    vein:[226,190,96], veinHot:[255,246,206], veinDark:[150,124,60], inlay:[236,240,248], inlayJoint:[190,200,216], polish:[246,249,255],
+    pool:[96,172,232], poolEdge:[150,206,246], poolShallow:[192,228,250], poolRim:[255,255,255], poolShelf:[198,210,228], poolShelfDry:[220,228,240], poolWet:[190,202,220], poolLight:'#BFE4FF',
+    crystal:['#FFFFFF','#E6F2FF','#B8CCE8','#8FC8F0'], crystalGold:'#E2BE60', crystalLight:'#E8F4FF', fill:'#E8F4FF',
+    rockHi:'#F2F6FC', rockMid:'#D2DCEA', rockLo:'#A6B4CA', rockEdge:'#6E7E98', motif:'sun'
   }
 };
 function ptMat(){ return floorMeta && floorMeta.plane && PT_MAT[floorMeta.plane] || null; }
@@ -672,7 +713,9 @@ function ptPlanFeatures(rr){
 /* the crystal art: drawn once per piece into a cached canvas, taller than its cells (it rises in front of the wall) */
 var PT_PIECES = {};
 function ptPieceCanvas(p){
-  var key=p.name+':'+p.seed+':'+(p.size||1)+':'+p.w+'x'+p.h+':'+(p.wallDir?p.wallDir.join(''):'');
+  /* 2026-09-19: the plane goes in the key. Without it the first plane visited in a session painted every later
+     one's crystals - the shards are drawn from ptMat().crystal, and a cached canvas kept the old palette. */
+  var key=(floorMeta&&floorMeta.plane||'-')+':'+p.name+':'+p.seed+':'+(p.size||1)+':'+p.w+'x'+p.h+':'+(p.wallDir?p.wallDir.join(''):'');
   if(PT_PIECES[key]) return PT_PIECES[key];
   var M=ptMat()||PT_MAT.light, W=p.w*PT_R, H=(p.h+1.4)*PT_R, c=document.createElement('canvas'); c.width=W; c.height=H;
   var g=c.getContext('2d'), rnd=mulberry32(p.seed||1), base=H-4;
@@ -1020,7 +1063,12 @@ function ptPoolFx(){
 var PT_POOL_FX = {
   shadow: ['rgba(110,70,190,0.55)','rgba(200,170,255,0.85)','rgba(240,228,255,0.95)','#D8C4FF', null],
   earth:  ['rgba(70,120,70,0.55)','rgba(170,220,150,0.8)','rgba(230,250,215,0.9)','#CDEBB8','rgba(190,230,170,0.35)'],
-  cavern: ['rgba(40,130,150,0.5)','rgba(150,235,230,0.8)','rgba(225,255,252,0.9)','#9FE8E0','rgba(160,240,230,0.3)']
+  cavern: ['rgba(40,130,150,0.5)','rgba(150,235,230,0.8)','rgba(225,255,252,0.9)','#9FE8E0','rgba(160,240,230,0.3)'],
+  /* 2026-09-19: the new three. Fire's "bubbles" are slag popping on a lava pool, Water's are real bubbles
+     breaking on the surface, Air's are the faint pale rings a downdraft puts on still water. */
+  fire:   ['rgba(255,110,30,0.6)','rgba(255,204,112,0.9)','rgba(255,248,220,0.95)','#FFB066','rgba(255,160,60,0.35)'],
+  water:  ['rgba(90,190,220,0.5)','rgba(204,246,255,0.85)','rgba(255,255,255,0.95)','#BFEFFF','rgba(190,240,255,0.4)'],
+  air:    ['rgba(150,200,240,0.45)','rgba(222,240,255,0.8)','rgba(255,255,255,0.9)','#E2F0FF','rgba(222,240,255,0.35)']
 };
 function ptPoolBubbles(){
   var FX=ptPoolFx(), P=FX && floorMeta.ptPool; if(!P) return;
