@@ -246,9 +246,9 @@ function knowPicker(){
   if(list.length===1){ identifyGear(list[0].it); refreshBagNames(); updateUI(); refreshSheet && refreshSheet(); return; }
   var done=false;
   var html='<p class="c-info">Clear water runs over one piece. Choose what to read - a curse shows before you put it on.</p>'+
-    list.map(function(o,i){ return '<div class="frow"><div class="ftext"><b>'+(o.it.name||'Unknown')+'</b> <span class="c-info">('+o.where+')</span></div>'+
+    list.map(function(o,i){ return '<div class="frow"><div class="ftext"><b>'+gearName(o.it)+'</b> <span class="c-info">('+o.where+')</span></div>'+
       '<button data-know="'+i+'">Read it</button></div>'; }).join('');
-  openModal('Water sigil', html, [{label:'Keep the sigil', fn:function(){
+  openModal(SIGILS.identify.name, html, [{label:'Keep the sigil', fn:function(){
     if(!done){ done=true; addBag('✦', SIGILS.identify.name, {kind:'sigil', data:{use:'identify'}, uid:'sigil:identify'}); log('You set the sigil aside.','c-info'); }
     closeModal(); updateUI(); }}]);
   document.querySelectorAll('[data-know]').forEach(function(b){ b.onclick=function(){
@@ -278,3 +278,28 @@ function rotPicker(){
     closeModal(); if(typeof abilityBar==='function') abilityBar(); updateUI();
   }; });
 }
+
+/* ---------------------------------------------------------------- names that say what a sigil does (2026-09-19)
+   Justin: "Water sigil" said which mote made it, not what it does. The one-mote sigils (and their doubled forms)
+   are named for their effect like the two-mote ones already were; the recipe still shows the motes. A known sigil
+   already in the bag (an old save) takes its new name too. */
+var SIGIL_RENAME = {
+  firestorm:'Sigil of the Firestorm',  firestorm2:'Greater Sigil of the Firestorm',
+  identify:'Sigil of Knowledge',       identify2:'Greater Sigil of Knowledge',
+  levitate:'Sigil of Floating',        levitate2:'Greater Sigil of Floating',
+  stoneskin:'Sigil of Stoneskin',      stoneskin2:'Greater Sigil of Stoneskin',
+  heal:'Sigil of Mending',             heal2:'Greater Sigil of Mending',
+  vanish:'Sigil of Vanishing',         vanish2:'Greater Sigil of Vanishing'
+};
+Object.keys(SIGIL_RENAME).forEach(function(k){ if(SIGILS[k]) SIGILS[k].name=SIGIL_RENAME[k]; });
+function sigilNamesRefresh(){
+  if(typeof player==='undefined' || !player || !player.bag || typeof sigilKnown==='undefined') return;
+  player.bag.forEach(function(b){ if(b.kind==='sigil' && b.data && sigilKnown[b.data.use] && SIGILS[b.data.use]) b.name=SIGILS[b.data.use].name; });
+}
+/* save.js loads after this file: wrap its loader once everything is in */
+window.addEventListener('load', function(){
+  if(typeof loadFrom!=='function' || loadFrom._sigilNames) return;
+  var _loadFromSigilNames=loadFrom;
+  loadFrom=function(){ var r=_loadFromSigilNames.apply(this, arguments); try{ sigilNamesRefresh(); }catch(e){} return r; };
+  loadFrom._sigilNames=true;
+});

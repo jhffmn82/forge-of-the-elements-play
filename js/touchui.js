@@ -96,7 +96,7 @@
     '#hmenu .hm-btns button.on{border-color:var(--gold);color:var(--gold)}',
 
     /* ---- long-press cards: across the screen, on the half away from the finger (see showCard below) */
-    'body.touch #dtip{left:8px!important;right:8px!important;max-width:none!important;width:auto!important;font-size:14px;padding:10px 12px!important}',
+    'body.touch #dtip{left:8px!important;right:8px!important;max-width:none!important;width:auto!important;font-size:14px;padding:10px 12px!important;z-index:85!important}',   /* over the docked hotbar and tabs (60) */
     'body.touch #dtip .nm{font-size:18px!important}',
 
     /* ---- one type size up across the strip (2026-09-18: it had room to spare) */
