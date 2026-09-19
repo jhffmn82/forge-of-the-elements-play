@@ -83,6 +83,7 @@ function caveBottomPad(o){
 var _drawCaveArtStand = drawCaveArt;
 drawCaveArt = function(o, cx, bottom, alpha, flipX){
   if(o && o.nm && CAVE_STANDING.test(o.nm)) bottom += caveBottomPad(o)*TS/64;
+  if(o && o.nm && /^cl-cave-pearls/.test(o.nm)) alpha *= 0.3;   /* 2026-09-19: faint, like the lichen - full strength they read as stamps */
   return _drawCaveArtStand(o, cx, bottom, alpha, flipX);
 };
 
