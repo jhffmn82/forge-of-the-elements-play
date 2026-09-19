@@ -81,6 +81,10 @@
     '#hotGhost .ico{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:86%;height:86%}',
     '#hotGhost .ico canvas{width:100%!important;height:100%!important;display:block}',
     '#hotGhost .k,#hotGhost .n,#hotGhost .c,#hotGhost .cdn,#hotGhost .clickmark{display:none}',
+    /* Gear keeps the hotbar on screen (and only the hotbar), so a bag item can be dragged onto it */
+    'body.touch.gearopen #bars,body.touch.gearopen #hud2,body.touch.gearopen #log,body.touch.gearopen #ctl{display:none!important}',
+    'body.touch.gearopen #shade{bottom:var(--hotb,0px)!important}',
+    'body.touch .tgear .cell.lifted,body.touch .tgear .gslot.lifted{opacity:.4}',
     '#hmenu{position:fixed;left:8px;right:8px;z-index:70;background:rgba(18,15,13,.97);border:1px solid var(--edge);border-radius:12px;',
     '  padding:12px;box-shadow:0 8px 30px rgba(0,0,0,.6);display:flex;flex-direction:column;gap:10px;max-width:520px;margin:0 auto}',
     '#hmenu .hm-card .nm{font-size:18px;color:var(--gold);margin-bottom:4px}',
@@ -297,6 +301,80 @@
     }
     if(hmSwallow) setTimeout(function(){ hmSwallow=false; }, 350);    /* some browsers send no click after a long hold */
   }, true); });
+  /* ---------------- Gear + hotbar together. While Gear is open on touch, the strip shows only the hotbar and the
+     sheet stops just above it. Hold a bag item (its card shows, as before) and then drag it: it lifts, and let
+     go over a hotbar slot to put it there. The worn amulet can be dragged down the same way. */
+  function gearMode(){
+    var on = touch() && typeof openSheet!=='undefined' && openSheet==='Equip';
+    document.body.classList.toggle('gearopen', on);
+    if(typeof resize==='function') resize();
+    var st=document.getElementById('strip');
+    if(on && st) document.body.style.setProperty('--hotb', Math.max(0, innerHeight - st.getBoundingClientRect().top)+'px');
+  }
+  var _showSheetTouch = showSheet;
+  showSheet = function(){ var r=_showSheetTouch.apply(this, arguments); gearMode(); return r; };
+  window.addEventListener('resize', function(){ setTimeout(gearMode, 60); });
+
+  var bl=null, blTimer=null;        /* {src, entry, x, y, moved, ghost, over} */
+  function bagEntry(el){
+    if(el.matches('.cell[data-b]')){ var it=player.bag[+el.getAttribute('data-b')]; return it ? {type:'item', ref:it} : null; }
+    if(el.matches('.gslot[data-slot="amulet"]')) return player.amulet ? {type:'amulet'} : null;
+    return null;
+  }
+  function endBL(){
+    if(!bl) return;
+    if(bl.ghost) bl.ghost.remove();
+    bl.src.classList.remove('lifted');
+    if(bl.over) bl.over.classList.remove('over');
+    bl=null;
+  }
+  function hideCards(){
+    if(typeof hideCard==='function') hideCard();
+    var tp=document.getElementById('tip'); if(tp) tp.style.display='none';
+    /* mobile.js is still holding its long press open: a pointerdown is what closes it */
+    try{ document.body.dispatchEvent(new PointerEvent('pointerdown', {bubbles:true, clientX:-50, clientY:-50})); }catch(e){}
+  }
+  document.addEventListener('pointerdown', function(ev){
+    if(!touch() || !document.body.classList.contains('gearopen') || ev.clientX<0) return;
+    var src=ev.target.closest && ev.target.closest('.tgear .cell[data-b], .tgear .gslot[data-slot="amulet"]'); if(!src) return;
+    var e0=bagEntry(src); if(!e0) return;
+    var x=ev.clientX, y=ev.clientY;
+    clearTimeout(blTimer); endBL();
+    blTimer=setTimeout(function(){ blTimer=null; bl={src:src, entry:e0, x:x, y:y, moved:false, ghost:null, over:null}; }, 420);
+    bl0={x:x, y:y};
+  }, true);
+  var bl0=null;
+  document.addEventListener('pointermove', function(ev){
+    if(blTimer && bl0 && (Math.abs(ev.clientX-bl0.x)>12 || Math.abs(ev.clientY-bl0.y)>12)){ clearTimeout(blTimer); blTimer=null; }
+    if(!bl) return;
+    if(!bl.moved && Math.abs(ev.clientX-bl.x)<10 && Math.abs(ev.clientY-bl.y)<10) return;
+    ev.preventDefault();
+    if(!bl.moved){
+      bl.moved=true; hideCards();
+      var r=bl.src.getBoundingClientRect(), g=document.createElement('div');
+      g.id='hotGhost'; g.className='slot'; g.style.width=r.width+'px'; g.style.height=r.height+'px';
+      var src=bl.src.querySelector('canvas');
+      if(src){ var c=document.createElement('canvas'); c.width=src.width; c.height=src.height; c.getContext('2d').drawImage(src,0,0);
+        c.style.cssText='position:absolute;left:13%;top:13%;width:74%;height:74%'; g.appendChild(c); }
+      document.body.appendChild(g); bl.ghost=g; bl.src.classList.add('lifted');
+    }
+    bl.ghost.style.left=(ev.clientX-bl.ghost.offsetWidth/2)+'px';
+    bl.ghost.style.top=(ev.clientY-bl.ghost.offsetHeight/2)+'px';
+    var over=slotAt(ev.clientX, ev.clientY);
+    if(over!==bl.over){ if(bl.over) bl.over.classList.remove('over'); bl.over=over; if(over) over.classList.add('over'); }
+  }, {capture:true, passive:false});
+  ['pointerup','pointercancel'].forEach(function(n){ document.addEventListener(n, function(){
+    if(blTimer){ clearTimeout(blTimer); blTimer=null; }
+    if(!bl) return;
+    var B=bl;
+    if(n==='pointerup' && B.moved && B.over){
+      hotbarPut(+B.over.getAttribute('data-i'), B.entry); sfx('ui-click');
+      endBL(); if(typeof refreshSheet==='function') refreshSheet();
+    } else endBL();
+  }, true); });
+  /* once a slot or bag item is lifted, the finger drags it rather than scrolling the page */
+  document.addEventListener('touchmove', function(ev){ if((bl && bl.moved) || (lift && lift.moved) || bl || lift) ev.preventDefault(); }, {passive:false});
+
   /* no native drag on the touch hotbar */
   document.addEventListener('dragstart', function(ev){ if(touch() && ev.target.closest && ev.target.closest('#hotbar')) ev.preventDefault(); }, true);
   var _abilityBarTouch = abilityBar;

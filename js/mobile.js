@@ -255,7 +255,7 @@
         '<div><p class="tg-sec">Worn</p><div class="tg-slots">'+
           SLOTS.map(function(s){ return tile(s[0], s[1], s[2]); }).join('')+'</div></div>'+
         '<div><p class="tg-sec">Bag &middot; '+player.bag.length+' / '+BAG_MAX+'</p><div class="tg-cells">'+cells.join('')+'</div>'+
-          '<p class="tg-hint">Tap a bag item to equip or use it. Tap a worn slot to take it off. Hold anything to read it.</p></div>'+
+          '<p class="tg-hint">Tap a bag item to equip or use it. Tap a worn slot to take it off. Hold anything to read it; hold and drag it onto the hotbar to put it there.</p></div>'+
       '</div>';
 
       /* below, scrolled to when wanted: the character and the totals */
