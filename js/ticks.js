@@ -38,12 +38,4 @@
 
   if(typeof aiAct === 'function') aiAct = afterActing(aiAct);
   if(typeof allyAct === 'function') allyAct = afterActing(allyAct);
-  /* 2026-09-19: files loaded after this one (the Caverns' and the Underdark's creatures) wrap aiAct from outside
-     this window, and their special moves call tickStatus themselves - a real tick, then this one again at the
-     end: a double tick that cut their statuses short. Wrapping once more when everything has loaded makes the
-     window outermost; the inner copy sees it is already inside a turn and leaves the tick to this one. */
-  window.addEventListener('load', function(){
-    if(typeof aiAct === 'function') aiAct = afterActing(aiAct);
-    if(typeof allyAct === 'function') allyAct = afterActing(allyAct);
-  });
 })();
