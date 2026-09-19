@@ -585,7 +585,7 @@ function drawLightmap(now, prp){
           r+=L.c[0]*f; g+=L.c[1]*f; b+=L.c[2]*f;
         }
         if(face){ r*=0.9; g*=0.9; b*=0.9; }
-        else { var n=0.93+0.09*hash2(x,y,21); r*=n; g*=n; b*=n; }
+        else { var n=0.93+0.09*(typeof ptVal==='function' ? ptVal(fx0*0.7, fy0*0.7, 21) : hash2(x,y,21)); r*=n; g*=n; b*=n; }   /* smooth across tiles (a per-tile value showed as a grid) */
       } else { r=-1; g=0; b=0; }
     }
     vals[o]=r; vals[o+1]=g; vals[o+2]=b;
