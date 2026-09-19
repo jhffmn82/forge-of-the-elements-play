@@ -459,7 +459,7 @@ endTurn = function(){
 function drawLyingCorpse(c, now){
   var i=idxOf(c.x,c.y); if(!(revealAll || seen[i])) return;
   var b=MONSTERS[c.kind] || {}, ms = spriteOn && b.sprite ? mobSheet(b.sprite) : null; if(!ms) return;
-  var px=(c.x-camX)*TS, py=(c.y-camY)*TS, lit=(revealAll||vis[i]) ? 1 : 0.45;
+  var px=(c.x-camX)*TS, py=(c.y-camY)*TS, lit=(revealAll||vis[i]) ? 1 : memA(0.45);
   var m=ms.m, cell=m.cell, box=m.box||[0,0,cell,cell], s=TS*(b.art||0.9)/Math.max(box[3], box[2]*0.8);
   var twitch = turn>=c.at-1 && !ANIM.reduce ? Math.sin(now/55)*TS*0.02 : 0;
   ctx.save(); ctx.globalAlpha=0.92*lit; ctx.imageSmoothingEnabled=true;

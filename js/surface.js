@@ -191,7 +191,7 @@ function drawSurfaceDeco(){
   for(var y=camY; y<=camY+viewH; y++) for(var x=camX; x<=camX+viewW; x++){
     if(!inb(x,y)) continue; var i=idxOf(x,y); if(!(revealAll||seen[i])) continue;
     var t=map[i]; if(isWallLike(t) || t===CHASM || t===WATER) continue;
-    var px=(x-camX)*TS, py=(y-camY)*TS, a=(revealAll||vis[i])?1:0.4;
+    var px=(x-camX)*TS, py=(y-camY)*TS, a=(revealAll||vis[i])?1:memA(0.4);
     blitRaster(cachedRaster('m', x, y, mossRaster), px, py, a);
     if(t!==FLOOR || ground[i] || propAt(x,y)) continue;
     var wn=isWallLike(at(x,y-1)), ws=isWallLike(at(x,y+1)), ww=isWallLike(at(x-1,y)), we=isWallLike(at(x+1,y));
@@ -316,7 +316,7 @@ drawWangLayer = function(key, tileType){
     var near=false; for(var dy=-1;dy<=1 && !near;dy++) for(var dx=-1;dx<=1;dx++) if(isWaterAt(x+dx,y+dy)){ near=true; break; }
     if(!near) continue;
     var c=cachedRaster('w'+waterSig(x,y)+'@', x, y, waterRaster);
-    blitRaster(c, (x-camX)*TS, (y-camY)*TS, (revealAll||vis[i])?1:0.4);
+    blitRaster(c, (x-camX)*TS, (y-camY)*TS, (revealAll||vis[i])?1:memA(0.4));
     if(isWaterAt(x,y) && (revealAll||vis[i])) waterGlints(x, y, (x-camX)*TS, (y-camY)*TS);
   }
   ctx.globalAlpha=1;
@@ -386,7 +386,7 @@ function drawGrassBed(){
     if(!inb(x,y)) continue; var i=idxOf(x,y); if(!(revealAll||seen[i]) || isWallLike(map[i])) continue;
     var near=false; for(var dy=-1;dy<=1 && !near;dy++) for(var dx=-1;dx<=1;dx++){ var xx=x+dx, yy=y+dy; if(inb(xx,yy) && ground[idxOf(xx,yy)]===G_GRASS){ near=true; break; } }
     if(!near) continue;
-    blitRaster(cachedRaster('g'+grassSig(x,y)+'@', x, y, grassRaster), (x-camX)*TS, (y-camY)*TS, (revealAll||vis[i])?1:0.4);
+    blitRaster(cachedRaster('g'+grassSig(x,y)+'@', x, y, grassRaster), (x-camX)*TS, (y-camY)*TS, (revealAll||vis[i])?1:memA(0.4));
   }
 }
 var _drawSurfaceDecoGrass = drawSurfaceDeco;

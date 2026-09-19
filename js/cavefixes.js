@@ -61,3 +61,38 @@ drawCorpse = function(f, p){
   if(m && m.clips.death){ var d=m.clips.death; delete m.clips.death; try { return _drawCorpseCave(f, p); } finally { m.clips.death=d; } }
   return _drawCorpseCave(f, p);
 };
+
+/* ---------------------------------------------------------------- 4. standing pieces sit on the ground
+   The delivered canvases leave 7-20 empty pixels under some pieces (giant mushrooms, pylons, the pool, burrows,
+   the mine support), and the canvas bottom is what stood on the floor - so the art hovered over its own shadow.
+   Standing pieces are now set down by the art's own solid bottom. */
+var CAVE_STANDING = /^(giant-mushroom|mushroom-pair|pylon|geode|glowing-pool|worm-burrow|mine-support|mine-cart|stalagmite)/;
+var CAVE_PAD = {};
+function caveBottomPad(o){
+  if(CAVE_PAD[o.nm]!==undefined) return CAVE_PAD[o.nm];
+  var pad=0;
+  try{
+    var c=document.createElement('canvas'); c.width=o.sw; c.height=o.sh; var g=c.getContext('2d');
+    g.drawImage(o.img, o.sx, o.sy, o.sw, o.sh, 0, 0, o.sw, o.sh);
+    var D=g.getImageData(0,0,o.sw,o.sh).data, lowest=-1;
+    for(var y=o.sh-1; y>=0 && lowest<0; y--) for(var x=0;x<o.sw;x++) if(D[(y*o.sw+x)*4+3]>=140){ lowest=y; break; }
+    pad = (o.fullH - (o.oy + lowest + 1));        /* empty rows under the solid art, in canvas pixels */
+  }catch(e){ pad=0; }
+  return (CAVE_PAD[o.nm]=Math.max(0, pad-1));
+}
+var _drawCaveArtStand = drawCaveArt;
+drawCaveArt = function(o, cx, bottom, alpha, flipX){
+  if(o && o.nm && CAVE_STANDING.test(o.nm)) bottom += caveBottomPad(o)*TS/64;
+  return _drawCaveArtStand(o, cx, bottom, alpha, flipX);
+};
+
+/* ---------------------------------------------------------------- 5. the Caverns were too bright
+   Every glowing mushroom, crystal, pool and glowworm adds a light of its own on top of the hero's, and they
+   overlapped into a wash. In the Caverns the scenery lights burn at 55% strength and 85% reach; the hero's own
+   light (always the first in the list) is left alone. */
+var _gatherLightsCave = gatherLights;
+gatherLights = function(now, prp){
+  var L=_gatherLightsCave.apply(this, arguments);
+  if(typeof inCaverns==='function' && inCaverns() && L && L.length) for(var i=1;i<L.length;i++){ L[i].s*=0.55; L[i].r*=0.85; }
+  return L;
+};

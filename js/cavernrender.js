@@ -22,7 +22,7 @@ PT_MAT.cavern = {
   pool:[16,64,92], poolEdge:[36,142,156], poolShallow:[64,172,176], poolRim:[168,248,238], poolShelf:[80,92,96], poolShelfDry:[104,98,92], poolWet:[76,72,70], poolLight:'#5FE0E0',
   crystal:['#E6FFFB','#9FF0E8','#5AB8C8','#8A5AE0'], crystalGold:'#6A4AB8', crystalLight:'#6FE0E8', fill:'#2E3842',
   moss:[[38,92,82],[54,120,104],[28,66,62],[88,186,158]],
-  rockHi:'#8A8078', rockMid:'#6A625C', rockLo:'#4A4440', rockEdge:'#221E1E', motif:'none'
+  rockHi:'#8A8078', rockMid:'#6A625C', rockLo:'#4A4440', rockEdge:'#221E1E', motif:'none', jag:1   /* broken, rocky edges (planeterrain.js ptJag) */
 };
 var _ptMatCave = ptMat;
 ptMat = function(){ var m=_ptMatCave(); if(m) return m; return (typeof map!=='undefined' && map && inCaverns()) ? PT_MAT.cavern : null; };
@@ -106,7 +106,7 @@ function drawCaveChasms(now){
   for(var y=camY; y<=camY+viewH; y++) for(var x=camX; x<=camX+viewW; x++){
     if(!caveVoid(x,y)) continue;
     var i=idxOf(x,y); if(!(revealAll||seen[i])) continue;
-    var px=(x-camX)*TS, py=(y-camY)*TS, a=(revealAll||vis[i]) ? 1 : 0.42;
+    var px=(x-camX)*TS, py=(y-camY)*TS, a=(revealAll||vis[i]) ? 1 : memA(0.42);
     ctx.globalAlpha=a; ctx.fillStyle='#030305'; ctx.fillRect(px, py, TS+0.6, TS+0.6);
     /* the depth: a faint cold glow far down, so the void is not a flat hole */
     if(hash2(x,y,707)<0.5){ var g=ctx.createRadialGradient(px+TS*0.5, py+TS*0.6, 0, px+TS*0.5, py+TS*0.6, TS*0.6); g.addColorStop(0,'rgba(40,60,80,0.10)'); g.addColorStop(1,'rgba(40,60,80,0)'); ctx.fillStyle=g; ctx.fillRect(px,py,TS,TS); }
@@ -170,7 +170,7 @@ function drawCaveDecals(){
     if(d.x<camX-1 || d.x>camX+viewW+1 || d.y<camY-1 || d.y>camY+viewH+1) return;
     var i=idxOf(d.x,d.y); if(!(revealAll||seen[i]) || at(d.x,d.y)!==FLOOR) return;
     var o=caveArt(d.n); if(!o) return;
-    var a=((revealAll||vis[i]) ? 1 : 0.42)*0.8, px=(d.x-camX)*TS, py=(d.y-camY)*TS;
+    var a=((revealAll||vis[i]) ? 1 : memA(0.42))*0.8, px=(d.x-camX)*TS, py=(d.y-camY)*TS;
     drawCaveArt(o, px+TS/2, py+TS/2+o.fullH*TS/128, a, hash2(d.x,d.y,31)<0.5);
   });
 }
@@ -180,7 +180,7 @@ function drawCaveWalls(now){
     if(w.x<camX-1 || w.x>camX+viewW+1 || w.y<camY-2 || w.y>camY+viewH+1) return;
     var i=idxOf(w.x,w.y); if(!(revealAll||seen[i]) || !isWallLike(at(w.x,w.y))) return;
     var o=caveArt(w.n); if(!o) return;
-    var below=idxOf(w.x,w.y+1), a=(revealAll||vis[i]||vis[below]) ? 1 : 0.42, px=(w.x-camX)*TS, py=(w.y-camY)*TS, s=TS/64;
+    var below=idxOf(w.x,w.y+1), a=(revealAll||vis[i]||vis[below]) ? 1 : memA(0.42), px=(w.x-camX)*TS, py=(w.y-camY)*TS, s=TS/64;
     ctx.save(); ctx.globalAlpha=a; ctx.imageSmoothingEnabled=false;
     /* wall art attaches at its top: the waterfall's lip sits at the top of the rock and its basin on the floor below */
     var top = w.fall ? py : py+TS*0.18;

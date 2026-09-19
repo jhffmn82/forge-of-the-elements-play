@@ -88,7 +88,7 @@ function drawOoze(now){
     if(!inb(x,y)) continue; var i=idxOf(x,y); if(!(revealAll||seen[i]) || isWallLike(map[i])) continue;
     var near=false; for(var dy=-1;dy<=1 && !near;dy++) for(var dx=-1;dx<=1;dx++) if(isOozeAt(x+dx,y+dy)){ near=true; break; }
     if(!near) continue;
-    var alpha=(revealAll||vis[i])?1:0.4;
+    var alpha=(revealAll||vis[i])?1:memA(0.4);
     blitRaster(cachedRaster('o'+oozeSig(x,y)+'@', x, y, oozeRaster), (x-camX)*TS, (y-camY)*TS, alpha);
     if(isOozeAt(x,y) && alpha===1){
       /* a slow sheen drifting over the surface */

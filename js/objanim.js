@@ -7,8 +7,8 @@
    centre and colour, the warm ones are where a flame burns, the lowest tips are where drips fall from - so
    new art gets the right placement without measuring each sprite by hand. Respects Options > Motion. */
 var OBJ_FX_RULES = [
-  [/^table-candle$/,                           ['flame']],
-  [/^kobold-campfire$/,                        ['flame', 'embers']],
+  [/^table-candle$/,                           ['flicker']],            /* the art paints its own flame: flicker its light */
+  [/^kobold-campfire$/,                        ['flicker', 'embers']],
   [/^plate-glow$/,                             ['glow']],
   [/^trap-fire$/,                              ['flicker', 'embers']],
   [/^trap-gas$/,                               ['mist']],

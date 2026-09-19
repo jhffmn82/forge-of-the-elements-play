@@ -104,11 +104,18 @@ function ptSolid(wx, wy, salt){
     if(!w) continue; w*=w; wsum+=w; if(ptWallCell(nx,ny)) sum+=w;
   }
   var f=wsum ? sum/wsum : (own?1:0);
-  var sld = f > 0.5 + (ptVal(wx*0.85, wy*0.85, salt+3)-0.5)*0.34 + (ptVal(wx*2.3, wy*2.3, salt+4)-0.5)*0.1;
+  var sld = f > 0.5 + (ptVal(wx*0.85, wy*0.85, salt+3)-0.5)*0.34 + (ptVal(wx*2.3, wy*2.3, salt+4)-0.5)*0.1 + ptJag(wx, wy, salt);
   var rc=Math.sqrt((fx-0.5)*(fx-0.5)+(fy-0.5)*(fy-0.5));
   if(!own && sld && rc<0.3) return false;   /* open cells keep a round walkable core */
   if(own && !sld && rc<0.26) return true;
   return sld;
+}
+/* 2026-09-19: a material can ask for broken, rocky edges (the Caverns): ridged noise at two finer scales
+   chips and notches the boundary instead of the planes' smooth wobble. 0 for everything else. */
+function ptJag(wx, wy, salt){
+  var M=ptMat(), J=M && M.jag; if(!J) return 0;
+  var r1=1-Math.abs(ptVal(wx*3.6, wy*3.6, salt+41)*2-1), r2=1-Math.abs(ptVal(wx*8.2, wy*8.2, salt+43)*2-1);
+  return (r1-0.5)*J*0.55 + (r2-0.5)*J*0.3;
 }
 /* 0 = open floor, 1 = rock formation, 2 = the dark beyond (rock far from any open ground) */
 function ptKind(wx, wy, salt){

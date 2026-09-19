@@ -82,6 +82,10 @@ function wallTile(x,y){
   return tileFrom('walls', WALL_TOP[Math.floor(hash2(x,y,13)*WALL_TOP.length)]);
 }
 function isWallLike(t){ return t===WALL || t===SECRET; }
+/* 2026-09-19: remembered tiles were faded one tile at a time, which drew the edge of what you can see as a
+   staircase of squares. With lighting on, the lightmap's (blurred) memory tone does that darkening smoothly,
+   so tiles draw at full strength; with lighting off they keep the old fade. */
+function memA(fade){ return (typeof lightingOn==='function' && lightingOn()) ? 1 : fade; }
 var TILE_SPRITE = {};
 function tileSprite(x,y,t){
   /* 2026-09-19: a door set in a wall that runs up-down (walls above and below it) is seen edge-on */
@@ -154,7 +158,7 @@ function drawWangLayer(key, tileType){
       bits += on ? '0' : '1';
     }
     if(!any || !known) continue;
-    var px=(vx-camX)*TS - TS/2, py=(vy-camY)*TS - TS/2, a=lit?1:0.42;
+    var px=(vx-camX)*TS - TS/2, py=(vy-camY)*TS - TS/2, a=lit?1:memA(0.42);
     if(img && set.tiles[bits]){ var tc=set.tiles[bits]; ctx.globalAlpha=a; ctx.imageSmoothingEnabled=true; ctx.drawImage(img,tc[0],tc[1],64,64,px,py,TS+0.6,TS+0.6); }
   }
   ctx.globalAlpha=1;
@@ -554,7 +558,7 @@ function drawLightmap(now, prp){
   /* the elemental planes set their own mood: Light is bright and warm, Shadow near-black, Earth a dim green */
   var PL = floorMeta && floorMeta.plane ? {light:{amb:[0.90,0.89,0.88], mem:[0.60,0.60,0.64]}, shadow:{amb:[0.30,0.26,0.40], mem:[0.40,0.36,0.52]}, earth:{amb:[0.42,0.44,0.34], mem:[0.46,0.48,0.40]}}[floorMeta.plane] : null;
   if(PL) BL=PL;
-  var AMB = darkRoom ? [0.08,0.08,0.12] : BL.amb, MEM=BL.mem;
+  var AMB = darkRoom ? [0.08,0.08,0.12] : BL.amb, MEM=BL.mem.map(function(v){ return v*0.45; });   /* the tile fade moved in here (memA) */
   var vals=new Float32Array(W*H*3), isWall=new Uint8Array(W*H);
   var tx, ty, k, j;
   for(ty=0; ty<H; ty++) for(tx=0; tx<W; tx++){
@@ -609,7 +613,12 @@ function drawLightmap(now, prp){
   ctx.save();
   ctx.imageSmoothingEnabled=true; ctx.imageSmoothingQuality='high';
   ctx.globalCompositeOperation='multiply';
+  /* 2026-09-19: the light is worked out a tile at a time, so a wall or blocking object cast a square-edged
+     shadow and stretching two texels a tile left square steps along walls and objects. A blur before it is
+     laid over the scene melts the steps into gradients. */
+  ctx.filter='blur('+Math.max(2, Math.round(TS*0.38))+'px)';
   ctx.drawImage(LM.c, 0, 0, W, H, -TS, -TS, W*TS/S, H*TS/S);
+  ctx.filter='none';
   ctx.globalCompositeOperation='lighter'; ctx.globalAlpha=0.3;
   ctx.drawImage(LM.bloom, 0, 0, W, H, -TS, -TS, W*TS/S, H*TS/S);
   ctx.restore();
@@ -737,7 +746,7 @@ function draw(){
     if(!inb(x,y)) continue;
     var i=idxOf(x,y), lit=revealAll||vis[i], known=revealAll||seen[i];
     if(!known) continue;
-    var t=map[i], px=(x-camX)*TS, py=(y-camY)*TS, a=lit?1:0.40;
+    var t=map[i], px=(x-camX)*TS, py=(y-camY)*TS, a=lit?1:memA(0.40);
     if(artOK){
       if(isWallLike(t)) blitTile(wallTile(x,y), px, py, a);
       else if(t===CHASM){ ctx.globalAlpha=a; ctx.fillStyle='#050408'; ctx.fillRect(px,py,TS+1,TS+1); }
@@ -767,7 +776,7 @@ function draw(){
   /* fallback water tint where no water tileset exists */
   for(y=camY;y<=camY+viewH;y++) for(x=camX;x<=camX+viewW;x++){
     if(!inb(x,y)) continue; var ii=idxOf(x,y); if(!(revealAll||seen[ii])) continue;
-    var tt=map[ii], ppx=(x-camX)*TS, ppy=(y-camY)*TS, aa=(revealAll||vis[ii])?1:0.4;
+    var tt=map[ii], ppx=(x-camX)*TS, ppy=(y-camY)*TS, aa=(revealAll||vis[ii])?1:memA(0.4);
     if(tt===WATER && !(AS.wang_water)){ ctx.globalAlpha=0.55*aa; ctx.fillStyle='#2E5E80'; ctx.fillRect(ppx,ppy,TS,TS);
       ctx.globalAlpha=0.25*aa; ctx.fillStyle='#9FD8FF'; ctx.fillRect(ppx+TS*0.2+Math.sin(now/600+x)*2,ppy+TS*0.3,TS*0.3,1); }
     if(tt===CHASM && !(AS.wang_chasm)){ ctx.globalAlpha=aa; ctx.fillStyle='#000'; ctx.fillRect(ppx+2,ppy+2,TS-4,TS-4); }
@@ -781,7 +790,7 @@ function draw(){
   /* ---- ground decals ---- */
   for(y=camY;y<=camY+viewH;y++) for(x=camX;x<=camX+viewW;x++){
     if(!inb(x,y)) continue; var gi=idxOf(x,y), gv=ground[gi]; if(!gv || !(revealAll||seen[gi])) continue;
-    var ga=(revealAll||vis[gi])?1:0.4, gpx=(x-camX)*TS, gpy=(y-camY)*TS, go=objArt('terrain', GROUND_ART[gv]);
+    var ga=(revealAll||vis[gi])?1:memA(0.4), gpx=(x-camX)*TS, gpy=(y-camY)*TS, go=objArt('terrain', GROUND_ART[gv]);
     if(gv===G_GRASS){ drawGrassTile(x, y, gpx, gpy, ga, 'back', now); continue; }
     if(drawGroundDecal(gv, x, y, gpx, gpy, ga, now)) continue;
     if(go) drawObj(go, gpx, gpy, {fit:0.9, alpha:ga*0.95});
@@ -800,14 +809,14 @@ function draw(){
   for(y=camY;y<=camY+viewH;y++) for(x=camX;x<=camX+viewW;x++){
     if(!inb(x,y)) continue; var oi=idxOf(x,y); if(!(revealAll||seen[oi])) continue;
     var ot=map[oi]; if(ot===FLOOR||ot===WALL||ot===WATER||ot===CHASM||ot===SECRET) continue;
-    var oa=(revealAll||vis[oi])?1:0.45, opx=(x-camX)*TS, opy=(y-camY)*TS, spr=spriteOn?tileSprite(x,y,ot):null;
+    var oa=(revealAll||vis[oi])?1:memA(0.45), opx=(x-camX)*TS, opy=(y-camY)*TS, spr=spriteOn?tileSprite(x,y,ot):null;
     if(ot===CHEST && typeof propShadow==='function') propShadow(x, y, opx, opy, oa, 'chest');
     if(typeof drawSideDoor==='function' && drawSideDoor(x, y, ot, opx, opy, oa)) continue;   /* doors in east/west walls (surface.js) */
     if(ot===OPEN){ drawOpenDoor(x, y, opx, opy, oa); continue; }
     var isDoor=(ot===DOOR||ot===OPEN||ot===LOCKED||ot===TOLL||ot===ICEDOOR||ot===THORNS||ot===SEALED);
     if(spr){
-      var big = ot===FORGE||ot===SHRINE||ot===EXIT;
-      drawObj(spr, opx, opy, {feet:!isDoor && ot!==STAIRS && ot!==19 && ot!==BRIDGE, fit: isDoor?1.02 : big?1.18 : (ot===STAIRS||ot===19)?0.95 : 0.85, alpha:oa, fill: isDoor});
+      var big = ot===FORGE||ot===SHRINE||ot===EXIT;   /* 2026-09-19: the god statues are two tiles tall - a shrine stands on its tile and rises above it */
+      drawObj(spr, opx, opy, {feet:!isDoor && ot!==STAIRS && ot!==19 && ot!==BRIDGE, fit: isDoor?1.02 : ot===SHRINE?2.1 : big?1.18 : (ot===STAIRS||ot===19)?0.95 : 0.85, alpha:oa, fill: isDoor});
       if(ot===EXIT && !floorMeta.exitOpen){ ctx.globalAlpha=0.55*oa; ctx.fillStyle='#000'; ctx.fillRect(opx+TS*0.2,opy+TS*0.1,TS*0.6,TS*0.8); ctx.globalAlpha=1; }
       if(ot===SEALED && !(floorMeta.crystalDoor && floorMeta.crystalDoor.x===x && floorMeta.crystalDoor.y===y)){ ctx.globalAlpha=0.35*oa; ctx.fillStyle='#6FB7FF'; ctx.fillRect(opx,opy,TS,TS); ctx.globalAlpha=1; }
     } else {
@@ -820,21 +829,21 @@ function draw(){
   if(plates) plates.cells.forEach(function(p){
     if(!(revealAll||seen[idxOf(p.x,p.y)])) return;
     var ppx=(p.x-camX)*TS, ppy=(p.y-camY)*TS;
-    drawObj(objArt('structures', p.pressed?'plate-glow':'trap-plate') || objArt('traps','trap-plate'), ppx, ppy, {fit:0.8, alpha:(revealAll||vis[idxOf(p.x,p.y)])?1:0.45});
+    drawObj(objArt('structures', p.pressed?'plate-glow':'trap-plate') || objArt('traps','trap-plate'), ppx, ppy, {fit:0.8, alpha:(revealAll||vis[idxOf(p.x,p.y)])?1:memA(0.45)});
     ctx.fillStyle = p.pressed ? '#FFE9A0' : '#D8CFC0'; ctx.font='700 '+Math.round(TS*0.42)+'px serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
     ctx.fillText({moon:'\u263E', sun:'\u2600', star:'\u2605'}[p.symbol], ppx+TS/2, ppy+TS/2);
   });
   /* traps you know about */
   feats.forEach(function(f){
     if(!(revealAll||f.found) || !(revealAll||seen[idxOf(f.x,f.y)])) return;
-    var fpx=(f.x-camX)*TS, fpy=(f.y-camY)*TS, fa=(revealAll||vis[idxOf(f.x,f.y)])?1:0.45;
+    var fpx=(f.x-camX)*TS, fpy=(f.y-camY)*TS, fa=(revealAll||vis[idxOf(f.x,f.y)])?1:memA(0.45);
     drawTrap(f, fpx, fpy, fa, now);
   });
   drawTelegraphs(now);   /* boss attack markings sit on the floor, under whoever stands there */
   /* items */
   items.forEach(function(it){
     if(!(revealAll||seen[idxOf(it.x,it.y)])) return;
-    var ipx=(it.x-camX)*TS, ipy=(it.y-camY)*TS, ia=(revealAll||vis[idxOf(it.x,it.y)])?1:0.45;
+    var ipx=(it.x-camX)*TS, ipy=(it.y-camY)*TS, ia=(revealAll||vis[idxOf(it.x,it.y)])?1:memA(0.45);
     var shw=(ITEM_FIT[it.kind]||0.5)*0.42; ctx.globalAlpha=0.35*ia; ctx.fillStyle='#000'; ctx.beginPath(); ctx.ellipse(ipx+TS/2,ipy+TS*0.76,TS*shw,TS*shw*0.35,0,0,7); ctx.fill(); ctx.globalAlpha=1;
     var bob = ANIM.reduce ? 0 : Math.sin(now/400 + it.x*2 + it.y)*TS*0.03;
     if(it.kind==='key'){
@@ -859,7 +868,7 @@ function draw(){
   var sortedProps=props.slice().sort(function(a,b){ return a.y-b.y; });
   sortedProps.forEach(function(p){
     if(!(revealAll||seen[idxOf(p.x,p.y)])) return;
-    var ppx=(p.x-camX)*TS, ppy=(p.y-camY)*TS, pa=(revealAll||vis[idxOf(p.x,p.y)])?1:0.45;
+    var ppx=(p.x-camX)*TS, ppy=(p.y-camY)*TS, pa=(revealAll||vis[idxOf(p.x,p.y)])?1:memA(0.45);
     var o=spriteOn ? objArt('props',p.name)||objArt('structures',p.name)||objArt('chests',p.name)||objArt('terrain',p.name) : null;   /* an opened chest's art lives with the chests */
     if(p.name==='elemental-lock' && p.opened) pa*=0.6;
     if(p.name==='vines'){ drawVines(p.x, p.y, ppx, ppy, pa, now); return; }
@@ -943,7 +952,7 @@ function draw(){
   /* tall grass sits on top: its front blades are drawn over everything standing on the tile */
   for(y=camY;y<=camY+viewH;y++) for(x=camX;x<=camX+viewW;x++){
     if(!inb(x,y)) continue; var fgi=idxOf(x,y); if(ground[fgi]!==G_GRASS || !(revealAll||seen[fgi])) continue;
-    drawGrassTile(x, y, (x-camX)*TS, (y-camY)*TS, (revealAll||vis[fgi])?1:0.4, 'front', now);
+    drawGrassTile(x, y, (x-camX)*TS, (y-camY)*TS, (revealAll||vis[fgi])?1:memA(0.4), 'front', now);
   }
 
   if(lightingOn()) drawLightmap(now, prp);
