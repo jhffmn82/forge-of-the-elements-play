@@ -939,7 +939,8 @@ function draw(){
       }
       if(e.ally){ ctx.strokeStyle='#7FD08A'; ctx.lineWidth=2; ctx.beginPath(); ctx.ellipse(px0+TS/2,py0+TS*0.9,TS*0.34,TS*0.12,0,0,7); ctx.stroke(); ctx.lineWidth=1; }
       /* health bar only once hurt, or always for bosses */
-      if(e.hp<e.maxhp || e.base.boss){
+      /* 2026-09-19: a boss has the bar across the top of the screen (ui.js bossBar) - no second one over its head */
+      if(e.hp<e.maxhp && !(e.base && e.base.boss)){
         /* 2026-09-19: Justin - "the Matron's hp bar is on her waist". A big creature is drawn taller than its own
            tile, so the bar goes above what is actually drawn, and spans its whole footprint. */
         var bigN=(e.base && e.base.big) || 1, bScale=(e.base && e.base.bigScale) || 1;
