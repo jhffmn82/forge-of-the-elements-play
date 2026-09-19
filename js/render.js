@@ -84,9 +84,11 @@ function wallTile(x,y){
 function isWallLike(t){ return t===WALL || t===SECRET; }
 var TILE_SPRITE = {};
 function tileSprite(x,y,t){
-  if(t===DOOR) return objArt('structures','door-wood');
+  /* 2026-09-19: a door set in a wall that runs up-down (walls above and below it) is seen edge-on */
+  var sideDoor = (t===DOOR || t===LOCKED) && isWallLike(at(x,y-1)) && isWallLike(at(x,y+1)) && !(isWallLike(at(x-1,y)) && isWallLike(at(x+1,y)));
+  if(t===DOOR) return (sideDoor && objArt('structures','door-wood-side')) || objArt('structures','door-wood');
   if(t===OPEN) return null;   /* open doors are drawn as jambs + a swung leaf, see drawOpenDoor */
-  if(t===LOCKED) return objArt('structures','door-iron');
+  if(t===LOCKED) return (sideDoor && objArt('structures','door-iron-side')) || objArt('structures','door-iron');
   if(t===TOLL) return objArt('structures','door-spiked');
   if(t===ICEDOOR) return objArt('structures','door-ice') || objArt('props','ice-block');
   if(t===THORNS) return objArt('structures','door-thorns') || objArt('props','vines');
@@ -97,7 +99,10 @@ function tileSprite(x,y,t){
   if(t===SHRINE) return objArt('structures', (GODS[RUN.shrineGod]||{}).sprite) || objArt('structures','shrine');
   if(t===EXIT) return objArt('structures','exit-gate') || objArt('structures','archway');
   if(t===RUBBLE) return objArt('props','rubble');
-  if(t===BRIDGE) return objArt('structures','bridge');
+  if(t===BRIDGE){   /* chasm to the left and right: the bridge runs up-down */
+    var lr = (at(x-1,y)===CHASM || at(x+1,y)===CHASM) && !(at(x,y-1)===CHASM || at(x,y+1)===CHASM);
+    return (lr && objArt('structures','bridge-v')) || objArt('structures','bridge');
+  }
   return null;
 }
 
