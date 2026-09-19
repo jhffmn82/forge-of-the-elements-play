@@ -96,3 +96,17 @@ gatherLights = function(now, prp){
   if(typeof inCaverns==='function' && inCaverns() && L && L.length) for(var i=1;i<L.length;i++){ L[i].s*=0.55; L[i].r*=0.85; }
   return L;
 };
+
+/* ---------------------------------------------------------------- 6. no lone moss
+   Glow moss only reads as moss in a streak; a single tuft (a streak that could not grow, or a Dungeon vine
+   converted on the way in) is taken out after the floor is built. */
+var _generateMossFix = generate;
+generate = function(seed){
+  var r=_generateMossFix.apply(this, arguments);
+  if(typeof inCaverns==='function' && inCaverns() && typeof props!=='undefined'){
+    var moss=props.filter(function(p){ return /^cl-glow-moss/.test(p.name); });
+    var lone=moss.filter(function(p){ return !moss.some(function(q){ return q!==p && Math.abs(q.x-p.x)+Math.abs(q.y-p.y)===1; }); });
+    if(lone.length){ props=props.filter(function(p){ return lone.indexOf(p)<0; }); if(typeof rebuildPropGrid==='function') rebuildPropGrid(); }
+  }
+  return r;
+};

@@ -450,7 +450,7 @@ function caveDecorate(){
     if(/glowworm/.test(name)) floorMeta.planeLights.push({x:x, y:y+0.9, col:/-2$/.test(name) ? '#FFC870' : '#7FE8D8', r:2.6, s:0.45});
   }
   /* clusters: a few small groups per chamber, mostly along the walls */
-  var CL=[['small-mushrooms',3],['glow-moss',2],['crystal-shards',2],['rubble',3],['cave-pearls',0.6],['lost-miner',0.5]], miners=0;
+  var CL=[['small-mushrooms',3],['crystal-shards',2],['rubble',3],['cave-pearls',0.6],['lost-miner',0.5]], miners=0;   /* glow moss grows in streaks, below */
   rooms.forEach(function(room){
     if(!room.cave) return;
     var groups = room.arena ? ri(2,4) : Math.min(5, 1 + Math.floor(room.n/28) + (rng()<0.5?1:0));
@@ -465,6 +465,18 @@ function caveDecorate(){
       for(var m=0; m<n2; m++){
         if(caveFree(px,py) && floorMeta.caveRoom[idxOf(px,py)]===room.id) addProp(px, py, caveVariant('cl-'+kind, 4));
         var nb=[[1,0],[-1,0],[0,1],[0,-1],[1,1],[-1,1]][Math.floor(rng()*6)]; px+=nb[0]; py+=nb[1];
+      }
+    }
+    /* 2026-09-19: glow moss creeps along the foot of the rock in a streak, now and then - one tuft alone in
+       the middle of a chamber read as a stray snowflake */
+    if(rng()<0.35){
+      var isEdge=function(x,y){ return caveFree(x,y) && floorMeta.caveRoom[idxOf(x,y)]===room.id && (caveWallAt(x-1,y)||caveWallAt(x+1,y)||caveWallAt(x,y-1)||caveWallAt(x,y+1)); };
+      var st=edge.pop(), len=ri(3,6), used={};
+      for(var q=0; st && q<len; q++){
+        addProp(st.x, st.y, caveVariant('cl-glow-moss', 4)); used[st.x+','+st.y]=1;
+        var nxt=[[1,0],[-1,0],[0,1],[0,-1]].map(function(d){ return {x:st.x+d[0], y:st.y+d[1]}; })
+          .filter(function(c2){ return !used[c2.x+','+c2.y] && isEdge(c2.x,c2.y); });
+        st = nxt.length ? nxt[Math.floor(rng()*nxt.length)] : null;
       }
     }
   });
