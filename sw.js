@@ -11,7 +11,7 @@
    demo.html loads every script with a fresh ?v= tag, so cache keys drop the query - otherwise each load
    would store another copy and nothing would ever match offline.
 */
-var CACHE = 'fote-v2';
+var CACHE = 'fote-v3';   /* 2026-09-19: v3 revalidates every request (see fetch) */
 
 function key(url){ var u = new URL(url, location.href); u.search = ''; return u.toString(); }
 
@@ -48,7 +48,10 @@ self.addEventListener('fetch', function(ev){
   var req = ev.request;
   if(req.method!=='GET' || new URL(req.url).origin!==location.origin) return;
   ev.respondWith(
-    fetch(req).then(function(res){
+    /* 2026-09-19: always ask the server first. GitHub Pages marks every file cacheable for 10 minutes and the
+       fetch went through that HTTP cache, so a device could open a copy up to 10 minutes old - longer on an
+       iPad home-screen app. 'no-cache' revalidates: an unchanged file is a tiny 304, a changed one comes fresh. */
+    fetch(req, {cache:'no-cache'}).then(function(res){
       if(res && res.status===200){
         var copy = res.clone();
         caches.open(CACHE).then(function(c){ c.put(key(req.url), copy); });
