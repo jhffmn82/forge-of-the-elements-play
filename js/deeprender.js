@@ -134,8 +134,8 @@ function deepSolid(wx, wy, style, salt){
    Per region: the lit / mid / shaded planes of the rock top, its edge, the cliff face from lip to foot, and what runs
    through the seams - glowing lava in the basalt, pale web strands on the spider-cave cliffs. */
 var DEEP_ROCK = {
-  1: {topHi:[108,100,126], top:[76,70,92], topLo:[44,40,58], edge:[20,18,28], lip:[150,142,170], face:[62,56,78], faceLo:[22,20,30], seam:[186,180,200], seamOn:'face', soft:1},
-  2: {topHi:[112,94,86], top:[70,59,55], topLo:[34,27,27], edge:[16,11,11], lip:[128,100,84], face:[50,42,40], faceLo:[20,14,14], seam:[255,118,40], seamHot:[255,206,110], seamOn:'both', soft:0}
+  1: {topHi:[118,110,138], top:[86,80,102], topLo:[52,48,66], edge:[26,24,34], lip:[158,150,178], face:[70,64,86], faceLo:[30,27,38], seam:[186,180,200], seamOn:'face', soft:1},
+  2: {topHi:[138,116,104], top:[96,80,74], topLo:[52,42,40], edge:[26,18,17], lip:[164,128,104], face:[74,60,56], faceLo:[34,25,24], seam:[255,86,24], seamHot:[255,224,150], seamOn:'both', soft:0}
 };
 DEEP_ROCK[0]=DEEP_ROCK[1];
 function deepMix(a, b, t){ return [a[0]+(b[0]-a[0])*t, a[1]+(b[1]-a[1])*t, a[2]+(b[2]-a[2])*t]; }
@@ -148,7 +148,7 @@ function deepRockCol(rgn, wx, wy, salt, part, depth, lip){
     if(cf.d2-cf.d1<0.03) col=deepMix(col, M.faceLo, 0.35);
     if(M.seamOn){   /* seams: web strands hang down the spider cliffs; lava glows in the basalt's cracks */
       var fv=ptVor(wx*1.6, wy*0.9, 0.9, salt+23), mk=ptVal(wx*0.3, wy*0.3, salt+20);
-      if(mk>(M.soft?0.62:0.5) && fv.d2-fv.d1<(M.soft?0.012:0.02)) col=deepMix(col, M.seamHot && fv.d2-fv.d1<0.007 ? M.seamHot : M.seam, M.soft?0.5:0.85);
+      if(mk>(M.soft?0.62:0.45) && fv.d2-fv.d1<(M.soft?0.012:0.024)) col=deepMix(col, M.seamHot && fv.d2-fv.d1<0.008 ? M.seamHot : M.seam, M.soft?0.5:1);
     }
     return col;
   }
@@ -158,7 +158,7 @@ function deepRockCol(rgn, wx, wy, salt, part, depth, lip){
   var mot=(ptVal(wx*3.2, wy*3.2, salt+15)-0.5)*9 + (ptVal(wx*7.5, wy*7.5, salt+16)-0.5)*5;
   col=[col[0]+mot, col[1]+mot, col[2]+mot*1.05];
   if(f.d2-f.d1<0.03){
-    if(M.seamOn==='both' && ptVal(wx*0.4, wy*0.4, salt+24)>0.3) col=deepMix(col, f.d2-f.d1<0.012 ? (M.seamHot||M.seam) : M.seam, 0.8);   /* lava in the cracks */
+    if(M.seamOn==='both' && ptVal(wx*0.4, wy*0.4, salt+24)>0.3) col=deepMix(col, f.d2-f.d1<0.014 ? (M.seamHot||M.seam) : M.seam, 1);   /* lava in the cracks, full strength */
     else col=deepMix(col, M.topLo, 0.55);
   }
   return col;
@@ -545,3 +545,13 @@ if(_drawAutomapDeep) drawAutomap = function(){
    cell, and green moss is not the Underdark's (the spider caves have their own violet growth) */
 var _mossRasterDeep = mossRaster;
 mossRaster = function(x, y){ if(inDeep()) return null; return _mossRasterDeep.apply(this, arguments); };
+
+/* ---------------------------------------------------------------- how dark each region is (2026-09-19)
+   Justin: "it's just so dark, i can't make out the walls in the lava biome, needs lava to give off some dull red
+   light". The lightmap's ambient is per biome; here it is per region, so the volcanic rock sits in a dull red glow
+   from the lava under it, the temple in a cold near-black, the spider caves a shade above that. */
+var DEEP_AMB = [[0.24,0.20,0.23], [0.22,0.21,0.27], [0.40,0.24,0.19]];
+function deepAmbAt(x, y){
+  if(!inDeep() || !floorMeta.deepRegion || !inb(x,y)) return null;
+  return DEEP_AMB[floorMeta.deepRegion[idxOf(x,y)]] || null;
+}

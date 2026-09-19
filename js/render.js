@@ -572,6 +572,8 @@ function drawLightmap(now, prp){
     if(!(revealAll||vis[i])){ r=MEM[0]; g=MEM[1]; b=MEM[2]; }
     else {
       r=AMB[0]; g=AMB[1]; b=AMB[2];
+      /* 2026-09-19: the Underdark lights its regions differently - a dull red glow over the lava rock (deeprender.js) */
+      if(typeof deepAmbAt==='function'){ var da=deepAmbAt(x,y); if(da){ r=da[0]; g=da[1]; b=da[2]; } }
       /* a wall face takes its light from the floor in front of it; a wall top is lit later from its neighbours */
       var face = wall && !isWallLike(at(x,y+1));
       if(!wall || face){
