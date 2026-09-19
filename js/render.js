@@ -940,9 +940,16 @@ function draw(){
       if(e.ally){ ctx.strokeStyle='#7FD08A'; ctx.lineWidth=2; ctx.beginPath(); ctx.ellipse(px0+TS/2,py0+TS*0.9,TS*0.34,TS*0.12,0,0,7); ctx.stroke(); ctx.lineWidth=1; }
       /* health bar only once hurt, or always for bosses */
       if(e.hp<e.maxhp || e.base.boss){
-        ctx.fillStyle='rgba(0,0,0,.7)'; ctx.fillRect(px0+TS*0.12,py0-TS*0.02,TS*0.76,3);
+        /* 2026-09-19: Justin - "the Matron's hp bar is on her waist". A big creature is drawn taller than its own
+           tile, so the bar goes above what is actually drawn, and spans its whole footprint. */
+        var bigN=(e.base && e.base.big) || 1, bScale=(e.base && e.base.bigScale) || 1;
+        var artH=(e.base && e.base.art) || 0.9;                    /* tall art (the Matron stands 2.1 tiles) */
+        var lift=Math.max(bigN*bScale>1 ? TS*(bigN*0.98*bScale-bigN) : 0, artH>1 ? TS*(artH-1) : 0);
+        var barW=TS*0.76*bigN, barX=px0+TS*0.12*bigN;
+        var barY=py0-TS*0.02-lift;
+        ctx.fillStyle='rgba(0,0,0,.7)'; ctx.fillRect(barX,barY,barW,3);
         ctx.fillStyle = e.ally ? '#7FD08A' : e.hp/e.maxhp>0.5 ? '#C7B04F' : '#C7503F';
-        ctx.fillRect(px0+TS*0.12,py0-TS*0.02,TS*0.76*clamp(e.hp/e.maxhp,0,1),3);
+        ctx.fillRect(barX,barY,barW*clamp(e.hp/e.maxhp,0,1),3);
       }
       var ix=px0+TS*0.02;
       if(e.surprised && e.foe) { mark('!',px0+TS*0.78,py0+TS*0.02,'#FFD24A'); }
