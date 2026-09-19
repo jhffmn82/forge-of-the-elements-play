@@ -80,14 +80,14 @@ function objFxInfo(o){
 var OBJ_GLINTS = [];
 function objGlintsFlush(){
   if(!OBJ_GLINTS.length) return;
-  ctx.save(); ctx.globalCompositeOperation='lighter';
+  ctx.save();
   OBJ_GLINTS.forEach(function(q){
     var x=q[0], y=q[1], a=q[2], L=q[3], hr=q[4], u=q[5];
-    var hg=ctx.createRadialGradient(x, y, 0, x, y, hr); hg.addColorStop(0, 'rgba(255,255,255,'+(0.4*a)+')'); hg.addColorStop(1, 'rgba(255,255,255,0)');
+    var hg=ctx.createRadialGradient(x, y, 0, x, y, hr); hg.addColorStop(0, 'rgba(255,255,255,'+(0.3*a)+')'); hg.addColorStop(1, 'rgba(255,255,255,0)');
     ctx.globalAlpha=1; ctx.fillStyle=hg; ctx.fillRect(x-hr, y-hr, hr*2, hr*2);
     ctx.globalAlpha=a; ctx.fillStyle='#FFFFFF';
     ctx.fillRect(x-u/2, y-L, u, L*2+u); ctx.fillRect(x-L, y-u/2, L*2+u, u);
-    ctx.globalAlpha=a*0.6; ctx.fillRect(x-u*1.5, y-u*1.5, u*3, u*3);
+    ctx.globalAlpha=a*0.6; ctx.fillRect(x-u/2, y-u/2, u, u);
   });
   ctx.restore(); OBJ_GLINTS.length=0;
 }
@@ -131,7 +131,7 @@ function objFxDraw(o, dx, dy, w, h, alpha, flip){
         var ph=((t*0.35 + hash2(i, seed|0, 5)) % 1)*2.2; if(ph>1) return;
         var a=Math.pow(Math.sin(Math.PI*ph), 3); if(a<0.05) return;
         /* queued, and drawn after the lighting (drawBeacons below): drawn here, the dark pass swallowed it */
-        OBJ_GLINTS.push([Math.round(X(b[0])), Math.round(Y(b[1])), a*alpha, Math.round(u*(2+3*a)), u*4*a, u]);
+        OBJ_GLINTS.push([Math.round(X(b[0])), Math.round(Y(b[1])), a*alpha*0.5, Math.round(u*(1+1.5*a)), u*2.5*a, u]);   /* Justin: exists, but quiet */
       });
     }
     if(k==='flame' && I.warm && typeof drawPixelFlame==='function'){
