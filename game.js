@@ -476,7 +476,7 @@ function resize(){
   cv.width=viewW*TS*dpr; cv.height=viewH*TS*dpr;
   cv.style.width=(viewW*TS)+'px'; cv.style.height=(viewH*TS)+'px';
   ctx.setTransform(dpr,0,0,dpr,0,0); ctx.imageSmoothingEnabled=false;
-  draw();
+  if(typeof draw==="function") draw();   /* the resize observer can fire before render.js has loaded */
 }
 var camOX=0, camOY=0;
 function atTile(mx,my,fn){

@@ -93,7 +93,7 @@ function findTileIn(stash, t){ var m=stash.map; for(var i=0;i<m.length;i++) if(m
 
 /* stepping on it, the key, the button */
 var _stepOnFloors = stepOn;
-stepOn = function(){ var r=_stepOnFloors(); if(at(player.x,player.y)===UPSTAIRS) log('Stairs up to floor '+(floorNo-1)+'. Press <b>&lt;</b> or click <b>Stairs</b> to climb.','c-kill'); return r; };
+stepOn = function(){ var r=_stepOnFloors(); if(at(player.x,player.y)===UPSTAIRS) log('Stairs up to floor '+(floorNo-1)+'. '+(document.body.classList.contains('touch') ? 'Tap them to climb.' : 'Press <b>&lt;</b> or click <b>Stairs</b> to climb.'),'c-kill'); return r; };
 window.addEventListener('keydown', function(ev){
   var tgt=ev.target && ev.target.tagName; if(tgt==='INPUT'||tgt==='SELECT'||tgt==='TEXTAREA') return;
   if(ev.key!=='<' || !player || player.hp<=0 || (typeof uiOpen==='function' && uiOpen())) return;

@@ -718,6 +718,10 @@ function draw(){
   var camFX=clamp(prp.x-(viewW>>1), 0, Math.max(0,MW-viewW));
   var camFY=clamp(prp.y-(viewH>>1), 0, Math.max(0,MH-viewH));
   camX=Math.floor(camFX); camY=Math.floor(camFY);
+  /* 2026-09-18: on touch the player stays centred even at a map edge. The tile window stays clamped (every
+     loop below reads inside the map); only the pixel offset follows the player, so the far side of the edge
+     is empty dark and the tiles pushed past the other side are simply off-canvas. Taps convert through camOX. */
+  if(document.body.classList.contains('touch')){ camFX=prp.x-(viewW>>1); camFY=prp.y-(viewH>>1); }
   camOX=(camFX-camX)*TS; camOY=(camFY-camY)*TS;
   ctx.globalAlpha=1; ctx.fillStyle='#07060A'; ctx.fillRect(0,0,viewW*TS,viewH*TS);
   ctx.save(); ctx.translate(-camOX, -camOY);

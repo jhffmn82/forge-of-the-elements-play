@@ -1,11 +1,10 @@
 /* autoaim.js - press to aim, press again to fire (2026-09-18).
-   Pressing a single-target ability (or the Hook / Swap amulet) opens the aim as before, and now also picks the
+   Pressing a single-target ability opens the aim as before, and now also picks the
    nearest enemy it can actually reach - in range, in sight, and for bolts with a clear path - and marks it.
    Pressing the same slot again fires at that enemy. Tapping or clicking any tile still fires there instead,
    and Esc, right-click or a d-pad press cancels. On a touch screen this means a ranged character never has
    to tap the map (and risk a step) to shoot. With nothing in reach, the second press cancels, as before. */
 var AUTO_AIM_KINDS = {bolt:1, chain:1, beam:1, tomb:1};
-var AUTO_AIM_AMULETS = {hook:1, swap:1};
 
 function autoAimTarget(){
   if(!aiming) return null;
@@ -13,13 +12,10 @@ function autoAimTarget(){
   ents.forEach(function(e){
     if(!e.foe || e.hp<=0 || !(revealAll || vis[idxOf(e.x,e.y)])) return;
     var d=dist(player,e);
-    if(aiming.amulet){ if(d>aiming.A.range) return; }
-    else {
-      if(!inRange(e.x,e.y)) return;
-      if(aiming.A.kind==='bolt'){
-        var p=boltPath(player.x,player.y,e.x,e.y), end=p.length ? p[p.length-1] : null;
-        if(!end || end.x!==e.x || end.y!==e.y) return;           /* something is in the way */
-      }
+    if(!inRange(e.x,e.y)) return;
+    if(aiming.A.kind==='bolt'){
+      var p=boltPath(player.x,player.y,e.x,e.y), end=p.length ? p[p.length-1] : null;
+      if(!end || end.x!==e.x || end.y!==e.y) return;           /* something is in the way */
     }
     /* nearest first; among equals the most hurt, so a second press finishes what the first started */
     if(d<bd || (d===bd && best && e.hp/e.maxhp < best.hp/best.maxhp)){ best=e; bd=d; }
@@ -45,19 +41,6 @@ useAbility = function(i){
   _useAbilityAuto(i);
   if(aiming && !aiming.amulet && aiming.i===i && !aiming.auto && AUTO_AIM_KINDS[aiming.A.kind]) autoAimPick();
 };
-
-if(typeof useAmulet==='function'){
-  var _useAmuletAuto = useAmulet;
-  useAmulet = function(){
-    if(aiming && aiming.amulet && aiming.auto){
-      var e=autoAimLive(); if(e) castAt(e.x, e.y); else cancelAim();
-      return;
-    }
-    _useAmuletAuto.apply(this, arguments);
-    var k=player.amulet && player.amulet.amulet;
-    if(aiming && aiming.amulet && !aiming.auto && AUTO_AIM_AMULETS[k]) autoAimPick();
-  };
-}
 
 /* the mark: a gold reticle on the chosen enemy and the bolt's path to it, drawn over the map */
 var _drawAuto = draw;

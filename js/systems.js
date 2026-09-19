@@ -87,7 +87,7 @@ function stepOn(){
   }
   if(plates) pressPlateAt(player.x,player.y,player);
   var t=at(player.x,player.y);
-  if(t===STAIRS) log('Stairs down to floor '+(floorNo+1)+'. Press <b>&gt;</b> or click <b>Stairs</b> to descend.','c-kill');
+  if(t===STAIRS) log('Stairs down to floor '+(floorNo+1)+'. '+(document.body.classList.contains('touch') ? 'Tap them to descend.' : 'Press <b>&gt;</b> or click <b>Stairs</b> to descend.'),'c-kill');
   if(t===EXIT && floorMeta.exitOpen){ if(floorNo<LAST_FLOOR) descend(); else victory(); }
   if(t===CHASM && !(player.levitate>0)) fallIntoChasm();
 }

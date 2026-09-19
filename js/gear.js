@@ -381,7 +381,27 @@ function useAmulet(){
 /* hotbar: the worn amulet gets a slot once, like a new ability */
 var _syncHotbarBase = syncHotbar;
 syncHotbar = function(){
+  /* 2026-09-18: learning an ability, changing god or class and the forge all reset the hotbar (hotbar=null)
+     so it rebuilds from abilities and prayers - which silently dropped the amulet and any potions on it.
+     The last layout is remembered, and after a rebuild those entries go back to their old slots. */
+  var rebuilt = !player.hotbar, prev = player._hotPrev || [];
   _syncHotbarBase();
+  if(rebuilt){
+    var fresh=player.hotbar.slice(), out=[null,null,null,null,null,null,null,null];
+    function same(x,y){ return x && y && x.type===y.type && x.key===y.key && x.ref===y.ref; }
+    function valid(h){
+      if(!h) return false;
+      if(h.type==='item') return player.bag.indexOf(h.ref)>=0;
+      if(h.type==='amulet') return !!player.amulet;
+      return fresh.some(function(f){ return same(f,h); });     /* abilities and prayers: still known */
+    }
+    prev.forEach(function(h, i){ if(i<8 && valid(h) && !out.some(function(o){ return same(o,h); })) out[i]=h; });
+    fresh.forEach(function(f){                                   /* whatever is new goes in the first free slot */
+      if(!f || out.some(function(o){ return same(o,f); })) return;
+      var j=out.indexOf(null); if(j>=0) out[j]=f;
+    });
+    player.hotbar=out;
+  }
   for(var i=0;i<8;i++){ var s=player.hotbar[i]; if(s && s.type==='amulet' && !player.amulet) player.hotbar[i]=null; }
   if(player.amulet){
     var id='m:'+(player.amulet.uidA || (player.amulet.uidA='a'+(nextId++)));
@@ -390,6 +410,7 @@ syncHotbar = function(){
       if(!player.hotbar.some(function(s){ return s && s.type==='amulet'; })){ for(var j=0;j<8;j++) if(!player.hotbar[j]){ player.hotbar[j]={type:'amulet'}; break; } }
     }
   }
+  player._hotPrev = player.hotbar.slice();
 };
 var _pressSlotIndexBase = pressSlotIndex;
 pressSlotIndex = function(i){
