@@ -425,7 +425,7 @@ function caveDecorate(){
   var salt=Math.floor(rng()*1e6), deco={decals:[], walls:[]}, x, y, i;
   floorMeta.caveDeco=deco;
   /* 2026-09-19: no lichen or spore-drift: stamped a tile at a time they read as stray snowflakes */
-  var DEC=[['dc-puddle',3]];   /* mineral veins also read as single spidery stamps */
+  var DEC=[['dc-lichen',3],['dc-mineral-vein',3],['dc-lichen',3],['dc-puddle',3]];   /* lichen draws at half strength (cavernrender.js) */
   for(y=1;y<MH-1;y++) for(x=1;x<MW-1;x++){
     if(at(x,y)!==FLOOR) continue;
     var n=caveNoise(x*0.28, y*0.28, salt);

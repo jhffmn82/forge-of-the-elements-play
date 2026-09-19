@@ -170,7 +170,7 @@ function drawCaveDecals(){
     if(d.x<camX-1 || d.x>camX+viewW+1 || d.y<camY-1 || d.y>camY+viewH+1) return;
     var i=idxOf(d.x,d.y); if(!(revealAll||seen[i]) || at(d.x,d.y)!==FLOOR) return;
     var o=caveArt(d.n); if(!o) return;
-    var a=((revealAll||vis[i]) ? 1 : memA(0.42))*0.8, px=(d.x-camX)*TS, py=(d.y-camY)*TS;
+    var a=((revealAll||vis[i]) ? 1 : memA(0.42))*(/^dc-lichen/.test(d.n) ? 0.5 : 0.8), px=(d.x-camX)*TS, py=(d.y-camY)*TS;   /* 2026-09-19: lichen at half strength, so it tints the stone instead of sitting on it */
     drawCaveArt(o, px+TS/2, py+TS/2+o.fullH*TS/128, a, hash2(d.x,d.y,31)<0.5);
   });
 }
