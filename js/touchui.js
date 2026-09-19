@@ -392,5 +392,5 @@
   }, true);
   document.addEventListener('contextmenu', function(ev){ if(touch() && ev.target.closest && ev.target.closest('#hotbar')) ev.preventDefault(); });
 
-  var n=0, t=setInterval(function(){ var a=hookDpad(), m=moveMap(), c=hookMapHover(); if((a && m && c) || ++n>60) clearInterval(t); }, 100);
+  var n=0, t=setInterval(function(){ var a=hookDpad(), m=moveMap(), c=hookMapHover(); if((a && m && c) || ++n>600) clearInterval(t);   /* up to a minute: the art takes a while to load */ }, 100);
 })();
