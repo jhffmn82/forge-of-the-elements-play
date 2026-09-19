@@ -33,7 +33,7 @@
     '@media (orientation:landscape){ body.touch{--dp:clamp(40px,8vh,52px)} }',
 
     /* ---- hotbar: square slots, icon fills the slot */
-    'body.touch #hotbar{grid-template-rows:auto!important;gap:6px!important}',
+    'body.touch #hotbar{grid-template-rows:auto!important;gap:6px!important;order:-1}',   /* hotbar first, above the bars */
     'body.touch #hotbar .slot{height:auto!important;aspect-ratio:1/1;max-height:96px;padding:0!important;border-radius:9px}',
     'body.touch #hotbar .slot .ico{width:86%!important;height:86%!important;left:50%!important;top:50%!important;transform:translate(-50%,-50%)!important}',
     'body.touch #hotbar .slot .ico canvas{width:100%!important;height:100%!important;display:block}',
