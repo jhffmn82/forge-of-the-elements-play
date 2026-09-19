@@ -74,6 +74,13 @@
     'body.touch #bAmHot{margin-top:10px;min-height:44px;padding:0 14px;font-size:14px}',
 
     /* ---- the hotbar's long-press menu */
+    'body.touch #hotbar .slot{touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}',
+    'body.touch #hotbar .slot.lifted{transform:scale(.92);opacity:.45}',
+    'body.touch #hotbar .slot.over{border-color:var(--gold)!important;box-shadow:0 0 0 2px rgba(232,180,74,.5) inset}',
+    '#hotGhost{position:fixed;z-index:80;pointer-events:none;transform:scale(1.12);opacity:.95;box-shadow:0 8px 24px rgba(0,0,0,.6);margin:0}',
+    '#hotGhost .ico{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:86%;height:86%}',
+    '#hotGhost .ico canvas{width:100%!important;height:100%!important;display:block}',
+    '#hotGhost .k,#hotGhost .n,#hotGhost .c,#hotGhost .cdn,#hotGhost .clickmark{display:none}',
     '#hmenu{position:fixed;left:8px;right:8px;z-index:70;background:rgba(18,15,13,.97);border:1px solid var(--edge);border-radius:12px;',
     '  padding:12px;box-shadow:0 8px 30px rgba(0,0,0,.6);display:flex;flex-direction:column;gap:10px;max-width:520px;margin:0 auto}',
     '#hmenu .hm-card .nm{font-size:18px;color:var(--gold);margin-bottom:4px}',
@@ -232,19 +239,72 @@
     if(navigator.vibrate) try{ navigator.vibrate(12); }catch(e){}
   }
   window.openHotbarMenu = openHM;
+  /* one gesture for the slot: hold it and it lifts. Drag it onto another slot and let go to swap them;
+     let go without moving and the menu opens. The browser's own long-press drag is switched off on the
+     hotbar (draggable=false, touch-action:none), because it fought this for the same press. */
+  var lift=null;      /* {slot, i, x, y, moved, ghost, over} while a slot is held */
+  function slotAt(x,y){ var el=document.elementFromPoint(x,y); return el && el.closest ? el.closest('#hotbar .slot[data-i]') : null; }
+  function endLift(){
+    if(!lift) return;
+    if(lift.ghost) lift.ghost.remove();
+    lift.slot.classList.remove('lifted');
+    if(lift.over) lift.over.classList.remove('over');
+    lift=null;
+  }
   document.addEventListener('pointerdown', function(ev){
     if(hm && !hm.contains(ev.target)){ closeHM(); hmSwallow=true; setTimeout(function(){ hmSwallow=false; }, 450); return; }
     if(!touch()) return;
     var slot=ev.target.closest && ev.target.closest('#hotbar .slot[data-i]'); if(!slot) return;
     hmX=ev.clientX; hmY=ev.clientY;
-    clearTimeout(hmTimer);
-    hmTimer=setTimeout(function(){ hmTimer=null; hmSwallow=true; openHM(+slot.getAttribute('data-i')); }, 450);
+    clearTimeout(hmTimer); endLift();
+    hmTimer=setTimeout(function(){
+      hmTimer=null; hmSwallow=true;
+      lift={slot:slot, i:+slot.getAttribute('data-i'), x:hmX, y:hmY, moved:false, ghost:null, over:null};
+      slot.classList.add('lifted');
+      if(navigator.vibrate) try{ navigator.vibrate(12); }catch(e){}
+    }, 420);
   }, true);
-  document.addEventListener('pointermove', function(ev){ if(hmTimer && (Math.abs(ev.clientX-hmX)>12 || Math.abs(ev.clientY-hmY)>12)){ clearTimeout(hmTimer); hmTimer=null; } }, true);
-  ['pointerup','pointercancel'].forEach(function(n){ document.addEventListener(n, function(){
+  document.addEventListener('pointermove', function(ev){
+    if(hmTimer && (Math.abs(ev.clientX-hmX)>12 || Math.abs(ev.clientY-hmY)>12)){ clearTimeout(hmTimer); hmTimer=null; }
+    if(!lift) return;
+    if(!lift.moved && Math.abs(ev.clientX-lift.x)<10 && Math.abs(ev.clientY-lift.y)<10) return;
+    ev.preventDefault();
+    if(!lift.moved){
+      lift.moved=true;
+      var g=lift.slot.cloneNode(true), r=lift.slot.getBoundingClientRect();
+      g.id='hotGhost'; g.style.width=r.width+'px'; g.style.height=r.height+'px';
+      /* the clone's canvas comes over blank: copy the painted icon across */
+      var src=lift.slot.querySelector('canvas'), dst=g.querySelector('canvas');
+      if(src && dst){ dst.width=src.width; dst.height=src.height; dst.getContext('2d').drawImage(src,0,0); }
+      document.body.appendChild(g); lift.ghost=g;
+    }
+    lift.ghost.style.left=(ev.clientX-lift.ghost.offsetWidth/2)+'px';
+    lift.ghost.style.top=(ev.clientY-lift.ghost.offsetHeight/2)+'px';
+    var over=slotAt(ev.clientX, ev.clientY);
+    if(over===lift.slot) over=null;
+    if(over!==lift.over){ if(lift.over) lift.over.classList.remove('over'); lift.over=over; if(over) over.classList.add('over'); }
+  }, {capture:true, passive:false});
+  ['pointerup','pointercancel'].forEach(function(n){ document.addEventListener(n, function(ev){
     if(hmTimer){ clearTimeout(hmTimer); hmTimer=null; }
+    if(lift){
+      var L=lift;
+      if(n==='pointerup' && L.moved && L.over){
+        var j=+L.over.getAttribute('data-i'), t=player.hotbar[j];
+        player.hotbar[j]=player.hotbar[L.i]; player.hotbar[L.i]=t;
+        endLift(); sfx('ui-click'); abilityBar();
+      } else if(n==='pointerup' && !L.moved){ endLift(); openHM(L.i); }
+      else endLift();
+    }
     if(hmSwallow) setTimeout(function(){ hmSwallow=false; }, 350);    /* some browsers send no click after a long hold */
   }, true); });
+  /* no native drag on the touch hotbar */
+  document.addEventListener('dragstart', function(ev){ if(touch() && ev.target.closest && ev.target.closest('#hotbar')) ev.preventDefault(); }, true);
+  var _abilityBarTouch = abilityBar;
+  abilityBar = function(){
+    var r=_abilityBarTouch.apply(this, arguments);
+    if(touch()) document.querySelectorAll('#hotbar .slot').forEach(function(b){ b.setAttribute('draggable','false'); });
+    return r;
+  };
   /* the tap that ends a long press (or closes the menu) must not also fire the slot or step on the map */
   document.addEventListener('click', function(ev){
     var slot=ev.target.closest && ev.target.closest('#hotbar .slot'); if(slot) slot._longPress=false;   /* travel.js's flag */
