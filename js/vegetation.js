@@ -64,6 +64,24 @@ function vegGrow(){
     i=idxOf(x,y); if(inRoom[i] || !free(x,y) || !wallN(x,y)) continue;
     if(vegNoise(x*0.5, y*0.5, salt+3)>0.72 && hash2(x,y,salt+4)<0.6) setG(x,y,G_SHORT);
   }
+  /* 2026-09-19: cuttable bushes, Zelda-style - on the Dungeon floors lush rooms (and some others) turn their plant
+     spots into bushes, often a short row along the wall. A bush blocks the way until you hit it; it burns; now and
+     then it hides a heart or a little essence. Never beside a door or in a gap only one tile wide. */
+  if(!cave){
+    function narrow(x,y){ var o=[[1,0],[-1,0],[0,1],[0,-1]].filter(function(d){ return walkable(x+d[0],y+d[1]); }).length; return o<=2; }
+    function nearDoor(x,y){ for(var dy=-1;dy<=1;dy++) for(var dx=-1;dx<=1;dx++){ var t=at(x+dx,y+dy); if(isDoorish(t) || t===STAIRS || t===CHEST) return true; } return false; }
+    function bushOK(x,y){ return at(x,y)===FLOOR && !propAt(x,y) && !nearDoor(x,y) && !narrow(x,y) && Math.max(Math.abs(x-player.x),Math.abs(y-player.y))>2; }
+    spots=spots.filter(function(sp){
+      var ch = sp.mood==='lush' ? 0.7 : 0.3;
+      if(rng()>ch || !bushOK(sp.x,sp.y)) return true;
+      addProp(sp.x, sp.y, 'bush'); if(ground[idxOf(sp.x,sp.y)]===G_GRASS) setG(sp.x,sp.y,G_SHORT);
+      /* a row: carry on along the wall a tile or two */
+      var run=ri(0,2), dirs=[[1,0],[-1,0],[0,1],[0,-1]].filter(function(d){ return isWallLike(at(sp.x+d[1],sp.y+d[0])) || isWallLike(at(sp.x-d[1],sp.y-d[0])); });
+      var d=dirs.length ? dirs[Math.floor(rng()*dirs.length)] : null, bx=sp.x, by=sp.y;
+      for(var k=0; d && k<run; k++){ bx+=d[0]; by+=d[1]; if(!bushOK(bx,by)) break; addProp(bx, by, 'bush'); if(ground[idxOf(bx,by)]===G_GRASS) setG(bx,by,G_SHORT); }
+      return false;
+    });
+  }
   floorMeta.vegSpots=spots;
 }
 var _generateVeg = generate;

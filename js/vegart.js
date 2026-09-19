@@ -108,3 +108,31 @@ drawPropSurface = function(p, px, py, alpha){
   }
   return _drawPropSurfaceVeg.apply(this, arguments);
 };
+
+/* ---------------------------------------------------------------- cuttable bushes (vegetation.js places them) */
+var _drawPropSurfaceBush = drawPropSurface;
+drawPropSurface = function(p, px, py, alpha){
+  if(p && p.name==='bush'){
+    var o=vegArt('earth-bush-'+(1+Math.floor(hash2(p.x,p.y,91)*3)));
+    if(o){
+      ctx.save(); ctx.globalAlpha=alpha*0.35; ctx.fillStyle='#0A0806'; ctx.beginPath(); ctx.ellipse(px+TS/2, py+TS*0.9, TS*0.4, TS*0.12, 0, 0, 7); ctx.fill(); ctx.restore();
+      vegDraw(o, px+TS/2, py+TS*0.97, 1.0, vegSway(p.x,p.y,performance.now(),0)*0.3, alpha, hash2(p.x,p.y,92)<0.5);
+      if(typeof flashOf==='function'){ var fl=flashOf(p); if(fl>0){ ctx.save(); ctx.globalAlpha=fl*0.5; ctx.fillStyle='#FFF'; ctx.fillRect(px+TS*0.2, py+TS*0.3, TS*0.6, TS*0.6); ctx.restore(); } }
+      return true;
+    }
+  }
+  return _drawPropSurfaceBush.apply(this, arguments);
+};
+/* cutting one: a burst of leaves, and what it drops is mostly a heart (Zelda rules) */
+var _damagePropBush = damageProp;
+damageProp = function(p, src, type){
+  if(!p || !p.bush) return _damagePropBush.apply(this, arguments);
+  removeProp(p); sfx('step-grass');
+  if(typeof burst==='function') burst(p.x, p.y, 'heal', 14, 0.05);
+  if(type==='fire'){ setG(p.x,p.y,G_ASH); return; }
+  if(rng()<(p.loot||0.25)){
+    var it = rng()<0.6 ? {kind:'heart'} : {kind:'essence', n:ri(2,5)+floorNo};
+    it.x=p.x; it.y=p.y; items.push(it);
+    log(it.kind==='heart' ? 'A heart was tucked under the bush.' : 'Something glints among the cut leaves.','c-good');
+  }
+};
