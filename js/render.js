@@ -938,6 +938,7 @@ function draw(){
     });
   });
   if(!playerDrawn) drawPlayer();
+  if(typeof drawOccluders==='function') drawOccluders(now);   /* tall scenery in front of whoever stands behind it (cavefixes.js) */
 
   /* tall grass sits on top: its front blades are drawn over everything standing on the tile */
   for(y=camY;y<=camY+viewH;y++) for(x=camX;x<=camX+viewW;x++){
