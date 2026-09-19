@@ -265,7 +265,7 @@ function ptCellRaster(x, y){
         else if(pf<0.42) col=ptMix(M.poolShallow, M.poolEdge, (pf-0.3)/0.12);                                 /* pale turquoise shallows */
         else col=ptMix(M.poolEdge, M.pool, Math.max(0,deep));
         var caus=Math.sin(wx*9.1+Math.sin(wy*7.3)*1.4)+Math.sin(wy*8.3+Math.sin(wx*6.1)*1.2);
-        if(pf>0.45 && caus>1.6 && floorMeta.plane!=='shadow' && hash2(Math.floor(wx*R/2), Math.floor(wy*R/2), salt+72)<0.5) col=ptMix(col, M.poolRim, 0.5);
+        if(pf>0.45 && caus>1.6 && floorMeta.plane!=='shadow' && floorMeta.plane!=='earth' && hash2(Math.floor(wx*R/2), Math.floor(wy*R/2), salt+72)<0.5) col=ptMix(col, M.poolRim, 0.5);
         if(pf<0.325 && ptVal(wx*3.4, wy*3.4, salt+74)>0.62 && hash2(Math.floor(wx*R), Math.floor(wy*R), salt+73)<0.5) col=ptMix(col, M.poolRim, 0.7);   /* intermittent waterline highlights */
       } else if(pf>0.18){
         var sh2=ptVal(wx*2.4, wy*2.4, salt+71);
@@ -1010,21 +1010,31 @@ drawGrassTile = function(x, y, px, py, alpha, layer, now){
 /* ---------------------------------------------------------------- the Shadow pool bubbles (2026-09-19)
    Justin: the still violet pool read as splotches; it should move, like the Crypt's ooze. Its caustic specks are gone
    from the ground and violet bubbles swell and pop across it instead, each on its own clock, with a slow sheen. */
+/* per plane: bubble fill, bubble rim, highlight, sheen, ripple ring (the Earth pool is a green swamp spring) */
+var PT_POOL_FX = {
+  shadow: ['rgba(110,70,190,0.55)','rgba(200,170,255,0.85)','rgba(240,228,255,0.95)','#D8C4FF', null],
+  earth:  ['rgba(70,120,70,0.55)','rgba(170,220,150,0.8)','rgba(230,250,215,0.9)','#CDEBB8','rgba(190,230,170,0.35)']
+};
 function ptPoolBubbles(){
-  var P=floorMeta && floorMeta.plane==='shadow' && floorMeta.ptPool; if(!P) return;
+  var FX=floorMeta && PT_POOL_FX[floorMeta.plane], P=FX && floorMeta.ptPool; if(!P) return;
   var t=(typeof ANIM!=='undefined' && ANIM.reduce) ? 0 : performance.now()/1000;
   for(var y=camY-1; y<=camY+viewH+1; y++) for(var x=camX-1; x<=camX+viewW+1; x++){
     if(!inb(x,y)) continue; var i=idxOf(x,y); if(!P[i] || !(revealAll||vis[i])) continue;
     var sh=(t*0.1 + hash2(x,y,141))%1;
-    if(sh<0.7){ ctx.globalAlpha=0.12*Math.sin(sh/0.7*Math.PI); ctx.fillStyle='#D8C4FF'; ctx.beginPath(); ctx.ellipse((x-camX+sh*1.2)*TS, (y-camY+0.35+0.3*hash2(x,y,143))*TS, TS*0.24, TS*0.05, -0.25, 0, 7); ctx.fill(); }
+    if(sh<0.7){ ctx.globalAlpha=0.12*Math.sin(sh/0.7*Math.PI); ctx.fillStyle=FX[3]; ctx.beginPath(); ctx.ellipse((x-camX+sh*1.2)*TS, (y-camY+0.35+0.3*hash2(x,y,143))*TS, TS*0.24, TS*0.05, -0.25, 0, 7); ctx.fill(); }
+    /* a ripple ring now and then, spreading and fading (Earth) */
+    if(FX[4] && hash2(x,y,151)<0.25){
+      var rp=((t*0.2 + hash2(x,y,153)*5)%1)*2.5;
+      if(rp<1){ ctx.globalAlpha=1-rp; ctx.strokeStyle=FX[4]; ctx.lineWidth=1; ctx.beginPath(); ctx.ellipse((x-camX+0.5)*TS, (y-camY+0.5)*TS, TS*(0.08+0.4*rp), TS*(0.04+0.2*rp), 0, 0, 7); ctx.stroke(); ctx.globalAlpha=1; }
+    }
     var nb = hash2(x,y,149)<0.3 ? 1 : 0;   /* about one cell in three, one bubble at a time, resting between pops */
     for(var b=0;b<nb;b++){
       var ph=((t*0.3 + hash2(x,y,131+b)*7)%1)*2; if(ph>1) continue; bx=(x-camX+0.2+0.6*hash2(x,y,111+b))*TS, by=(y-camY+0.2+0.6*hash2(x,y,121+b))*TS, r=TS*0.075*Math.sin(ph*Math.PI);
       if(r<0.8) continue;
       ctx.globalAlpha=1;
-      ctx.fillStyle='rgba(110,70,190,0.55)'; ctx.beginPath(); ctx.arc(bx,by,r,0,7); ctx.fill();
-      ctx.strokeStyle='rgba(200,170,255,0.85)'; ctx.lineWidth=1; ctx.beginPath(); ctx.arc(bx,by,r,0,7); ctx.stroke();
-      ctx.fillStyle='rgba(240,228,255,0.95)'; ctx.fillRect(bx-r*0.45, by-r*0.55, Math.max(1,r*0.4), Math.max(1,r*0.4));
+      ctx.fillStyle=FX[0]; ctx.beginPath(); ctx.arc(bx,by,r,0,7); ctx.fill();
+      ctx.strokeStyle=FX[1]; ctx.lineWidth=1; ctx.beginPath(); ctx.arc(bx,by,r,0,7); ctx.stroke();
+      ctx.fillStyle=FX[2]; ctx.fillRect(bx-r*0.45, by-r*0.55, Math.max(1,r*0.4), Math.max(1,r*0.4));
     }
   }
   ctx.globalAlpha=1;

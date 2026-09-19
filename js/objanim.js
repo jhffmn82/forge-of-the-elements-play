@@ -16,7 +16,7 @@ var OBJ_FX_RULES = [
   [/^ice-block$/,                              ['twinkle']],
   [/^(giant-mushroom|mushroom-pair)/,          ['glow', 'spores']],
   [/^(cl-small-mushrooms|cl-glow-moss)/,       ['glow']],
-  [/^(cl-crystal-shards|geode|cl-cave-pearls)/,['twinkle']],
+  [/^(cl-crystal-shards|geode|cl-cave-pearls|door-crystal|sigil-crystal)/,['twinkle']],
   [/^pylon/,                                   ['glow', 'arcs']],
   [/^wf-glowworm-curtain/,                     ['twinkle']],
   [/^wf-stalactite-drapery/,                   ['drip']],
@@ -76,6 +76,24 @@ function objFxInfo(o){
   return (OBJ_FX_INFO[key]=info);
 }
 
+/* ---------------------------------------------------------------- crystal glints, drawn over the lighting */
+var OBJ_GLINTS = [];
+function objGlintsFlush(){
+  if(!OBJ_GLINTS.length) return;
+  ctx.save(); ctx.globalCompositeOperation='lighter';
+  OBJ_GLINTS.forEach(function(q){
+    var x=q[0], y=q[1], a=q[2], L=q[3], hr=q[4], u=q[5];
+    var hg=ctx.createRadialGradient(x, y, 0, x, y, hr); hg.addColorStop(0, 'rgba(255,255,255,'+(0.4*a)+')'); hg.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.globalAlpha=1; ctx.fillStyle=hg; ctx.fillRect(x-hr, y-hr, hr*2, hr*2);
+    ctx.globalAlpha=a; ctx.fillStyle='#FFFFFF';
+    ctx.fillRect(x-u/2, y-L, u, L*2+u); ctx.fillRect(x-L, y-u/2, L*2+u, u);
+    ctx.globalAlpha=a*0.6; ctx.fillRect(x-u*1.5, y-u*1.5, u*3, u*3);
+  });
+  ctx.restore(); OBJ_GLINTS.length=0;
+}
+var _drawBeaconsGlint = drawBeacons;
+drawBeacons = function(){ objGlintsFlush(); return _drawBeaconsGlint.apply(this, arguments); };
+
 /* ---------------------------------------------------------------- drawing the effects */
 function objFxDraw(o, dx, dy, w, h, alpha, flip){
   if(!o || !o.nm || typeof ANIM==='undefined' || ANIM.reduce || !(alpha>0.5)) return;
@@ -107,12 +125,13 @@ function objFxDraw(o, dx, dy, w, h, alpha, flip){
       ctx.globalCompositeOperation='source-over';
     }
     if(k==='twinkle'){
-      I.bright.forEach(function(b, i){
-        var ph=((t*0.45 + hash2(i, seed|0, 5)) % 1), a=Math.pow(Math.sin(Math.PI*ph), 6);
-        if(a<0.05) return;
-        var x=Math.round(X(b[0])), y=Math.round(Y(b[1]));
-        ctx.globalAlpha=a*alpha; ctx.fillStyle='#FFFFFF';
-        ctx.fillRect(x-u/2, y-u*1.5, u, u*3); ctx.fillRect(x-u*1.5, y-u/2, u*3, u);
+      /* 2026-09-19: Justin - the glint was a 1-pixel cross too brief to notice. Now a four-point star with a soft
+         halo, each glint point on its own clock, so a crystal flashes every second or two */
+      I.bright.slice(0,3).forEach(function(b, i){   /* the three brightest points: more reads as glitter, not a glint */
+        var ph=((t*0.35 + hash2(i, seed|0, 5)) % 1)*2.2; if(ph>1) return;
+        var a=Math.pow(Math.sin(Math.PI*ph), 3); if(a<0.05) return;
+        /* queued, and drawn after the lighting (drawBeacons below): drawn here, the dark pass swallowed it */
+        OBJ_GLINTS.push([Math.round(X(b[0])), Math.round(Y(b[1])), a*alpha, Math.round(u*(2+3*a)), u*4*a, u]);
       });
     }
     if(k==='flame' && I.warm && typeof drawPixelFlame==='function'){
