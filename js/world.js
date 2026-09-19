@@ -51,7 +51,7 @@ function itemAt(x,y){ for(var i=0;i<items.length;i++) if(items[i].x===x && items
 function freeCell(x,y){ return at(x,y)===FLOOR && !propAt(x,y) && !itemAt(x,y) && !occupied(x,y) && !feats.some(function(f){return f.x===x&&f.y===y;}); }
 
 /* ---- biomes: every 5 floors (2026-09-17, biome 2) ---- */
-var LAST_FLOOR = 10;   /* the deepest built floor: the Crypt's boss hall */
+var LAST_FLOOR = 15;   /* the deepest built floor: the Caverns' boss arena (2026-09-19; was 10, the Crypt's boss hall) */
 var BIOME_NAMES = ['Dungeon', 'Crypt', 'Caverns', 'Temple', 'Realm of Chaos'];
 function bidx(n){ return Math.floor(((n||floorNo)-1)/5); }
 function bfloor(n){ return ((n||floorNo)-1)%5+1; }
@@ -153,8 +153,10 @@ function generateOnce(seed){
   var i, j, x, y;
 
   /* ---- rooms by BSP ---- */
-  /* the boss floor is a short approach to the throne room: build it in a small corner of the map */
-  rooms=[]; var leaves=[ floorMeta.boss ? {x:1,y:1,w:(bidx()===1 && typeof stampCryptBossHall==='function') ? 25 : 30,h:22} : {x:1,y:1,w:MW-2,h:MH-2} ];
+  /* 2026-09-19: the Caverns (biome 3) lay out cellular-automata caves instead (js/caverns.js caveLayout) */
+  rooms=[];
+  if(typeof caveLayout==='function' && caveLayout()){ /* map and rooms[] are built */ } else {
+  /* the boss floor is a short approach to the throne room: build it in a small corner of the map */ var leaves=[ floorMeta.boss ? {x:1,y:1,w:(bidx()===1 && typeof stampCryptBossHall==='function') ? 25 : 30,h:22} : {x:1,y:1,w:MW-2,h:MH-2} ];
   for(i=0;i<6;i++){
     var next=[];
     for(j=0;j<leaves.length;j++){
@@ -198,6 +200,7 @@ function generateOnce(seed){
       if(doorSpot(r.x+r.w,m,false) && rng()<0.7) setT(r.x+r.w,m,DOOR);
     }
   }
+  }   /* end of the BSP layout (2026-09-19) */
 
   var cryptHall = (floorMeta.boss && bidx()===1 && typeof stampCryptBossHall==='function') ? stampCryptBossHall() : null;   /* Morty's hall (js/cryptset.js) */
 
