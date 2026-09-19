@@ -158,7 +158,7 @@ function deepRockCol(rgn, wx, wy, salt, part, depth, lip){
   var mot=(ptVal(wx*3.2, wy*3.2, salt+15)-0.5)*9 + (ptVal(wx*7.5, wy*7.5, salt+16)-0.5)*5;
   col=[col[0]+mot, col[1]+mot, col[2]+mot*1.05];
   if(f.d2-f.d1<0.03){
-    if(M.seamOn==='both' && ptVal(wx*0.4, wy*0.4, salt+24)>0.3) col=deepMix(col, f.d2-f.d1<0.014 ? (M.seamHot||M.seam) : M.seam, 1);   /* lava in the cracks, full strength */
+    if(M.seamOn==='both' && ptVal(wx*0.4, wy*0.4, salt+24)>0.42) col=deepMix(col, f.d2-f.d1<0.008 ? (M.seamHot||M.seam) : M.seam, 0.62*(1-(f.d2-f.d1)/0.03));   /* lava in the cracks: hottest in the thinnest, fading out in the wider ones */
     else col=deepMix(col, M.topLo, 0.55);
   }
   return col;
@@ -550,8 +550,24 @@ mossRaster = function(x, y){ if(inDeep()) return null; return _mossRasterDeep.ap
    Justin: "it's just so dark, i can't make out the walls in the lava biome, needs lava to give off some dull red
    light". The lightmap's ambient is per biome; here it is per region, so the volcanic rock sits in a dull red glow
    from the lava under it, the temple in a cold near-black, the spider caves a shade above that. */
-var DEEP_AMB = [[0.24,0.20,0.23], [0.22,0.21,0.27], [0.40,0.24,0.19]];
+var DEEP_AMB = [[0.24,0.20,0.23], [0.22,0.21,0.27], [0.38,0.235,0.19]];
+var DEEP_AMB_MAP = {key:null, v:null};
+function deepAmbBuild(){
+  var key=floorNo+':'+(floorMeta.seed||0)+':'+MW+'x'+MH;
+  if(DEEP_AMB_MAP.key===key) return DEEP_AMB_MAP.v;
+  var N=MW*MH, a=new Float32Array(N*3), b=new Float32Array(N*3), R=floorMeta.deepRegion, i, j, x, y, c;
+  for(i=0;i<N;i++){ var A=DEEP_AMB[R[i]]||DEEP_AMB[0]; a[i*3]=A[0]; a[i*3+1]=A[1]; a[i*3+2]=A[2]; }
+  /* two box blurs across 5 tiles: the glow of one region falls off into the next instead of stopping at a line */
+  for(var pass=0; pass<2; pass++){
+    for(y=0;y<MH;y++) for(x=0;x<MW;x++){ var o=(y*MW+x)*3; for(c=0;c<3;c++){ var sum=0, n=0; for(var d=-2;d<=2;d++){ var xx=x+d; if(xx<0||xx>=MW) continue; sum+=a[(y*MW+xx)*3+c]; n++; } b[o+c]=sum/n; } }
+    for(y=0;y<MH;y++) for(x=0;x<MW;x++){ var o2=(y*MW+x)*3; for(c=0;c<3;c++){ var s2=0, n2=0; for(var d2=-2;d2<=2;d2++){ var yy=y+d2; if(yy<0||yy>=MH) continue; s2+=b[(yy*MW+x)*3+c]; n2++; } a[o2+c]=s2/n2; } }
+  }
+  DEEP_AMB_MAP.key=key; DEEP_AMB_MAP.v=a; return a;
+}
+var DEEP_AMB_OUT=[0,0,0];
 function deepAmbAt(x, y){
   if(!inDeep() || !floorMeta.deepRegion || !inb(x,y)) return null;
-  return DEEP_AMB[floorMeta.deepRegion[idxOf(x,y)]] || null;
+  var a=deepAmbBuild(), o=idxOf(x,y)*3;
+  DEEP_AMB_OUT[0]=a[o]; DEEP_AMB_OUT[1]=a[o+1]; DEEP_AMB_OUT[2]=a[o+2];
+  return DEEP_AMB_OUT;
 }

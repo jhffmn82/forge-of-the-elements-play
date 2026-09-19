@@ -395,6 +395,9 @@ function clipFrame(sheet, e, sliding){
     if(e._clip.name!=='death' && now>=e._clip.t0) e._clip=null;
   }
   if(ANIM.reduce){ var st=m.static_row!==undefined ? m.static_row : (m.clips.idle?m.clips.idle.row:0); return {sx:0, sy:st*cell}; }
+  /* 2026-09-19: Justin - a sleeping creature kept playing its idle (the Myconid swayed about with a Z over it).
+     Asleep it holds its still pose until something wakes it. */
+  if(e.state==='asleep'){ var sr=m.static_row!==undefined ? m.static_row : (m.clips.idle?m.clips.idle.row:0); return {sx:0, sy:sr*cell}; }
   if(sliding && m.clips.walk){ var w=m.clips.walk; return {sx:(Math.floor(now/CLIP_MS.walk)%w.frames)*cell, sy:w.row*cell}; }
   if(m.clips.idle){ var id=m.clips.idle, ph=((e.id||0)*97)%500; return {sx:(Math.floor((now+ph)/CLIP_MS.idle)%id.frames)*cell, sy:id.row*cell}; }
   return {sx:0, sy:(m.static_row||0)*cell};

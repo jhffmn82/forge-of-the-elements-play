@@ -205,3 +205,41 @@ function drawMawSkirts(){
 }
 var _drawSurfaceDecoMaw = drawSurfaceDeco;
 drawSurfaceDeco = function(){ var r=_drawSurfaceDecoMaw.apply(this, arguments); drawMawSkirts(); return r; };
+
+/* ---------------------------------------------------------------- 9. pieces with their own base cast no shadow (2026-09-19)
+   Justin: "the firepit and the crystal here in the cavern have a shadow underneath and look like they are floating".
+   Every standing piece was drawn over the same dark ellipse. A piece whose art already ends in a wide base - the
+   campfire's ring of stones, a crystal's rubble skirt, a stalagmite's foot - sits in the ground on its own, and the
+   ellipse under it reads as a hole it hovers over. Measured from the art: a wide, flat bottom means no shadow, and
+   anything narrower keeps a tighter, softer one. */
+var CAVE_BASE = {};
+function caveBaseWide(o){
+  if(!o || !o.nm) return false;
+  if(CAVE_BASE[o.nm]!==undefined) return CAVE_BASE[o.nm];
+  var wide=false;
+  try{
+    var c=document.createElement('canvas'); c.width=o.sw; c.height=o.sh; var g=c.getContext('2d');
+    g.drawImage(o.img, o.sx, o.sy, o.sw, o.sh, 0, 0, o.sw, o.sh);
+    var D=g.getImageData(0,0,o.sw,o.sh).data, rows=Math.max(3, Math.round(o.sh*0.09)), best=0;
+    for(var y=o.sh-1; y>=Math.max(0,o.sh-rows); y--){
+      var lo=-1, hi=-1;
+      for(var x=0;x<o.sw;x++) if(D[(y*o.sw+x)*4+3]>=140){ if(lo<0) lo=x; hi=x; }
+      if(lo>=0) best=Math.max(best, (hi-lo+1)/o.sw);
+    }
+    wide = best>=0.62;                     /* the art stands on most of its own width: it has a base */
+  }catch(e){ wide=false; }
+  return (CAVE_BASE[o.nm]=wide);
+}
+(function(){
+  var _drawPropSurfaceBase = drawPropSurface;
+  drawPropSurface = function(p, px, py, alpha){
+    if(!inCaverns() || p.flat || !(p.cave || (typeof CAVE_PIECES!=='undefined' && CAVE_PIECES[p.name]))) return _drawPropSurfaceBase(p, px, py, alpha);
+    var o=typeof caveArt==='function' ? caveArt(p.name) : null;
+    if(!o || !caveBaseWide(o)) return _drawPropSurfaceBase(p, px, py, alpha);
+    var w=p.w||1, h=p.h||1, X=(p.x-camX)*TS, Y=(p.y-camY)*TS;
+    var flip=hash2(p.x,p.y,5)<0.5 && !/burrow|pool|mine-support/.test(p.name);
+    drawCaveArt(o, X+w*TS/2, Y+h*TS-TS*0.02, alpha, flip);   /* no ellipse: the art brings its own footing */
+    if(typeof flashOf==='function' && p.br){ var fl=flashOf(p); if(fl>0){ ctx.save(); ctx.globalAlpha=fl*0.6; ctx.fillStyle='#FFF'; ctx.fillRect(X+TS*0.25, Y+TS*0.25, TS*0.5, TS*0.5); ctx.restore(); } }
+    return true;
+  };
+})();

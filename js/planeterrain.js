@@ -265,7 +265,7 @@ function ptCellRaster(x, y){
         else if(pf<0.42) col=ptMix(M.poolShallow, M.poolEdge, (pf-0.3)/0.12);                                 /* pale turquoise shallows */
         else col=ptMix(M.poolEdge, M.pool, Math.max(0,deep));
         var caus=Math.sin(wx*9.1+Math.sin(wy*7.3)*1.4)+Math.sin(wy*8.3+Math.sin(wx*6.1)*1.2);
-        if(pf>0.45 && caus>1.6 && floorMeta.plane!=='shadow' && floorMeta.plane!=='earth' && hash2(Math.floor(wx*R/2), Math.floor(wy*R/2), salt+72)<0.5) col=ptMix(col, M.poolRim, 0.5);
+        if(pf>0.45 && caus>1.6 && !ptPoolFx() && hash2(Math.floor(wx*R/2), Math.floor(wy*R/2), salt+72)<0.5) col=ptMix(col, M.poolRim, 0.5);
         if(pf<0.325 && ptVal(wx*3.4, wy*3.4, salt+74)>0.62 && hash2(Math.floor(wx*R), Math.floor(wy*R), salt+73)<0.5) col=ptMix(col, M.poolRim, 0.7);   /* intermittent waterline highlights */
       } else if(pf>0.18){
         var sh2=ptVal(wx*2.4, wy*2.4, salt+71);
@@ -1010,13 +1010,20 @@ drawGrassTile = function(x, y, px, py, alpha, layer, now){
 /* ---------------------------------------------------------------- the Shadow pool bubbles (2026-09-19)
    Justin: the still violet pool read as splotches; it should move, like the Crypt's ooze. Its caustic specks are gone
    from the ground and violet bubbles swell and pop across it instead, each on its own clock, with a slow sheen. */
-/* per plane: bubble fill, bubble rim, highlight, sheen, ripple ring (the Earth pool is a green swamp spring) */
+/* per plane (and the Caverns): bubble fill, bubble rim, highlight, sheen, ripple ring. Justin, 2026-09-19: the still
+   pools read as splotches - wherever these colours exist the painted specks give way to bubbles that swell and pop. */
+function ptPoolFx(){
+  if(!floorMeta) return null;
+  if(floorMeta.plane) return PT_POOL_FX[floorMeta.plane]||null;
+  return (typeof inCaverns==='function' && inCaverns()) ? PT_POOL_FX.cavern : null;
+}
 var PT_POOL_FX = {
   shadow: ['rgba(110,70,190,0.55)','rgba(200,170,255,0.85)','rgba(240,228,255,0.95)','#D8C4FF', null],
-  earth:  ['rgba(70,120,70,0.55)','rgba(170,220,150,0.8)','rgba(230,250,215,0.9)','#CDEBB8','rgba(190,230,170,0.35)']
+  earth:  ['rgba(70,120,70,0.55)','rgba(170,220,150,0.8)','rgba(230,250,215,0.9)','#CDEBB8','rgba(190,230,170,0.35)'],
+  cavern: ['rgba(40,130,150,0.5)','rgba(150,235,230,0.8)','rgba(225,255,252,0.9)','#9FE8E0','rgba(160,240,230,0.3)']
 };
 function ptPoolBubbles(){
-  var FX=floorMeta && PT_POOL_FX[floorMeta.plane], P=FX && floorMeta.ptPool; if(!P) return;
+  var FX=ptPoolFx(), P=FX && floorMeta.ptPool; if(!P) return;
   var t=(typeof ANIM!=='undefined' && ANIM.reduce) ? 0 : performance.now()/1000;
   for(var y=camY-1; y<=camY+viewH+1; y++) for(var x=camX-1; x<=camX+viewW+1; x++){
     if(!inb(x,y)) continue; var i=idxOf(x,y); if(!P[i] || !(revealAll||vis[i])) continue;
