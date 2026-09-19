@@ -557,11 +557,23 @@ function deepAmbBuild(){
   if(DEEP_AMB_MAP.key===key) return DEEP_AMB_MAP.v;
   var N=MW*MH, a=new Float32Array(N*3), b=new Float32Array(N*3), R=floorMeta.deepRegion, i, j, x, y, c;
   for(i=0;i<N;i++){ var A=DEEP_AMB[R[i]]||DEEP_AMB[0]; a[i*3]=A[0]; a[i*3+1]=A[1]; a[i*3+2]=A[2]; }
+  /* 2026-09-19: Justin - "the walls need to block illumination better". The glow belongs to the open cave, not to the
+     rock: a wall cell keeps it only where it faces open ground, and it falls away fast with every cell further in. */
+  var dep=new Uint8Array(N); for(i=0;i<N;i++) dep[i]=isWallLike(map[i]) ? 9 : 0;
+  for(var pass2=0; pass2<3; pass2++) for(y=0;y<MH;y++) for(x=0;x<MW;x++){
+    i=y*MW+x; if(!dep[i]) continue; var best=9;
+    if(x>0) best=Math.min(best, dep[i-1]); if(x<MW-1) best=Math.min(best, dep[i+1]);
+    if(y>0) best=Math.min(best, dep[i-MW]); if(y<MH-1) best=Math.min(best, dep[i+MW]);
+    dep[i]=Math.min(9, best+1);
+  }
+  var FALL=[1, 0.62, 0.34, 0.2, 0.13, 0.1, 0.08, 0.07, 0.06, 0.05];
+  for(i=0;i<N;i++){ if(!dep[i]) continue; var f=FALL[Math.min(9,dep[i])]; a[i*3]*=f; a[i*3+1]*=f; a[i*3+2]*=f; }
   /* two box blurs across 5 tiles: the glow of one region falls off into the next instead of stopping at a line */
   for(var pass=0; pass<2; pass++){
     for(y=0;y<MH;y++) for(x=0;x<MW;x++){ var o=(y*MW+x)*3; for(c=0;c<3;c++){ var sum=0, n=0; for(var d=-2;d<=2;d++){ var xx=x+d; if(xx<0||xx>=MW) continue; sum+=a[(y*MW+xx)*3+c]; n++; } b[o+c]=sum/n; } }
     for(y=0;y<MH;y++) for(x=0;x<MW;x++){ var o2=(y*MW+x)*3; for(c=0;c<3;c++){ var s2=0, n2=0; for(var d2=-2;d2<=2;d2++){ var yy=y+d2; if(yy<0||yy>=MH) continue; s2+=b[(yy*MW+x)*3+c]; n2++; } a[o2+c]=s2/n2; } }
   }
+  for(i=0;i<N;i++){ if(!dep[i]) continue; var f2=FALL[Math.min(9,dep[i])]; a[i*3]*=f2; a[i*3+1]*=f2; a[i*3+2]*=f2; }   /* again after the blur, so the rock stays dark */
   DEEP_AMB_MAP.key=key; DEEP_AMB_MAP.v=a; return a;
 }
 var DEEP_AMB_OUT=[0,0,0];

@@ -604,7 +604,11 @@ function drawLightmap(now, prp){
       var no=(ny*W+nx)*3; if(isWall[ny*W+nx] || vals[no]<0) continue;
       sr+=vals[no]; sg+=vals[no+1]; sb+=vals[no+2]; cnt++;
     }
-    vals[o2] = AMB[0]*0.7 + (cnt? sr/cnt*0.45 : 0); vals[o2+1] = AMB[1]*0.7 + (cnt? sg/cnt*0.45 : 0); vals[o2+2] = AMB[2]*0.7 + (cnt? sb/cnt*0.45 : 0);
+    /* 2026-09-19: in the Underdark the rock keeps its own (already dimmed) ambient and takes far less of the cave's
+       light, so a wall stops the glow instead of glowing with it */
+    var wx2=ox+Math.floor(tx/S), wy2=oy+Math.floor(ty/S);
+    var dAmb = typeof deepAmbAt==='function' ? deepAmbAt(wx2, wy2) : null, A2 = dAmb || AMB, bleed = dAmb ? 0.16 : 0.45;
+    vals[o2] = A2[0]*0.7 + (cnt? sr/cnt*bleed : 0); vals[o2+1] = A2[1]*0.7 + (cnt? sg/cnt*bleed : 0); vals[o2+2] = A2[2]*0.7 + (cnt? sb/cnt*bleed : 0);
   }
   /* soft ceiling: stacked lights (braziers beside a shrine) roll off instead of washing the tiles out */
   for(j=0;j<W*H*3;j++){ var v=vals[j]; if(v>1) vals[j]=1+(v-1)*0.3; }
