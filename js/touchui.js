@@ -85,7 +85,10 @@
     dp._touchWait=true;
     var c=dp.querySelector('[data-d="5"]'); if(c){ c.innerHTML='&#9906;'; c.title='Wait and search'; }   /* a magnifier-ish ring */
     dp.addEventListener('click', function(ev){
-      var b=ev.target.closest && ev.target.closest('button'); if(!b || b.getAttribute('data-d')!=='5') return;
+      var b=ev.target.closest && ev.target.closest('button'); if(!b) return;
+      /* while aiming, the d-pad cancels the aim instead of stepping (autoaim.js) */
+      if(typeof aiming!=='undefined' && aiming){ ev.stopImmediatePropagation(); ev.preventDefault(); cancelAim(); return; }
+      if(b.getAttribute('data-d')!=='5') return;
       ev.stopImmediatePropagation(); ev.preventDefault();
       if(typeof modalOpen!=='undefined' && modalOpen) return;
       if(!player || player.hp<=0) return;
