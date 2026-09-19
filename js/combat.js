@@ -449,7 +449,7 @@ function tickStatus(e){
     if(gAt(e.x,e.y)===G_GRASS || gAt(e.x,e.y)===G_SHORT) ignite(e.x,e.y, e===player?'player':null);
     if(e.hp<=0){ if(e===player){ heroicResolve(); if(player.hp<=0){ kill(e,null); return false; } } else { kill(e, e.lastHitBy||null); return false; } }
   }
-  if(s.poison){ var pd=s.poison.d||2; e.hp-=pd; floatText(e.x,e.y,String(pd),'poison'); s.poison.t--; if(s.poison.t<=0) delete s.poison; if(e.hp<=0){ if(e===player){ heroicResolve(); if(player.hp<=0){ kill(e,null); return false; } } else { kill(e,null); return false; } } }
+  if(s.poison){ var pd=s.poison.d||2; if(e===player && player.buffs && player.buffs.poisonward>0) pd=Math.max(1,Math.round(pd*0.5)); e.hp-=pd; floatText(e.x,e.y,String(pd),'poison'); s.poison.t--; if(s.poison.t<=0) delete s.poison; if(e.hp<=0){ if(e===player){ heroicResolve(); if(player.hp<=0){ kill(e,null); return false; } } else { kill(e,null); return false; } } }
   if(s.aura && e===player){
     ents.forEach(function(o){ if(o.foe && dist(o,player)<=2){ var ad=applyDamage(o,s.aura.d||3,'dark',player); floatText(o.x,o.y,String(ad),'dark'); healPlayer(1); if(o.hp<=0) kill(o,player); } });
   }

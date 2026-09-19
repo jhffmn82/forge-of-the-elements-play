@@ -100,7 +100,7 @@ useAmulet = function(){
   if(k==='seeking') amuletSeeking();
   else if(k==='stillness'){ player.stillness=3; log('<b>Time stops.</b> Move freely; any other action starts it again.','c-kill'); sparkleFx(player.x,player.y,'ice',30); draw(); updateUI(); return; }
   else if(k==='echo'){ log('The amulet echoes your last sigil.','c-good'); player._echoing=true; useSigil(player.lastSigil); player._echoing=false; }
-  else if(k==='plenty'){ items.push({x:player.x, y:player.y, kind:'food', food:'smallration'}); log('A small ration drops at your feet.','c-good'); sparkleFx(player.x,player.y,'light',16); }
+  else if(k==='plenty'){ items.push({x:player.x, y:player.y, kind:'food', food:'ration'}); log('A ration drops at your feet.','c-good'); sparkleFx(player.x,player.y,'light',16); }
   else if(k==='thorns'){
     applyStatus(player,'root',5); player.buffs.thorns=5; player.buffs.arcaneward=Math.max(player.buffs.arcaneward||0,5);
     player.ward=Math.max(player.ward||0, Math.round(player.maxhp*0.35)); derive(player);

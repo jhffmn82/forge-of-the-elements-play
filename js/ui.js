@@ -501,7 +501,7 @@ function bagCard(it){
   if(it.kind==='armor') return armorCard(it.data);
   if(it.kind==='off') return '<div class="nm">'+gearName(it.data)+'</div><div class="hint">'+(it.data.note||'')+'</div>';
   if(it.kind==='sigil'){ var k=sigilKnown[it.data.use]; return '<div class="nm">'+it.name+'</div><div class="hint">'+(k?SIGILS[it.data.use].desc:'Unidentified. Use it to learn what it does.')+'</div>'; }
-  if(it.kind==='food'){ var f=FOODS[it.data.food]; return '<div class="nm">'+f.name+'</div><div class="hint">Eat to stave off hunger'+(f.heal?' and heal a little':'')+'.</div>'; }
+  if(it.kind==='food'){ var f=FOODS[it.data.food]; return '<div class="nm">'+f.name+'</div><div class="hint">'+(f.desc ? f.desc+' Also eases hunger.' : 'Eat to stave off hunger'+(f.heal?' and heal a little':'')+'.')+'</div>'; }
   return '<div class="nm">'+it.name+'</div>';
 }
 

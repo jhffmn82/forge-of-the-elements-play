@@ -487,7 +487,7 @@ function rollDrops(e, byPlayerSide){
   var total=0, k; for(k in D.table) total+=D.table[k];
   var r=rng()*total, pickK='essence'; for(k in D.table){ r-=D.table[k]; if(r<0){ pickK=k; break; } }
   var spot = !itemAt(e.x,e.y) && walkable(e.x,e.y) ? {x:e.x,y:e.y} : (nearFree(e.x,e.y,1) || {x:e.x,y:e.y});
-  var it = pickK==='gear' ? randomGear() : pickK==='sigil' ? {kind:'sigil', use:randomSigilUse()} : pickK==='food' ? {kind:'food', food:pick(['bread','meat'])}
+  var it = pickK==='gear' ? randomGear() : pickK==='sigil' ? {kind:'sigil', use:randomSigilUse()} : pickK==='food' ? {kind:'food', food:randomFood()}
          : {kind:'essence', n:ri(3,8)+floorNo*2};
   it.x=spot.x; it.y=spot.y; items.push(it);
   if(pickK!=='essence') log('The '+e.name+' drops '+(pickK==='gear'?'something':'a '+pickK)+'.','c-good');

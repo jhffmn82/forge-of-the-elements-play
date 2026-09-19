@@ -192,7 +192,7 @@ function damageProp(p, src, type){
   if(!p.br) return;
   removeProp(p); sfx(p.sfx||'crate-break'); burst(p.x,p.y,'earth',12,0.05);
   if(p.loot && rng()<p.loot){
-    var roll2=rng(), it = roll2<0.74 ? {kind:'essence', n:ri(4,10)+floorNo} : roll2<0.78 ? {kind:'food', food:'bread'} : roll2<0.84 ? {kind:'sigil', use:randomSigilUse()} : {kind:'mote', el:pick(ELEMENTS)};
+    var roll2=rng(), it = roll2<0.74 ? {kind:'essence', n:ri(4,10)+floorNo} : roll2<0.78 ? {kind:'food', food:randomFood()} : roll2<0.84 ? {kind:'sigil', use:randomSigilUse()} : {kind:'mote', el:pick(ELEMENTS)};
     it.x=p.x; it.y=p.y; items.push(it); log('Something rolls out of the '+p.name+'.','c-good');
   }
 }
@@ -334,7 +334,7 @@ function openChest(x,y){
   var n = rich ? 3 : 1 + (rng()<0.5?1:0);
   for(var i=0;i<n;i++){
     var r=rng(), it;
-    if(kind==='crate-supply') it = r<0.35 ? {kind:'food', food:pick(['ration','bread'])} : r<0.6 ? {kind:'sigil', use:randomSigilUse()} : {kind:'essence', n:ri(10,22)+floorNo*3};
+    if(kind==='crate-supply') it = r<0.35 ? {kind:'food', food:randomFood()} : r<0.6 ? {kind:'sigil', use:randomSigilUse()} : {kind:'essence', n:ri(10,22)+floorNo*3};
     else if(r<0.22) it={kind:'mote', el:pick(ELEMENTS)};
     else if(r<0.64) it={kind:'essence', n:ri(10,22)+floorNo*3};
     else if(r<0.70) it={kind:'sigil', use:randomSigilUse()};
@@ -456,7 +456,9 @@ function useBagItem(idx){
   if(it.kind==='food'){
     var fd=FOODS[it.data.food]; player.hunger=Math.min(HUNGER_MAX, player.hunger+fd.nutrition);
     if(fd.heal){ var h=Math.round(player.maxhp*fd.heal*(hasGod('glimmer')?1+0.10*godRank():1)); healPlayer(h); floatText(player.x,player.y,'+'+h,'heal'); }
-    consume(idx); log('You eat the '+fd.name.toLowerCase()+'.','c-good'); sfx('eat'); endTurn(); return;
+    consume(idx); log('You eat the '+fd.name.toLowerCase()+'.','c-good'); sfx('eat');
+    if(fd.buff && typeof eatFoodBuff==='function') eatFoodBuff(fd);
+    endTurn(); return;
   }
   if(it.kind==='sigil'){ if(useSigil(it.data.use)===false) return; consume(idx); endTurn(); return; }
 }

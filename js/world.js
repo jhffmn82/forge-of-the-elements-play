@@ -283,7 +283,7 @@ function generateOnce(seed){
   drop(randomGear()); if(rng()<0.6) drop(randomGear());
   if(rng()<0.25) drop({kind:'sigil', use:randomSigilUse()});   /* about one loose sigil every other floor; chests, crates and monsters add the rest */
   /* food is meant to be a little scarce: about one meal a floor, so hunger nudges you downward */
-  if(rng()<0.45) drop({kind:'food', food: rng()<0.5 ? 'ration' : pick(['bread','meat'])});
+  if(rng()<0.45) drop({kind:'food', food: randomFood()});
   ((biomePlan().motes||{})[floorNo]||[]).forEach(function(el){ drop({kind:'mote', el:el}); });
 
   /* ---- start ---- */
@@ -630,7 +630,7 @@ function buildSpecial(kind, r){
   if(kind==='garden'){
     for(i=0;i<inner.length;i++) if(rng()<0.65) setG(inner[i].x,inner[i].y,G_GRASS);
     place(e,['mushrooms','vines'],ri(2,4));
-    if(rng()<0.5) put({kind:'food',food:pick(['bread','meat'])});
+    if(rng()<0.5) put({kind:'food',food:randomFood()});
     if(inner.length) { var w=inner.pop(); setT(w.x,w.y,WATER); setG(w.x,w.y,0); }
   } else if(kind==='storage'){
     place(e,['barrel','crate','pot','crate','barrel','pot'],Math.min(7,Math.floor(e.length*0.6)));
