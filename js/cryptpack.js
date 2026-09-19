@@ -327,9 +327,9 @@ addSetPiece = function(x, y, name, w, h, extra){
 /* ---------------------------------------------------------------- the rules, enforced once the floor is built */
 var PACK_KINDS = {urn:/^(urn-group)$/, bone:/^(bones|bone-pile)$/, candle:/^candles-\d$/, moss:/^grave-flowers-moss-\d$/};
 function packKindOf(p){ for(var k in PACK_KINDS) if(PACK_KINDS[k].test(p.name)) return k; return null; }
-/* an urn group that has to go leaves a single urn behind: it is a breakable with loot, not only scenery */
+/* 2026-09-19: an urn group that has to go goes entirely. It used to leave a single urn behind (a breakable with
+   loot), but Justin: the lone old urns undid the clusters - they are what the Crypt looked like before the pack */
 function packDropScatter(p){
-  if(p.name==='urn-group'){ p.name='urn'; delete p.pattern; delete p.kinds; delete p.flip; return; }
   var i=props.indexOf(p); if(i>=0) props.splice(i,1);
 }
 function packInHall(p){ var R=floorMeta && floorMeta.hallRect; return R && p.x>=R.x && p.x<R.x+R.w && p.y>=R.y && p.y<R.y+R.h; }
