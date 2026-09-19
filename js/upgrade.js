@@ -102,8 +102,9 @@ RINGS.keeneyes.desc='Spot traps and hidden doors anywhere you can see.';
 RINGS.keeneyes.unit='% chance a turn to spot traps you can see';
 
 /* ---------------------------------------------------------------- upgrades at the Forge */
-/* 2026-09-18: Fine and Masterwork gear costs 50% more to upgrade - a found Fine piece already starts ahead */
-function tierCostMult(it){ return it && it.kind!=='ring' && typeof tierNum==='function' && tierNum(it)>=2 ? 1.5 : 1; }
+/* 2026-09-18 (Justin): Fine costs 1.5x to upgrade and Masterwork 2x - a Masterwork piece is never swapped out,
+   so its +3 is the last thing that slot ever buys */
+function tierCostMult(it){ if(!it || it.kind==='ring' || typeof tierNum!=='function') return 1; var t=tierNum(it); return t>=3 ? 2 : t===2 ? 1.5 : 1; }
 function upgradeCost(it){
   if(!it) return null;
   var plus=it.plus||0;
@@ -139,7 +140,7 @@ function upgradeItem(it){
 function upgradePanelHTML(){
   var list=allUpgradeTargets();
   var h='<p class="c-info">Spend essence to strengthen gear, up to +3. Worn or carried, it all counts. '+
-        'Rings cost '+RING_RANK_COST+' a rank. Fine and Masterwork gear costs 50% more. Upgrading a cursed item breaks the curse. Deeper biomes yield more essence.'+
+        'Rings cost '+RING_RANK_COST+' a rank. Fine gear costs 1.5x, Masterwork 2x. Upgrading a cursed item breaks the curse. Deeper biomes yield more essence.'+
         (player.race==='dwarf'?' <b>Dwarven smithing: 25% cheaper.</b>':'')+'</p>';
   if(!list.length) return h+'<p class="c-info">Nothing to upgrade.</p>';
   list.forEach(function(o, i){
