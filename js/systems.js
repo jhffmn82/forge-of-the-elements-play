@@ -502,7 +502,8 @@ function shootAt(e){
 /* ---------------------------------------------------------------- turn loop */
 function endTurn(){
   if(player.hp<=0) return;
-  if(player.hidden>0) player.hidden--;
+  if(player.hidden>0 && !(player.hidden>(player._hidPrev||0))) player.hidden--;   /* fresh this turn: skip the first count */
+  player._hidPrev=player.hidden;
   tickStatus(player);
   if(player.hp<=0){ heroicResolve(); if(player.hp<=0){ death(); return; } }
   var cost = player.movedThisTurn ? moveCost() : actCost(player);
@@ -512,14 +513,22 @@ function endTurn(){
   turn++; RUN.turns++;
   if(player.blurCd>0) player.blurCd--;
   if(player.fortCd>0) player.fortCd--;
-  /* Light sigils leave an afterglow: 5% of max HP a turn while it lasts (2026-09-18) */
-  if(player.buffs && player.buffs.afterglow>0 && player.hp>0 && player.hp<player.maxhp){
-    var ag=Math.max(1, Math.round(player.maxhp*0.05)); healPlayer(ag); floatText(player.x,player.y,'+'+ag,'heal');
+  /* 2026-09-18: a buff cast this turn used to be counted down at the end of the same turn, so "10 turns" covered
+     9. One that is new or was just raised skips its first count; everything else counts as before. */
+  var changed=false, bprev=player._buffPrev||{};
+  for(var b in player.buffs){
+    if(!(player.buffs[b]>0)) continue;
+    if(player.buffs[b] > (bprev[b]||0)) continue;                 /* fresh this turn */
+    player.buffs[b]--;
+    /* Light sigils leave an afterglow: 5% of max HP for each turn it runs */
+    if(b==='afterglow' && player.hp>0 && player.hp<player.maxhp){ var ag=Math.max(1, Math.round(player.maxhp*0.05)); healPlayer(ag); floatText(player.x,player.y,'+'+ag,'heal'); }
+    if(player.buffs[b]===0){ changed=true; log(cap(b)+' fades.','c-info'); }
   }
-  var changed=false;
-  for(var b in player.buffs){ if(player.buffs[b]>0){ player.buffs[b]--; if(player.buffs[b]===0){ changed=true; log(cap(b)+' fades.','c-info'); } } }
+  player._buffPrev=Object.assign({}, player.buffs);
   if(changed) derive(player);
-  if(player.levitate>0){ player.levitate--; if(player.levitate===0){ log('Your feet touch the ground again.','c-info'); if(at(player.x,player.y)===CHASM) fallIntoChasm(); } }
+  var levFresh = player.levitate>(player._levPrev||0);
+  if(player.levitate>0 && !levFresh){ player.levitate--; if(player.levitate===0){ log('Your feet touch the ground again.','c-info'); if(at(player.x,player.y)===CHASM) fallIntoChasm(); } }
+  player._levPrev=player.levitate;
   /* hunger */
   var hungerRate = cost/100 * (player.race==='gloomling' ? 0.8 : 1);
   var before=player.hunger; player.hunger=Math.max(0, player.hunger-hungerRate);
