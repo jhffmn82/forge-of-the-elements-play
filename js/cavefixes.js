@@ -159,3 +159,49 @@ generate = function(seed){
   }
   return r;
 };
+
+/* ---------------------------------------------------------------- 8. the Maw's burrow mounds are heaved out of the floor (2026-09-19)
+   Justin: the mounds on floor 15 sat on the stone like a pile set down on it. Under each one now: churned dark earth
+   fading out past its footprint, cracks running away from it, and a scatter of pebbles thrown up with it - drawn on
+   the ground layer, beneath the mound, in the floor's own tint. One raster per mound, cached. */
+function mawSkirtRaster(x, y){
+  var T=24, W=4, R=T*W, c=document.createElement('canvas'); c.width=R; c.height=R;
+  var g=c.getContext('2d'), im=g.createImageData(R,R), D=im.data, salt=(typeof ptSalt==='function' ? ptSalt() : 7)+880;
+  var M=(typeof PT_MAT!=='undefined' && PT_MAT.cavern && PT_MAT.cavern.floor) || [96,84,70];
+  var cx=R/2, cy=R*0.56;                                   /* the mound's base centre (its 2x2 sits in the middle of the 4x4) */
+  for(var v=0; v<R; v++) for(var u=0; u<R; u++){
+    var dx=(u-cx)/(T*1.55), dy=(v-cy)/(T*1.15), wx=x+u/T, wy=y+v/T;
+    var d=Math.sqrt(dx*dx+dy*dy) + (ptVal(wx*1.6, wy*1.6, salt)-0.5)*0.35;
+    var p=(v*R+u)*4, col=null, a=0;
+    if(d<1){                                                /* churned earth: darker, a little warmer, broken up */
+      var k=1-d, grit=hash2(u>>1, v>>1, salt+1);
+      col=[M[0]*0.36, M[1]*0.31, M[2]*0.27]; a=Math.round(215*Math.pow(k,0.5)*(grit<0.2 ? 0.7 : 1));
+      if(d>0.8 && grit>0.35){ col=[M[0]*1.18, M[1]*1.1, M[2]*1.0]; a=Math.round(170*(1-Math.abs(d-0.9)/0.1)); }   /* the heaved-up lip, catching the light */
+    }
+    /* cracks running out from the mound */
+    var an=Math.atan2(dy, dx), rays=7, rk=((an+Math.PI)/(Math.PI*2))*rays + (ptVal(wx*2.5, wy*2.5, salt+2)-0.5)*0.6;
+    var rd=Math.abs(rk-Math.round(rk)), reach=0.9+0.5*hash2(Math.round(rk), 3, salt+3);
+    if(d>0.5 && d<reach && rd<0.05*(1.25-d/reach)){ col=[M[0]*0.3, M[1]*0.27, M[2]*0.25]; a=Math.round(200*(1-(d-0.55)/(reach-0.55))); }
+    /* pebbles thrown up around it */
+    var cell=hash2(u>>2, v>>2, salt+4);
+    if(d>0.45 && d<1.35 && cell<0.16*(1.4-d) && (u&3)<3 && (v&3)<2){ var lit=(v&3)===0; col=lit ? [M[0]*1.15, M[1]*1.12, M[2]*1.08] : [M[0]*0.6, M[1]*0.56, M[2]*0.52]; a=235; }
+    if(!col) continue;
+    D[p]=Math.min(255,col[0]); D[p+1]=Math.min(255,col[1]); D[p+2]=Math.min(255,col[2]); D[p+3]=Math.max(0,Math.min(255,a));
+  }
+  g.putImageData(im,0,0); return c;
+}
+var MAW_SKIRT={};
+function drawMawSkirts(){
+  if(typeof inCaverns!=='function' || !inCaverns() || typeof props==='undefined') return;
+  props.forEach(function(p){
+    if(!/^worm-burrow/.test(p.name)) return;
+    if(p.x+3<camX || p.x-1>camX+viewW || p.y+3<camY || p.y-1>camY+viewH) return;
+    var i=idxOf(p.x,p.y); if(!(revealAll||seen[i])) return;
+    var k=floorNo+':'+p.x+','+p.y, c=MAW_SKIRT[k]||(MAW_SKIRT[k]=mawSkirtRaster(p.x-1, p.y-1));
+    ctx.save(); ctx.imageSmoothingEnabled=false; ctx.globalAlpha=(revealAll||vis[i]) ? 1 : memA(0.42);
+    ctx.drawImage(c, 0, 0, c.width, c.height, Math.round((p.x-1-camX)*TS), Math.round((p.y-1-camY)*TS), TS*4, TS*4);
+    ctx.restore();
+  });
+}
+var _drawSurfaceDecoMaw = drawSurfaceDeco;
+drawSurfaceDeco = function(){ var r=_drawSurfaceDecoMaw.apply(this, arguments); drawMawSkirts(); return r; };
