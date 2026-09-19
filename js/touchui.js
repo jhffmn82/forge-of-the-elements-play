@@ -60,6 +60,9 @@
     'body.touch #tip .row{font-size:14.5px!important}',
     'body.touch #tip .odds{font-size:15px!important}',
     'body.touch .sheet{font-size:15px}',
+    /* Exit: a browser will not let a page (or an installed web app) close itself, so on a phone or tablet the
+       button could only fail. Home / swipe away closes it there. */
+    'body.touch #tExit,body.touch #oExit{display:none!important}',
     /* Opts: key bindings mean nothing without a keyboard, and they pushed Audio/Display (map zoom) below the fold */
     'body.touch .optgrid{grid-template-columns:1fr!important}',
     'body.touch .optgrid>div:first-child{display:none}',
