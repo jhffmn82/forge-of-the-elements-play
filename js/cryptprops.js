@@ -476,7 +476,7 @@ var _drawPropSurfaceChain = drawPropSurface;
 drawPropSurface = function(p, px, py, alpha){
   if(p.name==='chains'){
     var img=chainRaster(p.chainSeed===undefined ? (p.x*17+p.y*11)%89 : p.chainSeed, p.chainDir || [0,-1]);
-    ctx.save(); ctx.globalAlpha=alpha*0.95; ctx.imageSmoothingEnabled=false;
+    ctx.save(); ctx.globalAlpha=alpha*0.3; ctx.imageSmoothingEnabled=false;   /* 2026-09-19: Justin - chains are wall dressing, kept faint */
     var X=Math.round((p.x-camX)*TS), Y=Math.round((p.y-camY)*TS);
     ctx.drawImage(img, 0, 0, 32, 32, X, Y, Math.round((p.x+1-camX)*TS)-X, Math.round((p.y+1-camY)*TS)-Y);
     ctx.restore();
