@@ -1017,9 +1017,9 @@ function ptPoolBubbles(){
     if(!inb(x,y)) continue; var i=idxOf(x,y); if(!P[i] || !(revealAll||vis[i])) continue;
     var sh=(t*0.1 + hash2(x,y,141))%1;
     if(sh<0.7){ ctx.globalAlpha=0.12*Math.sin(sh/0.7*Math.PI); ctx.fillStyle='#D8C4FF'; ctx.beginPath(); ctx.ellipse((x-camX+sh*1.2)*TS, (y-camY+0.35+0.3*hash2(x,y,143))*TS, TS*0.24, TS*0.05, -0.25, 0, 7); ctx.fill(); }
-    var nb = hash2(x,y,149)<0.45 ? 1 : 2;
+    var nb = hash2(x,y,149)<0.3 ? 1 : 0;   /* about one cell in three, one bubble at a time, resting between pops */
     for(var b=0;b<nb;b++){
-      var ph=(t*0.45 + hash2(x,y,131+b)*7)%1, bx=(x-camX+0.2+0.6*hash2(x,y,111+b))*TS, by=(y-camY+0.2+0.6*hash2(x,y,121+b))*TS, r=TS*0.075*Math.sin(ph*Math.PI);
+      var ph=((t*0.3 + hash2(x,y,131+b)*7)%1)*2; if(ph>1) continue; bx=(x-camX+0.2+0.6*hash2(x,y,111+b))*TS, by=(y-camY+0.2+0.6*hash2(x,y,121+b))*TS, r=TS*0.075*Math.sin(ph*Math.PI);
       if(r<0.8) continue;
       ctx.globalAlpha=1;
       ctx.fillStyle='rgba(110,70,190,0.55)'; ctx.beginPath(); ctx.arc(bx,by,r,0,7); ctx.fill();
