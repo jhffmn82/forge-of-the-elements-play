@@ -42,30 +42,25 @@ useAbility = function(i){
   if(aiming && !aiming.amulet && aiming.i===i && !aiming.auto && AUTO_AIM_KINDS[aiming.A.kind]) autoAimPick();
 };
 
-/* the mark: a gold reticle on the chosen enemy and the bolt's path to it, drawn over the map */
+/* the mark: four thin corner brackets on the chosen enemy and a faint dotted path to it (2026-09-18: the first
+   version - a pulsing box plus brackets plus bold dots - was too loud) */
 var _drawAuto = draw;
 draw = function(){
   var r=_drawAuto.apply(this, arguments);
   var e=autoAimLive(); if(!e || !ctx) return r;
-  var now=performance.now(), pulse=0.75+0.25*Math.sin(now/160);
   var ox=typeof camOX!=='undefined' ? camOX : 0, oy=typeof camOY!=='undefined' ? camOY : 0;
   function px(x){ return (x-camX)*TS-ox; } function py(y){ return (y-camY)*TS-oy; }
   ctx.save();
   if(!aiming.amulet && aiming.A.kind==='bolt'){
-    var pts=boltPath(player.x,player.y,e.x,e.y); ctx.globalAlpha=0.55; ctx.fillStyle='#E8B44A';
-    for(var i=0;i<pts.length-1;i++) ctx.fillRect(px(pts[i].x)+TS/2-2, py(pts[i].y)+TS/2-2, 4, 4);
+    var pts=boltPath(player.x,player.y,e.x,e.y); ctx.globalAlpha=0.35; ctx.fillStyle='#E8B44A';
+    for(var i=0;i<pts.length-1;i++) ctx.fillRect(px(pts[i].x)+TS/2-1.5, py(pts[i].y)+TS/2-1.5, 3, 3);
   }
-  var x0=px(e.x), y0=py(e.y), c=TS*0.28;
-  ctx.globalAlpha=pulse; ctx.strokeStyle='#E8B44A'; ctx.lineWidth=Math.max(2, TS/16);
-  ctx.strokeRect(x0+2, y0+2, TS-4, TS-4);
-  ctx.beginPath();                                                   /* corner brackets */
-  [[0,0,1,1],[TS,0,-1,1],[0,TS,1,-1],[TS,TS,-1,-1]].forEach(function(k){
-    var bx=x0+k[0]-k[2]*2, by=y0+k[1]-k[3]*2;
-    ctx.moveTo(bx-k[2]*3, by+k[3]*c); ctx.lineTo(bx-k[2]*3, by-k[3]*3); ctx.lineTo(bx+k[2]*c, by-k[3]*3);
-  });
-  ctx.stroke();
-  ctx.restore();
+  var x0=px(e.x)+2, y0=py(e.y)+2, S=TS-4, c=Math.max(3, TS*0.13);
+  ctx.globalAlpha=0.7; ctx.strokeStyle="#E8B44A"; ctx.lineWidth=1; ctx.beginPath();
+  ctx.moveTo(x0, y0+c); ctx.lineTo(x0, y0); ctx.lineTo(x0+c, y0);
+  ctx.moveTo(x0+S-c, y0); ctx.lineTo(x0+S, y0); ctx.lineTo(x0+S, y0+c);
+  ctx.moveTo(x0, y0+S-c); ctx.lineTo(x0, y0+S); ctx.lineTo(x0+c, y0+S);
+  ctx.moveTo(x0+S-c, y0+S); ctx.lineTo(x0+S, y0+S); ctx.lineTo(x0+S, y0+S-c);
+  ctx.stroke(); ctx.restore();
   return r;
 };
-/* keep the reticle pulsing while the aim is open */
-(function tick(){ if(autoAimLive()) draw(); setTimeout(function(){ requestAnimationFrame(tick); }, 60); })();
