@@ -957,7 +957,7 @@ drawCharacter = function(e, px, py, opts){
     var n=e.base.big, ms=spriteOn ? mobSheet(e.base.sprite) : null;
     if(ms){
       var fr=clipFrame(ms, e, false), m=ms.m, cell=m.cell, box=m.box||[0,0,cell,cell];
-      var target=TS*n*0.98, sc=target/Math.max(box[3], box[2]*0.85);
+      var target=TS*n*0.98*(e.base.bigScale||1), sc=target/Math.max(box[3], box[2]*0.85);   /* bigScale: a boss can stand taller than its footprint (2026-09-19) */
       var w=cell*sc, h=cell*sc, dx=px+(TS*n)/2-(box[0]+box[2]/2)*sc, dy=py+TS*n*0.97-(box[1]+box[3])*sc;
       ctx.save(); ctx.globalAlpha=opts&&opts.alpha!==undefined?opts.alpha:1; ctx.imageSmoothingEnabled=true;
       ctx.fillStyle='rgba(12,10,18,0.35)'; ctx.beginPath(); ctx.ellipse(px+TS*n/2, py+TS*n-TS*0.18, TS*n*0.36, TS*0.16, 0, 0, 7); ctx.fill();

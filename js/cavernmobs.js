@@ -36,7 +36,7 @@ function inCaverns(){ return typeof bidx==='function' && bidx()===2 && !(floorMe
   delete M.cavebat.biome; delete M.caveslime.biome;   /* absolute floor bands like the rest of this table (the Dungeon originals are tagged biome 1) */
   /* The Deep Maw: tuned by hand for floor 15, so no floor curve (fixed, like the plane elites) */
   M.deepmaw       = {name:'The Deep Maw', sprite:'m-deep-maw', col:'#B07A4A', ch:'W', hp:240, dmg:[10,15], acc:70, eva:0, armor:4, speed:100, range:1, xp:600,
-                     band:[15,15], w:0, boss:true, elite:true, big:2, fixed:true, living:true, art:2.0, artLeft:true, sfx:'brute'};
+                     band:[15,15], w:0, boss:true, elite:true, big:2, fixed:true, living:true, art:2.0, bigScale:1.5, artLeft:true, sfx:'brute'};
   M.mawlimb       = {name:'The Deep Maw', sprite:'m-deep-maw', col:'#B07A4A', ch:'W', hp:9999, dmg:[0,0], acc:0, eva:0, armor:4, speed:100, range:0, xp:0,
                      band:[0,0], w:0, object:true, fixed:true, art:0.1};
   DROPS.stormbeetle   = {chance:0.20, table:{essence:10, gear:3, sigil:1}};
