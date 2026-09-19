@@ -276,7 +276,7 @@ function attack(att, def, mult, label){
   var blocked = (def===player && player.block && rng()<player.block);
   if(rng() > ch){
     log(who+' miss'+(att===player?'':'es')+' '+foe+' <span class="roll">('+Math.round(ch*100)+'% to hit)</span>','c-miss');
-    floatText(def.x, def.y, 'miss', 'miss'); sfx('miss'); if(def.state==='asleep' && att===player) def.state='hunt'; return;
+    floatText(def.x, def.y, 'miss', 'miss'); sfx('miss'); if(att===player && def.state!=='hunt' && def.state!=='throne') def.state='hunt'; if(att===player) def.caughtOff=-1; return;
   }
   var dr = att===player ? player.dmg : (att.dmg || att.base.dmg);
   var base = roll(dr[0], dr[1]) * mult;
@@ -298,7 +298,7 @@ function attack(att, def, mult, label){
     base *= Math.max(0.1, 1+gearPool) * Math.max(0.1, 1+statPool);
     if(player.range>1 && dist(att,def)<=1) base *= 0.6;
     if(player.weapon.unarmed && player.pummel>0){ base*=2; player.pummel--; applyStatus(def,'stun',1); }
-    var unaware = def.state==='asleep' || def.st.stun || def.st.frozen || player.hidden>0 || (typeof smokeAmbush==='function' && smokeAmbush(def)) || def.surprised;
+    var unaware = offGuard(def) || def.st.stun || def.st.frozen || player.hidden>0 || (typeof smokeAmbush==='function' && smokeAmbush(def)) || def.surprised;
     var critCh = player.crit + (unaware && player.aff.shadow ? 0.05*player.aff.shadow : 0);
     crit = rng() < critCh;
     if(unaware){ surprise=true; base *= isScoundrel() ? 2.0 : 1.5; if(player.weapon.name.indexOf('Dagger')>=0) base*=1.2;
@@ -382,7 +382,8 @@ function attack(att, def, mult, label){
   log((label?label+': ':'')+who+' hit '+foe+' <span class="roll">('+Math.round(ch*100)+'%'
       +(crit?', crit':'')+(surprise?', surprise':'')+(blocked?', blocked':'')+')</span> &mdash; <b>'+total+'</b>'+elTxt+note,
       att===player?'c-hit':'c-you');
-  if(def!==player && def.state==='asleep') def.state='hunt';
+  if(def!==player && def.state!=='hunt' && def.state!=='throne') def.state='hunt';
+  if(def!==player) def.caughtOff=-1;   /* the surprise is spent: it knows now */
   if(def!==player && def.living && rng()<0.3) setG(def.x,def.y,G_BLOOD);
   if(def.hp<=0){ kill(def, att); }
   else if(att===player && hasP('cleaving') && !label){
@@ -621,7 +622,7 @@ function castAt(x,y){
   else base = Math.round((sDMG(roll(A.base[0],A.base[1])) + (A.perAffinity ? A.perAffinity*totalAffinity() : 0)) * spellPower(A));   /* affinity adds before spell power */
   if(key==='smite' && (f.base.undead||f.base.shadowy)) base=Math.round(base*1.5);
   if(player.aff.fire && !A.divine) base += player.aff.fire;   /* Kindled: +1 per Fire point on spells too */
-  var unaware = f.state==='asleep' || f.st.stun || f.st.frozen || player.hidden>0;
+  var unaware = offGuard(f) || f.st.stun || f.st.frozen || player.hidden>0;
   var crit = rng() < player.crit + (unaware&&player.aff.shadow?0.05*player.aff.shadow:0);   /* spells use the normal crit chance */
   if(crit) base=Math.round(base*1.6);
   else if(!A.tech && !A.divine && rng()<orbCrit()){ crit=true; base=Math.round(base*1.5); }
@@ -670,6 +671,14 @@ function canSeePlayer(e){
   if(!vis[idxOf(e.x,e.y)]) return false;
   return true;
 }
+/* 2026-09-18: a surprise attack lands on anything that has not noticed you - asleep, or awake but not hunting
+   you - and on something that noticed you only on its last turn (the door you just opened): it is still
+   catching up, so your next swing or spell is a surprise. Once hit, it knows. */
+function offGuard(e){
+  if(!e || e===player) return false;
+  if(e.state==='throne') return false;
+  return e.state!=='hunt' || e.caughtOff===turn;
+}
 function aiAct(e){
   if(!tickStatus(e)) return;
   if(e.challengeT && --e.challengeT<=0) e.challenged=false;
@@ -683,11 +692,11 @@ function aiAct(e){
   }
   if(e.state==='asleep'){
     var notice = noticeChance(e, see, d, true);
-    if(rng()<notice){ e.state='hunt'; log(e.name+' notices you.','c-info'); if(e.base.sfx) sfx(e.base.sfx+'-alert'); }
+    if(rng()<notice){ e.state='hunt'; e.caughtOff=turn; log(e.name+' notices you.','c-info'); if(e.base.sfx) sfx(e.base.sfx+'-alert'); }
     e.t+=actCost(e); return;
   }
   if(e.st.fear){ fleeStep(e); e.t+=actCost(e); return; }
-  if(see && (e.state==='hunt' || e.challenged || rng()<noticeChance(e, see, d, false))) { if(e.state!=='hunt' && e.base.sfx) sfx(e.base.sfx+'-alert'); e.state='hunt'; e.lastSeen={x:player.x,y:player.y}; }
+  if(see && (e.state==='hunt' || e.challenged || rng()<noticeChance(e, see, d, false))) { if(e.state!=='hunt'){ e.caughtOff=turn; if(e.base.sfx) sfx(e.base.sfx+'-alert'); } e.state='hunt'; e.lastSeen={x:player.x,y:player.y}; }
   if(e.state==='hunt'){
     /* the boss */
     if(e.base.boss && bossTurn(e, see, d)){ e.t+=actCost(e); return; }

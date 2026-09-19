@@ -232,9 +232,10 @@ function spellHit(f, A, amount, type){
   if(!f || f.hp<=0) return 0;
   var crit = rng()<player.crit, base=amount;
   if(crit) base=Math.round(base*1.6);
-  LAST_HIT={att:player, def:f, crit:crit, surprise:f.state==='asleep'||player.hidden>0, spell:true};
+  LAST_HIT={att:player, def:f, crit:crit, surprise:(typeof offGuard==='function' ? offGuard(f) : f.state==='asleep')||player.hidden>0, spell:true};
   if(A.el==='light' && (f.base.undead||f.base.shadowy)) base=Math.round(base*1.5);
-  if(f.state==='asleep') f.state='hunt';
+  if(f.state!=='hunt' && f.state!=='throne') f.state='hunt';
+  f.caughtOff=-1;
   var d=applyDamage(f, base, type, player);
   floatText(f.x,f.y,String(d), type==='phys'?'phys':type, crit);
   f.lastHitBy=player;

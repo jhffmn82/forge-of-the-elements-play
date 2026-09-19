@@ -380,7 +380,7 @@ function useSigil(use){
   else if(use==='stoneskin'){ applyStatus(player,'stone',15); log('Your skin turns to stone.','c-good'); }
   else if(use==='heal'){ var q=Math.round(player.maxhp*0.35*(hasGod('glimmer')?1+0.10*godRank():1));
     if(player.race==='gloomling'){ var hd=applyDamage(player,Math.round(q/2),'light',null); floatText(player.x,player.y,String(hd),'light'); log('The Light sigil burns you! Gloomlings are hurt by holy light.','c-you'); if(player.hp<=0) death(); }
-    else { healPlayer(q); floatText(player.x,player.y,'+'+q,'heal'); sparkleFx(player.x,player.y,'heal',24); log('Light mends you. +'+q+' HP.','c-good'); } }
+    else { healPlayer(q); floatText(player.x,player.y,'+'+q,'heal'); sparkleFx(player.x,player.y,'heal',24); player.buffs.afterglow=15; log('Light mends you. +'+q+' HP, and keeps glowing: 5% a turn for 15 turns.','c-good'); } }
   else if(use==='vanish'){ player.hidden=6; ents.forEach(function(e){ if(e.foe && e.state==='hunt'){ e.state='wander'; e.lastSeen=null; } }); log('Shadows swallow you.','c-good'); sfx('vanish'); }
   else if(use==='identify'){ Object.keys(SIGILS).forEach(function(k){ if(player.bag.some(function(b){ return b.kind==='sigil' && b.data.use===k; })) identifySigil(k); }); }
   else if(use==='mapping'){ for(var i=0;i<seen.length;i++) if(map[i]!==WALL || true) seen[i]=1; log('The shape of the whole floor settles into your mind.','c-good'); }
@@ -512,6 +512,10 @@ function endTurn(){
   turn++; RUN.turns++;
   if(player.blurCd>0) player.blurCd--;
   if(player.fortCd>0) player.fortCd--;
+  /* Light sigils leave an afterglow: 5% of max HP a turn while it lasts (2026-09-18) */
+  if(player.buffs && player.buffs.afterglow>0 && player.hp>0 && player.hp<player.maxhp){
+    var ag=Math.max(1, Math.round(player.maxhp*0.05)); healPlayer(ag); floatText(player.x,player.y,'+'+ag,'heal');
+  }
   var changed=false;
   for(var b in player.buffs){ if(player.buffs[b]>0){ player.buffs[b]--; if(player.buffs[b]===0){ changed=true; log(cap(b)+' fades.','c-info'); } } }
   if(changed) derive(player);

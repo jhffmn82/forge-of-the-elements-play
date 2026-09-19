@@ -246,7 +246,11 @@ function faithChipHTML(){
         '<span class="gdot"></span><span class="gname">'+g.name.replace(/^(Mother|Father|Lord|Lady|Old|The)\s+/,'').split(/[ ,]/)[0]+'</span>';
   if(g.chaos){
     var am=Math.round(player.amusement||0);
-    return h+'<span class="meter" title="Amusement '+am+' / 100"><i style="width:'+am+'%;background:linear-gradient(90deg,#8A4FB0,'+g.color+')"></i></span><span class="rk">'+am+'%</span></span>';
+    var nx=PIETY_RANKS[r]||null, pv=PIETY_RANKS[r-1]||0, pp=nx ? clamp(((player.piety||0)-pv)/(nx-pv),0,1) : 1;
+    return h+'<span class="rk">R'+r+'</span>'+
+      '<span class="meter" title="Piety '+Math.round(player.piety||0)+(nx?' / '+nx+' for rank '+(r+1):' (max rank)')+'"><i style="width:'+Math.round(pp*100)+'%;background:linear-gradient(90deg,'+hexA(g.color,0.55)+','+g.color+')"></i></span>'+
+      '<span class="rk" title="Amusement: drama raises it, quiet drains it">☺ '+am+'</span>'+
+      '<span class="meter sm" title="Amusement '+am+' / 100"><i style="width:'+am+'%;background:linear-gradient(90deg,#8A4FB0,'+g.color+')"></i></span></span>';
   }
   var next=PIETY_RANKS[r]||null, prev=PIETY_RANKS[r-1]||0, pct=next ? clamp(((player.piety||0)-prev)/(next-prev),0,1) : 1, fav=Math.round(player.favor||0);
   return h+'<span class="rk">R'+r+'</span>'+

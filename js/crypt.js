@@ -450,3 +450,31 @@ endTurn = function(){
   for(var i=0;i<2;i++){ var s=nearFree(c.x,c.y,2); if(s){ var sk=_spawnCrypt('skeleton', s.x, s.y); sk.state='hunt'; sk.noXp=true; } }
   sparkleFx(c.x,c.y,'dark',60); log('<b>Morty re-forms from the phylactery!</b> "Where were we?" Two Skeletons climb out beside him.','c-you');
 };
+
+/* ---------------------------------------------------------------- the corpse stays visible (2026-09-18)
+   A shambler that "collapses and twitches" was only a log line: the death animation played, faded out, and
+   the tile looked empty - so there was nothing to see, walk onto or hit. The body now lies there (the last
+   frame of its death clip, or its sprite on its side) until it is finished, burned or gets back up, and it
+   twitches on the turn before it rises. */
+function drawLyingCorpse(c, now){
+  var i=idxOf(c.x,c.y); if(!(revealAll || seen[i])) return;
+  var b=MONSTERS[c.kind] || {}, ms = spriteOn && b.sprite ? mobSheet(b.sprite) : null; if(!ms) return;
+  var px=(c.x-camX)*TS, py=(c.y-camY)*TS, lit=(revealAll||vis[i]) ? 1 : 0.45;
+  var m=ms.m, cell=m.cell, box=m.box||[0,0,cell,cell], s=TS*(b.art||0.9)/Math.max(box[3], box[2]*0.8);
+  var twitch = turn>=c.at-1 && !ANIM.reduce ? Math.sin(now/55)*TS*0.02 : 0;
+  ctx.save(); ctx.globalAlpha=0.92*lit; ctx.imageSmoothingEnabled=true;
+  if(m.clips.death){
+    var d=m.clips.death;
+    ctx.drawImage(ms.img, (d.frames-1)*cell, d.row*cell, cell, cell, px+TS/2-(box[0]+box[2]/2)*s+twitch, py+TS*0.97-(box[1]+box[3])*s, cell*s, cell*s);
+  } else {
+    var srow=m.static_row!==undefined ? m.static_row : (m.clips.idle ? m.clips.idle.row : 0), fx0=px+TS/2, fy0=py+TS*0.95;
+    ctx.translate(fx0+twitch, fy0); ctx.rotate(Math.PI*0.5); ctx.translate(-fx0, -fy0);
+    ctx.drawImage(ms.img, 0, srow*cell, cell, cell, px+TS/2-(box[0]+box[2]/2)*s, py+TS*0.97-(box[1]+box[3])*s, cell*s, cell*s);
+  }
+  ctx.restore();
+}
+var _drawTelegraphsCorpse = drawTelegraphs;
+drawTelegraphs = function(now){
+  _drawTelegraphsCorpse(now);
+  if(floorMeta && floorMeta.corpses && floorMeta.corpses.length){ var t=performance.now(); floorMeta.corpses.forEach(function(c){ drawLyingCorpse(c, t); }); }
+};

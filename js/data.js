@@ -124,7 +124,7 @@ var GODS = {
   wobbles:  {name:'Wobbles, the Giggling Chaos', title:'god of whatever happens next', sprite:'shrine-wobbles', color:'#D98BD0', chaos:true,
              rule:'No rule and no tithe. The cost is that you never know.', invoke:'rolldice', prayers:['rolldice2'],
              boons:['Amused: occasional gifts (and pranks) when things get dramatic; gifts get better as amusement rises. Never kills you directly.','Favourite Toy: interventions lean helpful more often.','Beloved Toy: once per floor, Wobbles snatches you from a killing blow with a random rescue.'],
-             gain:'Drama: low HP, big fights, elites. Boredom drains it.'}
+             gain:'Every kill (elites count for more) and every new floor. Separately, Amusement rises with drama - low HP, big fights - and drains when nothing is happening; high Amusement brings his gifts and pranks.'}
 };
 var PIETY_RANKS = [0, 100, 300, 650, 1200];   /* rank 1 on joining; ranks 2-5 at these totals. 2026-09-17: doubled monster density made ranks come
    too fast (rank 3 by floor 3); now about rank 2 by floor 3, rank 3 early in biome 2, and rank 5 is a late-run goal */
@@ -191,7 +191,7 @@ var SIGILS = {
   mana:     {name:'Water sigil', motes:['water'], desc:'Restore 50% of your mana.'},
   levitate: {name:'Air sigil', motes:['air'], desc:'Float for 25 turns: cross chasms and water, ignore floor traps.'},
   stoneskin:{name:'Earth sigil', motes:['earth'], desc:'Stone skin: -3 physical damage per hit for 15 turns.'},
-  heal:     {name:'Light sigil', motes:['light'], desc:'Heal 35% of max HP. (Hurts Gloomlings.)'},
+  heal:     {name:'Light sigil', motes:['light'], desc:'Heal 35% of max HP, then 5% a turn for 15 turns. (Hurts Gloomlings.)'},
   vanish:   {name:'Shadow sigil', motes:['shadow'], desc:'Vanish for 6 turns; enemies lose track of you.'},
   identify: {name:'Sigil of Knowing', motes:['light','shadow'], desc:'Identify every sigil you carry.'},
   mapping:  {name:'Sigil of the Deep Map', motes:['shadow','earth'], desc:'Reveal this floor\'s layout.'},

@@ -21,7 +21,7 @@ var SIGIL_ORDER = {
     identify2: {name:'Water sigil+', motes:['water','water'], desc:'Identify every sigil and every piece of gear you carry or wear, learn the look of every sigil this run, and put out every fire within 5 tiles.'},
     levitate2: {name:'Air sigil+', motes:['air','air'], desc:'Float for 60 turns, and move 30% faster for 10.'},
     stoneskin2:{name:'Earth sigil+', motes:['earth','earth'], desc:'Stone skin for 30 turns and a shield of 20% of your max HP.'},
-    heal2:     {name:'Light sigil+', motes:['light','light'], desc:'Heal to full and cleanse every status. (Hurts Gloomlings.)'},
+    heal2:     {name:'Light sigil+', motes:['light','light'], desc:'Heal to full and cleanse every status, then heal 5% of max HP a turn for 15 turns. (Hurts Gloomlings.)'},
     vanish2:   {name:'Shadow sigil+', motes:['shadow','shadow'], desc:'Vanish for 15 turns; enemies lose track of you.'},
     cinder:    {name:'Sigil of Cinder Stride', motes:['fire','air'], desc:'Move 50% faster for 10 turns, leaving fire where you step.'},
     magma:     {name:'Sigil of the Molten Ring', motes:['fire','earth'], desc:'The ground 2 tiles around you (not under you) burns for 5 turns.'},
@@ -115,7 +115,7 @@ useSigil = function(use){
   else if(use==='stoneskin2'){ applyStatus(player,'stone',30); giveWard(player.maxhp*0.2, 30); log('Your skin hardens to granite.','c-good'); }
   else if(use==='heal2'){
     if(player.race==='gloomling'){ var hd=applyDamage(player,Math.round(player.maxhp*0.3),'light',null); floatText(player.x,player.y,String(hd),'light'); log('The blazing light scorches you!','c-you'); if(player.hp<=0) death(); }
-    else { player.hp=player.maxhp; cleanseAll(); floatText(player.x,player.y,'full heal','heal'); sparkleFx(player.x,player.y,'heal',40); log('Light pours through you. You are whole.','c-good'); } }
+    else { player.hp=player.maxhp; cleanseAll(); floatText(player.x,player.y,'full heal','heal'); sparkleFx(player.x,player.y,'heal',40); player.buffs.afterglow=15; log('Light pours through you. You are whole, and the light lingers: 5% a turn for 15 turns.','c-good'); } }
   else if(use==='vanish2'){ player.hidden=15; ents.forEach(function(e){ if(e.foe && e.state==='hunt'){ e.state='wander'; e.lastSeen=null; } }); log('You fold into the shadows.','c-good'); }
   else if(use==='cinder'){ player.buffs.cinder=10; derive(player); player._cinderAt={x:player.x,y:player.y}; log('Your feet catch fire. Run.','c-fire'); }
   else if(use==='magma'){ for(var my=-2;my<=2;my++) for(var mx=-2;mx<=2;mx++){ var tx=player.x+mx, ty=player.y+my; if((mx||my) && inb(tx,ty) && walkable(tx,ty)) fireT[idxOf(tx,ty)]=Math.max(fireT[idxOf(tx,ty)],5); }

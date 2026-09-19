@@ -228,7 +228,9 @@ function drawThresholds(){
 function cryptRoomsOn(){ return typeof inCrypt==='function' && inCrypt() && !(floorMeta && floorMeta.plane); }
 var _drawTelegraphsRooms = drawTelegraphs;
 drawTelegraphs = function(now){
-  if(cryptRoomsOn()){ drawThresholds(); drawCryptBorders(); }
+  /* 2026-09-18: off. The edging stones around tombs and the sills beside doors read as a grey dotted outline
+     around every set piece and doorway at game scale. */
+  /* if(cryptRoomsOn()){ drawThresholds(); drawCryptBorders(); } */
   _drawTelegraphsRooms(now);
 };
 var _drawPropSurfaceRooms = drawPropSurface;

@@ -229,7 +229,11 @@ function faithHTML(){
   var g=GODS[player.god], r=godRank(), next=PIETY_RANKS[r]||null, prev=PIETY_RANKS[r-1]||0;
   var pct = next ? Math.round(((player.piety||0)-prev)/(next-prev)*100) : 100;
   var h='<div class="faith"><h3 style="color:'+g.color+'">'+g.name+'</h3><div class="who">'+cap(g.title)+'</div>';
-  if(g.chaos) h+='<div class="kv"><span>Amusement</span><b>'+Math.round(player.amusement||0)+' / 100</b></div>';
+  /* 2026-09-18: Wobbles showed only Amusement here (it drains when nothing is happening), so his rank and
+     piety - which only ever go up - were invisible and he looked impossible to level. He shows both now. */
+  if(g.chaos) h+='<div class="kv"><span>Amusement</span><b>'+Math.round(player.amusement||0)+' / 100</b><span>Piety rank</span><b>'+r+' / 5</b><span>Piety</span><b>'+Math.round(player.piety||0)+(next?' (next rank at '+next+')':'')+'</b></div>'+
+    '<div class="fmeter"><span>Rank '+r+'</span><span class="meter"><i style="width:'+pct+'%;background:linear-gradient(90deg,'+hexA(g.color,0.55)+','+g.color+')"></i></span><span>'+(next?pct+'% to rank '+(r+1):'max rank')+'</span></div>'+
+    '<div class="fmeter"><span>Amusement</span><span class="meter"><i style="width:'+Math.round(player.amusement||0)+'%;background:linear-gradient(90deg,#8A4FB0,'+g.color+')"></i></span><span>'+Math.round(player.amusement||0)+' / 100</span></div>';
   else h+='<div class="kv"><span>Piety rank</span><b>'+r+' / 5</b><span>Piety</span><b>'+Math.round(player.piety||0)+(next?' (next rank at '+next+')':'')+'</b><span>Favor</span><b>'+Math.round(player.favor||0)+' / 100</b></div>'+
     '<div class="fmeter"><span>Rank '+r+'</span><span class="meter"><i style="width:'+pct+'%;background:linear-gradient(90deg,'+hexA(g.color,0.55)+','+g.color+')"></i></span><span>'+(next?pct+'% to rank '+(r+1):'max rank')+'</span></div>'+
     '<div class="fmeter"><span>Favor</span><span class="meter"><i style="width:'+Math.round(player.favor||0)+'%;background:linear-gradient(90deg,#6B5A22,#E8D27A)"></i></span><span>'+Math.round(player.favor||0)+' / 100</span></div>';
