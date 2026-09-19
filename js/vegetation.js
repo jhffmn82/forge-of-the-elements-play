@@ -9,11 +9,11 @@
    art arrives nothing is drawn for them. Gardens keep their own planting. The Dungeon and the Caverns; the Crypt keeps its own
    ground cover. The art is drawn and animated by js/vegart.js. */
 var VEG = {
-  mood: [['lush',0.30], ['some',0.40], ['bare',0.30]],
-  damp:  {lush:0.22, some:0.06, bare:0},        /* how damp the whole room is */
-  short: {lush:0.30, some:0.50, bare:0.80},     /* moisture needed for short grass */
-  tall:  {lush:0.62, some:0.82, bare:9},        /* ... and for tall grass */
-  spot:  {lush:0.50, some:0.70, bare:9}         /* ... and for a plant (bush / fern / flowers) */
+  mood: [['overgrown',0.12], ['lush',0.26], ['some',0.37], ['bare',0.25]],
+  damp:  {overgrown:0.5, lush:0.22, some:0.06, bare:0},        /* how damp the whole room is */
+  short: {overgrown:0.1, lush:0.30, some:0.50, bare:0.80},     /* moisture needed for short grass */
+  tall:  {overgrown:0.62, lush:0.62, some:0.82, bare:9},       /* ... and for tall grass */
+  spot:  {overgrown:0.35, lush:0.50, some:0.70, bare:9}        /* ... and for a plant (bush / fern / flowers) */
 };
 function vegNoise(x, y, s){ return typeof ptVal==='function' ? ptVal(x, y, s) : hash2(Math.floor(x), Math.floor(y), s); }
 function vegGrow(){
@@ -43,8 +43,9 @@ function vegGrow(){
     if(r.special==='garden' && !cave) return;   /* underground a garden is only moss: grow it properly */
     var t=VEG.mood.reduce(function(a,m){ return a+m[1]; },0), rr=rng()*t, mood='some';
     for(var k=0;k<VEG.mood.length;k++){ rr-=VEG.mood[k][1]; if(rr<=0){ mood=VEG.mood[k][0]; break; } }
-    if(r.role==='start' && mood==='lush') mood='some';
+    if(r.role==='start' && (mood==='lush' || mood==='overgrown')) mood='some';
     if(r.role==='boss') mood='bare';
+    if(cave && mood==='overgrown') mood='lush';   /* underground, lush is as green as it gets */
     if(r.special==='garden') mood='lush';
     r.greenery=mood;
     for(yy=r.y;yy<r.y+r.h;yy++) for(xx=r.x;xx<r.x+r.w;xx++){
@@ -56,7 +57,32 @@ function vegGrow(){
       else if(m>=VEG.short[mood]) setG(xx,yy,G_SHORT);
       /* water always has growth at its edge, whatever the room's mood */
       else if(wet[idxOf(xx,yy)]<=1 || (wet[idxOf(xx,yy)]===2 && vegNoise(xx*0.8, yy*0.8, salt+9)>0.4)) setG(xx,yy,G_SHORT);
-      if(m>=VEG.spot[mood] && wallN(xx,yy)>=1 && hash2(xx,yy,salt+5)<(cave?0.18:0.35)) spots.push({x:xx, y:yy, mood:mood, wet:wet[idxOf(xx,yy)]<3});
+      if(m>=VEG.spot[mood] && (wallN(xx,yy)>=1 || mood==='overgrown') && hash2(xx,yy,salt+5)<(cave?0.18:mood==='overgrown'?0.22:0.35)) spots.push({x:xx, y:yy, mood:mood==='overgrown'?'lush':mood, wet:wet[idxOf(xx,yy)]<3});
+    }
+    /* an overgrown room is a thicket, but never more than 40% tall grass: it stays fightable */
+    if(mood==='overgrown'){
+      var cellsR=[], tallN=0; for(yy=r.y;yy<r.y+r.h;yy++) for(xx=r.x;xx<r.x+r.w;xx++) if(at(xx,yy)===FLOOR){ cellsR.push([xx,yy]); if(ground[idxOf(xx,yy)]===G_GRASS) tallN++; }
+      var cap=Math.floor(cellsR.length*0.4);
+      for(var c2=0; tallN>cap && c2<cellsR.length; c2++){ var q2=cellsR[c2]; if(ground[idxOf(q2[0],q2[1])]===G_GRASS && hash2(q2[0],q2[1],salt+8)<0.5){ setG(q2[0],q2[1],G_SHORT); tallN--; } }
+    }
+    /* bunches in the corners: grass tucked into one to three corners of any room that is not bare */
+    if(mood!=='bare' && !cave){
+      var corners=[];
+      for(yy=r.y;yy<r.y+r.h;yy++) for(xx=r.x;xx<r.x+r.w;xx++){
+        if(at(xx,yy)!==FLOOR || propAt(xx,yy)) continue;
+        var wv=isWallLike(at(xx,yy-1))||isWallLike(at(xx,yy+1)), wh=isWallLike(at(xx-1,yy))||isWallLike(at(xx+1,yy));
+        if(wv && wh) corners.push({x:xx,y:yy});
+      }
+      corners=shuffled(corners).slice(0, ri(1,3));
+      corners.forEach(function(c){
+        if(Math.max(Math.abs(c.x-player.x),Math.abs(c.y-player.y))<=1) return;
+        for(var dy=-1;dy<=1;dy++) for(var dx=-1;dx<=1;dx++){
+          var x2=c.x+dx, y2=c.y+dy; if(at(x2,y2)!==FLOOR || propAt(x2,y2) || (ground[idxOf(x2,y2)] && ground[idxOf(x2,y2)]!==G_SHORT)) continue;
+          if(!dx && !dy) setG(x2,y2, rng()<0.6 ? G_GRASS : G_SHORT);
+          else if(hash2(x2,y2,salt+11)<0.7 && ground[idxOf(x2,y2)]!==G_GRASS) setG(x2,y2,G_SHORT);
+        }
+        if(rng()<0.5) spots.push({x:c.x, y:c.y, mood:mood==='overgrown'?'lush':mood, wet:false});
+      });
     }
   });
   /* corridors: the odd weed where the floor meets the wall */
