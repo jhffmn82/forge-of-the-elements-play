@@ -146,12 +146,16 @@ var ABILITIES = {
               desc:'Fire damage and sets the target Burning. Ignites grass and burns thorns.'},
   frostshard:{name:'Frost Shard', cost:12, kind:'bolt', range:6, type:'ice', base:[9,15], status:{chill:3}, icon:'ic-frost-shard', el:'water',
               desc:'Ice damage and Chill. Three Chills freeze the target solid.'},
-  spark:     {name:'Spark', cost:12, kind:'bolt', range:6, type:'lightning', base:[9,15], stunChance:0.35, icon:'ic-spark', el:'air',
-              desc:'Lightning damage with a 35% chance to stun. +50% against targets standing in water.'},
+  /* 2026-09-20: stunChance said 0.35 and the card said 35%, but js/elements.js overwrites both with
+     0.05 x Air on every derive - it scales with the element, as Justin intends, and a caster with no Air
+     never stuns. The dead literal read as the real number and misled a reader into calling it a bug, so it
+     is gone; elements.js sets the only value there is, and the card below says what it is. */
+  spark:     {name:'Spark', cost:12, kind:'bolt', range:6, type:'lightning', base:[9,15], icon:'ic-spark', el:'air',
+              desc:'Lightning damage with a 5% chance per Air point to stun. +50% against targets standing in water.'},
   root:      {name:'Earth Root', cost:12, kind:'bolt', range:4, type:'phys', base:[9,15], status:{root:2}, icon:'ic-earth-root', el:'earth',
               desc:'Rock spell: Physical damage and roots the target for 2 turns.'},
-  smite:     {name:'Lightfall', cost:12, kind:'bolt', range:4, type:'light', base:[9,15], blindChance:0.5, icon:'ic-smite', el:'light',
-              desc:'Light damage with a 50% chance to Blind. +50% against undead and shadow creatures.'},
+  smite:     {name:'Lightfall', cost:12, kind:'bolt', range:4, type:'light', base:[9,15], icon:'ic-smite', el:'light',
+              desc:'Light damage with a 10% chance per Light point to Blind. +50% against undead and shadow creatures.'},
   shadowbolt:{name:'Shadow Bolt', cost:12, kind:'bolt', range:6, type:'dark', base:[9,15], status:{fear:2}, icon:'ic-shadow-bolt', el:'shadow',
               desc:'Dark damage and the target flees in Fear.'},
   /* invokes (Cleric, by god) */

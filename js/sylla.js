@@ -28,9 +28,10 @@
 /* ---------------------------------------------------------------- tunables */
 var SYLLA = {
   webChance:   0.10,   /* per piety rank: 10% at rank 1, 50% at rank 5 */
-  webRoot:     2,      /* Justin: "rooted 1 turn". A status is ticked down at the START of the
-                          victim's turn, so a 1-turn root is spent before it ever stops a step;
-                          2 is one turn of actually being pinned. */
+  webRoot:     1,      /* Justin: "rooted 1 turn", and one turn is what this buys. It used to say 2,
+                          written when a status was ticked down before the victim ever acted; js/ticks.js
+                          fixed that on 2026-09-18 and the golden fixtures confirmed it - a root of n
+                          denies exactly n actions - so 2 was pinning for two. Justin, 2026-09-20: "ok 1". */
   webSlow:     3,      /* then slowed for 3 turns, starting when the root lets go */
   slowMult:    0.5,    /* "slowed 50%" */
   poisonTurns: 3,      /* anything you web, and a surprise attack or a crit at rank 3 */
@@ -121,11 +122,20 @@ clearBad = function(){ _clearBadSyl(); delete player.st.slow; player.syllaWeb=0;
 var _applyStatusSyl = applyStatus;
 applyStatus = function(e, key, turns, extra){
   if(e && e!==player && e.foe && syllaOn() && godRank()>=5 && turns>0) turns=turns+1;
-  return _applyStatusSyl(e, key, turns, extra);
+  var r = _applyStatusSyl(e, key, turns, extra);
+  /* slow counts game turns, not the bearer's actions - see the tickStatus wrapper below */
+  if(key==='slow' && e && e.st && e.st.slow && turns>0) e.st.slow.until = turn + turns;
+  return r;
 };
-/* the held-back half of the web goes on the moment the root expires */
+/* the held-back half of the web goes on the moment the root expires.
+   2026-09-20: slow is also spent here, in turns of the game rather than in the bearer's own actions.
+   Slow works by doubling what an action costs, so a slowed creature acts half as often - and a status
+   ticked on the bearer's turn therefore ticked half as often too, which made "3 turns of slow" last five
+   or six against a monster while costing the player exactly three. Justin: "should last n". Stamping the
+   turn it ends on makes n mean n for both sides. */
 var _tickStatusSyl = tickStatus;
 tickStatus = function(e){
+  if(e && e.st && e.st.slow && e.st.slow.until !== undefined && turn >= e.st.slow.until) delete e.st.slow;
   var r=_tickStatusSyl(e);
   if(r!==false && e && e.hp>0 && e.syllaWeb>0 && !(e.st && e.st.root)){ var n=e.syllaWeb; e.syllaWeb=0; applyStatus(e, 'slow', n); }
   return r;
