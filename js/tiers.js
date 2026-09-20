@@ -67,10 +67,17 @@ function itemKey(it){
   if(k) it.key=k;
   return k;
 }
+/* 2026-09-20: this read every tier string except 'Trusty' as tier 1, so Justin's upgrade prices of
+   2026-09-18 (Fine 1.5x, Masterwork 2x) never applied to an item whose tier was still a string - and the
+   obsolete 'Trusty' collected the 1.5x that belongs to Fine. Both forms are live: newRun() deals kit gear
+   'Rusty', bossDefeated() and the altar set 'Trusty', world.js deals both, and tierNormalize writes a
+   number. Every name the game has ever written is mapped here. */
+var TIER_BY_NAME = {Worn:0, Rusty:1, '':1, Plain:1, Trusty:2, Fine:2, Masterwork:3};
 function tierNum(it){
   if(!it) return 1;
   if(typeof it.tier==='number') return Math.max(0, Math.min(3, it.tier));
-  return it.tier==='Trusty' ? 2 : 1;
+  var t=TIER_BY_NAME[it.tier];
+  return t===undefined ? 1 : t;
 }
 function tierCol(it){ return (it && itemKey(it)) ? TIER_COL[tierNum(it)] : null; }
 /* rebuild an item's numbers from its type, tier and plus (safe to call any time) */

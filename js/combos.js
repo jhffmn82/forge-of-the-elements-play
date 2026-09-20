@@ -232,7 +232,7 @@ endTurn = function(){
    this no longer has to parse a "+N" float against a mark kept in endTurn (2026-09-18). */
 var _healPlayerCombo = healPlayer;
 healPlayer = function(n){
-  var over = _healPlayerCombo(n);
+  var over = _healPlayerCombo.apply(this, arguments);   /* pass every argument on: the second one says "natural regeneration" */
   if(over > 0 && combo('light','water') && player.iceArmor < player.iceArmorMax){
     player.iceArmor = Math.min(player.iceArmorMax, player.iceArmor + over);
   }

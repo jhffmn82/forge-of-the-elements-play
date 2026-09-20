@@ -559,7 +559,7 @@ function endTurn(){
   if(seesFoe) hpRate=0;                                                 /* wounds do not close while something hunts you */
   var scale=cost/100;
   player.mp = Math.min(player.maxmp, player.mp + player.maxmp*mpRate*scale);
-  healPlayer(player.maxhp*hpRate*scale);
+  healPlayer(player.maxhp*hpRate*scale, true);   /* true: natural regeneration, not a heal - it must not stanch bleeding */
   if(!seesFoe && player.iceArmor<player.iceArmorMax) player.iceArmor=Math.min(player.iceArmorMax, player.iceArmor+0.25);
   spotTraps();
   if(!floorMeta.boss) wanderingSpawn();

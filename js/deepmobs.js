@@ -214,7 +214,10 @@ tickStatus = function(e){
 };
 function deepStanch(t){ if(t && t.st && t.st.bleed){ delete t.st.bleed; if(t===player) log('The bleeding stops.','c-good'); else if(deepVis(t.x,t.y)) log('The '+t.name+' stops bleeding.','c-info'); } }
 var _healPlayerDeep = healPlayer;
-healPlayer = function(n){ var r=_healPlayerDeep.apply(this, arguments); if(n>=1) deepStanch(player); return r; };
+/* 2026-09-20: this used to tell natural regeneration from a real heal by size (n>=1), which works only
+   while max HP stays small - regen is maxhp*0.002 a turn, so anything over 500 max HP would have started
+   stanching its own wounds. healPlayer's second argument now says so outright. */
+healPlayer = function(n, natural){ var r=_healPlayerDeep.apply(this, arguments); if(!natural && n>=1) deepStanch(player); return r; };
 var _stepOnDeep = stepOn;
 stepOn = function(){ var hp0=player.hp, r=_stepOnDeep.apply(this, arguments); if(player.hp>hp0) deepStanch(player); return r; };
 if(typeof STATUS_INFO!=='undefined'){
