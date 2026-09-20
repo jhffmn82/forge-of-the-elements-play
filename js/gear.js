@@ -471,12 +471,9 @@ function breakCurse(it){
   return true;
 }
 /* Saint Glimmer's Consecrate also cleanses worn gear */
-var _usePrayerBase = usePrayer;
-usePrayer = function(pid){
-  var ok=canPray(pid);
-  _usePrayerBase(pid);
-  if(ok && pid==='consecrate') wornGear().forEach(breakCurse);
-};
+/* 2026-09-19: Consecrate used to break the curse on everything you wore - at rank 2, for 10 favor, without costing a
+   turn, over and over. Justin: cursed gear is meant to be a real problem, and the Sigil of Purity (water+light) and the
+   Forge already answer it. Consecrate now only does what its card says: cleanse your statuses and burn the undead. */
 
 /* ---------------------------------------------------------------- enemy loot */
 function rollDrops(e, byPlayerSide){
