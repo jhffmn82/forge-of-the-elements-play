@@ -16,7 +16,7 @@ CLASSES.mage.passive    = 'Deep Reserves: +30% max mana.';
 CLASSES.mage.blurb      = 'A staff and a robe. Magic Missile always hits, and can carry your elements’ effects.';
 CLASSES.mage.kit        = {main:'staff', alt:null, armor:'robe', off:null};
 CLASSES.scoundrel.passive = 'Sneaky: surprise attacks x2. Enemies notice you 2 tiles closer and half as often. Shadowstep hides you when no enemy is adjacent.';
-CLASSES.scoundrel.blurb = 'Dagger and parrying dagger, or a bow. Sap knocks a target out; the hit that wakes it is a surprise critical.';
+CLASSES.scoundrel.blurb = 'A dagger in each hand and a bow across the back. Sap knocks a target out; the hit that wakes it is a surprise critical.';
 CLASSES.tourist.passive = 'Well-Traveled: +1 stat point every 2 levels, +25% experience, and 1 free stat point to start.';
 RACES.human.blurb = 'Adaptable. +1 to every stat, +1 stat point every 3 levels, piety +25%, and once per biome survives a killing blow at 1 HP.';
 RACES.fae.blurb   = RACES.fae.blurb + ' Takes 25% more damage from the element opposite its court.';
@@ -30,13 +30,14 @@ var CLERIC_KITS = {
   anvil:   {main:'mace',   armor:'chain'},
   vellum:  {main:'staff',  armor:'robe'}
 };
+/* 2026-09-20: Justin - "scoundrel shouldn't have two paths, the starting set should just be 2 daggers and a bow".
+   One kit: a dagger in each hand and a bow slung, which the ranged slot fires without swapping. */
 var SCOUNDREL_KITS = {
-  melee:  {main:'dagger', armor:'leather', off:'dagger', label:'Knife work', d:'Two daggers, leather armor'},
-  ranged: {main:'bow',    armor:'leather', label:'Bowman', d:'Short bow and leather armor'}
+  melee: {main:'dagger', armor:'leather', off:'dagger', alt:'bow', label:'Knife work', d:'Two daggers, a short bow, leather armor'}
 };
 function kitFor(c){
   if(c.cls==='cleric'){ var g=c.god==='wobbles' ? pick(Object.keys(CLERIC_KITS)) : c.god; return CLERIC_KITS[g] || CLASSES.cleric.kit; }
-  if(c.cls==='scoundrel') return SCOUNDREL_KITS[c.kit||'melee'];
+  if(c.cls==='scoundrel') return SCOUNDREL_KITS.melee;   /* one kit, always */
   return CLASSES[c.cls].kit;
 }
 function kitNames(c){
@@ -69,13 +70,7 @@ renderCreate = function(){
   _renderCreateCls();
   var c=CHOICE, el=$('create'); if(!el) return;
   var sum=el.querySelector('.summary');
-  if(c.cls==='scoundrel' && sum){
-    if(!SCOUNDREL_KITS[c.kit]) c.kit='melee';
-    var h='<div class="step">Scoundrel kit</div><div class="cards" style="grid-template-columns:repeat(auto-fill,minmax(200px,1fr))">';
-    Object.keys(SCOUNDREL_KITS).forEach(function(k){ var K=SCOUNDREL_KITS[k]; h+='<button class="card'+(c.kit===k?' on':'')+'" data-kit="'+k+'"><b>'+K.label+'</b><span>'+K.d+'</span></button>'; });
-    sum.insertAdjacentHTML('beforebegin', h+'</div>');
-    el.querySelectorAll('[data-kit]').forEach(function(b){ b.onclick=function(){ sfx('ui-click'); c.kit=b.getAttribute('data-kit'); renderCreate(); }; });
-  }
+  if(c.cls==='scoundrel') c.kit='melee';   /* 2026-09-20: one kit, so the picker is gone */
   el.querySelectorAll('.summary .kv span').forEach(function(sp){ if(sp.textContent==='Starting kit' && sp.nextElementSibling) sp.nextElementSibling.textContent=kitNames(c).join(', '); });
 };
 

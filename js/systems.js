@@ -381,7 +381,7 @@ function useSigil(use){
   else if(use==='heal'){ var q=Math.round(player.maxhp*0.35*(hasGod('glimmer')?1+0.10*godRank():1));
     if(player.race==='gloomling'){ var hd=applyDamage(player,Math.round(q/2),'light',null); floatText(player.x,player.y,String(hd),'light'); log('The Light sigil burns you! Gloomlings are hurt by holy light.','c-you'); if(player.hp<=0) death(); }
     else { healPlayer(q); floatText(player.x,player.y,'+'+q,'heal'); sparkleFx(player.x,player.y,'heal',24); player.buffs.afterglow=15; log('Light mends you. +'+q+' HP, and keeps glowing: 5% a turn for 15 turns.','c-good'); } }
-  else if(use==='vanish'){ player.hidden=6; ents.forEach(function(e){ if(e.foe && e.state==='hunt'){ e.state='wander'; e.lastSeen=null; } }); log('Shadows swallow you.','c-good'); sfx('vanish'); }
+  else if(use==='vanish'){ player.hidden=10;   /* 2026-09-20: Justin - six turns was not enough to do anything with */ ents.forEach(function(e){ if(e.foe && e.state==='hunt'){ e.state='wander'; e.lastSeen=null; } }); log('Shadows swallow you.','c-good'); sfx('vanish'); }
   else if(use==='identify'){ Object.keys(SIGILS).forEach(function(k){ if(player.bag.some(function(b){ return b.kind==='sigil' && b.data.use===k; })) identifySigil(k); }); }
   else if(use==='mapping'){ for(var i=0;i<seen.length;i++) if(map[i]!==WALL || true) seen[i]=1; log('The shape of the whole floor settles into your mind.','c-good'); }
   else if(use==='blink'){ var spots=[]; for(var y=0;y<MH;y++) for(var x=0;x<MW;x++) if(walkable(x,y) && vis[idxOf(x,y)] && dist(player,{x:x,y:y})<=6 && dist(player,{x:x,y:y})>=3 && !occupied(x,y)) spots.push({x:x,y:y});

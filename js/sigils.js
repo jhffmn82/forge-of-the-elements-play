@@ -22,7 +22,7 @@ var SIGIL_ORDER = {
     levitate2: {name:'Air sigil+', motes:['air','air'], desc:'Float for 60 turns, and move 30% faster for 10.'},
     stoneskin2:{name:'Earth sigil+', motes:['earth','earth'], desc:'Stone skin for 30 turns and a shield of 20% of your max HP.'},
     heal2:     {name:'Light sigil+', motes:['light','light'], desc:'Heal to full and cleanse every status, then heal 5% of max HP a turn for 15 turns. (Hurts Gloomlings.)'},
-    vanish2:   {name:'Shadow sigil+', motes:['shadow','shadow'], desc:'Vanish for 15 turns; enemies lose track of you.'},
+    vanish2:   {name:'Shadow sigil+', motes:['shadow','shadow'], desc:'Vanish for 20 turns; enemies lose track of you.'},
     cinder:    {name:'Sigil of Cinder Stride', motes:['fire','air'], desc:'Move 50% faster for 10 turns, leaving fire where you step.'},
     magma:     {name:'Sigil of the Molten Ring', motes:['fire','earth'], desc:'The ground 2 tiles around you (not under you) burns for 5 turns.'},
     sunburst:  {name:'Sigil of Sunburst', motes:['fire','light'], desc:'Every enemy you can see takes light damage and is Blinded for 3 turns.'},

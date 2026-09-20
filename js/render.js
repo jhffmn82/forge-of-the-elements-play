@@ -63,6 +63,10 @@ function blitTile(o, px, py, alpha){
 /* dynamic lighting can be switched off from the sandbox (Light field) */
 function lightingOn(){ try { return localStorage.getItem('fote-light')!=='off'; } catch(e){ return true; } }
 
+/* the colour behind each condition's icon: light where the art is dark, deep where the art is pale */
+var STATUS_CHIP = {burn:'#FFC27A', chill:'#BFE4F0', frozen:'#DCF2FF', root:'#C8E0A0', stun:'#FFE9A8', fear:'#C8B4E0',
+                   blind:'#FFFFFF', poison:'#C6E39A', web:'#E4DCF0', slow:'#E4DCF0', bleed:'#F0B0B0'};
+
 /* ---- terrain choices ---- */
 var FLOOR_PLAIN=[0,12], FLOOR_ACCENT=[2,2,6,6,14,10,11,15,9,1,3,7,13,5];
 function floorTile(x,y){
@@ -957,10 +961,18 @@ function draw(){
       if(e.state==='asleep') { mark('z',px0+TS*0.78,py0+TS*0.08+(ANIM.reduce?0:Math.sin(now/400+e.id)*2),'#CFE0FF'); }
       if(e.keyholder){ drawObj(objArt('items','item-key-iron'), px0+TS*0.52, py0-TS*0.34, {fit:0.4}); }
       if(e.challenged){ mark('!',px0+TS*0.5,py0-TS*0.1,'#E8B44A'); }
-      ['burn','chill','frozen','root','stun','fear','blind','poison'].forEach(function(k){
+      /* 2026-09-20: Justin - "we need some art for conditions and not just a black placeholder symbol". The icons
+         were drawn straight onto the scene, so a dark one over a dark creature read as a black box. Each sits on a
+         small chip of its own colour now, with a dark rim, so it reads against anything. */
+      ['burn','chill','frozen','root','stun','fear','blind','poison','web','slow','bleed'].forEach(function(k){
         if(!e.st[k]) return;
-        if(!drawObj(objArt('icons','st-'+k), ix, py0-TS*0.3, {fit:0.3})) mark(k.charAt(0), ix+TS*0.1, py0+TS*0.05, '#FFF');
-        ix+=TS*0.2;
+        var col=STATUS_CHIP[k]||'#C8C0B4', cx=ix+TS*0.1, cy=py0-TS*0.3+TS*0.15, rr=TS*0.115;
+        ctx.save();
+        ctx.fillStyle='rgba(10,8,6,0.85)'; ctx.beginPath(); ctx.arc(cx, cy, rr*1.25, 0, 7); ctx.fill();
+        ctx.fillStyle=col; ctx.beginPath(); ctx.arc(cx, cy, rr, 0, 7); ctx.fill();
+        ctx.restore();
+        if(!drawObj(objArt('icons','st-'+k), ix, py0-TS*0.3, {fit:0.26})) mark(k.charAt(0), cx, py0+TS*0.05, '#120F0D');
+        ix+=TS*0.24;
       });
     });
   });

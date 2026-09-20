@@ -3,12 +3,19 @@
    ========================================================================== */
 
 var CHOICE = {race:'dwarf', sex:'m', court:'fire', cls:'fighter', god:'murk', name:''};
+/* 2026-09-20: the reroll button worked all along - each race and sex simply had three or four names, so it handed
+   back the same two over and over and read as broken. Sixteen apiece now, in each people's own voice. */
 var NAMES = {
-  human:{m:['Aldric','Tomas','Wren','Corvin'], f:['Mira','Elsbeth','Wren','Isolde']},
-  elf:{m:['Saelis','Thalion','Ereth'], f:['Ilyra','Saelis','Nimue']},
-  dwarf:{m:['Thrain','Borin','Dagna'], f:['Brynja','Helga','Dagna']},
-  fae:{m:['Pip','Thistle','Corrin','Wisp'], f:['Nerissa','Ilka','Briar','Sylph']},
-  gloomling:{m:['Vesk','Hollow','Mortis'], f:['Vess','Nyx','Pale Anna']}
+  human:{m:['Aldric','Tomas','Corvin','Rowan','Edric','Garrick','Halden','Merrick','Orin','Perrin','Quillan','Stefan','Tobias','Ulric','Wendel','Yorick'],
+         f:['Mira','Elsbeth','Isolde','Wren','Adela','Bryony','Corliss','Delia','Ferris','Greta','Hester','Linnet','Marta','Odile','Rosalind','Verity']},
+  elf:{m:['Saelis','Thalion','Ereth','Aelric','Caladan','Dathien','Elrowen','Faelar','Ithil','Lathriel','Maeron','Narion','Oriel','Sylvanas','Taeral','Yllestar'],
+       f:['Ilyra','Nimue','Saelis','Aerith','Celine','Elowen','Faelyn','Idriel','Liriel','Maerwyn','Nythera','Oriane','Sylwen','Thessaly','Vaelia','Yrsa']},
+  dwarf:{m:['Thrain','Borin','Dagna','Balin','Durin','Fargrim','Grum','Harbek','Kildrak','Morgran','Norbal','Orsik','Rurik','Thorbek','Ulfgar','Vondal'],
+         f:['Brynja','Helga','Dagna','Astrid','Bardryn','Eldeth','Fenna','Gunnloda','Hilda','Ilde','Kathra','Liftrasa','Mardred','Riswynn','Torbera','Vistra']},
+  fae:{m:['Pip','Thistle','Corrin','Wisp','Bramble','Cinder','Dewdrop','Fennel','Gossamer','Hollyhock','Juniper','Moss','Nettle','Quill','Sorrel','Tamarind'],
+       f:['Nerissa','Ilka','Briar','Sylph','Aster','Clover','Dandelion','Elowyn','Fern','Hazel','Iris','Lilac','Marigold','Pearl','Saffron','Willow']},
+  gloomling:{m:['Vesk','Hollow','Mortis','Ash','Cinder','Dusk','Ember','Grim','Knell','Lament','Murk','Pallor','Rook','Shade','Umbra','Wane'],
+             f:['Vess','Nyx','Pale Anna','Bleak','Cinder','Dolor','Ember','Gloam','Hush','Lethe','Mourn','Nocte','Requiem','Sable','Tenebrae','Vespers']}
 };
 /* an off-hand kit slot may name a weapon: these two helpers are what classes.js and the creation screen
    ask, now that there is no separate off-hand dagger item (2026-09-17) */

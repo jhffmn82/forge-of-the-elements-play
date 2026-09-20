@@ -68,12 +68,16 @@ useBagItem = function(idx){
   var b = player.bag[idx];
   if(b && b.kind==='weapon' && isRangedWeapon(b.data)){
     if(typeof reqBlock==='function' && reqBlock(tierNormalize(b.data))) return;
+    /* 2026-09-20: the slot obeys a curse like every other. A cursed bow stays slung until the curse is broken,
+       and putting one on says so - Justin carried a cursed -3 bow for a whole run without being told. */
+    if(typeof cursedBlock==='function' && cursedBlock(player.ranged, 'come off your back')) return;
     var old = player.ranged;
     player.ranged = b.data;
     player.bag.splice(idx, 1);
     if(old) addBag('⚔', gearName(old), {kind:'weapon', data:old});
     derive(player);
     log('You sling the <b>'+gearName(player.ranged)+'</b> across your back. It answers anything out of reach.','c-good');
+    if(typeof onPutOn==='function') onPutOn(player.ranged);
     sfx('equip-weapon'); endTurn(); return;
   }
   return _useBagItemRanged(idx);
@@ -94,6 +98,7 @@ equipFromBag = function(idx, slot){
 
 function unequipRanged(){
   if(!player.ranged) return;
+  if(typeof cursedBlock==='function' && cursedBlock(player.ranged, 'come off your back')) return;
   if(player.bag.length >= BAG_MAX){ log('Your bag is full.','c-info'); return; }
   var b = player.ranged; player.ranged = null; derive(player);
   addBag('⚔', gearName(b), {kind:'weapon', data:b});

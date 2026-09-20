@@ -258,6 +258,9 @@ function attack(att, def, mult, label){
   if(att.st && att.st.blind) ch *= 0.6;
   if(def===player && typeof luckBonus==='function') ch -= luckBonus();   /* Lady Luck's Blessing: blows slide off */
   if(def.st && (def.st.frozen || def.st.stun)) ch = 1;
+  /* 2026-09-20: Justin - "surprise attacks shouldn't miss". Striking something that has not noticed you always
+     lands: the same rule frozen and stunned targets already had. */
+  if(att===player && def!==player && (typeof offGuard==='function' && offGuard(def) || player.hidden>0 || def.surprised)) ch = 1;
   var who = att===player ? 'You' : att.name;
   var foe = def===player ? 'you' : def.name;
   var tAt = fxClock;

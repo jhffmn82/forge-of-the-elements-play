@@ -192,7 +192,7 @@ var SIGILS = {
   levitate: {name:'Air sigil', motes:['air'], desc:'Float for 25 turns: cross chasms and water, ignore floor traps.'},
   stoneskin:{name:'Earth sigil', motes:['earth'], desc:'Stone skin: -3 physical damage per hit for 15 turns.'},
   heal:     {name:'Light sigil', motes:['light'], desc:'Heal 35% of max HP, then 5% a turn for 15 turns. (Hurts Gloomlings.)'},
-  vanish:   {name:'Shadow sigil', motes:['shadow'], desc:'Vanish for 6 turns; enemies lose track of you.'},
+  vanish:   {name:'Shadow sigil', motes:['shadow'], desc:'Vanish for 10 turns; enemies lose track of you.'},
   identify: {name:'Sigil of Knowing', motes:['light','shadow'], desc:'Identify every sigil you carry.'},
   mapping:  {name:'Sigil of the Deep Map', motes:['shadow','earth'], desc:'Reveal this floor\'s layout.'},
   blink:    {name:'Sigil of Blinking', motes:['air','shadow'], desc:'Teleport to a spot you can see within 6 tiles.'}

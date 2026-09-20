@@ -177,6 +177,10 @@ function wornGear(){
   if(player.off && player.off!==EMPTY_OFF) out.push(player.off);
   (player.rings||[]).forEach(function(r){ if(r) out.push(r); });
   if(player.amulet) out.push(player.amulet);
+  /* 2026-09-20: the bow in the ranged slot is worn like anything else. It was left out, so a cursed bow never
+     announced itself, never locked on, and the Sigil of Purity washed over everything except the thing that was
+     cursed. Justin lost a run to a -3 bow he could not see or shed. */
+  if(player.ranged && player.ranged!==EMPTY_OFF && out.indexOf(player.ranged)<0) out.push(player.ranged);
   return out;
 }
 function useCount(it, kind, n){
