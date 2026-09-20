@@ -112,7 +112,19 @@ function packDraw(p, name, alpha){
   if(p.wall) bottom=(p.y-camY+1)*TS + packBottomPad(o)*s;                   /* set into the wall face, on the floor line */
   var dx=Math.round(left+o.ox*s), dy=Math.round(bottom-fh+o.oy*s), dw=Math.round(o.sw*s), dh=Math.round(o.sh*s);
   ctx.save(); ctx.globalAlpha=alpha; ctx.imageSmoothingEnabled=false;
-  if(!flat && !p.wall){   /* the pack paints no cast shadow: a soft contact shadow under what stands on the floor */
+  /* 2026-09-20: Justin - "the stepping stones need to be integrated into the floor somehow". A stone in a pool is
+     half in the water: no contact shadow, a dark wet halo where it breaks the surface, a bright waterline on its
+     lit side, and the art sunk a little into the tile. */
+  var wet = p.name==='stepping-stone' && typeof ptMat==='function' && ptMat();
+  if(wet){
+    var M=ptMat(), cx0=dx+dw/2, cy0=(p.y-camY+h)*TS-TS*0.16;
+    ctx.fillStyle='rgba('+Math.round(M.pool[0]*0.55)+','+Math.round(M.pool[1]*0.55)+','+Math.round(M.pool[2]*0.6)+',0.75)';
+    ctx.beginPath(); ctx.ellipse(cx0, cy0, dw*0.56, TS*0.2, 0, 0, 7); ctx.fill();
+    ctx.strokeStyle='rgba('+M.poolRim[0]+','+M.poolRim[1]+','+M.poolRim[2]+',0.5)'; ctx.lineWidth=Math.max(1, TS/32);
+    ctx.beginPath(); ctx.ellipse(cx0, cy0, dw*0.5, TS*0.17, 0, Math.PI*0.08, Math.PI*0.92); ctx.stroke();
+    dy += Math.round(TS*0.12);                                  /* sunk, so the waterline cuts across it */
+  }
+  else if(!flat && !p.wall){   /* the pack paints no cast shadow: a soft contact shadow under what stands on the floor */
     var sy=(p.y-camY+h)*TS-TS*0.08;
     ctx.fillStyle='rgba(8,6,12,0.32)'; ctx.beginPath(); ctx.ellipse(dx+dw/2, sy, dw*0.46, TS*0.13, 0, 0, 7); ctx.fill();
   }

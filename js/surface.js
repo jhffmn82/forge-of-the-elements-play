@@ -417,7 +417,9 @@ function propFlame(p, o, px, py, alpha, now){
   drawPixelFlame(bx, by, TS*F.size, F.wide, alpha, now, p.x*7+p.y*13);
 }
 function drawPixelFlame(bx, by, H, wide, alpha, now, seed){
-  var u=Math.max(1, Math.round(TS/32));                 /* one art pixel */
+  /* 2026-09-20: Justin - "the art for on fire looks really bad and low res". It was drawn one art pixel per TS/32,
+     so at a close zoom the flame was a handful of fat blocks. Finer pixels, so it has the detail the rest has. */
+  var u=Math.max(1, Math.round(TS/64));                 /* one art pixel */
   var t=ANIM.reduce ? 0 : now/1000;
   var cols=(typeof SOUL_FIRE!=='undefined' && SOUL_FIRE==='violet') ? ['#3A1A6A','#7A3CD8','#B884FF','#F0DCFF'] : (typeof SOUL_FIRE!=='undefined' && SOUL_FIRE) ? ['#1E5A2A','#3FB85A','#8CF07A','#E0FFC0'] : ['#8E2A12','#E2622B','#FFA040','#FFE08A'];   /* the Crypt burns green */
   ctx.save(); ctx.globalAlpha=alpha; ctx.imageSmoothingEnabled=false;

@@ -51,16 +51,22 @@ PLANE_THEMES.air   = {name:'Skyvault', rock:'#A6B4CA', floor:'#D2DCEA', water:'#
 /* the props buildPlaneFloor() asks for. decor/light are only read on the Earth plane, but they are filled in
    with the names packet 04 will deliver so the swap is one line when the art lands. */
 PLANE_PROPS.fire  = {decor:['crystal-fire-small','stalagmite-fire','crystal-fire-small'], light:'crystal-fire', lightCol:'#FF8A3A', rune:'rune-stone-fire',  center:'lava-fountain', stone:null}   /* packet 04's signature piece, 2x2 */;
-PLANE_PROPS.water = {decor:['crystal-water-small','stalagmite-water','crystal-water-small'], light:'crystal-water', lightCol:'#7CC8FF', rune:'rune-stone-water', center:null, stone:null};
-PLANE_PROPS.air   = {decor:['crystal-air-small','stalagmite-air','crystal-air-small'], light:'crystal-air', lightCol:'#E8F4FF', rune:'rune-stone-air',   center:null, stone:null};
+PLANE_PROPS.water = {decor:['crystal-water-small','stalagmite-water','crystal-water-small'], light:'crystal-water', lightCol:'#7CC8FF', rune:'rune-stone-water', center:'signature-water', stone:'stepping-stone'}   /* packet 04: the giant clam */;
+PLANE_PROPS.air   = {decor:['crystal-air-small','stalagmite-air','crystal-air-small'], light:'crystal-air', lightCol:'#E8F4FF', rune:'rune-stone-air',   center:'signature-air', stone:null}      /* packet 04: the wind shrine */;
 ['rune-stone-fire','rune-stone-water','rune-stone-air'].forEach(function(n){ PROPS[n]={b:1}; });
 ['crystal-fire','crystal-fire-small','stalagmite-fire','crystal-water','crystal-water-small','stalagmite-water',
  'crystal-air','crystal-air-small','stalagmite-air'].forEach(function(n){ PROPS[n]=PROPS[n]||{flat:1}; });
 /* 2026-09-19: packet 04's Fire art is in - the lava fountain stands in the central chamber and the ember-and-slag
    clusters scatter along the wall feet (the scenery rules: wall-adjacent, in streaks, never lone) */
 PROPS['lava-fountain']={b:1, w:2, h:2, light:'#FF7A26'};
-['embers-slag-1','embers-slag-2','embers-slag-3','embers-slag-4'].forEach(function(n){ PROPS[n]={flat:1}; });
-var FWA_CLUSTERS = {fire:['embers-slag-1','embers-slag-2','embers-slag-3','embers-slag-4']};
+PROPS['signature-water']={b:1, w:2, h:2, light:'#7CC8FF'};
+PROPS['signature-air']={b:1, w:2, h:2, light:'#E8F4FF'};
+['embers-slag-1','embers-slag-2','embers-slag-3','embers-slag-4',
+ 'scatter-water-1','scatter-water-2','scatter-water-3','scatter-water-4',
+ 'scatter-air-1','scatter-air-2','scatter-air-3','scatter-air-4'].forEach(function(n){ PROPS[n]={flat:1}; });
+var FWA_CLUSTERS = {fire:['embers-slag-1','embers-slag-2','embers-slag-3','embers-slag-4'],
+                    water:['scatter-water-1','scatter-water-2','scatter-water-3','scatter-water-4'],
+                    air:['scatter-air-1','scatter-air-2','scatter-air-3','scatter-air-4']};
 var _buildPlaneFloorFwaClu = buildPlaneFloor;
 buildPlaneFloor = function(el, seed){
   var r=_buildPlaneFloorFwaClu.apply(this, arguments);

@@ -31,10 +31,10 @@ var PT_MAT = {
   },
   shadow: {
     /* violet-black rock, dark slate floors, violet crystal light, a still void pool */
-    floor:[74,64,92], floorLav:[62,54,82], jointCol:[44,38,58], joint:0.45, grain:0.02, occ:[38,32,50],
-    mineralCool:[86,74,112], pearl:[104,92,132], band:[90,80,116],
-    top:[70,60,88], topHi:[104,92,128], topLo:[46,40,60], topLav:[84,72,110], edge:[24,20,32],
-    face:[62,54,78], faceLo:[36,31,46], faceH:0.8, lip:[124,110,152],
+    floor:[52,45,66], floorLav:[44,38,58], jointCol:[32,27,42], joint:0.45, grain:0.02, occ:[26,22,35],
+    mineralCool:[62,53,82], pearl:[76,66,98], band:[64,56,84],
+    top:[48,41,62], topHi:[74,65,92], topLo:[32,28,43], topLav:[60,51,80], edge:[16,13,22],
+    face:[43,37,55], faceLo:[25,21,32], faceH:0.8, lip:[92,81,114],
     void:[6,5,10], voidEdge:[26,22,34],
     vein:[168,120,232], veinHot:[236,214,255], veinDark:[84,52,126], inlay:[96,84,124], inlayJoint:[56,48,72], polish:[104,92,132],
     pool:[40,22,84], poolEdge:[86,56,150], poolShallow:[74,48,130], poolRim:[196,168,255], poolShelf:[70,60,90], poolShelfDry:[84,74,106], poolWet:[56,48,74], poolLight:'#B98CFF',

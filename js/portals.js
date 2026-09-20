@@ -327,7 +327,12 @@ applyDamage = function(target, amount, type, source){
       }
       return 0;
     }
-    if(b.moonbound && !inMoonlight(target)){ if(source===player) log('Your blow passes through shadow: the <b>Night Warden</b> can only be hurt in the crystals\' light.','c-info'); return 0; }
+    if(b.moonbound && !inMoonlight(target)){
+      /* 2026-09-20: Justin took 0 damage and could not tell why. Say it on the blow, not only in the log. */
+      if(typeof floatText==='function') floatText(target.x, target.y, 'immune', 'miss');
+      if(source===player) log('Your blow passes through shadow: the <b>'+target.name+'</b> can only be hurt in the crystal light.','c-info');
+      return 0;
+    }
     if(b.burrows && target.burrowed) return 0;
     if(b.blocksFirst && target._blockTurn!==turn && amount>0){ target._blockTurn=turn; floatText(target.x,target.y,'block','miss'); if(vis[idxOf(target.x,target.y)]) log('The <b>Zealot Knight</b> takes the blow on its shield.','c-info'); return 0; }
     if(b.big && source===player) target._provoked=true;
@@ -398,7 +403,14 @@ aiAct = function(e){
       e.tpCd=(e.tpCd||0)-1;
       if(e.tpCd<=0 || (d<=1 && inMoonlight(e))){
         var shadows=[]; for(var y=player.y-7;y<=player.y+7;y++) for(var x=player.x-7;x<=player.x+7;x++){ if(inb(x,y) && walkable(x,y) && !occupied(x,y) && dist({x:x,y:y},player)>=2 && dist({x:x,y:y},player)<=4) shadows.push({x:x,y:y}); }
-        if(shadows.length){ var s2=pick(shadows); sparkleFx(e.x,e.y,'dark',24); e.x=s2.x; e.y=s2.y; e._lx=undefined; e.tpCd=3; log('The <b>Night Warden</b> steps through the shadows.','c-info'); e.t+=actCost(e); return; }
+        if(shadows.length){
+          var s2=pick(shadows);
+          sparkleFx(e.x, e.y, 'dark', 30); if(typeof ringFx==='function') ringFx(e.x, e.y, '#7A4FE0', 2);
+          e.x=s2.x; e.y=s2.y; e._lx=undefined; e.tpCd=3;
+          sparkleFx(s2.x, s2.y, 'dark', 30); if(typeof ringFx==='function') ringFx(s2.x, s2.y, '#B98CFF', 2);
+          if(typeof sfx==='function') sfx('vanish');
+          log('The <b>'+e.name+'</b> steps through the shadows.','c-info'); e.t+=actCost(e); return;
+        }
       }
     }
     if(b.brands){
@@ -504,3 +516,26 @@ kill = function(e, by){
 /* The Heart's sprite already draws at TS * art(1.9) * big(1.25), so it spills well past its tile. What it
    does not have is a 2x2 FOOTPRINT: `big:2` is read by the renderer for scale and by the lightmap, but
    nothing uses it for collision or targeting, so it occupies one tile. Left as is deliberately. */
+
+
+/* ---------------------------------------------------------------- 2026-09-20: a moonbound creature shows its state
+   Justin: "the shadow plane is confusing... the warden took 0 damage from range and I'm not sure what he was doing."
+   Out of the crystals' light it wears a dark shroud and cannot be hurt; inside it, it glows and is open to a blow. */
+var _drawCharacterMoon = drawCharacter;
+drawCharacter = function(e, px, py, opts){
+  if(!e || !e.base || !e.base.moonbound || !(typeof floorMeta!=='undefined' && floorMeta && floorMeta.plane)) return _drawCharacterMoon.apply(this, arguments);
+  var lit = typeof inMoonlight==='function' && inMoonlight(e), now=performance.now();
+  var r=_drawCharacterMoon.apply(this, arguments);
+  ctx.save();
+  if(lit){
+    var a=0.25+0.15*Math.sin(now/260);
+    var g=ctx.createRadialGradient(px+TS/2, py+TS*0.55, TS*0.1, px+TS/2, py+TS*0.55, TS*0.8);
+    g.addColorStop(0,'rgba(201,178,255,'+a.toFixed(3)+')'); g.addColorStop(1,'rgba(201,178,255,0)');
+    ctx.globalCompositeOperation='lighter'; ctx.fillStyle=g; ctx.fillRect(px-TS*0.4, py-TS*0.4, TS*1.8, TS*1.8);
+  } else {
+    ctx.globalAlpha=0.45; ctx.fillStyle='#120E1E';
+    ctx.beginPath(); ctx.ellipse(px+TS/2, py+TS*0.5, TS*0.46, TS*0.52, 0, 0, 7); ctx.fill();
+  }
+  ctx.restore();
+  return r;
+};

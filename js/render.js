@@ -885,7 +885,7 @@ function draw(){
     if(p.pillar){ drawPillar(p, ppx, ppy, pa, now); return; }
     if(typeof drawPropSurface==='function' && drawPropSurface(p, ppx, ppy, pa)) return;   /* flat bones and rubble (surface.js) */
     if(typeof propShadow==='function' && !p.flat) propShadow(p.x, p.y, ppx, ppy, pa, p.name);   /* contact shadow (surface.js) */
-    if(!drawObj(o, ppx, ppy, {feet:!p.flat, fit: p.flat?0.82 : (p.name==='bookshelf'||p.name==='statue'||p.name==='boss-throne')?1.12:0.9, alpha:pa, flash:flashOf(p)})){
+    if(!drawObj(o, ppx, ppy, {feet:!p.flat, fit: p.flat?0.82 : (p.name==='bookshelf'||p.name==='statue'||p.name==='boss-throne')?1.12 : /^(urn|coffin|sarcophagus|tomb)/.test(p.name)?1.08 : 0.9, alpha:pa, flash:flashOf(p)})){
       ctx.globalAlpha=pa; ctx.fillStyle=p.b?'#6A5A48':'#4A4038'; ctx.fillRect(ppx+TS*0.2,ppy+TS*0.2,TS*0.6,TS*0.6); ctx.globalAlpha=1;
     }
     if(typeof propFlame==='function') propFlame(p, o, ppx, ppy, pa, now);   /* animated flames (surface.js) */
