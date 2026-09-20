@@ -6,6 +6,9 @@
    ===================================================================== */
 
 function capstone(god){ return player && player.god===god && godRank()>=5; }
+/* 2026-09-20 (Justin): Undying Light is Saint Glimmer's THIRD boon now, not her rank-5 reward - her rank 5
+   is the free point of Light (religion.js). It is the one entry here that is not a rank-5 capstone. */
+function undyingLight(){ return player && player.god==='glimmer' && godRank()>=3; }
 function foesInView(){ return ents.filter(function(e){ return e.foe && vis[idxOf(e.x,e.y)]; }).length; }
 
 /* ---------------------------------------------------------------- attacks you make */
@@ -40,7 +43,7 @@ applyDamage = function(target, amount, type, source){
   }
   var d=_applyDamageCap(target, amount, type, source);
   if(target===player && player.hp<=0){
-    if(capstone('glimmer') && !floorMeta.undyingUsed){
+    if(undyingLight() && !floorMeta.undyingUsed){
       floorMeta.undyingUsed=true; player.hp=Math.round(player.maxhp*0.5);
       log('<b>Undying Light.</b> Saint Glimmer will not let you fall here.','c-kill'); sparkleFx(player.x,player.y,'light',50); sfx('heal');
     } else if(capstone('wobbles') && !floorMeta.wobblesSaved){

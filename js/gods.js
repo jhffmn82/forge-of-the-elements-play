@@ -5,6 +5,11 @@
    (earned alongside piety, capped at 100). See DESIGN.md 6.5.
    ========================================================================== */
 
+/* 2026-09-20: most gods unlock boons at 1 / 3 / 5, with the third boon doubling as the rank-5 reward.
+   Sylla and Saint Glimmer have three boons AND a rank-5 reward, so they carry their own table on the god
+   (g.boonRanks). Everyone else still reads BOON_RANKS. */
+function godBoonRanks(g){ return (g && g.boonRanks) || BOON_RANKS; }
+
 function joinGod(id, startPiety){
   var prev=player.god;
   if(prev && prev!==id){
@@ -26,7 +31,7 @@ function gainPiety(n, why){
   var after=godRank();
   if(after>before){
     log('<b>'+g.name+' is pleased.</b> Piety rank '+after+'.','c-kill'); sfx('piety-rank'); ringFx(player.x,player.y,g.color,3);
-    var bi=BOON_RANKS.indexOf(after), boon=bi>=0 ? g.boons[bi] : null; if(boon) log('Boon: '+boon,'c-good');
+    var bi=godBoonRanks(g).indexOf(after), boon=bi>=0 ? g.boons[bi] : null; if(boon) log('Boon: '+boon,'c-good');
     (g.prayers||[]).forEach(function(pid){ var P=PRAYERS[pid]; if(P.rank===after) log('New prayer: <b>'+P.name+'</b> &mdash; '+P.desc+' (Faith tab or P)','c-kill'); });
     derive(player); updateUI();
   }
@@ -184,8 +189,8 @@ function clearBad(){ ['burn','poison','chill','frozen','fear','blind','stun','ro
 /* ---------------------------------------------------------------- the shrine window */
 /* only what you have earned is shown: a stranger sees the first boon, a follower sees boons and prayers up to their rank */
 function shrineGifts(id, g, mine){
-  var r = mine ? godRank() : 1;
-  var boons = g.boons.filter(function(b, i){ return (BOON_RANKS[i]||i+1)<=r; });
+  var r = mine ? godRank() : 1, BR = godBoonRanks(g);
+  var boons = g.boons.filter(function(b, i){ return (BR[i]||i+1)<=r; });
   var prayers = mine ? (g.prayers||[]).filter(function(p){ return PRAYERS[p] && r>=PRAYERS[p].rank; }) : [];
   var h='<p><b>'+(mine?'Your boons:':'First boon:')+'</b></p><ol class="boons">'+boons.map(function(b){ return '<li>'+b+'</li>'; }).join('')+'</ol>';
   if(prayers.length) h+='<p><b>Your prayers:</b> '+prayers.map(function(p){ var P=PRAYERS[p]; return '<b>'+P.name+'</b> ('+prayerCost(p)+'): '+P.desc; }).join(' &middot; ')+'</p>';
@@ -237,8 +242,9 @@ function faithHTML(){
   else h+='<div class="kv"><span>Piety rank</span><b>'+r+' / 5</b><span>Piety</span><b>'+Math.round(player.piety||0)+(next?' (next rank at '+next+')':'')+'</b><span>Favor</span><b>'+Math.round(player.favor||0)+' / 100</b></div>'+
     '<div class="fmeter"><span>Rank '+r+'</span><span class="meter"><i style="width:'+pct+'%;background:linear-gradient(90deg,'+hexA(g.color,0.55)+','+g.color+')"></i></span><span>'+(next?pct+'% to rank '+(r+1):'max rank')+'</span></div>'+
     '<div class="fmeter"><span>Favor</span><span class="meter"><i style="width:'+Math.round(player.favor||0)+'%;background:linear-gradient(90deg,#6B5A22,#E8D27A)"></i></span><span>'+Math.round(player.favor||0)+' / 100</span></div>';
-  h+='<p><b>Rule.</b> '+g.rule+'</p><p><b>Piety from:</b> '+g.gain+'</p><p><b>Boons</b></p><ol class="boons">'+g.boons.map(function(b,i){ var br=BOON_RANKS[i]||i+1; return br<=r ? '<li><b>Rank '+br+'.</b> '+b+'</li>' : ''; }).join('')+'</ol>'+
-     (g.boons.some(function(b,i){ return (BOON_RANKS[i]||i+1)>r; }) ? '<p class="c-info" style="font-size:11px">Grow in piety to learn what else '+g.name.split(',')[0]+' grants.</p>' : '')+'<p><b>Prayers</b></p>';
+  var BRf=godBoonRanks(g);
+  h+='<p><b>Rule.</b> '+g.rule+'</p><p><b>Piety from:</b> '+g.gain+'</p><p><b>Boons</b></p><ol class="boons">'+g.boons.map(function(b,i){ var br=BRf[i]||i+1; return br<=r ? '<li><b>Rank '+br+'.</b> '+b+'</li>' : ''; }).join('')+'</ol>'+
+     (g.boons.some(function(b,i){ return (BRf[i]||i+1)>r; }) ? '<p class="c-info" style="font-size:11px">Grow in piety to learn what else '+g.name.split(',')[0]+' grants.</p>' : '')+'<p><b>Prayers</b></p>';
   var shown=0;
   g.prayers.forEach(function(pid){ var P=PRAYERS[pid], ok=canPray(pid); if(godRank()<P.rank) return; shown++;
     h+='<div class="abrow" data-pr="'+pid+'"><span class="pico"></span><span class="k">'+P.rank+'</span><span><span style="color:var(--ink)">'+P.name+'</span><div class="d">'+P.desc+(godRank()>=P.rank?' <span style="opacity:.6">(drag to hotbar)</span>':'')+'</div></span>'+

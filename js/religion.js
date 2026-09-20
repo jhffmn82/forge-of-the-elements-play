@@ -12,9 +12,15 @@ GODS.grom.boons = ['Iron Flesh: +2 armor per rank, and your fists hit harder as 
                    'Staggering Blows: unarmed hits stun 15% of the time.',
                    'Mountain’s Fists: every third unarmed attack in a row strikes as a critical hit and knocks the target back a tile.'];
 GODS.glimmer.rule = 'No Shadow: no shadow affinity, enchantments or sigils. Light must be one of your elements.';
-GODS.glimmer.boons = ['Mending Light: joining grants 1 Light affinity that does not count toward your cap. All healing and HP regeneration +10%, and +10% damage against undead and shadow creatures, per rank.',
+/* 2026-09-20 (Justin): the free Light point is no longer a joining gift - it is what rank 5 is FOR. Undying
+   Light comes down to rank 3 to take its old place, so she still reads as three boons and a rank-5 reward.
+   Her boons unlock at 1 / 2 / 3 / 5 (godBoonRanks in gods.js); rank 2 for Guiding Light is the one number
+   here that is not Justin's - PLACEHOLDER, it only moves the +5% Smite chance one rank earlier. */
+GODS.glimmer.boonRanks = [1, 2, 3, 5];
+GODS.glimmer.boons = ['Mending Light: all healing and HP regeneration +10%, and +10% damage against undead and shadow creatures, per rank.',
                       'Guiding Light: +5% Smite chance per rank.',
-                      'Undying Light: once per floor, a killing blow instead heals you to half your HP.'];
+                      'Undying Light: once per floor, a killing blow instead heals you to half your HP.',
+                      'Kindled: Saint Glimmer sets 1 Light affinity burning in you that does not count toward your cap.'];
 GODS.murk.invoke = 'unholyaura';
 GODS.murk.prayers = ['raisedead','corpsefeast'];
 GODS.murk.boons = ['Life Drain: kills heal 1 HP per rank, and your undead have +10% HP and damage per rank.',
@@ -73,13 +79,26 @@ function godRefuses(id){
   return false;
 }
 
-/* ---------------------------------------------------------------- Glimmer's Light point */
+/* ---------------------------------------------------------------- Glimmer's Light point (rank 5 from 2026-09-20) */
 function grantGlimmerLight(){
   if(player.glimmerLight) return;
+  /* the point arrives late now, so there may be no room left for it: a Gloomling is refused at the shrine,
+     but anyone can fill both element slots between joining and rank 5. She waits rather than breaking the cap. */
+  if(typeof canHoldLight==='function' && !canHoldLight()){
+    log('<b>Saint Glimmer</b> would kindle Light in you, but there is no room left for it.','c-info');
+    return;
+  }
   player.glimmerLight=true;
   player.aff.light=(player.aff.light||0)+1;
   if(!player.primary) player.primary='light';
   log('<b>Saint Glimmer</b> kindles a point of <b>Light</b> in you.','c-kill');
+}
+/* granted at rank 5 and taken back the moment the rank drops below it (or she is abandoned) */
+function syncGlimmerLight(){
+  if(!player) return;
+  var want = player.god==='glimmer' && godRank()>=5;
+  if(want && !player.glimmerLight){ grantGlimmerLight(); if(player.glimmerLight){ derive(player); updateUI(); } }
+  else if(!want && player.glimmerLight){ takeGlimmerLight(); derive(player); updateUI(); }
 }
 function takeGlimmerLight(){
   if(!player.glimmerLight) return;
@@ -95,21 +114,24 @@ var _joinGodRel = joinGod;
 joinGod = function(id, startPiety){
   if(player.god==='glimmer' && id!=='glimmer') takeGlimmerLight();
   _joinGodRel(id, startPiety);
-  if(id==='glimmer') grantGlimmerLight();
+  syncGlimmerLight();
   derive(player); updateUI();
 };
+var _gainPietyRel = gainPiety;
+gainPiety = function(n, why){ var r=_gainPietyRel(n, why); syncGlimmerLight(); return r; };
 var _pietyViolationRel = pietyViolation;
 pietyViolation = function(what, amount){
   var was=player.god;
   _pietyViolationRel(what, amount);
   if(was==='glimmer' && player.god!=='glimmer') takeGlimmerLight();
+  syncGlimmerLight();   /* piety lost can drop you below rank 5: the light goes out with it */
 };
 var _newRunRel = newRun;
 newRun = function(seed, choice){
   _newRunRel(seed, choice);
-  if(player.cls==='cleric' && player.god==='glimmer'){ grantGlimmerLight(); derive(player); updateUI(); }
+  syncGlimmerLight();
 };
-function smiteBonus(){ return hasGod('glimmer') && godRank()>=3 ? 0.05*godRank() : 0; }
+function smiteBonus(){ return hasGod('glimmer') && godRank()>=2 ? 0.05*godRank() : 0; }   /* Guiding Light is boon 2, and boon 2 unlocks at rank 2 now */
 
 /* ---------------------------------------------------------------- Grom: fists by rank, armor, punch piety, Iron Hide */
 var GROM_FISTS = [[1,3],[2,5],[3,6],[5,9],[5,9],[7,12]];

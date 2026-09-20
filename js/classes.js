@@ -116,15 +116,12 @@ derive = function(p){
 var _playerShieldCls = playerShield;
 playerShield = function(){ return _playerShieldCls() + Math.max(0, Math.floor(player.guard||0)); };
 
-/* Cleric: piety 25% faster, Invoke 1 mana cheaper per rank */
+/* Cleric: piety 25% faster.
+   2026-09-20 (Justin): the per-rank discount on a divine invoke is gone. An invoke never gets cheaper as your
+   piety grows - it gets stronger. Saint Glimmer's Heal already scales (+5% a rank, combat.js castSelf) and
+   Sylla's Into the Dark does the same; that is what rank buys. */
 var _gainPietyCls = gainPiety;
 gainPiety = function(n, why){ return _gainPietyCls(player && player.cls==='cleric' ? n*1.25 : n, why); };
-var _costOfCls = costOf;
-costOf = function(A){
-  var c=_costOfCls(A);
-  if(c>0 && A.divine && A.god && player.cls==='cleric' && player.god) c=Math.max(1, c-godRank());
-  return c;
-};
 
 /* Experience curve (level cap 20), refit 2026-09-17 after doubling monster density: XP for the next level =
    50 x 1.55^(level-1), rounded to 5 (50, 80, 120, 185, 290, 450, 695, 1075 ...). Measured biome 1 full clears on the
