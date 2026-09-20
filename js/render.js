@@ -900,7 +900,8 @@ function draw(){
   for(y=camY;y<=camY+viewH;y++) for(x=camX;x<=camX+viewW;x++){
     if(!inb(x,y) || !fireT[idxOf(x,y)] || !(revealAll||vis[idxOf(x,y)])) continue;
     var fpx2=(x-camX)*TS, fpy2=(y-camY)*TS;
-    drawObj(objArt('terrain','fire-ground'), fpx2, fpy2 + (ANIM.reduce?0:Math.sin(now/90+x*5)*1.2), {fit:0.95, feet:true, sy: ANIM.reduce?0:0.08*Math.sin(now/70+y*3)});
+    /* 2026-09-20: Justin - the burning-ground flames read as too big; 70% of what they were */
+    drawObj(objArt('terrain','fire-ground'), fpx2, fpy2 + (ANIM.reduce?0:Math.sin(now/90+x*5)*1.2), {fit:0.67, feet:true, sy: ANIM.reduce?0:0.08*Math.sin(now/70+y*3)});
     if(typeof emitFire==='function') emitFire(x,y);
   }
 
