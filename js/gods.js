@@ -233,7 +233,12 @@ function faithHTML(){
     (player.wrath ? '<p class="c-you">The wrath of '+GODS[player.wrath.god].name+' still follows you ('+player.wrath.t+' turns).</p>' : '')+'</div>';
   var g=GODS[player.god], r=godRank(), next=PIETY_RANKS[r]||null, prev=PIETY_RANKS[r-1]||0;
   var pct = next ? Math.round(((player.piety||0)-prev)/(next-prev)*100) : 100;
-  var h='<div class="faith"><h3 style="color:'+g.color+'">'+g.name+'</h3><div class="who">'+cap(g.title)+'</div>';
+  /* 2026-09-20: the statue and a line about the god, above the numbers */
+  var h='<div class="faith"><div class="godhead" style="display:flex;gap:12px;align-items:flex-start;margin-bottom:8px">'+
+        '<div class="faith-art" style="flex:0 0 96px;width:96px;height:96px"></div>'+
+        '<div style="flex:1 1 auto"><h3 style="color:'+g.color+';margin:0">'+g.name+'</h3><div class="who">'+cap(g.title)+'</div>'+
+        (typeof GOD_BLURB!=='undefined' && GOD_BLURB[player.god] ? '<p class="c-info" style="margin:6px 0 0;font-size:12px;line-height:1.5">'+GOD_BLURB[player.god]+'</p>' : '')+
+        '</div></div>';
   /* 2026-09-18: Wobbles showed only Amusement here (it drains when nothing is happening), so his rank and
      piety - which only ever go up - were invisible and he looked impossible to level. He shows both now. */
   if(g.chaos) h+='<div class="kv"><span>Amusement</span><b>'+Math.round(player.amusement||0)+' / 100</b><span>Piety rank</span><b>'+r+' / 5</b><span>Piety</span><b>'+Math.round(player.piety||0)+(next?' (next rank at '+next+')':'')+'</b></div>'+

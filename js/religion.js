@@ -271,3 +271,19 @@ function greaterPrayer(){
   }
   computeFOV();
 }
+
+
+/* ---------------------------------------------------------------- who each god is (2026-09-20)
+   Justin: "the faith tab should really show the artwork of the statue, maybe a little blurb about the god". The
+   sheet was all rules and numbers; these are the few lines that say what kind of thing you have sworn to. */
+var GOD_BLURB = {
+  grom:     'A bare-knuckled god of the old sort, who thinks a weapon is an apology for weak arms. His shrines are worn smooth where fists have struck them.',
+  grumbok:  'He hates wizards. That is the whole of his theology, and he pursues it with the patience of a man sharpening a very large axe.',
+  glimmer:  'A saint, not a god: a healer who walked into the dark once too often and never quite came back. Her light mends what it touches and burns what should not be.',
+  murk:     'Mother of the quiet dead. She does not raise her voice, and she does not think dying should end anyone\'s usefulness.',
+  reginald: 'An adventurer who died of an ambush and took it personally. He asks only that you let them see you coming, and hit them anyway.',
+  anvil:    'The smith below, who never sleeps and never asks what you did. Bring essence, and he will make your gear worthy of a better owner.',
+  vellum:   'A book that reads itself, endlessly. Vellum remembers every spell ever spoken and wants nothing more than to hear them all again.',
+  wobbles:  'Nobody knows what Wobbles is. He finds that funny. Amuse him and he is generous; bore him and he gets creative.',
+  sylla:    'A drider carved in white stone, waiting with her legs folded beneath her. Sylla teaches that the fight is decided before it starts: web it, poison it, and be somewhere else when it dies.'
+};

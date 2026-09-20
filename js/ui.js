@@ -386,6 +386,9 @@ function spendPoint(key){
 function panes(){
   if(openSheet==='Faith'){
     $('mFaith').innerHTML=faithHTML();
+    /* 2026-09-20: paint the god's own statue at the top of the sheet */
+    var fart=$('mFaith').querySelector('.faith-art');
+    if(fart && player.god && GODS[player.god]) paintArt(fart, 'structures', GODS[player.god].sprite, 96);
     $('mFaith').querySelectorAll('.prayer').forEach(function(b){ b.onclick=function(){ var pid=b.getAttribute('data-p'); showSheet('Faith'); usePrayer(pid); updateUI(); }; });
     $('mFaith').querySelectorAll('.abrow[data-pr]').forEach(function(row){
       var pid=row.getAttribute('data-pr'), ic=row.querySelector('.pico');
