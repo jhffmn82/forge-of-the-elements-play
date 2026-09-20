@@ -135,3 +135,50 @@ function renderForge(){
   body.querySelectorAll('[data-craft]').forEach(function(b){ b.onclick=function(){ craftSigil(b.getAttribute('data-craft')); }; });
   body.querySelectorAll('[data-art]').forEach(function(el){ paintArt(el, 'items', el.getAttribute('data-art'), 30); });
 }
+
+/* ---------------------------------------------------------------- the Forge says what it did (2026-09-20)
+   Justin: "when crafting or anything at the forge, some sort of acknowledgement should pop up that you crafted
+   something". The Forge's own panel covers the message log, so the line it wrote went unseen. Every fuse, enchant,
+   upgrade and carving now leaves a banner across the top of the panel for a few seconds. */
+function forgeSay(html, kind){
+  var body=document.querySelector('.fpanel') || document.getElementById('forgeBody') || document.querySelector('#shade .sheet');
+  if(!body) return;
+  var el=document.getElementById('forgeSaid');
+  if(!el){
+    el=document.createElement('div'); el.id='forgeSaid';
+    el.style.cssText='margin:0 0 8px;padding:8px 10px;border-radius:6px;border:1px solid var(--gold);'+
+      'background:linear-gradient(180deg,rgba(232,180,74,.18),rgba(232,180,74,.06));color:var(--ink);font-size:13px';
+    body.insertBefore(el, body.firstChild);
+  }
+  el.style.borderColor = kind==='bad' ? '#D0605A' : 'var(--gold)';
+  el.innerHTML=html;
+  clearTimeout(el._t); el._t=setTimeout(function(){ if(el && el.parentNode) el.remove(); }, 6000);
+}
+var _craftSigilSay = craftSigil;
+craftSigil = function(key){
+  var before=(player.bag||[]).length, r=_craftSigilSay.apply(this, arguments);
+  var S=(typeof SIGILS!=='undefined' && SIGILS[key]); if(S && (player.bag||[]).length!==before) forgeSay('Carved: <b>'+S.name+'</b> &mdash; '+S.desc);
+  return r;
+};
+var _fuseMoteSay = fuseMote;
+fuseMote = function(el){
+  var b=(player.aff&&player.aff[el])||0, r=_fuseMoteSay.apply(this, arguments), a=(player.aff&&player.aff[el])||0;
+  if(a>b) forgeSay('The <b>'+cap(el)+'</b> mote takes root in you: affinity <b>'+a+'</b>.');
+  return r;
+};
+var _enchantItemSay = enchantItem;
+enchantItem = function(slot, el){
+  var r=_enchantItemSay.apply(this, arguments);
+  var it = slot==='ranged' ? player.ranged : slot==='off' ? player.off : slot==='armor' ? player.armorItem : player.weapon;
+  if(it && it.enchant===el) forgeSay('Your <b>'+gearName(it)+'</b> takes the '+cap(el)+' enchantment.');
+  return r;
+};
+if(typeof upgradeItem==='function'){
+  var _upgradeItemSay = upgradeItem;
+  upgradeItem = function(it){
+    var was=it && (it.plus||0), wasCursed=it && it.cursed, r=_upgradeItemSay.apply(this, arguments);
+    if(it && wasCursed && !it.cursed) forgeSay('The Forge burns the curse out of your <b>'+gearName(it)+'</b>.');
+    else if(it && (it.plus||0)>was) forgeSay('Your <b>'+gearName(it)+'</b> comes off the anvil stronger.');
+    return r;
+  };
+}

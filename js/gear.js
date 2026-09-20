@@ -138,14 +138,16 @@ var _weaponCardBase = weaponCard;
 weaponCard = function(w, worn){
   if(!w) return '';
   if(!w.unid) return _weaponCardBase(w, worn) + focusRows(w) + (w.cursed?'<div class="hint" style="color:#D0605A">Cursed: it will not leave your hand until the curse is broken.</div>':'');
-  return '<div class="nm">'+gearName(w)+'</div><div class="row"><span>Base damage</span><b>'+w.dmg[0]+'&ndash;'+w.dmg[1]+'</b></div>'+
+  /* 2026-09-20: an unidentified weapon showed its "base damage", which is the tier table PLUS its hidden upgrade
+     level - so a cursed -3 bow read 0-2 and gave the curse away while pretending to be a mystery. Nothing now. */
+  return '<div class="nm">'+gearName(w)+'</div><div class="row"><span>Damage</span><b>?</b></div>'+
     '<div class="row"><span>Hands</span><b>'+(w.hands||1)+'</b></div>'+(w.range?'<div class="row"><span>Range</span><b>'+w.range+'</b></div>':'')+unidHint(w);
 };
 var _armorCardBase = armorCard;
 armorCard = function(a, worn){
   if(!a) return '';
   if(!a.unid) return _armorCardBase(a, worn) + (a.cursed?'<div class="hint" style="color:#D0605A">Cursed: you cannot take it off until the curse is broken.</div>':'');
-  return '<div class="nm">'+gearName(a)+'</div><div class="row"><span>Base armor</span><b>'+a.armor+'</b></div><div class="row"><span>Evasion</span><b>'+(a.eva||0)+'</b></div>'+unidHint(a);
+  return '<div class="nm">'+gearName(a)+'</div><div class="row"><span>Armor</span><b>?</b></div><div class="row"><span>Evasion</span><b>'+(a.eva||0)+'</b></div>'+unidHint(a);
 };
 var _bagCardBase = bagCard;
 bagCard = function(it){

@@ -106,3 +106,68 @@ updateUI = function(){
   var mc=hud.querySelector('.chip[title="Motes"]'); if(mc) mc.classList.add('motechip');
   return r;
 };
+
+/* ---------------------------------------------------------------- icon backgrounds (2026-09-20)
+   Justin: "all of the icons need a background color (thematic) that provides contrast to the icon... I'd assign each
+   icon a color that contrasts with the icon" - light purple behind Sylla's dark spider, white behind Glimmer's gold,
+   and so on. Rather than hand-painting seventy pairs, each icon's own art is read once: its opaque pixels give a mean
+   hue and lightness, and the chip takes that hue at the opposite end of the scale, with a deeper rim of the same
+   family. A handful of hand-picked pairs below win over the measurement where Justin named one. */
+var ICON_BG_FIXED = {
+  'pr-the-brood':   ['#CDB6E8','#4A2A6E'],   /* dark spider on light purple */
+  'ic-into-the-dark':['#CDB6E8','#4A2A6E'],
+  'pr-venom-burst': ['#CFE6B4','#2F5A2A'],
+  'ic-heal':        ['#FFFFFF','#8A6A20'],   /* Saint Glimmer: gold art on white */
+  'pr-consecrate':  ['#FFFFFF','#8A6A20'],
+  'pr-sanctuary':   ['#FFFFFF','#8A6A20']
+};
+var ICON_BG_CACHE = {};
+function iconBG(name){
+  if(!name) return null;
+  if(ICON_BG_FIXED[name]) return ICON_BG_FIXED[name];
+  if(ICON_BG_CACHE[name]!==undefined) return ICON_BG_CACHE[name];
+  var o=(typeof objArt==='function' && (objArt('icons',name) || (typeof anyObj==='function' && anyObj(name))));
+  if(!o || !o.img || !o.img.complete || !o.img.naturalWidth) return null;      /* not loaded yet: try again later */
+  var out=null;
+  try{
+    var c=document.createElement('canvas'); c.width=o.sw; c.height=o.sh;
+    var g=c.getContext('2d'); g.drawImage(o.img, o.sx, o.sy, o.sw, o.sh, 0, 0, o.sw, o.sh);
+    var D=g.getImageData(0,0,o.sw,o.sh).data, r=0, gg=0, b=0, n=0, lum=0;
+    for(var i=0;i<D.length;i+=4){ if(D[i+3]<150) continue; r+=D[i]; gg+=D[i+1]; b+=D[i+2]; n++;
+      lum += (0.2126*D[i] + 0.7152*D[i+1] + 0.0722*D[i+2]); }
+    if(!n) return (ICON_BG_CACHE[name]=null);
+    r/=n; gg/=n; b/=n; lum/=n;
+    var mx=Math.max(r,gg,b), mn=Math.min(r,gg,b), d2=mx-mn, h=0;
+    if(d2){ h = mx===r ? ((gg-b)/d2+(gg<b?6:0)) : mx===gg ? ((b-r)/d2+2) : ((r-gg)/d2+4); h*=60; }
+    var sat = mx ? d2/mx : 0;
+    function hsl(hh, ss, ll){
+      ss=Math.max(0,Math.min(1,ss)); ll=Math.max(0,Math.min(1,ll));
+      var cc=(1-Math.abs(2*ll-1))*ss, xx=cc*(1-Math.abs(((hh/60)%2)-1)), m=ll-cc/2, t;
+      t = hh<60?[cc,xx,0]:hh<120?[xx,cc,0]:hh<180?[0,cc,xx]:hh<240?[0,xx,cc]:hh<300?[xx,0,cc]:[cc,0,xx];
+      return '#'+[t[0],t[1],t[2]].map(function(v){ return ('0'+Math.round((v+m)*255).toString(16)).slice(-2); }).join('');
+    }
+    var pale = lum < 140;                                     /* dark art wants a light chip, and the other way round */
+    var fill = pale ? hsl(h, Math.min(0.45, sat*0.7+0.12), 0.78) : hsl(h, Math.min(0.5, sat*0.6+0.1), 0.18);
+    var rim  = pale ? hsl(h, Math.min(0.6, sat*0.8+0.2), 0.3)  : hsl(h, Math.min(0.7, sat*0.9+0.2), 0.62);
+    out=[fill, rim];
+  }catch(e){ out=null; }
+  return (ICON_BG_CACHE[name]=out);
+}
+/* paint the chip behind every hotbar icon, on the desktop bar and the touch one */
+function iconChipFor(el, name){
+  var bg=iconBG(name);
+  var slot=el && el.closest ? el.closest('.slot, .gslot, .hbslot') : null;
+  if(!slot) return;
+  if(!bg){ setTimeout(function(){ if(el.isConnected) iconChipFor(el, name); }, 400); return; }
+  slot.style.background=bg[0];
+  slot.style.borderColor=bg[1];
+  slot.style.boxShadow='inset 0 0 0 1px rgba(0,0,0,0.35)';
+}
+var _paintArtChip = paintArt;
+paintArt = function(el, group, name, size){
+  var r=_paintArtChip(el, group, name, size);
+  try{
+    if(el && el.classList && el.classList.contains('ico') && group!=='cast') iconChipFor(el, name);
+  }catch(e){}
+  return r;
+};
