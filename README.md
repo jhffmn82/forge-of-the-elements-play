@@ -22,4 +22,4 @@ Or just open the play link above in Chrome on the device - the game lays itself 
 ## This repository
 
 Generated output only: the playable build, published by `tools/publish.py` from the source project. Last
-build: **2026-09-20 09:59:13**.
+build: **2026-09-20 14:36:38**.

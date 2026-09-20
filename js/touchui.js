@@ -249,6 +249,10 @@
   var lift=null;      /* {slot, i, x, y, moved, ghost, over} while a slot is held */
   function slotAt(x,y){ var el=document.elementFromPoint(x,y); return el && el.closest ? el.closest('#hotbar .slot[data-i]') : null; }
   function dollAt(x,y){ if(x==null) return null; var el=document.elementFromPoint(x,y); return el && el.closest ? el.closest('.gdoll, .tg-portrait, .tg-mid') : null; }
+  /* 2026-09-20: Justin - on touch you could not drop a bag item onto a worn slot, only on the doll, and the doll
+     equips a weapon into the main hand. So a dagger could never reach the off hand. A drop on a worn slot now goes
+     to THAT slot (js/sheets.js already does this with the mouse). */
+  function wornSlotAt(x,y){ if(x==null) return null; var el=document.elementFromPoint(x,y); return el && el.closest ? el.closest('.gslot[data-slot]') : null; }
   function endLift(){
     if(!lift) return;
     if(lift.ghost) lift.ghost.remove();
@@ -331,6 +335,7 @@
     if(bl.ghost) bl.ghost.remove();
     bl.src.classList.remove('lifted');
     if(bl.over) bl.over.classList.remove('over');
+    if(bl.worn) bl.worn.classList.remove('over');
     bl=null;
   }
   function hideCards(){
@@ -368,6 +373,8 @@
     bl.ghost.style.top=(ev.clientY-bl.ghost.offsetHeight/2)+'px';
     var over=slotAt(ev.clientX, ev.clientY);
     if(over!==bl.over){ if(bl.over) bl.over.classList.remove('over'); bl.over=over; if(over) over.classList.add('over'); }
+    var worn=bl.entry && bl.entry.type==='item' ? wornSlotAt(ev.clientX, ev.clientY) : null;
+    if(worn!==bl.worn){ if(bl.worn) bl.worn.classList.remove('over'); bl.worn=worn; if(worn) worn.classList.add('over'); }
   }, {capture:true, passive:false});
   ['pointerup','pointercancel'].forEach(function(n){ document.addEventListener(n, function(){
     if(blTimer){ clearTimeout(blTimer); blTimer=null; }
@@ -376,6 +383,13 @@
     if(n==='pointerup' && B.moved && B.over){
       hotbarPut(+B.over.getAttribute('data-i'), B.entry); sfx('ui-click');
       endBL(); if(typeof refreshSheet==='function') refreshSheet();
+    } else if(n==='pointerup' && B.moved && B.entry.type==='item' && wornSlotAt(B.lx, B.ly) && player.bag.indexOf(B.entry.ref)>=0){
+      var wel=wornSlotAt(B.lx, B.ly), wslot=wel.getAttribute('data-slot'), wbi=player.bag.indexOf(B.entry.ref);
+      endBL(); hideCards();
+      if(typeof equipFromBag==='function' && wslot) equipFromBag(wbi, wslot==='stow' ? 'ranged' : wslot);
+      else useBagItem(wbi);
+      sfx('ui-click');
+      if(typeof updateUI==='function') updateUI(); if(typeof refreshSheet==='function') refreshSheet();
     } else if(n==='pointerup' && B.moved && B.entry.type==='item' && dollAt(B.lx, B.ly) && player.bag.indexOf(B.entry.ref)>=0){
       /* 2026-09-20: Justin - dropping on the paper doll equips, the same as tapping the item (js/sheets.js) */
       var bi=player.bag.indexOf(B.entry.ref);
