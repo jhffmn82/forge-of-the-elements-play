@@ -40,6 +40,7 @@ var SYLLA = {
   burstRange:  3,      /* Venom Burst */
   burstBlind:  3,      /* PLACEHOLDER: Justin set the range, not the blind's length */
   broodN:      3,      /* The Brood */
+  broodLife:   30,     /* Justin: the spiderlings last 30 turns and then go back into the dark */
   pietyKill:   2, pietyBig:15,   /* the same shape as every other god's kills */
   pietySurprise:1, pietyUnseen:2,/* PLACEHOLDER: per surprise attack, doubled while unseen. Kept small -
                                     Grom's per-hit piety put him a whole biome ahead (gods.js, 2026-09-17). */
@@ -53,10 +54,11 @@ GODS.sylla = {
   name:'Sylla the Patient', title:'mother of the brood', sprite:'shrine-sylla', color:'#B81A3A',
   rule:'No fire: no fire affinity, fire enchantments or fire sigils, and nothing of hers set alight. No shields, and nothing heavier than leather.',
   invoke:'intothedark', prayers:['the-brood','venom-burst'],
-  boonRanks:[1,2,3,5],
+  /* 2026-09-20: Justin - three boons, at ranks 1, 3 and 5, with poison on attack as the one at 3. The separate
+     "surprise attacks and crits poison" boon is folded away; Venomtouch covers the poison. */
+  boonRanks:[1,3,5],
   boons:['Web on Hit: every hit has a 10% chance per rank to web what you strike - rooted for a turn, then moving at half speed for three.',
-         'Venomtouch: hitting an enemy that already carries any status adds +1 poison damage per rank, with weapon, bow or spell - and anything you web is poisoned for 3 turns.',
-         'Fangs in the Dark: your surprise attacks and your critical hits always poison.',
+         'Venomtouch: your attacks poison - weapon, bow or spell. +1 poison damage per rank against anything that already carries a status, and anything you web is poisoned for 3 turns.',
          'The Long Patience: every status you inflict lasts one round longer.'],
   gain:'Kills of the webbed, the rooted and the poisoned, and every surprise attack - worth more while nothing can see you.'
 };
@@ -94,7 +96,7 @@ function syllaWeb(t, r){
   t.syllaWeb = SYLLA.webSlow;
   floatText(t.x, t.y, 'webbed', 'web');
   if(typeof sparkleFx==='function') sparkleFx(t.x, t.y, (typeof TRAIL!=='undefined' && TRAIL.web) ? 'web' : 'magic', 12);
-  if(r>=2) syllaPoison(t, SYLLA.poisonTurns, r);   /* Venomtouch: what you web, you poison */
+  if(r>=3) syllaPoison(t, SYLLA.poisonTurns, r);   /* Venomtouch: what you web, you poison */
 }
 
 /* ---------------------------------------------------------------- the slow status
@@ -142,12 +144,16 @@ applyDamage = function(target, amount, type, source){
   var L=LAST_HIT;
   if(!L || L.att!==player || L.def!==target || L._syl) return d;
   L._syl=true;
+  /* 2026-09-20: Venomtouch is the rank 3 boon now (Justin: "the boon at 3 was supposed to be poison on attack").
+     From rank 3 every strike of yours poisons, and it bites harder against anything already suffering. */
   var r=godRank();
-  if(r>=2 && syllaStatused(target) && target.hp>0){
-    var vd=_applyDamageSyl(target, r, 'poison', player);          /* +1 poison damage per rank */
-    if(vd>0) floatText(target.x, target.y, String(vd), 'poison');
+  if(r>=3 && target.hp>0){
+    syllaPoison(target, SYLLA.poisonTurns, r);
+    if(syllaStatused(target) && target.hp>0){
+      var vd=_applyDamageSyl(target, r, 'poison', player);        /* +1 poison damage per rank */
+      if(vd>0) floatText(target.x, target.y, String(vd), 'poison');
+    }
   }
-  if(r>=3 && (L.crit || L.surprise) && target.hp>0) syllaPoison(target, SYLLA.poisonTurns, r);
   return d;
 };
 
@@ -206,14 +212,14 @@ function prayTheBrood(){
     s.foe=false; s.ally=true; s.state='ally'; s.broodling=true; s.noXp=true; s.name='Spiderling';
     s.maxhp=s.hp=S.hp; s.dmg=[S.dmg[0], S.dmg[1]]; s.syllaResist=S.resist;
     s.base=Object.assign({}, s.base, {armor:S.armor});          /* armorOf() reads the base, so give it its own */
-    s.t=player.t; s.life=undefined;
+    s.t=player.t; s.life=SYLLA.broodLife;   /* they are called, not kept */
     sparkleFx(c.x, c.y, (typeof TRAIL!=='undefined' && TRAIL.web) ? 'web' : 'dark', 18);
     got++;
   }
   if(!got){ log('There is no room for the brood.','c-info'); return; }
   player.favor -= PRAYERS['the-brood'].favor;
   sfx('pray'); setClip(player,'cast'); ringFx(player.x, player.y, GODS.sylla.color, 2.5); sfx('summon');
-  log('<b>The Brood.</b> '+got+' spiderling'+(got>1?'s':'')+' scuttle out of the dark: '+S.hp+' HP, '+S.dmg[0]+'-'+S.dmg[1]+', armour '+S.armor+', '+Math.round(S.resist*100)+'% resistance.','c-good');
+  log('<b>The Brood.</b> '+got+' spiderling'+(got>1?'s':'')+' scuttle out of the dark for '+SYLLA.broodLife+' turns: '+S.hp+' HP, '+S.dmg[0]+'-'+S.dmg[1]+', armour '+S.armor+', '+Math.round(S.resist*100)+'% resistance.','c-good');
   endTurn();
 }
 function prayVenomBurst(){
