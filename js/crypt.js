@@ -52,7 +52,12 @@ PROPS['coffin']          = {b:1};
 PROPS['candelabra']      = {b:1, light:'#9CFFB8'};
 if(typeof FLAME_AT!=='undefined'){ FLAME_AT['soul-brazier']={ax:0.5, ay:0.28, size:0.46, wide:1.4, soul:1}; FLAME_AT['candelabra']={ax:0.5, ay:0.14, size:0.16, wide:0.7, soul:1}; }
 var CRYPT_PROP = {'brazier-lit':'soul-brazier', 'brazier-unlit':'soul-brazier', 'torch-stand':'candelabra', 'banner-stand':'grave-pillar',
-  'statue':'sarcophagus', 'statue-broken':'sarcophagus-open', 'barrel':'urn', 'barrel-explosive':'urn', 'crate':'urn', 'crate-supply':'urn', 'pot':'urn',
+  /* 2026-09-20: 'barrel-explosive' used to map to 'urn' here, swept in beside plain barrels, crates and
+     pots when this table was written to re-skin the Crypt. But an explosive barrel carries ex:1 (js/data.js)
+     and an urn does not, so the storage room's one gameplay object was silently defused underground. It
+     stays a barrel: Justin wants it to go off. Anything added here must be checked the same way - this
+     table is for looks, and a prop that does something is not interchangeable with one that does not. */
+  'statue':'sarcophagus', 'statue-broken':'sarcophagus-open', 'barrel':'urn', 'crate':'urn', 'crate-supply':'urn', 'pot':'urn',
   'bookshelf':'coffin', 'weapon-rack':'coffin', 'cart':'sarcophagus-open', 'bed-straw':'bone-pile', 'alchemy-table':'sarcophagus', 'table-candle':'candelabra'};
 var _addPropCrypt = addProp;
 addProp = function(x, y, name, extra){

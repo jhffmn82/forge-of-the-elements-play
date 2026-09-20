@@ -103,7 +103,11 @@ var GODS = {
              gain:'Kills, extra for killing spellcasters.'},
   glimmer:  {name:'Saint Glimmer', title:'saint of mending light', sprite:'shrine-glimmer', color:'#F6E7B0', refuses:'gloomling',
              rule:'No Shadow: no shadow affinity, enchantments or sigils.', invoke:'heal', prayers:['consecrate','sanctuary'],
-             boons:['Mending Light: all healing and HP regeneration +10%, and +10% damage against undead and shadow creatures, per rank.','Purifying Touch: Heal also cleanses Burning, Poison, Chill, Fear, Blind, Stun and Root.','Undying Light: once per floor, a killing blow instead heals you to half your HP.'],
+             /* 2026-09-20: the third boon read "Undying Light: once per floor, a killing blow instead heals
+                you to half your HP" long after Justin cut the free revive - undyingLight() has returned false
+                since. The Faith sheet was promising a rank-5 reward that did nothing. It now says what rank 5
+                actually gives: the free point of Light (grantGlimmerLight, js/religion.js). */
+             boons:['Mending Light: all healing and HP regeneration +10%, and +10% damage against undead and shadow creatures, per rank.','Purifying Touch: Heal also cleanses Burning, Poison, Chill, Fear, Blind, Stun and Root.','Light Mastery: a free point of Light affinity, for as long as you keep her favour.'],
              gain:'Kills, extra for undead and shadow creatures.'},
   murk:     {name:'Mother Murk', title:'mother of the quiet dead', sprite:'shrine-murk', color:'#8A6FB0', loves:'gloomling',
              rule:'No Light: no light affinity, enchantments or sigils.', invoke:'raisedead', prayers:['unholyaura','corpsefeast'],

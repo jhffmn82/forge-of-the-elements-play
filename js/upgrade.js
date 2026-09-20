@@ -11,7 +11,10 @@
    - Placement: about 2 rings and 1 amulet per floor, outside the normal loot pool.
    ===================================================================== */
 
-var UPGRADE_COST = [150, 400, 900];     /* to +1, +2, +3 (2026-09-17: was 600/1200/2000; a full biome 1 gave ~700) */
+/* to +1, +2, +3. 2026-09-17: was 600/1200/2000, cut to 150/400/900 because a full biome 1 gave ~700.
+   2026-09-20 (Justin): doubled to 300/800/1800 - the cut went too far. Fine costs 1.5x these and
+   Masterwork 2x, through tierCostMult below, so a Masterwork +3 is 3600. */
+var UPGRADE_COST = [300, 800, 1800];
 var RING_RANK_COST = [500, 1000, 2000];   /* to +1, +2, +3 (2026-09-18, Justin: was a flat 500 a rank) */
 var ESSENCE_BIOME_MULT = [1, 2.5, 4.5, 6, 8];
 function essenceMult(){ return ESSENCE_BIOME_MULT[Math.min(ESSENCE_BIOME_MULT.length-1, Math.floor((floorNo-1)/5))]; }
