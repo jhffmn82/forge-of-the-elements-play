@@ -34,10 +34,8 @@ derive = function(p){
   var b = p.ranged;
   if(isRangedWeapon(b)){
     p.range = (b.range||1) + (p.rangeBonus||0);
-    var plus = (typeof itemPlus==='function' ? itemPlus(b) : (b.plus||0))
-             + (hasGod('anvil') ? godRank() : 0) + (buff('temper') ? 2 : 0);
-    p.rangedDmg = [sDMG(b.dmg[0]) + plus, sDMG(b.dmg[1]) + plus];
-    p.rangedAcc = 60 + 2*p.stats.agi + (b.acc||0) + (hasGod('reginald') ? 4*godRank() : 0) + (buff('rally') ? 10 : 0);
+    /* the bow's damage and accuracy are worked out below, by running the real derive with the bow in
+       hand instead of copying its rules here. */
   } else {
     /* no bow: range is whatever the main hand itself reaches (a wand, a thrown weapon) */
     p.range = p.weapon && p.weapon.range ? p.weapon.range + (p.rangeBonus||0) : 1;
@@ -47,6 +45,44 @@ derive = function(p){
   return r;
 };
 
+/* ---------------------------------------------------------------- the bow's real numbers
+   2026-09-20: the bow's damage used to be worked out by hand up there - base plus upgrades - so a shot
+   missed every bonus the melee path collects afterwards: the dwarf's per-tier bonus (tiers.js), Ring of
+   Striking (gear.js), the Might buff (foods.js), a combo's damage (combos.js) and a god's weapon form
+   (religion.js). And p.rangedAcc was written there and read nowhere at all, so a bow's accuracy - its own
+   acc, Reginald's rank, Rally - did nothing.
+
+   Rather than copy those rules a second time, run the real derive with the bow in the main hand and keep
+   what it produces, then run it once more with the true weapon back so every other derived field is honest.
+   Wrapped at window load so that every module which touches derive has already wrapped it and this one is
+   outermost - the same reason js/ticks.js re-wraps there. */
+function rangedFullDerive(){
+  if(typeof derive !== 'function') return;
+  var _deriveRangedFull = derive, inside = false;
+  derive = function(p){
+    var r = _deriveRangedFull(p);
+    if(inside || p !== player) return r;
+    if(!isRangedWeapon(p.ranged)){ p.rangedDmg = null; p.rangedAcc = null; p.rangedCrit = null; return r; }
+    /* derive() rebuilds p.weapon from p.sets[p.activeSet] on its first line, so the bow has to be put in
+       the set itself, not in the weapon slot, for the probe to mean anything. */
+    var slot = p.activeSet, saved = p.sets[slot];
+    inside = true;
+    try {
+      p.sets[slot] = p.ranged;
+      _deriveRangedFull(p);
+      var d = p.dmg, a = p.acc, c = p.crit;
+      p.sets[slot] = saved;
+      _deriveRangedFull(p);
+      p.rangedDmg = d; p.rangedAcc = a; p.rangedCrit = c;
+    } finally { inside = false; p.sets[slot] = saved; }
+    return r;
+  };
+}
+/* demo.html appends these files itself, so window's load event can have gone by before this line runs -
+   registering a listener for it would then never fire. Install now if the page is already loaded. */
+if(document.readyState === 'complete') rangedFullDerive();
+else window.addEventListener('load', rangedFullDerive);
+
 /* ---------------------------------------------------------------- shooting: the bow answers for the shot
    The whole attack pipeline reads player.weapon, so the bow steps into that slot for the duration of a
    ranged attack and steps out again - the same trick the off-hand swing uses. That means a bow's tier,
@@ -55,11 +91,13 @@ var _attackRanged = attack;
 attack = function(att, def, mult, label){
   if(att !== player || !def || !isRangedWeapon(player.ranged) || dist(player, def) <= 1 || player._reaching)   /* reach.js: the spear's own hit */
     return _attackRanged(att, def, mult, label);
-  var mainW = player.weapon, mainDmg = player.dmg;
+  var mainW = player.weapon, mainDmg = player.dmg, mainAcc = player.acc, mainCrit = player.crit;
   player.weapon = player.ranged;
   if(player.rangedDmg) player.dmg = player.rangedDmg;
+  if(player.rangedAcc) player.acc = player.rangedAcc;     /* 2026-09-20: the bow's accuracy finally counts */
+  if(player.rangedCrit) player.crit = player.rangedCrit;
   try { return _attackRanged(att, def, mult, label); }
-  finally { player.weapon = mainW; player.dmg = mainDmg; }
+  finally { player.weapon = mainW; player.dmg = mainDmg; player.acc = mainAcc; player.crit = mainCrit; }
 };
 
 /* ---------------------------------------------------------------- equipping goes to the right slot */

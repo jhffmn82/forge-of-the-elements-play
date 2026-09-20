@@ -299,7 +299,10 @@ function attack(att, def, mult, label){
     if(hasGod('glimmer') && (def.base.undead||def.base.shadowy)) statPool += 0.10*godRank();
     if(hasGod('reginald') && (def.elite||def.base.elite||def.base.boss)) statPool += 0.10*godRank();
     base *= Math.max(0.1, 1+gearPool) * Math.max(0.1, 1+statPool);
-    if(player.range>1 && dist(att,def)<=1) base *= 0.6;
+    /* 2026-09-20: this read player.range, which rangedslot.js sets to the BOW's reach whenever one is
+       slung - so merely carrying a bow cut every adjacent sword swing to 60% damage. Ask the weapon in
+       hand, the same way the hit-chance line above was fixed on 2026-09-17. */
+    if(((player.weapon && player.weapon.range)||1)>1 && dist(att,def)<=1) base *= 0.6;
     if(player.weapon.unarmed && player.pummel>0){ base*=2; player.pummel--; applyStatus(def,'stun',1); }
     var unaware = offGuard(def) || def.st.stun || def.st.frozen || player.hidden>0 || (typeof smokeAmbush==='function' && smokeAmbush(def)) || def.surprised;
     var critCh = player.crit + (unaware && player.aff.shadow ? 0.05*player.aff.shadow : 0);
