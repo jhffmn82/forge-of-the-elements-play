@@ -536,3 +536,48 @@ generate = function(seed){
     blob(r.x+ri(1,Math.max(1,r.w-2)), r.y+ri(1,Math.max(1,r.h-2)), ri(3,7), function(xx,yy){ var j=idxOf(xx,yy); if(at(xx,yy)===FLOOR && !propAt(xx,yy) && !itemAt(xx,yy) && !feats.some(function(f){ return f.x===xx&&f.y===yy; })){ floorMeta.ooze[j]=1; ground[j]=0; } });
   }
 };
+
+/* ---------------------------------------------------------------- shelf fungus and hanging roots (packet 08, 2026-09-20)
+   The Crypt's walls get the rest of the mushroom pack: bracket fungus stepping down a wall face, and pale roots
+   pushing through the masonry. Both hang from the top of a wall face that looks onto open floor, like the pack's
+   cobwebs, and they sway with everything else (vegart.js). Two to four a floor, never side by side. */
+var CRYPT_WALLVEG = {shelf:3, roots:3};
+function cryptWallFaces(){
+  var out=[];
+  for(var y=1;y<MH-1;y++) for(var x=1;x<MW-1;x++){
+    if(!isWallLike(at(x,y)) || at(x,y)===SECRET) continue;
+    if(at(x,y+1)!==FLOOR) continue;                       /* the face you can see, with floor below it */
+    if(propAt(x,y) || propAt(x,y+1)) continue;
+    out.push({x:x, y:y});
+  }
+  return out;
+}
+function cryptGrowWallVeg(){
+  if(!cryptShrooms() || typeof vegArt!=='function' || !vegArt('crypt-shelf-fungus-1')) return;
+  var spots=shuffled(cryptWallFaces()), used={}, put=0, want=ri(2,4);
+  for(var i=0;i<spots.length && put<want;i++){
+    var s=spots[i];
+    if(used[(s.x-1)+','+s.y] || used[(s.x+1)+','+s.y]) continue;   /* never two in a row */
+    var roots=rng()<0.45;
+    var name=(roots?'crypt-roots-':'crypt-shelf-fungus-')+(1+Math.floor(rng()*(roots?CRYPT_WALLVEG.roots:CRYPT_WALLVEG.shelf)));
+    addProp(s.x, s.y, name, {wall:true, flat:1, b:0, cryptWallVeg:1});
+    used[s.x+','+s.y]=1; put++;
+  }
+}
+var _generateCryptWallVeg = generate;
+generate = function(seed){ var r=_generateCryptWallVeg.apply(this, arguments); try{ cryptGrowWallVeg(); }catch(e){ if(window.console) console.warn('crypt wall veg', e); } return r; };
+/* drawn hanging from the top of the wall face */
+var _drawPropSurfaceCryptWallVeg = drawPropSurface;
+drawPropSurface = function(p, px, py, alpha){
+  if(p && p.cryptWallVeg && typeof vegArt==='function'){
+    var o=vegArt(p.name);
+    if(o){
+      var sw=vegSway(p.x, p.y, performance.now(), 0)*0.35;
+      vegDraw(o, px+TS*(0.5+0.12*(hash2(p.x,p.y,311)-0.5)), py+TS*0.92, 0.9, sw, alpha, hash2(p.x,p.y,312)<0.5);
+      return true;
+    }
+  }
+  return _drawPropSurfaceCryptWallVeg(p, px, py, alpha);
+};
+['crypt-shelf-fungus-1','crypt-shelf-fungus-2','crypt-shelf-fungus-3','crypt-roots-1','crypt-roots-2','crypt-roots-3']
+  .forEach(function(n){ PROPS[n]={flat:1}; });
