@@ -8,20 +8,20 @@
 /* ---------------------------------------------------------------- the bestiary */
 (function(){
   var M=MONSTERS;
-  M.shambler   = {name:'Shambler', sprite:'m-shambler', col:'#8FA37A', ch:'z', hp:22, dmg:[4,7], acc:60, eva:8, armor:1, speed:100, range:1, xp:22,
+  M.shambler   = {name:'Shambler', sprite:'m-shambler', col:'#8FA37A', ch:'z', hp:40, dmg:[5,8], acc:60, eva:8, armor:1, speed:100, range:1, xp:22,
                   band:[6,8], w:22, undead:true, rises:true, art:0.95, sfx:'skeleton'};
-  M.gravebeetle= {name:'Grave Beetle', sprite:'m-grave-beetle', col:'#3E5A3A', ch:'b', hp:18, dmg:[4,6], acc:62, eva:12, armor:3, speed:100, range:1, xp:20,
+  M.gravebeetle= {name:'Grave Beetle', sprite:'m-grave-beetle', col:'#3E5A3A', ch:'b', hp:40, dmg:[5,8], acc:62, eva:12, armor:3, speed:100, range:1, xp:20,
                   band:[6,8], w:18, fumes:true, living:true, art:0.8, sfx:'slime'};
   M.skeleton.band=[6,10]; M.skeleton.w=18; M.skeleton.boneType=true; M.skeleton.sprite='m-crypt-skeleton';   /* Justin's Crypt sprite set, 2026-09-17 */
   /* 2026-09-17: their arrows are grave-tipped. A 4-7 shot was nothing to a mage with Magic Barrier (-5 from
      ranged) or anyone in real armour, so the threat is the poison rather than the hit. */
-  M.bonearcher = {name:'Bone Archer', sprite:'m-bone-archer', col:'#D8CEBC', ch:'a', hp:16, dmg:[4,7], acc:64, eva:16, armor:1, speed:100, range:6, xp:26,
+  M.bonearcher = {name:'Bone Archer', sprite:'m-bone-archer', col:'#D8CEBC', ch:'a', hp:36, dmg:[5,8], acc:64, eva:16, armor:1, speed:100, range:6, xp:26,
                   band:[7,10], w:14, undead:true, reloads:true, poisons:0.45, art:0.95, sfx:'skeleton'};
-  M.shade      = {name:'Shade', sprite:'m-shade', col:'#5A3E7A', ch:'S', hp:20, dmg:[5,8], acc:66, eva:26, armor:0, speed:100, range:1, xp:30,
+  M.shade      = {name:'Shade', sprite:'m-shade', col:'#5A3E7A', ch:'S', hp:40, dmg:[5,8], acc:66, eva:26, armor:0, speed:100, range:1, xp:30,
                   band:[7,10], w:10, undead:true, shadowy:true, phases:true, el:'shadow', art:0.95, sfx:'elementaling'};
-  M.gravebloat = {name:'Grave Bloat', sprite:'m-grave-bloat', col:'#9FBF7A', ch:'B', hp:44, dmg:[7,11], acc:58, eva:4, armor:2, speed:100, range:1, xp:38,
+  M.gravebloat = {name:'Grave Bloat', sprite:'m-grave-bloat', col:'#9FBF7A', ch:'B', hp:75, dmg:[8,11], acc:58, eva:4, armor:2, speed:100, range:1, xp:38,
                   band:[8,10], w:10, undead:true, bursts:true, rots:true, art:1.1, sfx:'brute'};
-  M.acolyte    = {name:'Necro-Acolyte', sprite:'m-necro-acolyte', col:'#6A3E8A', ch:'n', hp:24, dmg:[3,6], acc:62, eva:14, armor:0, speed:100, range:1, xp:40,
+  M.acolyte    = {name:'Necro-Acolyte', sprite:'m-necro-acolyte', col:'#6A3E8A', ch:'n', hp:36, dmg:[5,8], acc:62, eva:14, armor:0, speed:100, range:1, xp:40,
                   band:[9,10], w:8, living:true, spellcaster:true, summoner:true, art:0.95, sfx:'shaman'};
   M.morty      = {name:'Morty the Mostly-Dead', sprite:'m-morty', col:'#7A4FB0', ch:'M', hp:170, dmg:[8,13], acc:70, eva:18, armor:3, speed:100, range:1, xp:450,
                   band:[10,10], w:0, boss:true, elite:true, undead:true, spellcaster:true, art:1.2, sfx:'shaman'};

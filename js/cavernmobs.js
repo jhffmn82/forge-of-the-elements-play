@@ -18,24 +18,24 @@ function inCaverns(){ return typeof bidx==='function' && bidx()===2 && !(floorMe
   var M=MONSTERS;
   /* band = absolute floors (rollMonster reads floorNo). The floor curve (+5% HP, +3% damage a floor) is on
      top of these, so at floor 12 a Storm Beetle is 26*1.55 = 40 HP and hits 6-10. */
-  M.stormbeetle   = {name:'Storm Beetle', sprite:'m-storm-beetle', col:'#3A4A7A', ch:'b', hp:26, dmg:[5,8], acc:64, eva:8, armor:5, speed:100, range:1, xp:40,
+  M.stormbeetle   = {name:'Storm Beetle', sprite:'m-storm-beetle', col:'#3A4A7A', ch:'b', hp:100, dmg:[9,13], acc:64, eva:8, armor:5, speed:100, range:1, xp:40,
                      band:[11,15], w:22, arcs:true, grounded:true, living:true, art:0.95, artLeft:true, sfx:'slime'};
-  M.sparkjelly    = {name:'Spark Jelly', sprite:'m-spark-jelly', col:'#8FD8FF', ch:'j', hp:16, dmg:[4,6], acc:66, eva:28, armor:0, speed:100, range:1, xp:36,
+  M.sparkjelly    = {name:'Spark Jelly', sprite:'m-spark-jelly', col:'#8FD8FF', ch:'j', hp:24, dmg:[4,6], acc:66, eva:28, armor:0, speed:100, range:1, xp:36,
                      band:[12,15], w:12, flying:true, erratic:true, stingChain:true, el:'air', glow:'#7FD0FF', living:true, art:0.85, sfx:'bat'};
-  M.shockeel      = {name:'Shock Eel', sprite:'m-shock-eel', col:'#3F7A6A', ch:'e', hp:24, dmg:[4,7], acc:66, eva:18, armor:1, speed:100, range:1, xp:40,
+  M.shockeel      = {name:'Shock Eel', sprite:'m-shock-eel', col:'#3F7A6A', ch:'e', hp:55, dmg:[6,9], acc:66, eva:18, armor:1, speed:100, range:1, xp:40,
                      band:[11,14], w:0, aquatic:true, el:'water', living:true, art:0.95, artLeft:true, sfx:'slime'};   /* w:0 - placed in water by eelPlacement() */
-  M.myconid       = {name:'Myconid', sprite:'m-myconid', col:'#7FA8A0', ch:'f', hp:22, dmg:[3,6], acc:60, eva:10, armor:1, speed:100, range:1, xp:38,
+  M.myconid       = {name:'Myconid', sprite:'m-myconid', col:'#7FA8A0', ch:'f', hp:55, dmg:[6,9], acc:60, eva:10, armor:1, speed:100, range:1, xp:38,
                      band:[11,15], w:16, spores:true, sporeproof:true, el:'earth', living:true, spellcaster:true, art:0.95, sfx:'shaman'};
-  M.shroomling    = {name:'Shroomling', sprite:'m-myconid', col:'#9FC0B0', ch:'f', hp:7, dmg:[2,4], acc:58, eva:12, armor:0, speed:100, range:1, xp:6,
+  M.shroomling    = {name:'Shroomling', sprite:'m-myconid', col:'#9FC0B0', ch:'f', hp:18, dmg:[4,6], acc:58, eva:12, armor:0, speed:100, range:1, xp:6,
                      band:[0,0], w:0, sporeproof:true, living:true, art:0.5, sfx:'slime'};
-  M.crystalcrawler= {name:'Crystal Crawler', sprite:'m-crystal-crawler', col:'#8A6AD0', ch:'c', hp:18, dmg:[4,7], acc:68, eva:20, armor:3, speed:130, range:1, xp:38,
+  M.crystalcrawler= {name:'Crystal Crawler', sprite:'m-crystal-crawler', col:'#8A6AD0', ch:'c', hp:50, dmg:[6,9], acc:68, eva:20, armor:3, speed:130, range:1, xp:38,
                      band:[13,15], w:9, shatters:true, el:'earth', art:0.95, artLeft:true, sfx:'rat'};   /* the Caverns' one fast creature */
   /* the Dungeon's bat and slime, in their Caverns bands (their own entries stay on floors 1-5) */
   M.cavebat       = Object.assign({}, M.bat, {band:[11,12], w:8});
   M.caveslime     = Object.assign({}, M.slime, {band:[11,15], w:10});
   delete M.cavebat.biome; delete M.caveslime.biome;   /* absolute floor bands like the rest of this table (the Dungeon originals are tagged biome 1) */
   /* The Deep Maw: tuned by hand for floor 15, so no floor curve (fixed, like the plane elites) */
-  M.deepmaw       = {name:'The Deep Maw', sprite:'m-deep-maw', col:'#B07A4A', ch:'W', hp:240, dmg:[10,15], acc:70, eva:0, armor:4, speed:100, range:1, xp:600,
+  M.deepmaw       = {name:'The Deep Maw', sprite:'m-deep-maw', col:'#B07A4A', ch:'W', hp:240, dmg:[12,17], acc:70, eva:0, armor:4, speed:100, range:1, xp:600,
                      band:[15,15], w:0, boss:true, elite:true, big:2, fixed:true, living:true, art:2.0, bigScale:1.5, artLeft:true, sfx:'brute'};
   M.mawlimb       = {name:'The Deep Maw', sprite:'m-deep-maw', col:'#B07A4A', ch:'W', hp:9999, dmg:[0,0], acc:0, eva:0, armor:4, speed:100, range:0, xp:0,
                      band:[0,0], w:0, object:true, fixed:true, art:0.1};

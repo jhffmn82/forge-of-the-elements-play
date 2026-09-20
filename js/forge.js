@@ -89,7 +89,7 @@ function renderForge(){
   var affLine = Object.keys(player.aff).length ? Object.keys(player.aff).map(function(k){ return '<span style="color:'+AFF_COL[k]+'">'+cap(k)+' '+player.aff[k]+(k===player.primary?' (primary)':'')+'</span>'; }).join(' &middot; ') : 'none yet';
   var h='<div class="forge-top"><div class="pouch2">'+pouch+'</div><div class="forge-info">'+
         '<div>Affinity: <b>'+affLine+'</b></div><div>Cap: <b>'+totalAffinity()+' / '+affinityCap()+'</b>'+' <span class="c-info">(rises when you give a boss core to the exit gate)</span>'+'</div>'+
-        '<div>Essence: <b>'+player.essence+'</b></div></div></div>'+
+        '<div>Essence: <b style="color:var(--gold);font-size:15px">'+player.essence+'</b></div></div></div>'+
         '<div class="ftabs">'+['fuse','enchant','upgrade','craft'].map(function(t){ return '<button data-ft="'+t+'" class="'+(forgeTab===t?'on':'')+'">'+{fuse:'Fuse',enchant:'Enchant',upgrade:'Upgrade',craft:'Craft sigils'}[t]+'</button>'; }).join('')+'</div><div class="fpanel">';
   if(forgeTab==='fuse'){
     h+='<p class="c-info">Burn a mote into yourself for a point of affinity. Two elements at most, never opposites, and the second can never outgrow the first. Permanent.</p>';

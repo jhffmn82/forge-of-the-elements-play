@@ -31,6 +31,7 @@ var STATUS_INFO = {
   haste:     {name:'Haste', icon:'ic-flame-step', d:'You move and act faster.'},
   cinder:    {name:'Cinder Stride', icon:'ic-flame-step', d:'Faster, leaving fire where you step.'},
   manaflow:  {name:'Mana Flow', icon:'pr-manatide', d:'Mana returns twice as fast.'},
+  afterglow: {name:'Afterglow', icon:'ic-heal', d:'Light lingers: you heal 5% of your maximum HP each turn.'},
   thorns:    {name:'Thorns', icon:'st-root', d:'Attackers take damage back.'},
   /* other timers on the player */
   hidden:    {name:'Hidden', icon:'st-hidden', d:'Enemies can\'t see you; your next hit is a surprise attack.'},

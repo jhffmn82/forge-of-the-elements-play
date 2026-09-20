@@ -479,6 +479,14 @@ function panes(){
 function weaponCard(w, worn){
   if(!w) return '';
   var plus=itemPlus(w);
+  /* 2026-09-20: an unidentified piece gives nothing away - not its damage, not its enchantment. That is the
+     whole point of carrying it into a fight (or reading a Sigil of Knowledge). */
+  if(w.unid) return '<div class="nm">'+gearName(w)+'</div>'+
+    '<div class="row"><span>Damage</span><b>?</b></div>'+
+    '<div class="row"><span>Hands</span><b>'+(w.hands||1)+'</b></div>'+
+    (w.range?'<div class="row"><span>Range</span><b>'+(w.range+(player.rangeBonus||0))+'</b></div>':'')+
+    (typeof unidHint==='function' ? unidHint(w) : '')+
+    '<div class="hint">'+(worn?'':'click to equip')+'</div>';
   return '<div class="nm">'+gearName(w)+'</div>'+
     '<div class="row"><span>Damage</span><b>'+(w.dmg[0]+plus)+'&ndash;'+(w.dmg[1]+plus)+'</b></div>'+
     '<div class="row"><span>Accuracy</span><b>'+(w.acc>=0?'+':'')+(w.acc||0)+'</b></div>'+
@@ -489,6 +497,10 @@ function weaponCard(w, worn){
 }
 function armorCard(a, worn){
   if(!a) return '';
+  if(a.unid) return '<div class="nm">'+gearName(a)+'</div>'+
+    '<div class="row"><span>Armor</span><b>?</b></div>'+
+    (typeof unidHint==='function' ? unidHint(a) : '')+
+    '<div class="hint">'+(worn?'':'click to equip')+'</div>';
   return '<div class="nm">'+gearName(a)+'</div>'+
     '<div class="row"><span>Armor</span><b>'+(a.armor+(a.armor>0?itemPlus(a):0))+'</b></div>'+
     '<div class="row"><span>Evasion</span><b>'+((a.eva||0)>=0?'+':'')+(a.eva||0)+'</b></div>'+

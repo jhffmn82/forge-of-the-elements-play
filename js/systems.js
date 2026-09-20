@@ -215,7 +215,7 @@ function sacrifice(p){
   var cost=Math.max(1, Math.round(player.maxhp*0.15)), lethal=player.hp<=cost;
   var nextReward = a.passes<3 ? 3 : a.passes<5 ? 5 : a.passes<7 ? 7 : null;
   if(!nextReward){ log('The altar is sated.','c-info'); return true; }
-  confirmBox('Sacrifice altar', 'Press your hand onto the spikes for <b>'+cost+' HP</b>. Offerings so far: <b>'+a.passes+'</b>. Rewards at 3, 5 and 7.'+(lethal?'<br><span class="c-you"><b>This would kill you.</b></span>':''),
+  confirmBox('Sacrifice altar', 'Press your hand onto the spikes for <b>'+cost+' HP</b>. What it gives, and when, is its own business.'+(lethal?'<br><span class="c-you"><b>This would kill you.</b></span>':''),
     lethal ? 'Offer anyway' : 'Offer blood', function(){
       player.hp-=cost; player._hit=performance.now(); floatText(player.x,player.y,String(cost),'phys'); sfx('player-hurt'); a.passes++;
       if(player.hp<=0){ heroicResolve(); if(player.hp<=0){ death(); return; } }
@@ -225,7 +225,7 @@ function sacrifice(p){
         if(a.passes===7 && rng()<0.5) reward={kind:'mote',el:pick(ELEMENTS)};
         reward.x=c.x; reward.y=c.y; items.push(reward);
         log('The altar is pleased. A gift appears.','c-kill'); sfx('shrine-convert'); sparkleFx(p.x,p.y,'dark',30);
-      } else log('The altar drinks. ('+a.passes+' offerings)','c-info');
+      } else log('The altar drinks.','c-info');
       endTurn();
     });
   return true;
