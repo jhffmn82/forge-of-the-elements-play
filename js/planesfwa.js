@@ -50,12 +50,41 @@ PLANE_THEMES.air   = {name:'Skyvault', rock:'#A6B4CA', floor:'#D2DCEA', water:'#
 
 /* the props buildPlaneFloor() asks for. decor/light are only read on the Earth plane, but they are filled in
    with the names packet 04 will deliver so the swap is one line when the art lands. */
-PLANE_PROPS.fire  = {decor:['crystal-fire-small','stalagmite-fire','crystal-fire-small'], light:'crystal-fire', lightCol:'#FF8A3A', rune:'rune-stone-fire',  center:null, stone:null};
+PLANE_PROPS.fire  = {decor:['crystal-fire-small','stalagmite-fire','crystal-fire-small'], light:'crystal-fire', lightCol:'#FF8A3A', rune:'rune-stone-fire',  center:'lava-fountain', stone:null}   /* packet 04's signature piece, 2x2 */;
 PLANE_PROPS.water = {decor:['crystal-water-small','stalagmite-water','crystal-water-small'], light:'crystal-water', lightCol:'#7CC8FF', rune:'rune-stone-water', center:null, stone:null};
 PLANE_PROPS.air   = {decor:['crystal-air-small','stalagmite-air','crystal-air-small'], light:'crystal-air', lightCol:'#E8F4FF', rune:'rune-stone-air',   center:null, stone:null};
 ['rune-stone-fire','rune-stone-water','rune-stone-air'].forEach(function(n){ PROPS[n]={b:1}; });
 ['crystal-fire','crystal-fire-small','stalagmite-fire','crystal-water','crystal-water-small','stalagmite-water',
  'crystal-air','crystal-air-small','stalagmite-air'].forEach(function(n){ PROPS[n]=PROPS[n]||{flat:1}; });
+/* 2026-09-19: packet 04's Fire art is in - the lava fountain stands in the central chamber and the ember-and-slag
+   clusters scatter along the wall feet (the scenery rules: wall-adjacent, in streaks, never lone) */
+PROPS['lava-fountain']={b:1, w:2, h:2, light:'#FF7A26'};
+['embers-slag-1','embers-slag-2','embers-slag-3','embers-slag-4'].forEach(function(n){ PROPS[n]={flat:1}; });
+var FWA_CLUSTERS = {fire:['embers-slag-1','embers-slag-2','embers-slag-3','embers-slag-4']};
+var _buildPlaneFloorFwaClu = buildPlaneFloor;
+buildPlaneFloor = function(el, seed){
+  var r=_buildPlaneFloorFwaClu.apply(this, arguments);
+  try{
+    var list=FWA_CLUSTERS[el]; if(!list || !list.length || typeof setArt!=='function' || !setArt(list[0])) return r;
+    var spots=[];
+    for(var y=1;y<MH-1;y++) for(var x=1;x<MW-1;x++){
+      if(at(x,y)!==FLOOR || propAt(x,y) || (typeof LAVA!=='undefined' && at(x,y)===LAVA)) continue;
+      if(Math.max(Math.abs(x-player.x), Math.abs(y-player.y))<3) continue;
+      var wall=0; for(var d=0;d<4;d++){ var o=[[1,0],[-1,0],[0,1],[0,-1]][d]; if(isWallLike(at(x+o[0],y+o[1]))) wall++; }
+      if(wall) spots.push({x:x, y:y});
+    }
+    spots=shuffled(spots);
+    for(var k=0, put=0; k<spots.length && put<5; k++){
+      var sp=spots[k], run=ri(3,4);                     /* streaks of 3-4, never a lone piece */
+      for(var j=0;j<run;j++){
+        var cx=sp.x+j, cy=sp.y; if(at(cx,cy)!==FLOOR || propAt(cx,cy)) break;
+        addProp(cx, cy, list[Math.floor(rng()*list.length)], {flat:1});
+      }
+      put++;
+    }
+  }catch(e){ if(window.console) console.warn('fwa clusters', e); }
+  return r;
+};
 PROPS['updraft-vent']={flat:1};
 
 PLANE_HAZARD_TEXT.fire  = 'The basalt is split with molten rock: it cannot be crossed, and standing beside it scorches you. When the roof glows, get out from under it.';

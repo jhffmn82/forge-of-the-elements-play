@@ -341,7 +341,9 @@ function deepLavaRaster(x, y){
 var DEEP_LB = null, DEEP_LM = null;
 function drawDeepLava(now){
   if(!floorMeta.lava) return;
-  var lava=atl('surface-lava.png'); if(!lava) return;
+  /* a plane with lava of its own (packet 04's Fire plane) uses its art; everything else uses the Underdark's */
+  var lava=(floorMeta.plane && AS.surface && AS.surface[floorMeta.plane+'-lava'] && atl('surface-'+floorMeta.plane+'-lava.png')) || atl('surface-lava.png');
+  if(!lava) return;
   var S=32, W=(viewW+3)*S, H=(viewH+3)*S, ox=camX-1, oy=camY-1, list=[], near=[];
   for(var y=camY-1; y<=camY+viewH+1; y++) for(var x=camX-1; x<=camX+viewW+1; x++){
     if(!inb(x,y) || !(revealAll||seen[idxOf(x,y)]) || isWallLike(at(x,y))) continue;
