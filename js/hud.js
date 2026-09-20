@@ -159,7 +159,8 @@ function iconChipFor(el, name){
   var slot=el && el.closest ? el.closest('.slot, .gslot, .hbslot') : null;
   if(!slot) return;
   if(!bg){ setTimeout(function(){ if(el.isConnected) iconChipFor(el, name); }, 400); return; }
-  slot.style.background=bg[0];
+  /* 2026-09-20: Justin - "i'd make the hotbar backdrops like 50% transparent, but still i can identify them now" */
+  slot.style.background=hexA(bg[0], 0.5);
   slot.style.borderColor=bg[1];
   slot.style.boxShadow='inset 0 0 0 1px rgba(0,0,0,0.35)';
 }
