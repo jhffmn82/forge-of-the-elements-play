@@ -545,7 +545,10 @@ function castSelf(key, A){
     ents.forEach(function(e){ if(e.foe && dist(e,player)<=3) applyStatus(e,'stun',1); });
     var h=Math.round(player.maxhp*0.10*div); healPlayer(h); floatText(player.x,player.y,'+'+h,'heal'); ringFx(player.x,player.y,'#B8453A',3.5);
     log('You bellow. Everything nearby reels.','c-good'); }
-  else if(key==='heal'){ var hh=Math.round(player.maxhp*(0.25+0.05*r)*div*(1+0.10*r)); healPlayer(hh);
+  /* 2026-09-20: Justin - "glimmer's heal was doing too much, it was healing like 40+ hp, needs to be like half
+     that". It was 25% +5% a rank, then multiplied again by Mending Light: about three quarters of your health at
+     rank 5. Now 12% +3% a rank (Mending Light still applies on top), which is roughly half what it was. */
+  else if(key==='heal'){ var hh=Math.round(player.maxhp*(0.12+0.03*r)*div*(1+0.10*r)); healPlayer(hh);
     floatText(player.x,player.y,'+'+hh,'heal'); sparkleFx(player.x,player.y,'heal',30); sfx('heal');
     if(player.race==='gloomling'){ /* refused, but just in case */ }
     log('Saint Glimmer mends you. +'+hh+' HP.','c-good'); }

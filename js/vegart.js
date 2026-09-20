@@ -12,6 +12,7 @@ function vegSet(){
   if(typeof floorMeta==='undefined' || !floorMeta) return null;
   if(floorMeta.plane) return floorMeta.plane==='earth' ? 'earth' : null;
   if(typeof inCaverns==='function' && inCaverns()) return 'caverns';
+  if(typeof cryptShrooms==='function' && cryptShrooms()) return 'crypt';   /* 2026-09-20: the Crypt's purple mushrooms */
   return bidx()===0 ? 'dungeon' : null;
 }
 function vegArt(name){ return objArt('veg', 'veg-'+name); }
@@ -26,7 +27,7 @@ function vegSway(x, y, now, bend){
 /* 2026-09-19: Justin - the pack's greens were jarringly bright on the grey stone. Each plant is baked once into a
    darker, less saturated copy (a canvas filter per draw is slow, and older iPads lack ctx.filter), and grass is
    drawn part-transparent so the floor shows through it. VEG_DIM per set: how far toward the set's shadow colour. */
-var VEG_DIM = {dungeon:[0.38,'#2A2E1C'], caverns:[0.25,'#14222A'], earth:[0.2,'#23261A']}, VEG_GRASS_A = 0.78, VEG_BAKE = {};
+var VEG_DIM = {dungeon:[0.38,'#2A2E1C'], caverns:[0.25,'#14222A'], earth:[0.2,'#23261A'], crypt:[0.18,'#221A30']}, VEG_GRASS_A = 0.78, VEG_BAKE = {};
 function vegBaked(o){
   var set=vegSet(), d=VEG_DIM[set]; if(!d) return null;
   var k=set+':'+o.sx+','+o.sy+','+o.sw+','+o.sh+':'+(o.img.src||'').slice(-24);
@@ -61,6 +62,9 @@ function vegBend(x, y){ var b=vegBody(x,y); if(!b) return 0; var rp=renderPos(b)
 var _drawGrassTileVeg = drawGrassTile;
 drawGrassTile = function(x, y, px, py, alpha, layer, now){
   var set=vegSet(); if(!set) return _drawGrassTileVeg.apply(this, arguments);
+  /* the Crypt has no grass: its patches are the purple mushrooms, drawn by js/cryptset.js. It only borrows this
+     file's sway and grading (vegSet returns 'crypt' for those). */
+  if(set==='crypt') return _drawGrassTileVeg.apply(this, arguments);
   alpha*=VEG_GRASS_A;
   now=now||performance.now();
   var bend=vegBend(x,y), sw=vegSway(x,y,now,bend), flip=hash2(x,y,51)<0.5;
@@ -77,6 +81,7 @@ drawGrassTile = function(x, y, px, py, alpha, layer, now){
 var _drawGroundDecalVeg = drawGroundDecal;
 drawGroundDecal = function(gv, x, y, px, py, alpha, now){
   var set=vegSet();
+  if(gv===G_SHORT && set==='crypt') return _drawGroundDecalVeg.apply(this, arguments);
   if(gv===G_SHORT && set){
     now=now||performance.now(); alpha*=VEG_GRASS_A;
     var sw=vegSway(x,y,now,vegBend(x,y))*0.8;

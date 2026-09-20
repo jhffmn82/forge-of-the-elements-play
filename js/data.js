@@ -157,7 +157,7 @@ var ABILITIES = {
   /* invokes (Cleric, by god) */
   ironbody:  {name:'Iron Body', cost:8, kind:'self', icon:'ic-iron-body', divine:true, god:'grom', desc:'Invoke (Grom): +4 armor for 6 turns and your unarmed hits stun 30%.'},
   bellow:    {name:'Bellow', cost:8, kind:'self', icon:'ic-bellow', divine:true, god:'grumbok', tech:true, desc:'Invoke (Grumbok): enemies within 3 are stunned for 1 turn and you heal 10% of max HP.'},
-  heal:      {name:'Heal', cost:8, kind:'self', icon:'ic-heal', divine:true, god:'glimmer', desc:'Invoke (Saint Glimmer): restore 25% of max HP (+5% per piety rank).'},
+  heal:      {name:'Heal', cost:8, kind:'self', icon:'ic-heal', divine:true, god:'glimmer', desc:'Invoke (Saint Glimmer): restore 12% of max HP (+3% per piety rank).'},
   raisedead: {name:'Raise Dead', cost:8, kind:'summon', range:4, life:22, icon:'ic-raise-dead', divine:true, god:'murk', desc:'Invoke (Mother Murk): the dead rise to fight for you. One at a time.'},
   arcaneward:{name:'Arcane Ward', cost:8, kind:'self', icon:'ic-arcane-ward', divine:true, god:'vellum', desc:'Invoke (Vellum): a ward absorbs damage equal to 25% of your max mana (+5% per piety rank) for 10 turns.'},
   challenge: {name:'Challenge', cost:6, kind:'bolt', range:6, type:'none', icon:'ic-challenge', divine:true, god:'reginald', desc:'Invoke (Sir Reginald): mark an enemy. You deal +25% damage to it and it must come for you.'},

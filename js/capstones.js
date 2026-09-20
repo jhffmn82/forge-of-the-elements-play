@@ -8,7 +8,9 @@
 function capstone(god){ return player && player.god===god && godRank()>=5; }
 /* 2026-09-20 (Justin): Undying Light is Saint Glimmer's THIRD boon now, not her rank-5 reward - her rank 5
    is the free point of Light (religion.js). It is the one entry here that is not a rank-5 capstone. */
-function undyingLight(){ return player && player.god==='glimmer' && godRank()>=3; }
+/* 2026-09-20: Justin - Saint Glimmer's free revive is gone. Her rank 5 is the Light affinity now, and a
+   killing blow kills. */
+function undyingLight(){ return false; }
 function foesInView(){ return ents.filter(function(e){ return e.foe && vis[idxOf(e.x,e.y)]; }).length; }
 
 /* ---------------------------------------------------------------- attacks you make */

@@ -16,10 +16,9 @@ GODS.glimmer.rule = 'No Shadow: no shadow affinity, enchantments or sigils. Ligh
    Light comes down to rank 3 to take its old place, so she still reads as three boons and a rank-5 reward.
    Her boons unlock at 1 / 2 / 3 / 5 (godBoonRanks in gods.js); rank 2 for Guiding Light is the one number
    here that is not Justin's - PLACEHOLDER, it only moves the +5% Smite chance one rank earlier. */
-GODS.glimmer.boonRanks = [1, 2, 3, 5];
+GODS.glimmer.boonRanks = [1, 2, 5];
 GODS.glimmer.boons = ['Mending Light: all healing and HP regeneration +10%, and +10% damage against undead and shadow creatures, per rank.',
                       'Guiding Light: +5% Smite chance per rank.',
-                      'Undying Light: once per floor, a killing blow instead heals you to half your HP.',
                       'Kindled: Saint Glimmer sets 1 Light affinity burning in you that does not count toward your cap.'];
 GODS.murk.invoke = 'unholyaura';
 GODS.murk.prayers = ['raisedead','corpsefeast'];
