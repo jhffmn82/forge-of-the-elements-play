@@ -160,3 +160,68 @@ if(typeof shootAt === 'function'){
     player.hidden = 0; endTurn(); return true;
   };
 }
+
+/* ---------------------------------------------------------------- the bow on the hotbar (2026-09-20)
+   Justin: "it still isn't possible to drag an EQUIPED item to the hotbar... If you click on an inventory item in
+   the hotbar, it just equips it. So there is no way to shoot a bow from a hotbar."
+   The ranged slot on the Gear sheet is a drag source now (js/sheets.js, js/touchui.js) and the hotbar holds a
+   'ranged' entry (js/ui.js). Pressing it draws on the nearest enemy it can actually reach and marks it the way a
+   spell's auto-aim does (js/autoaim.js); pressing it again looses the arrow. Aiming costs no turn, so a wrong
+   press costs nothing. Clicking an enemy on the map still shoots exactly as before. */
+var BOWAIM = null;
+function bowReady(){ return !!(player && isRangedWeapon(player.ranged)); }
+function bowCanHit(e){
+  return !!(e && e.foe && e.hp>0 && (revealAll||vis[idxOf(e.x,e.y)]) && dist(player,e)>1 && dist(player,e)<=player.range);
+}
+function bowLive(){ return (BOWAIM && ents.indexOf(BOWAIM)>=0 && bowCanHit(BOWAIM)) ? BOWAIM : null; }
+function bowNextTarget(){
+  var list=ents.filter(bowCanHit);
+  if(!list.length) return null;
+  /* nearest first, and among equals the most hurt - a second volley finishes what the first started */
+  list.sort(function(a,b){ return (dist(player,a)-dist(player,b)) || (a.hp/a.maxhp - b.hp/b.maxhp); });
+  var i=list.indexOf(BOWAIM);
+  return list[(i+1) % list.length];
+}
+function bowSlotPress(){
+  if(!bowReady()){ log('Nothing is slung across your back. Put a bow in your ranged slot first.','c-info'); return; }
+  if(typeof aiming!=='undefined' && aiming && typeof cancelAim==='function') cancelAim();
+  var live=bowLive();
+  if(live){ BOWAIM=null; shootAt(live); return; }
+  var e=bowNextTarget();
+  if(!e){ BOWAIM=null; log('Nothing in sight is within the <b>'+gearName(player.ranged)+'</b>’s reach.','c-info'); return; }
+  BOWAIM=e;
+  log('You draw the <b>'+gearName(player.ranged)+'</b> on the <b>'+e.name+'</b>. Press again to loose.','c-info');
+  if(typeof draw==='function') draw();
+}
+/* the mark: the same four thin corner brackets the spell aim uses, in the bow's own colour */
+var _drawBowAim = draw;
+draw = function(){
+  var r=_drawBowAim.apply(this, arguments);
+  var e=bowLive(); if(!e || typeof ctx==='undefined' || !ctx) return r;
+  var ox=typeof camOX!=='undefined' ? camOX : 0, oy=typeof camOY!=='undefined' ? camOY : 0;
+  var x0=(e.x-camX)*TS-ox+2, y0=(e.y-camY)*TS-oy+2, S=TS-4, c=Math.max(3, TS*0.13);
+  ctx.save(); ctx.globalAlpha=0.7; ctx.strokeStyle='#9FD8FF'; ctx.lineWidth=1; ctx.beginPath();
+  ctx.moveTo(x0, y0+c); ctx.lineTo(x0, y0); ctx.lineTo(x0+c, y0);
+  ctx.moveTo(x0+S-c, y0); ctx.lineTo(x0+S, y0); ctx.lineTo(x0+S, y0+c);
+  ctx.moveTo(x0, y0+S-c); ctx.lineTo(x0, y0+S); ctx.lineTo(x0+c, y0+S);
+  ctx.moveTo(x0+S-c, y0+S); ctx.lineTo(x0+S, y0+S); ctx.lineTo(x0+S, y0+S-c);
+  ctx.stroke(); ctx.restore();
+  return r;
+};
+/* a turn passing makes the mark stale: monsters have moved. Aiming itself costs no turn. */
+var _endTurnBowAim = endTurn;
+endTurn = function(){ BOWAIM=null; return _endTurnBowAim.apply(this, arguments); };
+
+/* a bow sitting in the bag keeps its hotbar slot when you equip it from there: the slot becomes the bow slot
+   instead of going empty, so the press that equipped it is the last press that ever equips it. */
+var _pressSlotIndexBow = pressSlotIndex;
+pressSlotIndex = function(i){
+  var s=player && player.hotbar && player.hotbar[i];
+  if(s && s.type==='item' && s.ref && s.ref.kind==='weapon' && isRangedWeapon(s.ref.data)){
+    var d=s.ref.data;
+    _pressSlotIndexBow(i);
+    if(player.ranged===d){ player.hotbar[i]={type:'ranged'}; abilityBar(); }
+    return;
+  }
+  return _pressSlotIndexBow(i);
+};

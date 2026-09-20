@@ -90,8 +90,17 @@ function travelPath(tx, ty, stopAdjacent){
 /* ---------------------------------------------------------------- walking */
 function visibleFoeIds(){ return ents.filter(function(e){ return e.foe && vis[idxOf(e.x,e.y)] && e.state!=='asleep'; }).map(function(e){ return e.id; }); }
 function stopTravel(why){ if(TRAVEL){ TRAVEL=null; if(why) log(why,'c-info'); } }
+/* 2026-09-20: Justin - a misclick during a fight was killing people. Clicking a tile several steps off while
+   something is awake and watching used to walk the whole route, so a finger that meant "shoot that" instead
+   strolled past two monsters and took a free hit from each. With any awake foe in sight a click is now worth
+   exactly one step along the path: the walk stops there and you choose again. Nothing in sight walks as before. */
+function travelOneStep(){ return visibleFoeIds().length > 0; }
 function startTravel(path, then){
   if(!path || !path.length){ if(then) then(); return; }
+  if(path.length>1 && travelOneStep()){
+    path=path.slice(0,1);
+    if(!window.STEP_HINT){ window.STEP_HINT=true; log('With an enemy in sight you take one step at a time &mdash; click again to keep going.','c-info'); }
+  }
   TRAVEL={path:path, then:then, hp:player.hp, foes:visibleFoeIds(), traps:feats.filter(function(f){ return f.found; }).length};
   travelStep();
 }

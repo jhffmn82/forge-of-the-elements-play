@@ -85,6 +85,11 @@ function vegGrow(){
       });
     }
   });
+  /* 2026-09-20: Justin - "mushrooms and other vegetation shouldn't spawn on top of the other vegetation". The room
+     sweep and the corner bunches could both mark the same tile, so one tile grew two plants (and, once bushes
+     arrived, two bushes on one square). One tile carries one spot. */
+  var spotSeen={};
+  spots=spots.filter(function(sp){ var i2=idxOf(sp.x,sp.y); if(spotSeen[i2]) return false; spotSeen[i2]=1; return true; });
   /* corridors: the odd weed where the floor meets the wall */
   for(y=1;y<MH-1;y++) for(x=1;x<MW-1;x++){
     i=idxOf(x,y); if(inRoom[i] || !free(x,y) || !wallN(x,y)) continue;
@@ -108,6 +113,11 @@ function vegGrow(){
       return false;
     });
   }
+  /* and the plant itself is the tile's one piece: a spot left sitting on a prop is dropped, and the grass growing
+     under a kept spot is cleared so a bush or fern is not drawn over a tuft. The moss bed (vegart.js) still runs
+     under the spot, so the plant reads as growth on the stone rather than an object put down on bare rock. */
+  spots=spots.filter(function(sp){ return !propAt(sp.x,sp.y); });
+  spots.forEach(function(sp){ var i2=idxOf(sp.x,sp.y); if(ground[i2]===G_GRASS || ground[i2]===G_SHORT) ground[i2]=0; });
   floorMeta.vegSpots=spots;
 }
 var _generateVeg = generate;

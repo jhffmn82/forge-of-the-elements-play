@@ -449,6 +449,41 @@ gatherLights = function(now, prp){
   return L;
 };
 
+/* 2026-09-20: Justin - the mushroom patches sat straight on the flagstones. This is the moss bed the Dungeon's
+   grass got (vegart.js drawVegMoss), in the Crypt's colours: one smooth, mostly transparent field over every
+   mushroom cell and its neighbours, so touching patches join into a single growth, with pale moss flecks and a
+   violet cast picked up from the caps. Drawn from drawSurfaceDeco, which runs before the ground layer. */
+function cryptMossIs(x,y){ if(!inb(x,y) || isWallLike(at(x,y))) return false; var g=ground[idxOf(x,y)]; return g===G_GRASS || g===G_SHORT; }
+function cryptMossSig(x,y){ var s=''; for(var yy=y-1;yy<=y+1;yy++) for(var xx=x-1;xx<=x+1;xx++) s+=cryptMossIs(xx,yy)?'1':'0'; return s; }
+function cryptMossRaster(x, y){
+  var R=32, cells=[];
+  for(var yy=y-1;yy<=y+1;yy++) for(var xx=x-1;xx<=x+1;xx++) if(cryptMossIs(xx,yy)) cells.push([xx+0.5,yy+0.5]);
+  if(!cells.length) return null;
+  var c=document.createElement('canvas'); c.width=R; c.height=R;
+  var g=c.getContext('2d'), im=g.createImageData(R,R), D=im.data, salt=surfSalt()+163, any=false;
+  for(var v=0; v<R; v++) for(var u=0; u<R; u++){
+    var wx=x+(u+0.5)/R, wy=y+(v+0.5)/R, f=0;
+    for(var k=0;k<cells.length;k++){ var dx=wx-cells[k][0], dy=wy-cells[k][1], d=Math.sqrt(dx*dx+dy*dy)/1.25; if(d<1) f+=(1-d)*(1-d); }
+    var val=f + (ptValG(wx*2.2, wy*2.2, salt)-0.5)*0.35 + (hash2(Math.floor(wx*16), Math.floor(wy*16), salt+1)-0.5)*0.1;
+    if(val<0.28) continue;
+    var p=(v*R+u)*4, dense=Math.min(1,(val-0.28)*1.8), n=hash2(Math.floor(wx*16), Math.floor(wy*16), salt+2);
+    var col = n<0.12 ? [104,128,60] : n>0.9 ? [84,50,116] : [48+18*dense, 72+16*dense, 38];
+    D[p]=col[0]; D[p+1]=col[1]; D[p+2]=col[2]; D[p+3]=Math.round((n<0.12?110:58)+92*dense); any=true;   /* ~23-60%: the caps' own glow is drawn over this with 'lighter', so a Dungeon-weight bed vanished under it */
+  }
+  if(!any) return null;
+  g.putImageData(im,0,0); return c;
+}
+function drawCryptMoss(){
+  if(!cryptShrooms()) return;
+  for(var y=camY-1; y<=camY+viewH+1; y++) for(var x=camX-1; x<=camX+viewW+1; x++){
+    if(!inb(x,y)) continue; var i=idxOf(x,y); if(!(revealAll||seen[i]) || isWallLike(at(x,y))) continue;
+    var sig=cryptMossSig(x,y); if(sig.indexOf('1')<0) continue;
+    blitRaster(cachedRaster('cm'+sig+'@', x, y, cryptMossRaster), (x-camX)*TS, (y-camY)*TS, (revealAll||vis[i])?1:memA(0.4));
+  }
+}
+var _drawSurfaceDecoCryptMoss = drawSurfaceDeco;
+drawSurfaceDeco = function(){ var r=_drawSurfaceDecoCryptMoss.apply(this, arguments); drawCryptMoss(); return r; };
+
 /* ---------- Crypt floors: ooze instead of standing water, mushroom patches instead of the blue mushroom prop, more moss ---------- */
 var _addPropShroom = addProp;
 addProp = function(x, y, name, extra){

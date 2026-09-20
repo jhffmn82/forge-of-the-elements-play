@@ -638,6 +638,12 @@ vegGrow = function(){
     }
     if(stand.length>=3) stand.forEach(function(c){ spots.push({x:c.x, y:c.y, kind:'ashweed'}); });
   });
+  /* 2026-09-20: Justin - one piece of vegetation per tile. The Deep grows its own greenery, so it needs the same
+     rule vegetation.js got: a fungus or ashweed spot is deduped, never sits on a prop, and clears the grass under
+     it - the clump is the tile's growth, not a second layer over a tuft. */
+  var spotSeenDeep={};
+  spots=spots.filter(function(sp){ var i2=idxOf(sp.x,sp.y); if(spotSeenDeep[i2] || propAt(sp.x,sp.y)) return false; spotSeenDeep[i2]=1; return true; });
+  spots.forEach(function(sp){ var i2=idxOf(sp.x,sp.y); if(ground[i2]===G_GRASS || ground[i2]===G_SHORT) ground[i2]=0; });
   /* fungus glows faintly: a dim violet light for about one clump in three */
   floorMeta.planeLights=floorMeta.planeLights||[];
   spots.forEach(function(sp){ if(sp.kind==='fungus' && hash2(sp.x,sp.y,salt+9)<0.35) floorMeta.planeLights.push({x:sp.x, y:sp.y+0.2, col:'#A77CFF', r:2.2, s:0.22}); });
@@ -663,6 +669,9 @@ generate = function(seed){
   for(var wi=0; wi<map.length; wi++) if(map[wi]===WATER && floorMeta.deepRegion[wi]===2 && !(roomAt(wi%MW,(wi/MW)|0)||{}).pocket) map[wi]=FLOOR;
   deepLavaLights();
   if(typeof lightRulesPass==='function'){ try{ lightRulesPass(); }catch(e){} }
+  /* deepDress() lays its props down after the greenery grew, so a clump can end up under one: the tile keeps the
+     prop and loses the clump (2026-09-20, one piece of vegetation per tile) */
+  if(floorMeta.vegSpots) floorMeta.vegSpots=floorMeta.vegSpots.filter(function(sp){ return !propAt(sp.x,sp.y); });
   if(typeof vegRemember==='function'){ try{ vegRemember(); }catch(e){} }
   if(typeof SURF_CACHE!=='undefined') SURF_CACHE.key=null;
   return r;

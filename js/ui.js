@@ -288,6 +288,8 @@ function pressSlotIndex(i){
   if(s.type==='ability'){ var ai=player.abilities.indexOf(s.key); if(ai>=0) useAbility(ai); return; }
   if(s.type==='prayer'){ usePrayer(s.key); updateUI(); return; }
   if(s.type==='swap'){ swapWeapon(); return; }
+  /* 2026-09-20: the equipped bow can live on the hotbar; pressing it shoots (js/rangedslot.js) */
+  if(s.type==='ranged'){ if(typeof bowSlotPress==='function') bowSlotPress(); return; }
   if(s.type==='item'){
     var bi=player.bag.indexOf(s.ref);
     if(bi<0){ player.hotbar[i]=null; abilityBar(); return; }
@@ -313,6 +315,10 @@ function abilityBar(){
             '<span class="ico"></span><span class="k">'+(i+1)+'</span><span class="n">'+PR.name+'</span><span class="c">'+prayerCost(s.key)+'</span></button>';
     } else if(s.type==='amulet'){
       html+='<button class="slot" data-i="'+i+'"><span class="k">'+(i+1)+'</span><span class="n">Amulet</span></button>';   /* filled in by gear.js */
+    } else if(s.type==='ranged'){
+      var rw=player.ranged, rn=rw ? (typeof gearName==='function' ? gearName(rw) : rw.name) : 'no bow';
+      html+='<button class="slot hasico" data-i="'+i+'" data-ico="'+((rw&&rw.icon)||'')+'"'+(rw?'':' disabled')+' title="Shoot your '+rn.replace(/"/g,'&quot;')+'"><span class="ico"></span>'+
+            '<span class="k">'+(i+1)+'</span><span class="n">'+rn+'</span><span class="c">shoot</span></button>';
     } else if(s.type==='swap'){
       var stow=player.sets[1-player.activeSet];
       html+='<button class="slot hasico" data-i="'+i+'" data-ico="ic-swap" title="Draw the stowed weapon (costs a turn)"><span class="ico"></span>'+
@@ -337,6 +343,7 @@ function abilityBar(){
       dropTarget(b, function(tag){
         var bi=bagIndexFromTag(tag);
         if(bi>=0 && player.bag[bi]) hotbarPut(idx, {type:'item', ref:player.bag[bi]});
+        else if(tag==='ranged') hotbarPut(idx, {type:'ranged'});
         else if(tag==='weapons') hotbarPut(idx, {type:'swap'});
         else if(tag==='amulet') hotbarPut(idx, {type:'amulet'});
         else if(tag.indexOf('abil:')===0) hotbarPut(idx, {type:'ability', key:tag.slice(5)});

@@ -29,7 +29,11 @@ var HELD = {
 function heldKeyOf(it){
   if(!it || it.unarmed || it===EMPTY_OFF || it.joke) return null;
   var ic=(it.icon||'').replace(/^item-/,'');
-  if(it.kind==='off' && it.weapon) return 'dagger';
+  /* 2026-09-20: Justin - dual wield drew wrong. An off-hand weapon was sent to the dagger sprite whatever it was,
+     and (worse) HELD.dagger says hand 'r', so it was drawn into the same fist as the main weapon - the two sat on
+     top of each other and read as one two-handed pose. It keeps its own art when the pack has it; a two-hander,
+     shield or focus shape can never be a dual-wielded weapon, so those still fall back to the dagger. */
+  if(it.kind==='off' && it.weapon) return (HELD[ic] && !HELD[ic].two && !HELD[ic].shield && !HELD[ic].float) ? ic : 'dagger';
   return HELD[ic] ? ic : null;
 }
 
@@ -136,17 +140,19 @@ function heldTierImage(o, key, tier){
   return c;
 }
 function heldTier(it){ return (it && typeof itemKey==='function' && itemKey(it) && typeof tierNum==='function') ? tierNum(it) : null; }
-function drawHeld(g, key, pose, rest, dx, dy, sc, drawH, enchant, now, tier){
+/* handOv: draw this item in the other hand (an off-hand weapon), mirrored so its own art faces outward */
+function drawHeld(g, key, pose, rest, dx, dy, sc, drawH, enchant, now, tier, handOv){
   var H=HELD[key], o=objArt('held','held-'+key); if(!H || !o) return;
   var tinted=heldTierImage(o, key, tier);
   if(tinted) o={img:tinted, sx:0, sy:0, sw:o.sw, sh:o.sh};
-  var hand=pose[H.hand==='r'?'rh':'lh'], elbow=pose[H.hand==='r'?'re':'le'];
+  var hk = handOv || H.hand, mirror = !!handOv && handOv!==H.hand;
+  var hand=pose[hk==='r'?'rh':'lh'], elbow=pose[hk==='r'?'re':'le'];
   if(!hand) return;
   var hx=dx+hand[0]*sc, hy=dy+hand[1]*sc;
   var len=H.len*drawH, s=len/o.sh;
   g.save();
   g.translate(hx, hy);
-  var side = H.hand==='r' ? 1 : -1;     /* the right hand is on the image's left: lean outward = negative angle */
+  var side = hk === 'r' ? 1 : -1;     /* the right hand is on the image's left: lean outward = negative angle */
   if(H.shield){
     g.drawImage(o.img, o.sx,o.sy,o.sw,o.sh, -o.sw*s/2, -o.sh*s*0.55, o.sw*s, o.sh*s);
   } else if(H.float){
@@ -156,11 +162,12 @@ function drawHeld(g, key, pose, rest, dx, dy, sc, drawH, enchant, now, tier){
     var ang=-Math.PI/2 + H.tilt*side;
     if(elbow){
       var fa=Math.atan2(hand[1]-elbow[1], hand[0]-elbow[0]);
-      var rh=rest && rest[H.hand==='r'?'rh':'lh'], re=rest && rest[H.hand==='r'?'re':'le'];
+      var rh=rest && rest[hk==='r'?'rh':'lh'], re=rest && rest[hk==='r'?'re':'le'];
       var fr = (rh && re) ? Math.atan2(rh[1]-re[1], rh[0]-re[0]) : Math.PI/2;
       ang += angDiff(fa, fr)*H.follow;
     }
     g.rotate(ang + Math.PI/2);
+    if(mirror) g.scale(-1, 1);
     if(enchant){ g.shadowColor=AFF_COL[enchant]||'#fff'; g.shadowBlur=Math.max(3, drawH*0.04); }
     g.drawImage(o.img, o.sx,o.sy,o.sw,o.sh, -o.sw*s/2, -o.sh*s*H.grip, o.sw*s, o.sh*s);
   }
@@ -179,14 +186,15 @@ function drawCastLayers(e, cs, fr, dx, dy, w, h, g){
   var items=[];
   if(pose){
     if(mainKey) items.push({key:mainKey, ench:wpn.enchant, tier:heldTier(wpn), z:(pose[HELD[mainKey].hand==='r'?'rh':'lh']||[0,0,0])[2]});
-    if(offKey) items.push({key:offKey, ench:off.enchant, tier:heldTier(off), z:(pose.lh||[0,0,0])[2]});
+    /* the off hand is the left one, whatever hand the item's own entry names (2026-09-20) */
+    if(offKey) items.push({key:offKey, ench:off.enchant, tier:heldTier(off), hand:'l', z:(pose.lh||[0,0,0])[2]});
   }
   var drawH=m.stand*sc;
-  items.forEach(function(it){ if(it.z<0) drawHeld(g, it.key, pose, rest, dx, dy, sc, drawH, it.ench, now, it.tier); });
+  items.forEach(function(it){ if(it.z<0) drawHeld(g, it.key, pose, rest, dx, dy, sc, drawH, it.ench, now, it.tier, it.hand); });
   var look=armorLook(arm);
   if(look){ g.drawImage(tintedFrame(cs,row,col,look,pose), 0,0,cell,cell, dx,dy,w,h); }
   else g.drawImage(cs.img, fr.sx, fr.sy, cell, cell, dx, dy, w, h);
-  items.forEach(function(it){ if(it.z>=0) drawHeld(g, it.key, pose, rest, dx, dy, sc, drawH, it.ench, now, it.tier); });
+  items.forEach(function(it){ if(it.z>=0) drawHeld(g, it.key, pose, rest, dx, dy, sc, drawH, it.ench, now, it.tier, it.hand); });
 }
 
 /* ---------------------------------------------------------------- the paper doll */

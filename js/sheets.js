@@ -41,7 +41,8 @@
     '.gslot .ench{position:absolute;top:3px;right:3px;width:7px;height:7px;border-radius:50%}',
     '.gslot.over{border-color:var(--gold)!important;background:#2A2015}',
     '.gslot .ph{font-size:22px;color:var(--dim)}',
-    '.stowrow{display:flex;align-items:center;gap:12px;margin-top:22px}'
+    '.stowrow{display:flex;align-items:center;gap:12px;margin-top:22px}',
+    '.gdoll.over{outline:1px dashed var(--gold);outline-offset:6px;border-radius:10px}'   /* 2026-09-20: the whole doll takes a drop */
   ].join('\n');
   document.head.appendChild(st);
 })();
@@ -241,8 +242,20 @@ function wireEquip(root){
       updateUI(); refreshSheet();
     };
     if(key==='main' && slotItem('main')) dragSource(el, 'weapons');
+    /* 2026-09-20: Justin - an equipped bow could not be put on the hotbar. The ranged slot is a drag source now,
+       and the hotbar takes 'ranged' (js/rangedslot.js), where pressing it shoots instead of equipping. */
+    if(key==='stow' && slotItem('stow')) dragSource(el, 'ranged');
     dropTarget(el, function(tag){ var bi=bagIndexFromTag(tag); if(bi<0) return; hideCard();
       equipFromBag(bi, key==='stow' ? 'ranged' : key); updateUI(); refreshSheet(); });
+  });
+  /* 2026-09-20: Justin - "dropping onto the paperdoll should be the same as clicking to equip, instead of just
+     dragging onto the equipped item slot". A drop anywhere on the doll - the figure, the gaps between the slots -
+     equips the dragged bag item into its natural slot. The slots themselves still take their own drop and stop it
+     here, so dropping a light weapon on the off hand still means the off hand. */
+  var doll=root.querySelector('.gdoll');
+  if(doll) dropTarget(doll, function(tag){
+    var bi=bagIndexFromTag(tag); if(bi<0 || !player.bag[bi]) return;
+    hideCard(); useBagItem(bi); updateUI(); refreshSheet();
   });
   root.querySelectorAll('.cell[data-b]').forEach(function(cel){
     var bi=+cel.getAttribute('data-b'), it=player.bag[bi];

@@ -111,7 +111,18 @@ function drawVegSpots(now){
 /* 2026-09-19: Justin - a soft moss bed under the Dungeon's grass, mostly transparent, so a patch reads as growth on the
    stone rather than tufts set down on it. One smooth field over every grass cell (short or tall), so neighbouring
    tiles join into one mass, with a fleck of lighter moss through it. */
-function vegIsGrass(x,y){ if(!inb(x,y) || isWallLike(at(x,y))) return false; var g=ground[idxOf(x,y)]; return g===G_GRASS || g===G_SHORT; }
+/* 2026-09-20: a plant spot has no grass under it any more (vegetation.js: one piece of growth per tile), so the
+   moss bed counts those tiles too - a bush or fern still stands on moss, joined to the patch around it. */
+var VEG_SPOT_MAP = {arr:null, map:null};
+function vegSpotMap(){
+  var a=(typeof floorMeta!=='undefined' && floorMeta) ? floorMeta.vegSpots : null;
+  if(!a) return null;
+  if(VEG_SPOT_MAP.arr!==a){ var m={}; a.forEach(function(sp){ m[idxOf(sp.x,sp.y)]=1; }); VEG_SPOT_MAP={arr:a, map:m}; }
+  return VEG_SPOT_MAP.map;
+}
+function vegIsGrass(x,y){ if(!inb(x,y) || isWallLike(at(x,y))) return false; var i=idxOf(x,y), g=ground[i];
+  if(g===G_GRASS || g===G_SHORT) return true;
+  var S=vegSpotMap(); return !!(S && S[i]); }
 function vegMossSig(x,y){ var s=''; for(var yy=y-1;yy<=y+1;yy++) for(var xx=x-1;xx<=x+1;xx++) s+=vegIsGrass(xx,yy)?'1':'0'; return s; }
 function vegMossRaster(x, y){
   var R=32, cells=[];

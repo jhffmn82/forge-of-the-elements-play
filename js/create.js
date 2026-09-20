@@ -21,6 +21,14 @@ function offHandWeapon(d){
   return d;
 }
 
+/* 2026-09-20: Justin - "the random name button does nothing". It did fire; it just drew from a list of three or
+   four and handed back the name already in the box about a third of the time, three times running often enough
+   to look broken. A reroll now always lands on a different name (and survives a race with no list at all). */
+function rollName(c){
+  var list=(NAMES[c.race]||{})[c.sex] || (NAMES[c.race]||{}).m || ['Adventurer'];
+  var other=list.filter(function(n){ return n!==c.name; });
+  return pick(other.length ? other : list);
+}
 function lookFor(c){ var s=RACES[c.race].sexes[c.sex]; return c.race==='fae' ? s.replace('%s', c.court) : s; }
 function statsFor(c){
   var s={mig:10,agi:10,vit:10,foc:10}, rm=RACES[c.race].mods, cm=CLASSES[c.cls].mods;
@@ -36,7 +44,7 @@ function openCreate(){
 }
 function renderCreate(){
   var el=$('create'), c=CHOICE;
-  if(!c.name) c.name=pick(NAMES[c.race][c.sex]);
+  if(!c.name) c.name=rollName(c);
   var h='<div class="wrap"><h1>Forge of the Elements</h1><div class="tag2">Descend five floors of the Dungeon, fuse elemental motes at the Forge, and bring down Grukk the Warchief.</div>';
   h+='<div class="step">1 &middot; Race</div><div class="cards">';
   Object.keys(RACES).forEach(function(r){
@@ -90,7 +98,7 @@ function renderCreate(){
   el.querySelectorAll('[data-shrine]').forEach(function(p){ paintArt(p,'structures',p.getAttribute('data-shrine'),110); });
   paintArt($('bigPort'),'cast',lookFor(c),220);
   $('cname').oninput=function(){ c.name=this.value; };
-  $('reroll').onclick=function(){ c.name=pick(NAMES[c.race][c.sex]); renderCreate(); };
+  $('reroll').onclick=function(){ sfx('ui-click'); c.name=rollName(c); renderCreate(); };
   $('begin').onclick=function(){ audioInit(); sfx('ui-click'); $('create').classList.remove('on'); newRun(Date.now()%1000000, CHOICE); };
 }
 

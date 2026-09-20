@@ -393,6 +393,7 @@ syncHotbar = function(){
       if(!h) return false;
       if(h.type==='item') return player.bag.indexOf(h.ref)>=0;
       if(h.type==='amulet') return !!player.amulet;
+      if(h.type==='ranged') return true;                       /* the bow slot is the player's own choice: it survives a rebuild (2026-09-20) */
       return fresh.some(function(f){ return same(f,h); });     /* abilities and prayers: still known */
     }
     prev.forEach(function(h, i){ if(i<8 && valid(h) && !out.some(function(o){ return same(o,h); })) out[i]=h; });

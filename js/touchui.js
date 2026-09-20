@@ -224,7 +224,7 @@
     var btns=[];
     if(s.type==='ability' && typeof clickSpellable==='function' && clickSpellable(s.key))
       btns.push(player.clickSpell===s.key ? ['tap','Stop casting this on tap','on'] : ['tap','Cast this when I tap an enemy','']);
-    if(s.type==='item' || s.type==='amulet') btns.push(['rm','Remove from hotbar','']);
+    if(s.type==='item' || s.type==='amulet' || s.type==='ranged') btns.push(['rm','Remove from hotbar','']);
     btns.push(['x','Close','']);
     hm=document.createElement('div'); hm.id='hmenu';
     var card=(typeof hotbarCard==='function' ? hotbarCard(i) : '').replace(/<div class="hint">[^<]*(Right-click|Key \d|Drag )[^<]*<\/div>/g,'');
@@ -248,6 +248,7 @@
      hotbar (draggable=false, touch-action:none), because it fought this for the same press. */
   var lift=null;      /* {slot, i, x, y, moved, ghost, over} while a slot is held */
   function slotAt(x,y){ var el=document.elementFromPoint(x,y); return el && el.closest ? el.closest('#hotbar .slot[data-i]') : null; }
+  function dollAt(x,y){ if(x==null) return null; var el=document.elementFromPoint(x,y); return el && el.closest ? el.closest('.gdoll, .tg-portrait, .tg-mid') : null; }
   function endLift(){
     if(!lift) return;
     if(lift.ghost) lift.ghost.remove();
@@ -319,6 +320,8 @@
   function bagEntry(el){
     if(el.matches('.cell[data-b]')){ var it=player.bag[+el.getAttribute('data-b')]; return it ? {type:'item', ref:it} : null; }
     if(el.matches('.gslot[data-slot="amulet"]')) return player.amulet ? {type:'amulet'} : null;
+    /* 2026-09-20: the equipped bow drags onto the hotbar too, where pressing it shoots (js/rangedslot.js) */
+    if(el.matches('.gslot[data-slot="stow"]')) return (typeof isRangedWeapon==='function' && isRangedWeapon(player.ranged)) ? {type:'ranged'} : null;
     var ab=el.getAttribute('data-ab'); if(ab && player.abilities.indexOf(ab)>=0) return {type:'ability', key:ab};
     var pr=el.getAttribute('data-pr'); if(pr && el.getAttribute('draggable')==='true') return {type:'prayer', key:pr};
     return null;
@@ -338,7 +341,7 @@
   }
   document.addEventListener('pointerdown', function(ev){
     if(!touch() || !document.body.classList.contains('gearopen') || ev.clientX<0) return;
-    var src=ev.target.closest && ev.target.closest('.tgear .cell[data-b], .tgear .gslot[data-slot="amulet"], #shade [data-ab], #shade [data-pr]'); if(!src) return;
+    var src=ev.target.closest && ev.target.closest('.tgear .cell[data-b], .tgear .gslot[data-slot="amulet"], .tgear .gslot[data-slot="stow"], #shade [data-ab], #shade [data-pr]'); if(!src) return;
     var e0=bagEntry(src); if(!e0) return;
     var x=ev.clientX, y=ev.clientY;
     clearTimeout(blTimer); endBL();
@@ -360,6 +363,7 @@
         c.style.cssText='position:absolute;left:13%;top:13%;width:74%;height:74%'; g.appendChild(c); }
       document.body.appendChild(g); bl.ghost=g; bl.src.classList.add('lifted');
     }
+    bl.lx=ev.clientX; bl.ly=ev.clientY;
     bl.ghost.style.left=(ev.clientX-bl.ghost.offsetWidth/2)+'px';
     bl.ghost.style.top=(ev.clientY-bl.ghost.offsetHeight/2)+'px';
     var over=slotAt(ev.clientX, ev.clientY);
@@ -372,6 +376,11 @@
     if(n==='pointerup' && B.moved && B.over){
       hotbarPut(+B.over.getAttribute('data-i'), B.entry); sfx('ui-click');
       endBL(); if(typeof refreshSheet==='function') refreshSheet();
+    } else if(n==='pointerup' && B.moved && B.entry.type==='item' && dollAt(B.lx, B.ly) && player.bag.indexOf(B.entry.ref)>=0){
+      /* 2026-09-20: Justin - dropping on the paper doll equips, the same as tapping the item (js/sheets.js) */
+      var bi=player.bag.indexOf(B.entry.ref);
+      endBL(); hideCards(); useBagItem(bi); sfx('ui-click');
+      if(typeof updateUI==='function') updateUI(); if(typeof refreshSheet==='function') refreshSheet();
     } else endBL();
   }, true); });
   /* once a slot or bag item is lifted, the finger drags it rather than scrolling the page */

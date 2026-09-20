@@ -27,7 +27,11 @@
     '#hotbar{grid-template-columns:repeat(8,52px)!important;grid-template-rows:52px!important;min-height:0!important;gap:5px;flex:0 0 auto}',
     '#hotbar .slot{padding:0;align-items:center;justify-content:center;width:52px;height:52px}',
     '#hotbar .slot .n,#hotbar .slot .c{display:none}',
-    '#hotbar .slot .ico{left:50%;top:50%;transform:translate(-50%,-50%);width:38px;height:38px}',
+    /* 2026-09-20: Justin - the icons sat small and off to one side. The art was painted at 28px into a 38px box
+       that was never centred on its contents, so every slot looked lop-sided. The box is centred, fills most of
+       the slot, and the canvas inside stretches to it (painted at 64 below, so it stays sharp). */
+    '#hotbar .slot .ico{left:50%;top:50%;transform:translate(-50%,-50%);width:44px;height:44px;display:flex;align-items:center;justify-content:center}',
+    '#hotbar .slot .ico canvas{width:100%!important;height:100%!important;display:block}',
     '#hotbar .slot .k{top:2px;left:4px;right:auto;font-size:9px}',
     '#hotbar .slot .cdn{position:absolute;right:3px;bottom:2px;font-size:9px;color:var(--gold);text-shadow:0 1px 2px #000}',
     '#ctl{display:grid!important;grid-template-columns:auto auto;grid-template-rows:auto 1fr;gap:5px 8px;align-items:center;align-content:center}',
@@ -36,12 +40,20 @@
     '#extra button{padding:3px 10px;white-space:nowrap;font-size:11px}',
     '#bClose{display:none!important}',   /* closing a door stays on Shift+C and right-click */
     /* narrower windows keep 8 in a row with smaller slots; the chips drop their labels */
-    '@media (max-width:980px){#mid{width:430px!important} #hotbar{grid-template-columns:repeat(8,45px)!important;grid-template-rows:45px!important;gap:4px} #hotbar .slot{width:45px;height:45px} #hotbar .slot .ico{width:32px;height:32px} #hud2{font-size:12px} #hud2 .hunger{width:40px} #hud2 .faithchip .meter{width:30px}}',
-    '@media (max-width:760px){#mid{width:350px!important} #hotbar{grid-template-columns:repeat(8,37px)!important;grid-template-rows:37px!important} #hotbar .slot{width:37px;height:37px} #hotbar .slot .ico{width:26px;height:26px} #hud2 .faithchip .meter{display:none}}',
+    '@media (max-width:980px){#mid{width:430px!important} #hotbar{grid-template-columns:repeat(8,45px)!important;grid-template-rows:45px!important;gap:4px} #hotbar .slot{width:45px;height:45px} #hotbar .slot .ico{width:38px;height:38px} #hud2{font-size:12px} #hud2 .hunger{width:40px} #hud2 .faithchip .meter{width:30px}}',
+    '@media (max-width:760px){#mid{width:350px!important} #hotbar{grid-template-columns:repeat(8,37px)!important;grid-template-rows:37px!important} #hotbar .slot{width:37px;height:37px} #hotbar .slot .ico{width:31px;height:31px} #hud2 .faithchip .meter{display:none}}',
     '@media (max-width:640px){#strip{grid-template-columns:1fr auto!important} #log{grid-column:1/-1;contain:none;height:clamp(70px,12vh,110px)!important}}'
   ].join('\n');
   document.head.appendChild(st);
 })();
+
+/* the hotbar's icons are painted large and scaled down by the CSS above, so they stay crisp at any slot size
+   (touchui.js does the same at 72 for finger-sized slots) */
+var _paintArtHud = paintArt;
+paintArt = function(el, group, name, size){
+  if(el && el.closest && el.closest('#hotbar') && (size||32) < 64) size = 64;
+  return _paintArtHud(el, group, name, size);
+};
 
 /* hover details for hotbar slots */
 function hotbarCard(i){
@@ -57,6 +69,13 @@ function hotbarCard(i){
     return '<div class="nm">'+P.name+'</div><div class="row"><span>Cost</span><b>'+prayerCost(s.key)+'</b></div><div class="row"><span>Needs</span><b>rank '+P.rank+'</b></div><div class="hint">'+P.desc+'</div><div class="hint">Key '+(i+1)+'</div>';
   }
   if(s.type==='amulet') return player.amulet && typeof trinketCard==='function' ? trinketCard(player.amulet) : '<div class="nm">Amulet</div>';
+  if(s.type==='ranged'){
+    var rw=player.ranged;
+    if(!rw) return '<div class="nm">Ranged</div><div class="hint">Your ranged slot is empty. Sling a bow and this slot shoots it.</div>';
+    return '<div class="nm">'+gearName(rw)+'</div><div class="row"><span>Range</span><b>'+player.range+'</b></div>'+
+           (player.rangedDmg ? '<div class="row"><span>Damage</span><b>'+player.rangedDmg[0]+'&ndash;'+player.rangedDmg[1]+'</b></div>' : '')+
+           '<div class="hint">Press to draw on the nearest enemy in reach; press again to loose.</div><div class="hint">Key '+(i+1)+'</div>';
+  }
   if(s.type==='swap'){ return '<div class="nm">Nothing here</div><div class="hint">Weapon swapping is gone: a bow in your ranged slot fires by itself at anything out of reach.</div>'; }
   if(s.ref) return bagCard(s.ref)+'<div class="hint">Key '+(i+1)+'</div>';
   return '';
