@@ -541,7 +541,7 @@ function inspectHTML(mx,my){
   if(e && e.parent) e=e.parent;   /* a big elite's other cells report the creature itself, not its proxy */
   if(e && (revealAll||vis[idxOf(mx,my)])){
     if(e.ally) return '<div class="nm">'+e.name+'</div><div class="row"><span>HP</span><b>'+Math.max(0,e.hp)+' / '+e.maxhp+'</b></div><div class="hint">Fights for you.</div>';
-    var ch=Math.round(hitChance(player.acc,e.base.eva)*100), back=Math.round(hitChance(e.base.acc,player.eva)*100);
+    var ch=Math.round(hitChance(player.acc,e.base.eva)*100), back=Math.round(Math.max(0.15, hitChance(e.base.acc,player.eva)*(hasP('blur')?0.8:1))*100);
     var lo=Math.max(1,Math.round(player.dmg[0]-Math.min(armorOf(e),player.dmg[0]*0.5))), hi=Math.max(1,Math.round(player.dmg[1]-Math.min(armorOf(e),player.dmg[1]*0.5)));
     var st=Object.keys(e.st).filter(function(k){ return k.indexOf('imm_')!==0; }).map(function(k){ return '<span class="tag t-'+k+'">'+k+'</span>'; }).join(' ');
     return '<div class="nm">'+e.name+'</div>'+

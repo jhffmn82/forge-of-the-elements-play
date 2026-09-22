@@ -103,7 +103,9 @@ function tileSprite(x,y,t){
   if(t===SEALED) return (floorMeta && floorMeta.crystalDoor && floorMeta.crystalDoor.x===x && floorMeta.crystalDoor.y===y && objArt('structures','door-crystal')) || objArt('structures','door-iron');
   if(t===STAIRS) return objArt('structures','stairs-down');
   if(t===CHEST) { var k=chestKind[idxOf(x,y)]||'chest-wood'; return objArt('chests', k==='mimic'?'chest-wood':k); }
-  if(t===FORGE) return objArt('structures','forge-lit') || objArt('structures','forge-cold');
+  /* 2026-09-21: the Forge draws from its natural-size copy on the set sheet (97x154 of art) instead of the 44x64
+     the structures grid squeezed it to and the draw then enlarged. The packer puts it there now (tools/pack.py). */
+  if(t===FORGE) return (typeof setArtAsObj==='function' && setArtAsObj('forge-lit')) || objArt('structures','forge-lit') || objArt('structures','forge-cold');
   if(t===SHRINE) return objArt('structures', (GODS[RUN.shrineGod]||{}).sprite) || objArt('structures','shrine');
   if(t===EXIT) return objArt('structures','exit-gate') || objArt('structures','archway');
   if(t===RUBBLE) return objArt('props','rubble');
@@ -566,7 +568,7 @@ function drawLightmap(now, prp){
   var PL = floorMeta && floorMeta.plane ? {light:{amb:[0.90,0.89,0.88], mem:[0.60,0.60,0.64]}, shadow:{amb:[0.30,0.26,0.40], mem:[0.40,0.36,0.52]}, earth:{amb:[0.42,0.44,0.34], mem:[0.46,0.48,0.40]}}[floorMeta.plane] : null;
   if(PL) BL=PL;
   var AMB = darkRoom ? [0.08,0.08,0.12] : BL.amb, MEM=BL.mem.map(function(v){ return v*0.45; });   /* the tile fade moved in here (memA) */
-  var vals=new Float32Array(W*H*3), isWall=new Uint8Array(W*H);
+  var vals=new Float32Array(W*H*3), isWall=new Uint8Array(W*H), openSeen=new Uint8Array(W*H);
   var tx, ty, k, j;
   for(ty=0; ty<H; ty++) for(tx=0; tx<W; tx++){
     var x=ox+Math.floor(tx/S), y=oy+Math.floor(ty/S), o=(ty*W+tx)*3, cell=ty*W+tx;
@@ -574,7 +576,7 @@ function drawLightmap(now, prp){
     if(!inb(x,y)){ continue; }
     var i=idxOf(x,y);
     if(!(revealAll||seen[i])) continue;
-    var wall=isWallLike(at(x,y)); isWall[cell]=wall?1:0;
+    var wall=isWallLike(at(x,y)); isWall[cell]=wall?1:0; if(!wall) openSeen[cell]=1;
     var r, g, b;
     if(!(revealAll||vis[i])){ r=MEM[0]; g=MEM[1]; b=MEM[2]; }
     else {
@@ -599,6 +601,21 @@ function drawLightmap(now, prp){
     }
     vals[o]=r; vals[o+1]=g; vals[o+2]=b;
   }
+  /* 2026-09-21: Justin's lighting ruling (the render lane's 121480e and 75ce401, brought home). In natural rock - the
+     Caverns and the six planes, the places ptMat() covers - wall light is DEPTH-LIMITED. A two-pass chamfer gives
+     every wall texel its distance into the rock from the nearest open texel; the exposed lip keeps its light, it
+     falls off as (1 - d/penetration) squared a tile and a half in, and the deep mass drops to a tenth of ambient and
+     is swallowed. Lit as a flat 0.7 of ambient, the rock read as an artificial cutaway whose broad bright masses
+     competed with the things standing on them. A light that sits in the rock (a wall crystal) lights the rock round
+     it as a bounded pool with a steeper falloff and no line-of-sight test, since every line from inside rock is
+     blocked by definition. Built stone - the Dungeon, the Crypt, the Underdark's own treatment - is untouched. */
+  var natural = typeof ptMat==='function' && !!ptMat(), dist=null, WALL_MASS_FLOOR=0.10, PEN=S*1.5;
+  if(natural){
+    dist=new Float32Array(W*H); for(j=0;j<W*H;j++) dist[j]=openSeen[j]?0:1e9;
+    for(ty=0;ty<H;ty++) for(tx=0;tx<W;tx++){ var c1=ty*W+tx, v1=dist[c1]; if(tx>0) v1=Math.min(v1, dist[c1-1]+1); if(ty>0){ v1=Math.min(v1, dist[c1-W]+1); if(tx>0) v1=Math.min(v1, dist[c1-W-1]+1.4); if(tx<W-1) v1=Math.min(v1, dist[c1-W+1]+1.4); } dist[c1]=v1; }
+    for(ty=H-1;ty>=0;ty--) for(tx=W-1;tx>=0;tx--){ var c2=ty*W+tx, v2=dist[c2]; if(tx<W-1) v2=Math.min(v2, dist[c2+1]+1); if(ty<H-1){ v2=Math.min(v2, dist[c2+W]+1); if(tx<W-1) v2=Math.min(v2, dist[c2+W+1]+1.4); if(tx>0) v2=Math.min(v2, dist[c2+W-1]+1.4); } dist[c2]=v2; }
+    for(k=0;k<lights.length;k++){ var Lr=lights[k]; Lr.rock = Lr.tx!==undefined && inb(Lr.tx,Lr.ty) && isWallLike(at(Lr.tx,Lr.ty)); }
+  }
   /* wall tops: dark masses, faintly picking up the light of the open ground beside them */
   for(ty=0; ty<H; ty++) for(tx=0; tx<W; tx++){
     var o2=(ty*W+tx)*3; if(vals[o2]!==-1) continue;
@@ -613,6 +630,16 @@ function drawLightmap(now, prp){
     var wx2=ox+Math.floor(tx/S), wy2=oy+Math.floor(ty/S);
     var dAmb = typeof deepAmbAt==='function' ? deepAmbAt(wx2, wy2) : null, A2 = dAmb || AMB, bleed = dAmb ? 0.16 : 0.45;
     vals[o2] = A2[0]*0.7 + (cnt? sr/cnt*bleed : 0); vals[o2+1] = A2[1]*0.7 + (cnt? sg/cnt*bleed : 0); vals[o2+2] = A2[2]*0.7 + (cnt? sb/cnt*bleed : 0);
+    if(natural){
+      var dd=dist[ty*W+tx], kk = dd>=1+PEN ? 0 : Math.pow(1-(dd-1)/PEN, 2);   /* the lip (dd=1) keeps its light */
+      vals[o2]=Math.max(A2[0]*WALL_MASS_FLOOR, vals[o2]*kk); vals[o2+1]=Math.max(A2[1]*WALL_MASS_FLOOR, vals[o2+1]*kk); vals[o2+2]=Math.max(A2[2]*WALL_MASS_FLOOR, vals[o2+2]*kk);
+      var wfx=ox+(tx+0.5)/S-0.5, wfy=oy+(ty+0.5)/S-0.5;
+      for(k=0;k<lights.length;k++){
+        var Lp=lights[k]; if(!Lp.rock) continue;
+        var pdx=Lp.x-wfx, pdy=Lp.y-wfy, pd=Math.sqrt(pdx*pdx+pdy*pdy); if(pd>=Lp.r) continue;
+        var pf=Math.pow(1-pd/Lp.r, 2.2)*Lp.s; vals[o2]+=Lp.c[0]*pf; vals[o2+1]+=Lp.c[1]*pf; vals[o2+2]+=Lp.c[2]*pf;
+      }
+    }
   }
   /* soft ceiling: stacked lights (braziers beside a shrine) roll off instead of washing the tiles out */
   for(j=0;j<W*H*3;j++){ var v=vals[j]; if(v>1) vals[j]=1+(v-1)*0.3; }
@@ -858,7 +885,8 @@ function draw(){
   items.forEach(function(it){
     if(!(revealAll||seen[idxOf(it.x,it.y)])) return;
     var ipx=(it.x-camX)*TS, ipy=(it.y-camY)*TS, ia=(revealAll||vis[idxOf(it.x,it.y)])?1:memA(0.45);
-    var shw=(ITEM_FIT[it.kind]||0.5)*0.42; ctx.globalAlpha=0.35*ia; ctx.fillStyle='#000'; ctx.beginPath(); ctx.ellipse(ipx+TS/2,ipy+TS*0.76,TS*shw,TS*shw*0.35,0,0,7); ctx.fill(); ctx.globalAlpha=1;
+    /* 2026-09-21: Justin - a map object casts no shadow; only a creature does. A coin, a crate or a crystal sits flush on
+       the stone with no gap beneath it, so an ellipse there does not ground it, it floats it. */
     var bob = ANIM.reduce ? 0 : Math.sin(now/400 + it.x*2 + it.y)*TS*0.03;
     if(it.kind==='key'){
       /* 2026-09-17: a key on a stone floor was almost impossible to spot, and missing one locks the vault
@@ -888,7 +916,6 @@ function draw(){
     if(p.name==='vines'){ drawVines(p.x, p.y, ppx, ppy, pa, now); return; }
     if(p.pillar){ drawPillar(p, ppx, ppy, pa, now); return; }
     if(typeof drawPropSurface==='function' && drawPropSurface(p, ppx, ppy, pa)) return;   /* flat bones and rubble (surface.js) */
-    if(typeof propShadow==='function' && !p.flat) propShadow(p.x, p.y, ppx, ppy, pa, p.name);   /* contact shadow (surface.js) */
     if(!drawObj(o, ppx, ppy, {feet:!p.flat, fit: p.flat?0.82 : (p.name==='bookshelf'||p.name==='statue'||p.name==='boss-throne')?1.12 : /^(urn|coffin|sarcophagus|tomb)/.test(p.name)?1.08 : 0.9, alpha:pa, flash:flashOf(p)})){
       ctx.globalAlpha=pa; ctx.fillStyle=p.b?'#6A5A48':'#4A4038'; ctx.fillRect(ppx+TS*0.2,ppy+TS*0.2,TS*0.6,TS*0.6); ctx.globalAlpha=1;
     }
@@ -967,12 +994,16 @@ function draw(){
          small chip of its own colour now, with a dark rim, so it reads against anything. */
       ['burn','chill','frozen','root','stun','fear','blind','poison','web','slow','bleed'].forEach(function(k){
         if(!e.st[k]) return;
-        var col=STATUS_CHIP[k]||'#C8C0B4', cx=ix+TS*0.1, cy=py0-TS*0.3+TS*0.15, rr=TS*0.115;
+        var col=STATUS_CHIP[k]||'#C8C0B4', cx=ix+TS*0.1, cy=py0-TS*0.3+TS*0.15, rr=TS*0.15;
         ctx.save();
         ctx.fillStyle='rgba(10,8,6,0.85)'; ctx.beginPath(); ctx.arc(cx, cy, rr*1.25, 0, 7); ctx.fill();
         ctx.fillStyle=col; ctx.beginPath(); ctx.arc(cx, cy, rr, 0, 7); ctx.fill();
         ctx.restore();
-        if(!drawObj(objArt('icons','st-'+k), ix, py0-TS*0.3, {fit:0.26})) mark(k.charAt(0), cx, py0+TS*0.05, '#120F0D');
+        /* 2026-09-21: drawObj centres its art in a whole tile whose corner is the point given, so the icon used to land
+           0.4 of a tile right of its chip and 0.35 below it: an empty disc over the head, a stray icon over the chest.
+           Hand it the tile whose centre IS the chip. The chip grew from 0.115 to 0.15 so a ring of colour shows round
+           the icon (the rebuild's fix, ported). */
+        if(!drawObj(objArt('icons','st-'+k), cx-TS/2, cy-TS/2, {fit:0.26})) mark(k.charAt(0), cx-TS*0.09, cy, '#120F0D');
         ix+=TS*0.24;
       });
     });

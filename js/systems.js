@@ -513,7 +513,6 @@ function endTurn(){
   player.t += cost;
   player.movedThisTurn=false;
   turn++; RUN.turns++;
-  if(player.blurCd>0) player.blurCd--;
   if(player.fortCd>0) player.fortCd--;
   /* 2026-09-18: a buff cast this turn used to be counted down at the end of the same turn, so "10 turns" covered
      9. One that is new or was just raised skips its first count; everything else counts as before. */

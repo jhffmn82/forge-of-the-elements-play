@@ -35,9 +35,7 @@ function drawSetPiece(p, alpha){
   var fit=p.wall ? 0.9 : 0.98, sc=Math.min((p.w*TS*fit)/o.sw, (p.h*TS*(p.w===1&&p.h===1?1.15:1.02))/o.sh);
   var dw=o.sw*sc, dh=o.sh*sc, px=(p.x-camX)*TS+(p.w*TS-dw)/2, py=p.wall ? (p.y-camY)*TS+(TS-dh)/2 : (p.y-camY+p.h)*TS-dh-TS*0.02;
   ctx.save(); ctx.globalAlpha=alpha; ctx.imageSmoothingEnabled=false;
-  if(!p.wall && !p.flat){   /* what lies flat in the ground casts no shadow */
-    ctx.fillStyle='rgba(8,6,12,0.38)'; ctx.beginPath(); ctx.ellipse(px+dw/2, (p.y-camY+p.h)*TS-TS*0.1, dw*0.48, TS*0.2, 0, 0, 7); ctx.fill();
-  }
+  /* 2026-09-21: no contact shadow under a set piece either - a map object casts none (Justin's ruling) */
   ctx.drawImage(o.img, o.sx, o.sy, o.sw, o.sh, px, py, dw, dh);
   ctx.restore();
   return true;

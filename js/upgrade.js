@@ -122,7 +122,7 @@ function upgradeable(it){ return it && (it.kind==='ring' || it.kind==='weapon' |
 function allUpgradeTargets(){
   var out=[];
   function add(it, where){ if(upgradeable(it) && out.every(function(o){ return o.it!==it; })) out.push({it:it, where:where}); }
-  add(player.sets[player.activeSet], 'main hand'); add(player.sets[1-player.activeSet], 'stowed'); add(player.armorItem, 'armor');
+  add(player.sets[player.activeSet], 'main hand'); add(player.ranged, 'ranged'); add(player.armorItem, 'armor');   /* 2026-09-21: the bow slot, not the stowed slot that rangedslot.js retired */
   if(player.off && player.off!==EMPTY_OFF) add(player.off, 'off hand');
   (player.rings||[]).forEach(function(r,i){ add(r, 'ring '+(i+1)); });
   player.bag.forEach(function(b){ if(b.data && (b.kind==='weapon'||b.kind==='armor'||b.kind==='off'||b.kind==='ring')) add(b.data, 'bag'); });

@@ -66,17 +66,23 @@ applyDamage = function(target, amount, type, source){
   return d;
 };
 
-/* ---------------------------------------------------------------- Murk: the servant rises again once */
+/* ---------------------------------------------------------------- Murk: the Lich rises again once */
+/* 2026-09-21: Justin - the Lich comes back once, one turn after it falls, at half its HP. It used to stand
+   straight back up at full. The wait lives in floorMeta, so it survives a save and is forgotten with the floor. */
 var _killCap = kill;
 kill = function(e, by){
-  var rise = e && e.ally && e.undeadServant && !e.revived && capstone('murk') && ents.indexOf(e)>=0;
+  var rise = e && e.ally && e.undeadServant && e.name==='Lich' && !e.revived && capstone('murk') && ents.indexOf(e)>=0;
   _killCap(e, by);
-  if(rise){
-    e.revived=true; e.hp=e.maxhp; e.st={};
-    var spot = !occupied(e.x,e.y) ? {x:e.x,y:e.y} : nearFree(e.x,e.y,2);
-    if(spot){ e.x=spot.x; e.y=spot.y; e._lx=undefined; ents.push(e); log('<b>Mother Murk</b> will not let your '+e.name+' rest. It rises again.','c-kill'); sparkleFx(e.x,e.y,'dark',30); }
-  }
+  if(rise){ e.revived=true; floorMeta.lichRise={e:e, at:turn+1}; log('<b>Mother Murk</b> will not let your Lich rest.','c-info'); }
 };
+function lichRises(){
+  var r=floorMeta.lichRise; if(!r || turn<r.at) return;
+  floorMeta.lichRise=null;
+  var e=r.e; if(ents.some(function(o){ return o.ally && o.undeadServant; })) return;   /* a new servant was raised meanwhile */
+  e.hp=Math.max(1, Math.round(e.maxhp/2)); e.st={};
+  var spot = !occupied(e.x,e.y) ? {x:e.x,y:e.y} : nearFree(e.x,e.y,2);
+  if(spot){ e.x=spot.x; e.y=spot.y; e._lx=undefined; e.t=player.t; ents.push(e); log('Your <b>Lich</b> rises again.','c-kill'); sparkleFx(e.x,e.y,'dark',30); }
+}
 
 /* ---------------------------------------------------------------- Anvil: cheaper upgrades, and +4 */
 var _upgradeCostCap = upgradeCost;
@@ -127,6 +133,7 @@ stepOn = function(){
 var _endTurnGlobes = endTurn;
 endTurn = function(){
   _endTurnGlobes();
+  lichRises();
   if(items.some(function(it){ return it.until && turn>=it.until; })) items=items.filter(function(it){ return !(it.until && turn>=it.until); });
 };
 var _itemLabelGlobes = itemLabel;

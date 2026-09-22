@@ -18,7 +18,7 @@ PASSIVES={
        {at:15,id:'deadeye',  name:'Deadeye',d:'+8% crit chance'},
        {at:18,id:'fleet',    name:'Fleet',d:'moving costs 15% less time'},
        {at:21,id:'keenAim',  name:'Keen Aim',d:'your attacks ignore 25% of the target\'s evasion'},
-       {at:25,id:'blur',     name:'Blur',d:'an attack against you misses outright (every 20 turns)'}],
+       {at:25,id:'blur',     name:'Blur',d:'hostile attacks are 20% less likely to hit you'}],
   vit:[{at:12,id:'tough',    name:'Tough',d:'+15% max HP'},
        {at:15,id:'resilient',name:'Resilient',d:'HP regeneration doubles below half HP'},
        {at:18,id:'ironConst',name:'Iron Constitution',d:'statuses on you last half as long'},
@@ -93,7 +93,7 @@ function derive(p){
   if(evaPen<0 && (hasP('armorMaster') || p.race==='dwarf')) evaPen = p.race==='dwarf' ? 0 : Math.round(evaPen/2);
   p.eva = 10 + 2*s.agi + evaPen + ((p.off&&p.off.eva)||0) + (hasP('lightFeet')?8:0) + (arm.enchant==='water'?Math.round(8*enchantScale('water')):0);
   p.armor = (arm.armor||0) + (arm.armor>0 ? itemPlus(arm) : 0) + (arm.enchant==='earth'?Math.round(2*enchantScale('earth')):0)
-          + (hasGod('grom')?rank:0) + (buff('ironbody')?4:0) + (buff('ironhide')?5:0);
+          + (hasGod('grom')?rank:0) + (buff('ironbody')?4:0) + (buff('ironhide')?5:0) + (buff('temper')?4:0);   /* Temper: +4 armor too (2026-09-21) */
   p.twoHanded = p.weapon.hands===2;
   var shield = p.off && p.off.block>0 && !p.twoHanded;
   /* Might braces a shield: +1% block per point above 10 (2026-09-17). Needs a shield - it is about holding
@@ -256,6 +256,9 @@ function attack(att, def, mult, label){
   if(att===player) player.lastAttack=true;
   if(att===player && ((player.weapon&&player.weapon.range)||1)>1 && dist(att,def)<=1) ch *= 0.7;
   if(att.st && att.st.blind) ch *= 0.6;
+  /* 2026-09-21: Justin - Blur is no longer one free miss every 20 turns. Every hostile direct attack is 20% less
+     likely to land, and the 15% floor that every hit roll has still holds. */
+  if(def===player && hasP('blur')) ch = Math.max(0.15, ch*0.8);
   if(def===player && typeof luckBonus==='function') ch -= luckBonus();   /* Lady Luck's Blessing: blows slide off */
   if(def.st && (def.st.frozen || def.st.stun)) ch = 1;
   /* 2026-09-20: Justin - "surprise attacks shouldn't miss". Striking something that has not noticed you always
@@ -270,7 +273,6 @@ function attack(att, def, mult, label){
   if(ranged){ boltFx(att.x,att.y,def.x,def.y,'phys',{arrow:true}); sfx('bow-shot',{at:tSwing}); }
   else { lungeFx(att, def.x, def.y); sfx('swing',{at:tSwing}); }
   if(att!==player && att.base.sfx) sfx(att.base.sfx+'-attack',{at:tSwing});
-  if(def===player && hasP('blur') && player.blurCd<=0){ player.blurCd=20; log('You blur aside.','c-good'); floatText(def.x,def.y,'miss','miss'); return; }
   if(def===player && player.parry && dist(att,def)<=1 && rng()<player.parry){
     log('You parry '+att.name+'.','c-good'); sfx('parry'); floatText(def.x,def.y,'parry','miss');
     if(att.hp>0){ log('Riposte!','c-good'); attack(player, att, 0.5, 'Riposte'); }
@@ -490,6 +492,13 @@ function kill(e, by){
   if(e.st.corrupt && byPlayerSide && !e.base.boss && !e.elite) raiseShade(e);
   if(e.base.boss) bossDefeated(e);
 }
+/* 2026-09-21: Justin's ruling of 09-20 (built only in the rebuild until now) - Forge is single-player, so every
+   foe's death is the player's kill unless someone on the player's side is named: the burn, bleed or poison that
+   named nobody, the trap, the pit, the other monster. XP, drops, piety, the shade and the on-kill effects all read
+   the same answer. Wrapped once everything has loaded, so it is outermost and every wrapper of kill() sees the
+   credited killer. An ally's kill stays the ally's, so Mother Murk's servant rules still tell them apart. */
+function killCredit(e, by){ return (e && e.foe && !(by===player || (by && by.ally) || by==='player')) ? player : by; }
+window.addEventListener('load', function(){ var _killCredit=kill; kill=function(e, by){ return _killCredit(e, killCredit(e, by)); }; });
 function burnDmg(){ return sDMG(2 + ((player && player.aff && player.aff.fire)||0)); }   /* Burning: 2 + 1 per Fire point */
 function TRAIL_EL(el){ return {fire:'fire',water:'ice',air:'lightning',earth:'earth',light:'light',shadow:'dark'}[el]||'magic'; }
 function raiseShade(e){
@@ -504,7 +513,7 @@ function bossDefeated(e){
   RUN.bossDead=true; floorMeta.exitOpen=true;
   log('<b>Grukk the Warchief falls.</b> The way onward opens.','c-kill');
   log('Your affinity cap rises to <b>'+affinityCap()+'</b>.','c-kill');
-  for(var i=0;i<4;i++){ var c=nearFree(e.x,e.y,2)||{x:e.x,y:e.y}; items.push(i===0?{x:c.x,y:c.y,kind:'essence',n:60}:i===1?{x:c.x,y:c.y,kind:'mote',el:pick(ELEMENTS)}:(function(){ var g=randomGear(); g.x=c.x; g.y=c.y; if(g.it.plus!==undefined) g.it.plus=3; g.it.tier='Trusty'; return g; })()); }
+  for(var i=0;i<4;i++){ var c=nearFree(e.x,e.y,2)||{x:e.x,y:e.y}; items.push(i===0?{x:c.x,y:c.y,kind:'essence',n:60}:i===1?{x:c.x,y:c.y,kind:'mote',el:pick(ELEMENTS)}:(function(){ var g=bossGear(); g.x=c.x; g.y=c.y; return g; })()); }
   explosionFx(e.x,e.y); playMusic('dungeon');
   ents.forEach(function(o){ if(o.foe && o.guard) applyStatus(o,'fear',6); });
 }
@@ -559,7 +568,7 @@ function castSelf(key, A){
     if(player.race==='gloomling'){ /* refused, but just in case */ }
     log('Saint Glimmer mends you. +'+hh+' HP.','c-good'); }
   else if(key==='arcaneward'){ player.buffs.arcaneward=10; player.ward=Math.round(player.maxmp*(0.25+0.05*r)*div); log('Arcane Ward: '+player.ward+' damage will break on the ward first.','c-good'); sfx("cast-generic"); ringFx(player.x,player.y,'#7FA8FF',2); }
-  else if(key==='temper'){ player.buffs.temper=12; derive(player); log('Old Anvil tempers your '+player.weapon.name+': +2 for 12 turns.','c-good'); sfx('forge-enchant'); sparkleFx(player.x,player.y,'fire',20); }
+  else if(key==='temper'){ player.buffs.temper=12; derive(player); log('Old Anvil tempers your '+player.weapon.name+' and your armor: +2 damage and +4 armor for 12 turns.','c-good'); sfx('forge-enchant'); sparkleFx(player.x,player.y,'fire',20); updateUI(); return false; }   /* 2026-09-21: Justin - Temper is instant; false here means "do not end the turn" */
   else if(key==='rolldice'){ sfx('wobbles-giggle'); wobblesIntervention(false); }
   return true;
 }

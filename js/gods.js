@@ -53,13 +53,13 @@ function godConductEquip(kind, data){
   var g=player.god; if(!g) return true;
   if(g==='grom'){
     if(kind==='weapon' && data && !data.unarmed) pietyViolation('you taking up a weapon', 15);
-    if(kind==='off' && data && (data.block>0 || data.weapon)) pietyViolation('you carrying a shield or blade', 15);
+    if(kind==='off' && data && (isShield(data) || data.weapon)) pietyViolation('you carrying a shield or blade', 15);
     if(kind==='armor' && data && data.weight && data.weight!=='cloth') pietyViolation('you wearing real armor', 15);
   }
   if(g==='glimmer' && data && data.enchant==='shadow') pietyViolation('shadow-touched gear', 15);
   if(g==='murk' && data && data.enchant==='light') pietyViolation('light-touched gear', 15);
   if(g==='vellum'){
-    if(kind==='off' && data && data.block>0) pietyViolation('you carrying a shield', 15);
+    if(kind==='off' && data && isShield(data)) pietyViolation('you carrying a shield', 15);
     if(kind==='armor' && data && (data.weight==='medium' || data.weight==='heavy')) pietyViolation('you wearing heavy armor', 15);
   }
   return true;
@@ -99,11 +99,12 @@ function godOnKill(e, by){
   var g=player.god; if(!g) return;
   var byPlayer = by===player, byAlly = by && by.ally, big = e.elite || e.base.elite || e.base.boss, r=godRank();
   var aware = e.state!=='asleep' && !(e.st.stun) && !(e.st.frozen);
-  if(g==='grom'){ if(byPlayer && player.weapon.unarmed) gainPiety(big?15:2); }
+  if(g==='grom'){ /* paid per damaging unarmed hit in religion.js, not per kill (2026-09-21) */ }
   else if(g==='grumbok'){ if(byPlayer||byAlly) gainPiety((e.base.spellcaster||e.base.el?5:2)+(big?15:0)); if(r>=3 && e.base.spellcaster && byPlayer){ var h=Math.round(player.maxhp*0.1); healPlayer(h); } }
   else if(g==='glimmer'){ if(byPlayer||byAlly) gainPiety((e.base.undead||e.base.shadowy?4:2)+(big?15:0)); }
   else if(g==='murk'){ if(byAlly && by.undeadServant) gainPiety(4+(big?15:0)); else if((byPlayer||byAlly) && !e.base.undead) gainPiety(2+(big?15:0));
-    if((byPlayer||byAlly) && r>0){ healPlayer(r); } }
+    /* 2026-09-21: Justin - Life Drain is 2 HP a rank, from a living hostile, felled by Mother Murk herself or her servant */
+    if((byPlayer || (byAlly && by.undeadServant)) && r>0 && e.foe && !e.base.undead){ healPlayer(2*r); } }
   else if(g==='reginald'){ if(byPlayer && aware) gainPiety(2+(big?15:0)); }
   else if(g==='vellum'){ if(byPlayer) gainPiety((player.castTurn===turn?2:0)+(big?15:0)); }
   else if(g==='wobbles'){ gainPiety(big?15:2); }

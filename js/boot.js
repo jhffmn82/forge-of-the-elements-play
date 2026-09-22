@@ -88,21 +88,32 @@
 })();
 
 function preloadArt(done){
-  var files=(window.ASSETS && ASSETS.files) || [], left=files.length, finished=false;
+  /* 2026-09-21: every sheet is DECODED, not just fetched, before the game shows, so the first frame never pays
+     the decode or draws a sheet that is still a blank. A file that fails is named in the console and the log
+     instead of quietly counting as done, and if the 20-second valve has to open it says which files it gave up on. */
+  var files=(window.ASSETS && ASSETS.files) || [], left=files.length, finished=false, failed=[], pending={};
   var veil=document.createElement('div');
   veil.id='loadVeil';
   veil.style.cssText='position:fixed;inset:0;z-index:99;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;background:#0B0A09;color:#A79C93;font:12px "IBM Plex Mono",monospace;letter-spacing:.08em';
   veil.innerHTML='<div style="font:700 26px Grenze Gotisch,serif;color:#E8B44A">Forge of the Elements</div><div id="loadTxt">LIGHTING THE TORCHES&hellip;</div>'+
     '<div style="width:220px;height:6px;border:1px solid #332A24;border-radius:3px;overflow:hidden"><i id="loadBar" style="display:block;height:100%;width:0;background:linear-gradient(90deg,#6B5A22,#E8B44A)"></i></div>';
   document.body.appendChild(veil);
-  function finish(){ if(finished) return; finished=true; veil.remove(); draw(); done(); }
-  function tick(){ left--; var pct=files.length ? Math.round((files.length-left)/files.length*100) : 100; var bar=document.getElementById('loadBar'); if(bar) bar.style.width=pct+'%'; if(left<=0) finish(); }
+  function report(){
+    var late=Object.keys(pending);
+    if(failed.length){ console.warn('art failed to load: '+failed.join(', ')); if(typeof log==='function') log('Some art failed to load ('+failed.length+' file'+(failed.length>1?'s':'')+'); see the console.','c-info'); }
+    if(late.length){ console.warn('art still loading when the game opened: '+late.join(', ')); }
+  }
+  function finish(){ if(finished) return; finished=true; veil.remove(); report(); draw(); done(); }
+  function tick(f){ delete pending[f]; left--; var pct=files.length ? Math.round((files.length-left)/files.length*100) : 100; var bar=document.getElementById('loadBar'); if(bar) bar.style.width=pct+'%'; if(left<=0) finish(); }
   if(!files.length){ finish(); return; }
   files.forEach(function(f){
-    var im=atl(f);
-    if(ATL[f].complete && ATL[f].naturalWidth){ tick(); return; }
-    ATL[f].addEventListener('load', tick, {once:true});
-    ATL[f].addEventListener('error', tick, {once:true});
+    atl(f); pending[f]=1;
+    var im=ATL[f];
+    var ok=function(){ tick(f); }, bad=function(){ failed.push(f); tick(f); };
+    if(im.decode){ im.decode().then(ok, bad); return; }
+    if(im.complete && im.naturalWidth){ ok(); return; }
+    im.addEventListener('load', ok, {once:true});
+    im.addEventListener('error', bad, {once:true});
   });
-  setTimeout(finish, 20000);   /* never trap the player behind a slow file */
+  setTimeout(finish, 20000);   /* never trap the player behind a slow file; report() names what was still missing */
 }

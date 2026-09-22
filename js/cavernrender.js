@@ -56,9 +56,7 @@ drawPropSurface = function(p, px, py, alpha){
     drawCaveArt(o, X+TS/2, Y+TS/2+o.fullH*TS/128, alpha, flip);
     return true;
   }
-  /* a contact shadow, then the piece standing on the bottom edge of its footprint */
-  ctx.save(); ctx.globalAlpha=alpha*0.4; ctx.fillStyle='#06050A';
-  ctx.beginPath(); ctx.ellipse(X+w*TS/2, Y+h*TS-TS*0.12, w*TS*0.42, TS*0.16, 0, 0, 7); ctx.fill(); ctx.restore();
+  /* the piece stands on the bottom edge of its footprint; no contact shadow - a map object casts none (Justin, 2026-09-21) */
   drawCaveArt(o, X+w*TS/2, Y+h*TS-TS*0.02, alpha, flip);
   if(typeof flashOf==='function' && p.br){ var fl=flashOf(p); if(fl>0){ ctx.save(); ctx.globalAlpha=fl*0.6; ctx.fillStyle='#FFF'; ctx.fillRect(X+TS*0.25, Y+TS*0.25, TS*0.5, TS*0.5); ctx.restore(); } }
   return true;

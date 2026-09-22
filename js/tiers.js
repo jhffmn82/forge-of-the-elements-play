@@ -25,7 +25,7 @@ var TIER_WEAPON = {
 var MACE_PIERCE = [2,2,3,4];
 var TIER_ARMOR = { robe:[0,1,2,3], leather:[2,3,5,7], chain:[3,5,8,11], plate:[4,7,11,15], shirt:[0,0,0,0] };
 var TIER_ROBE = { spell:[0.05,0.05,0.10,0.15], spellPer:0.03, mana:[0.05,0.05,0.10,0.10] };
-var TIER_BLOCK = { buckler:[0.08,0.10,0.14,0.18], kite:[0.15,0.20,0.25,0.30], per:0.02 };
+var TIER_BLOCK = { buckler:[0.08,0.10,0.14,0.18], kite:[0.15,0.20,0.25,0.30], holy:[0.04,0.05,0.07,0.09], per:0.02 };   /* holy: Justin, 2026-09-21 */
 var TIER_OFF = {
   tome:     {field:'manaPct',     base:[0.10,0.15,0.20,0.25], per:0.04},
   holy:     {field:'divine',      base:[0.10,0.15,0.20,0.25], per:0.04},
@@ -49,12 +49,24 @@ var TIER_REQ = {
   bow:      {any:['agi'], v:[0,11,14,18]},
   staff:    {any:['foc'], v:[0,12,15,21]},
   wand:     {any:['foc'], v:[0,11,14,18]}, orb:{any:['foc'], v:[0,11,14,18]}, tome:{any:['foc'], v:[0,11,14,18]},
-  holy:     {any:['foc'], v:[0,11,14,18]}, censer:{any:['foc'], v:[0,11,14,18]},
+  holy:     {any:['vit','foc'], v:[0,11,14,18]}, censer:{any:['vit','foc'], v:[0,11,14,18]},   /* 2026-09-21: Justin - Vitality or Focus, either is enough */
   buckler:  {any:['mig','vit'], v:[0,11,14,18]}, kite:{any:['mig','vit'], v:[0,11,14,18]}
 };
 var STAT_NAME = {mig:'Might', agi:'Agility', vit:'Vitality', foc:'Focus'};
-/* chance of T1 / T2 / T3 by biome */
-var TIER_ODDS = [[0.90,0.10,0], [0.60,0.38,0.02], [0.25,0.60,0.15], [0.05,0.55,0.40], [0,0.30,0.70]];
+/* chance of Plain / Fine / Masterwork by depth (Justin, 2026-09-21; replaces the step at each biome). Plain falls 10
+   points a floor and is gone by floor 10. Masterwork runs straight between the milestones below and holds at the last
+   one. Fine is whatever is left. Worn is starting gear and never drops. */
+var PLAIN_FALL = 0.10;
+var MASTERWORK_AT = [[5,0], [10,0.10], [15,0.25], [20,0.40]];   /* [floor, chance] */
+function tierOdds(d){
+  var plain=Math.max(0, 1-PLAIN_FALL*d), M=MASTERWORK_AT, mw=M[0][1];
+  for(var i=1;i<M.length;i++){
+    if(d>=M[i][0]){ mw=M[i][1]; continue; }
+    if(d>M[i-1][0]) mw=M[i-1][1]+(M[i][1]-M[i-1][1])*(d-M[i-1][0])/(M[i][0]-M[i-1][0]);
+    break;
+  }
+  return [plain, 1-plain-mw, mw];
+}
 
 /* ---------------------------------------------------------------- identity */
 function itemKey(it){
@@ -88,8 +100,8 @@ function tierNormalize(it){
     var b=TIER_WEAPON[k][t], per=tierPer(it);
     it.dmg=[b[0]+lvl*(per[0]-1), b[1]+lvl*(per[1]-1)];   /* derive adds the plus once more */
     if(k==='mace') it.pierce=MACE_PIERCE[t];
-    if(k==='censer') it.divine=TIER_OFF.holy.base[t]+TIER_OFF.holy.per*lvl;
   }
+  if(k==='censer') it.divine=TIER_OFF.holy.base[t]+TIER_OFF.holy.per*lvl;   /* in either hand (2026-09-21) */
   if(TIER_ARMOR[k]){
     it.armor=TIER_ARMOR[k][t];
     it.eva = k==='leather' ? 5+2*lvl : k==='plate' ? -10 : k==='robe' ? 5 : 0;
@@ -107,6 +119,7 @@ function allGear(){
   var out=[];
   if(!player) return out;
   (player.sets||[]).forEach(function(s){ if(s) out.push(s); });
+  if(player.ranged) out.push(player.ranged);   /* 2026-09-21 */
   if(player.armorItem) out.push(player.armorItem);
   if(player.off && player.off!==EMPTY_OFF) out.push(player.off);
   (player.bag||[]).forEach(function(b){ if(b.data && (b.kind==='weapon'||b.kind==='armor'||b.kind==='off')) out.push(b.data); });
@@ -233,8 +246,8 @@ derive = function(p){
      60% cap. This is the live formula - combat.js sets p.block first and this wrapper runs after it. */
   var o=p.off, sh = o && o!==EMPTY_OFF && o.block>0 && !p.twoHanded;
   p.block = sh ? Math.min(0.75, o.block + TIER_BLOCK.per*(o.plus||0)
-                              + (p.cls==='fighter' && typeof FIGHTER_NO_BLOCK==='undefined' ? 0.15 : 0)
-                              + 0.02*Math.max(0, (p.stats&&p.stats.mig||10)-10)) : 0;
+                              + (isShield(o) && p.cls==='fighter' && typeof FIGHTER_NO_BLOCK==='undefined' ? 0.15 : 0)
+                              + (isShield(o) ? 0.02*Math.max(0, (p.stats&&p.stats.mig||10)-10) : 0)) : 0;
   /* tomes carry their own per-level mana; undo upgrade.js's older +5%/level */
   if(o && o!==EMPTY_OFF && !p.twoHanded && o.manaPct && (o.plus||0)) p.maxmp=Math.round(p.maxmp/(1+0.05*o.plus));
   if(arm && itemKey(arm)==='robe') p.maxmp=Math.round(p.maxmp*(1+TIER_ROBE.mana[tierNum(arm)]));
@@ -254,8 +267,16 @@ spellPower = function(A){
 
 /* ---------------------------------------------------------------- drops by depth */
 function rollTier(){
-  var odds=TIER_ODDS[Math.min(4, Math.floor((floorNo-1)/5))], r=rng();
+  var odds=tierOdds(floorNo), r=rng();
   return r<odds[0] ? 1 : r<odds[0]+odds[1] ? 2 : 3;
+}
+/* a boss's gear (Justin, 2026-09-21; was two forced Fine +3): never below Fine, Masterwork when the depth roll says so;
+   at least +1, then the same one-in-three steps toward +3, so essence stays the dependable road to +3 */
+function bossGear(){
+  var g=randomGear();
+  if(g.it.plus!==undefined) g.it.plus=rollPlus(1);
+  g.it.tier=Math.max(2, tierNum(g.it)); tierNormalize(g.it);
+  return g;
 }
 var _randomGearTier = randomGear;
 randomGear = function(){

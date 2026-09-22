@@ -22,7 +22,7 @@ GODS.glimmer.boons = ['Mending Light: all healing and HP regeneration +10%, and 
                       'Kindled: Saint Glimmer sets 1 Light affinity burning in you that does not count toward your cap.'];
 GODS.murk.invoke = 'unholyaura';
 GODS.murk.prayers = ['raisedead','corpsefeast'];
-GODS.murk.boons = ['Life Drain: kills heal 1 HP per rank, and your undead have +10% HP and damage per rank.',
+GODS.murk.boons = ['Life Drain: a living foe felled by you or your servant heals you 2 HP per rank, and your undead have +10% HP and damage per rank.',
                    'Undying Servants: Raise Dead brings up a Zombie Bruiser instead of a skeleton.',
                    'Lich-Mother: Raise Dead calls a Lich, and your servant rises again once when it is destroyed.'];
 GODS.reginald.rule = 'No surprise attacks and no stealth kills. Refuses Scoundrels and anyone touched by Shadow.';
@@ -43,11 +43,11 @@ PRAYERS.ironhide.desc = '+5 armor for 12 turns, and a shield of 5 + 2 per rank.'
 PRAYERS.rampage.desc = '+40% melee damage and 20% faster attacks for 10 turns.';
 PRAYERS.raisedead = {name:'Raise Dead', favor:20, rank:2, desc:'The dead rise beside you and fight until destroyed or you leave the floor. One at a time.'};
 PRAYERS.offering.desc = 'Offer 10% of your essence (at least 50): +10 piety and favor (x2 at a shrine).';
-PRAYERS.reforge.desc = 'Permanently add +1 to your main-hand weapon (not above +3).';
+PRAYERS.reforge.desc = 'Permanently add +1 to your main-hand weapon (not above +3). Only with no enemy in sight.';
 PRAYERS.unbound.desc = 'Your next spell takes no time to cast.';
 PRAYERS.rolldice2 = {name:'Greater Prayer', favor:0, rank:4, amusement:40, desc:'Spend 40 amusement: a big roll that can grant gear, rings and amulets. Its bad outcomes are worse too.'};
 ABILITIES.unholyaura = {name:'Unholy Aura', cost:8, kind:'self', icon:'pr-unholyaura', divine:true, god:'murk', desc:'Invoke (Mother Murk): for 8 turns enemies within 2 take 5 dark damage (+1 per rank) each turn, and you heal 1 per enemy hit.'};
-ABILITIES.temper.desc = 'Invoke (Old Anvil): +2 weapon damage for 12 turns.';
+ABILITIES.temper.desc = 'Invoke (Old Anvil): +2 weapon damage and +4 armor for 12 turns. Takes no time.';
 INVOKE_OF.murk = 'unholyaura';
 UNDEAD_FORMS = UNDEAD_FORMS.filter(function(u){ return u.name!=='Vampire'; });
 if(typeof AMULETS!=='undefined' && AMULETS.fury) AMULETS.fury.desc = 'Rampage for 8 turns: +40% melee damage and 20% faster attacks.';
@@ -141,6 +141,7 @@ derive = function(p){
   var r=godRank();
   if(hasGod('grom')){
     p.armor += r;   /* base gives +1 per rank; Iron Flesh is +2 */
+    if(buff('hardened')) p.armor += 4;
     if(p.weapon && p.weapon.unarmed){
       var f=GROM_FISTS[Math.min(5,r)];
       p.dmg=[p.dmg[0]-r-sDMG(1)+sDMG(f[0]), p.dmg[1]-r-sDMG(3)+sDMG(f[1])];
@@ -153,13 +154,32 @@ var _attackRel = attack;
 attack = function(att, def, mult, label){
   var hp0 = def ? def.hp : 0;
   _attackRel(att, def, mult, label);
-  /* 2026-09-17: Grom's piety is paid per unarmed KILL in godOnKill now (2, 15 for an elite). Paying per
-     hit as well put him a whole biome ahead of every other god. */
+  /* 2026-09-21: Justin - one piety for every unarmed hit that draws blood from a hostile. A hit for nothing,
+     an ally, a summon or a piece of scenery pays nothing. This replaces the per-kill payment of 2026-09-17. */
+  if(att===player && def && def.foe && !(def.base && def.base.object) && def.hp<hp0 && hasGod('grom') && player.weapon.unarmed) gainPiety(1);
+};
+
+/* ---------------------------------------------------------------- Grom: Hardened */
+/* 2026-09-21: Justin - after taking damage Grom's faithful are Hardened for 3 turns: +4 armor and 15% resistance
+   to every element. Being hurt again refreshes the 3; it never stacks. applyDamage calls onPlayerHurt, which
+   until now nothing defined. */
+function onPlayerHurt(d){
+  if(!hasGod('grom') || player.hp<=0) return;
+  var fresh=!buff('hardened');
+  player.buffs.hardened=3;
+  if(fresh){ derive(player); log('<b>Hardened.</b> Grom sets your skin like stone.','c-good'); }
+}
+var _resistMultRel = resistMult;
+resistMult = function(target, type){
+  var m=_resistMultRel(target, type);
+  if(target===player && type!=='phys' && type!=='magic' && buff('hardened')) m=Math.max(0, m-0.15);
+  return m;
 };
 var _usePrayerRel = usePrayer;
 usePrayer = function(pid){
   if(pid==='offering' && PRAYERS.offering) PRAYERS.offering.essence = Math.max(50, Math.round((player.essence||0)*0.10));
   if(pid==='reforge' && player.weapon && (player.weapon.plus||0)>=3){ log('Old Anvil will not reforge past +3.','c-info'); sfx('ui-error'); return; }
+  if(pid==='reforge' && foesInView()>0){ log('Old Anvil does not work with enemies watching.','c-info'); sfx('ui-error'); return; }
   if(pid==='raisedead') return prayRaiseDead();
   if(pid==='unbound'){
     if(!canPray(pid)){ log('You cannot offer that prayer right now.','c-info'); sfx('ui-error'); return; }
@@ -223,8 +243,10 @@ applyDamage = function(target, amount, type, source){
 };
 
 /* ---------------------------------------------------------------- Anvil rank 3: Second Heat refunds motes */
+/* 2026-09-21: Justin - the refund chance grows with rank: 30% at 3, 40% at 4, 50% at 5. One roll a craft. */
+var SECOND_HEAT = {3:0.30, 4:0.40, 5:0.50};
 function secondHeat(before){
-  if(!hasGod('anvil') || godRank()<3 || rng()>=0.30) return;
+  if(!hasGod('anvil') || !SECOND_HEAT[godRank()] || rng()>=SECOND_HEAT[godRank()]) return;
   var back=0;
   for(var k in before){ var lost=before[k]-(player.motes[k]||0); if(lost>0){ player.motes[k]=(player.motes[k]||0)+lost; back+=lost; } }
   if(back) log('<b>Second Heat.</b> Old Anvil hands your mote'+(back>1?'s':'')+' back.','c-good');

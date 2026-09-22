@@ -279,7 +279,7 @@ godConductEquip = function(kind, data){
   var r=_godConductEquipSyl(kind, data);
   if(syllaOn() && data){
     if(data.enchant==='fire') pietyViolation('fire-touched gear', SYLLA.violation);
-    if(kind==='off' && data.block>0) pietyViolation('you carrying a shield', SYLLA.violation);
+    if(kind==='off' && isShield(data)) pietyViolation('you carrying a shield', SYLLA.violation);
     if(kind==='armor' && data.weight && data.weight!=='cloth' && data.weight!=='light')
       pietyViolation('you wearing armor heavier than leather', SYLLA.violation);
   }

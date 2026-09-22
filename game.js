@@ -121,7 +121,9 @@ var GODS={
   murk:{ name:'Mother Murk', invoke:'raisedead' }
 };
 var EMPTY_OFF={name:'Empty', block:0, note:'nothing in your off hand'};
-var ABILITIES={
+/* 2026-09-21: a Holy Symbol blocks a little but is not a shield: no god forbids it, no shield infusion answers it,
+   and Might does not brace it. The divine field is what sets it apart. */
+function isShield(it){ return !!(it && it!==EMPTY_OFF && it.block>0 && !it.divine); }var ABILITIES={
   double:{name:'Double Strike', cost:12, tech:true, kind:'melee2', desc:'Two weapon attacks on an adjacent enemy.'},
   root:{name:'Earth Root', cost:12, kind:'bolt', range:4, type:'phys', base:[9,15], status:{root:2}, desc:'Rock spell: physical damage, roots for 2 turns.'},
   missile:{name:'Magic Missile', cost:7, kind:'bolt', range:6, type:'magic', base:[3,6], always:true, perAffinity:1, desc:'Always hits. Magic damage: nothing resists it. +1 for every point of elemental affinity you hold. No riders.'},
@@ -166,7 +168,7 @@ var PASSIVES={
        {at:15,id:'deadeye',  name:'Deadeye',d:'+8% crit chance'},
        {at:18,id:'fleet',    name:'Fleet',d:'moving costs 15% less time'},
        {at:21,id:'riposte',  name:'Riposte',d:'a parry has a 50% chance to counterattack'},
-       {at:25,id:'blur',     name:'Blur',d:'an attack against you misses outright (every 20 turns)'}],
+       {at:25,id:'blur',     name:'Blur',d:'hostile attacks are 20% less likely to hit you'}],
   vit:[{at:12,id:'tough',    name:'Tough',d:'+15% max HP'},
        {at:15,id:'secondWind',name:'Second Wind',d:'heal 10% of max HP on every new floor'},
        {at:18,id:'ironConst',name:'Iron Constitution',d:'statuses on you last half as long'},
@@ -209,7 +211,7 @@ var NUM=1.0, LETH=1.0;
 function sHP(v){ return Math.max(1, Math.round(v*NUM)); }
 function sDMG(v){ return Math.max(1, Math.round(v*NUM*LETH)); }
 var player={ id:0, ch:'@', x:2, y:2, t:0, st:{}, foe:false, build:'dwarf',
-             essence:0, motes:{}, bag:[], hidden:0, level:1, xp:0, xpNext:90, points:0, blurCd:0, fortCd:0 };
+             essence:0, motes:{}, bag:[], hidden:0, level:1, xp:0, xpNext:90, points:0, fortCd:0 };
 
 function at(x,y){ return (x<0||y<0||x>=MW||y>=MH) ? WALL : map[y*MW+x]; }
 function setT(x,y,v){ if(x>=0&&y>=0&&x<MW&&y<MH) map[y*MW+x]=v; }

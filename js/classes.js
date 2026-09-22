@@ -21,14 +21,19 @@ CLASSES.tourist.passive = 'Well-Traveled: +1 stat point every 2 levels, +25% exp
 RACES.human.blurb = 'Adaptable. +1 to every stat, +1 stat point every 3 levels, piety +25%, and once per biome survives a killing blow at 1 HP.';
 RACES.fae.blurb   = RACES.fae.blurb + ' Takes 25% more damage from the element opposite its court.';
 
+/* 2026-09-21: Justin - two kits, chosen by god. Censer: Short Sword and a Bone Censer in the off hand. Symbol: Mace and
+   a Holy Symbol. Grom forbids weapons, so his faithful get the Symbol and their fists. Armour is each god's as before;
+   Sylla and Wobbles had none, and take leather. */
 var CLERIC_KITS = {
-  grom:    {main:null,     armor:'robe'},
-  grumbok: {main:'axe',    armor:'leather'},
-  glimmer: {main:'mace',   armor:'leather', off:'holy'},
-  murk:    {main:'censer', armor:'robe'},
-  reginald:{main:'sword',  armor:'leather', off:'kite'},
-  anvil:   {main:'mace',   armor:'chain'},
-  vellum:  {main:'staff',  armor:'robe'}
+  wobbles: {main:'sword',  armor:'leather', off:'censer'},
+  sylla:   {main:'sword',  armor:'leather', off:'censer'},
+  murk:    {main:'sword',  armor:'robe',    off:'censer'},
+  glimmer: {main:'sword',  armor:'leather', off:'censer'},
+  grom:    {main:null,     armor:'robe',    off:'holy'},
+  grumbok: {main:'mace',   armor:'leather', off:'holy'},
+  reginald:{main:'mace',   armor:'leather', off:'holy'},
+  anvil:   {main:'mace',   armor:'chain',   off:'holy'},
+  vellum:  {main:'mace',   armor:'robe',    off:'holy'}
 };
 /* 2026-09-20: Justin - "scoundrel shouldn't have two paths, the starting set should just be 2 daggers and a bow".
    One kit: a dagger in each hand and a bow slung, which the ranged slot fires without swapping. */
@@ -36,12 +41,11 @@ var SCOUNDREL_KITS = {
   melee: {main:'dagger', armor:'leather', off:'dagger', alt:'bow', label:'Knife work', d:'Two daggers, a short bow, leather armor'}
 };
 function kitFor(c){
-  if(c.cls==='cleric'){ var g=c.god==='wobbles' ? pick(Object.keys(CLERIC_KITS)) : c.god; return CLERIC_KITS[g] || CLASSES.cleric.kit; }
+  if(c.cls==='cleric') return CLERIC_KITS[c.god] || CLASSES.cleric.kit;
   if(c.cls==='scoundrel') return SCOUNDREL_KITS.melee;   /* one kit, always */
   return CLASSES[c.cls].kit;
 }
 function kitNames(c){
-  if(c.cls==='cleric' && c.god==='wobbles') return ['A random god-given kit'];
   var k=kitFor(c), out=[];
   out.push(k.main ? WEAPONS[k.main].name : 'Fists');
   if(k.alt) out.push(WEAPONS[k.alt].name);

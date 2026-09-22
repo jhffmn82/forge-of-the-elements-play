@@ -130,7 +130,7 @@ function newRun(seed, choice){
   }
   var p = {id:0, ch:'@', x:2, y:2, t:0, st:{}, foe:false, buffs:{},
     race:c.race, cls:c.cls, sex:c.sex, court:c.court, look:lookFor(c), name:(c.name||'Adventurer').trim()||'Adventurer',
-    stats:statsFor(c), level:1, xp:0, xpNext:90, points:0, blurCd:0, fortCd:0, hidden:0,
+    stats:statsFor(c), level:1, xp:0, xpNext:90, points:0, fortCd:0, hidden:0,
     essence: c.cls==='tourist' ? 30 : 0, motes:{}, aff:{}, primary:null, keys:{iron:0, crystal:0}, hunger:1200,
     sets:[gear(WEAPONS,kit.main), null], activeSet:0, ranged:(function(){ var a=gear(WEAPONS,kit.alt); return (a && (a.range||0)>1) ? a : null; })(),
     armorItem:gear(ARMORS,kit.armor), off:offKitGear(kit.off),

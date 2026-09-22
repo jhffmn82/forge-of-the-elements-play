@@ -92,7 +92,9 @@ function packNameFor(p){
   return PACK_CRYPT[n] ? n : null;
 }
 /* the planes' wall formations: a crystal or a stalagmite of this plane for the big one, small crystals beside it */
-var PACK_PLANE_KIT = {light:['crystal-gold','crystal-gold-small','stalagmite-light'], shadow:['crystal-violet','crystal-violet-small','stalagmite-shadow'], earth:['crystal-amber','crystal-amber-small','stalagmite-earth']};
+var PACK_PLANE_KIT = {light:['crystal-gold','crystal-gold-small','stalagmite-light'], shadow:['crystal-violet','crystal-violet-small','stalagmite-shadow'], earth:['crystal-amber','crystal-amber-small','stalagmite-earth'],
+                      /* 2026-09-21: the Fire, Water and Air planes had no row, so their formations drew nothing; the pieces were packed all along */
+                      fire:['crystal-fire','crystal-fire-small','stalagmite-fire'], water:['crystal-water','crystal-water-small','stalagmite-water'], air:['crystal-air','crystal-air-small','stalagmite-air']};
 function packPlaneCluster(p){
   var K=PACK_PLANE_KIT[floorMeta.plane]; if(!K) return null;
   if((p.size||1)<1) return K[1];

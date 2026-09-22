@@ -428,16 +428,19 @@ function decoratePlain(r){
 }
 
 /* ---- gear, sigils ---- */
+/* a found item's plus (Justin, 2026-09-21): each step is its own one-in-three, taken only if the last one landed -
+   +0 67%, +1 22%, +2 7%, +3 4%. A boss's gear starts the same walk at +1. */
+function rollPlus(from){ var p=from||0; while(p<3 && rng()<1/3) p++; return p; }
 function randomGear(){
   var roll=rng();
   var it;
-  if(roll<0.5){ var k=pick(['sword','dagger','mace','longsword','axe','bow','staff','wand','spear']); it={kind:'weapon', it:clone(WEAPONS[k])}; }
+  if(roll<0.5){ var k=pick(['sword','dagger','mace','longsword','axe','bow','staff','wand','spear','censer']); it={kind:'weapon', it:clone(WEAPONS[k])}; }
   else if(roll<0.8){ var a=pick(['leather','chain','plate','robe']); it={kind:'armor', it:clone(ARMORS[a])}; }
   else { var o=pick(['buckler','kite','orb','tome','holy']); it={kind:'off', it:clone(OFFHANDS[o])}; }   /* daggers drop as weapons and can be worn in either hand */
   var tierRoll=rng();
   if(floorNo>=3 && tierRoll<0.25){ it.it.tier='Trusty'; } else it.it.tier='Rusty';
   if(it.kind!=='off'){
-    it.it.plus = rng()<0.45 ? ri(1, floorNo>=3?3:2) : 0;
+    it.it.plus = rollPlus();
     if(rng()<0.15+floorNo*0.03) it.it.enchant=pick(ELEMENTS);
   }
   return it;

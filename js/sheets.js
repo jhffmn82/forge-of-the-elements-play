@@ -225,7 +225,11 @@ function slotCard(key){
   if(key==='amulet' || key==='ring0' || key==='ring1') return trinketCard(it);
   return bagCard({kind:'off', data:it}) + (player.block?'<div class="row"><span>Block</span><b>'+Math.round(player.block*100)+'%</b></div>':'') + (player.parry?'<div class="row"><span>Parry</span><b>'+Math.round(player.parry*100)+'%</b></div>':'');
 }
+/* 2026-09-21: a finger cannot drag, so on touch a light weapon - the one kind of bag item with two homes - is placed
+   in two taps: tap it, then tap Main hand or Off hand. Everything else still goes to its natural slot on one tap. */
+var placingBag=-1;
 function wireEquip(root){
+  placingBag=-1;
   /* the doll box is wider now, so the figure is drawn bigger to match (2026-09-17) */
   if(typeof paintDoll==='function') paintDoll($('dollArt'), 210); else paintArt($('dollArt'),'cast',player.look,210);
   root.querySelectorAll('[data-mote]').forEach(function(e){ paintArt(e,'items','mote-'+e.getAttribute('data-mote'),16); });
@@ -236,6 +240,7 @@ function wireEquip(root){
     hoverCard(el, function(){ return slotCard(key); });
     el.onclick=function(){
       hideCard();
+      if(placingBag>=0 && (key==='main' || key==='off')){ var pb=placingBag; placingBag=-1; equipFromBag(pb, key); updateUI(); refreshSheet(); return; }
       if(key==='stow'){ if(typeof unequipRanged==='function') unequipRanged(); }
       else if(key==='amulet'){ if(player.amulet) takeOffAmulet(); }
       else if(key==='ring0' || key==='ring1'){ if(slotItem(key)) takeOffRing(key==='ring0'?0:1); }
@@ -264,7 +269,18 @@ function wireEquip(root){
     var c=it && it.data && (it.kind==='weapon'||it.kind==='armor'||it.kind==='off') && typeof tierCol==='function' ? tierCol(it.data) : null;
     if(c){ cel.style.borderColor=c; }
     if(c && typeof meetsReq==='function' && !meetsReq(it.data)) cel.style.opacity='0.55';
-    cel.onclick=function(){ hideCard(); useBagItem(bi); refreshSheet(); };
+    cel.onclick=function(){
+      hideCard();
+      var d=it && it.kind==='weapon' && it.data, twoHomes = d && d.light && d.hands!==2 && document.body.classList.contains('touch');
+      if(twoHomes){
+        if(placingBag===bi){ placingBag=-1; refreshSheet(); return; }
+        placingBag=bi; cel.classList.add('over');
+        root.querySelectorAll('.gslot[data-slot="main"], .gslot[data-slot="off"]').forEach(function(s){ s.classList.add('over'); });
+        var hint=root.querySelector('.tg-hint'); if(hint) hint.textContent='Tap Main hand or Off hand to place the '+gearName(d)+', or tap it again to cancel.';
+        return;
+      }
+      useBagItem(bi); refreshSheet();
+    };
     cel.oncontextmenu=function(ev){ ev.preventDefault(); hideCard(); dropBagItem(bi); updateUI(); refreshSheet(); };
     hoverCard(cel, function(){ return bagCard(player.bag[bi]); });
     dragSource(cel, 'bag:'+bi);
