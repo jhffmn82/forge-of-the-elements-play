@@ -290,7 +290,7 @@ endTurn = function(){
         removeProp(p); var m=spawn('brute',p.x,p.y); m.name='Stone Sentinel'; m.maxhp=m.hp=40+floorNo*6; m.state='hunt'; m.base=Object.assign({},m.base,{armor:6, sprite:'m-stoneling', col:'#8C8C84'}); m.t=player.t;
         burst(p.x,p.y,'earth',20,0.06);
       });
-      SHAKE=8; log('<b>The stone sentinels wake!</b>','c-you'); sfx('warchief-roar');
+      SHAKE=8; log('<b>The stone sentinels wake!</b>','c-you'); sfx('golem-alert');
     }
   }
   else if(k==='library' && !(player.hidden>0) && aff('shadow')<3 && player.movedLast){

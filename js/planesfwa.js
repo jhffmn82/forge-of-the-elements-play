@@ -129,31 +129,31 @@ function fwaSprite(kind){
   function mk(o){ o.band=[0,0]; o.w=0; o.speed=o.speed||100; o.range=o.range||1; o.fixed=true; return o; }
   /* --- Fire ------------------------------------------------------------------------------------- */
   M.cinderimp    = mk({name:'Cinder Imp', sprite:fwaSprite('cinderimp'), col:'#FF8A3A', ch:'i', hp:70, dmg:[8,11], acc:72, eva:30, armor:1, xp:85,
-                       fwa:'hop', el:'fire', living:true, art:0.75, sfx:'bat'});
+                       fwa:'hop', el:'fire', living:true, art:0.75, sfx:'imp'});
   M.magmacrawler = mk({name:'Magma Crawler', sprite:fwaSprite('magmacrawler'), col:'#D8541E', ch:'c', hp:130, dmg:[11,15], acc:68, eva:4, armor:12, speed:70, xp:110,
-                       fwa:'crawler', magmaBurst:true, el:'fire', art:0.95, sfx:'rat'});
+                       fwa:'crawler', magmaBurst:true, el:'fire', art:0.95, sfx:'spider'});
   M.flamedancer  = mk({name:'Flame Dancer', sprite:fwaSprite('flamedancer'), col:'#FFB066', ch:'f', hp:70, dmg:[8,11], acc:76, eva:38, armor:2, xp:100,
                        fwa:'dancer', kindles:true, el:'fire', art:0.95, sfx:'elementaling'});
   M.emberlord    = mk({name:'The Emberlord', sprite:fwaSprite('emberlord'), col:'#FF6A18', ch:'E', hp:230, dmg:[13,18], acc:78, eva:14, armor:7, xp:700,
-                       fwa:'emberlord', elite:true, el:'fire', art:1.5, sfx:'brute'});
+                       fwa:'emberlord', elite:true, el:'fire', art:1.5, sfx:'emberlord'});
   /* --- Water ------------------------------------------------------------------------------------ */
   M.tidecrab     = mk({name:'Tide Crab', sprite:fwaSprite('tidecrab'), col:'#5CC8D8', ch:'C', hp:130, dmg:[11,15], acc:70, eva:8, armor:10, xp:105,
-                       fwa:'crab', shellGuard:true, living:true, art:1.0, sfx:'rat'});
+                       fwa:'crab', shellGuard:true, living:true, art:1.0, sfx:'spider'});
   M.siren        = mk({name:'Siren', sprite:fwaSprite('siren'), col:'#9FF0E8', ch:'S', hp:70, dmg:[8,11], acc:72, eva:26, armor:1, range:5, xp:110,
                        fwa:'siren', living:true, spellcaster:true, art:0.95, sfx:'shaman'});
   M.drownedone   = mk({name:'Drowned One', sprite:fwaSprite('drownedone'), col:'#4E667C', ch:'d', hp:70, dmg:[8,11], acc:70, eva:14, armor:4, xp:100,
-                       fwa:'drowned', art:0.95, sfx:'goblin'});
+                       fwa:'drowned', art:0.95, sfx:'zombie'});
   M.leviathaneel = mk({name:'The Leviathan Eel', sprite:fwaSprite('leviathaneel'), col:'#2E86A8', ch:'L', hp:230, dmg:[13,18], acc:76, eva:18, armor:5, xp:700,
-                       fwa:'leviathan', elite:true, living:true, el:'water', art:1.5, sfx:'brute'});
+                       fwa:'leviathan', elite:true, living:true, el:'water', art:1.5, sfx:'leviathan'});
   /* --- Air -------------------------------------------------------------------------------------- */
   M.stormhawk    = mk({name:'Storm Hawk', sprite:fwaSprite('stormhawk'), col:'#BFE4FF', ch:'h', hp:70, dmg:[8,11], acc:74, eva:34, armor:0, speed:130, xp:95,
                        fwa:'hawk', flying:true, hover:true, living:true, art:0.85, sfx:'bat'});
   M.thundertotem = mk({name:'Thunder Totem', sprite:fwaSprite('thundertotem'), col:'#E2BE60', ch:'T', hp:130, dmg:[11,15], acc:70, eva:0, armor:8, range:6, xp:90,
                        fwa:'totem', rooted:true, art:1.0, sfx:'shaman'});
   M.windwisp     = mk({name:'Wind Wisp', sprite:fwaSprite('windwisp'), col:'#E8F4FF', ch:'w', hp:30, dmg:[5,7], acc:68, eva:40, armor:0, speed:140, xp:85,
-                       fwa:'wisp', flying:true, erratic:true, el:'air', art:0.75, sfx:'elementaling'});
+                       fwa:'wisp', flying:true, erratic:true, el:'air', art:0.75, sfx:'wisp'});
   M.tempestdjinn = mk({name:'The Tempest Djinn', sprite:fwaSprite('tempestdjinn'), col:'#A8D8FF', ch:'D', hp:230, dmg:[13,18], acc:78, eva:22, armor:4, xp:700,
-                       fwa:'djinn', elite:true, flying:true, hover:true, el:'air', art:1.5, sfx:'warchief'});
+                       fwa:'djinn', elite:true, flying:true, hover:true, el:'air', art:1.5, sfx:'djinn'});
   Object.keys(FWA_ART).forEach(function(k){ DROPS[k]=DROPS[k] || (MONSTERS[k].elite ? {chance:0.6, table:{essence:6, gear:8, sigil:2}} : {chance:0.3, table:{essence:8, sigil:2, gear:3}}); });
   for(var el in PLANE_ROSTER_FWA) PLANE_ROSTER[el]=PLANE_ROSTER_FWA[el];
 })();

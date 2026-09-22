@@ -548,8 +548,8 @@ function endTurn(){
   /* hunger */
   var hungerRate = hungerCost(cost);
   var before=player.hunger; player.hunger=Math.max(0, player.hunger-hungerRate);
-  if(before>=300 && player.hunger<300) log('<b>You are getting hungry.</b> Eat something soon.','c-you');
-  if(player.hunger<=0 && turn%5===0){ player.hp-=1; floatText(player.x,player.y,'1','phys'); if(turn%25===0) log('You are starving!','c-you'); }
+  if(before>=300 && player.hunger<300){ log('<b>You are getting hungry.</b> Eat something soon.','c-you'); sfx('hungry'); }
+  if(player.hunger<=0 && turn%5===0){ player.hp-=1; floatText(player.x,player.y,'1','phys'); if(turn%25===0){ log('You are starving!','c-you'); sfx('hungry'); } }
   /* the world moves */
   refreshPlayerDistance();
   if(typeof worldRunActors==='function')worldRunActors(player.t-cost,player.t);
@@ -645,7 +645,7 @@ function death(){
 }
 function victory(){
   if(RUN.victory) return;
-  RUN.victory=true; sfx('victory'); playMusic('victory');
+  RUN.victory=true; stopMusic(); sfx('victory');   /* the fanfare is the victory sound; no victory music (Justin, 2026-09-22) */
   showEnd(true);
 }
 function showEnd(won){

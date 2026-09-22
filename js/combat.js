@@ -433,6 +433,8 @@ function applyStatus(e,key,turns,extra){
   if(key==='burn'){ if(at(e.x,e.y)===WATER) return; e.st.burn={t:Math.max(turns, cur?cur.t:0), d:extra||sDMG(2)}; }
   else e.st[key] = {t:Math.max(turns, cur&&cur.t||0), d:extra};
   if(key==='burn') sfx('status-burn'); else if(key==='stun') sfx('status-stun'); else if(key==='fear') sfx('status-fear');
+  else if(key==='root') sfx('status-root'); else if(key==='blind') sfx('status-blind'); else if(key==='poison') sfx('status-poison');
+  else if(key==='bleed') sfx('status-bleed'); else if(key==='slow') sfx('status-slow');
 }
 function addChill(e){
   var c=e.st.chill; var n=(c?c.n:0)+1;
@@ -493,8 +495,8 @@ function kill(e, by){
   var seenIt = vis[idxOf(e.x,e.y)] || revealAll;
   if(seenIt) fx.push({k:'d', e:{x:e.x, y:e.y, col:e.col, sprite:e.base.sprite, art:e.base.art, flip: (player.x<e.x) !== !!e.base.artLeft},
                       t0:Math.max(performance.now(), fxClock)+60, dur:900});
+  if(e.ally){ sfx('ally-death', {at:fxClock}); log(e.name+' falls.','c-info'); return; }
   if(e.base.sfx) sfx(e.base.sfx+'-death', {at:fxClock});
-  if(e.ally){ log(e.name+' falls.','c-info'); return; }
   log(e.name+' dies.','c-kill');
   var byPlayerSide = by===player || (by && by.ally) || by==='player';
   RUN.kills++;

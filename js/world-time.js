@@ -40,8 +40,10 @@ function knockback(e,dx,dy,n){
   /* DESIGN 12: Unstoppable is immune to knockback (2026-09-22: it was in the table, not in the code) */
   if(!e||e.hp<=0||e===player&&(e.resolveUntil>player.t||hasP('unstoppable'))||e.base&&e.base.boss)return false;
   var moved=false;dx=Math.sign(dx);dy=Math.sign(dy);
-  for(var i=0;i<n;i++){var x=e.x+dx,y=e.y+dy;if(!walkable(x,y)||occupied(x,y))break;e.x=x;e.y=y;moved=true;}
+  var blocked=false;
+  for(var i=0;i<n;i++){var x=e.x+dx,y=e.y+dy;if(!walkable(x,y)||occupied(x,y)){blocked=true;break;}e.x=x;e.y=y;moved=true;}
   if(moved){e._lx=undefined;if(e===player){player.resolveUntil=player.t+200;computeFOV();}}
+  if(blocked&&typeof sfx==='function')sfx('knock-thud');   /* the push ended against a wall or a body (gap pass 2026-09-22) */
   return moved;
 }
 function worldStatusPulse(e,clock){

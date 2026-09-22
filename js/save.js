@@ -248,7 +248,7 @@ function openTitle(){
   if(!el){ el=document.createElement('div'); el.id='title'; document.body.appendChild(el); }
   el.classList.add('on');
   if($('create')) $('create').classList.remove('on');
-  playMusic('title');
+  playMusic('menu');   /* the vocal song; character creation plays the instrumental intro (Justin, 2026-09-22) */
   renderTitleMenu();
 }
 /* a browser only lets a page close a window it opened itself: try, and otherwise say goodbye so the tab can be closed */
@@ -259,7 +259,7 @@ function exitGame(){
     var el=$('title'); if(!el) return;
     el.innerHTML='<div class="panel" style="text-align:center"><h2>Farewell</h2><p>The forge fire banks low. Your saves are kept in this browser; close this tab or window whenever you like.</p>'+
       '<div class="panelfoot" style="justify-content:center"><button id="tBack">Back to the title</button></div></div>';
-    $('tBack').onclick=function(){ playMusic('title'); renderTitleMenu(); };
+    $('tBack').onclick=function(){ playMusic('menu'); renderTitleMenu(); };
   }, 150);
 }
 function closeTitle(){ var el=$('title'); if(el) el.classList.remove('on'); }
@@ -306,9 +306,11 @@ function renderLoadPanel(){
 function renderAbout(){
   var el=$('title');
   el.innerHTML='<div class="panel"><h2>About</h2>'+
-    '<p><b>Forge of the Elements</b> is a turn-based roguelike. Pick a race and a class, descend through the Dungeon, carry elemental motes to the Forge to shape your gear and your magic, swear yourself to a god, and bring down Grukk the Warchief.</p>'+
+    '<p><b>Forge of the Elements</b> is a turn-based roguelike. Pick a race and a class and descend twenty floors: the Dungeon, the Crypt, the Caverns and the Underdark, each held by its own lord, with portals to the six elemental planes along the way. Carry elemental motes to the Forge to shape your gear and your magic, swear yourself to a god, and take at most two elements into yourself.</p>'+
     '<p>Everything happens in turns: you act, then the dungeon answers. Hover anything for details. Tab opens your character, I your gear, P your faith, Esc closes windows. Key bindings, sound, lighting and animation speed live in the Options tab, along with saving.</p>'+
-    '<p>This is a work in progress: biome 1, the Dungeon, is playable.</p>'+
+    '<h3>Credits</h3>'+
+    '<p>Created by <b>Justin Hoffman</b>: design, story, world, balance, and the direction of every creature, map and sound in it. The title song, <i>To Bind the Flame</i>, is written by Justin.</p>'+
+    '<p>Creature and map art painted to his direction with ChatGPT image generation and brought to life with PixelLab; score with Google Lyria; sound effects with ElevenLabs; code written with Claude and OpenAI Codex. Storybook in spirit, hand-picked throughout.</p>'+
     '<div class="panelfoot"><span></span><button id="tBack">Back</button></div></div>';
   $('tBack').onclick=renderTitleMenu;
 }

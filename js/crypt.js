@@ -9,7 +9,7 @@
 (function(){
   var M=MONSTERS;
   M.shambler   = {name:'Shambler', sprite:'m-shambler', col:'#8FA37A', ch:'z', hp:40, dmg:[5,8], acc:60, eva:8, armor:1, speed:100, range:1, xp:22,
-                  band:[6,8], w:22, undead:true, rises:true, art:0.95, sfx:'skeleton'};
+                  band:[6,8], w:22, undead:true, rises:true, art:0.95, sfx:'zombie'};
   M.gravebeetle= {name:'Grave Beetle', sprite:'m-grave-beetle', col:'#3E5A3A', ch:'b', hp:40, dmg:[5,8], acc:62, eva:12, armor:3, speed:100, range:1, xp:20,
                   band:[6,8], w:18, fumes:true, living:true, art:0.8, sfx:'slime'};
   M.skeleton.band=[6,10]; M.skeleton.w=18; M.skeleton.boneType=true; M.skeleton.sprite='m-crypt-skeleton';   /* Justin's Crypt sprite set, 2026-09-17 */
@@ -18,13 +18,13 @@
   M.bonearcher = {name:'Bone Archer', sprite:'m-bone-archer', col:'#D8CEBC', ch:'a', hp:36, dmg:[5,8], acc:64, eva:16, armor:1, speed:100, range:6, xp:26,
                   band:[7,10], w:14, undead:true, reloads:true, poisons:0.65, art:0.95, sfx:'skeleton'};
   M.shade      = {name:'Shade', sprite:'m-shade', col:'#5A3E7A', ch:'S', hp:40, dmg:[5,8], acc:66, eva:26, armor:0, speed:100, range:1, xp:30,
-                  band:[7,10], w:10, undead:true, shadowy:true, phases:true, el:'shadow', art:0.95, sfx:'elementaling'};
+                  band:[7,10], w:10, undead:true, shadowy:true, phases:true, el:'shadow', art:0.95, sfx:'wisp'};
   M.gravebloat = {name:'Grave Bloat', sprite:'m-grave-bloat', col:'#9FBF7A', ch:'B', hp:75, dmg:[8,11], acc:58, eva:4, armor:2, speed:100, range:1, xp:38,
-                  band:[8,10], w:10, undead:true, bursts:true, rots:true, art:1.1, sfx:'brute'};
+                  band:[8,10], w:10, undead:true, bursts:true, rots:true, art:1.1, sfx:'zombie'};
   M.acolyte    = {name:'Necro-Acolyte', sprite:'m-necro-acolyte', col:'#6A3E8A', ch:'n', hp:36, dmg:[5,8], acc:62, eva:14, armor:0, speed:100, range:1, xp:40,
                   band:[9,10], w:8, living:true, spellcaster:true, summoner:true, art:0.95, sfx:'shaman'};
   M.morty      = {name:'Morty the Mostly-Dead', sprite:'m-morty', col:'#7A4FB0', ch:'M', hp:170, dmg:[8,13], acc:70, eva:18, armor:3, speed:100, range:1, xp:450,
-                  band:[10,10], w:0, boss:true, elite:true, undead:true, spellcaster:true, art:1.2, sfx:'shaman'};
+                  band:[10,10], w:0, boss:true, elite:true, undead:true, spellcaster:true, art:1.2, sfx:'morty'};
   M.phylactery = {name:'Phylactery', sprite:'m-phylactery', col:'#6FE08A', ch:'&', hp:60, dmg:[0,0], acc:0, eva:0, armor:12, speed:100, range:0, xp:60,
                   band:[10,10], w:0, still:true, object:true, art:0.9};
   /* elementalings roam every biome */
@@ -365,7 +365,7 @@ function mortyAct(e){
   var see=canSeePlayer(e), d=dist(e,player), hall=mortyHall(), rm=roomAt(player.x,player.y);
   if(e.state==='throne'){
     if(see && d<=8 && rm && rm===hall){
-      e.state='hunt'; e.turnN=0; log('<b>Morty the Mostly-Dead</b> adjusts his crown. "Ah! A visitor! Do stay. Forever, ideally."','c-you'); sfx('warchief-roar'); playMusic('boss');
+      e.state='hunt'; e.turnN=0; log('<b>Morty the Mostly-Dead</b> adjusts his crown. "Ah! A visitor! Do stay. Forever, ideally."','c-you'); sfx('morty-intro'); playMusic('boss');
       ents.forEach(function(o){ if(o.guard) o.state='hunt'; });
     }
     e.t+=actCost(e); return;

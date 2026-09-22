@@ -2,7 +2,7 @@
    playSceneMusic() directly, so a later biome never inherits Dungeon music. */
 var ASTRA_SCORE=['crypt','caverns','underdark','plane-fire','plane-water','plane-air','plane-earth','plane-light','plane-shadow','boss-morty','boss-maw','boss-matron'];
 var BIOME_SCORE=['dungeon','crypt','caverns','underdark'];
-window.AUDIO_FILES=(window.AUDIO_FILES||[]).concat(ASTRA_SCORE.map(function(k){return 'music-'+k;}));
+window.AUDIO_FILES=window.AUDIO_FILES||[];ASTRA_SCORE.forEach(function(k){if(window.AUDIO_FILES.indexOf('music-'+k)<0)window.AUDIO_FILES.push('music-'+k);});   /* the packed registry lists them since the gap pass; never twice */
 ['door-close','trap-gas','skeleton-death'].forEach(function(n){if(window.AUDIO_FILES.indexOf(n)<0)window.AUDIO_FILES.push(n);});
 function floorScore(n){
   n=Number(n)||1;
@@ -43,7 +43,7 @@ function playSceneMusic(){
     var r=baseBars.apply(this,arguments),kind=AUDIO.musicKind||AUDIO.pendingMusic;
     if(isScene(kind)){
       if(player.hp<=0 || (RUN && RUN.over)){stopMusic();AUDIO.pendingMusic=null;}
-      else if(RUN && RUN.victory)playMusic('victory');else playSceneMusic();
+      else if(RUN && RUN.victory){ if(AUDIO.musicKind)stopMusic(); }else playSceneMusic();   /* the end screen stays quiet after its fanfare */
     }
     return r;
   };

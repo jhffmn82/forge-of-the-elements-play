@@ -5,8 +5,11 @@
    ========================================================================== */
 
 var AUDIO = { ctx:null, master:null, sfxBus:null, musicBus:null, verb:null, muted:false, musicOn:true,
-              files:{}, missing:{}, music:null, musicKind:null, vol:{sfx:0.8, music:0.45} };
-try { var _m=localStorage.getItem('astra-temple-audio'); if(_m){ var o=JSON.parse(_m); AUDIO.muted=!!o.muted; AUDIO.musicOn=o.musicOn!==false; AUDIO.vol=o.vol||AUDIO.vol; } } catch(e){}
+              files:{}, missing:{}, music:null, musicKind:null, vol:{sfx:0.8, music:0.5} };
+/* Justin, 2026-09-22: music softer by default, slider at 50%. Every music loop now sits at -24 LUFS (tools/level-music.py)
+   instead of -14..-22 with a hidden -3 dB on some kinds. A saved 0.45 is the old default nobody touched: it becomes 0.5 once. */
+try { var _m=localStorage.getItem('astra-temple-audio'); if(_m){ var o=JSON.parse(_m); AUDIO.muted=!!o.muted; AUDIO.musicOn=o.musicOn!==false; AUDIO.vol=o.vol||AUDIO.vol;
+  if(!o.levelled && AUDIO.vol && Math.abs(AUDIO.vol.music-0.45)<1e-6){ AUDIO.vol.music=0.5; } AUDIO.levelled=true; } } catch(e){}
 
 function audioInit(){
   if(AUDIO.ctx) { if(AUDIO.ctx.state==='suspended') AUDIO.ctx.resume(); return; }
@@ -25,13 +28,13 @@ function audioInit(){
   if(AUDIO.pendingMusic){ var requested=AUDIO.pendingMusic; AUDIO.pendingMusic=null; playMusic(requested); }
 }
 ['pointerdown','keydown'].forEach(function(ev){ window.addEventListener(ev, audioInit, {passive:true}); });
-function audioSave(){ try{ localStorage.setItem('astra-temple-audio', JSON.stringify({muted:AUDIO.muted, musicOn:AUDIO.musicOn, vol:AUDIO.vol})); }catch(e){} }
+function audioSave(){ try{ localStorage.setItem('astra-temple-audio', JSON.stringify({muted:AUDIO.muted, musicOn:AUDIO.musicOn, vol:AUDIO.vol, levelled:true})); }catch(e){} }
 function toggleMute(){ AUDIO.muted=!AUDIO.muted; if(AUDIO.master) AUDIO.master.gain.value=AUDIO.muted?0:1; audioSave(); return AUDIO.muted; }
 function toggleMusic(){ AUDIO.musicOn=!AUDIO.musicOn; if(AUDIO.musicBus) AUDIO.musicBus.gain.setTargetAtTime(AUDIO.musicOn?AUDIO.vol.music:0, AUDIO.ctx.currentTime, 0.3); audioSave(); return AUDIO.musicOn; }
 
 /* ---- file-backed playback with synth fallback ---- */
 var AUDIO_LOADING={},AUDIO_MUSIC_LRU=[],AUDIO_MUSIC_REQUEST=0;
-function musicGain(kind){return ['title','dungeon','forge','boss','victory'].includes(kind)?Math.pow(10,-3/20):1;}
+function musicGain(kind){return 1;}   /* 2026-09-22: the files are levelled to -24 LUFS; the slider is the only music gain */
 function loadFile(name, cb){
   if(AUDIO.files[name]) return cb(AUDIO.files[name]);
   if(AUDIO.missing[name]) return cb(null);
@@ -49,12 +52,21 @@ function loadFile(name, cb){
     .catch(function(){ finish(null); });
 }
 var SFX_ALIASES={
-  'shaman-attack':'shaman-cast','shaman-death':'goblin-death','shaman-alert':'goblin-alert',
-  'skeleton-attack':'skeleton-rattle','skeleton-alert':'skeleton-rattle',
-  'mimic-attack':'brute-attack','mimic-death':'brute-death','mimic-alert':'mimic-reveal',
+  'shaman-attack':'shaman-cast','shaman-alert':'goblin-alert',
+  'skeleton-alert':'skeleton-rattle',
+  'mimic-alert':'mimic-reveal',
   'warchief-attack':'brute-attack','warchief-alert':'warchief-roar',
-  'elementaling-attack':'magic-missile','elementaling-alert':'elementaling-appear',
-  'rat-alert':'rat-attack','bat-alert':'bat-attack','brute-alert':'brute-attack','slime-alert':'slime-attack'
+  'elementaling-alert':'elementaling-appear',
+  'rat-alert':'rat-attack','bat-alert':'bat-attack','brute-alert':'brute-attack','slime-alert':'slime-attack',
+  /* gap pass 2026-09-22: boss voices. An alias is one level deep, so each points straight at a file. */
+  'maw-alert':'maw-intro','matron-alert':'matron-intro',
+  'emberlord-alert':'emberlord-intro','emberlord-attack':'brute-attack',
+  'leviathan-alert':'leviathan-intro','leviathan-attack':'brute-attack',
+  'djinn-alert':'djinn-intro','djinn-attack':'lightning-cast',
+  'night-warden-alert':'night-warden-intro','night-warden-attack':'shadow-cast',
+  'radiant-warden-attack':'light-cast',
+  'morty-alert':'morty-intro','radiant-warden-alert':'radiant-warden-intro',
+  'heart-alert':'heart-intro','heart-attack':'golem-attack'
 };
 var SFX_LAST={},SFX_VOICES=[],SFX_STEP=0;
 function sfx(name, opts){
@@ -178,6 +190,12 @@ function synth(name, t, opts){
 }
 
 /* ---- music: file first, generative score otherwise ---- */
+function musicEnds(buf){ /* a song with an ending rather than a loop: its last half second is silent */
+  if(!buf || typeof buf.getChannelData!=='function' || !buf.sampleRate) return false;
+  var d=buf.getChannelData(0), n=Math.floor(buf.sampleRate*0.5), peak=0;
+  for(var i=Math.max(0,d.length-n);i<d.length;i++){ var a=Math.abs(d[i]); if(a>peak) peak=a; }
+  return peak<0.01;
+}
 function playMusic(kind){
   /* pendingMusic is the request waiting for the first user gesture, not a
      historical track.  Leaving the old request here allowed a load or a
@@ -190,8 +208,19 @@ function playMusic(kind){
     if(AUDIO.musicKind!==kind || request!==AUDIO_MUSIC_REQUEST) return;
     var c=AUDIO.ctx;
     if(buf){
-      var s=c.createBufferSource(); s.buffer=buf;s.loop=true; var g=c.createGain(); g.gain.setValueAtTime(0,c.currentTime); g.gain.linearRampToValueAtTime(musicGain(kind),c.currentTime+2);
-      s.connect(g); g.connect(AUDIO.musicBus);s.onended=function(){s.disconnect();g.disconnect();}; s.start(); AUDIO.music={stop:function(){ g.gain.cancelScheduledValues(c.currentTime);g.gain.setTargetAtTime(0,c.currentTime,.25); s.stop(c.currentTime+1.1); }};
+      /* Justin, 2026-09-22: the menu song fades in softly. A track that ends (its last half second is silent,
+         a song rather than a loop) plays once and comes back after a rest instead of looping mid-phrase. */
+      var fade=(kind==='menu'||kind==='title')?6:2, once=musicEnds(buf), s, g, timer=null, stopped=false;
+      function start(){
+        s=c.createBufferSource(); s.buffer=buf; s.loop=!once; g=c.createGain(); g.gain.setValueAtTime(0,c.currentTime); g.gain.linearRampToValueAtTime(musicGain(kind),c.currentTime+fade);
+        s.connect(g); g.connect(AUDIO.musicBus);
+        s.onended=function(){ s.disconnect(); g.disconnect();
+          if(once && !stopped && AUDIO.musicKind===kind && request===AUDIO_MUSIC_REQUEST)
+            timer=setTimeout(function(){ timer=null; if(!stopped && AUDIO.musicKind===kind && request===AUDIO_MUSIC_REQUEST) start(); }, AUDIO.musicRestMs||5000); };
+        s.start();
+      }
+      start();
+      AUDIO.music={stop:function(){ stopped=true; if(timer){clearTimeout(timer);timer=null;} g.gain.cancelScheduledValues(c.currentTime);g.gain.setTargetAtTime(0,c.currentTime,.25); s.stop(c.currentTime+1.1); }};
     } else AUDIO.music=generativeMusic(kind);
   });
 }
@@ -199,7 +228,7 @@ function stopMusic(){ AUDIO_MUSIC_REQUEST++;if(AUDIO.music){ try{ AUDIO.music.st
 function generativeMusic(kind){
   var c=AUDIO.ctx, out=c.createGain(); out.gain.value=0; out.gain.linearRampToValueAtTime(1, c.currentTime+3); out.connect(AUDIO.musicBus);
   var wet=c.createGain(); wet.gain.value=0.6; out.connect(AUDIO.verb);
-  var boss = kind==='boss', title = kind==='title', vict = kind==='victory';
+  var boss = kind==='boss', title = kind==='title'||kind==='menu', vict = kind==='victory';
   var root = boss ? 55 : title ? 65.4 : 58.3;               /* A1, C2, Bb1 */
   var scale = boss ? [0,1,3,5,7,8,10] : [0,2,3,5,7,8,10];  /* phrygian for the boss, aeolian otherwise */
   var drones=[];

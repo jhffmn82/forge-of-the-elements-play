@@ -6,17 +6,49 @@ var CHOICE = {race:'dwarf', sex:'m', court:'fire', cls:'fighter', god:'murk', na
 /* 2026-09-20: the reroll button worked all along - each race and sex simply had three or four names, so it handed
    back the same two over and over and read as broken. Sixteen apiece now, in each people's own voice. */
 var NAMES = {
-  human:{m:['Aldric','Tomas','Corvin','Rowan','Edric','Garrick','Halden','Merrick','Orin','Perrin','Quillan','Stefan','Tobias','Ulric','Wendel','Yorick'],
-         f:['Mira','Elsbeth','Isolde','Wren','Adela','Bryony','Corliss','Delia','Ferris','Greta','Hester','Linnet','Marta','Odile','Rosalind','Verity']},
-  elf:{m:['Saelis','Thalion','Ereth','Aelric','Caladan','Dathien','Elrowen','Faelar','Ithil','Lathriel','Maeron','Narion','Oriel','Sylvanas','Taeral','Yllestar'],
-       f:['Ilyra','Nimue','Saelis','Aerith','Celine','Elowen','Faelyn','Idriel','Liriel','Maerwyn','Nythera','Oriane','Sylwen','Thessaly','Vaelia','Yrsa']},
-  dwarf:{m:['Thrain','Borin','Dagna','Balin','Durin','Fargrim','Grum','Harbek','Kildrak','Morgran','Norbal','Orsik','Rurik','Thorbek','Ulfgar','Vondal'],
-         f:['Brynja','Helga','Dagna','Astrid','Bardryn','Eldeth','Fenna','Gunnloda','Hilda','Ilde','Kathra','Liftrasa','Mardred','Riswynn','Torbera','Vistra']},
-  fae:{m:['Pip','Thistle','Corrin','Wisp','Bramble','Cinder','Dewdrop','Fennel','Gossamer','Hollyhock','Juniper','Moss','Nettle','Quill','Sorrel','Tamarind'],
-       f:['Nerissa','Ilka','Briar','Sylph','Aster','Clover','Dandelion','Elowyn','Fern','Hazel','Iris','Lilac','Marigold','Pearl','Saffron','Willow']},
-  gloomling:{m:['Vesk','Hollow','Mortis','Ash','Cinder','Dusk','Ember','Grim','Knell','Lament','Murk','Pallor','Rook','Shade','Umbra','Wane'],
-             f:['Vess','Nyx','Pale Anna','Bleak','Cinder','Dolor','Ember','Gloam','Hush','Lethe','Mourn','Nocte','Requiem','Sable','Tenebrae','Vespers']}
+  human:{m:['Aldric','Tomas','Corvin','Rowan','Edric','Garrick','Halden','Merrick','Orin','Perrin','Quillan','Stefan','Tobias','Ulric','Wendel','Yorick','Ansel','Bertram','Cedric','Dorian','Emeric','Fulke','Godwin','Hamund','Ivo','Jorund','Kester','Leofric','Marlow','Nevin','Osric','Piers','Ranulf','Sigurd','Tancred','Uther','Vance','Wystan','Alaric','Benedict','Caspian','Dunstan','Everard','Florian','Gideon','Hadrian','Isembard','Joscelin','Lucan','Matthias','Neville','Oswin','Percival','Roderick','Silas','Thaddeus','Valen','Warrick','Aubrey','Brand','Conrad','Drustan'],
+          f:['Mira','Elsbeth','Isolde','Wren','Adela','Bryony','Corliss','Delia','Ferris','Greta','Hester','Linnet','Marta','Odile','Rosalind','Verity','Alys','Beatrix','Cerys','Dagny','Edith','Fenna','Gwen','Hawise','Ida','Jocasta','Katrin','Lisbet','Maud','Nessa','Orla','Petra','Rhoswen','Sabine','Tamsin','Una','Vivienne','Winifred','Ysolt','Annis','Bronwen','Clemence','Dorothea','Eleanor','Freya','Giselle','Honora','Imogen','Juliana','Lorelei','Margery','Nell','Ottilie','Philippa','Rowena','Sidonie','Temperance','Ursula','Valeria','Wilhelmina','Ada','Blanche','Cora']},
+  elf:{m:['Saelis','Thalion','Ereth','Aelric','Caladan','Dathien','Elrowen','Faelar','Ithil','Lathriel','Maeron','Narion','Oriel','Sylvanas','Taeral','Yllestar','Aramil','Belegorn','Cirdan','Daeron','Elathar','Finrael','Galathil','Haldir','Iolas','Kelvhan','Laurelin','Mithrandel','Naeris','Orophin','Quarion','Rhalion','Soveliss','Tarathiel','Uthemar','Varis','Wyndael','Xalvador','Ysgarn','Zaltarish','Aelindel','Beluar','Caeldrim','Durothil','Erendriel','Faenor','Galinndan','Hyrael','Ilphras','Kyrenic','Lirael','Melandrach','Nuvian','Orlanthir','Paeris','Riardon','Sariel','Theodren','Ulmaris','Vaeril','Wrenthal','Yestrel','Zylas','Adran'],
+        f:['Ilyra','Nimue','Saelis','Aerith','Celine','Elowen','Faelyn','Idriel','Liriel','Maerwyn','Nythera','Oriane','Sylwen','Thessaly','Vaelia','Yrsa','Alathiel','Bethrynna','Caelynn','Drusilia','Enna','Felosial','Galadria','Hesper','Ithronel','Keyleth','Lia','Meriele','Naivara','Quelenna','Rilaith','Shaeris','Thia','Valanthe','Wynlaith','Xanaphia','Ylwen','Zaleria','Amastacia','Birel','Cyrenne','Dalyra','Eilistra','Faerwyn','Gaelira','Hollis','Ilmadia','Jelenneth','Kelisande','Loralei','Miriel','Nerysa','Ossiane','Peyrith','Quillathe','Rosaith','Sylvara','Tethys','Ulaeth','Vanya','Wenlith','Yathrelle','Zephyra','Ariadne']},
+  dwarf:{m:['Thrain','Borin','Dagna','Balin','Durin','Fargrim','Grum','Harbek','Kildrak','Morgran','Norbal','Orsik','Rurik','Thorbek','Ulfgar','Vondal','Adrik','Baern','Brottor','Dain','Eberk','Einkil','Flint','Gardain','Gimlor','Hargrim','Ivaldi','Jarn','Kragg','Lodrin','Magnir','Nordak','Oskar','Radnor','Stonn','Tordek','Urist','Varric','Wulfram','Yorgen','Angrim','Bofur','Dwalin','Farin','Gloin','Hakon','Ingvar','Korvin','Loki','Mundin','Nain','Orvald','Rangrim','Sindri','Torin','Ulvar','Vigmar','Wurf','Brokk','Dolgrin','Eldgrim','Fundin','Gunnar','Halvor'],
+          f:['Brynja','Helga','Dagna','Astrid','Bardryn','Eldeth','Fenna','Gunnloda','Hilda','Ilde','Kathra','Liftrasa','Mardred','Riswynn','Torbera','Vistra','Amber','Audhild','Bera','Dagnal','Diesa','Ebba','Gerdrun','Gurdis','Hlin','Ingrid','Jora','Kristryd','Lif','Magna','Nora','Orsa','Ragna','Sif','Thora','Tova','Ulla','Valdis','Yngvild','Anvild','Bruni','Dorna','Eirny','Frida','Gerta','Hildr','Idunn','Kara','Ljot','Marra','Nanna','Oddny','Runa','Signy','Thyra','Ulfhild','Vigdis','Wynna','Asa','Birna','Dalla','Embla','Gunnhild','Halla']},
+  fae:{m:['Pip','Thistle','Corrin','Wisp','Bramble','Cinder','Dewdrop','Fennel','Gossamer','Hollyhock','Juniper','Moss','Nettle','Quill','Sorrel','Tamarind','Acorn','Birch','Cobweb','Dusty','Elm','Flicker','Glimmer','Hob','Ivy','Jinx','Kestrel','Larkspur','Mote','Nimble','Oakum','Puck','Quince','Rush','Sedge','Tumble','Ushi','Vetch','Wick','Yarrow','Alder','Bracken','Chestnut','Dapple','Elder','Fig','Gorse','Hawthorn','Ivo','Jasper','Knot','Lichen','Mallow','Nutmeg','Osier','Pebble','Rowan','Sprig','Teasel','Umber','Vervain','Whin','Yew','Zest'],
+        f:['Nerissa','Ilka','Briar','Sylph','Aster','Clover','Dandelion','Elowyn','Fern','Hazel','Iris','Lilac','Marigold','Pearl','Saffron','Willow','Amaranth','Bluebell','Calla','Damson','Ember','Foxglove','Gilly','Honey','Ivyrose','Jonquil','Kit','Lark','Meadow','Nixie','Opal','Poppy','Quicksilver','Rue','Sorrel','Tansy','Verbena','Wisteria','Yarrow','Zinnia','Anise','Bryony','Celandine','Dahlia','Eglantine','Flax','Ginger','Heather','Isolde','Jessamine','Kelpie','Lavender','Mistral','Nightshade','Orchid','Primrose','Rosemary','Sage','Thyme','Violet','Wren','Yasmin','Zephyrine','Twill']},
+  gloomling:{m:['Vesk','Hollow','Mortis','Ash','Cinder','Dusk','Ember','Grim','Knell','Lament','Murk','Pallor','Rook','Shade','Umbra','Wane','Abyss','Blight','Cairn','Dirge','Eclipse','Fathom','Gallows','Haunt','Ichor','Jet','Kohl','Lurk','Marrow','Nadir','Omen','Pyre','Quiet','Raven','Sepulchre','Tallow','Vale','Wither','Yarrow','Zenith','Bane','Crypt','Draven','Ebon','Fell','Gloam','Husk','Inkwell','Keening','Lorne','Mordant','Nightjar','Ossuary','Pitch','Quell','Rime','Sombre','Thorn','Vane','Wraithe','Yew','Ashling','Brume','Duskin'],
+              f:['Vess','Nyx','Pale Anna','Bleak','Cinder','Dolor','Ember','Gloam','Hush','Lethe','Mourn','Nocte','Requiem','Sable','Tenebrae','Vespers','Ashen','Belladonna','Covenna','Dusk','Elegy','Fenwick','Grief','Hollowyn','Isolde','Jet','Kestrel','Lachrymae','Morrow','Nightingale','Obsidia','Perdita','Quietus','Ravenna','Sorrow','Threnody','Umbra','Veil','Wisteria','Yvaine','Zilla','Anguish','Bryn','Cerise','Dimity','Eventide','Fable','Gossamer','Hesper','Ivory','Juniper','Lull','Mira','Nocturne','Ophelia','Pallas','Rue','Solace','Twilight','Vesper','Willow','Yara','Ashvine','Cobweb']}
 };
+
+/* 2026-09-22 (Justin): "dramatically increase the number of randomly generated names". Sixty-four curated names per race
+   and sex above, and a syllable generator per race below: a reroll draws a curated name three times in five and a
+   built one otherwise, so the button has thousands of names behind it and stays in each race's voice. */
+var NAME_BANKS = {
+  human:{a:['Al','Bel','Cor','Dur','Ed','Fal','Gar','Hal','Is','Jor','Kel','Lor','Mar','Ner','Os','Per','Ros','Ser','Tal','Ul','Ver','Wil'],
+         b:['an','ber','dan','en','er','in','is','lin','mer','on','ric','ryn','ten','ton','ver','win'],
+         m:['','an','ar','ic','in','on','us','d','n','r','s','th'], f:['a','e','ia','ie','is','wen','yn','ys']},
+  elf:{a:['Ae','Cael','Dae','El','Fae','Gal','Il','Lae','Lir','Mae','Nae','Ory','Quel','Sae','Syl','Thae','Vae','Yl'],
+       b:['la','le','li','lo','na','ni','ra','re','ri','ro','tha','the','thi','va','ve','vi'],
+       m:['n','r','s','th','l','dir','mar','ril','an','ael','ion','ir'], f:['a','e','el','ia','ith','wen','yn','ys']},
+  dwarf:{a:['Bal','Bor','Dag','Dur','Far','Gim','Grum','Har','Kil','Mor','Nor','Or','Rur','Thor','Ulf','Von','Bram','Dol'],
+         b:['ak','ar','ek','gar','gin','grim','im','in','li','na','or','rak','rik','ulf','un','ur'],
+         m:['','d','k','n','r','th','ak','in','or','ur'], f:['a','da','hild','ja','na','ra','va','ya']},
+  fae:{a:['Bram','Bri','Clo','Dew','Fen','Gos','Hol','Ju','Lil','Mar','Mos','Net','Pip','Quil','Sor','Tam','Wil','Wis'],
+       b:['ber','bel','den','dle','kin','let','ling','low','mer','nel','pin','ret','sel','ter','thi','wick'],
+       m:['','kin','le','let','ling','ock','s','y','o','et','in'], f:['a','bell','ette','ie','la','ley','wyn','y']},
+  gloomling:{a:['Ash','Bleak','Cin','Dol','Dus','Em','Gloam','Grim','Hol','Knell','Lam','Mor','Murk','Noc','Pal','Sab','Umb','Ves'],
+             b:['ar','en','er','id','is','or','ra','re','ren','ric','ris','rok','sha','ten','ul','ver'],
+             m:['','k','n','r','s','th','x','ar','en','is','ost'], f:['a','e','ia','is','ith','na','ra','yx']}
+};
+function buildName(race, sex){
+  var B=NAME_BANKS[race]||NAME_BANKS.human, n=pick(B.a)+pick(B.b);
+  if(rng()<0.35 && n.length<=6){ var extra=pick(B.b); if(n.slice(-extra.length)!==extra) n+=extra; }
+  var ends=sex==='f'?B.f:B.m, vowelEnd=/[aeiouy]$/.test(n), tail=pick(ends);
+  /* a consonant seam takes a vowel-led ending (Borrikth, Osinr: no); a vowel seam drops the doubled vowel */
+  if(!vowelEnd && /^[^aeiouy]/.test(tail)){ var v=ends.filter(function(e){ return e===''||/^[aeiouy]/.test(e); }); tail=v.length?pick(v):''; }
+  if(vowelEnd && /^[aeiouy]/.test(tail)) n=n.replace(/[aeiouy]$/,'');
+  if((n+tail).length>10) tail='';
+  n=(n+tail).toLowerCase().replace(/([a-z])+/g,'$1$1').replace(/([aeiouy])/g,'$1');
+  return n.charAt(0).toUpperCase()+n.slice(1);
+}
 /* an off-hand kit slot may name a weapon: these two helpers are what classes.js and the creation screen
    ask, now that there is no separate off-hand dagger item (2026-09-17) */
 var CLERIC_KITS={wobbles:'censer',sylla:'censer',murk:'censer',glimmer:'censer',grom:'symbol',grumbok:'symbol',reginald:'symbol',anvil:'symbol',vellum:'symbol'};
@@ -45,6 +77,7 @@ function offHandWeapon(d){
 function rollName(c){
   var list=(NAMES[c.race]||{})[c.sex] || (NAMES[c.race]||{}).m || ['Adventurer'];
   var other=list.filter(function(n){ return n!==c.name; });
+  if(NAME_BANKS[c.race] && rng()<0.4){ var built=buildName(c.race, c.sex); if(built!==c.name && built.length>=3) return built; }
   return pick(other.length ? other : list);
 }
 function lookFor(c){ var s=RACES[c.race].sexes[c.sex]; return c.race==='fae' ? s.replace('%s', c.court) : s; }

@@ -28,7 +28,7 @@ function inCaverns(){ return typeof bidx==='function' && bidx()===2 && !(floorMe
   M.shroomling    = {name:'Shroomling', sprite:'m-myconid', col:'#9FC0B0', ch:'f', hp:18, dmg:[4,6], acc:58, eva:12, armor:0, speed:100, range:1, xp:6,
                      band:[0,0], w:0, sporeproof:true, living:true, art:0.5, sfx:'slime'};
   M.crystalcrawler= {name:'Crystal Crawler', sprite:'m-crystal-crawler', col:'#8A6AD0', ch:'c', hp:50, dmg:[6,9], acc:68, eva:20, armor:3, speed:130, range:1, xp:38,
-                     band:[13,15], w:9, shatters:true, el:'earth', art:0.95, artLeft:true, sfx:'rat'};   /* the Caverns' one fast creature */
+                     band:[13,15], w:9, shatters:true, el:'earth', art:0.95, artLeft:true, sfx:'spider'};   /* the Caverns' one fast creature */
   /* Biome-three versions of the Dungeon vermin; the originals stay on floors 1-5. */
   M.caverat       = Object.assign({}, M.rat, {name:'Cave Rat',hp:38,dmg:[6,9],acc:66,eva:24,speed:135,xp:30,art:.85,band:[11,13],w:8});
   M.cavebat       = Object.assign({}, M.bat, {name:'Grotto Bat',hp:30,dmg:[4,6],acc:66,eva:28,speed:130,xp:28,art:.85,band:[11,12], w:8});
@@ -36,7 +36,7 @@ function inCaverns(){ return typeof bidx==='function' && bidx()===2 && !(floorMe
   delete M.caverat.biome; delete M.cavebat.biome; delete M.caveslime.biome;
   /* The Deep Maw: tuned by hand for floor 15, so no floor curve (fixed, like the plane elites) */
   M.deepmaw       = {name:'The Deep Maw', sprite:'m-deep-maw', col:'#B07A4A', ch:'W', hp:480, dmg:[12,17], acc:70, eva:0, armor:4, speed:100, range:1, xp:600,
-                     band:[15,15], w:0, boss:true, elite:true, big:2, fixed:true, living:true, art:2.0, bigScale:1.5, artLeft:true, sfx:'brute'};
+                     band:[15,15], w:0, boss:true, elite:true, big:2, fixed:true, living:true, art:2.0, bigScale:1.5, artLeft:true, sfx:'maw'};
   M.mawlimb       = {name:'The Deep Maw', sprite:'m-deep-maw', col:'#B07A4A', ch:'W', hp:9999, dmg:[0,0], acc:0, eva:0, armor:4, speed:100, range:0, xp:0,
                      band:[0,0], w:0, object:true, fixed:true, art:0.1};
   DROPS.stormbeetle   = {chance:0.20, table:{essence:10, gear:3, sigil:1}};
@@ -516,7 +516,7 @@ function mawErupt(M){
   });
   ringFx(s.x+1, s.y+1, '#C08A50', 3);
   M.phase='up'; M.at=turn+(hurt ? MAW.upTurnsHurt : MAW.upTurns); M.n++;
-  log('<b>The Deep Maw</b> bursts out of the ground! Hit it before it dives again.','c-you');
+  log('<b>The Deep Maw</b> bursts out of the ground! Hit it before it dives again.','c-you'); sfx('maw-intro');
 }
 function mawDive(M){
   var e=M.ent;
