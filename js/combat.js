@@ -605,6 +605,10 @@ function boltPath(ax,ay,bx,by){
   }
   return pts;
 }
+/* 2026-09-22 (Justin): a shooter has a clear shot only when nothing stands between it and its target. Enemies do not
+   loose a projectile through their own ranks; the player's arrow hits whatever is in front. Clouds and lobbed
+   sprays are not projectiles and do not use this. */
+function clearShot(a,b){ var p=boltPath(a.x,a.y,b.x,b.y), e=p[p.length-1]; return !!(e && e.x===b.x && e.y===b.y); }
 function previewPath(ax,ay,bx,by,A){
   if(A.kind!=='bolt') return;
   var pts=boltPath(ax,ay,bx,by); ctx.globalAlpha=0.35; ctx.fillStyle='#E8B44A';
@@ -742,7 +746,7 @@ function aiAct(e){
     /* casters */
     if(e.base.caster && see && d<=e.base.castRange){
       e.castCd=(e.castCd||0)-1;
-      if(e.castCd<=0){
+      if(e.castCd<=0 && clearShot(e,player)){   /* a shaman behind its own goblins holds the bolt */
         e.castCd=e.base.castEvery; setClip(e,'attack'); sfx('shaman-cast');
         boltFx(e.x,e.y,player.x,player.y,'fire');
         if(rng() < hostileHitChance(hitChance(e.base.acc+10, player.eva))){
@@ -956,7 +960,7 @@ function allyAct(e){
      something closes on it (2026-09-17 - the form's caster field was never wired up before) */
   if(target && e.castSpell && best>=2 && best<=6){
     e.castCd=(e.castCd||0)-1;
-    if(e.castCd<=0){
+    if(e.castCd<=0 && clearShot(e,target)){   /* nor does your Lich bolt through you or another creature */
       e.castCd=2; setClip(e,'attack');
       if(typeof boltFx==='function') boltFx(e.x, e.y, target.x, target.y, 'shadow');
       var ld=applyDamage(target, roll(e.dmg[0], e.dmg[1]), 'dark', e);

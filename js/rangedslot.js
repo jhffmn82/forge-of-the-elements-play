@@ -197,6 +197,15 @@ if(typeof shootAt === 'function'){
       lastDir = [dx, dy]; tryMove(dx, dy); return true;
     }
     if(player.range <= 1 || dist(player, e) > player.range || !vis[e.y*MW + e.x]) return false;
+    /* 2026-09-22 (Justin): an arrow stops at the first creature in its path. A foe standing in the way takes the
+       shot; an ally in the way, or a wall, means no shot (this override had dropped the original's path check, so
+       a bow shot straight through a melee enemy to the mage behind it). */
+    var path=boltPath(player.x, player.y, e.x, e.y), end=path[path.length-1];
+    if(!end || end.x!==e.x || end.y!==e.y){
+      var front=end && ents.filter(function(o){ return o.x===end.x && o.y===end.y && o.hp>0; })[0];
+      if(!front || !front.foe){ log(front ? 'Your '+front.name+' is in the way.' : 'Something is in the way.','c-info'); return true; }
+      log('The <b>'+front.name+'</b> is in the way and takes the arrow.','c-info'); e=front;
+    }
     var w = isRangedWeapon(player.ranged) ? player.ranged : player.weapon;
     attack(player, e, 1, w.name);
     player.hidden = 0; endTurn(); return true;
@@ -213,7 +222,7 @@ if(typeof shootAt === 'function'){
 var BOWAIM = null;
 function bowReady(){ return !!(player && isRangedWeapon(player.ranged)); }
 function bowCanHit(e){
-  return !!(e && e.foe && e.hp>0 && (revealAll||vis[idxOf(e.x,e.y)]) && dist(player,e)>1 && dist(player,e)<=player.range);
+  return !!(e && e.foe && e.hp>0 && (revealAll||vis[idxOf(e.x,e.y)]) && dist(player,e)>1 && dist(player,e)<=player.range && (typeof clearShot!=='function' || clearShot(player,e)));
 }
 function bowLive(){ return (BOWAIM && ents.indexOf(BOWAIM)>=0 && bowCanHit(BOWAIM)) ? BOWAIM : null; }
 function bowNextTarget(){
