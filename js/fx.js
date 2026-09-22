@@ -181,7 +181,10 @@ function ringFx(x,y,col,r,o){ fx.push({k:'ring', x:x, y:y, col:col||'#FFF', r:r|
 /* keep frames coming while particles live */
 function fxTick(t){
   var live = fx.length>0 || PARTS.length>0 || !ANIM.reduce;
-  if(live){ if(!t || t-lastFrame>=33){ lastFrame=t||0; draw(); } fxIdleFrames=3; }
+  /* 2026-09-22: 60 fps while the hero slides - a 170 ms step drawn at 30 fps was five positions, a visible
+     stutter (Justin) - and 30 fps the rest of the time, for the phones' sake */
+  var cap = (typeof motionActive==='function' && typeof player!=='undefined' && player && motionActive(player, t||performance.now())) ? 15 : 33;
+  if(live){ if(!t || t-lastFrame>=cap){ lastFrame=t||0; draw(); } fxIdleFrames=3; }
   else if(fxIdleFrames>0){ fxIdleFrames--; draw(); }
   requestAnimationFrame(fxTick);
 }

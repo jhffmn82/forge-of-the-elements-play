@@ -366,12 +366,19 @@ function motionState(e){
   if(!s || s.floor!==floorMeta){s={x:e.x,y:e.y,fx:e.x,fy:e.y,mt:0,floor:floorMeta};MOTION_STATE.set(e,s);}
   return s;
 }
-function motionActive(e,now){var s=MOTION_STATE.get(e);return !!(s && s.mt && now-s.mt<MOVE_MS);}
+function motionActive(e,now){var s=MOTION_STATE.get(e);return !!(s && s.mt && now-s.mt<(s.dur||MOVE_MS));}
+/* how far through its slide a figure is: 1 when it is standing still, below 0 while a slide waits to start */
+function slideFrac(e,now){var s=MOTION_STATE.get(e);return (s && s.mt) ? (now-s.mt)/(s.dur||MOVE_MS) : 1;}
 function renderPos(e){
   var now=performance.now(),s=motionState(e);
   if(e.x!==s.x || e.y!==s.y){
     var cur=slideAt(e,now),jump=Math.max(Math.abs(e.x-cur.x),Math.abs(e.y-cur.y));
-    s.fx=cur.x;s.fy=cur.y;s.x=e.x;s.y=e.y;
+    /* 2026-09-22 (Justin: walking stuttered). A step taken while the last slide is still running continues from
+       where the figure is drawn, at a steady pace: the slide lasts in proportion to the distance left and runs
+       linear instead of easing to a stop at every tile. A step from rest keeps its ease in and out. */
+    var chained=!!(s.mt && now-s.mt<(s.dur||MOVE_MS) && jump<=3);
+    s.fx=cur.x;s.fy=cur.y;s.x=e.x;s.y=e.y;s.lin=chained;
+    s.dur=chained?Math.round(MOVE_MS*Math.max(0.5,jump)):MOVE_MS;
     s.mt=(ANIM.reduce || jump>3)?0:(e!==player && typeof fxClock==='number'?Math.max(now,fxClock):now);
   }
   return slideAt(e,now);
@@ -379,10 +386,10 @@ function renderPos(e){
 function slideAt(e,now){
   var s=motionState(e);
   if(!s.mt) return {x:s.x,y:s.y,hop:0};
-  var p=(now-s.mt)/MOVE_MS;
+  var p=(now-s.mt)/(s.dur||MOVE_MS);
   if(p<0) return {x:s.fx,y:s.fy,hop:0};
   if(p>=1){s.mt=0;return {x:s.x,y:s.y,hop:0};}
-  var q=p<0.5?2*p*p:1-Math.pow(-2*p+2,2)/2;
+  var q=s.lin?p:(p<0.5?2*p*p:1-Math.pow(-2*p+2,2)/2);
   return {x:s.fx+(s.x-s.fx)*q,y:s.fy+(s.y-s.fy)*q,hop:Math.sin(p*Math.PI)};
 }
 function breathOf(e){
