@@ -12,7 +12,7 @@ var SAVE_SLOTS = ['auto', '1', '2', '3'];
 /* run state only: data tables (ABILITIES, SIGILS...) always come from the current code */
 var SAVE_KEYS = ['player','RUN','floorNo','turn','revealAll','worldSeed','nextId','lastDir','spawnedExtra','nextSpawn',
   'map','seen','vis','feats','items','ents','rooms','ground','fireT','fireSrc','props','propGrid','chestKind','floorMeta',
-  'levers','plates','altars','iceG','rootG','holyG','sigilLook','sigilKnown','pendingExtra','LAST_CHOICE'];
+  'levers','plates','altars','iceG','rootG','holyG','sigilLook','sigilKnown','pendingExtra','LAST_CHOICE','rngState'];
 
 /* ---------------------------------------------------------------- graph encoding */
 function saveEncode(root){
@@ -63,6 +63,7 @@ function saveDecode(root){
 
 /* ---------------------------------------------------------------- snapshot and restore */
 function saveSnapshot(label){
+  if(rng && rng.state) rngState=rng.state();   /* 2026-09-21: the dice continue where they were, instead of reseeding from seed and turn */
   var g={};
   SAVE_KEYS.forEach(function(k){ if(typeof window[k]!=='undefined') g[k]=window[k]; });
   var logHtml=[]; var L=$('log'); if(L) for(var i=Math.max(0,L.children.length-40); i<L.children.length; i++) logHtml.push([L.children[i].className, L.children[i].innerHTML]);
@@ -78,7 +79,7 @@ function saveApply(data){
   else throw new Error('Not a Forge of the Elements save.');
   SAVE_KEYS.forEach(function(k){ if(g[k]!==undefined) window[k]=g[k]; });
   /* everything derived or visual is rebuilt rather than restored */
-  rng=mulberry32(((worldSeed||1) ^ (turn*2654435761))>>>0);
+  rng=mulberry32(g.rngState ? g.rngState : ((worldSeed||1) ^ (turn*2654435761))>>>0);   /* older saves without a state keep the old reseed */
   fx=[]; PARTS.length=0; aiming=null; LAST_HIT=null;
   if(typeof modalOpen!=='undefined' && modalOpen && typeof closeModal==='function') closeModal();
   if(typeof SURF_CACHE!=='undefined') SURF_CACHE.key=null;
@@ -89,7 +90,10 @@ function saveApply(data){
   if(player.off && !player.off.kind && player.off.name===EMPTY_OFF.name) player.off=EMPTY_OFF;
   saveMigrateSigils();
   if(typeof ensureRuneLooks==='function') ensureRuneLooks();
+  var hp0=player.hp, mp0=player.mp;
   derive(player);
+  /* 2026-09-21: two derive layers clamp hp and mp to a maximum that later layers then raise, so a full character loaded a few points short; the saved values stand, clamped to the FINAL maximum */
+  player.hp=Math.min(hp0, player.maxhp); player.mp=Math.min(mp0, player.maxmp);
   var L=$('log'); if(L){ L.innerHTML=''; (data.log||[]).forEach(function(p){ log(p[1], p[0]); }); }
   log('<b>Game loaded.</b> '+player.name+', level '+player.level+', floor '+floorNo+'.','c-kill');
   var ov=$('over'); if(ov) ov.style.display='none';
@@ -235,13 +239,13 @@ function exitGame(){
 function closeTitle(){ var el=$('title'); if(el) el.classList.remove('on'); }
 function latestSave(){
   var best=null, bestSlot=null;
-  SAVE_SLOTS.forEach(function(s){ var d=readSlot(s); if(d && (!best || String(d.savedAt)>String(best.savedAt))){ best=d; bestSlot=s; } });
+  SAVE_SLOTS.forEach(function(s){ var d=readSlot(s); if(d && d.savedAt && (!best || String(d.savedAt)>String(best.savedAt))){ best=d; bestSlot=s; } });   /* 2026-09-21: a slot with no timestamp sorted above every real one */
   return bestSlot;
 }
 function renderTitleMenu(){
-  var el=$('title'), last=latestSave(), lastD=last ? readSlot(last) : null;
+  var el=$('title'), last=latestSave(), lastD=last ? readSlot(last) : null, sm=(lastD && lastD.summary)||{};   /* 2026-09-21: one slot without a summary blanked the whole title */
   el.innerHTML='<div class="menu">'+
-    (last ? '<button id="tContinue">Continue<span class="sub">'+(lastD.summary.name||'')+' &middot; level '+lastD.summary.level+' &middot; floor '+lastD.summary.floor+'</span></button>' : '')+
+    (last ? '<button id="tContinue">Continue<span class="sub">'+(sm.name||'')+' &middot; level '+(sm.level||'?')+' &middot; floor '+(sm.floor||'?')+'</span></button>' : '')+
     '<button id="tNew">New Game</button>'+
     '<button id="tLoad">Load Game</button>'+
     '<button id="tAbout">About</button>'+

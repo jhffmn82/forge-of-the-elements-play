@@ -10,8 +10,9 @@
 /* ============ helpers ============ */
 var $ = function(id){ return document.getElementById(id); };
 var clamp = function(v,a,b){ return Math.max(a, Math.min(b, v)); };
-function mulberry32(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; var t=Math.imul(a^a>>>15,1|a);
-  t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+function mulberry32(a){ var f=function(){ a|=0; a=a+0x6D2B79F5|0; var t=Math.imul(a^a>>>15,1|a);
+  t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; f.state=function(){ return a|0; }; return f; }   /* state(): what a save keeps (2026-09-21) */
+var rngState=0;   /* filled at save time from rng.state(), restored on load */
 var rng = mulberry32(48213);
 function ri(a,b){ return a + Math.floor(rng()*(b-a+1)); }
 function pick(arr){ return arr[Math.floor(rng()*arr.length)]; }
@@ -632,6 +633,7 @@ var KEYS={ArrowUp:[0,-1],ArrowDown:[0,1],ArrowLeft:[-1,0],ArrowRight:[1,0],
 window.addEventListener('keydown', function(ev){
   var tgt=ev.target.tagName;
   if(tgt==='INPUT'||tgt==='SELECT') return;
+  if($('title') && $('title').classList.contains('on')) return;   /* 2026-09-21: the run under the title used to keep taking keys - moving, waiting, even descending onto the autosave */
   var k=ev.key;
   if(k==='Escape'){ if(aiming) cancelAim(); else if(openSheet) showSheet(openSheet); return; }
   if(player.hp<=0 || openSheet) return;

@@ -55,9 +55,12 @@ function gearName(it){
    The cost of the build is the shield slot and steep Agility requirements on daggers. */
 function offHandSwing(foe){
   if(!foe || foe.hp<=0 || !player.off || !player.off.weapon || player.twoHanded) return;
-  var main=player.weapon;
+  var main=player.weapon, mainDmg=player.dmg, mainAcc=player.acc, mainCrit=player.crit;
   player.weapon=player.off;
-  try{ attack(player, foe, 0.6); } finally { player.weapon=main; }
+  if(player.offDmg) player.dmg=player.offDmg;   /* 2026-09-21: the blade's own numbers (rangedslot.js offFullDerive) */
+  if(player.offAcc) player.acc=player.offAcc;
+  if(player.offCrit) player.crit=player.offCrit;
+  try{ attack(player, foe, 0.6); } finally { player.weapon=main; player.dmg=mainDmg; player.acc=mainAcc; player.crit=mainCrit; }
 }
 function derive(p){
   var race=RACES[p.race]||RACES.human, cls=CLASSES[p.cls]||CLASSES.fighter, s=p.stats;
@@ -414,8 +417,11 @@ function applyStatus(e,key,turns,extra){
     if(e.st['imm_'+key]) return;
   }
   var cur=e.st[key];
-  if(key==='burn'){ if(at(e.x,e.y)===WATER) return; e.st.burn={t:Math.max(turns, cur?cur.t:0), d:extra||sDMG(2)}; }
-  else e.st[key] = {t:Math.max(turns, cur&&cur.t||0), d:extra};
+  /* 2026-09-21: a status put on a creature during the monster phase is stamped with the turn, and this turn's pass
+     leaves it alone, so a 1-turn root or stun costs the one action it says it does instead of expiring first */
+  var stamp = e!==player ? turn : undefined;
+  if(key==='burn'){ if(at(e.x,e.y)===WATER) return; e.st.burn={t:Math.max(turns, cur?cur.t:0), d:extra||sDMG(2), at:stamp}; }
+  else e.st[key] = {t:Math.max(turns, cur&&cur.t||0), d:extra, at:stamp};
   if(key==='burn') sfx('status-burn'); else if(key==='stun') sfx('status-stun'); else if(key==='fear') sfx('status-fear');
 }
 function addChill(e){
@@ -448,21 +454,22 @@ function healPlayer(n){
 
 function tickStatus(e){
   var s=e.st;
+  var fresh=function(k){ return e!==player && s[k] && s[k].at===turn; };   /* applied this very turn: not counted yet */
   if(at(e.x,e.y)===WATER){ if(s.burn){ delete s.burn; floatText(e.x,e.y,'hiss','ice'); } s.wet={t:3}; }
   if(fireT && fireT[idxOf(e.x,e.y)]>0 && !(e===player && player.aff.fire>=6) && !(e.base && e.base.el==='fire')) applyStatus(e,'burn',3,sDMG(2));
-  if(s.burn){
+  if(s.burn && !fresh('burn')){
     var bd=Math.max(1,Math.round(s.burn.d*resistMult(e,'fire'))); e.hp -= bd; e._hit=performance.now(); floatText(e.x, e.y, String(bd), 'fire');
     if(e===player) log('Burning: '+bd+' fire damage.','c-you');
     s.burn.t--; if(s.burn.t<=0) delete s.burn;
     if(gAt(e.x,e.y)===G_GRASS || gAt(e.x,e.y)===G_SHORT) ignite(e.x,e.y, e===player?'player':null);
     if(e.hp<=0){ if(e===player){ heroicResolve(); if(player.hp<=0){ kill(e,null); return false; } } else { kill(e, e.lastHitBy||null); return false; } }
   }
-  if(s.poison){ var pd=s.poison.d||2; if(e===player && player.buffs && player.buffs.poisonward>0) pd=Math.max(1,Math.round(pd*0.5)); e.hp-=pd; floatText(e.x,e.y,String(pd),'poison'); s.poison.t--; if(s.poison.t<=0) delete s.poison; if(e.hp<=0){ if(e===player){ heroicResolve(); if(player.hp<=0){ kill(e,null); return false; } } else { kill(e,null); return false; } } }
+  if(s.poison && !fresh('poison')){ var pd=s.poison.d||2; if(e===player && player.buffs && player.buffs.poisonward>0) pd=Math.max(1,Math.round(pd*0.5)); e.hp-=pd; floatText(e.x,e.y,String(pd),'poison'); s.poison.t--; if(s.poison.t<=0) delete s.poison; if(e.hp<=0){ if(e===player){ heroicResolve(); if(player.hp<=0){ kill(e,null); return false; } } else { kill(e,null); return false; } } }
   if(s.aura && e===player){
     ents.forEach(function(o){ if(o.foe && dist(o,player)<=2){ var ad=applyDamage(o,s.aura.d||3,'dark',player); floatText(o.x,o.y,String(ad),'dark'); healPlayer(1); if(o.hp<=0) kill(o,player); } });
   }
   for(var k in s){
-    if(k==='burn'||k==='poison') continue;
+    if(k==='burn'||k==='poison' || fresh(k)) continue;
     if(s[k] && s[k].t!==undefined){ s[k].t--; if(s[k].t<=0){ var was=k; delete s[k]; if(was==='fear' && e!==player) s.imm_fear={t:5}; } }
   }
   return true;

@@ -29,7 +29,7 @@ function pacedKey(ev){
   if(typeof KEYS!=='undefined' && KEYS[ev.key]) return true;
   return !!PACED_KEYS[ev.key];
 }
-function uiOpen(){ return (typeof modalOpen!=='undefined' && modalOpen) || (typeof openSheet!=='undefined' && openSheet) || ($('create') && $('create').classList.contains('on')); }
+function uiOpen(){ return (typeof modalOpen!=='undefined' && modalOpen) || (typeof openSheet!=='undefined' && openSheet) || ($('create') && $('create').classList.contains('on')) || ($('title') && $('title').classList.contains('on')); }   /* 2026-09-21: the title too */
 
 window.addEventListener('keydown', function(ev){
   var tgt=ev.target && ev.target.tagName;

@@ -83,6 +83,34 @@ function rangedFullDerive(){
 if(document.readyState === 'complete') rangedFullDerive();
 else window.addEventListener('load', rangedFullDerive);
 
+/* 2026-09-21 (audit B4): the off-hand strike swapped the blade into player.weapon but attack() rolls player.dmg, which
+   derive built from the MAIN hand, so an off-hand weapon's tier, plus and enchant never reached its hit and the Forge sold
+   off-hand upgrades that bought nothing. Probe the full derive chain with the off-hand blade standing in as the main
+   weapon (as a kind:'weapon' clone, since tierNormalize skips damage for kind 'off') and keep what it gives. */
+function offFullDerive(){
+  if(typeof derive !== 'function') return;
+  var _deriveOffFull = derive, inside = false;
+  derive = function(p){
+    var r = _deriveOffFull(p);
+    if(inside || p !== player) return r;
+    var o = p.off;
+    if(!o || o===EMPTY_OFF || !o.weapon || p.twoHanded){ p.offDmg = null; p.offAcc = null; p.offCrit = null; return r; }
+    var slot = p.activeSet, saved = p.sets[slot], probe = Object.assign({}, o, {kind:'weapon'});
+    inside = true;
+    try {
+      p.sets[slot] = probe;
+      _deriveOffFull(p);
+      var d = p.dmg, a = p.acc, c = p.crit;
+      p.sets[slot] = saved;
+      _deriveOffFull(p);
+      p.offDmg = d; p.offAcc = a; p.offCrit = c;
+    } finally { inside = false; p.sets[slot] = saved; }
+    return r;
+  };
+}
+if(document.readyState === 'complete') offFullDerive();
+else window.addEventListener('load', offFullDerive);
+
 /* ---------------------------------------------------------------- shooting: the bow answers for the shot
    The whole attack pipeline reads player.weapon, so the bow steps into that slot for the duration of a
    ranged attack and steps out again - the same trick the off-hand swing uses. That means a bow's tier,
