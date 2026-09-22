@@ -17,7 +17,7 @@ function isScoundrel(){ return player.cls==='scoundrel'; }
 PASSIVES={
   mig:[{at:12,id:'heavyHands',name:'Heavy Hands',d:'+10% melee damage'},
        {at:15,id:'crushing',  name:'Crushing Blows',d:'+25% damage to targets below half HP'},
-       {at:18,id:'armorMaster',name:'Armor Master',d:'heavy armor evasion penalty halved'},
+       {at:18,id:'spellWard', name:'Spell Ward',d:'block spells and abilities in addition to melee and ranged attacks'},
        {at:21,id:'cleaving',  name:'Cleaving Swings',d:'your attacks also hit one other adjacent enemy for half'},
        {at:25,id:'unstoppable',name:'Unstoppable',d:'immune to stun, slow and knockback, +20% melee damage'}],
   agi:[{at:12,id:'lightFeet',name:'Light Feet',d:'+8 evasion'},
@@ -37,6 +37,7 @@ PASSIVES={
        {at:25,id:'archmage',  name:'Archmage',d:'+10% spell damage, +5 percentage points spell crit, +20% max mana'}]
 };
 var AOE_HIT=false;   /* set while resolving area attacks, so Magic Barrier ignores them */
+var ATTACK_ROLLED=false;   /* set while attack() applies a hit it has already rolled block for, so Spell Ward does not roll twice */
 function godRank(){ return player.god ? pietyRank(player.piety||0) : 0; }
 function hasGod(id){ return player.god===id; }
 function totalAffinity(){ var t=0; for(var k in player.aff) t+=player.aff[k]||0; return t; }
@@ -97,7 +98,7 @@ function derive(p){
   p.acc = 60 + 2*s.agi + (p.weapon.acc||0) + (hasGod('reginald')?4*rank:0) + (p.weapon.enchant==='light'?Math.round(10*enchantScale('light')):0);
   var arm=typeof bodyArmor==='function'?bodyArmor(p):(p.armorItem||{});
   var evaPen = arm.eva||0;
-  if(evaPen<0 && (hasP('armorMaster') || p.race==='dwarf')) evaPen = p.race==='dwarf' ? 0 : Math.round(evaPen/2);
+  if(evaPen<0 && p.race==='dwarf') evaPen = 0;   /* Armor Master (Might 18) became Spell Ward on 2026-09-22 */
   p.eva = 10 + 2*s.agi + evaPen + ((p.off&&p.off.eva)||0) + (hasP('lightFeet')?8:0) + (arm.enchant==='water'?Math.round(8*enchantScale('water')):0);
   p.armor = (arm.armor||0) + (arm.armor>0 ? itemPlus(arm) : 0) + (arm.enchant==='earth'?Math.round(2*enchantScale('earth')):0)
           + (hasGod('grom')?rank:0) + (buff('ironbody')?4:0) + (buff('ironhide')?5:0);
@@ -181,6 +182,13 @@ function resistMult(target, type){
 function isWet(e){ return at(e.x,e.y)===WATER || (e.st && e.st.wet); }
 function applyDamage(target, amount, type, source){
   var d=amount;
+  /* Spell Ward (Might 18, Justin 2026-09-22): the shield also rolls against spells and abilities, everything a
+     foe does to you outside the attack roll. Ticks, traps, clouds and sigils have no attacker and stay as they are. */
+  if(target===player && !ATTACK_ROLLED && !AOE_HIT && source && source!==player && source.foe && hasP('spellWard') && player.block>0 && combatRoll(player.block,true)){
+    d*=0.25; if(typeof onShieldBlock==='function') onShieldBlock(source, player, d);
+    log('Your shield turns the '+(type==='phys'?'blow':type)+' from '+(source.name||'the attack')+'.','c-good');
+    if(typeof floatText==='function') floatText(player.x,player.y,'block','miss'); if(typeof sfx==='function') sfx('block');
+  }
   /* Magic Barrier (Focus 21): -5 from single-target ranged attacks, applied with the other flat reductions */
   var barrier = (target===player && hasP('magicBarrier') && !AOE_HIT && source && source!=='player' && source.foe && dist(source,player)>1) ? 5 : 0;
   if(type==='phys'){
@@ -338,7 +346,7 @@ function attack(att, def, mult, label){
      mastery smite, and the light-air combo). Mixing them meant a smite proc was subtracted twice on any
      weapon that was not light-enchanted, while a light-enchanted weapon skipped the subtraction entirely
      and silently dropped the fire-affinity bonus and the enchant's own +25% against undead. */
-  var phys=applyDamage(def, base, att.swarm?'dark':'phys', att), extra=0, applied=0, note='', el=null;
+  ATTACK_ROLLED=true; var phys=applyDamage(def, base, att.swarm?'dark':'phys', att), extra=0, applied=0, note='', el=null; ATTACK_ROLLED=false;
   sfx(hitSfx(att,def,crit,blocked), {at:def._hit});
   if(att===player){
     var ench = player.weapon.enchant;
@@ -367,7 +375,7 @@ function attack(att, def, mult, label){
     }
     if(player.aff.fire){ el = el || 'fire'; extra += player.aff.fire; }
     if(player.aff.light && rng() < 0.10*player.aff.light + (typeof smiteBonus==='function' ? smiteBonus() : 0)){
-      var sm=applyDamage(def, smiteDamage(), 'light', player); applied+=sm; el = el || 'light';
+      ATTACK_ROLLED=true; var sm=applyDamage(def, smiteDamage(), 'light', player); ATTACK_ROLLED=false; applied+=sm; el = el || 'light';
       /* the light-air combo fires a second smite, so count it before the log line is written: what the
          note reports is the whole smite, not just the first half of it (2026-09-18) */
       if(typeof onSmiteProc==='function'){ var sm2=onSmiteProc(def)||0; applied+=sm2; sm+=sm2; }
