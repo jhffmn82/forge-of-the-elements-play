@@ -449,7 +449,7 @@ function deepDrawPiece(p, alpha){
     /* stands on the bottom edge of its footprint, set down by its own solid bottom, over a contact shadow */
     var bottom=Y+h*TS+deepBottomPad(o)*s;
     dw=o.sw*s; dh=o.sh*s; dx=X+(w*TS-o.fullW*s)/2+o.ox*s; dy=bottom-o.fullH*s+o.oy*s;
-    ctx.fillStyle='rgba(8,6,12,0.34)'; ctx.beginPath(); ctx.ellipse(dx+dw/2, Y+h*TS-TS*0.08, Math.min(dw*0.46, w*TS*0.48), TS*0.13, 0, 0, 7); ctx.fill();
+    /* no contact shadow: a map object casts none (Justin, 2026-09-21) */
   }
   if(flip){ ctx.translate(dx+dw/2, 0); ctx.scale(-1,1); ctx.translate(-(dx+dw/2), 0); }
   ctx.drawImage(o.img, o.sx, o.sy, o.sw, o.sh, Math.round(dx), Math.round(dy), Math.round(dw), Math.round(dh));

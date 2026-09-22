@@ -471,6 +471,7 @@ function equipFromBag(idx, slot){
     if(it.kind!=='weapon' || it.data.hands===2 || !it.data.light){ log('Only a light weapon, shield or focus fits your off hand.','c-info'); return; }
     if(player.twoHanded){ log('Both hands are on the '+player.weapon.name+'.','c-info'); return; }
     /* 2026-09-17: the weapon itself goes into the off hand, keeping its tier, upgrades, enchantment, curse and identity */
+    if(typeof onPutOn==='function') onPutOn(it.data);   /* 2026-09-21: a cursed blade locks on here too, so it says so here too */
     var old=player.off, d=it.data;
     offHandWeapon(d);
     player.off=d;
@@ -480,7 +481,7 @@ function equipFromBag(idx, slot){
 }
 function enforceHands(){
   if(!player.twoHanded || !player.off || player.off===EMPTY_OFF) return;
-  if(!(player.off.block || player.off.weapon)) return;
+  if(!(isShield(player.off) || player.off.weapon)) return;   /* 2026-09-21: a Holy Symbol blocks a little but is not a shield; it stays like a focus does */
   var prev=player.off; player.off=EMPTY_OFF; derive(player);
   addBag('\u26E8', gearName(prev), {kind:'off', data:prev});
   log('Both hands are on the '+player.weapon.name+' &mdash; the '+prev.name+' goes into your bag.','c-info');

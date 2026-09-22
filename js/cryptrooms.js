@@ -339,12 +339,10 @@ function drawUrnGroup(p, alpha){
     if(q.sp==='tip' && !wood){ w=TS*q.s*1.3; h=w*(o.sh/o.sw); }
     if(q.sp==='tip' && wood){   /* a barrel or pot lying on its side */
       var tw=TS*q.s*1.05, th=tw*(o.sw/o.sh);
-      ctx.fillStyle='rgba(8,6,12,0.34)'; ctx.beginPath(); ctx.ellipse(cx, fy-u, tw*0.55, TS*0.06, 0, 0, 7); ctx.fill();
       ctx.save(); ctx.translate(cx, fy-th/2); ctx.rotate(p.flip ? -Math.PI/2 : Math.PI/2); ctx.drawImage(o.img, o.sx, o.sy, o.sw, o.sh, -th/2, -tw/2, th, tw); ctx.restore();
       return;
     }
     var X=cx-w/2, Y=fy-h;
-    ctx.fillStyle='rgba(8,6,12,0.34)'; ctx.beginPath(); ctx.ellipse(cx, fy-u, w*0.42, TS*0.055, 0, 0, 7); ctx.fill();
     if(p.flip && q.sp==='tip'){ ctx.save(); ctx.translate(cx,0); ctx.scale(-1,1); ctx.drawImage(o.img, o.sx, o.sy, o.sw, o.sh, -w/2, Y, w, h); ctx.restore(); }
     else ctx.drawImage(o.img, o.sx, o.sy, o.sw, o.sh, X, Y, w, h);
   });

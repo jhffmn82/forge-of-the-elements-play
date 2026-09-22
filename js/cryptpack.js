@@ -126,10 +126,7 @@ function packDraw(p, name, alpha){
     ctx.beginPath(); ctx.ellipse(cx0, cy0, dw*0.5, TS*0.17, 0, Math.PI*0.08, Math.PI*0.92); ctx.stroke();
     dy += Math.round(TS*0.12);                                  /* sunk, so the waterline cuts across it */
   }
-  else if(!flat && !p.wall){   /* the pack paints no cast shadow: a soft contact shadow under what stands on the floor */
-    var sy=(p.y-camY+h)*TS-TS*0.08;
-    ctx.fillStyle='rgba(8,6,12,0.32)'; ctx.beginPath(); ctx.ellipse(dx+dw/2, sy, dw*0.46, TS*0.13, 0, 0, 7); ctx.fill();
-  }
+  /* the pack paints no cast shadow, and since 2026-09-21 no contact shadow either: a map object casts none (Justin) */
   if(flip){ ctx.translate(dx+dw/2, 0); ctx.scale(-1, 1); ctx.translate(-(dx+dw/2), 0); }
   ctx.drawImage(o.img, o.sx, o.sy, o.sw, o.sh, dx, dy, dw, dh);
   ctx.restore();

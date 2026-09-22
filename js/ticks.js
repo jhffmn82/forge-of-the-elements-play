@@ -40,12 +40,16 @@
     };
   }
 
-  /* the one pass a turn: every creature that fights, after all of them have moved */
+  /* the one pass a turn: every creature that fights, after all of them have moved. It runs the WHOLE tickStatus
+     chain as it stands once everything has loaded (the Underdark's bleed and Sylla's slow wrap tickStatus after
+     this file), so their work is per turn like the rest, not per action through the nested call. */
+  var TICK_CHAIN = null;
   function tickTheWorld(){
     if(typeof ents === 'undefined') return;
+    var tick = TICK_CHAIN || _tickStatusOrder;
     ents.slice().forEach(function(e){
       if(e === player || !(e.foe || e.ally) || e.hp <= 0 || ents.indexOf(e) < 0) return;
-      _tickStatusOrder(e);
+      tick(e);
     });
   }
 
@@ -58,7 +62,10 @@
   window.addEventListener('load', function(){
     if(typeof aiAct === 'function') aiAct = afterActing(aiAct);
     if(typeof allyAct === 'function') allyAct = afterActing(allyAct);
-    /* outermost, so the pass runs once the whole turn - the player's tick, the monsters' moves, fire - is done */
-    if(typeof endTurn === 'function'){ var _endTurnTicks = endTurn; endTurn = function(){ var r = _endTurnTicks.apply(this, arguments); if(player && player.hp > 0) tickTheWorld(); return r; }; }
+    /* the guard goes outermost too, so a wrapper loaded after this file is silenced inside a turn like the base */
+    if(typeof tickStatus === 'function'){ TICK_CHAIN = tickStatus; tickStatus = function(e){ if(INSIDE_TURN) return true; return TICK_CHAIN(e); }; }
+    /* outermost, so the pass runs once the whole turn - the player's tick, the monsters' moves, fire - is done;
+       and only when a turn actually passed: a free action (Unbound, Stillness, Lightning Reflexes) moves nothing */
+    if(typeof endTurn === 'function'){ var _endTurnTicks = endTurn; endTurn = function(){ var t0 = typeof turn==='number' ? turn : -1; var r = _endTurnTicks.apply(this, arguments); if(player && player.hp > 0 && turn !== t0) tickTheWorld(); return r; }; }
   });
 })();

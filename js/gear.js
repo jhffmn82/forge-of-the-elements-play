@@ -463,7 +463,7 @@ if(SIGILS.identify) SIGILS.identify.desc='Identify every sigil you carry, and re
 /* enchanting an item at the Forge burns a curse out of it */
 var _enchantItemBase = enchantItem;
 enchantItem = function(slot, el){
-  var item = slot==='ranged' ? player.ranged : slot==='off' ? player.off : slot==='weapon' ? player.weapon : player.armorItem;   /* 2026-09-21: the bow and the off hand too */
+  var item = slot==='weapon' ? player.weapon : player.armorItem;   /* the ranged and off-hand roads break their own curses in enchslots.js */
   var was = item && item.cursed;
   _enchantItemBase(slot, el);
   if(was && item.enchant===el){ breakCurse(item); }

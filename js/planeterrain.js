@@ -528,7 +528,6 @@ drawPropSurface = function(p, px, py, alpha){
   if(p.name==='sun-dais' && ptMat()){
     var img=ptDaisRaster(), X=Math.round((p.x-camX)*TS), Y=Math.round((p.y-camY)*TS), W=Math.round(TS*2);
     ctx.save(); ctx.globalAlpha=alpha; ctx.imageSmoothingEnabled=false;
-    ctx.fillStyle='rgba(60,50,40,0.18)'; ctx.beginPath(); ctx.ellipse(X+W/2, Y+W*0.62, W*0.5, W*0.34, 0, 0, 7); ctx.fill();   /* soft contact shadow */
     ctx.drawImage(img, 0, 0, 64, 64, X, Y, W, W); ctx.restore();
     return true;
   }

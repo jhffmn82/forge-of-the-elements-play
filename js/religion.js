@@ -30,7 +30,7 @@ GODS.reginald.boons = ['Fair Fight: +4 accuracy, +2% crit and +10% damage agains
                        'Called Out: elites and bosses that can see you take 15% more damage from you and your allies.',
                        'Champion: while only one enemy is in view you deal 30% more damage and take 20% less.'];
 GODS.anvil.boons = ['Smith’s Blessing: +1 weapon damage and enchantments 10% stronger, per rank.',
-                    'Second Heat: enchanting or carving a sigil at the Forge has a 30% chance to give back its motes.',
+                    'Second Heat: enchanting or carving a sigil at the Forge gives back its motes 30% of the time, 40% at rank 4, 50% at rank 5.',
                     'Masterwork: Forge upgrades cost 30% less, and gear can be raised to +4.'];
 GODS.vellum.rule = 'No shields, and nothing heavier than light armor. Refuses Fighters and Scoundrels.';
 GODS.vellum.boons = ['Deep Well: +8% max mana and +8% spell damage per rank.',
@@ -180,6 +180,7 @@ usePrayer = function(pid){
   if(pid==='offering' && PRAYERS.offering) PRAYERS.offering.essence = Math.max(50, Math.round((player.essence||0)*0.10));
   if(pid==='reforge' && player.weapon && (player.weapon.plus||0)>=3){ log('Old Anvil will not reforge past +3.','c-info'); sfx('ui-error'); return; }
   if(pid==='reforge' && foesInView()>0){ log('Old Anvil does not work with enemies watching.','c-info'); sfx('ui-error'); return; }
+  if(pid==='reforge' && (!player.weapon || player.weapon.unarmed)){ log('Old Anvil needs a weapon in your hand to reforge.','c-info'); sfx('ui-error'); return; }   /* FISTS is one shared object */
   if(pid==='raisedead') return prayRaiseDead();
   if(pid==='unbound'){
     if(!canPray(pid)){ log('You cannot offer that prayer right now.','c-info'); sfx('ui-error'); return; }

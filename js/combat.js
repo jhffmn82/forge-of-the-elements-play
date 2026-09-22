@@ -497,7 +497,7 @@ function kill(e, by){
    named nobody, the trap, the pit, the other monster. XP, drops, piety, the shade and the on-kill effects all read
    the same answer. Wrapped once everything has loaded, so it is outermost and every wrapper of kill() sees the
    credited killer. An ally's kill stays the ally's, so Mother Murk's servant rules still tell them apart. */
-function killCredit(e, by){ return (e && e.foe && !(by===player || (by && by.ally) || by==='player')) ? player : by; }
+function killCredit(e, by){ if(by==='player') return player; return (e && e.foe && !(by===player || (by && by.ally))) ? player : by; }   /* explode() names the player as a string */
 window.addEventListener('load', function(){ var _killCredit=kill; kill=function(e, by){ return _killCredit(e, killCredit(e, by)); }; });
 function burnDmg(){ return sDMG(2 + ((player && player.aff && player.aff.fire)||0)); }   /* Burning: 2 + 1 per Fire point */
 function TRAIL_EL(el){ return {fire:'fire',water:'ice',air:'lightning',earth:'earth',light:'light',shadow:'dark'}[el]||'magic'; }

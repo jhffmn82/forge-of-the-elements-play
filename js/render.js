@@ -632,6 +632,7 @@ function drawLightmap(now, prp){
     vals[o2] = A2[0]*0.7 + (cnt? sr/cnt*bleed : 0); vals[o2+1] = A2[1]*0.7 + (cnt? sg/cnt*bleed : 0); vals[o2+2] = A2[2]*0.7 + (cnt? sb/cnt*bleed : 0);
     if(natural){
       var dd=dist[ty*W+tx], kk = dd>=1+PEN ? 0 : Math.pow(1-(dd-1)/PEN, 2);   /* the lip (dd=1) keeps its light */
+      dist[ty*W+tx]=-1;   /* marks this texel done, so the remembered-wall pass below leaves it alone */
       vals[o2]=Math.max(A2[0]*WALL_MASS_FLOOR, vals[o2]*kk); vals[o2+1]=Math.max(A2[1]*WALL_MASS_FLOOR, vals[o2+1]*kk); vals[o2+2]=Math.max(A2[2]*WALL_MASS_FLOOR, vals[o2+2]*kk);
       var wfx=ox+(tx+0.5)/S-0.5, wfy=oy+(ty+0.5)/S-0.5;
       for(k=0;k<lights.length;k++){
@@ -640,6 +641,12 @@ function drawLightmap(now, prp){
         var pf=Math.pow(1-pd/Lp.r, 2.2)*Lp.s; vals[o2]+=Lp.c[0]*pf; vals[o2+1]+=Lp.c[1]*pf; vals[o2+2]+=Lp.c[2]*pf;
       }
     }
+  }
+  /* remembered rock takes the same depth attenuation, else a mass would brighten the moment it left sight (audit, 2026-09-21) */
+  if(natural) for(ty=0; ty<H; ty++) for(tx=0; tx<W; tx++){
+    var c3=ty*W+tx, o3=c3*3; if(!isWall[c3] || dist[c3]<0 || dist[c3]>=1e9) continue;
+    var d3=dist[c3], k3 = d3>=1+PEN ? 0 : Math.pow(1-(d3-1)/PEN, 2);
+    vals[o3]=Math.max(vals[o3]*WALL_MASS_FLOOR, vals[o3]*k3); vals[o3+1]=Math.max(vals[o3+1]*WALL_MASS_FLOOR, vals[o3+1]*k3); vals[o3+2]=Math.max(vals[o3+2]*WALL_MASS_FLOOR, vals[o3+2]*k3);
   }
   /* soft ceiling: stacked lights (braziers beside a shrine) roll off instead of washing the tiles out */
   for(j=0;j<W*H*3;j++){ var v=vals[j]; if(v>1) vals[j]=1+(v-1)*0.3; }
@@ -851,7 +858,6 @@ function draw(){
     if(!inb(x,y)) continue; var oi=idxOf(x,y); if(!(revealAll||seen[oi])) continue;
     var ot=map[oi]; if(ot===FLOOR||ot===WALL||ot===WATER||ot===CHASM||ot===SECRET) continue;
     var oa=(revealAll||vis[oi])?1:memA(0.45), opx=(x-camX)*TS, opy=(y-camY)*TS, spr=spriteOn?tileSprite(x,y,ot):null;
-    if(ot===CHEST && typeof propShadow==='function') propShadow(x, y, opx, opy, oa, 'chest');
     if(typeof drawSideDoor==='function' && drawSideDoor(x, y, ot, opx, opy, oa)) continue;   /* doors in east/west walls (surface.js) */
     if(ot===OPEN){ drawOpenDoor(x, y, opx, opy, oa); continue; }
     var isDoor=(ot===DOOR||ot===OPEN||ot===LOCKED||ot===TOLL||ot===ICEDOOR||ot===THORNS||ot===SEALED);

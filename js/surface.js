@@ -215,7 +215,6 @@ function drawPropSurface(p, px, py, alpha){
     /* shelves fill the tile's width so a row of them stands nearly flush against the wall */
     var o=objArt('props','bookshelf'); if(!o) return false;
     var w=TS*0.98, h=o.sh*(w/o.sw);
-    propShadow(p.x, p.y, px, py, alpha, 'bookshelf');
     ctx.save(); ctx.globalAlpha=alpha; ctx.imageSmoothingEnabled=false;
     ctx.drawImage(o.img, o.sx, o.sy, o.sw, o.sh, Math.round(px+(TS-w)/2), Math.round(py+TS*0.97-h), Math.round(w), Math.round(h));
     ctx.restore(); return true;

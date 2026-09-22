@@ -274,6 +274,7 @@ function rollTier(){
    at least +1, then the same one-in-three steps toward +3, so essence stays the dependable road to +3 */
 function bossGear(){
   var g=randomGear();
+  if(g.it.cursed){ delete g.it.cursed; delete g.it.cursedOff; }   /* a hoard piece is never cursed; a curse under a positive plus was nonsense */
   if(g.it.plus!==undefined) g.it.plus=rollPlus(1);
   g.it.tier=Math.max(2, tierNum(g.it)); tierNormalize(g.it);
   return g;

@@ -75,8 +75,8 @@ if(typeof enchantTargets === 'function'){
     }
     /* 2026-09-21: the ranged and off-hand roads used to skip Old Anvil's Second Heat, which only wrapped the main road */
     var b=Object.assign({}, player.motes);
-    if(slot === 'ranged'){ setInto(player.ranged, slot, el, 'it answers every shot'); if(typeof secondHeat==='function') secondHeat(b); return; }
-    if(slot === 'off' && offHandIsWeapon()){ setInto(player.off, slot, el, 'it answers your off-hand strike'); if(typeof secondHeat==='function') secondHeat(b); return; }
+    if(slot === 'ranged'){ setInto(player.ranged, slot, el, 'it answers every shot'); if(typeof secondHeat==='function'){ secondHeat(b); renderForge(); updateUI(); } return; }
+    if(slot === 'off' && offHandIsWeapon()){ setInto(player.off, slot, el, 'it answers your off-hand strike'); if(typeof secondHeat==='function'){ secondHeat(b); renderForge(); updateUI(); } return; }
     return _enchantItemSlots(slot, el);
   };
 })();

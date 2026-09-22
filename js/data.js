@@ -60,7 +60,7 @@ var OFFHANDS = {
   kite:    {name:'Kite Shield', block:0.20, eva:-5, note:'20% block, -5 evasion', icon:'item-kite', kind:'off'},
   orb:     {name:'Orb', block:0, spell:0.10, note:'spell critical hits', icon:'item-orb', kind:'off'},
   tome:    {name:'Tome', block:0, manaPct:0.15, note:'+15% max mana', icon:'item-tome', kind:'off'},
-  holy:    {name:'Holy Symbol', block:0.05, divine:0.15, note:'+15% Invoke and prayer strength', icon:'item-holy', kind:'off'},
+  holy:    {name:'Holy Symbol', block:0.05, divine:0.15, note:'+15% Invoke and prayer strength; blocks a little, but is no shield', icon:'item-holy', kind:'off'},
   /* 2026-09-17: there is no separate off-hand dagger any more. Any light one-handed weapon goes in the off
      hand (see equipFromBag in systems.js), so a plain Dagger from WEAPONS is what the kits hand out and
      what drops. Old saves holding the retired item still work: itemKey resolves it to 'dagger' by name. */
