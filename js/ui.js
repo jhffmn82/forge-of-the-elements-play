@@ -203,7 +203,7 @@ function bars(){
   $('hpFill').style.width=hpPct+'%';
   var sf=$('shFill'); if(sf){ sf.style.left=hpPct+'%'; sf.style.width=(shield>0?shPct:0)+'%'; }
   $('hpTxt').textContent=Math.max(0,Math.round(player.hp))+'/'+player.maxhp+(shield>0?' +'+Math.round(shield):'');
-  $('hpTxt').title = shield>0 ? 'Shield '+Math.round(shield)+': absorbs damage before your HP (ice armor'+(player.ward>0?', ward':'')+')' : '';
+  $('hpTxt').title = shield>0 ? 'Shield '+Math.round(shield)+': absorbs damage before your HP ('+shieldParts().join(', ')+')' : '';
   $('mpFill').style.width=(clamp(player.mp/player.maxmp,0,1)*100)+'%';
   $('mpTxt').textContent=Math.floor(player.mp)+'/'+player.maxmp;
   $('xpFill').style.width=(clamp(player.xp/player.xpNext,0,1)*100)+'%';
@@ -245,6 +245,14 @@ function trinketSlots(){
 
 /* shield points on top of HP: Water's ice armor plus any active ward (Arcane Ward, Amulet of Thorns) */
 function playerShield(){ return Math.max(0,Math.floor(player.iceArmor||0)) + ((player.buffs && player.buffs.arcaneward>0) ? Math.max(0,player.ward||0) : 0); }
+/* 2026-09-22 (Justin): the HP bar's shield tooltip named ice armor whatever the source; a Fighter's is Guard */
+function shieldParts(){
+  var parts=[], ice=Math.floor(player.iceArmor||0), ward=(player.buffs && player.buffs.arcaneward>0) ? Math.max(0,player.ward||0) : 0, guard=Math.floor(player.guard||0);
+  if(guard>0) parts.push('Guard '+guard+' of '+(player.guardMax||guard)+', the Fighter footing that rebuilds out of combat');
+  if(ice>0) parts.push('Ice Armor '+ice+' from Water affinity');
+  if(ward>0) parts.push('Ward '+ward);
+  return parts;
+}
 
 /* ---------------------------------------------------------------- faith in the HUD */
 function faithChipHTML(){
