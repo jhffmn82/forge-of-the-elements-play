@@ -430,8 +430,9 @@ var pendingExtra=null;
 function applyStatus(e,key,turns,extra){
   if(!e || e.hp<=0) return;
   if(e===player){
-    /* 2026-09-22 (Justin): slow too - Sylla's web slow cannot take hold of an Unstoppable fighter */
-    if((key==='stun' || key==='slow') && hasP('unstoppable')){ log('Unstoppable: the '+key+' fails.','c-good'); return; }
+    /* 2026-09-22 (Justin): nothing holds an Unstoppable fighter - stun, slow, root (webs), chill and freeze all fail.
+       The label still reads "stun, slow and knockback"; fear, blind and the damage statuses are not movement. */
+    if((key==='stun' || key==='slow' || key==='root' || key==='frozen' || key==='chill') && hasP('unstoppable')){ log('Unstoppable: the '+(key==='frozen'?'freeze':key==='root'?'hold':key)+' fails.','c-good'); return; }
     if(hasP('ironConst')) turns=Math.max(1,Math.round(turns/2));
   } else {
     if(e.base.boss && (key==='stun'||key==='fear'||key==='root'||key==='frozen')) turns=1;
@@ -445,6 +446,7 @@ function applyStatus(e,key,turns,extra){
   else if(key==='bleed') sfx('status-bleed'); else if(key==='slow') sfx('status-slow');
 }
 function addChill(e){
+  if(e===player && hasP('unstoppable')) return;   /* chill never stacks toward a freeze on an Unstoppable fighter (2026-09-22) */
   var c=e.st.chill; var n=(c?c.n:0)+1;
   if(n>=3){ delete e.st.chill; applyStatus(e,'frozen',2); if(e!==player) e.st.imm_frozen={t:5}; sfx('status-freeze'); floatText(e.x,e.y,'frozen','ice'); }
   else e.st.chill={t:4, n:n};
