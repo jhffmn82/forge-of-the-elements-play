@@ -12,9 +12,6 @@
 
   var st=document.createElement('style');
   st.textContent=[
-    /* ---- action buttons: gone */
-    'body.touch #extra{display:none!important}',
-
     /* ---- d-pad: a real thumb target. --dp is one button */
     'body.touch{--dp:clamp(46px,9vw,62px)}',
     'body.touch #dpad{grid-template-columns:repeat(3,var(--dp))!important;grid-auto-rows:var(--dp)!important;gap:5px!important}',
@@ -72,6 +69,35 @@
     'body.touch .tgear .tg-hint{font-size:13px!important}',
     'body.touch .tgear .tg-sec{font-size:11px!important}',
     'body.touch #bAmHot{margin-top:10px;min-height:44px;padding:0 14px;font-size:14px}',
+
+    /* Wide phone landscape: controls | map + hotbar | menus, vitals and log.
+       Flatten layout containers only; retain the same elements and their event handlers. */
+    '@media (orientation:landscape) and (min-width:740px) and (max-height:560px){',
+    ' body.touch #title .menu{top:12px;bottom:12px;overflow-y:auto;justify-content:center;gap:6px}',
+    ' body.touch #title .menu button{font-size:20px;min-height:44px;padding:6px 14px;flex-shrink:0}',
+    ' body.touch #app{display:grid!important;box-sizing:border-box;grid-template-columns:140px minmax(352px,1fr) 190px;grid-template-rows:92px 82px 62px minmax(0,1fr) 54px;gap:6px;padding:6px max(6px,env(safe-area-inset-right)) 6px max(6px,env(safe-area-inset-left))}',
+    ' body.touch #strip,body.touch #mid,body.touch #ctl{display:contents!important}',
+    ' body.touch #map{grid-column:2;grid-row:1/5;min-width:0;min-height:0;overflow:hidden}',
+    ' body.touch #hotbar{grid-column:2;grid-row:5;align-self:stretch;grid-template-rows:1fr!important;gap:4px!important;order:0;margin:0;min-width:0}',
+    ' body.touch #hotbar .slot{height:100%!important;min-width:0;aspect-ratio:auto;max-height:54px}',
+    ' body.touch #hotbar .slot .ico{width:44px!important;height:44px!important}',
+    ' body.touch #dpad{grid-column:1;grid-row:1/-1;align-self:center;justify-self:center;grid-template-columns:repeat(3,44px)!important;grid-auto-rows:44px!important;gap:3px!important}',
+    ' body.touch #fx{position:static!important;grid-column:1;grid-row:1;align-self:start;display:flex!important;max-width:100%;justify-content:center;pointer-events:auto;max-height:86px;overflow:auto}',
+    ' body.touch #top{grid-column:3;grid-row:1;min-height:0!important;min-width:0;padding:0!important;border:0}',
+    ' body.touch #brand{display:none!important}',
+    ' body.touch #tabs{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px!important;align-self:stretch}',
+    ' body.touch #tabs button{min-height:44px!important;min-width:0!important;padding:0 2px!important;font-size:13px!important;letter-spacing:0}',
+    ' body.touch #bars{grid-column:3;grid-row:2;grid-template-columns:1fr;gap:3px}',
+    ' body.touch #bars .bar{height:25px!important}',
+    ' body.touch #bars .bar span{font-size:13px!important}',
+    ' body.touch #hud2{grid-column:3;grid-row:3;display:flex;flex-wrap:wrap!important;align-content:start;justify-content:flex-start;gap:3px;overflow:auto;font-size:11px}',
+    ' body.touch #hud2 .chip{padding:2px 4px;font-size:11px}',
+    ' body.touch #log{grid-column:3;grid-row:4/6;position:static!important;width:auto!important;height:auto!important;max-height:none!important;min-height:0;contain:size;pointer-events:auto;overflow:auto;font-size:12px;line-height:1.3;padding:6px;background:#151110;border:1px solid var(--edge)}',
+    ' body.touch #shade{top:6px!important;bottom:6px!important;left:6px!important;right:6px!important}',
+    ' body.touch.gearopen #shade{bottom:66px!important}',
+    ' body.touch.gearopen #hotbar{z-index:65}',
+    ' body.touch #dtip{max-height:calc(100dvh - 24px);overflow:auto}',
+    '}',
 
     /* ---- the hotbar's long-press menu */
     'body.touch #hotbar .slot{touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}',

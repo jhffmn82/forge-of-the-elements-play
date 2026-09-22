@@ -13,6 +13,29 @@ affinityCap = function(){
   return 1 + (RUN ? RUN.cores : 0) + ((RACES[player.race]||{}).capBonus||0);
 };
 
+/* Old saves may have crossed completed biome gates before cores were tracked.
+   A carried core at an already-open exit is also treated as absorbed: this is
+   the state produced by the Deep Maw burrow before the gate/core rules met. */
+function repairCoreProgress(){
+  if(!RUN || !player) return false;
+  var changed=false, completedBefore=Math.max(0,Math.min(4,Math.floor((floorNo-1)/5)));
+  if((RUN.cores||0)<completedBefore){ RUN.cores=completedBefore; changed=true; }
+  if(player.core && floorMeta && floorMeta.exitOpen){
+    RUN.cores=Math.max(RUN.cores||0, completedBefore+1);
+    player.core=null; changed=true;
+  }
+  return changed;
+}
+
+function absorbCoreAtGate(nx, ny){
+  var name=player.core; if(!name) return false;
+  player.core=null; RUN.cores=(RUN.cores||0)+1; floorMeta.exitOpen=true;
+  log('You press the <b>'+name+'</b> into the gate. It drinks the light, and the gate grinds open.','c-kill');
+  log('<b>Your affinity cap rises to '+affinityCap()+'.</b> One more element can take root in you.','c-kill');
+  sfx('victory'); if(typeof ringFx==='function') ringFx(nx,ny,'#9FD8FF',4); sparkleFx(nx,ny,'light',60);
+  computeFOV(); updateUI(); draw(); return true;
+}
+
 var _bossDefeatedCore = bossDefeated;
 bossDefeated = function(e){
   if(RUN.cores===undefined) RUN.cores=0;
@@ -48,16 +71,13 @@ ITEM_FIT.core = 0.52;
 var _tryMoveCore = tryMove;
 tryMove = function(dx, dy){
   var nx=player.x+dx, ny=player.y+dy;
-  if(at(nx,ny)===EXIT && !floorMeta.exitOpen){
-    if(!player.core){ log('The gate is sealed. It waits for the heart its guardian carried.','c-info'); sfx('door-locked'); return; }
-    var name=player.core; player.core=null;
-    RUN.cores = (RUN.cores||0) + 1;
-    floorMeta.exitOpen = true;
-    log('You press the <b>'+name+'</b> into the gate. It drinks the light, and the gate grinds open.','c-kill');
-    log('<b>Your affinity cap rises to '+affinityCap()+'.</b> One more element can take root in you.','c-kill');
-    sfx('victory'); if(typeof ringFx==='function') ringFx(nx, ny, '#9FD8FF', 4); sparkleFx(nx, ny, 'light', 60);
-    computeFOV(); updateUI(); draw(); endTurn();
-    return;
+  if(at(nx,ny)===EXIT && player.core){
+    var wasOpen=!!floorMeta.exitOpen;
+    absorbCoreAtGate(nx,ny);
+    if(!wasOpen){ endTurn(); return; }
+    /* An already-open burrow absorbs the core and continues downstairs. */
+  } else if(at(nx,ny)===EXIT && !floorMeta.exitOpen){
+    log('The gate is sealed. It waits for the heart its guardian carried.','c-info'); sfx('door-locked'); return;
   }
   return _tryMoveCore(dx, dy);
 };

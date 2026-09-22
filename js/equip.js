@@ -18,7 +18,8 @@ var HELD = {
   spear:    {len:0.86, hand:'r', follow:0.5, tilt:-0.12, grip:0.62, two:true},
   staff:    {len:0.80, hand:'r', follow:0.4, tilt:-0.10, grip:0.62, two:true},
   wand:     {len:0.30, hand:'r', follow:1.0, tilt:-0.50, grip:0.85},
-  censer:   {len:0.34, hand:'r', follow:0.7, tilt:-0.30, grip:0.85},
+  censer:   {len:0.28, hand:'r', follow:0.7, tilt:-0.30, grip:0.85,
+             sourceGrip:[0.31,0.73], sourceTip:[0.96,0.04], sourcePommel:[0.13,0.91]},
   bow:      {len:0.58, hand:'l', follow:0.3, tilt:0.08,  grip:0.50, two:true},
   buckler:  {len:0.30, hand:'l', shield:true},
   kite:     {len:0.42, hand:'l', shield:true},
@@ -150,6 +151,10 @@ function drawHeld(g, key, pose, rest, dx, dy, sc, drawH, enchant, now, tier, han
   if(!hand) return;
   var hx=dx+hand[0]*sc, hy=dy+hand[1]*sc;
   var len=H.len*drawH, s=len/o.sh;
+  if(H.sourceTip){
+    var vx=(H.sourceTip[0]-H.sourcePommel[0])*o.sw, vy=(H.sourceTip[1]-H.sourcePommel[1])*o.sh;
+    s=len/Math.hypot(vx,vy);
+  }
   g.save();
   g.translate(hx, hy);
   var side = hk === 'r' ? 1 : -1;     /* the right hand is on the image's left: lean outward = negative angle */
@@ -169,7 +174,11 @@ function drawHeld(g, key, pose, rest, dx, dy, sc, drawH, enchant, now, tier, han
     g.rotate(ang + Math.PI/2);
     if(mirror) g.scale(-1, 1);
     if(enchant){ g.shadowColor=AFF_COL[enchant]||'#fff'; g.shadowBlur=Math.max(3, drawH*0.04); }
-    g.drawImage(o.img, o.sx,o.sy,o.sw,o.sh, -o.sw*s/2, -o.sh*s*H.grip, o.sw*s, o.sh*s);
+    if(H.sourceGrip){
+      var angle=Math.atan2((H.sourceTip[1]-H.sourceGrip[1])*o.sh,(H.sourceTip[0]-H.sourceGrip[0])*o.sw);
+      g.rotate(-Math.PI/2-angle);
+      g.drawImage(o.img,o.sx,o.sy,o.sw,o.sh,-o.sw*s*H.sourceGrip[0],-o.sh*s*H.sourceGrip[1],o.sw*s,o.sh*s);
+    }else g.drawImage(o.img, o.sx,o.sy,o.sw,o.sh, -o.sw*s/2, -o.sh*s*H.grip, o.sw*s, o.sh*s);
   }
   g.restore();
 }
@@ -195,18 +204,35 @@ function drawCastLayers(e, cs, fr, dx, dy, w, h, g){
   if(look){ g.drawImage(tintedFrame(cs,row,col,look,pose), 0,0,cell,cell, dx,dy,w,h); }
   else g.drawImage(cs.img, fr.sx, fr.sy, cell, cell, dx, dy, w, h);
   items.forEach(function(it){ if(it.z>=0) drawHeld(g, it.key, pose, rest, dx, dy, sc, drawH, it.ench, now, it.tier, it.hand); });
+  /* Fingers close over the grip rather than the handle covering the whole fist. */
+  items.forEach(function(it){
+    var held=HELD[it.key];if(it.z<0||held.shield||held.float)return;
+    var hand=pose[(it.hand||held.hand)==='r'?'rh':'lh'];if(!hand)return;
+    g.save();g.beginPath();g.arc(dx+hand[0]*sc,dy+hand[1]*sc,cell*.018*sc,0,Math.PI*2);g.clip();
+    if(look)g.drawImage(tintedFrame(cs,row,col,look,pose),0,0,cell,cell,dx,dy,w,h);
+    else g.drawImage(cs.img,fr.sx,fr.sy,cell,cell,dx,dy,w,h);
+    g.restore();
+  });
 }
 
 /* ---------------------------------------------------------------- the paper doll */
 function paintDoll(el, size){
   var cs=castSheet(player.look);
   if(!cs || !AS.map || !AS.map.held){ paintArt(el,'cast',player.look,size); return; }
+  /* 2026-09-22 (Justin): the doll drew the map sheet's 107px figure at 231 CSS px, a x2.2 blow-up. tools/pack.py
+     packs each native cut-out alone at 256 (cast-<look>-doll.png, ASSETS.cast[look].doll); it is used here when it
+     has loaded, and the map sheet stays the fallback. */
+  var dm=cs.m.doll, di=dm && atl('cast-'+player.look+'-doll.png'), hi=!!(di && di.complete && di.naturalWidth);
+  if(hi) cs={img:di, m:dm};
   var S=size||150, d=window.devicePixelRatio||1, c=document.createElement('canvas');
   c.width=S*d; c.height=S*d*1.25; c.style.width=S+'px'; c.style.height=(S*1.25)+'px';
-  var g=c.getContext('2d'); g.setTransform(d,0,0,d,0,0); g.imageSmoothingEnabled=true;
+  var g=c.getContext('2d'); g.setTransform(d,0,0,d,0,0); g.imageSmoothingEnabled=hi;
   var m=cs.m, row = m.static_row!==undefined ? m.static_row : (m.clips.idle?m.clips.idle.row:0);
   var sc=(S*1.1)/m.stand, w=m.cell*sc;
-  drawCastLayers(player, cs, {sx:0, sy:row*m.cell}, (S-w)/2, S*1.25-w+S*0.02, w, w, g);
+  var figure=document.createElement('canvas');figure.width=figure.height=m.cell;
+  var fg=figure.getContext('2d');fg.imageSmoothingEnabled=true;
+  drawCastLayers(player,cs,{sx:0,sy:row*m.cell},0,0,m.cell,m.cell,fg);
+  g.drawImage(figure,(S-w)/2,S*1.25-w+S*.02,w,w);
   el.innerHTML=''; el.appendChild(c);
   /* redraw while the doll is open so an enchanted weapon glows and an orb bobs */
   if(!el._dollTimer){ el._dollTimer=setInterval(function(){ if(!el.isConnected){ clearInterval(el._dollTimer); return; } }, 1000); }

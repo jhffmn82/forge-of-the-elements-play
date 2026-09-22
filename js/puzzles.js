@@ -366,7 +366,6 @@ window.addEventListener('keydown', function(ev){
   if(aiming) cancelAim();
   searchAround(false); updateUI();
 }, true);
-(function(){ var b=$('bSearch'); if(b) b.onclick=function(){ if(!player || player.hp<=0) return; searchAround(false); updateUI(); }; })();
 
 /* flames on or beside a frozen-hoard block melt that block */
 var _endTurnIce = endTurn;

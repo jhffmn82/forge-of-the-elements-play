@@ -20,12 +20,12 @@
   window.addEventListener('load', function(){
     fetch('build.json?t='+Date.now(), {cache:'no-store'}).then(function(r){ return r.ok ? r.json() : null; }).then(async function(b){
       if(!b || !b.built || b.built===mine) return;
-      var tried=null; try{ tried=sessionStorage.getItem('fote-upd'); }catch(e){}
+      var tried=null; try{ tried=sessionStorage.getItem('astra-temple-upd'); }catch(e){}
       if(tried===b.built) return;                          /* one attempt per build, never a reload loop */
-      try{ sessionStorage.setItem('fote-upd', b.built); }catch(e){}
+      try{ sessionStorage.setItem('astra-temple-upd', b.built); }catch(e){}
       try{
-        if(navigator.serviceWorker){ var regs=await navigator.serviceWorker.getRegistrations(); await Promise.all(regs.map(function(r){ return r.unregister(); })); }
-        if(window.caches){ var ks=await caches.keys(); await Promise.all(ks.filter(function(k){ return k.indexOf('fote')===0; }).map(function(k){ return caches.delete(k); })); }
+        if(navigator.serviceWorker){ var regs=await navigator.serviceWorker.getRegistrations(); await Promise.all(regs.filter(function(r){return r.scope===new URL('./',location.href).href;}).map(function(r){ return r.unregister(); })); }
+        if(window.caches){ var ks=await caches.keys(); await Promise.all(ks.filter(function(k){ return k.indexOf('astra-temple-')===0; }).map(function(k){ return caches.delete(k); })); }
       }catch(e){}
       location.replace(location.pathname+'?b='+(b.epoch||Date.now()));
     }).catch(function(){});                                /* offline: play the copy we have */

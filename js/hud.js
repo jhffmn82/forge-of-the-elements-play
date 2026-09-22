@@ -1,25 +1,27 @@
 /* =====================================================================
    hud.js - a roomier layout (2026-09-17).
    - Bottom strip: the log runs the strip's full height on the left; next to it the HP / MP / level bars, the fed,
-     essence and faith chips, and a one-row hotbar of 8 icon-only slots are stacked; the d-pad and a column of
-     action buttons sit at the right edge. Hovering a hotbar slot shows its name, cost and description.
+     essence and faith chips, and a one-row hotbar of 8 icon-only slots are stacked; the d-pad sits at the right
+     edge. Hovering a hotbar slot shows its name, cost and description.
+   - 2026-09-22: Justin - the Stairs / Grab / Search button column is gone (the keys and the map do those jobs),
+     and the centre column takes the room it used.
    ===================================================================== */
 
 (function(){
   var st=document.createElement('style');
   st.textContent=[
-    /* bottom strip: log (full height) | bars, chips and hotbar stacked | d-pad and a column of action buttons */
-    '#strip{grid-template-columns:minmax(220px,1fr) auto auto!important;align-items:stretch}',
+    /* bottom strip: log (full height) | bars, chips and hotbar stacked | d-pad */
+    '#strip{grid-template-columns:minmax(220px,1fr) minmax(0,720px) auto!important;align-items:stretch}',
     '#log{height:auto!important;min-height:0;contain:size;align-self:stretch;font-size:12px}',
-    '#mid{width:490px!important;justify-content:flex-start;gap:6px}',   /* the hotbar (8 x 52 + gaps) plus room for a full chip row */
+    '#mid{width:720px!important;justify-content:flex-start;gap:6px}',   /* reserve room for every status chip; the log yields first */
     '#bars{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}',
     '#mid .bar{height:20px}',
     '#mid .bar span{font-size:12.5px;padding:0 7px}',
     /* the chips fit one row under the bars: short meters, favor shown as a number only */
-    '#hud2{flex-wrap:nowrap;gap:5px;font-size:12.5px;color:var(--ink);justify-content:space-between}',
-    '#hud2 .chip{padding:2px 7px 2px 4px;gap:4px;white-space:nowrap}',
+    '#hud2{flex-wrap:nowrap;gap:5px;font-size:12.5px;color:var(--ink);justify-content:flex-start;min-width:0;max-width:100%}',
+    '#hud2 .chip{padding:2px 7px 2px 4px;gap:4px;white-space:nowrap;flex:0 0 auto;box-sizing:border-box}',
     '#hud2 .hunger{width:52px}',
-    '#hud2 .faithchip{gap:5px;min-width:0;flex:0 1 auto}',
+    '#hud2 .faithchip{gap:5px;min-width:max-content;flex:0 0 auto}',
     '#hud2 .faithchip .meter{width:40px;flex:0 1 40px;min-width:14px}',
     '#hud2 .motechip{gap:3px;font-size:11.5px}',
     '#hud2 .motechip .dot{margin-right:1px}',
@@ -36,12 +38,10 @@
     '#hotbar .slot .cdn{position:absolute;right:3px;bottom:2px;font-size:9px;color:var(--gold);text-shadow:0 1px 2px #000}',
     '#ctl{display:grid!important;grid-template-columns:auto auto;grid-template-rows:auto 1fr;gap:5px 8px;align-items:center;align-content:center}',
     '#ctl #fx{grid-column:1/-1;max-width:none;justify-content:flex-start}',
-    '#extra{display:flex!important;flex-direction:column;flex-wrap:nowrap;gap:3px;max-width:none}',
-    '#extra button{padding:3px 10px;white-space:nowrap;font-size:11px}',
-    '#bClose{display:none!important}',   /* closing a door stays on Shift+C and right-click */
     /* narrower windows keep 8 in a row with smaller slots; the chips drop their labels */
-    '@media (max-width:980px){#mid{width:430px!important} #hotbar{grid-template-columns:repeat(8,45px)!important;grid-template-rows:45px!important;gap:4px} #hotbar .slot{width:45px;height:45px} #hotbar .slot .ico{width:38px;height:38px} #hud2{font-size:12px} #hud2 .hunger{width:40px} #hud2 .faithchip .meter{width:30px}}',
-    '@media (max-width:760px){#mid{width:350px!important} #hotbar{grid-template-columns:repeat(8,37px)!important;grid-template-rows:37px!important} #hotbar .slot{width:37px;height:37px} #hotbar .slot .ico{width:31px;height:31px} #hud2 .faithchip .meter{display:none}}',
+    '@media (max-width:1200px){#strip{grid-template-columns:minmax(220px,1fr) minmax(0,620px) auto!important} #mid{width:620px!important}}',
+    '@media (max-width:980px){#strip{grid-template-columns:minmax(180px,1fr) minmax(0,480px) auto!important} #mid{width:480px!important} #hotbar{grid-template-columns:repeat(8,45px)!important;grid-template-rows:45px!important;gap:4px} #hotbar .slot{width:45px;height:45px} #hotbar .slot .ico{width:38px;height:38px} #hud2{flex-wrap:wrap;font-size:12px;gap:3px} #hud2 .chip{padding:2px 4px 2px 3px} #hud2 .hunger{width:28px} #hud2 .motechip{font-size:11px;gap:2px} #hud2 .faithchip{gap:3px} #hud2 .faithchip .meter{width:24px}}',
+    '@media (max-width:760px){#mid{width:380px!important} #hotbar{grid-template-columns:repeat(8,37px)!important;grid-template-rows:37px!important} #hotbar .slot{width:37px;height:37px} #hotbar .slot .ico{width:31px;height:31px} #hud2 .faithchip .meter{display:none}}',
     '@media (max-width:640px){#strip{grid-template-columns:1fr auto!important} #log{grid-column:1/-1;contain:none;height:clamp(70px,12vh,110px)!important}}'
   ].join('\n');
   document.head.appendChild(st);
@@ -61,7 +61,7 @@ function hotbarCard(i){
   if(!s) return '<div class="nm">Empty slot '+(i+1)+'</div><div class="hint">Drag an ability, prayer or bag item here.</div>';
   if(s.type==='ability'){
     var A=ABILITIES[s.key]; if(!A) return '';
-    var cost = A.cd ? (typeof cdLeft==='function' && cdLeft(s.key) ? 'ready in '+cdLeft(s.key)+' turns' : A.cd+'-turn cooldown') : costOf(A)+' mana';
+    var cost = A.cd ? (typeof cdLeft==='function' && cdLeft(s.key) ? 'ready in '+cdLeft(s.key)+' turns' : A.cd+'-turn cooldown') : A.favor ? A.favor+' Favor' : costOf(A)+' mana';
     return '<div class="nm">'+A.name+'</div><div class="row"><span>Cost</span><b>'+cost+'</b></div>'+(A.range?'<div class="row"><span>Range</span><b>'+spellRange(A)+'</b></div>':'')+'<div class="hint">'+A.desc+'</div><div class="hint">Key '+(i+1)+'</div>';
   }
   if(s.type==='prayer'){

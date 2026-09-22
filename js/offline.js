@@ -10,7 +10,7 @@
    ===================================================================== */
 (function(){
   if(!('caches' in window) || !('serviceWorker' in navigator)) return;
-  var CACHE = 'fote-v4', BATCH = 8;   /* must match sw.js: the worker deletes every other cache */
+  var CACHE = 'astra-temple-v1', BATCH = 8;   /* must match sw.js: the worker removes only obsolete Astra caches */
 
   function stripQuery(url){ var u=new URL(url, location.href); u.search=''; return u.toString(); }
 

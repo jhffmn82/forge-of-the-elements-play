@@ -92,9 +92,7 @@ function packNameFor(p){
   return PACK_CRYPT[n] ? n : null;
 }
 /* the planes' wall formations: a crystal or a stalagmite of this plane for the big one, small crystals beside it */
-var PACK_PLANE_KIT = {light:['crystal-gold','crystal-gold-small','stalagmite-light'], shadow:['crystal-violet','crystal-violet-small','stalagmite-shadow'], earth:['crystal-amber','crystal-amber-small','stalagmite-earth'],
-                      /* 2026-09-21: the Fire, Water and Air planes had no row, so their formations drew nothing; the pieces were packed all along */
-                      fire:['crystal-fire','crystal-fire-small','stalagmite-fire'], water:['crystal-water','crystal-water-small','stalagmite-water'], air:['crystal-air','crystal-air-small','stalagmite-air']};
+var PACK_PLANE_KIT = {light:['crystal-gold','crystal-gold-small','stalagmite-light'], shadow:['crystal-violet','crystal-violet-small','stalagmite-shadow'], earth:['crystal-amber','crystal-amber-small','stalagmite-earth']};
 function packPlaneCluster(p){
   var K=PACK_PLANE_KIT[floorMeta.plane]; if(!K) return null;
   if((p.size||1)<1) return K[1];
@@ -126,7 +124,7 @@ function packDraw(p, name, alpha){
     ctx.beginPath(); ctx.ellipse(cx0, cy0, dw*0.5, TS*0.17, 0, Math.PI*0.08, Math.PI*0.92); ctx.stroke();
     dy += Math.round(TS*0.12);                                  /* sunk, so the waterline cuts across it */
   }
-  /* the pack paints no cast shadow, and since 2026-09-21 no contact shadow either: a map object casts none (Justin) */
+
   if(flip){ ctx.translate(dx+dw/2, 0); ctx.scale(-1, 1); ctx.translate(-(dx+dw/2), 0); }
   ctx.drawImage(o.img, o.sx, o.sy, o.sw, o.sh, dx, dy, dw, dh);
   ctx.restore();
@@ -245,6 +243,30 @@ if(_ptSparklePack) ptSparkle = function(p, X, Y, W, H, alpha){ if(p.name==='pt-c
    converted props (barrels to urns, the dungeon's bone scatter) slip through. */
 function packLight(x, y, col, r, s){ floorMeta.planeLights=floorMeta.planeLights||[]; floorMeta.planeLights.push({x:x, y:y, col:col, r:r, s:s}); }
 function packWallAt(x, y){ return inb(x,y) && isWallLike(at(x,y)) && at(x,y)!==DOOR; }
+/* Corridors carved after room decoration can leave a wall memorial on floor.
+   Repair deterministically, including old saves, without moving gameplay objects. */
+function repairWallMemorials(){
+  var changed=false;
+  props.slice().forEach(function(p){
+    if(!p.wall || !/^(wall-plaque|wall-niche)$/.test(p.name) || isWallLike(at(p.x,p.y)))return;
+    var ox=p.x,oy=p.y,best=null,score=Infinity;
+    for(var dy=-2;dy<=2;dy++)for(var dx=-2;dx<=2;dx++){
+      var x=ox+dx,y=oy+dy,d=Math.abs(dx)+Math.abs(dy);
+      if(!inb(x,y)||at(x,y)!==WALL||propAt(x,y)||!inb(x,y+1)||isWallLike(at(x,y+1)))continue;
+      if(d<score){best={x:x,y:y};score=d;}
+    }
+    var lights=floorMeta&&floorMeta.planeLights;
+    if(best){
+      p.x=best.x;p.y=best.y;
+      if(lights)lights.forEach(function(l){if(l.x===ox&&Math.abs(l.y-(oy+.9))<.001){l.x=best.x;l.y=best.y+.9;}});
+    }else{
+      props.splice(props.indexOf(p),1);
+      if(lights)floorMeta.planeLights=lights.filter(function(l){return !(l.x===ox&&Math.abs(l.y-(oy+.9))<.001);});
+    }
+    rebuildPropGrid();changed=true;
+  });
+  return changed;
+}
 function packFloorFree(x, y){ return inb(x,y) && freeCell(x,y) && !nearDoor(x,y) && !(typeof isOozeAt==='function' && isOozeAt(x,y)); }
 function packWallSide(x, y){ return [[1,0],[-1,0],[0,1],[0,-1]].some(function(o){ var t=at(x+o[0],y+o[1]); return isWallLike(t) && !isDoorish(t); }); }
 var PACK_BIG = /^(sarc|tomb-|dais-sarcophagus|grave-monument|stairs-wide|rune-stone-|sun-dais|pt-outcrop)/;

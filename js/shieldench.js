@@ -35,7 +35,7 @@ function shieldKind(){
   var o=player && player.off;
   if(!o || o===EMPTY_OFF) return null;
   var ic=(o.icon||'').replace(/^item-/,'');
-  return (isShield(o) || ic==='buckler' || ic==='kite') ? 'shield' : null;
+  return (o.block>0 || ic==='buckler' || ic==='kite') ? 'shield' : null;
 }
 if(typeof offKind==='function'){
   var _offKindSh = offKind;
@@ -47,7 +47,7 @@ if(typeof derive==='function'){
   var _deriveSh = derive;
   derive = function(p){
     var r=_deriveSh(p);
-    if(p===player && p.block && p.off && p.off.enchant==='earth' && isShield(p.off) && !p.twoHanded){
+    if(p===player && p.block && p.off && p.off.enchant==='earth' && p.off.block>0 && !p.twoHanded){
       p.block = Math.min(0.75, p.block + 0.05*(p.aff && p.aff.earth || 0));
     }
     return r;
@@ -58,7 +58,7 @@ if(typeof derive==='function'){
 function onShieldBlock(att, def, raw){
   if(def!==player || !att || att===player) return;
   var sh=player.off, el=sh && sh.enchant;
-  if(!el || !isShield(sh)) return;
+  if(!el || !(sh.block>0)) return;
   var pts=shPts(el);
   if(el==='fire'){
     var burn=Math.max(1, Math.round(raw*(0.25+0.08*pts)));

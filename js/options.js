@@ -7,7 +7,7 @@
 
 /* ---------------------------------------------------------------- animation speed */
 var ANIM_SPEED = 1;
-try { ANIM_SPEED = parseFloat(localStorage.getItem('fote-anim-speed')) || 1; } catch(e){}
+try { ANIM_SPEED = parseFloat(localStorage.getItem('astra-temple-anim-speed')) || 1; } catch(e){}
 var BASE_MOVE_MS = MOVE_MS, BASE_CLIP_MS = Object.assign({}, CLIP_MS), BASE_WINDUP = Object.assign({}, CLIP_WINDUP);
 function applyAnimSpeed(){
   MOVE_MS = Math.round(BASE_MOVE_MS/ANIM_SPEED);
@@ -32,7 +32,7 @@ newRun = function(seed, choice){ var r=_newRunOpt(seed, choice); speedFxList(); 
    A multiplier on however many tiles the current view wants (desktop, phone portrait or landscape), so it
    stacks with the layout's own choice instead of replacing it. Closer = fewer, bigger tiles. */
 var MAP_ZOOM_MUL = {far:1.3, normal:1, close:0.8, closest:0.65}, MAP_ZOOM='normal';
-try { MAP_ZOOM = localStorage.getItem('fote-map-zoom') || 'normal'; } catch(e){}
+try { MAP_ZOOM = localStorage.getItem('astra-temple-map-zoom') || 'normal'; } catch(e){}
 if(!MAP_ZOOM_MUL[MAP_ZOOM]) MAP_ZOOM='normal';
 
 /* ---------------------------------------------------------------- the sheet */
@@ -88,10 +88,10 @@ function wireOptions(root){
       var v=b.getAttribute('data-v');
       if(id==='mute'){ audioInit(); if((v==='1')!==AUDIO.muted) toggleMute(); if(typeof syncAudioButtons==='function') syncAudioButtons(); }
       if(id==='music'){ audioInit(); if((v==='1')!==AUDIO.musicOn) toggleMusic(); if(typeof syncAudioButtons==='function') syncAudioButtons(); }
-      if(id==='light'){ try{ localStorage.setItem('fote-light', v); }catch(e){} var bl=$('bLight'); if(bl) bl.textContent='Lighting: '+v; draw(); }
+      if(id==='light'){ try{ localStorage.setItem('astra-temple-light', v); }catch(e){} var bl=$('bLight'); if(bl) bl.textContent='Lighting: '+v; draw(); }
       if(id==='motion'){ if(typeof setMotion==='function') setMotion(v); }
-      if(id==='mapzoom'){ MAP_ZOOM=v; try{ localStorage.setItem('fote-map-zoom', v); }catch(e){} resize(); }
-      if(id==='speed'){ ANIM_SPEED=parseFloat(v)||1; try{ localStorage.setItem('fote-anim-speed', String(ANIM_SPEED)); }catch(e){} applyAnimSpeed(); }
+      if(id==='mapzoom'){ MAP_ZOOM=v; try{ localStorage.setItem('astra-temple-map-zoom', v); }catch(e){} resize(); }
+      if(id==='speed'){ ANIM_SPEED=parseFloat(v)||1; try{ localStorage.setItem('astra-temple-anim-speed', String(ANIM_SPEED)); }catch(e){} applyAnimSpeed(); }
       sfx('ui-click'); refreshSheet();
     }; });
   });

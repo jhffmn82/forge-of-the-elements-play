@@ -49,7 +49,7 @@ function boltFx(ax,ay,bx,by,type,opts){
   /* an arrow is loosed, not lobbed: about a third of the flight time of a spell bolt (2026-09-18) */
   var dur=(opts && opts.arrow) ? 45+18*d : 110+55*d;
   var el = type==='phys' && opts && opts.arrow ? 'arrow' : type;
-  fx.push({k:'p', ax:ax, ay:ay, bx:bx, by:by, type:type, arrow: !!(opts&&opts.arrow), t0:fxAt(dur, dur*0.85), dur:dur, hit:false, sfxHit: opts&&opts.sfxHit});
+  fx.push({k:'p', ax:ax, ay:ay, bx:bx, by:by, type:type, arrow: !!(opts&&opts.arrow), t0:fxAt(dur, dur*0.85), dur:dur, hit:false, sfxHit: opts&&opts.sfxHit, silentHit:!!(opts&&opts.silentHit)});
 }
 
 function drawCorpse(f, p){
@@ -88,7 +88,7 @@ function drawFX(){
     var f=fx[i], p=(now-f.t0)/f.dur;
     if(p>=1){
       if(f.k==='p' && !f.hit){ f.hit=true; burst(f.bx,f.by, f.arrow?'phys':f.type, f.type==='phys'?6:18, 0.05);
-        if(typeof sfx==='function') sfx(f.sfxHit || hitSfxFor(f.type)); }
+        if(!f.silentHit && typeof sfx==='function') sfx(f.sfxHit || hitSfxFor(f.type)); }
       continue;
     }
     keep.push(f);

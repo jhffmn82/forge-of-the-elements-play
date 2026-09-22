@@ -19,11 +19,6 @@ attack = function(att, def, mult, label){
   mult = mult || 1;
   var knock=false;
   if(att===player && def && def.hp>0){
-    if(capstone('grom') && player.weapon && player.weapon.unarmed){
-      player.gromStreak=(player.gromStreak||0)+1;
-      if(player.gromStreak>=3){ player.gromStreak=0; mult*=1.6; knock=true; }
-    }
-    if(capstone('grumbok') && player.spellbreak && dist(att,def)<=1){ mult*=2; player.spellbreak=false; log('<b>Spellbreaker!</b> You answer the spell with steel.','c-good'); }
     if(capstone('reginald') && foesInView()===1) mult*=1.3;
   }
   var hp0 = def ? def.hp : 0;
@@ -31,7 +26,7 @@ attack = function(att, def, mult, label){
   if(knock && def && def.hp>0 && def.hp<hp0 && !(def.base && def.base.boss)){
     var nx=def.x+Math.sign(def.x-player.x), ny=def.y+Math.sign(def.y-player.y);
     if(walkable(nx,ny) && !occupied(nx,ny)){ def.x=nx; def.y=ny; def._lx=undefined; }
-    log('<b>Mountain’s Fists</b> hurl the '+def.name+' back.','c-good');
+    log('<b>Mountainâ€™s Fists</b> hurl the '+def.name+' back.','c-good');
   }
   return r;
 };
@@ -40,7 +35,6 @@ attack = function(att, def, mult, label){
 var _applyDamageCap = applyDamage;
 applyDamage = function(target, amount, type, source){
   if(target===player){
-    if(capstone('grumbok') && type!=='phys' && source && source.foe){ amount*=0.5; player.spellbreak=true; }
     if(capstone('reginald') && foesInView()===1) amount*=0.8;
   }
   var d=_applyDamageCap(target, amount, type, source);
@@ -48,41 +42,23 @@ applyDamage = function(target, amount, type, source){
     if(undyingLight() && !floorMeta.undyingUsed){
       floorMeta.undyingUsed=true; player.hp=Math.round(player.maxhp*0.5);
       log('<b>Undying Light.</b> Saint Glimmer will not let you fall here.','c-kill'); sparkleFx(player.x,player.y,'light',50); sfx('heal');
-    } else if(capstone('wobbles') && !floorMeta.wobblesSaved){
-      floorMeta.wobblesSaved=true; player.hp=Math.max(1, Math.round(player.maxhp*0.25));
-      var pickR=Math.floor(rng()*3);
-      if(pickR===0){ player.hp=player.maxhp; log('<b>Wobbles giggles.</b> "Not yet!" You are fully healed.','c-kill'); }
-      else if(pickR===1){
-        var spots=[]; for(var y=0;y<MH;y++) for(var x=0;x<MW;x++) if(walkable(x,y) && !occupied(x,y) && inRoom(x,y) && dist(player,{x:x,y:y})>12) spots.push({x:x,y:y});
-        if(spots.length){ var s=pick(spots); player.x=s.x; player.y=s.y; player._lx=undefined; computeFOV(); }
-        log('<b>Wobbles giggles</b> and yanks you somewhere else entirely.','c-kill');
-      } else {
-        if(source && source.foe && !(source.base && source.base.boss)){ var sx=source.x, sy=source.y; ents=ents.filter(function(e){ return e!==source; }); var rat=spawn('rat',sx,sy); rat.name='Very Confused Rat'; rat.noXp=true; rat.state='wander'; }
-        log('<b>Wobbles giggles.</b> Your killer is suddenly a very confused rat.','c-kill');
-      }
-      sfx('wobbles-giggle'); sparkleFx(player.x,player.y,'magic',40);
+
     }
   }
   return d;
 };
 
-/* ---------------------------------------------------------------- Murk: the Lich rises again once */
-/* 2026-09-21: Justin - the Lich comes back once, one turn after it falls, at half its HP. It used to stand
-   straight back up at full. The wait lives in floorMeta, so it survives a save and is forgotten with the floor. */
+/* ---------------------------------------------------------------- Murk: the servant rises again once */
 var _killCap = kill;
 kill = function(e, by){
-  var rise = e && e.ally && e.undeadServant && e.name==='Lich' && !e.revived && capstone('murk') && ents.indexOf(e)>=0;
+  var rise = e && e.ally && e.undeadServant && !e.revived && capstone('murk') && ents.indexOf(e)>=0;
   _killCap(e, by);
-  if(rise){ e.revived=true; floorMeta.lichRise={e:e, at:turn+1}; log('<b>Mother Murk</b> will not let your Lich rest.','c-info'); }
+  if(rise){
+    e.revived=true; e.hp=e.maxhp; e.st={};
+    var spot = !occupied(e.x,e.y) ? {x:e.x,y:e.y} : nearFree(e.x,e.y,2);
+    if(spot){ e.x=spot.x; e.y=spot.y; e._lx=undefined; ents.push(e); log('<b>Mother Murk</b> will not let your '+e.name+' rest. It rises again.','c-kill'); sparkleFx(e.x,e.y,'dark',30); }
+  }
 };
-function lichRises(){
-  var r=floorMeta.lichRise; if(!r || turn<r.at) return;
-  floorMeta.lichRise=null;
-  var e=r.e; if(ents.some(function(o){ return o.ally && o.undeadServant; })) return;   /* a new servant was raised meanwhile */
-  e.hp=Math.max(1, Math.round(e.maxhp/2)); e.st={};
-  var spot = !occupied(e.x,e.y) ? {x:e.x,y:e.y} : nearFree(e.x,e.y,2);
-  if(spot){ e.x=spot.x; e.y=spot.y; e._lx=undefined; e.t=player.t; ents.push(e); log('Your <b>Lich</b> rises again.','c-kill'); sparkleFx(e.x,e.y,'dark',30); }
-}
 
 /* ---------------------------------------------------------------- Anvil: cheaper upgrades, and +4 */
 var _upgradeCostCap = upgradeCost;
@@ -133,7 +109,6 @@ stepOn = function(){
 var _endTurnGlobes = endTurn;
 endTurn = function(){
   _endTurnGlobes();
-  lichRises();
   if(items.some(function(it){ return it.until && turn>=it.until; })) items=items.filter(function(it){ return !(it.until && turn>=it.until); });
 };
 var _itemLabelGlobes = itemLabel;

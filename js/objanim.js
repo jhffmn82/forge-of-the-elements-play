@@ -191,7 +191,7 @@ if(typeof caveArt==='function'){
   drawCaveArt = function(o, cx, bottom, alpha, flipX){
     var r=_drawCaveArtFx(o, cx, bottom, alpha, flipX);
     if(o && o.nm && objFxFor(o.nm)){
-      var s=TS/64, left=cx-o.fullW*s/2, top=bottom-o.fullH*s, dx=left+o.ox*s, w=o.sw*s;
+      var s=caveArtScale(o), left=cx-o.fullW*s/2, top=bottom-o.fullH*s, dx=left+o.ox*s, w=o.sw*s;
       if(flipX) dx = 2*cx - (dx+w);
       objFxDraw(o, dx, top+o.oy*s, w, o.sh*s, alpha, !!flipX);
     }

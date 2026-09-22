@@ -34,7 +34,10 @@ var _surfImgDeep = surfImg;
 surfImg = function(name){
   if(DEEP_AT>=0 && inDeep()){
     var pre=DEEP_REGIONS[DEEP_AT];
-    if(AS.surface && AS.surface[pre+'-'+name]) return atl('surface-'+pre+'-'+name+'.png');
+    if(AS.surface && AS.surface[pre+'-'+name]) {
+      var img=atl('surface-'+pre+'-'+name+'.png');
+      return ['face','top','rim-n','rim-v'].indexOf(name)>=0 ? weatheredMasonry(img) : img;
+    }
   }
   return _surfImgDeep(name);
 };
@@ -85,8 +88,9 @@ function deepNeedsRaster(x, y, sig){
 function deepTex(reg, name){
   var k=reg+':'+name; if(DC.tex[k]) return DC.tex[k];
   var img=atl('surface-'+DEEP_REGIONS[reg]+'-'+name+'.png'); if(!img) return null;
+  if(name==='top'||name==='face')img=weatheredMasonry(img);
   try{
-    var c=document.createElement('canvas'); c.width=img.naturalWidth; c.height=img.naturalHeight;
+    var c=document.createElement('canvas'); c.width=img.naturalWidth||img.width; c.height=img.naturalHeight||img.height;
     var g=c.getContext('2d'); g.drawImage(img,0,0);
     return (DC.tex[k]={w:c.width, h:c.height, d:g.getImageData(0,0,c.width,c.height).data});
   }catch(e){ return null; }
@@ -295,11 +299,12 @@ blitTile = function(o, px, py, alpha){
   return r;
 };
 var _drawDeepBudget = draw;
+var DEEP_RAF=null;
 draw = function(){
-  if(DC) DC.built = document.body.classList.contains('touch') ? DEEP_BUDGET-8 : 0;
-  var r=_drawDeepBudget.apply(this, arguments);
-  DEEP_RC=false; DEEP_AT=-1;
-  if(inDeep() && DC.built>=DEEP_BUDGET) requestAnimationFrame(function(){ draw(); });
+  if(DC && DEEP_RAF===null) DC.built = document.body.classList.contains('touch') ? DEEP_BUDGET-8 : 0;
+  var r;
+  try{r=_drawDeepBudget.apply(this, arguments);}finally{DEEP_RC=false;DEEP_AT=-1;}
+  if(inDeep() && DC.built>=DEEP_BUDGET && DEEP_RAF===null) DEEP_RAF=requestAnimationFrame(function(){DEEP_RAF=null;draw();});
   return r;
 };
 
@@ -449,7 +454,6 @@ function deepDrawPiece(p, alpha){
     /* stands on the bottom edge of its footprint, set down by its own solid bottom, over a contact shadow */
     var bottom=Y+h*TS+deepBottomPad(o)*s;
     dw=o.sw*s; dh=o.sh*s; dx=X+(w*TS-o.fullW*s)/2+o.ox*s; dy=bottom-o.fullH*s+o.oy*s;
-    /* no contact shadow: a map object casts none (Justin, 2026-09-21) */
   }
   if(flip){ ctx.translate(dx+dw/2, 0); ctx.scale(-1,1); ctx.translate(-(dx+dw/2), 0); }
   ctx.drawImage(o.img, o.sx, o.sy, o.sw, o.sh, Math.round(dx), Math.round(dy), Math.round(dw), Math.round(dh));

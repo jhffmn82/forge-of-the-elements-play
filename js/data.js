@@ -30,7 +30,7 @@ var RACES = {
              courts:{fire:'Ember Court', water:'Tide Court', air:'Gale Court', earth:'Stone Court'},
              sexes:{m:'fae-%s-m', f:'fae-%s-f'}},
   gloomling:{name:'Gloomling', mods:{vit:2, foc:1}, speed:100, locked:'shadow', capBonus:1,
-             blurb:'Pale things that walk with shadow. Start with Shadow 1, +1 affinity cap, 20% less hunger. Light healing hurts them.',
+             blurb:'Pale things that walk with shadow. Start with Shadow 1, +1 affinity cap, 20% less hunger. Light damage hurts 25% more; healing works normally.',
              sexes:{m:'gloomling-m', f:'gloomling-f'}}
 };
 
@@ -46,7 +46,7 @@ var WEAPONS = {
   bow:      W('Short Bow',[3,8],5,2,{range:6, note:'range 6; weak up close', icon:'item-bow'}),
   staff:    W('Oak Staff',[3,6],0,2,{note:'the most spell damage and +1 spell range', spell:0.20, icon:'item-staff'}),
   spear:    W('Spear',[5,9],5,2,{note:'reach: attacks 2 tiles away in a line', reach:2, icon:'item-spear'}),
-  censer:   W('Bone Censer',[3,6],0,1,{note:'+15% Invoke and prayer strength; off-hand eligible', divine:0.15, icon:'item-censer', light:true})
+  censer:   W('Ceremonial Knife',[3,6],0,1,{note:'+15% Invoke and prayer strength', light:true, divine:0.15, icon:'item-censer'})
 };
 var ARMORS = {
   robe:    {name:'Cloth Robe', armor:0, eva:5,  weight:'cloth',  note:'no penalty', icon:'item-robe', kind:'armor'},
@@ -60,7 +60,7 @@ var OFFHANDS = {
   kite:    {name:'Kite Shield', block:0.20, eva:-5, note:'20% block, -5 evasion', icon:'item-kite', kind:'off'},
   orb:     {name:'Orb', block:0, spell:0.10, note:'spell critical hits', icon:'item-orb', kind:'off'},
   tome:    {name:'Tome', block:0, manaPct:0.15, note:'+15% max mana', icon:'item-tome', kind:'off'},
-  holy:    {name:'Holy Symbol', block:0.05, divine:0.15, note:'+15% Invoke and prayer strength; blocks a little, but is no shield', icon:'item-holy', kind:'off'},
+  holy:    {name:'Holy Symbol', block:0, divine:0.15, note:'+15% Invoke and prayer strength', icon:'item-holy', kind:'off'},
   /* 2026-09-17: there is no separate off-hand dagger any more. Any light one-handed weapon goes in the off
      hand (see equipFromBag in systems.js), so a plain Dagger from WEAPONS is what the kits hand out and
      what drops. Old saves holding the retired item still work: itemKey resolves it to 'dagger' by name. */
@@ -96,7 +96,7 @@ var GODS = {
   grom:     {name:'Grom the Unclad', title:'god of the bare fist', sprite:'shrine-grom', color:'#C98A5A',
              rule:'No weapons or shields. Cloth armor only.', invoke:'ironbody', prayers:['ironhide','pummel'],
              boons:['Iron Flesh: +1 unarmed damage and +1 armor per rank.','Staggering Blows: unarmed hits stun 15% of the time.','Mountain’s Fists: every third unarmed attack in a row strikes as a critical hit and knocks the target back a tile.'],
-             gain:'Unarmed hits that draw blood.'},
+             gain:'Unarmed kills.'},
   grumbok:  {name:'Grumbok, Who Hates Wizards', title:'god of honest violence', sprite:'shrine-grumbok', color:'#B8453A',
              rule:'No spells, wands or magic sigils. Techniques are fine.', invoke:'bellow', prayers:['rampage','trollblood'],
              boons:['Thick Hide: take 8% less elemental and magic damage, and regenerate HP 25% faster, per rank.','Wizard Hunter: killing a spellcaster restores 10% of your max HP.','Spellbreaker: enemy spells deal half damage to you, and each one that hurts you doubles your next melee hit.'],
@@ -111,7 +111,7 @@ var GODS = {
              gain:'Kills, extra for undead and shadow creatures.'},
   murk:     {name:'Mother Murk', title:'mother of the quiet dead', sprite:'shrine-murk', color:'#8A6FB0', loves:'gloomling',
              rule:'No Light: no light affinity, enchantments or sigils.', invoke:'raisedead', prayers:['unholyaura','corpsefeast'],
-             boons:['Life Drain: a living foe felled by you or your servant heals you 2 HP per rank, and your undead have +10% HP and damage per rank.','Undying Servants: Raise Dead brings up a Zombie Bruiser instead of a skeleton.','Lich-Mother: Raise Dead calls a Lich, and your servant rises again once when it is destroyed.'],
+             boons:['Life Drain: kills heal 1 HP per rank, and your undead have +10% HP and damage per rank.','Undying Servants: Raise Dead brings up a Zombie Bruiser instead of a skeleton.','Lich-Mother: Raise Dead calls a Lich, and your servant rises again once when it is destroyed.'],
              gain:'Kills of the living, extra for kills by your undead.'},
   reginald: {name:'Sir Reginald the Unsneaky', title:'patron of the fair fight', sprite:'shrine-reginald', color:'#9FB0C0',
              rule:'No surprise attacks and no stealth kills.', invoke:'challenge', prayers:['laststand','rally'],
@@ -187,7 +187,7 @@ var PRAYERS = {
   laststand:  {name:'Last Stand', favor:10, rank:2, desc:'Take 35% less damage for 10 turns.'},
   rally:      {name:'Rally', favor:25, rank:4, desc:'Heal 25% of max HP, remove statuses, +10 accuracy for 10 turns.'},
   offering:   {name:'Offering', favor:0, rank:2, essence:15, desc:'Offer 15 essence: +10 piety and favor (x2 at a shrine).'},
-  reforge:    {name:'Reforge', favor:100, rank:4, desc:'Permanently add +1 to your main-hand weapon.'},   /* 2026-09-21: Justin - 100 Favor, and only with no enemy in sight */
+  reforge:    {name:'Reforge', favor:25, rank:4, desc:'Permanently add +1 to your main-hand weapon.'},
   manatide:   {name:'Mana Tide', favor:10, rank:2, desc:'Restore 50% of your max mana.'},
   unbound:    {name:'Unbound', favor:25, rank:4, desc:'For 6 turns your spells and techniques cost no mana.'},
   rolldice2:  {name:'Big Roll', favor:0, rank:2, amusement:30, desc:'Spend 30 amusement for a big random intervention.'}

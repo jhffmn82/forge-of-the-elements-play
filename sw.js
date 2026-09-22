@@ -11,7 +11,7 @@
    demo.html loads every script with a fresh ?v= tag, so cache keys drop the query - otherwise each load
    would store another copy and nothing would ever match offline.
 */
-var CACHE = 'fote-v4';   /* 2026-09-19: v4 fetches the page itself by URL, never from any cache */
+var CACHE = 'astra-temple-v1';   /* 2026-09-19: v4 fetches the page itself by URL, never from any cache */
 
 function key(url){ var u = new URL(url, location.href); u.search = ''; return u.toString(); }
 
@@ -40,7 +40,7 @@ self.addEventListener('install', function(ev){
 
 self.addEventListener('activate', function(ev){
   ev.waitUntil(caches.keys().then(function(ks){
-    return Promise.all(ks.filter(function(k){ return k!==CACHE; }).map(function(k){ return caches.delete(k); }));
+    return Promise.all(ks.filter(function(k){ return k.indexOf('astra-temple-')===0 && k!==CACHE; }).map(function(k){ return caches.delete(k); }));
   }).then(function(){ return self.clients.claim(); }));
 });
 

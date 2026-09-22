@@ -13,9 +13,9 @@ var BIND_ACTIONS = [
   ['char','Character','Tab'],['gear','Equipment','i'],['faith','Faith','p'],['map','Map overlay','v'],['mute','Sound on/off','m'],['music','Music on/off','n']
 ];
 var BINDS = {};
-try { BINDS = JSON.parse(localStorage.getItem('fote-binds')||'{}') || {}; } catch(e){ BINDS={}; }
+try { BINDS = JSON.parse(localStorage.getItem('astra-temple-binds')||'{}') || {}; } catch(e){ BINDS={}; }
 function bindKey(id){ var a=BIND_ACTIONS.filter(function(b){ return b[0]===id; })[0]; return BINDS[id] || (a && a[2]); }
-function saveBinds(){ try{ localStorage.setItem('fote-binds', JSON.stringify(BINDS)); }catch(e){} }
+function saveBinds(){ try{ localStorage.setItem('astra-temple-binds', JSON.stringify(BINDS)); }catch(e){} }
 function keyLabel(k){ return k===' ' ? 'Space' : k==='Tab' ? 'Tab' : k.length===1 ? (k===k.toUpperCase() && k!==k.toLowerCase() ? 'Shift+'+k : k.toUpperCase()) : k; }
 
 var REBINDING=null;

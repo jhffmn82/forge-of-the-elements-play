@@ -12,7 +12,7 @@ var SAVE_SLOTS = ['auto', '1', '2', '3'];
 /* run state only: data tables (ABILITIES, SIGILS...) always come from the current code */
 var SAVE_KEYS = ['player','RUN','floorNo','turn','revealAll','worldSeed','nextId','lastDir','spawnedExtra','nextSpawn',
   'map','seen','vis','feats','items','ents','rooms','ground','fireT','fireSrc','props','propGrid','chestKind','floorMeta',
-  'levers','plates','altars','iceG','rootG','holyG','sigilLook','sigilKnown','pendingExtra','LAST_CHOICE','rngState'];
+  'levers','plates','altars','iceG','rootG','holyG','sigilLook','sigilKnown','pendingExtra','LAST_CHOICE'];
 
 /* ---------------------------------------------------------------- graph encoding */
 function saveEncode(root){
@@ -63,13 +63,12 @@ function saveDecode(root){
 
 /* ---------------------------------------------------------------- snapshot and restore */
 function saveSnapshot(label){
-  if(rng && rng.state) rngState=rng.state();   /* 2026-09-21: the dice continue where they were, instead of reseeding from seed and turn */
   var g={};
   SAVE_KEYS.forEach(function(k){ if(typeof window[k]!=='undefined') g[k]=window[k]; });
   var logHtml=[]; var L=$('log'); if(L) for(var i=Math.max(0,L.children.length-40); i<L.children.length; i++) logHtml.push([L.children[i].className, L.children[i].innerHTML]);
   return {format:SAVE_FORMAT, savedAt:new Date().toISOString(), label:label||'',
     summary:{runId:runId(), name:player.name, who:player.who, cls:player.cls, race:player.race, god:player.god||null, level:player.level, floor:floorNo, turns:RUN.turns||turn},
-    state:saveEncode(g), log:logHtml};
+    state:saveEncode(g), rngState:typeof rng.state==='function'?rng.state():null, log:logHtml};
 }
 function saveApply(data){
   if(!data) throw new Error('No save data.');
@@ -78,8 +77,14 @@ function saveApply(data){
   else if(data.format==='fote-rescue-1') g=saveDecode(data.globals);   /* one id space across every global, so decode them together */
   else throw new Error('Not a Forge of the Elements save.');
   SAVE_KEYS.forEach(function(k){ if(g[k]!==undefined) window[k]=g[k]; });
+  if(typeof migrateXpCurve==='function')migrateXpCurve();
+  if(typeof repairCoreProgress==='function')repairCoreProgress();
+  if(typeof repairWallMemorials==='function')repairWallMemorials();
+  if(typeof refreshCavernResidents==='function')refreshCavernResidents();
+  if(typeof refreshEncounterTuning==='function')refreshEncounterTuning();
+  if(typeof repairSavedEffectClocks==='function')repairSavedEffectClocks();
   /* everything derived or visual is rebuilt rather than restored */
-  rng=mulberry32(g.rngState ? g.rngState : ((worldSeed||1) ^ (turn*2654435761))>>>0);   /* older saves without a state keep the old reseed */
+  rng=mulberry32(Number.isInteger(data.rngState)?data.rngState:((worldSeed||1) ^ (turn*2654435761))>>>0);
   fx=[]; PARTS.length=0; aiming=null; LAST_HIT=null;
   if(typeof modalOpen!=='undefined' && modalOpen && typeof closeModal==='function') closeModal();
   if(typeof SURF_CACHE!=='undefined') SURF_CACHE.key=null;
@@ -90,17 +95,18 @@ function saveApply(data){
   if(player.off && !player.off.kind && player.off.name===EMPTY_OFF.name) player.off=EMPTY_OFF;
   saveMigrateSigils();
   if(typeof ensureRuneLooks==='function') ensureRuneLooks();
-  var hp0=player.hp, mp0=player.mp;
+  var savedHP=player.hp, savedMP=player.mp;
   derive(player);
-  /* 2026-09-21: two derive layers clamp hp and mp to a maximum that later layers then raise, so a full character loaded a few points short; the saved values stand, clamped to the FINAL maximum */
-  player.hp=Math.min(hp0, player.maxhp); player.mp=Math.min(mp0, player.maxmp);
+  // Inner derive layers clamp against intermediate pools before later gear bonuses.
+  // Loading must preserve the saved resources, bounded by the FINAL derived pools.
+  player.hp=Math.min(savedHP,player.maxhp);player.mp=Math.min(savedMP,player.maxmp);
   var L=$('log'); if(L){ L.innerHTML=''; (data.log||[]).forEach(function(p){ log(p[1], p[0]); }); }
   log('<b>Game loaded.</b> '+player.name+', level '+player.level+', floor '+floorNo+'.','c-kill');
   var ov=$('over'); if(ov) ov.style.display='none';
   closeTitle(); if($('create')) $('create').classList.remove('on');
   if(openSheet) showSheet(openSheet);
   resize(); if(typeof abilityBar==='function') abilityBar(); updateUI(); draw();
-  playMusic(floorMeta && floorMeta.forge ? 'forge' : 'dungeon');
+  playSceneMusic();
 }
 
 /* sigils cut or renamed since a save was made become their nearest current sigil, and new sigils get a look */
@@ -138,11 +144,31 @@ death = function(){
   return r;
 };
 
+/* ---------------------------------------------------------------- the original game's saves, once
+   2026-09-22 (Justin): this build goes back to the original address, jhffmn82.github.io/forge-of-the-elements-play/.
+   Both addresses share one origin, so the fote-* keys the original game wrote there (saves, rescue, key binds,
+   lighting, map zoom, animation speed, audio) sit beside the astra-temple-* keys this build reads. The first launch
+   copies each original value into its key here when that key is empty and never touches the originals; a flag makes
+   it a one-time pass, so a slot deleted afterwards stays deleted. Copied settings take effect from the next launch. */
+var LEGACY_KEYS = [['fote-save-auto','astra-temple-save-auto'],['fote-save-1','astra-temple-save-1'],['fote-save-2','astra-temple-save-2'],
+  ['fote-save-3','astra-temple-save-3'],['fote-rescue','astra-temple-rescue'],['fote-binds','astra-temple-binds'],['fote-light','astra-temple-light'],
+  ['fote-map-zoom','astra-temple-map-zoom'],['fote-anim-speed','astra-temple-anim-speed'],['fote-audio','astra-temple-audio']];
+function importLegacySaves(){
+  var copied=0;
+  try{
+    if(localStorage.getItem('astra-temple-legacy-import')) return 0;
+    LEGACY_KEYS.forEach(function(p){ var v=localStorage.getItem(p[0]); if(v!==null && localStorage.getItem(p[1])===null){ localStorage.setItem(p[1], v); copied++; } });
+    localStorage.setItem('astra-temple-legacy-import', new Date().toISOString());
+  }catch(e){}
+  return copied;
+}
+importLegacySaves();
+
 /* ---------------------------------------------------------------- slots */
-function slotKey(s){ return 'fote-save-'+s; }
+function slotKey(s){ return 'astra-temple-save-'+s; }
 function readSlot(s){
   try{
-    var raw = s==='rescue' ? localStorage.getItem('fote-rescue') : localStorage.getItem(slotKey(s));
+    var raw = s==='rescue' ? localStorage.getItem('astra-temple-rescue') : localStorage.getItem(slotKey(s));
     if(!raw) return null; var d=JSON.parse(raw);
     if(s==='rescue') d.summary=d.summary||{}, d.savedAt=d.savedAt||'';
     return d;
@@ -160,7 +186,7 @@ function loadFrom(s){
   try{ saveApply(d); sfx('ui-click'); }
   catch(e){ console.error(e); alert('That save could not be loaded: '+(e.message||e)); }
 }
-function deleteSlot(s){ try{ localStorage.removeItem(s==='rescue' ? 'fote-rescue' : slotKey(s)); }catch(e){} }
+function deleteSlot(s){ try{ localStorage.removeItem(s==='rescue' ? 'astra-temple-rescue' : slotKey(s)); }catch(e){} }
 function slotSummary(d){
   if(!d) return '<span class="c-info">Empty</span>';
   var s=d.summary||{}, when=d.savedAt ? new Date(d.savedAt) : null;
@@ -239,13 +265,13 @@ function exitGame(){
 function closeTitle(){ var el=$('title'); if(el) el.classList.remove('on'); }
 function latestSave(){
   var best=null, bestSlot=null;
-  SAVE_SLOTS.forEach(function(s){ var d=readSlot(s); if(d && d.savedAt && (!best || String(d.savedAt)>String(best.savedAt))){ best=d; bestSlot=s; } });   /* 2026-09-21: a slot with no timestamp sorted above every real one */
+  SAVE_SLOTS.forEach(function(s){ var d=readSlot(s); if(d && d.summary && typeof d.savedAt==='string' && Number.isFinite(Date.parse(d.savedAt)) && (!best || d.savedAt>best.savedAt)){ best=d; bestSlot=s; } });
   return bestSlot;
 }
 function renderTitleMenu(){
-  var el=$('title'), last=latestSave(), lastD=last ? readSlot(last) : null, sm=(lastD && lastD.summary)||{};   /* 2026-09-21: one slot without a summary blanked the whole title */
+  var el=$('title'), last=latestSave(), lastD=last ? readSlot(last) : null;
   el.innerHTML='<div class="menu">'+
-    (last ? '<button id="tContinue">Continue<span class="sub">'+(sm.name||'')+' &middot; level '+(sm.level||'?')+' &middot; floor '+(sm.floor||'?')+'</span></button>' : '')+
+    (last ? '<button id="tContinue">Continue<span class="sub">'+(lastD.summary.name||'')+' &middot; level '+lastD.summary.level+' &middot; floor '+lastD.summary.floor+'</span></button>' : '')+
     '<button id="tNew">New Game</button>'+
     '<button id="tLoad">Load Game</button>'+
     '<button id="tAbout">About</button>'+

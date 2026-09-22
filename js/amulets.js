@@ -135,7 +135,7 @@ function amuletHook(x,y,check){
   var foe=ents.filter(function(e){ return e.x===x && e.y===y && e.foe; })[0];
   var path=boltPathRaw(player.x,player.y,x,y);
   if(foe){
-    if(foe.base.boss){ if(!check) return false; log('Grukk is far too heavy to drag.','c-info'); return false; }
+    if(foe.base.boss){ if(!check) return false; log(foe.name+' is far too heavy to drag.','c-info'); return false; }
     /* the first free tile next to you on the line */
     var land=null;
     for(var i=0;i<path.length-1;i++){ var t=path[i]; if(!walkable(t.x,t.y) || occupied(t.x,t.y)){ break; } land=t; break; }
@@ -167,7 +167,7 @@ function amuletHook(x,y,check){
 function amuletSwap(x,y,check){
   var who=ents.filter(function(e){ return e.x===x && e.y===y; })[0];
   if(!who){ if(check) log('Aim at a creature.','c-info'); return false; }
-  if(who.base && who.base.boss){ if(check) log('Grukk will not be moved.','c-info'); return false; }
+  if(who.base && who.base.boss){ if(check) log(who.name+' will not be moved.','c-info'); return false; }
   if(check) return true;
   var px=player.x, py=player.y;
   player.x=who.x; player.y=who.y; who.x=px; who.y=py; player._lx=undefined; who._lx=undefined;

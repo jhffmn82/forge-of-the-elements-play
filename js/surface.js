@@ -13,11 +13,33 @@
    ===================================================================== */
 
 var SURF_P = 12;                        /* cells per repeat of each surface */
+/* Cache subtle mineral grain in the constructed stone surfaces. Work at the
+   original two-pixel grain, preserving mortar and bevels and never using rng. */
+var WALL_GRAIN_CACHE = new WeakMap();
+function weatheredMasonry(img){
+  if(!img || !(img.naturalWidth||img.width)) return img;
+  if(WALL_GRAIN_CACHE.has(img)) return WALL_GRAIN_CACHE.get(img);
+  var c=document.createElement('canvas');
+  c.width=img.naturalWidth||img.width; c.height=img.naturalHeight||img.height;
+  var g=c.getContext('2d'); g.drawImage(img,0,0);
+  var im=g.getImageData(0,0,c.width,c.height), d=im.data;
+  function grain(x,y,s){var n=Math.imul(x+17,374761393)^Math.imul(y+31,668265263)^s;n=Math.imul(n^(n>>>13),1274126177);return ((n^(n>>>16))>>>0)/4294967296;}
+  for(var y=0;y<c.height;y++)for(var x=0;x<c.width;x++){
+    var i=(y*c.width+x)*4, lum=(d[i]+d[i+1]+d[i+2])/3;
+    if(!d[i+3]||lum<16)continue; // preserve deep joints without skipping dark brick
+    var u=x>>1,v=y>>1,n=grain(u,v,71),patch=grain(u>>2,v>>2,193);
+    var delta=((n-.5)*20+(patch-.5)*15)*Math.min(1,(lum-16)/22);
+    if(n<.065)delta-=9; else if(n>.96)delta+=6;
+    for(var k=0;k<3;k++)d[i+k]=Math.max(0,Math.min(255,d[i+k]+delta));
+  }
+  g.putImageData(im,0,0); WALL_GRAIN_CACHE.set(img,c); return c;
+}
 function surfImg(name){
   /* a biome or plane with its own stone uses it: surface-crypt-floor, surface-light-floor ... */
   var pre = (typeof floorMeta!=='undefined' && floorMeta && floorMeta.plane) ? floorMeta.plane : (typeof bidx==='function' && bidx()===1 ? 'crypt' : null);
-  if(pre && AS.surface && AS.surface[pre+'-'+name]) return atl('surface-'+pre+'-'+name+'.png');
-  return (AS.surface && AS.surface[name]) ? atl('surface-'+name+'.png') : null;
+  var key=pre && AS.surface && AS.surface[pre+'-'+name] ? pre+'-'+name : name;
+  var img=(AS.surface && AS.surface[key]) ? atl('surface-'+key+'.png') : null;
+  return ['face','top','rim-n','rim-v'].indexOf(name)>=0 ? weatheredMasonry(img) : img;
 }
 function surfSalt(){ return ((typeof worldSeed==='number' ? worldSeed : 0) % 9973) + floorNo*31; }
 function smod(v){ return ((v % SURF_P) + SURF_P) % SURF_P; }
@@ -148,21 +170,34 @@ function mossRaster(x, y){
   g.putImageData(im,0,0); return c;
 }
 function bonesRaster(x, y){
-  var R=32, c=document.createElement('canvas'); c.width=R; c.height=R;
-  var g=c.getContext('2d'), salt=surfSalt(), H=function(k){ return hash2(x,y,salt+60+k); };
+  // Native canvas decoration: fine contours instead of magnified 32px blocks.
+  var R=128,c=document.createElement('canvas');c.width=R;c.height=R;
+  var g=c.getContext('2d'),salt=surfSalt(),H=function(k){return hash2(x,y,salt+60+k);};
+  g.scale(4,4);
+  function oval(cx,cy,rx,ry,col){g.fillStyle=col;g.beginPath();g.ellipse(cx,cy,rx,ry,0,0,Math.PI*2);g.fill();}
   var n=3+Math.floor(H(0)*3);
   for(var i=0;i<n;i++){
-    var cx=6+H(i*3+1)*20, cy=8+H(i*3+2)*16, ang=H(i*3+3)*Math.PI, len=4+H(i*5+4)*5;
-    var dx=Math.cos(ang)*len/2, dy=Math.sin(ang)*len/2;
-    g.strokeStyle='rgba(20,18,16,0.45)'; g.lineWidth=2; g.beginPath(); g.moveTo(cx-dx+1,cy-dy+1); g.lineTo(cx+dx+1,cy+dy+1); g.stroke();
-    g.strokeStyle='#B9AF98'; g.lineWidth=1.4; g.beginPath(); g.moveTo(cx-dx,cy-dy); g.lineTo(cx+dx,cy+dy); g.stroke();
-    g.fillStyle='#D2C9B2'; g.fillRect(Math.round(cx-dx-1),Math.round(cy-dy-1),2,2); g.fillRect(Math.round(cx+dx-1),Math.round(cy+dy-1),2,2);
+    var cx=6+H(i*3+1)*20,cy=8+H(i*3+2)*16,len=4+H(i*5+4)*5;
+    g.save();g.translate(cx,cy);g.rotate(H(i*3+3)*Math.PI);
+    g.lineCap='round';g.strokeStyle='rgba(22,19,15,.45)';g.lineWidth=1.8;
+    g.beginPath();g.moveTo(-len/2+.3,.5);g.lineTo(len/2+.3,.5);g.stroke();
+    g.strokeStyle='#918776';g.lineWidth=1.25;g.beginPath();g.moveTo(-len/2,0);g.quadraticCurveTo(0,.5,len/2,0);g.stroke();
+    g.strokeStyle='#c4b9a1';g.lineWidth=.7;g.beginPath();g.moveTo(-len/2,-.2);g.quadraticCurveTo(0,.2,len/2,-.2);g.stroke();
+    [-1,1].forEach(function(end){oval(end*len/2,-.35,.65,.55,'#c9bea7');oval(end*len/2,.35,.6,.5,'#b2a58c');oval(end*len/2-.15,-.48,.3,.2,'#dfd2b6');});
+    g.restore();
   }
-  if(H(30)<0.5){   /* a small skull */
-    var sx=Math.round(8+H(31)*14), sy=Math.round(10+H(32)*10);
-    g.fillStyle='rgba(20,18,16,0.45)'; g.fillRect(sx+1,sy+1,6,5);
-    g.fillStyle='#CFC6AE'; g.fillRect(sx,sy,6,4); g.fillRect(sx+1,sy+4,4,1);
-    g.fillStyle='#2A2622'; g.fillRect(sx+1,sy+1,1,1); g.fillRect(sx+4,sy+1,1,1);
+  if(H(30)<.5){
+    g.save();g.translate(11+H(31)*14,12+H(32)*10);g.rotate((H(33)-.5)*1.1);
+    oval(.35,.5,2.9,2.55,'rgba(22,19,15,.5)');
+    var bone=g.createLinearGradient(-2,-2,2,2);bone.addColorStop(0,'#d8ccb1');bone.addColorStop(.55,'#bdb097');bone.addColorStop(1,'#8e816c');
+    oval(0,-.3,2.65,2.2,bone);oval(0,1.45,1.8,.9,'#ac9c81');
+    oval(-1,-.15,.72,.83,'#403a31');oval(1,-.15,.72,.83,'#403a31');
+    oval(-1.12,-.3,.36,.45,'#292620');oval(.88,-.3,.36,.45,'#292620');
+    g.fillStyle='#51483b';g.beginPath();g.moveTo(0,.5);g.lineTo(-.4,1.1);g.lineTo(.4,1.1);g.fill();
+    g.strokeStyle='#776a55';g.lineWidth=.18;
+    for(var t=-1;t<=1;t+=.5){g.beginPath();g.moveTo(t,1.4);g.lineTo(t,2);g.stroke();}
+    g.beginPath();g.moveTo(.2,-2.25);g.lineTo(-.2,-1.65);g.lineTo(.2,-1.3);g.stroke();
+    g.restore();
   }
   return c;
 }
@@ -173,7 +208,7 @@ function cachedRaster(kind, x, y, fn){
 }
 function blitRaster(c, px, py, alpha){
   if(!c) return;
-  ctx.save(); ctx.globalAlpha=alpha; ctx.imageSmoothingEnabled=false; ctx.drawImage(c, 0,0,32,32, px,py,TS,TS); ctx.restore();
+  ctx.save(); ctx.globalAlpha=alpha; ctx.imageSmoothingEnabled=c.width>32; ctx.drawImage(c, 0,0,c.width,c.height, px,py,TS,TS); ctx.restore();
 }
 
 /* moss and bones are drawn by the surface pass now */
@@ -215,6 +250,7 @@ function drawPropSurface(p, px, py, alpha){
     /* shelves fill the tile's width so a row of them stands nearly flush against the wall */
     var o=objArt('props','bookshelf'); if(!o) return false;
     var w=TS*0.98, h=o.sh*(w/o.sw);
+    propShadow(p.x, p.y, px, py, alpha, 'bookshelf');
     ctx.save(); ctx.globalAlpha=alpha; ctx.imageSmoothingEnabled=false;
     ctx.drawImage(o.img, o.sx, o.sy, o.sw, o.sh, Math.round(px+(TS-w)/2), Math.round(py+TS*0.97-h), Math.round(w), Math.round(h));
     ctx.restore(); return true;
@@ -395,15 +431,8 @@ drawSurfaceDeco = function(){ _drawSurfaceDecoGrass(); drawGrassBed(); };
 var PROP_SHADOW = {chest:0.34, crate:0.36, barrel:0.3, 'barrel-explosive':0.3, pot:0.28, 'brazier-lit':0.32, 'brazier-unlit':0.32, 'torch-stand':0.16,
   'table-candle':0.3, bookshelf:0.42, 'weapon-rack':0.36, cart:0.42, statue:0.34, 'statue-broken':0.34, 'banner-stand':0.3, 'alchemy-table':0.38,
   cage:0.4, fountain:0.44, 'altar-spikes':0.4, 'chest-wood-open':0.34};
-function propShadow(x, y, px, py, alpha, name){
-  var r=PROP_SHADOW[name]; if(!r) r=0.3;
-  ctx.save(); ctx.globalAlpha=alpha;
-  var cx=px+TS/2, cy=py+TS*0.86;
-  var g=ctx.createRadialGradient(cx, cy, 0, cx, cy, TS*r);
-  g.addColorStop(0,'rgba(8,7,10,0.55)'); g.addColorStop(0.7,'rgba(8,7,10,0.3)'); g.addColorStop(1,'rgba(8,7,10,0)');
-  ctx.fillStyle=g; ctx.beginPath(); ctx.ellipse(cx, cy, TS*r, TS*r*0.42, 0, 0, Math.PI*2); ctx.fill();
-  ctx.restore();
-}
+/* PR #4: scenery sits flush with the floor. Only actors cast contact shadows. */
+function propShadow(){}
 
 /* ---------------------------------------------------------------- animated pixel flames on braziers, torch stands and candles
    anchor: where the flame's base sits in the trimmed sprite (measured from the art); size: flame height in tiles */

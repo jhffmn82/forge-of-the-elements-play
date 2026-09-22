@@ -227,6 +227,9 @@ function ptCellRaster(x, y){
         }
         if(K(u2-1,v2)===0 || K(u2+1,v2)===0 || K(u2,v2-1)===0) col=ptMix(col, M.edge, 0.55);
       }
+      /* Fine rock grain follows world coordinates, including cliff faces. */
+      var rockGrain=(hash2(Math.floor(wx*R),Math.floor(wy*R),salt+114)-0.5)*10;
+      col=[col[0]+rockGrain,col[1]+rockGrain,col[2]+rockGrain];
     } else {
       /* floor: broad calm slabs; joints on only some edges, low contrast */
       var sl=ptVor(wx, wy, 2.1, salt+31), tone=hash2(sl.ix,sl.iy,salt+32);
@@ -441,7 +444,7 @@ gatherLights = function(now, prp){
   L.push({x:prp.x, y:prp.y, c:hexRGB(M.fill||'#FFFFFF'), r:13, s:0.34, tx:player.x, ty:player.y});
   ptCrystalCells().forEach(function(c){
     if(c.x<camX-4 || c.x>camX+viewW+4 || c.y<camY-4 || c.y>camY+viewH+4 || !(revealAll||seen[idxOf(c.x,c.y)])) return;
-    L.push({x:c.x, y:c.y+0.8, c:hexRGB(M.crystalLight), r:2.6, s:0.55, tx:c.x, ty:c.y+1});
+    L.push({x:c.x, y:c.y+0.8, c:hexRGB(M.crystalLight), em:true, wall:true, wr:1.6, ws:1.2, r:2.6, s:0.55, tx:c.x, ty:c.y+1});
   });
   return L;
 };
@@ -1010,7 +1013,6 @@ drawCharacter = function(e, px, py, opts){
       var target=TS*n*0.98*(e.base.bigScale||1), sc=target/Math.max(box[3], box[2]*0.85);   /* bigScale: a boss can stand taller than its footprint (2026-09-19) */
       var w=cell*sc, h=cell*sc, dx=px+(TS*n)/2-(box[0]+box[2]/2)*sc, dy=py+TS*n*0.97-(box[1]+box[3])*sc;
       ctx.save(); ctx.globalAlpha=opts&&opts.alpha!==undefined?opts.alpha:1; ctx.imageSmoothingEnabled=true;
-      ctx.fillStyle='rgba(12,10,18,0.35)'; ctx.beginPath(); ctx.ellipse(px+TS*n/2, py+TS*n-TS*0.18, TS*n*0.36, TS*0.16, 0, 0, 7); ctx.fill();
       if(opts&&opts.flip){ ctx.translate(px+TS*n/2,0); ctx.scale(-1,1); ctx.translate(-(px+TS*n/2),0); }
       ctx.drawImage(ms.img, fr.sx, fr.sy, cell, cell, dx, dy, w, h);
       if(opts&&opts.flash>0){ ctx.globalAlpha*=opts.flash; ctx.drawImage(whiteCut(ms.img,fr.sx,fr.sy,cell,cell), dx,dy,w,h); }

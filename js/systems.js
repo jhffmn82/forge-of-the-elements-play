@@ -4,6 +4,17 @@
    ========================================================================== */
 
 var BAG_MAX = 20;   /* 2026-09-17: 16 was too tight once sigils, keys and a ranged weapon compete for it */
+function hungerCost(cost){ return cost/100 * 1.5 * (player.race==='gloomling' ? 0.8 : 1); }
+
+function bossNameForFloor(){
+  var live=typeof ents!=='undefined' && ents.filter(function(e){return e.foe&&e.base&&e.base.boss&&e.hp>0;})[0];
+  if(live)return live.name||(live.base&&live.base.name)||'this floor\'s guardian';
+  if(floorNo<=5)return 'Grukk the Warchief';
+  if(floorNo<=10)return 'Morty the Mostly-Dead';
+  if(floorNo<=15)return 'the Deep Maw';
+  if(floorNo<=20)return 'the Matron of the Web';
+  return 'this floor\'s guardian';
+}
 
 /* ---------------------------------------------------------------- movement */
 function tryMove(dx,dy){
@@ -35,7 +46,7 @@ function tryMove(dx,dy){
   if(t===SECRET){ return bumpSecret(nx,ny); }
   if(t===FORGE){ if(typeof openForge==='function') openForge(); return; }
   if(t===SHRINE){ if(typeof openShrine==='function') openShrine(); return; }
-  if(t===EXIT && !floorMeta.exitOpen){ log('The gate is sealed. Grukk the Warchief holds its key in his will.','c-info'); sfx('door-locked'); return; }
+  if(t===EXIT && !floorMeta.exitOpen){ log('The gate is sealed. It opens when '+bossNameForFloor()+' falls.','c-info'); sfx('door-locked'); return; }
   if(t===CHASM){
     if(player.levitate>0){ player.x=nx; player.y=ny; player.movedThisTurn=true; stepOn(); endTurn(); return; }
     log('A sheer drop into darkness. You would need to float to cross.','c-info'); return;
@@ -44,7 +55,7 @@ function tryMove(dx,dy){
   if(!walkable(nx,ny)) return;
   player.x=nx; player.y=ny; player.movedThisTurn=true;
   if(gAt(nx,ny)===G_GRASS){ setG(nx,ny,G_SHORT); sfx('step-grass'); }
-  else if(t===WATER) sfx('step-water'); else sfx('step-stone',{vol:0.5});
+  else if(t===WATER) sfx('step-water',{vol:0.8}); else sfx('step-stone',{vol:0.8});
   stepOn(); endTurn();
 }
 /* close an open door next to you: Shift+C closes every empty adjacent door, right-click closes one */
@@ -471,7 +482,6 @@ function equipFromBag(idx, slot){
     if(it.kind!=='weapon' || it.data.hands===2 || !it.data.light){ log('Only a light weapon, shield or focus fits your off hand.','c-info'); return; }
     if(player.twoHanded){ log('Both hands are on the '+player.weapon.name+'.','c-info'); return; }
     /* 2026-09-17: the weapon itself goes into the off hand, keeping its tier, upgrades, enchantment, curse and identity */
-    if(typeof onPutOn==='function') onPutOn(it.data);   /* 2026-09-21: a cursed blade locks on here too, so it says so here too */
     var old=player.off, d=it.data;
     offHandWeapon(d);
     player.off=d;
@@ -481,7 +491,7 @@ function equipFromBag(idx, slot){
 }
 function enforceHands(){
   if(!player.twoHanded || !player.off || player.off===EMPTY_OFF) return;
-  if(!(isShield(player.off) || player.off.weapon)) return;   /* 2026-09-21: a Holy Symbol blocks a little but is not a shield; it stays like a focus does */
+  if(!(player.off.block || player.off.weapon)) return;
   var prev=player.off; player.off=EMPTY_OFF; derive(player);
   addBag('\u26E8', gearName(prev), {kind:'off', data:prev});
   log('Both hands are on the '+player.weapon.name+' &mdash; the '+prev.name+' goes into your bag.','c-info');
@@ -505,20 +515,24 @@ function shootAt(e){
 /* ---------------------------------------------------------------- turn loop */
 function endTurn(){
   if(player.hp<=0) return;
-  if(player.hidden>0 && !(player.hidden>(player._hidPrev||0))) player.hidden--;   /* fresh this turn: skip the first count */
+  if(typeof WORLD_TICK==='undefined' && player.hidden>0 && !(player.hidden>(player._hidPrev||0))) player.hidden--;
   player._hidPrev=player.hidden;
   tickStatus(player);
   if(player.hp<=0){ heroicResolve(); if(player.hp<=0){ death(); return; } }
   var cost = player.movedThisTurn ? moveCost() : actCost(player);
+  if(player.tombed)cost=100;
   player.lastAttack=false;
+  if(cost<=0){player.movedThisTurn=false;return;}
   player.t += cost;
   player.movedThisTurn=false;
   turn++; RUN.turns++;
+  if(player.blurCd>0) player.blurCd--;
   if(player.fortCd>0) player.fortCd--;
   /* 2026-09-18: a buff cast this turn used to be counted down at the end of the same turn, so "10 turns" covered
      9. One that is new or was just raised skips its first count; everything else counts as before. */
   var changed=false, bprev=player._buffPrev||{};
   for(var b in player.buffs){
+    if(typeof WORLD_TICK!=='undefined')continue;
     if(!(player.buffs[b]>0)) continue;
     if(player.buffs[b] > (bprev[b]||0)) continue;                 /* fresh this turn */
     player.buffs[b]--;
@@ -529,16 +543,17 @@ function endTurn(){
   player._buffPrev=Object.assign({}, player.buffs);
   if(changed) derive(player);
   var levFresh = player.levitate>(player._levPrev||0);
-  if(player.levitate>0 && !levFresh){ player.levitate--; if(player.levitate===0){ log('Your feet touch the ground again.','c-info'); if(at(player.x,player.y)===CHASM) fallIntoChasm(); } }
+  if(typeof WORLD_TICK==='undefined' && player.levitate>0 && !levFresh){ player.levitate--; if(player.levitate===0){ log('Your feet touch the ground again.','c-info'); if(at(player.x,player.y)===CHASM) fallIntoChasm(); } }
   player._levPrev=player.levitate;
   /* hunger */
-  var hungerRate = cost/100 * (player.race==='gloomling' ? 0.8 : 1);
+  var hungerRate = hungerCost(cost);
   var before=player.hunger; player.hunger=Math.max(0, player.hunger-hungerRate);
   if(before>=300 && player.hunger<300) log('<b>You are getting hungry.</b> Eat something soon.','c-you');
   if(player.hunger<=0 && turn%5===0){ player.hp-=1; floatText(player.x,player.y,'1','phys'); if(turn%25===0) log('You are starving!','c-you'); }
   /* the world moves */
   refreshPlayerDistance();
-  ents.slice().forEach(function(e){
+  if(typeof worldRunActors==='function')worldRunActors(player.t-cost,player.t);
+  else ents.slice().forEach(function(e){
     if(!e.foe && !e.ally) return;
     var guard=0;
     while(e.t < player.t && guard++ < 4 && ents.indexOf(e)>=0 && player.hp>0) (e.ally ? allyAct : aiAct)(e);
@@ -552,15 +567,15 @@ function endTurn(){
   if(hasP('tidalMind') && player.mp < player.maxmp/2) mpRate *= 2;
   var hpRate = (0.20 + 0.02*Math.max(0,player.stats.vit-10)) / 100;   /* slower: a full refill is ~500 turns at VIT 10 */
   if(hasP('resilient') && player.hp < player.maxhp/2) hpRate *= 2;
-  if((player.armorItem||{}).enchant==='light') hpRate *= 1 + 0.5*enchantScale('light');
-  if(hasGod('grumbok')) hpRate *= 1 + 0.25*godRank();
+  if(bodyArmor(player).enchant==='light') hpRate *= 1 + 0.5*enchantScale('light');
+  if(hasGod('grumbok')) hpRate *= 1 + 0.20*godRank();
   if(hasGod('glimmer')) hpRate *= 1 + 0.10*godRank();
   if(player.hunger<=0 || player.st.poison || player.st.rot) hpRate=0;   /* Rot (Grave Bloat) stops regeneration */
   if(seesFoe) hpRate=0;                                                 /* wounds do not close while something hunts you */
   var scale=cost/100;
   player.mp = Math.min(player.maxmp, player.mp + player.maxmp*mpRate*scale);
   healPlayer(player.maxhp*hpRate*scale, true);   /* true: natural regeneration, not a heal - it must not stanch bleeding */
-  if(!seesFoe && player.iceArmor<player.iceArmorMax) player.iceArmor=Math.min(player.iceArmorMax, player.iceArmor+0.25);
+  if(player.t-(player.lastDamageTime||0)>=500 && player.iceArmor<player.iceArmorMax) player.iceArmor=Math.min(player.iceArmorMax, player.iceArmor+cost/100);
   spotTraps();
   if(!floorMeta.boss) wanderingSpawn();
   if(typeof godTick==='function') godTick(seesFoe);
@@ -600,11 +615,11 @@ function floorIntro(){
   if(floorMeta.vault) log('Somewhere an iron vault is locked. Its key walks with one of the monsters.','c-info');
   if(floorMeta.boss) log('<b>The Warchief\'s hall.</b> Grukk waits on his throne. Kill him to open the way on.','c-you');
   (floorMeta.notes||[]).forEach(function(n){ log(n,'c-info'); });
-  playMusic(floorMeta.boss ? 'dungeon' : floorMeta.forge ? 'forge' : 'dungeon');
+  playSceneMusic();
 }
 function wanderingSpawn(){
   if(turn < nextSpawn) return;
-  nextSpawn = turn + ri(90,150);
+  nextSpawn = turn + ri(45,75);   /* twice the former wandering encounter rate */
   var alive=ents.filter(function(e){ return e.foe; }).length;
   if(spawnedExtra >= 3 + floorNo || alive >= Math.round((10 + floorNo*2)*0.8)) return;
   var spots=[];

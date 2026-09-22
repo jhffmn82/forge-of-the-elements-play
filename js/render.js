@@ -13,6 +13,9 @@ function hash2(x,y,s){ var h=(x*374761393 + y*668265263 + (s||0)*2147483647)|0; 
 
 /* ---- sprite lookups ---- */
 function objArt(group, name){
+  if(name==='item-censer'||name==='held-censer'){group='knife';name='ceremonial-knife';}
+  if(group==='structures'&&name==='stairs-up'&&AS.map&&AS.map.stairs)group='stairs';
+  if(group==='props'&&name==='weapon-rack'&&AS.map&&AS.map.rack)group='rack';
   var g=AS.map && AS.map[group]; if(!g || !g.items[name]) return null;
   var img=atl('map-'+group+'.png'); if(!img) return null;
   var b=g.items[name];
@@ -33,6 +36,11 @@ function whiteCut(img, sx,sy,sw,sh){
   WHITE_CACHE[key]=c; return c;
 }
 /* draw a trimmed object in a tile. fit: fraction of the tile; feet: stand on the tile's lower edge */
+/* Adapted from render/place.js at fb69933: round destination edges together, not each size separately. */
+function placementRect(x,y,w,h){
+  var left=Math.round(x),top=Math.round(y);
+  return {x:left,y:top,w:Math.max(1,Math.round(x+w)-left),h:Math.max(1,Math.round(y+h)-top)};
+}
 function drawObj(o, px, py, opt){
   if(!o) return false;
   opt=opt||{};
@@ -40,10 +48,17 @@ function drawObj(o, px, py, opt){
   if(opt.fill){ s=Math.max(TS/o.sw, TS/o.sh); }
   var w=o.sw*s, h=o.sh*s*(1+(opt.sy||0));
   var dx=px+(TS-w)/2, dy= opt.feet ? py+TS*(opt.base||0.96)-h : py+(TS-h)/2;
+  var rect=placementRect(dx,dy,w,h); dx=rect.x;dy=rect.y;w=rect.w;h=rect.h;
   ctx.save();
   ctx.globalAlpha=(opt.alpha===undefined?1:opt.alpha);
   ctx.imageSmoothingEnabled = s<1;
   if(opt.flip){ ctx.translate(dx+w/2,0); ctx.scale(-1,1); ctx.translate(-(dx+w/2),0); }
+  if(opt.outline){
+    var cut=whiteCut(o.img,o.sx,o.sy,o.sw,o.sh), edge=Math.max(1,Math.round(TS/40));
+    ctx.globalAlpha=(opt.alpha===undefined?1:opt.alpha)*0.22;
+    [[-edge,0],[edge,0],[0,-edge],[0,edge],[-edge,-edge],[edge,-edge],[-edge,edge],[edge,edge]].forEach(function(d){ctx.drawImage(cut,dx+d[0],dy+d[1],w,h);});
+    ctx.globalAlpha=(opt.alpha===undefined?1:opt.alpha);
+  }
   ctx.drawImage(o.img, o.sx,o.sy,o.sw,o.sh, dx,dy,w,h);
   if(opt.flash>0){ ctx.globalAlpha*=opt.flash; ctx.drawImage(whiteCut(o.img,o.sx,o.sy,o.sw,o.sh), dx,dy,w,h); }
   ctx.restore();
@@ -61,7 +76,7 @@ function blitTile(o, px, py, alpha){
 }
 
 /* dynamic lighting can be switched off from the sandbox (Light field) */
-function lightingOn(){ try { return localStorage.getItem('fote-light')!=='off'; } catch(e){ return true; } }
+function lightingOn(){ try { return localStorage.getItem('astra-temple-light')!=='off'; } catch(e){ return true; } }
 
 /* the colour behind each condition's icon: light where the art is dark, deep where the art is pale */
 var STATUS_CHIP = {burn:'#FFC27A', chill:'#BFE4F0', frozen:'#DCF2FF', root:'#C8E0A0', stun:'#FFE9A8', fear:'#C8B4E0',
@@ -103,9 +118,7 @@ function tileSprite(x,y,t){
   if(t===SEALED) return (floorMeta && floorMeta.crystalDoor && floorMeta.crystalDoor.x===x && floorMeta.crystalDoor.y===y && objArt('structures','door-crystal')) || objArt('structures','door-iron');
   if(t===STAIRS) return objArt('structures','stairs-down');
   if(t===CHEST) { var k=chestKind[idxOf(x,y)]||'chest-wood'; return objArt('chests', k==='mimic'?'chest-wood':k); }
-  /* 2026-09-21: the Forge draws from its natural-size copy on the set sheet (97x154 of art) instead of the 44x64
-     the structures grid squeezed it to and the draw then enlarged. The packer puts it there now (tools/pack.py). */
-  if(t===FORGE) return (typeof setArtAsObj==='function' && setArtAsObj('forge-lit')) || objArt('structures','forge-lit') || objArt('structures','forge-cold');
+  if(t===FORGE) return setArt('forge-lit') || objArt('structures','forge-lit') || objArt('structures','forge-cold');
   if(t===SHRINE) return objArt('structures', (GODS[RUN.shrineGod]||{}).sprite) || objArt('structures','shrine');
   if(t===EXIT) return objArt('structures','exit-gate') || objArt('structures','archway');
   if(t===RUBBLE) return objArt('props','rubble');
@@ -211,21 +224,21 @@ function drawVines(x, y, px, py, alpha, now){
   var H=function(k){ return grassHash(x,y,k); }, t=ANIM.reduce?0:now/1000;
   ctx.save(); ctx.globalAlpha=alpha; ctx.lineCap='round'; ctx.lineJoin='round';
   for(var v=0; v<4; v++){
-    var ax=px+TS*(0.05+0.9*H(v)), ay=py+TS*(0.1+0.8*H(v+10));
+    var ax=px+TS*(0.42+0.12*H(v)), ay=py+TS*(0.48+0.12*H(v+10));
     var bx=px+TS*(0.05+0.9*H(v+20)), by=py+TS*(0.1+0.8*H(v+30));
     var mx=(ax+bx)/2+(H(v+40)-0.5)*TS*0.6 + Math.sin(t*0.8+v)*TS*0.02, my=(ay+by)/2+(H(v+50)-0.5)*TS*0.6;
-    ctx.strokeStyle='#1E3316'; ctx.lineWidth=Math.max(2.5,TS*0.075);
+    ctx.strokeStyle='#263021'; ctx.lineWidth=Math.max(1,TS*0.028);
     ctx.beginPath(); ctx.moveTo(ax,ay); ctx.quadraticCurveTo(mx,my,bx,by); ctx.stroke();
-    ctx.strokeStyle='#3B5A26'; ctx.lineWidth=Math.max(1.5,TS*0.04);
+    ctx.strokeStyle='#556043'; ctx.lineWidth=Math.max(0.5,TS*0.012);
     ctx.beginPath(); ctx.moveTo(ax,ay); ctx.quadraticCurveTo(mx,my,bx,by); ctx.stroke();
-    for(var k=1;k<5;k++){
-      var q=k/5, qx=(1-q)*(1-q)*ax+2*(1-q)*q*mx+q*q*bx, qy=(1-q)*(1-q)*ay+2*(1-q)*q*my+q*q*by;
-      if(H(v*10+k+60)<0.55){
-        var la=H(v*10+k+70)*Math.PI*2 + Math.sin(t*1.3+k+v)*0.15, lr=TS*0.09;
-        ctx.fillStyle= H(v*10+k+80)<0.5 ? '#4E7A30' : '#35592A';
+    for(var k=1;k<8;k++){
+      var q=k/8, qx=(1-q)*(1-q)*ax+2*(1-q)*q*mx+q*q*bx, qy=(1-q)*(1-q)*ay+2*(1-q)*q*my+q*q*by;
+      if(H(v*10+k+60)<0.85){
+        var la=Math.atan2((1-q)*(my-ay)+q*(by-my),(1-q)*(mx-ax)+q*(bx-mx))+(k%2?1:-1)*0.9, lr=TS*(0.032+H(v*10+k+70)*0.025);
+        ctx.fillStyle= H(v*10+k+80)<0.5 ? '#667044' : '#46573A';
         ctx.beginPath(); ctx.ellipse(qx+Math.cos(la)*lr*0.8, qy+Math.sin(la)*lr*0.8, lr, lr*0.45, la, 0, Math.PI*2); ctx.fill();
       } else {
-        ctx.fillStyle='#C9BFA0'; var th=Math.max(1.5,TS*0.035); ctx.fillRect(qx-th/2, qy-th*1.6, th, th*1.4);
+        ctx.fillStyle='#8B8861'; var th=Math.max(.5,TS*0.014); ctx.fillRect(qx-th/2, qy-th*1.6, th, th*1.4);
       }
     }
   }
@@ -302,7 +315,6 @@ function drawTrap(f, px, py, alpha, now){
 function drawPillar(p, px, py, alpha, now){
   var left = Math.max(0, (p.until||0) - turn), u=TS/32;
   ctx.save(); ctx.globalAlpha=alpha;
-  ctx.fillStyle='rgba(0,0,0,.35)'; ctx.beginPath(); ctx.ellipse(px+TS/2, py+TS*0.9, TS*0.36, TS*0.1, 0, 0, 7); ctx.fill();
   var w=TS*0.56, h=TS*1.05, x=px+(TS-w)/2, y=py+TS*0.92-h;
   var g=ctx.createLinearGradient(x,0,x+w,0); g.addColorStop(0,'#5A544C'); g.addColorStop(0.35,'#8C857A'); g.addColorStop(1,'#46403A');
   ctx.fillStyle=g; ctx.fillRect(x, y+u*3, w, h-u*3);
@@ -398,7 +410,7 @@ function clipFrame(sheet, e, sliding){
       if(e._clip.name==='death' && f>=c.frames) f=c.frames-1;
       if(f>=0 && f<c.frames) return {sx:f*cell, sy:c.row*cell};
     }
-    if(e._clip.name!=='death' && now>=e._clip.t0) e._clip=null;
+    /* Expired clips fall through without mutating the simulation actor. */
   }
   if(ANIM.reduce){ var st=m.static_row!==undefined ? m.static_row : (m.clips.idle?m.clips.idle.row:0); return {sx:0, sy:st*cell}; }
   /* 2026-09-19: Justin - a sleeping creature kept playing its idle (the Myconid swayed about with a Z over it).
@@ -415,6 +427,7 @@ function drawCharacter(e, px, py, opts){
     if(cs){
       var fr=clipFrame(cs, e, opts.sliding), m=cs.m, cell=m.cell, sc=(TS*1.08)/m.stand;
       var w=cell*sc, h=cell*sc, dx=px+TS/2-w/2, dy=py+TS-(cell-m.foot)*sc;
+      var rect=placementRect(dx,dy,w,h);dx=rect.x;dy=rect.y;w=rect.w;h=rect.h;
       ctx.save(); ctx.globalAlpha=opts.alpha===undefined?1:opts.alpha; ctx.imageSmoothingEnabled=true;
       if(opts.flip){ ctx.translate(px+TS/2,0); ctx.scale(-1,1); ctx.translate(-(px+TS/2),0); }
       if(typeof drawCastLayers==='function') drawCastLayers(player, cs, fr, dx, dy, w, h); else ctx.drawImage(cs.img, fr.sx, fr.sy, cell, cell, dx, dy, w, h);
@@ -430,15 +443,32 @@ function drawCharacter(e, px, py, opts){
     var target=TS*(e.base.art||0.9)*(e.big?1.25:1), s2=target/Math.max(box[3], box[2]*0.8);
     var w2=c2*s2, h2=c2*s2, feet=(box[1]+box[3]);
     var dx2=px+TS/2-(box[0]+box[2]/2)*s2, dy2=py+TS*0.97-feet*s2;
+    /* Tier-two reference art has a single pose: give it a restrained breath,
+       attack compression and recoil without altering simulation state. */
+    if(e.base.elementTier && !ANIM.reduce && e.state!=='asleep'){
+      var msNow=performance.now(), age2=e._clip?msNow-e._clip.t0:9999;
+      var action2=e._clip&&e._clip.name==='attack'&&age2>=0&&age2<540?Math.sin(age2/540*Math.PI):0;
+      var pulse2=Math.sin(msNow/330+(e.id||0))*.012;
+      var sy2=1+pulse2-action2*.08, sx2=1+action2*.05;
+      dx2=px+TS/2+(dx2-px-TS/2)*sx2;w2*=sx2;
+      dy2=py+TS*.97+(dy2-py-TS*.97)*sy2;h2*=sy2;
+    }
+    var rect2=placementRect(dx2,dy2,w2,h2);dx2=rect2.x;dy2=rect2.y;w2=rect2.w;h2=rect2.h;
     ctx.save(); ctx.globalAlpha=opts.alpha===undefined?1:opts.alpha; ctx.imageSmoothingEnabled=true;
     if(opts.flip){ ctx.translate(px+TS/2,0); ctx.scale(-1,1); ctx.translate(-(px+TS/2),0); }
+    if(opts.outline){
+      var cut2=whiteCut(ms.img,f2.sx,f2.sy,c2,c2),edge2=Math.max(1,Math.round(TS/40));
+      ctx.globalAlpha=0.22;
+      [[-edge2,0],[edge2,0],[0,-edge2],[0,edge2],[-edge2,-edge2],[edge2,-edge2],[-edge2,edge2],[edge2,edge2]].forEach(function(d){ctx.drawImage(cut2,dx2+d[0],dy2+d[1],w2,h2);});
+      ctx.globalAlpha=1;
+    }
     ctx.drawImage(ms.img, f2.sx, f2.sy, c2, c2, dx2, dy2, w2, h2);
     if(opts.flash>0){ ctx.globalAlpha*=opts.flash; ctx.drawImage(whiteCut(ms.img,f2.sx,f2.sy,c2,c2), dx2,dy2,w2,h2); }
     ctx.restore();
     return true;
   }
   var o = spriteOn ? objArt('monsters', 'mob-'+({rat:'rat',bat:'bat',goblin:'goblin',archer:'goblin-archer',brute:'goblin-brute',slime:'slime',shaman:'goblin-shaman'}[e.kind]||'x')) : null;
-  if(o) return drawObj(o, px, py, {feet:true, fit:(e.base.art||0.9), flip:opts.flip, flash:opts.flash, sy:opts.breath});
+  if(o) return drawObj(o, px, py, {feet:true, fit:(e.base.art||0.9), flip:opts.flip, flash:opts.flash, sy:opts.breath, outline:opts.outline});
   return false;
 }
 
@@ -523,7 +553,7 @@ function wallTorchAt(x,y){
 }
 function gatherLights(now, prp){
   var L=[], x, y;
-  function add(lx,ly,col,rad,str,src){ L.push({x:lx, y:ly, c:hexRGB(col), r:rad, s:str, tx:src?src[0]:Math.round(lx), ty:src?src[1]:Math.round(ly)}); }
+  function add(lx,ly,col,rad,str,src){ L.push({em:L.length>0, x:lx, y:ly, c:hexRGB(col), r:rad, s:str, tx:src?src[0]:Math.round(lx), ty:src?src[1]:Math.round(ly)}); }
   function fl(k){ return ANIM.reduce ? 1 : 1 + 0.07*Math.sin(now/130 + k*1.7) + 0.04*Math.sin(now/47 + k*3.1); }
   var x0=camX-7, x1=camX+viewW+7, y0=camY-7, y1=camY+viewH+7;
   /* the hero's own torch follows the sliding render position, so light glides with each step */
@@ -568,7 +598,7 @@ function drawLightmap(now, prp){
   var PL = floorMeta && floorMeta.plane ? {light:{amb:[0.90,0.89,0.88], mem:[0.60,0.60,0.64]}, shadow:{amb:[0.30,0.26,0.40], mem:[0.40,0.36,0.52]}, earth:{amb:[0.42,0.44,0.34], mem:[0.46,0.48,0.40]}}[floorMeta.plane] : null;
   if(PL) BL=PL;
   var AMB = darkRoom ? [0.08,0.08,0.12] : BL.amb, MEM=BL.mem.map(function(v){ return v*0.45; });   /* the tile fade moved in here (memA) */
-  var vals=new Float32Array(W*H*3), isWall=new Uint8Array(W*H), openSeen=new Uint8Array(W*H);
+  var vals=new Float32Array(W*H*3), isWall=new Uint8Array(W*H);
   var tx, ty, k, j;
   for(ty=0; ty<H; ty++) for(tx=0; tx<W; tx++){
     var x=ox+Math.floor(tx/S), y=oy+Math.floor(ty/S), o=(ty*W+tx)*3, cell=ty*W+tx;
@@ -576,7 +606,7 @@ function drawLightmap(now, prp){
     if(!inb(x,y)){ continue; }
     var i=idxOf(x,y);
     if(!(revealAll||seen[i])) continue;
-    var wall=isWallLike(at(x,y)); isWall[cell]=wall?1:0; if(!wall) openSeen[cell]=1;
+    var wall=isWallLike(at(x,y)); isWall[cell]=wall?1:0;
     var r, g, b;
     if(!(revealAll||vis[i])){ r=MEM[0]; g=MEM[1]; b=MEM[2]; }
     else {
@@ -601,21 +631,6 @@ function drawLightmap(now, prp){
     }
     vals[o]=r; vals[o+1]=g; vals[o+2]=b;
   }
-  /* 2026-09-21: Justin's lighting ruling (the render lane's 121480e and 75ce401, brought home). In natural rock - the
-     Caverns and the six planes, the places ptMat() covers - wall light is DEPTH-LIMITED. A two-pass chamfer gives
-     every wall texel its distance into the rock from the nearest open texel; the exposed lip keeps its light, it
-     falls off as (1 - d/penetration) squared a tile and a half in, and the deep mass drops to a tenth of ambient and
-     is swallowed. Lit as a flat 0.7 of ambient, the rock read as an artificial cutaway whose broad bright masses
-     competed with the things standing on them. A light that sits in the rock (a wall crystal) lights the rock round
-     it as a bounded pool with a steeper falloff and no line-of-sight test, since every line from inside rock is
-     blocked by definition. Built stone - the Dungeon, the Crypt, the Underdark's own treatment - is untouched. */
-  var natural = typeof ptMat==='function' && !!ptMat(), dist=null, WALL_MASS_FLOOR=0.10, PEN=S*1.5;
-  if(natural){
-    dist=new Float32Array(W*H); for(j=0;j<W*H;j++) dist[j]=openSeen[j]?0:1e9;
-    for(ty=0;ty<H;ty++) for(tx=0;tx<W;tx++){ var c1=ty*W+tx, v1=dist[c1]; if(tx>0) v1=Math.min(v1, dist[c1-1]+1); if(ty>0){ v1=Math.min(v1, dist[c1-W]+1); if(tx>0) v1=Math.min(v1, dist[c1-W-1]+1.4); if(tx<W-1) v1=Math.min(v1, dist[c1-W+1]+1.4); } dist[c1]=v1; }
-    for(ty=H-1;ty>=0;ty--) for(tx=W-1;tx>=0;tx--){ var c2=ty*W+tx, v2=dist[c2]; if(tx<W-1) v2=Math.min(v2, dist[c2+1]+1); if(ty<H-1){ v2=Math.min(v2, dist[c2+W]+1); if(tx<W-1) v2=Math.min(v2, dist[c2+W+1]+1.4); if(tx>0) v2=Math.min(v2, dist[c2+W-1]+1.4); } dist[c2]=v2; }
-    for(k=0;k<lights.length;k++){ var Lr=lights[k]; Lr.rock = Lr.tx!==undefined && inb(Lr.tx,Lr.ty) && isWallLike(at(Lr.tx,Lr.ty)); }
-  }
   /* wall tops: dark masses, faintly picking up the light of the open ground beside them */
   for(ty=0; ty<H; ty++) for(tx=0; tx<W; tx++){
     var o2=(ty*W+tx)*3; if(vals[o2]!==-1) continue;
@@ -630,23 +645,6 @@ function drawLightmap(now, prp){
     var wx2=ox+Math.floor(tx/S), wy2=oy+Math.floor(ty/S);
     var dAmb = typeof deepAmbAt==='function' ? deepAmbAt(wx2, wy2) : null, A2 = dAmb || AMB, bleed = dAmb ? 0.16 : 0.45;
     vals[o2] = A2[0]*0.7 + (cnt? sr/cnt*bleed : 0); vals[o2+1] = A2[1]*0.7 + (cnt? sg/cnt*bleed : 0); vals[o2+2] = A2[2]*0.7 + (cnt? sb/cnt*bleed : 0);
-    if(natural){
-      var dd=dist[ty*W+tx], kk = dd>=1+PEN ? 0 : Math.pow(1-(dd-1)/PEN, 2);   /* the lip (dd=1) keeps its light */
-      dist[ty*W+tx]=-1;   /* marks this texel done, so the remembered-wall pass below leaves it alone */
-      vals[o2]=Math.max(A2[0]*WALL_MASS_FLOOR, vals[o2]*kk); vals[o2+1]=Math.max(A2[1]*WALL_MASS_FLOOR, vals[o2+1]*kk); vals[o2+2]=Math.max(A2[2]*WALL_MASS_FLOOR, vals[o2+2]*kk);
-      var wfx=ox+(tx+0.5)/S-0.5, wfy=oy+(ty+0.5)/S-0.5;
-      for(k=0;k<lights.length;k++){
-        var Lp=lights[k]; if(!Lp.rock) continue;
-        var pdx=Lp.x-wfx, pdy=Lp.y-wfy, pd=Math.sqrt(pdx*pdx+pdy*pdy); if(pd>=Lp.r) continue;
-        var pf=Math.pow(1-pd/Lp.r, 2.2)*Lp.s; vals[o2]+=Lp.c[0]*pf; vals[o2+1]+=Lp.c[1]*pf; vals[o2+2]+=Lp.c[2]*pf;
-      }
-    }
-  }
-  /* remembered rock takes the same depth attenuation, else a mass would brighten the moment it left sight (audit, 2026-09-21) */
-  if(natural) for(ty=0; ty<H; ty++) for(tx=0; tx<W; tx++){
-    var c3=ty*W+tx, o3=c3*3; if(!isWall[c3] || dist[c3]<0 || dist[c3]>=1e9) continue;
-    var d3=dist[c3], k3 = d3>=1+PEN ? 0 : Math.pow(1-(d3-1)/PEN, 2);
-    vals[o3]=Math.max(vals[o3]*WALL_MASS_FLOOR, vals[o3]*k3); vals[o3+1]=Math.max(vals[o3+1]*WALL_MASS_FLOOR, vals[o3+1]*k3); vals[o3+2]=Math.max(vals[o3+2]*WALL_MASS_FLOOR, vals[o3+2]*k3);
   }
   /* soft ceiling: stacked lights (braziers beside a shrine) roll off instead of washing the tiles out */
   for(j=0;j<W*H*3;j++){ var v=vals[j]; if(v>1) vals[j]=1+(v-1)*0.3; }
@@ -853,13 +851,16 @@ function draw(){
       ctx.globalAlpha=1;
     }
   }
+  var upright=[];
+  function standing(row,paint){upright.push({row:row,paint:paint,order:upright.length});}
   /* ---- tile objects ---- */
-  for(y=camY;y<=camY+viewH;y++) for(x=camX;x<=camX+viewW;x++){
-    if(!inb(x,y)) continue; var oi=idxOf(x,y); if(!(revealAll||seen[oi])) continue;
-    var ot=map[oi]; if(ot===FLOOR||ot===WALL||ot===WATER||ot===CHASM||ot===SECRET) continue;
+  function paintTileObject(x,y){
+    if(!inb(x,y)) return; var oi=idxOf(x,y); if(!(revealAll||seen[oi])) return;
+    var ot=map[oi]; if(ot===FLOOR||ot===WALL||ot===WATER||ot===CHASM||ot===SECRET) return;
     var oa=(revealAll||vis[oi])?1:memA(0.45), opx=(x-camX)*TS, opy=(y-camY)*TS, spr=spriteOn?tileSprite(x,y,ot):null;
-    if(typeof drawSideDoor==='function' && drawSideDoor(x, y, ot, opx, opy, oa)) continue;   /* doors in east/west walls (surface.js) */
-    if(ot===OPEN){ drawOpenDoor(x, y, opx, opy, oa); continue; }
+    if(ot===CHEST && typeof propShadow==='function') propShadow(x, y, opx, opy, oa, 'chest');
+    if(typeof drawSideDoor==='function' && drawSideDoor(x, y, ot, opx, opy, oa)) return;   /* doors in east/west walls (surface.js) */
+    if(ot===OPEN){ drawOpenDoor(x, y, opx, opy, oa); return; }
     var isDoor=(ot===DOOR||ot===OPEN||ot===LOCKED||ot===TOLL||ot===ICEDOOR||ot===THORNS||ot===SEALED);
     if(spr){
       var big = ot===FORGE||ot===SHRINE||ot===EXIT;   /* 2026-09-19: the god statues are two tiles tall - a shrine stands on its tile and rises above it */
@@ -871,6 +872,10 @@ function draw(){
       var col={2:'#6B4B2A',7:'#53381F',3:'#E8B44A',4:'#7A5A2A',5:'#E2622B',9:'#8A8A9A',10:'#F6E7B0',11:'#9FD8FF',12:'#3E6B2E',13:'#9FD8FF',14:'#B8453A',17:'#7A5A34',18:'#6FB7FF'}[ot]||'#555';
       ctx.fillStyle=col; ctx.fillRect(opx+TS*0.12,opy+TS*0.12,TS*0.76,TS*0.76); ctx.globalAlpha=1;
     }
+  }
+  for(y=camY;y<=camY+viewH;y++) for(x=camX;x<=camX+viewW;x++){
+    if(!inb(x,y) || !(revealAll||seen[idxOf(x,y)]))continue;
+    (function(tx,ty){standing(ty+1,function(){paintTileObject(tx,ty);});})(x,y);
   }
   /* pressure plates */
   if(plates) plates.cells.forEach(function(p){
@@ -889,10 +894,8 @@ function draw(){
   drawTelegraphs(now);   /* boss attack markings sit on the floor, under whoever stands there */
   /* items */
   items.forEach(function(it){
-    if(!(revealAll||seen[idxOf(it.x,it.y)])) return;
+    if(!(revealAll||vis[idxOf(it.x,it.y)])) return;
     var ipx=(it.x-camX)*TS, ipy=(it.y-camY)*TS, ia=(revealAll||vis[idxOf(it.x,it.y)])?1:memA(0.45);
-    /* 2026-09-21: Justin - a map object casts no shadow; only a creature does. A coin, a crate or a crystal sits flush on
-       the stone with no gap beneath it, so an ellipse there does not ground it, it floats it. */
     var bob = ANIM.reduce ? 0 : Math.sin(now/400 + it.x*2 + it.y)*TS*0.03;
     if(it.kind==='key'){
       /* 2026-09-17: a key on a stone floor was almost impossible to spot, and missing one locks the vault
@@ -913,8 +916,7 @@ function draw(){
     if(it.kind==='mote' && !ANIM.reduce){ ctx.save(); ctx.globalCompositeOperation='lighter'; ctx.globalAlpha=0.18+0.08*Math.sin(now/200+it.x); ctx.fillStyle=AFF_COL[it.el]; ctx.beginPath(); ctx.arc(ipx+TS/2,ipy+TS*0.58,TS*0.2,0,7); ctx.fill(); ctx.restore(); }
   });
   /* props */
-  var sortedProps=props.slice().sort(function(a,b){ return a.y-b.y; });
-  sortedProps.forEach(function(p){
+  function paintProp(p){
     if(!(revealAll||seen[idxOf(p.x,p.y)])) return;
     var ppx=(p.x-camX)*TS, ppy=(p.y-camY)*TS, pa=(revealAll||vis[idxOf(p.x,p.y)])?1:memA(0.45);
     var o=spriteOn ? objArt('props',p.name)||objArt('structures',p.name)||objArt('chests',p.name)||objArt('terrain',p.name) : null;   /* an opened chest's art lives with the chests */
@@ -922,13 +924,19 @@ function draw(){
     if(p.name==='vines'){ drawVines(p.x, p.y, ppx, ppy, pa, now); return; }
     if(p.pillar){ drawPillar(p, ppx, ppy, pa, now); return; }
     if(typeof drawPropSurface==='function' && drawPropSurface(p, ppx, ppy, pa)) return;   /* flat bones and rubble (surface.js) */
+    if(typeof propShadow==='function' && !p.flat) propShadow(p.x, p.y, ppx, ppy, pa, p.name);   /* contact shadow (surface.js) */
     if(!drawObj(o, ppx, ppy, {feet:!p.flat, fit: p.flat?0.82 : (p.name==='bookshelf'||p.name==='statue'||p.name==='boss-throne')?1.12 : /^(urn|coffin|sarcophagus|tomb)/.test(p.name)?1.08 : 0.9, alpha:pa, flash:flashOf(p)})){
       ctx.globalAlpha=pa; ctx.fillStyle=p.b?'#6A5A48':'#4A4038'; ctx.fillRect(ppx+TS*0.2,ppy+TS*0.2,TS*0.6,TS*0.6); ctx.globalAlpha=1;
     }
     if(typeof propFlame==='function') propFlame(p, o, ppx, ppy, pa, now);   /* animated flames (surface.js) */
     if(p.name==='elemental-lock' && !p.opened){ ctx.globalAlpha=pa*(0.6+0.3*Math.sin(now/300)); ctx.fillStyle=AFF_COL[p.element]; ctx.beginPath(); ctx.arc(ppx+TS/2,ppy+TS*0.25,TS*0.1,0,7); ctx.fill(); ctx.globalAlpha=1; }
     if(p.prisoner && (revealAll||vis[idxOf(p.x,p.y)])){ mark('!', ppx+TS*0.72, ppy+TS*0.2, '#E8B44A'); }
+  }
+  props.forEach(function(p){
+    if(p.flat || p.name==='vines')paintProp(p);
+    else standing(p.y+(p.h||1),function(){paintProp(p);});
   });
+
   /* fire on the ground */
   for(y=camY;y<=camY+viewH;y++) for(x=camX;x<=camX+viewW;x++){
     if(!inb(x,y) || !fireT[idxOf(x,y)] || !(revealAll||vis[idxOf(x,y)])) continue;
@@ -940,20 +948,15 @@ function draw(){
 
   /* ---- entities, back to front ---- */
   var list=ents.filter(function(e){ return e!==player && (revealAll||vis[idxOf(e.x,e.y)]||(e.foe && player && player.dawnUntil>turn)); }).sort(function(a,b){ return a.y-b.y; });
-  var playerDrawn=false;
   function drawPlayer(){
-    playerDrawn=true;
     var poff=entOffset(player);
     atTile(prp.x,prp.y,function(px0,py0){
       var px=px0+poff[0]+shakeOf(player), py=py0+poff[1]-prp.hop*TS*0.10;
       ctx.globalAlpha=0.35; ctx.fillStyle='#000'; ctx.beginPath(); ctx.ellipse(px0+TS/2,py0+TS*0.9,TS*0.28,TS*0.1,0,0,7); ctx.fill(); ctx.globalAlpha=1;
       var fade = player.hidden>0 ? 0.5 : 1;
       var flip = player.face==='west';
-      if(!drawCharacter(player, px, py, {alpha:fade, flip:flip, flash:flashOf(player), sliding:!!player._mt})){
-        var sp = spriteOn ? playerSprite() : null;
-        if(!(sp && drawSprite(sp.im, px, py, fade, 1, {flip:sp.flip, breath:sp.animated?0:breathOf(player), flash:flashOf(player)}))){
-          ctx.globalAlpha=fade; ctx.fillStyle=player.col||'#E8B44A'; roundRect(px+TS*0.14,py+TS*0.1,TS*0.72,TS*0.72,TS*0.16); ctx.fill(); glyph('@',px,py,'#120F0D'); ctx.globalAlpha=1;
-        }
+      if(!drawCharacter(player, px, py, {alpha:fade, flip:flip, flash:flashOf(player), sliding:motionActive(player,now)})){
+        ctx.globalAlpha=fade; ctx.fillStyle=player.col||'#E8B44A'; roundRect(px+TS*0.14,py+TS*0.1,TS*0.72,TS*0.72,TS*0.16); ctx.fill(); glyph('@',px,py,'#120F0D'); ctx.globalAlpha=1;
       }
       var shp = typeof playerShield==='function' ? playerShield() : 0;
       if(shp>0){ var pulseS=ANIM.reduce?0.5:0.5+0.5*Math.sin(now/400); ctx.save(); ctx.globalAlpha=0.18+0.12*pulseS+Math.min(0.2, shp/player.maxhp*0.4);
@@ -964,14 +967,14 @@ function draw(){
     });
   }
   list.forEach(function(e){
-    if(!playerDrawn && e.y>player.y) drawPlayer();
+    standing(renderPos(e).y+1,function(){
     var off=entOffset(e), rp=renderPos(e);
     atTile(rp.x,rp.y,function(px0,py0){
       var px=px0+off[0]+shakeOf(e), py=py0+off[1]-rp.hop*TS*0.14 - (e.base.flying ? TS*0.12 + (ANIM.reduce?0:Math.sin(now/180+e.id)*TS*0.04) : 0);
       ctx.globalAlpha=0.35; ctx.fillStyle='#000'; ctx.beginPath(); ctx.ellipse(px0+TS/2,py0+TS*0.9,TS*0.26*(e.base.art||0.9),TS*0.09,0,0,7); ctx.fill(); ctx.globalAlpha=1;
-      var flip = player.x < e.x;
+      var flip = e.ally && typeof e.facingLeft==='boolean' ? e.facingLeft : player.x < e.x;
       if(e.base && e.base.artLeft) flip = !flip;   /* art painted facing left (goblin) */
-      if(!drawCharacter(e, px, py, {flip:flip, flash:flashOf(e), breath:breathOf(e)})){
+      if(!drawCharacter(e, px, py, {flip:flip, flash:flashOf(e), breath:breathOf(e), outline:e.foe && !!vis[idxOf(e.x,e.y)]})){
         var bb=breathOf(e)*TS*0.6;
         ctx.fillStyle=e.col; roundRect(px+TS*0.14,py+TS*0.1-bb,TS*0.72,TS*0.72+bb,TS*0.16); ctx.fill(); glyph(e.ch,px,py,'#120F0D');
       }
@@ -998,24 +1001,27 @@ function draw(){
       /* 2026-09-20: Justin - "we need some art for conditions and not just a black placeholder symbol". The icons
          were drawn straight onto the scene, so a dark one over a dark creature read as a black box. Each sits on a
          small chip of its own colour now, with a dark rim, so it reads against anything. */
-      ['burn','chill','frozen','root','stun','fear','blind','poison','web','slow','bleed'].forEach(function(k){
-        if(!e.st[k]) return;
-        var col=STATUS_CHIP[k]||'#C8C0B4', cx=ix+TS*0.1, cy=py0-TS*0.3+TS*0.15, rr=TS*0.15;
+      (typeof statusList==='function'?statusList(e):[]).forEach(function(status){
+        var k=status.k;
+        var col=STATUS_CHIP[k]||'#C8C0B4', cx=ix+TS*0.1, cy=py0-TS*0.3+TS*0.15, rr=TS*0.115;
         ctx.save();
         ctx.fillStyle='rgba(10,8,6,0.85)'; ctx.beginPath(); ctx.arc(cx, cy, rr*1.25, 0, 7); ctx.fill();
         ctx.fillStyle=col; ctx.beginPath(); ctx.arc(cx, cy, rr, 0, 7); ctx.fill();
         ctx.restore();
-        /* 2026-09-21: drawObj centres its art in a whole tile whose corner is the point given, so the icon used to land
-           0.4 of a tile right of its chip and 0.35 below it: an empty disc over the head, a stray icon over the chest.
-           Hand it the tile whose centre IS the chip. The chip grew from 0.115 to 0.15 so a ring of colour shows round
-           the icon (the rebuild's fix, ported). */
-        if(!drawObj(objArt('icons','st-'+k), cx-TS/2, cy-TS/2, {fit:0.26})) mark(k.charAt(0), cx-TS*0.09, cy, '#120F0D');
+        if(!drawObj(objArt('icons',status.icon||'st-'+k), cx-TS/2, cy-TS/2, {fit:0.26})){
+          ctx.save();
+          ctx.fillStyle='#120F0D'; ctx.font='600 '+Math.max(7,Math.round(TS*0.2))+'px "IBM Plex Mono",monospace';
+          ctx.textAlign='center'; ctx.textBaseline='middle';
+          ctx.fillText(k.charAt(0).toUpperCase(),cx,cy);
+          ctx.restore();
+        }
         ix+=TS*0.24;
       });
     });
   });
-  if(!playerDrawn) drawPlayer();
-  if(typeof drawOccluders==='function') drawOccluders(now);   /* tall scenery in front of whoever stands behind it (cavefixes.js) */
+    });
+  standing(prp.y+1,drawPlayer);
+  upright.sort(function(a,b){return a.row-b.row || a.order-b.order;}).forEach(function(c){c.paint();});
 
   /* tall grass sits on top: its front blades are drawn over everything standing on the tile */
   for(y=camY;y<=camY+viewH;y++) for(x=camX;x<=camX+viewW;x++){

@@ -16,7 +16,7 @@
   /* 2026-09-17: their arrows are grave-tipped. A 4-7 shot was nothing to a mage with Magic Barrier (-5 from
      ranged) or anyone in real armour, so the threat is the poison rather than the hit. */
   M.bonearcher = {name:'Bone Archer', sprite:'m-bone-archer', col:'#D8CEBC', ch:'a', hp:36, dmg:[5,8], acc:64, eva:16, armor:1, speed:100, range:6, xp:26,
-                  band:[7,10], w:14, undead:true, reloads:true, poisons:0.45, art:0.95, sfx:'skeleton'};
+                  band:[7,10], w:14, undead:true, reloads:true, poisons:0.65, art:0.95, sfx:'skeleton'};
   M.shade      = {name:'Shade', sprite:'m-shade', col:'#5A3E7A', ch:'S', hp:40, dmg:[5,8], acc:66, eva:26, armor:0, speed:100, range:1, xp:30,
                   band:[7,10], w:10, undead:true, shadowy:true, phases:true, el:'shadow', art:0.95, sfx:'elementaling'};
   M.gravebloat = {name:'Grave Bloat', sprite:'m-grave-bloat', col:'#9FBF7A', ch:'B', hp:75, dmg:[8,11], acc:58, eva:4, armor:2, speed:100, range:1, xp:38,
@@ -115,7 +115,7 @@ function addCloud(cx, cy, r, turns, dmg, source){
 function cloudAt(i){ return (floorMeta.clouds||[]).filter(function(c){ return turn<c.until && c.cells.indexOf(i)>=0; })[0]; }
 var _endTurnCrypt = endTurn;
 endTurn = function(){
-  _endTurnCrypt();
+  var before=turn;_endTurnCrypt();if(turn===before)return;
   if(!floorMeta || !floorMeta.clouds || !floorMeta.clouds.length || !player || player.hp<=0) return;
   floorMeta.clouds = floorMeta.clouds.filter(function(c){ return turn<c.until; });
   ents.slice().forEach(function(e){
@@ -204,7 +204,7 @@ attack = function(att, def, mult, label){
   var hp0 = def ? def.hp : 0;
   var r=_attackCrypt(att, def, mult, label);
   if(att===player && def && def.base && def.base.fumes && dist(att,def)<=1 && def.hp>0 && (def._fumeAt||-9)<turn-1){
-    def._fumeAt=turn; addCloud(def.x, def.y, 1, 3, sDMG(2+Math.floor(floorNo/3)), 'beetle');
+    def._fumeAt=turn; addCloud(def.x, def.y, 1, 5, sDMG(2+Math.floor(floorNo/3)), 'beetle');
     log('The <b>Grave Beetle</b> vents a cloud of noxious fumes!','c-you'); sfx('trap-gas');
   }
   if(att && att.base && att.base.reloads && def===player && dist(att,def)>1){
@@ -239,7 +239,7 @@ aiAct = function(e){
       e.boltCd=(e.boltCd||0)-1;
       if(d<=5 && e.boltCd<=0){
         e.boltCd=3; setClip(e,'attack'); boltFx(e.x,e.y,player.x,player.y,'dark');
-        if(rng()<hitChance(b.acc+8, player.eva)){ var gd=applyDamage(player, roll(3,6)+Math.floor(floorNo/2), 'dark', e); floatText(player.x,player.y,String(gd),'dark'); log('The <b>Necro-Acolyte</b>\'s grave bolt hits you: '+gd+'.','c-you'); if(player.hp<=0) kill(player,e); }
+        if(rng()<hostileHitChance(hitChance(b.acc+8, player.eva))){ var gd=applyDamage(player, roll(3,6)+Math.floor(floorNo/2), 'dark', e); floatText(player.x,player.y,String(gd),'dark'); log('The <b>Necro-Acolyte</b>\'s grave bolt hits you: '+gd+'.','c-you'); if(player.hp<=0) kill(player,e); }
         else log('A grave bolt misses.','c-miss');
         e.t+=actCost(e); return;
       }
@@ -274,7 +274,7 @@ kill = function(e, by){
     return;
   }
   if(b.bursts && ents.indexOf(e)>=0){
-    addCloud(e.x, e.y, 1, 3, sDMG(3+Math.floor(floorNo/3)), 'bloat');
+    addCloud(e.x, e.y, 1, 5, sDMG(3+Math.floor(floorNo/3)), 'bloat');
     if(vis[idxOf(e.x,e.y)]) log('The <b>Grave Bloat</b> bursts in a cloud of rot!','c-you');
     sfx('trap-gas');
   }
@@ -416,7 +416,7 @@ function mortyAct(e){
   /* soul bolts at range, otherwise keep his distance */
   if(d>=2 && d<=7){
     setClip(e,'attack'); boltFx(e.x,e.y,player.x,player.y,'dark'); sfx('shaman-cast');
-    if(rng()<hitChance(e.base.acc, player.eva)){ var sd=applyDamage(player, roll(6,10)+Math.floor(floorNo/2), 'dark', e); floatText(player.x,player.y,String(sd),'dark'); log('Morty\'s soul bolt hits you: '+sd+'.','c-you'); if(player.hp<=0) kill(player,e); }
+    if(rng()<hostileHitChance(hitChance(e.base.acc, player.eva))){ var sd=applyDamage(player, roll(6,10)+Math.floor(floorNo/2), 'dark', e); floatText(player.x,player.y,String(sd),'dark'); log('Morty\'s soul bolt hits you: '+sd+'.','c-you'); if(player.hp<=0) kill(player,e); }
     else log('Morty\'s soul bolt misses.','c-miss');
     e.t+=actCost(e); return;
   }

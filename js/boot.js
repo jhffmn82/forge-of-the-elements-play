@@ -41,16 +41,12 @@
   };
   $('bLevel').onclick=function(){ gainXP(player.xpNext-player.xp); updateUI(); };
   $('bAgain').onclick=function(){ $('over').style.display='none'; openCreate(); };
-  $('bStairs').onclick=function(){ if(at(player.x,player.y)===STAIRS) descend(); else log('No stairs here.','c-info'); };
-  $('bGrab').onclick=function(){ if(grab()) endTurn(); };
-  $('bClose').onclick=function(){ closeAdjacentDoors(); updateUI(); };
-  $('bSwap').onclick=function(){ swapWeapon(); };
 
   /* help sheet */
   var help=$('mHelp');
   if(help) help.innerHTML='<div class="cols">'+
-    '<div><p class="sub">Moving</p><div class="kv"><span>Arrows / WASD</span><b>step or attack</b><span>Q E Z C</span><b>diagonals</b><span>Click a tile</span><b>step that way</b><span>. or space</span><b>wait a turn</b><span>r</span><b>rest until healed (searches a little)</b><span>f</span><b>search for hidden doors and traps</b><span>&gt;</span><b>take the stairs</b><span>Shift+C / click the door</span><b>close a door</b></div></div>'+
-    '<div><p class="sub">Acting</p><div class="kv"><span>1 &ndash; 8</span><b>hotbar slot</b><span>g</span><b>pick up</b><span>x</span><b>swap weapon sets</b><span>Click a monster</span><b>shoot it (bow out)</b><span>Bump a door, chest, lever</span><b>use it</b><span>Bump the Forge / a shrine</span><b>open it</b></div></div>'+
+    '<div><p class="sub">Moving</p><div class="kv"><span>Arrows / WASD</span><b>step or attack</b><span>Q E Z C</span><b>diagonals</b><span>Click a tile</span><b>step that way</b><span>. or space</span><b>wait a turn</b><span>r</span><b>rest until healed (searches a little)</b><span>f</span><b>search for hidden doors and traps</b><span>&gt; / &lt;</span><b>stairs down / up</b><span>Shift+C / click the door</span><b>close a door</b></div></div>'+
+    '<div><p class="sub">Acting</p><div class="kv"><span>1 &ndash; 8</span><b>hotbar slot</b><span>g</span><b>pick up</b><span>Click a monster</span><b>shoot it (bow out)</b><span>Bump a door, chest, lever</span><b>use it</b><span>Bump the Forge / a shrine</span><b>open it</b></div></div>'+
     '<div><p class="sub">Windows</p><div class="kv"><span>Tab</span><b>character</b><span>i</span><b>bag and gear</b><span>p</span><b>faith and prayers</b><span>m / n</span><b>sound / music</b><span>esc</span><b>close</b><span>Right-click bag item</span><b>drop it</b></div></div>'+
     '<div><p class="sub">Reading the map</p><div class="kv"><span>Dim tiles</span><b>remembered</b><span>z</span><b>asleep: surprise it</b><span>Key over a head</span><b>key holder</b><span>Bones at a door</span><b>a zoo behind it</b><span>Uneven stones</span><b>a hidden door near</b><span>Tall grass</span><b>blocks sight, burns</b></div></div></div>';
 
@@ -65,6 +61,7 @@
 
   /* right-click an open door beside you to shut it (right-click still cancels aiming first) */
   cv.addEventListener('contextmenu', function(ev){
+    if(document.body.classList.contains('touch'))return;
     if(aiming || !player || (RUN && (RUN.over||RUN.victory))) return;
     var r=cv.getBoundingClientRect();
     var mx=camX+Math.floor((ev.clientX-r.left+camOX)/TS), my=camY+Math.floor((ev.clientY-r.top+camOY)/TS);
@@ -74,10 +71,9 @@
   var bl=$('bLight');
   if(bl){
     bl.textContent='Lighting: '+(lightingOn()?'on':'off');
-    bl.onclick=function(){ try{ localStorage.setItem('fote-light', lightingOn()?'off':'on'); }catch(e){} bl.textContent='Lighting: '+(lightingOn()?'on':'off'); draw(); };
+    bl.onclick=function(){ try{ localStorage.setItem('astra-temple-light', lightingOn()?'off':'on'); }catch(e){} bl.textContent='Lighting: '+(lightingOn()?'on':'off'); draw(); };
   }
 
-  loadSprites();
   newRun(Date.now()%1000000, CHOICE);
   setMotion('auto');
   requestAnimationFrame(resize);
@@ -87,33 +83,47 @@
   preloadArt(openTitle);
 })();
 
+/* A failed or undecoded required atlas must never reveal an incomplete scene. */
 function preloadArt(done){
-  /* 2026-09-21: every sheet is DECODED, not just fetched, before the game shows, so the first frame never pays
-     the decode or draws a sheet that is still a blank. A file that fails is named in the console and the log
-     instead of quietly counting as done, and if the 20-second valve has to open it says which files it gave up on. */
-  var files=(window.ASSETS && ASSETS.files) || [], left=files.length, finished=false, failed=[], pending={};
-  var veil=document.createElement('div');
-  veil.id='loadVeil';
-  veil.style.cssText='position:fixed;inset:0;z-index:99;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;background:#0B0A09;color:#A79C93;font:12px "IBM Plex Mono",monospace;letter-spacing:.08em';
-  veil.innerHTML='<div style="font:700 26px Grenze Gotisch,serif;color:#E8B44A">Forge of the Elements</div><div id="loadTxt">LIGHTING THE TORCHES&hellip;</div>'+
-    '<div style="width:220px;height:6px;border:1px solid #332A24;border-radius:3px;overflow:hidden"><i id="loadBar" style="display:block;height:100%;width:0;background:linear-gradient(90deg,#6B5A22,#E8B44A)"></i></div>';
+  var files=(window.ASSETS && ASSETS.files)||[];
+  var veil=document.createElement('div'); veil.id='loadVeil';
+  veil.style.cssText='position:fixed;inset:0;z-index:99;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;background:#0B0A09;color:#A79C93;font:14px sans-serif';
+  var title=document.createElement('h1'); title.textContent='Forge of the Elements'; veil.appendChild(title);
+  var status=document.createElement('p'); status.setAttribute('role','status'); veil.appendChild(status);
+  var retry=document.createElement('button'); retry.textContent='Retry loading'; retry.hidden=true; veil.appendChild(retry);
   document.body.appendChild(veil);
-  function report(){
-    var late=Object.keys(pending);
-    if(failed.length){ console.warn('art failed to load: '+failed.join(', ')); if(typeof log==='function') log('Some art failed to load ('+failed.length+' file'+(failed.length>1?'s':'')+'); see the console.','c-info'); }
-    if(late.length){ console.warn('art still loading when the game opened: '+late.join(', ')); }
-  }
-  function finish(){ if(finished) return; finished=true; veil.remove(); report(); draw(); done(); }
-  function tick(f){ delete pending[f]; left--; var pct=files.length ? Math.round((files.length-left)/files.length*100) : 100; var bar=document.getElementById('loadBar'); if(bar) bar.style.width=pct+'%'; if(left<=0) finish(); }
-  if(!files.length){ finish(); return; }
-  files.forEach(function(f){
-    atl(f); pending[f]=1;
-    var im=ATL[f];
-    var ok=function(){ tick(f); }, bad=function(){ failed.push(f); tick(f); };
-    if(im.decode){ im.decode().then(ok, bad); return; }
-    if(im.complete && im.naturalWidth){ ok(); return; }
-    im.addEventListener('load', ok, {once:true});
-    im.addEventListener('error', bad, {once:true});
+  var scriptsReady=new Promise(function(resolve){
+    if(document.readyState==='complete') resolve();
+    else window.addEventListener('load',resolve,{once:true});
   });
-  setTimeout(finish, 20000);   /* never trap the player behind a slow file; report() names what was still missing */
+  function imageReady(file){
+    atl(file); var img=ATL[file];
+    return new Promise(function(resolve,reject){
+      function clean(){ img.removeEventListener('load',loaded); img.removeEventListener('error',failed); }
+      function failed(){ clean(); reject(new Error(file)); }
+      function loaded(){
+        clean();
+        if(!img.naturalWidth) return reject(new Error(file));
+        Promise.resolve(typeof img.decode==='function'?img.decode():undefined).then(resolve,function(){reject(new Error(file));});
+      }
+      if(img.complete){ if(img.naturalWidth) loaded(); else failed(); }
+      else { img.addEventListener('load',loaded); img.addEventListener('error',failed); }
+    });
+  }
+  var failed=[];
+  function attempt(){
+    retry.hidden=true; status.textContent='Lighting the torches…';
+    failed.forEach(function(file){delete ATL[file];}); failed=[];
+    if(!files.length){status.textContent='The artwork manifest could not be loaded. Reload to try again.';return;}
+    var loaded=0;
+    Promise.all(files.map(function(file){return imageReady(file).then(function(){
+      loaded++;status.textContent='Loading artwork '+loaded+' / '+files.length;
+    },function(){failed.push(file);});})).then(function(){
+      if(failed.length){status.textContent='Could not load '+failed.length+' artwork file(s). Check your connection and retry.';retry.hidden=false;return;}
+      return scriptsReady.then(function(){return document.fonts?document.fonts.ready:undefined;}).then(function(){
+        return new Promise(function(resolve){requestAnimationFrame(function(){resize();draw();requestAnimationFrame(resolve);});});
+      }).then(function(){done();veil.remove();});
+    }).catch(function(){status.textContent='The scene could not be prepared. Retry loading.';retry.hidden=false;});
+  }
+  retry.onclick=attempt; attempt();
 }

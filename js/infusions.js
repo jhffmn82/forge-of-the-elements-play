@@ -125,7 +125,7 @@ derive = function(p){ _deriveInf(p); if(p===player && infusion('tome')==='earth'
 var _endTurnInf = endTurn;
 endTurn = function(){
   if(player) player.movedLast = !!player.movedThisTurn;
-  _endTurnInf();
+  var before=turn;_endTurnInf();if(turn===before)return;
   if(!player || player.hp<=0) return;
   if(infusion('tome')==='water') player.mp=Math.min(player.maxmp, player.mp + player.maxmp*0.006*0.30*infScale('water'));
   if(player.mward>0 && infusion('tome')!=='light') player.mward=0;
@@ -134,7 +134,7 @@ var _playerShieldInf = playerShield;
 playerShield = function(){ return _playerShieldInf() + Math.max(0, Math.floor(player.mward||0)); };
 /* Shadow armor: stealth */
 /* the one armor enchant that did not read enchantScale, so Old Anvil skipped it too (2026-09-18) */
-function stealthExtra(){ var a=player.armorItem; if(!a || a.enchant!=='shadow') return 0;
+function stealthExtra(){ var a=bodyArmor(player); if(!a || a.enchant!=='shadow') return 0;
   var am = (player.god==='anvil' ? 1 + 0.10*godRank() : 1);
   return 0.05*Math.max(1,affPts('shadow'))*am; }
 

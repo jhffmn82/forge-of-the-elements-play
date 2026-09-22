@@ -99,6 +99,6 @@ var _bagCardHoly = bagCard;
 bagCard = function(it){
   var h=_bagCardHoly(it);
   if(it && it.kind==='off' && it.data && itemKey(it.data)==='holy' && !it.data.unid)
-    h=h.replace(/(<div class="row"><span>Invoke strength<\/span><b>[^<]*<\/b><\/div>)/, '$1<div class="row"><span>Buff duration</span><b>+'+Math.round(holyDurationPct(it.data)*100)+'%</b></div>');
+    h=h.replace(/(<div class="row"><span>Invoke &amp; prayer strength<\/span><b>[^<]*<\/b><\/div>)/, '$1<div class="row"><span>Buff duration</span><b>+'+Math.round(holyDurationPct(it.data)*100)+'%</b></div>');
   return h;
 };

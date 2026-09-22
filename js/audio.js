@@ -6,50 +6,76 @@
 
 var AUDIO = { ctx:null, master:null, sfxBus:null, musicBus:null, verb:null, muted:false, musicOn:true,
               files:{}, missing:{}, music:null, musicKind:null, vol:{sfx:0.8, music:0.45} };
-try { var _m=localStorage.getItem('fote-audio'); if(_m){ var o=JSON.parse(_m); AUDIO.muted=!!o.muted; AUDIO.musicOn=o.musicOn!==false; AUDIO.vol=o.vol||AUDIO.vol; } } catch(e){}
+try { var _m=localStorage.getItem('astra-temple-audio'); if(_m){ var o=JSON.parse(_m); AUDIO.muted=!!o.muted; AUDIO.musicOn=o.musicOn!==false; AUDIO.vol=o.vol||AUDIO.vol; } } catch(e){}
 
 function audioInit(){
   if(AUDIO.ctx) { if(AUDIO.ctx.state==='suspended') AUDIO.ctx.resume(); return; }
   var AC=window.AudioContext||window.webkitAudioContext; if(!AC) return;
   var c=new AC(); AUDIO.ctx=c;
-  AUDIO.master=c.createGain(); AUDIO.master.gain.value=AUDIO.muted?0:1; AUDIO.master.connect(c.destination);
+  AUDIO.master=c.createGain(); AUDIO.master.gain.value=AUDIO.muted?0:1;
+  var limiter=c.createDynamicsCompressor();limiter.threshold.value=-3;limiter.knee.value=3;limiter.ratio.value=12;limiter.attack.value=.003;limiter.release.value=.15;
+  AUDIO.master.connect(limiter);limiter.connect(c.destination);AUDIO.limiter=limiter;
   AUDIO.sfxBus=c.createGain(); AUDIO.sfxBus.gain.value=AUDIO.vol.sfx; AUDIO.sfxBus.connect(AUDIO.master);
   AUDIO.musicBus=c.createGain(); AUDIO.musicBus.gain.value=AUDIO.musicOn?AUDIO.vol.music:0; AUDIO.musicBus.connect(AUDIO.master);
   /* a generated impulse response gives everything a stone-room echo */
-  var len=c.sampleRate*1.8, ir=c.createBuffer(2,len,c.sampleRate);
+  var len=Math.floor(c.sampleRate*0.65), ir=c.createBuffer(2,len,c.sampleRate);
   for(var ch=0;ch<2;ch++){ var d=ir.getChannelData(ch); for(var i=0;i<len;i++) d[i]=(Math.random()*2-1)*Math.pow(1-i/len,3.2); }
   AUDIO.verb=c.createConvolver(); AUDIO.verb.buffer=ir;
-  var vg=c.createGain(); vg.gain.value=0.22; AUDIO.verb.connect(vg); vg.connect(AUDIO.master);
-  if(AUDIO.pendingMusic) playMusic(AUDIO.pendingMusic);
+  var vg=c.createGain(); vg.gain.value=0.08; AUDIO.verb.connect(vg); vg.connect(AUDIO.sfxBus);
+  if(AUDIO.pendingMusic){ var requested=AUDIO.pendingMusic; AUDIO.pendingMusic=null; playMusic(requested); }
 }
 ['pointerdown','keydown'].forEach(function(ev){ window.addEventListener(ev, audioInit, {passive:true}); });
-function audioSave(){ try{ localStorage.setItem('fote-audio', JSON.stringify({muted:AUDIO.muted, musicOn:AUDIO.musicOn, vol:AUDIO.vol})); }catch(e){} }
+function audioSave(){ try{ localStorage.setItem('astra-temple-audio', JSON.stringify({muted:AUDIO.muted, musicOn:AUDIO.musicOn, vol:AUDIO.vol})); }catch(e){} }
 function toggleMute(){ AUDIO.muted=!AUDIO.muted; if(AUDIO.master) AUDIO.master.gain.value=AUDIO.muted?0:1; audioSave(); return AUDIO.muted; }
 function toggleMusic(){ AUDIO.musicOn=!AUDIO.musicOn; if(AUDIO.musicBus) AUDIO.musicBus.gain.setTargetAtTime(AUDIO.musicOn?AUDIO.vol.music:0, AUDIO.ctx.currentTime, 0.3); audioSave(); return AUDIO.musicOn; }
 
 /* ---- file-backed playback with synth fallback ---- */
+var AUDIO_LOADING={},AUDIO_MUSIC_LRU=[],AUDIO_MUSIC_REQUEST=0;
+function musicGain(kind){return ['title','dungeon','forge','boss','victory'].includes(kind)?Math.pow(10,-3/20):1;}
 function loadFile(name, cb){
   if(AUDIO.files[name]) return cb(AUDIO.files[name]);
   if(AUDIO.missing[name]) return cb(null);
   if(!(window.AUDIO_FILES && window.AUDIO_FILES.indexOf(name)>=0)){ AUDIO.missing[name]=true; return cb(null); }
+  if(AUDIO_LOADING[name]){AUDIO_LOADING[name].push(cb);return;}
+  AUDIO_LOADING[name]=[cb];
+  function finish(buf){var callbacks=AUDIO_LOADING[name]||[];delete AUDIO_LOADING[name];callbacks.forEach(function(f){f(buf);});}
   fetch('audio/'+name+'.ogg').then(function(r){ if(!r.ok) throw 0; return r.arrayBuffer(); })
     .then(function(b){ return AUDIO.ctx.decodeAudioData(b); })
-    .then(function(buf){ AUDIO.files[name]=buf; cb(buf); })
-    .catch(function(){ AUDIO.missing[name]=true; cb(null); });
+    .then(function(buf){
+      AUDIO.files[name]=buf;
+      if(name.indexOf('music-')===0){AUDIO_MUSIC_LRU.push(name);while(AUDIO_MUSIC_LRU.length>3)delete AUDIO.files[AUDIO_MUSIC_LRU.shift()];}
+      finish(buf);
+    })
+    .catch(function(){ finish(null); });
 }
-var SFX_LAST={};
+var SFX_ALIASES={
+  'shaman-attack':'shaman-cast','shaman-death':'goblin-death','shaman-alert':'goblin-alert',
+  'skeleton-attack':'skeleton-rattle','skeleton-alert':'skeleton-rattle',
+  'mimic-attack':'brute-attack','mimic-death':'brute-death','mimic-alert':'mimic-reveal',
+  'warchief-attack':'brute-attack','warchief-alert':'warchief-roar',
+  'elementaling-attack':'magic-missile','elementaling-alert':'elementaling-appear',
+  'rat-alert':'rat-attack','bat-alert':'bat-attack','brute-alert':'brute-attack','slime-alert':'slime-attack'
+};
+var SFX_LAST={},SFX_VOICES=[],SFX_STEP=0;
 function sfx(name, opts){
   if(!AUDIO.ctx || AUDIO.muted || !name) return;
-  var now=performance.now(); if(SFX_LAST[name] && now-SFX_LAST[name]<40) return; SFX_LAST[name]=now;
+  var now=performance.now();
   opts=opts||{};
   /* game sounds follow the animation queue: a swing sounds when the swing plays, not when the key was pressed */
-  var at = opts.at || (name.indexOf('ui-')!==0 && typeof fxClock==='number' ? Math.max(now, fxClock) : now);
-  var delay=Math.max(0, (at-now)/1000);
-  loadFile(name, function(buf){
-    var c=AUDIO.ctx, t=c.currentTime+delay;
+  var at = opts.at===undefined ? (name.indexOf('ui-')!==0 && typeof fxClock==='number' ? Math.max(now, fxClock) : now) : opts.at;
+  var alert=/-alert$/.test(name), group=alert?'creature-alert':name;
+  if(SFX_LAST[group]!==undefined && Math.abs(at-SFX_LAST[group])<(alert?350:40))return;
+  SFX_LAST[group]=at;
+  var file=name==='step-stone' ? ['step-stone','step-stone-1','step-stone-3','step-stone-2'][SFX_STEP++%4] : (SFX_ALIASES[name]||name);
+  loadFile(file, function(buf){
+    if(AUDIO.muted || performance.now()>at+500)return; // Never replay stale impacts after slow decoding.
+    var c=AUDIO.ctx, t=c.currentTime+Math.max(0,(at-performance.now())/1000);
     if(buf){
-      var s=c.createBufferSource(); s.buffer=buf; s.playbackRate.value=opts.rate||(0.94+Math.random()*0.12);
-      var g=c.createGain(); g.gain.value=opts.vol||1; s.connect(g); g.connect(AUDIO.sfxBus); g.connect(AUDIO.verb); s.start(t);
+      var s=c.createBufferSource(); s.buffer=buf; s.playbackRate.value=opts.rate||1;
+      while(SFX_VOICES.length>=24){var old=SFX_VOICES.shift();try{old.stop();}catch(e){}}
+      var g=c.createGain(); g.gain.value=(opts.vol===undefined?1:opts.vol)*(alert?.55:1); s.connect(g); g.connect(AUDIO.sfxBus);
+      if(/^(fire|ice|lightning|earth|light|shadow|magic|cast|shrine|pray|summon|heal|forge|wrath)/.test(name))g.connect(AUDIO.verb);
+      SFX_VOICES.push(s);s.onended=function(){var i=SFX_VOICES.indexOf(s);if(i>=0)SFX_VOICES.splice(i,1);s.disconnect();g.disconnect();};s.start(t);
     } else synth(name, t, opts);
   });
 }
@@ -58,7 +84,7 @@ function sfx(name, opts){
 function envGain(t, a, d, peak){ var g=AUDIO.ctx.createGain(); g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(peak||0.5,t+a); g.gain.exponentialRampToValueAtTime(0.0001,t+a+d); return g; }
 function tone(t, type, f1, f2, dur, vol, dest){
   var c=AUDIO.ctx, o=c.createOscillator(); o.type=type; o.frequency.setValueAtTime(f1,t); if(f2) o.frequency.exponentialRampToValueAtTime(Math.max(20,f2), t+dur);
-  var g=envGain(t, Math.min(0.01,dur*0.2), dur, vol||0.3); o.connect(g); g.connect(dest||AUDIO.sfxBus); g.connect(AUDIO.verb); o.start(t); o.stop(t+dur+0.05);
+  var g=envGain(t, Math.min(0.01,dur*0.2), dur, vol||0.3); o.connect(g); g.connect(dest||AUDIO.sfxBus); g.connect(AUDIO.verb); trackSynth(o,[g]); o.start(t); o.stop(t+dur+0.05);
 }
 var NOISE=null;
 function noise(t, dur, vol, fType, f1, f2, q){
@@ -67,7 +93,11 @@ function noise(t, dur, vol, fType, f1, f2, q){
   var s=c.createBufferSource(); s.buffer=NOISE; var f=c.createBiquadFilter(); f.type=fType||'lowpass'; f.frequency.setValueAtTime(f1||1200,t);
   if(f2) f.frequency.exponentialRampToValueAtTime(Math.max(30,f2), t+dur); f.Q.value=q||0.8;
   var g=envGain(t, Math.min(0.008,dur*0.15), dur, vol||0.3); s.connect(f); f.connect(g); g.connect(AUDIO.sfxBus); g.connect(AUDIO.verb);
-  s.start(t, Math.random()); s.stop(t+dur+0.05);
+  trackSynth(s,[f,g]);s.start(t, Math.random()); s.stop(t+dur+0.05);
+}
+function trackSynth(s,nodes){
+  while(SFX_VOICES.length>=24){var old=SFX_VOICES.shift();try{old.stop();}catch(e){}}
+  SFX_VOICES.push(s);s.onended=function(){var i=SFX_VOICES.indexOf(s);if(i>=0)SFX_VOICES.splice(i,1);s.disconnect();nodes.forEach(function(n){n.disconnect();});};
 }
 function arp(t, notes, step, type, vol){ notes.forEach(function(n,i){ tone(t+i*step, type||'triangle', n, 0, step*2.2, vol||0.18); }); }
 var ELEM_SYNTH = {
@@ -149,19 +179,23 @@ function synth(name, t, opts){
 
 /* ---- music: file first, generative score otherwise ---- */
 function playMusic(kind){
+  /* pendingMusic is the request waiting for the first user gesture, not a
+     historical track.  Leaving the old request here allowed a load or a
+     downstairs transition to fall back to the earlier biome later. */
   if(!AUDIO.ctx){ AUDIO.pendingMusic=kind; return; }
+  AUDIO.pendingMusic=null;
   if(AUDIO.musicKind===kind) return;
-  stopMusic(); AUDIO.musicKind=kind;
+  stopMusic(); AUDIO.musicKind=kind;var request=++AUDIO_MUSIC_REQUEST;
   loadFile('music-'+kind, function(buf){
-    if(AUDIO.musicKind!==kind) return;
+    if(AUDIO.musicKind!==kind || request!==AUDIO_MUSIC_REQUEST) return;
     var c=AUDIO.ctx;
     if(buf){
-      var s=c.createBufferSource(); s.buffer=buf; s.loop=true; var g=c.createGain(); g.gain.setValueAtTime(0,c.currentTime); g.gain.linearRampToValueAtTime(1,c.currentTime+2);
-      s.connect(g); g.connect(AUDIO.musicBus); s.start(); AUDIO.music={stop:function(){ g.gain.linearRampToValueAtTime(0,c.currentTime+1); s.stop(c.currentTime+1.1); }};
+      var s=c.createBufferSource(); s.buffer=buf;s.loop=true; var g=c.createGain(); g.gain.setValueAtTime(0,c.currentTime); g.gain.linearRampToValueAtTime(musicGain(kind),c.currentTime+2);
+      s.connect(g); g.connect(AUDIO.musicBus);s.onended=function(){s.disconnect();g.disconnect();}; s.start(); AUDIO.music={stop:function(){ g.gain.cancelScheduledValues(c.currentTime);g.gain.setTargetAtTime(0,c.currentTime,.25); s.stop(c.currentTime+1.1); }};
     } else AUDIO.music=generativeMusic(kind);
   });
 }
-function stopMusic(){ if(AUDIO.music){ try{ AUDIO.music.stop(); }catch(e){} AUDIO.music=null; } AUDIO.musicKind=null; }
+function stopMusic(){ AUDIO_MUSIC_REQUEST++;if(AUDIO.music){ try{ AUDIO.music.stop(); }catch(e){} AUDIO.music=null; } AUDIO.musicKind=null; }
 function generativeMusic(kind){
   var c=AUDIO.ctx, out=c.createGain(); out.gain.value=0; out.gain.linearRampToValueAtTime(1, c.currentTime+3); out.connect(AUDIO.musicBus);
   var wet=c.createGain(); wet.gain.value=0.6; out.connect(AUDIO.verb);

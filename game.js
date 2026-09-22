@@ -10,9 +10,8 @@
 /* ============ helpers ============ */
 var $ = function(id){ return document.getElementById(id); };
 var clamp = function(v,a,b){ return Math.max(a, Math.min(b, v)); };
-function mulberry32(a){ var f=function(){ a|=0; a=a+0x6D2B79F5|0; var t=Math.imul(a^a>>>15,1|a);
-  t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; f.state=function(){ return a|0; }; return f; }   /* state(): what a save keeps (2026-09-21) */
-var rngState=0;   /* filled at save time from rng.state(), restored on load */
+function mulberry32(a){ var next=function(){ a|=0; a=a+0x6D2B79F5|0; var t=Math.imul(a^a>>>15,1|a);
+  t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; };next.state=function(){return a>>>0;};return next; }
 var rng = mulberry32(48213);
 function ri(a,b){ return a + Math.floor(rng()*(b-a+1)); }
 function pick(arr){ return arr[Math.floor(rng()*arr.length)]; }
@@ -122,9 +121,7 @@ var GODS={
   murk:{ name:'Mother Murk', invoke:'raisedead' }
 };
 var EMPTY_OFF={name:'Empty', block:0, note:'nothing in your off hand'};
-/* 2026-09-21: a Holy Symbol blocks a little but is not a shield: no god forbids it, no shield infusion answers it,
-   and Might does not brace it. The divine field is what sets it apart. */
-function isShield(it){ return !!(it && it!==EMPTY_OFF && it.block>0 && !it.divine); }var ABILITIES={
+var ABILITIES={
   double:{name:'Double Strike', cost:12, tech:true, kind:'melee2', desc:'Two weapon attacks on an adjacent enemy.'},
   root:{name:'Earth Root', cost:12, kind:'bolt', range:4, type:'phys', base:[9,15], status:{root:2}, desc:'Rock spell: physical damage, roots for 2 turns.'},
   missile:{name:'Magic Missile', cost:7, kind:'bolt', range:6, type:'magic', base:[3,6], always:true, perAffinity:1, desc:'Always hits. Magic damage: nothing resists it. +1 for every point of elemental affinity you hold. No riders.'},
@@ -164,12 +161,12 @@ var PASSIVES={
        {at:15,id:'crushing',  name:'Crushing Blows',d:'+25% damage to targets below half HP'},
        {at:18,id:'armorMaster',name:'Armor Master',d:'heavy armor evasion penalty halved'},
        {at:21,id:'cleaving',  name:'Cleaving Swings',d:'your attacks also hit one other adjacent enemy for half'},
-       {at:25,id:'unstoppable',name:'Unstoppable',d:'immune to stun, +20% melee damage'}],
+       {at:25,id:'unstoppable',name:'Unstoppable',d:'immune to stun, slow and knockback, +20% melee damage'}],
   agi:[{at:12,id:'lightFeet',name:'Light Feet',d:'+8 evasion'},
        {at:15,id:'deadeye',  name:'Deadeye',d:'+8% crit chance'},
        {at:18,id:'fleet',    name:'Fleet',d:'moving costs 15% less time'},
        {at:21,id:'riposte',  name:'Riposte',d:'a parry has a 50% chance to counterattack'},
-       {at:25,id:'blur',     name:'Blur',d:'hostile attacks are 20% less likely to hit you'}],
+       {at:25,id:'blur',     name:'Blur',d:'an attack against you misses outright (every 20 turns)'}],
   vit:[{at:12,id:'tough',    name:'Tough',d:'+15% max HP'},
        {at:15,id:'secondWind',name:'Second Wind',d:'heal 10% of max HP on every new floor'},
        {at:18,id:'ironConst',name:'Iron Constitution',d:'statuses on you last half as long'},
@@ -212,7 +209,7 @@ var NUM=1.0, LETH=1.0;
 function sHP(v){ return Math.max(1, Math.round(v*NUM)); }
 function sDMG(v){ return Math.max(1, Math.round(v*NUM*LETH)); }
 var player={ id:0, ch:'@', x:2, y:2, t:0, st:{}, foe:false, build:'dwarf',
-             essence:0, motes:{}, bag:[], hidden:0, level:1, xp:0, xpNext:90, points:0, fortCd:0 };
+             essence:0, motes:{}, bag:[], hidden:0, level:1, xp:0, xpNext:90, points:0, blurCd:0, fortCd:0 };
 
 function at(x,y){ return (x<0||y<0||x>=MW||y>=MH) ? WALL : map[y*MW+x]; }
 function setT(x,y,v){ if(x>=0&&y>=0&&x<MW&&y<MH) map[y*MW+x]=v; }
@@ -342,25 +339,12 @@ function cancelAim(){ if(!aiming) return; aiming=null; abilityBar(); draw(); }
 /* ============ turn loop ============ */
 
 /* ============ sprites ============ =======================================
-   The concept art, turned around by PixelLab and cut to 128px. The map still
-   draws blocks for everything else, so this is a toggle, not a commitment.  */
-var SPRITES={}, spriteOn=true;
-/* sprites drawn with one facing (toward the right); mirrored when the character faces left */
-var SINGLE_ART={};
-/* frame animations generated from a sprite (PixelLab animate-with-text-v3): name -> {frames:[Image], ms per frame} */
-var ANIM_ART={};
-function loadAnim(key, clip, count, ms){
-  var list=[];
-  for(var i=0;i<count;i++){ var im=new Image(); im.src='art/sprites/anim/'+key+'-'+clip+'-'+i+'.png'; list.push(im); }
-  ANIM_ART[key]=ANIM_ART[key]||{}; ANIM_ART[key][clip]={frames:list, ms:ms};
-}
-function animFrame(key, clip, phase){
-  var a=ANIM_ART[key] && ANIM_ART[key][clip];
-  if(!a) return null;
-  var n=a.frames.length, i=Math.floor((performance.now()+(phase||0))/a.ms)%n;
-  var im=a.frames[i];
-  return (im.complete && im.naturalWidth) ? im : null;
-}
+   Every creature and character draws from the packed sheets (art/packed, via assets.js). The sandbox's
+   "Block art" button turns that off to show the old coloured blocks.
+   2026-09-22: the first PixelLab cut-outs (art/sprites/*.png) were still requested here on every launch
+   although nothing had drawn them since the sheets arrived - 17 files the published build does not ship,
+   so 17 404s a launch. */
+var spriteOn=true;
 var OS_REDUCE = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
 var ANIM={ mode:'auto', reduce: OS_REDUCE };
 function setMotion(mode){
@@ -368,97 +352,43 @@ function setMotion(mode){
   var b=document.getElementById('bMotion');
   if(b) b.textContent = 'Motion: '+(mode==='auto' ? (OS_REDUCE?'auto (off)':'auto (on)') : mode);
 }
-var MOB_ART={};
-function loadSprites(){
-  ['dwarf','gloomling'].forEach(function(who){
-    SPRITES[who]={};
-    ['south','east','north','west'].forEach(function(d){
-      var im=new Image();
-      im.onload=function(){ draw(); };
-      im.src='art/sprites/'+who+'-'+d+'.png';
-      SPRITES[who][d]=im;
-    });
-  });
-  loadAnim('fae-water','idle',8,140);
-  ['fae-water'].forEach(function(k){
-    var im=new Image(); im.onload=function(){ draw(); }; im.src='art/sprites/'+k+'.png'; SINGLE_ART[k]=im;
-  });
-  /* monsters need one facing only - they are read, not steered */
-  ['goblin','rat','emberling','tideling','galeling','stoneling','wisp','lumenling'].forEach(function(m){
-    var im=new Image();
-    im.onload=function(){ draw(); };
-    im.src='art/sprites/mob-'+m+'.png';
-    MOB_ART[m]=im;
-  });
-}
-function playerSprite(){
-  var key=BUILDS[player.build] && BUILDS[player.build].sprite;
-  if(!key) return null;
-  var face=player.face||'south';
-  if(SPRITES[key]) return {im:SPRITES[key][face], flip:false};
-  var idle = ANIM.reduce ? null : animFrame(key,'idle');
-  if(idle) return {im:idle, flip:face==='west', animated:true};
-  if(SINGLE_ART[key]) return {im:SINGLE_ART[key], flip:face==='west'};
-  return null;
-}
 function faceOf(dx,dy){
   if(Math.abs(dx)>Math.abs(dy)) return dx<0 ? 'west' : 'east';
   if(dy) return dy<0 ? 'north' : 'south';
   return null;
 }
-/* draw a sprite standing on a tile: feet on the floor, head over the row above */
-function whiteOf(im){                 /* a white silhouette of the sprite, for hit flashes */
-  if(im._white) return im._white;
-  var c=document.createElement('canvas'); c.width=im.naturalWidth; c.height=im.naturalHeight;
-  var g2=c.getContext('2d'); g2.drawImage(im,0,0);
-  g2.globalCompositeOperation='source-in'; g2.fillStyle='#fff'; g2.fillRect(0,0,c.width,c.height);
-  im._white=c; return c;
-}
-function drawSprite(im, px, py, alpha, scale, o){
-  if(!im || !im.complete || !im.naturalWidth) return false;
-  o = o || {};
-  /* one tile, one figure: it stands inside its square, feet on the floor line.
-     scale lets a rat be smaller than a goblin without redrawing the art */
-  var h=TS*1.04*(scale||1), w=h*im.naturalWidth/im.naturalHeight;
-  if(w>TS*1.04){ h*=TS*1.04/w; w=TS*1.04; }
-  var sy = 1 + (o.breath||0);                     /* idle breathing / death squash, anchored at the feet */
-  ctx.save();
-  ctx.globalAlpha = alpha===undefined ? 1 : alpha;
-  ctx.translate(px+TS/2, py+TS);
-  if(o.flip) ctx.scale(-1,1);
-  ctx.imageSmoothingEnabled = h < im.naturalHeight;   /* smooth when shrinking, crisp pixels when enlarging */
-  ctx.drawImage(im, -w/2, -h*sy, w, h*sy);
-  if(o.flash>0){ ctx.globalAlpha = (alpha===undefined?1:alpha)*o.flash; ctx.drawImage(whiteOf(im), -w/2, -h*sy, w, h*sy); }
-  ctx.restore();
-  ctx.imageSmoothingEnabled=false;
-  return true;
-}
-
 /* ---- motion: tile-to-tile slides, idle breathing, hit flash and shake ---- */
 var MOVE_MS=170;
-function renderPos(e){
-  var now=performance.now();
-  if(e._lx===undefined){ e._lx=e.x; e._ly=e.y; e._fx=e.x; e._fy=e.y; e._mt=0; }
-  if(e.x!==e._lx || e.y!==e._ly){
-    var cur=slideAt(e, now);
-    var jump=Math.max(Math.abs(e.x-cur.x), Math.abs(e.y-cur.y));
-    e._fx=cur.x; e._fy=cur.y; e._lx=e.x; e._ly=e.y;
-    e._mt = (ANIM.reduce || jump>3) ? 0 : now;       /* teleports and new floors snap */
-  }
-  return slideAt(e, now);
+/* Presentation state is renderer-owned. Drawing never writes interpolation fields to actors. */
+var MOTION_STATE=new WeakMap();
+function motionState(e){
+  var s=MOTION_STATE.get(e);
+  if(!s || s.floor!==floorMeta){s={x:e.x,y:e.y,fx:e.x,fy:e.y,mt:0,floor:floorMeta};MOTION_STATE.set(e,s);}
+  return s;
 }
-function slideAt(e, now){
-  if(!e._mt) return {x:e._lx===undefined?e.x:e._lx, y:e._ly===undefined?e.y:e._ly, hop:0};
-  var p=(now-e._mt)/MOVE_MS;
-  if(p>=1){ e._mt=0; return {x:e._lx, y:e._ly, hop:0}; }
-  var q = p<0.5 ? 2*p*p : 1-Math.pow(-2*p+2,2)/2;
-  return {x:e._fx+(e._lx-e._fx)*q, y:e._fy+(e._ly-e._fy)*q, hop:Math.sin(p*Math.PI)};
+function motionActive(e,now){var s=MOTION_STATE.get(e);return !!(s && s.mt && now-s.mt<MOVE_MS);}
+function renderPos(e){
+  var now=performance.now(),s=motionState(e);
+  if(e.x!==s.x || e.y!==s.y){
+    var cur=slideAt(e,now),jump=Math.max(Math.abs(e.x-cur.x),Math.abs(e.y-cur.y));
+    s.fx=cur.x;s.fy=cur.y;s.x=e.x;s.y=e.y;
+    s.mt=(ANIM.reduce || jump>3)?0:(e!==player && typeof fxClock==='number'?Math.max(now,fxClock):now);
+  }
+  return slideAt(e,now);
+}
+function slideAt(e,now){
+  var s=motionState(e);
+  if(!s.mt) return {x:s.x,y:s.y,hop:0};
+  var p=(now-s.mt)/MOVE_MS;
+  if(p<0) return {x:s.fx,y:s.fy,hop:0};
+  if(p>=1){s.mt=0;return {x:s.x,y:s.y,hop:0};}
+  var q=p<0.5?2*p*p:1-Math.pow(-2*p+2,2)/2;
+  return {x:s.fx+(s.x-s.fx)*q,y:s.fy+(s.y-s.fy)*q,hop:Math.sin(p*Math.PI)};
 }
 function breathOf(e){
   if(ANIM.reduce) return 0;
-  if(e._ph===undefined) e._ph=((e.id||0)*2.399)%6.283;
-  var slow = e.state==='asleep' ? 700 : 380;            /* ~2.4 s breath awake, ~4.4 s asleep */
-  return 0.06*Math.sin(performance.now()/slow + e._ph);
+  var phase=((e.id||0)*2.399)%6.283;
+  return 0.06*Math.sin(performance.now()/(e.state==='asleep'?700:380)+phase);
 }
 function hitP(e){ if(!e._hit) return -1; var p=(performance.now()-e._hit)/220; return (p<0||p>=1) ? -1 : p; }
 function flashOf(e){ var p=hitP(e); return p<0 ? 0 : 0.85*(1-p); }
@@ -632,8 +562,8 @@ var KEYS={ArrowUp:[0,-1],ArrowDown:[0,1],ArrowLeft:[-1,0],ArrowRight:[1,0],
   w:[0,-1],s:[0,1],a:[-1,0],d:[1,0],q:[-1,-1],e:[1,-1],z:[-1,1],c:[1,1]};
 window.addEventListener('keydown', function(ev){
   var tgt=ev.target.tagName;
+  if(typeof uiOpen==='function'&&uiOpen()&&!openSheet)return;
   if(tgt==='INPUT'||tgt==='SELECT') return;
-  if($('title') && $('title').classList.contains('on')) return;   /* 2026-09-21: the run under the title used to keep taking keys - moving, waiting, even descending onto the autosave */
   var k=ev.key;
   if(k==='Escape'){ if(aiming) cancelAim(); else if(openSheet) showSheet(openSheet); return; }
   if(player.hp<=0 || openSheet) return;
@@ -669,9 +599,6 @@ $('tabs').addEventListener('click', function(ev){
 });
 $('close').onclick=function(){ showSheet(openSheet); };
 $('shade').addEventListener('click', function(ev){ if(ev.target===$('shade')) showSheet(openSheet); });
-$('bStairs').onclick=function(){ if(at(player.x,player.y)===STAIRS) descend(); else log('No stairs here.','c-info'); };
-$('bGrab').onclick=function(){ if(grab()) endTurn(); };
-$('bSwap').onclick=function(){ swapWeapon(); };
 $('bNew').onclick=function(){ var s=parseInt($('seed').value,10); newRun(isNaN(s)?Date.now()%100000:s); };
 $('bReveal').onclick=function(){
   revealAll=!revealAll;

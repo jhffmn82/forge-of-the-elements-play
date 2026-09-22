@@ -21,7 +21,7 @@ var SIGIL_ORDER = {
     identify2: {name:'Water sigil+', motes:['water','water'], desc:'Identify every sigil and every piece of gear you carry or wear, learn the look of every sigil this run, and put out every fire within 5 tiles.'},
     levitate2: {name:'Air sigil+', motes:['air','air'], desc:'Float for 60 turns, and move 30% faster for 10.'},
     stoneskin2:{name:'Earth sigil+', motes:['earth','earth'], desc:'Stone skin for 30 turns and a shield of 20% of your max HP.'},
-    heal2:     {name:'Light sigil+', motes:['light','light'], desc:'Heal to full and cleanse every status, then heal 5% of max HP a turn for 15 turns. (Hurts Gloomlings.)'},
+    heal2:     {name:'Light sigil+', motes:['light','light'], desc:'Heal to full and cleanse harmful conditions. Works normally on Gloomlings.'},
     vanish2:   {name:'Shadow sigil+', motes:['shadow','shadow'], desc:'Vanish for 20 turns; enemies lose track of you.'},
     cinder:    {name:'Sigil of Cinder Stride', motes:['fire','air'], desc:'Move 50% faster for 10 turns, leaving fire where you step.'},
     magma:     {name:'Sigil of the Molten Ring', motes:['fire','earth'], desc:'The ground 2 tiles around you (not under you) burns for 5 turns.'},
@@ -89,7 +89,7 @@ sigilConduct = function(use){
 function visibleFoes(maxD){ return ents.filter(function(e){ return e.foe && vis[idxOf(e.x,e.y)] && (maxD===undefined || dist(player,e)<=maxD); }); }
 function hurt(e, n, type){ var d=applyDamage(e, n, type, player); floatText(e.x,e.y,String(d), type==='ice'?'ice':type); if(e.hp<=0) kill(e,player); return d; }
 function cleanseAll(){ ['burn','poison','chill','fear','blind','stun','root','frozen','wet'].forEach(function(k){ delete player.st[k]; }); }
-function giveWard(n, turns){ player.ward=Math.max(player.ward||0, Math.round(n)); player.buffs.arcaneward=Math.max(player.buffs.arcaneward||0, turns); }
+function giveWard(n, turns){ player.ward=Math.round(n); player.buffs.arcaneward=turns; }
 
 var _useSigilFull = useSigil;
 useSigil = function(use){
@@ -116,7 +116,7 @@ useSigil = function(use){
   else if(use==='heal2'){
     if(player.race==='gloomling'){ var hd=applyDamage(player,Math.round(player.maxhp*0.3),'light',null); floatText(player.x,player.y,String(hd),'light'); log('The blazing light scorches you!','c-you'); if(player.hp<=0) death(); }
     else { player.hp=player.maxhp; cleanseAll(); floatText(player.x,player.y,'full heal','heal'); sparkleFx(player.x,player.y,'heal',40); player.buffs.afterglow=15; log('Light pours through you. You are whole, and the light lingers: 5% a turn for 15 turns.','c-good'); } }
-  else if(use==='vanish2'){ player.hidden=15; ents.forEach(function(e){ if(e.foe && e.state==='hunt'){ e.state='wander'; e.lastSeen=null; } }); log('You fold into the shadows.','c-good'); }
+  else if(use==='vanish2'){ player.hidden=20; ents.forEach(function(e){ if(e.foe && e.state==='hunt'){ e.state='wander'; e.lastSeen=null; } }); log('You fold into the shadows.','c-good'); }
   else if(use==='cinder'){ player.buffs.cinder=10; derive(player); player._cinderAt={x:player.x,y:player.y}; log('Your feet catch fire. Run.','c-fire'); }
   else if(use==='magma'){ for(var my=-2;my<=2;my++) for(var mx=-2;mx<=2;mx++){ var tx=player.x+mx, ty=player.y+my; if((mx||my) && inb(tx,ty) && walkable(tx,ty)) fireT[idxOf(tx,ty)]=Math.max(fireT[idxOf(tx,ty)],5); }
     ents.forEach(function(e){ if(e.foe && dist(e,player)<=2) applyStatus(e,'burn',3,sDMG(2)); }); log('The floor around you melts into a ring of fire.','c-fire'); }
@@ -127,7 +127,7 @@ useSigil = function(use){
     foes.slice(0,3).forEach(function(e){ var wet=isWet(e); hurt(e, Math.round((10+F)*(wet?1.5:1)), 'lightning'); if(e.hp>0 && rng()<0.5) applyStatus(e,'stun',1); burst(e.x,e.y,'lightning',16,0.06); });
     foes.forEach(function(e){ if(e.hp>0){ e.st.wet={t:5}; } }); log('Thunder cracks and rain hammers down.','c-good'); }
   else if(use==='mire'){ ents.forEach(function(e){ if(e.foe && dist(e,player)<=3){ applyStatus(e,'root',3); e.st.wet={t:6}; burst(e.x,e.y,'earth',8,0.04); } }); log('The ground turns to sucking mud.','c-good'); }
-  else if(use==='purify'){ cleanseAll(); var ph=Math.round(player.maxhp*0.2); if(player.race!=='gloomling'){ healPlayer(ph); floatText(player.x,player.y,'+'+ph,'heal'); }
+  else if(use==='purify'){ cleanseAll(); var ph=Math.round(player.maxhp*0.2); { healPlayer(ph); floatText(player.x,player.y,'+'+ph,'heal'); }
     var broke=0; wornGear().forEach(function(it){ if(breakCurse(it)) broke++; }); log('Clear water washes over you'+(broke?' and your gear':'')+'.','c-good'); }
   else if(use==='recall'){ var g2=null; for(var j=0;j<map.length;j++){ if(map[j]===STAIRS || (map[j]===EXIT && floorMeta.exitOpen)){ g2={x:j%MW, y:(j/MW)|0}; break; } }
     var land=(!occupied(g2.x,g2.y) && walkable(g2.x,g2.y)) ? g2 : nearFree(g2.x,g2.y,2);
@@ -135,7 +135,7 @@ useSigil = function(use){
   else if(use==='aegis'){ giveWard(player.maxhp*0.5, 15); applyStatus(player,'stone',15); ringFx(player.x,player.y,'#F6E7B0',2.5); log('A shining aegis settles around you ('+player.ward+').','c-good'); }
   /* 2026-09-18: read the requirement from xpToNext(), not from player.xpNext - gainXP()'s wrapper resets
      xpNext to xpToNext(level) before spending anything, so a stale xpNext made this sigil a no-op. */
-  else if(use==='wisdom'){ var need=Math.max(1, (typeof xpToNext==='function' ? xpToNext(player.level) : player.xpNext) - player.xp); gainXP(need); log('Understanding floods in.','c-kill'); }
+  else if(use==='wisdom'){ var progress=player.xp,need=(typeof xpToNext==='function' ? xpToNext(player.level) : player.xpNext);player.xp=0;gainXP(player.cls==='tourist'?Math.ceil(need/1.25):need);player.xp=progress; log('Understanding floods in.','c-kill'); }
   else if(use==='ascension'){ sigilUpgradePicker(); }
   updateUI();
   return true;
@@ -165,7 +165,7 @@ endTurn = function(){
     var c=player._cinderAt; if(!(c.x===player.x&&c.y===player.y)) fireT[idxOf(c.x,c.y)]=Math.max(fireT[idxOf(c.x,c.y)],3);
   }
   if(player) player._cinderAt={x:player.x, y:player.y};
-  _endTurnSig();
+  var before=turn;_endTurnSig();if(turn===before)return;
   if(player && player.buffs && player.buffs.manaflow>0 && player.hp>0){ player.mp=Math.min(player.maxmp, player.mp + player.maxmp*0.009); }
 };
 

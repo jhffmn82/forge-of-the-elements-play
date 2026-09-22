@@ -444,8 +444,8 @@ addProp = function(x, y, name, extra){
 var CHAIN_CACHE = {};
 function chainRaster(seed, dir){
   var key=seed+':'+dir.join(','); if(CHAIN_CACHE[key]) return CHAIN_CACHE[key];
-  var R=32, c=document.createElement('canvas'); c.width=R; c.height=R;
-  var g=c.getContext('2d'), rnd=mulberry32(seed*7717+5);
+  var R=32, c=document.createElement('canvas'); c.width=128; c.height=128;
+  var g=c.getContext('2d'), rnd=mulberry32(seed*7717+5); g.scale(4,4);
   var north = dir[1]<0, ax = north ? 0 : (dir[0]<0 ? -1 : 1);
   /* the anchor: an iron ring bolted into the wall at the top (or the side) of this cell */
   var bx = north ? 10+rnd()*12 : (ax<0 ? 3 : R-3), by = north ? 2 : 6+rnd()*8;
@@ -460,11 +460,11 @@ function chainRaster(seed, dir){
     if(y>R-8) a = (i%2 ? 0.15 : -0.15) + (ax<0 ? 0.2 : 2.9);
     x += Math.cos(a)*2.5; y += Math.sin(a)*2.2 + slack*0.2;
     x=Math.max(3, Math.min(R-3, x)); y=Math.max(3, Math.min(R-3, y));
-    var w=2.3+rnd()*0.6, h=1.6+rnd()*0.4, rust=rnd()<0.32;
-    g.save(); g.translate(x, y); g.rotate(a*0.8);
-    g.strokeStyle='#17171D'; g.lineWidth=1.7; g.beginPath(); g.ellipse(0,0,w,h,0,0,7); g.stroke();
-    g.strokeStyle=rust ? '#6B4630' : (i%2 ? '#67676F' : '#53535B'); g.lineWidth=0.9; g.beginPath(); g.ellipse(0,0,w-0.5,h-0.5,0,0,7); g.stroke();
-    g.strokeStyle='#96969F'; g.lineWidth=0.6; g.beginPath(); g.ellipse(-0.3,-0.4,w-1.1,h-1,0,3.6,5.4); g.stroke();
+    var w=1.8+rnd()*0.3, h=i%2 ? .65 : 1.25, rust=rnd()<0.16;
+    g.save(); g.translate(x, y); g.rotate(a);
+    g.strokeStyle='#17171D'; g.lineWidth=1.05; g.beginPath(); g.ellipse(0,0,w,h,0,0,7); g.stroke();
+    g.strokeStyle=rust ? '#79634b' : (i%2 ? '#93928b' : '#777970'); g.lineWidth=0.65; g.beginPath(); g.ellipse(0,0,w-.15,h-.15,0,0,7); g.stroke();
+    g.strokeStyle='#c2c0ac'; g.lineWidth=0.28; g.beginPath(); g.ellipse(-0.3,-0.4,w-.2,Math.max(.25,h-.25),0,3.6,5.4); g.stroke();
     g.restore();
   }
   /* a soft shadow where the links lie on the stone */
@@ -476,9 +476,9 @@ var _drawPropSurfaceChain = drawPropSurface;
 drawPropSurface = function(p, px, py, alpha){
   if(p.name==='chains'){
     var img=chainRaster(p.chainSeed===undefined ? (p.x*17+p.y*11)%89 : p.chainSeed, p.chainDir || [0,-1]);
-    ctx.save(); ctx.globalAlpha=alpha*0.3; ctx.imageSmoothingEnabled=false;   /* 2026-09-19: Justin - chains are wall dressing, kept faint */
+    ctx.save(); ctx.globalAlpha=alpha; ctx.imageSmoothingEnabled=true; // solid metal; scene lighting and memory still apply
     var X=Math.round((p.x-camX)*TS), Y=Math.round((p.y-camY)*TS);
-    ctx.drawImage(img, 0, 0, 32, 32, X, Y, Math.round((p.x+1-camX)*TS)-X, Math.round((p.y+1-camY)*TS)-Y);
+    ctx.drawImage(img, 0, 0, img.width, img.height, X, Y, Math.round((p.x+1-camX)*TS)-X, Math.round((p.y+1-camY)*TS)-Y);
     ctx.restore();
     return true;
   }
@@ -491,6 +491,7 @@ drawPropSurface = function(p, px, py, alpha){
 var B1_WEATHER = {};
 var B1_LIST = {'statue':1,'statue-broken':1,'bookshelf':1,'weapon-rack':1,'cart':1,'crate':1,'crate-supply':1,'barrel':1,'barrel-explosive':1,'pot':1,'alchemy-table':1,'table-candle':1,'cage':1,'bed-straw':1,'anvil':1,'bench':1,'rubble':1,'bones':1};
 function b1Weather(name, o){
+  if(name==='weapon-rack'&&AS.map&&AS.map.rack)return o; // replacement already has weathering; avoid a second outline
   var key='w'+name; if(B1_WEATHER[key]) return B1_WEATHER[key];
   if(!o || !o.img || !o.img.complete || !o.img.naturalWidth) return null;
   var W=o.sw+2, H=o.sh+2, c=document.createElement('canvas'); c.width=W; c.height=H; var g=c.getContext('2d');

@@ -40,7 +40,7 @@ var RANK_TEXT = {
      light:'Radiance: heal 1 HP per Light point whenever you deal light damage. Immune to Blind.',
      shadow:'Fade: after 50 turns out of combat you are fully hidden. Immune to Fear.'},
   6:{fire:'Wildfire: when a Burning enemy dies its fire leaps to the nearest enemy within 3. Fire spells leave flames for 3 turns. Immune to fire.',
-     water:'Deep Freeze: two Chills freeze. Ice spells leave icy ground that Chills for 3 turns. Immune to ice.',
+     water:'Deep Freeze: three Chills freeze. Ice spells leave icy ground that Chills for 3 turns. Immune to ice.',
      air:'Lightning Reflexes: 15% of your attacks and spells take no time; lightning damage has a 15% stun chance. Immune to lightning.',
      earth:'Petrify: rooting a rooted enemy turns it to stone for 2 turns. Earth spells leave grasping roots for 3 turns. Immune to poison.',
      light:'Consecration: your Light spells and your Smite sanctify the ground for 3 turns, burning enemies on it (undead double). Immune to light.',
@@ -102,16 +102,16 @@ addChill = function(e){
   if(!e || e.hp<=0) return;
   if(e===player && aff('water')>=3) return;
   if(e.tomb>0) return;
-  var need = (e!==player && aff('water')>=6) ? 2 : 3;
+  var need = 3;
   var c=e.st.chill, n=(c?c.n:0)+1;
   if(n>=need && !(e.st.imm_frozen)){ delete e.st.chill; applyStatus(e,'frozen',2); if(e!==player) e.st.imm_frozen={t:5}; sfx('status-freeze'); floatText(e.x,e.y,'frozen','ice'); }
-  else e.st.chill={t:4, n:Math.min(n, need-1)};
+  else e.st.chill={t:4, n:Math.min(n, need-1),waterRank:e===player?0:aff('water')};
 };
 function applyPoison(e, announce){
   if(!e || e.hp<=0 || e===player) return;
-  var big=e.elite || e.base.elite || e.base.boss;
+  var big=e.base && e.base.boss;
   /* 3 turns of its own: once it is in, the root wearing off does not stop it (2026-09-17) */
-  e.st.poison={t:3, d:Math.max(1, Math.round(e.maxhp*0.10*(big?0.5:1)))};
+  e.st.poison={t:Math.min(3,Math.max(1,aff('earth')-2)), d:Math.max(1, Math.round(e.maxhp*0.10*(big?0.5:1)))};
   if(announce){
     if(typeof floatText==='function') floatText(e.x, e.y, 'poisoned', 'poison');
     if(typeof log==='function' && vis[idxOf(e.x,e.y)]) log('<b>Venom.</b> The rooted '+e.name+' is poisoned: '+e.st.poison.d+' a turn for 3 turns.','c-good');
@@ -127,7 +127,7 @@ applyDamage = function(target, amount, type, source){
   if(target===player){ for(var el in IMMUNE_TYPE) if(IMMUNE_TYPE[el]===type && aff(el)>=6){ floatText(player.x,player.y,'immune','miss'); return 0; } }
   var byPlayer = source===player || source==='player';
   if(target && target!==player){
-    if(byPlayer && aff('fire')>=3 && target.st && target.st.burn) amount*=1.15;
+    if(byPlayer && aff('fire')>=3 && target.st && target.st.burn) amount*=1+0.05*aff('fire');
     if(target.st && target.st.hollow) amount*=1+0.05*target.st.hollow.n;
   }
   var d=_applyDamageEl(target, amount, type, source);
@@ -169,7 +169,7 @@ kill = function(e, by){
 /* ---------------------------------------------------------------- enemies: tomb, stone, ground */
 var _aiActEl = aiAct;
 aiAct = function(e){
-  if(e.tomb>0){ e.tomb--; if(e.tomb===0){ log('The ice around '+e.name+' shatters.','c-info'); sfx('ice-melt'); } e.t+=actCost(e); return; }
+  if(e.tomb>0){ if(typeof WORLD_TICK==='undefined')e.tomb--; if(e.tomb===0){ log('The ice around '+e.name+' shatters.','c-info'); sfx('ice-melt'); } e.t+=actCost(e); return; }
   if(e.st && e.st.stone){ tickStatus(e); e.t+=actCost(e); return; }
   var ox=e.x, oy=e.y;
   _aiActEl(e);
@@ -200,7 +200,7 @@ actCost = function(e){
   return c;
 };
 var _moveCostEl = moveCost;
-moveCost = function(){ var c=_moveCostEl(); if(player.stormUntil>player.t) c=Math.round(c*0.25); return c; };
+moveCost = function(){ var c=_moveCostEl(); if(player.stormUntil>player.t) c=Math.round(c*0.5); return c; };
 var _endTurnEl = endTurn;
 endTurn = function(){
   if(!player || player.hp<=0) return _endTurnEl();
@@ -209,11 +209,11 @@ endTurn = function(){
   _endTurnEl();
   FREE_ACTION=false;
   if(!player || player.hp<=0 || turn===before) return;
-  groundTick();
+  if(typeof WORLD_TICK==='undefined')groundTick();
   /* Fade (Shadow 3) */
   var fighting=ents.some(function(e){ return e.foe && e.state==='hunt' && vis[idxOf(e.x,e.y)]; });
   player.calm = fighting || player.noisy ? 0 : (player.calm||0)+1;
-  if(aff('shadow')>=3 && player.calm>=50 && !(player.hidden>1)) player.hidden=2;
+  if(aff('shadow')>=3 && player.calm>=(16-2*aff('shadow')) && !(player.hidden>1)) player.hidden=2;
   /* Upheaval walls crumble */
   var up=floorMeta && floorMeta.upheaval;
   if(up && up.length){
@@ -230,8 +230,8 @@ endTurn = function(){
 function spellRoll(A){ var b=sDMG(roll(AOE_BASE[0],AOE_BASE[1])) + (aff('fire') && !A.divine ? aff('fire') : 0); return Math.round(b*spellPower(A)); }
 function spellHit(f, A, amount, type){
   if(!f || f.hp<=0) return 0;
-  var crit = rng()<player.crit, base=amount;
-  if(crit) base=Math.round(base*1.6);
+  var crit = combatRoll(player.crit + (!A.tech && hasP('archmage')?0.05:0),true), base=amount;
+  if(crit){base=Math.round(base*1.6);if(typeof gainAmusement==='function')gainAmusement(1);}
   LAST_HIT={att:player, def:f, crit:crit, surprise:(typeof offGuard==='function' ? offGuard(f) : f.state==='asleep')||player.hidden>0, spell:true};
   if(A.el==='light' && (f.base.undead||f.base.shadowy)) base=Math.round(base*1.5);
   if(f.state!=='hunt' && f.state!=='throne') f.state='hunt';
@@ -354,7 +354,7 @@ castAt = function(x,y){
     beginCast(A);
     var dmg3=spellRoll(A);
     bt.forEach(function(t){ sparkleFx(t[0],t[1],'light',4); });
-    ents.slice().forEach(function(e){ if(!e.foe || !bt.some(function(t){ return t[0]===e.x&&t[1]===e.y; })) return; spellHit(e,A,dmg3,'light'); if(e.hp>0 && rng()<0.25) applyStatus(e,'blind',2); finishHit(e); });
+    ents.slice().forEach(function(e){ if(!e.foe || !bt.some(function(t){ return t[0]===e.x&&t[1]===e.y; })) return; spellHit(e,A,dmg3,'light'); if(e.hp>0 && rng()<.05*aff('light')) applyStatus(e,'blind',2); finishHit(e); });
     markGround(bt, A);
     log('<b>Radiant Beam.</b>','c-hit');
   }
@@ -363,8 +363,9 @@ castAt = function(x,y){
     for(var sy=y-1;sy<=y+1;sy++) for(var sx=x-1;sx<=x+1;sx++) if(inb(sx,sy) && walkable(sx,sy) && !occupied(sx,sy)) spots.push([sx,sy]);
     if(!spots.length){ log('No room for shadows there.','c-info'); return false; }
     beginCast(A);
-    var p=Math.max(1,aff('shadow'));
-    spots.forEach(function(s){ var m=spawn('wisp',s[0],s[1]); m.foe=false; m.ally=true; m.state='ally'; m.name='Shadow'; m.maxhp=m.hp=3; m.dmg=[2*p,2*p]; m.life=6; m.noXp=true; m.swarm=true; m.t=player.t; sparkleFx(s[0],s[1],'dark',8); });
+    ents=ents.filter(function(e){return !e.swarm;});
+    var shadePower=Math.max(1,Math.round(5*spellPower(A)));
+    spots.forEach(function(s){ var m=spawn('wisp',s[0],s[1]); m.foe=false; m.ally=true; m.state='ally'; m.name='Shade'; m.base=Object.assign({},m.base,{name:'Shade',sprite:'m-shade',art:.8,dmg:[shadePower,shadePower],el:'shadow'});m.maxhp=m.hp=shadePower; m.dmg=[shadePower,shadePower]; m.life=6; m.noXp=true; m.swarm=true; m.t=player.t+100; sparkleFx(s[0],s[1],'dark',8); });
     log('<b>Shadow Swarm.</b> '+spots.length+' shadows rise.','c-good');
   }
   else if(A.kind==='lflame'){
@@ -372,7 +373,7 @@ castAt = function(x,y){
     if(summonCount()>=2){ log('You already command two summons.','c-info'); return false; }
     beginCast(A);
     var sp=spellPower(A), m2=spawn('emberling',x,y);
-    m2.foe=false; m2.ally=true; m2.state='ally'; m2.name='Living Flame'; m2.livingFlame=true; m2.rangedAlly=6; m2.noXp=true; m2.t=player.t;
+    m2.kind='emberling'; m2.base=MONSTERS.emberling; m2.foe=false; m2.ally=true; m2.state='ally'; m2.name='Living Flame'; m2.livingFlame=true; m2.rangedAlly=6; m2.noXp=true; m2.t=player.t;
     m2.maxhp=m2.hp=Math.round(20*sp); m2.dmg=[Math.round(4*sp), Math.round(8*sp)]; m2.life=20;
     explosionFx(x,y);
     var land=spellRoll(A);
@@ -385,8 +386,9 @@ castAt = function(x,y){
       beginCast(A);
       log('<b>Glacial Tomb.</b> Ice closes over you.','c-good'); sfx('status-freeze');
       player.tombed=true;
-      for(var r=0;r<3 && player.hp>0;r++){ healPlayer(player.maxhp*0.05); player.movedThisTurn=false; endTurn(); }
-      player.tombed=false; log('The tomb melts away.','c-info');
+      var savedConditions=player.st;player.st={};
+      try{for(var r=0;r<3 && player.hp>0;r++){player.movedThisTurn=false;endTurn();}}finally{player.st=savedConditions;player.tombed=false;}
+      healPlayer(player.maxhp*.25);player.mp=Math.min(player.maxmp,player.mp+Math.round(player.maxmp*.25)); log('The tomb melts away.','c-info');
       return true;
     }
     if(!f){ log('Glacial Tomb needs an enemy, or yourself.','c-info'); return false; }
@@ -428,7 +430,7 @@ var _allyActEl = allyAct;
 allyAct = function(e){
   if(!e.rangedAlly) return _allyActEl(e);
   if(!tickStatus(e)) return;
-  e.life--; if(e.life<=0){ ents=ents.filter(function(o){ return o!==e; }); log('Your '+e.name+' gutters out.','c-info'); return; }
+  if(typeof WORLD_TICK==='undefined')e.life--; if(e.life<=0){ ents=ents.filter(function(o){ return o!==e; }); log('Your '+e.name+' gutters out.','c-info'); return; }
   if(e.st.stun || e.st.frozen){ e.t+=actCost(e); return; }
   var tgt=ents.filter(function(o){ if(!o.foe || o.hp<=0 || !vis[idxOf(o.x,o.y)] || dist(e,o)>e.rangedAlly) return false; var pth=boltPath(e.x,e.y,o.x,o.y), en=pth[pth.length-1]; return en && en.x===o.x && en.y===o.y; })
     .sort(function(a,b){ return dist(a,e)-dist(b,e); })[0];

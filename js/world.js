@@ -124,6 +124,10 @@ function newRunState(seed){
 
 /* ============================================================== generation */
 function generate(seed){
+  /* Status/buff timing uses this scheduler clock across the whole run.  Resetting
+     it on every new floor left carried effects with timestamps far in the future,
+     so they stopped counting down and affected saves preserved the mismatch. */
+  var floorClock=(typeof player!=='undefined' && player && Number.isFinite(player.t))?player.t:0;
   for(var attempt=0; attempt<8; attempt++){
     if(generateOnce((seed + attempt*7919)>>>0)){
       /* later room builders can wall over a cell chosen earlier: drop traps and loot left inside walls */
@@ -131,9 +135,9 @@ function generate(seed){
       items = items.filter(function(it){ return walkable(it.x,it.y) || at(it.x,it.y)===STAIRS; });
       /* a chest, stairs or door placed after a prop takes the tile */
       props = props.filter(function(p){ return !objectTile(at(p.x,p.y)); }); rebuildPropGrid();
-      /* everyone on a fresh floor starts on the same clock */
-      if(typeof player!=='undefined' && player) player.t=0;
-      ents.forEach(function(e){ e.t=0; });
+      /* everyone on a fresh floor starts on the same, run-wide clock */
+      if(typeof player!=='undefined' && player) player.t=floorClock;
+      ents.forEach(function(e){ e.t=floorClock; });
       return;
     }
   }
@@ -287,9 +291,9 @@ function generateOnce(seed){
   ((biomePlan().motes||{})[floorNo]||[]).forEach(function(el){ drop({kind:'mote', el:el}); });
 
   /* ---- start ---- */
-  player.x=start.cx; player.y=start.cy; player.t=0;
+  player.x=start.cx; player.y=start.cy;
   if(!walkable(player.x,player.y)){ var sp=nearestWalkable(player.x,player.y); player.x=sp.x; player.y=sp.y; }
-  ents=[player]; spawnedExtra=0; nextSpawn=turn + ri(90,150);
+  ents=[player]; spawnedExtra=0; nextSpawn=turn + ri(45,75);
 
   /* ---- monsters ---- */
   var count = floorMeta.boss ? 9 : 12 + bfloor()*3 + bidx()*2;   /* 2026-09-17: roughly double the old density so a full clear levels you steadily; the boss floor is a shorter approach */
@@ -428,9 +432,6 @@ function decoratePlain(r){
 }
 
 /* ---- gear, sigils ---- */
-/* a found item's plus (Justin, 2026-09-21): each step is its own one-in-three, taken only if the last one landed -
-   +0 67%, +1 22%, +2 7%, +3 4%. A boss's gear starts the same walk at +1. */
-function rollPlus(from){ var p=from||0; while(p<3 && rng()<1/3) p++; return p; }
 function randomGear(){
   var roll=rng();
   var it;
@@ -439,8 +440,8 @@ function randomGear(){
   else { var o=pick(['buckler','kite','orb','tome','holy']); it={kind:'off', it:clone(OFFHANDS[o])}; }   /* daggers drop as weapons and can be worn in either hand */
   var tierRoll=rng();
   if(floorNo>=3 && tierRoll<0.25){ it.it.tier='Trusty'; } else it.it.tier='Rusty';
+  it.it.plus = rollEnhancement(0);
   if(it.kind!=='off'){
-    it.it.plus = rollPlus();
     if(rng()<0.15+floorNo*0.03) it.it.enchant=pick(ELEMENTS);
   }
   return it;

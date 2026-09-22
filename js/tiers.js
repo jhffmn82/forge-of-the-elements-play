@@ -25,9 +25,9 @@ var TIER_WEAPON = {
 var MACE_PIERCE = [2,2,3,4];
 var TIER_ARMOR = { robe:[0,1,2,3], leather:[2,3,5,7], chain:[3,5,8,11], plate:[4,7,11,15], shirt:[0,0,0,0] };
 var TIER_ROBE = { spell:[0.05,0.05,0.10,0.15], spellPer:0.03, mana:[0.05,0.05,0.10,0.10] };
-var TIER_BLOCK = { buckler:[0.08,0.10,0.14,0.18], kite:[0.15,0.20,0.25,0.30], holy:[0.04,0.05,0.07,0.09], per:0.02 };   /* holy: Justin, 2026-09-21 */
+var TIER_BLOCK = { buckler:[0.08,0.10,0.14,0.18], kite:[0.15,0.20,0.25,0.30], holy:[0.04,0.05,0.07,0.09], per:0.02 };
 var TIER_OFF = {
-  tome:     {field:'manaPct',     base:[0.10,0.15,0.20,0.25], per:0.04},
+  tome:     {field:'manaPct',     base:[0.10,0.10,0.10,0.10], per:0.05},
   holy:     {field:'divine',      base:[0.10,0.15,0.20,0.25], per:0.04},
 };
 /* caster items: tier value + per upgrade level (tierOf reads these by tier number) */
@@ -49,23 +49,23 @@ var TIER_REQ = {
   bow:      {any:['agi'], v:[0,11,14,18]},
   staff:    {any:['foc'], v:[0,12,15,21]},
   wand:     {any:['foc'], v:[0,11,14,18]}, orb:{any:['foc'], v:[0,11,14,18]}, tome:{any:['foc'], v:[0,11,14,18]},
-  holy:     {any:['vit','foc'], v:[0,11,14,18]}, censer:{any:['vit','foc'], v:[0,11,14,18]},   /* 2026-09-21: Justin - Vitality or Focus, either is enough */
+  holy:     {any:['vit','foc'], v:[0,11,14,18]}, censer:{any:['vit','foc'], v:[0,11,14,18]},
   buckler:  {any:['mig','vit'], v:[0,11,14,18]}, kite:{any:['mig','vit'], v:[0,11,14,18]}
 };
 var STAT_NAME = {mig:'Might', agi:'Agility', vit:'Vitality', foc:'Focus'};
-/* chance of Plain / Fine / Masterwork by depth (Justin, 2026-09-21; replaces the step at each biome). Plain falls 10
-   points a floor and is gone by floor 10. Masterwork runs straight between the milestones below and holds at the last
-   one. Fine is whatever is left. Worn is starting gear and never drops. */
-var PLAIN_FALL = 0.10;
-var MASTERWORK_AT = [[5,0], [10,0.10], [15,0.25], [20,0.40]];   /* [floor, chance] */
-function tierOdds(d){
-  var plain=Math.max(0, 1-PLAIN_FALL*d), M=MASTERWORK_AT, mw=M[0][1];
-  for(var i=1;i<M.length;i++){
-    if(d>=M[i][0]){ mw=M[i][1]; continue; }
-    if(d>M[i-1][0]) mw=M[i-1][1]+(M[i][1]-M[i-1][1])*(d-M[i-1][0])/(M[i][0]-M[i-1][0]);
-    break;
-  }
-  return [plain, 1-plain-mw, mw];
+/* Owner-settled depth milestones: [depth, plain, masterwork]. Fine is the remainder. */
+var QUALITY_CURVE = [[1,0.9,0],[5,0.5,0],[10,0,0.10],[15,0,0.25],[20,0,0.40],[25,0,0.40]];
+function qualityOdds(depth){
+  var d=Math.max(1,Math.min(25,depth)), a=QUALITY_CURVE[0], b=a;
+  for(var i=1;i<QUALITY_CURVE.length;i++){ b=QUALITY_CURVE[i]; if(d<=b[0]) break; a=b; }
+  var t=b[0]===a[0]?0:(d-a[0])/(b[0]-a[0]);
+  var plain=a[1]+(b[1]-a[1])*t, master=a[2]+(b[2]-a[2])*t;
+  return [plain,1-plain-master,master];
+}
+function rollEnhancement(minimum){
+  var plus=minimum||0;
+  while(plus<3 && rng()<1/3) plus++;
+  return plus;
 }
 
 /* ---------------------------------------------------------------- identity */
@@ -95,19 +95,21 @@ function tierCol(it){ return (it && itemKey(it)) ? TIER_COL[tierNum(it)] : null;
 /* rebuild an item's numbers from its type, tier and plus (safe to call any time) */
 function tierNormalize(it){
   var k=itemKey(it); if(!k) return it;
+  if(k==='censer'){it.name='Ceremonial Knife';it.icon='item-censer';}
   var t=tierNum(it), lvl=it.plus||0; it.tier=t;
-  if(TIER_WEAPON[k] && it.kind!=='off'){
+  if(TIER_WEAPON[k] && (it.kind!=='off' || it.weapon)){
     var b=TIER_WEAPON[k][t], per=tierPer(it);
     it.dmg=[b[0]+lvl*(per[0]-1), b[1]+lvl*(per[1]-1)];   /* derive adds the plus once more */
     if(k==='mace') it.pierce=MACE_PIERCE[t];
+    if(k==='censer') it.divine=TIER_OFF.holy.base[t]+TIER_OFF.holy.per*lvl;
   }
-  if(k==='censer') it.divine=TIER_OFF.holy.base[t]+TIER_OFF.holy.per*lvl;   /* in either hand (2026-09-21) */
   if(TIER_ARMOR[k]){
     it.armor=TIER_ARMOR[k][t];
     it.eva = k==='leather' ? 5+2*lvl : k==='plate' ? -10 : k==='robe' ? 5 : 0;
   }
   if(TIER_BLOCK[k]){ it.block=TIER_BLOCK[k][t]; it.eva = k==='kite' ? -5 : 0; }
   if(TIER_OFF[k]){ var O=TIER_OFF[k]; it[O.field]=Math.max(0, O.base[t]+O.per*lvl); }
+  if(k==='holy'||k==='censer') it.note='Divine Focus: strengthens Invokes and prayers.';
   return it;
 }
 function tierPer(w){
@@ -119,7 +121,7 @@ function allGear(){
   var out=[];
   if(!player) return out;
   (player.sets||[]).forEach(function(s){ if(s) out.push(s); });
-  if(player.ranged) out.push(player.ranged);   /* 2026-09-21 */
+  if(player.ranged && out.indexOf(player.ranged)<0) out.push(player.ranged);
   if(player.armorItem) out.push(player.armorItem);
   if(player.off && player.off!==EMPTY_OFF) out.push(player.off);
   (player.bag||[]).forEach(function(b){ if(b.data && (b.kind==='weapon'||b.kind==='armor'||b.kind==='off')) out.push(b.data); });
@@ -203,7 +205,8 @@ bagCard = function(it){
     if(!d.unid){
       if(TIER_BLOCK[k]) extra+='<div class="row"><span>Block</span><b>'+Math.round((d.block+TIER_BLOCK.per*(d.plus||0))*100)+'%</b></div>';
       if(k==='tome') extra+='<div class="row"><span>Max mana</span><b>+'+Math.round(d.manaPct*100)+'%</b></div>';
-      if(k==='holy') extra+='<div class="row"><span>Invoke strength</span><b>+'+Math.round(d.divine*100)+'%</b></div>';
+      if(k==='holy') extra+='<div class="row"><span>Invoke &amp; prayer strength</span><b>+'+Math.round(d.divine*100)+'%</b></div>';
+      if(k==='holy') extra+='<div class="row"><span>Beneficial prayer duration</span><b>+'+((d.plus||0)>=3?2:1)+' turns</b></div>';
       if(d.kind==='off' && d.weapon) extra+='<div class="row"><span>Off-hand strike</span><b>60% damage, own procs</b></div>';
     }
     h=tierTint(h, d)+extra+reqRow(d);
@@ -246,8 +249,8 @@ derive = function(p){
      60% cap. This is the live formula - combat.js sets p.block first and this wrapper runs after it. */
   var o=p.off, sh = o && o!==EMPTY_OFF && o.block>0 && !p.twoHanded;
   p.block = sh ? Math.min(0.75, o.block + TIER_BLOCK.per*(o.plus||0)
-                              + (isShield(o) && p.cls==='fighter' && typeof FIGHTER_NO_BLOCK==='undefined' ? 0.15 : 0)
-                              + (isShield(o) ? 0.02*Math.max(0, (p.stats&&p.stats.mig||10)-10) : 0)) : 0;
+                              + (p.cls==='fighter' && typeof FIGHTER_NO_BLOCK==='undefined' ? 0.15 : 0)
+                              + 0.02*Math.max(0, (p.stats&&p.stats.mig||10)-10)) : 0;
   /* tomes carry their own per-level mana; undo upgrade.js's older +5%/level */
   if(o && o!==EMPTY_OFF && !p.twoHanded && o.manaPct && (o.plus||0)) p.maxmp=Math.round(p.maxmp/(1+0.05*o.plus));
   if(arm && itemKey(arm)==='robe') p.maxmp=Math.round(p.maxmp*(1+TIER_ROBE.mana[tierNum(arm)]));
@@ -267,17 +270,8 @@ spellPower = function(A){
 
 /* ---------------------------------------------------------------- drops by depth */
 function rollTier(){
-  var odds=tierOdds(floorNo), r=rng();
+  var odds=qualityOdds(floorNo), r=rng();
   return r<odds[0] ? 1 : r<odds[0]+odds[1] ? 2 : 3;
-}
-/* a boss's gear (Justin, 2026-09-21; was two forced Fine +3): never below Fine, Masterwork when the depth roll says so;
-   at least +1, then the same one-in-three steps toward +3, so essence stays the dependable road to +3 */
-function bossGear(){
-  var g=randomGear();
-  if(g.it.cursed){ delete g.it.cursed; delete g.it.cursedOff; }   /* a hoard piece is never cursed; a curse under a positive plus was nonsense */
-  if(g.it.plus!==undefined) g.it.plus=rollPlus(1);
-  g.it.tier=Math.max(2, tierNum(g.it)); tierNormalize(g.it);
-  return g;
 }
 var _randomGearTier = randomGear;
 randomGear = function(){

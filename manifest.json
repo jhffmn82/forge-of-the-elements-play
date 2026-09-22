@@ -1,11 +1,12 @@
 {
   "name": "Forge of the Elements",
   "short_name": "Forge",
+  "id": "./",
   "description": "Descend five floors of the Dungeon, fuse elemental motes at the Forge, and bring down Grukk the Warchief.",
   "start_url": "./",
   "scope": "./",
   "display": "fullscreen",
-  "orientation": "portrait",
+  "orientation": "any",
   "background_color": "#0F0D0C",
   "theme_color": "#0F0D0C",
   "icons": [

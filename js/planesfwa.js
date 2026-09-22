@@ -825,10 +825,5 @@ inspectHTML = function(mx, my){
     var line='<div class="hint">'+FWA_HINT[e.kind]+'</div>', at2=h.indexOf('<div class="odds">');
     return at2>=0 ? h.slice(0,at2)+line+h.slice(at2) : h+line;
   }
-  if(!e && (revealAll||seen[idxOf(mx,my)])){
-    if(fwaIsLava(mx,my)) return '<div class="nm">Molten rock</div><div class="hint">Impassable. It scorches anything that ends a turn beside it.</div>';
-    if(fwaDeepAt(mx,my)) return '<div class="nm">Deep water</div><div class="hint">You can cross it, but it drags you down: damage and a chill every turn you end in it.</div>';
-    if(fwaVentAt(mx,my)) return '<div class="nm">Updraft vent</div><div class="hint">The gust throws you a tile off it.</div>';
-  }
   return h;
 };

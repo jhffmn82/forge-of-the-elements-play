@@ -67,7 +67,7 @@ var DEEP_HINT = {
   drowblade:'A duelist. Its cuts bleed, and it throws globes of darkness it can see through.',
   drowpriestess:'Heals and wards the drow, calls spiderlings, and drinks from the blood bolts she throws. Kill her first.',
   thoughteater:'Saps your mana to heal itself. With no mana left, it dazes you instead. Fragile.',
-  webspitter:'Spits webbing that pins you for a turn: you can still fight, not move. Its bite can bleed.',
+  webspitter:'A landed web shot always pins you for a turn, then slows you for three. Its bite can bleed.',
   spiderling:'Weak alone, never alone.',
   drider:'Shoots from range, poisons with its fangs up close, and webs you in place.',
   fireimp:'Hurls fire bolts that burn you and set webs and grass alight.',
@@ -79,7 +79,7 @@ var DEEP_HINT = {
 var BLEED   = {turns:4, base:2, per:0.15};                 /* damage a turn = 2 + 0.15 per floor (4 at floor 16), 4 turns */
 var GLOBE   = {r:1, turns:5, cd:[10,14], first:[1,3]};     /* 3x3 of darkness on you for 5 turns */
 var PRIEST  = {healPct:0.30, healFlat:10, healCd:4, ward:8, wardTurns:8, wardCd:7, callCd:9, callN:[1,2], capEach:2, capFloor:8, range:6};
-var WEBSHOT = {cd:4, range:5, pin:1};
+var WEBSHOT = {cd:4, range:5, pin:1, slow:3};
 var DRIDER  = {webCd:6, poison:[4,3]};                     /* fangs: poison 4 turns, 3 a turn */
 var SAP     = {cd:3, range:6, base:6, per:0.5, heal:2};    /* drains 6 + half the floor in MP (14 at 16); heals 2 HP per MP */
 var IMP     = {cd:2, range:6, burn:0.40};
@@ -199,6 +199,7 @@ function inflictBleed(t, src, turns){
 }
 var _tickStatusDeep = tickStatus;
 tickStatus = function(e){
+  if(typeof WORLD_TICK!=='undefined'&&!WORLD_TICK)return true;
   var s=e && e.st;
   if(s && s.bleed && s.bleed.t>0 && e.hp>0){
     var bd=Math.max(1, s.bleed.d||2);
@@ -308,11 +309,12 @@ drawTelegraphs = function(now){
 /* ---------------------------------------------------------------- webs: pinned for a turn (you can still attack) */
 function webShot(e, who){
   setClip(e,'attack'); boltFx(e.x,e.y,player.x,player.y,'web'); sfx('trap-web');
-  if(rng() < hitChance(e.base.acc+8, player.eva)){
+  if(rng() < hostileHitChance(hitChance(e.base.acc+8, player.eva))){
     applyStatus(player, 'root', WEBSHOT.pin);
+    player.syllaWeb=WEBSHOT.slow;   /* tickStatus applies the slow as soon as the one-turn pin ends */
     if(gAt(player.x,player.y)!==G_WEB) setG(player.x, player.y, G_WEB);
     burst(player.x, player.y, 'web', 22, 0.05); floatText(player.x, player.y, 'webbed', 'phys');
-    log('The <b>'+(who||e.name)+'</b> spits sticky webbing over you: <b>pinned</b> for a turn. You can still fight, not move.','c-you');
+    log('The <b>'+(who||e.name)+'</b> spits sticky webbing over you: <b>pinned</b> for a turn, then slowed for three.','c-you');
   } else {
     var c=nearFree(player.x, player.y, 1); if(c) setG(c.x, c.y, G_WEB);
     log('The '+(who||e.name)+'\'s web splatters beside you.','c-miss');
@@ -371,7 +373,7 @@ var DEEP_AI = {
     if(d>=2 && d<=PRIEST.range && deepShot(e)){
       if(!tickStatus(e)) return true;
       setClip(e,'attack'); boltFx(e.x,e.y,player.x,player.y,'blood'); sfx('shaman-cast');
-      if(rng()<hitChance(e.base.acc+6, player.eva)){
+      if(rng()<hostileHitChance(hitChance(e.base.acc+6, player.eva))){
         var bd=deepHurt(player, roll(e.dmg[0], e.dmg[1]), 'dark', e, 'The <b>Drow Priestess</b>\'s blood bolt hits you');
         if(bd>0 && e.hp>0 && e.hp<e.maxhp){ var hh=Math.min(bd, e.maxhp-e.hp); e.hp+=hh; floatText(e.x,e.y,'+'+hh,'heal'); }
       } else { log('The Drow Priestess\'s blood bolt misses.','c-miss'); floatText(player.x,player.y,'miss','miss'); }
@@ -386,7 +388,7 @@ var DEEP_AI = {
     if(d>=2 && d<=SAP.range && deepShot(e)){
       if(!tickStatus(e)) return true;
       setClip(e,'attack'); boltFx(e.x,e.y,player.x,player.y,'magic'); sfx('shaman-cast');
-      if(rng() >= hitChance(e.base.acc+10, player.eva)){ log('The Thought Eater\'s '+(e.sapCd<=0 ? 'mana sap' : 'lash')+' slides off your mind.','c-miss'); floatText(player.x,player.y,'miss','miss'); if(e.sapCd<=0) e.sapCd=1; e.t+=actCost(e); return true; }
+      if(rng() >= hostileHitChance(hitChance(e.base.acc+10, player.eva))){ log('The Thought Eater\'s '+(e.sapCd<=0 ? 'mana sap' : 'lash')+' slides off your mind.','c-miss'); floatText(player.x,player.y,'miss','miss'); if(e.sapCd<=0) e.sapCd=1; e.t+=actCost(e); return true; }
       if(e.sapCd<=0){
         e.sapCd=SAP.cd;
         if(player.mp>=1){
@@ -427,7 +429,7 @@ var DEEP_AI = {
     if(e.boltCd<=0 && d>=2 && d<=IMP.range && deepShot(e)){
       if(!tickStatus(e)) return true;
       e.boltCd=IMP.cd; setClip(e,'attack'); boltFx(e.x,e.y,player.x,player.y,'fire'); sfx('shaman-cast');
-      if(rng()<hitChance(e.base.acc+6, player.eva)){
+      if(rng()<hostileHitChance(hitChance(e.base.acc+6, player.eva))){
         var fd=deepHurt(player, roll(e.dmg[0], e.dmg[1]), 'fire', e, 'The <b>Fire Imp</b>\'s fire bolt hits you');
         if(player.hp>0 && rng()<IMP.burn){ applyStatus(player,'burn',3,sDMG(2)); log('You are <span class="c-fire">burning</span>.','c-you'); }
         ignite(player.x, player.y, null);

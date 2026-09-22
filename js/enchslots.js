@@ -56,7 +56,6 @@ if(typeof enchantTargets === 'function'){
     }
     player.motes[el]--; if(player.motes[el] <= 0) delete player.motes[el];
     item.enchant = el;
-    if(item.cursed && typeof breakCurse==='function') breakCurse(item);   /* 2026-09-21: the Forge burns a curse out of a bow or off-hand blade too, as it does the main hand and armour */
     if(player.god === 'anvil') gainPiety(20);
     godConductEquip('weapon', item);
     derive(player);
@@ -73,10 +72,8 @@ if(typeof enchantTargets === 'function'){
     if(target && target.unid){
       log('The Forge will not work metal you do not know. <b>Identify it first.</b>','c-info'); sfx('ui-error'); return;
     }
-    /* 2026-09-21: the ranged and off-hand roads used to skip Old Anvil's Second Heat, which only wrapped the main road */
-    var b=Object.assign({}, player.motes);
-    if(slot === 'ranged'){ setInto(player.ranged, slot, el, 'it answers every shot'); if(typeof secondHeat==='function'){ secondHeat(b); renderForge(); updateUI(); } return; }
-    if(slot === 'off' && offHandIsWeapon()){ setInto(player.off, slot, el, 'it answers your off-hand strike'); if(typeof secondHeat==='function'){ secondHeat(b); renderForge(); updateUI(); } return; }
+    if(slot === 'ranged') return setInto(player.ranged, slot, el, 'it answers every shot');
+    if(slot === 'off' && offHandIsWeapon()) return setInto(player.off, slot, el, 'it answers your off-hand strike');
     return _enchantItemSlots(slot, el);
   };
 })();

@@ -1,3 +1,4 @@
+<meta charset="utf-8">
 <title>Forge of the Elements</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="mobile-web-app-capable" content="yes">
@@ -10,7 +11,7 @@
 <link rel="apple-touch-icon" sizes="167x167" href="art/icons/apple-touch-icon-167.png">
 <link rel="apple-touch-icon" sizes="152x152" href="art/icons/apple-touch-icon-152.png">
 <meta name="theme-color" content="#0F0D0C">
-<meta name="fote-build" content="2026-09-21 21:25:06">
+<meta name="fote-build" content="2026-09-22 06:39:46">
 <link rel="manifest" href="manifest.json">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Grenze+Gotisch:wght@500;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
 <style>
@@ -125,8 +126,6 @@
   .t-hidden{color:var(--ash);border-color:#3A322B;background:#1C1815}
   #dpad{display:grid;grid-template-columns:repeat(3,34px);grid-auto-rows:30px;gap:3px}
   #dpad button{padding:0;font-size:13px}
-  #extra{display:flex;gap:4px;flex-wrap:wrap;justify-content:center;max-width:220px}
-  #extra button{padding:4px 8px;font-size:10.5px}
 
   select,input[type=text],button{font-family:var(--mono);font-size:12px;color:var(--ink);
     background:var(--panel-2);border:1px solid var(--edge);border-radius:4px;padding:5px 8px}
@@ -242,8 +241,6 @@
   body.touch #ctl{flex-direction:row;align-items:flex-end;gap:6px}
   body.touch #dpad{grid-template-columns:repeat(3,44px);grid-auto-rows:34px;gap:4px}
   body.touch #dpad button{font-size:17px}
-  body.touch #extra{display:grid;grid-template-columns:1fr 1fr;gap:4px;max-width:184px}
-  body.touch #extra button{min-height:34px;font-size:11.5px;padding:0 8px}
 
   /* portrait only: a phone turned sideways gets the card, not a letterboxed game */
   #rotate{display:none;position:fixed;inset:0;z-index:40;align-items:center;justify-content:center;
@@ -265,8 +262,6 @@
     body.touch #hotbar{grid-template-columns:repeat(4,minmax(0,1fr));grid-template-rows:1fr 1fr;min-height:118px;gap:7px}
     body.touch .slot .n{font-size:12px}
     body.touch #ctl{flex-direction:row;align-items:stretch;justify-content:space-between;gap:8px}
-    body.touch #extra{flex:1 1 auto;max-width:none;grid-template-columns:1fr 1fr;gap:6px}
-    body.touch #extra button{min-height:42px;font-size:12.5px}
     body.touch #dpad{grid-template-columns:repeat(3,52px);grid-auto-rows:44px;gap:5px}
     body.touch #dpad button{font-size:19px}
     /* the message log is the bottom row, under the controls, where it reads like a chat feed */
@@ -352,13 +347,13 @@
                 <div class="kv"><span>Arrows / WASD</span><b>step or attack</b>
                   <span>Q E Z C</span><b>diagonals</b>
                   <span>. or space</span><b>wait</b>
-                  <span>&gt;</span><b>take the stairs</b>
+                  <span>&gt; / &lt;</span><b>stairs down / up</b>
+                  <span>f</span><b>search for hidden doors and traps</b>
                   <span>Click a tile</span><b>step that way</b></div></div>
               <div><p class="sub">Abilities</p>
                 <div class="kv"><span>1 &ndash; 8</span><b>use that slot</b>
                   <span>Hover a monster</span><b>odds and stats</b>
                   <span>g</span><b>pick up an item</b>
-                  <span>x</span><b>swap weapon sets</b>
                   <span>Click a monster</span><b>shoot it (bow out)</b>
                   <span>Drag bag &rarr; hotbar</span><b>assign a slot</b>
                   <span>esc</span><b>close this sheet</b></div></div>
@@ -395,12 +390,11 @@
         <button data-d="4">&#8592;</button><button data-d="5">&#183;</button><button data-d="6">&#8594;</button>
         <button data-d="1">&#8601;</button><button data-d="2">&#8595;</button><button data-d="3">&#8600;</button>
       </div>
-      <div id="extra"><button id="bSwap" title="Swap weapon sets (x)">Swap &#8646;</button><button id="bStairs">Stairs &gt;</button><button id="bGrab">Grab</button><button id="bSearch" title="Search nearby for hidden doors and traps (F)">Search</button><button id="bClose" title="Close an open door next to you (Shift+C, or right-click the door)">Close door</button></div>
     </div>
   </div>
 </div>
 <script>
 /* every script loads with a fresh version tag, so a normal reload always picks up new code */
-(function(){ var v=Date.now(), f=["art/packed/assets.js", "js/keybind.js", "game.js", "js/data.js", "js/world.js", "js/render.js", "js/surface.js", "js/fx.js", "js/pacing.js", "js/audio.js", "js/combat.js", "js/systems.js", "js/gods.js", "js/forge.js", "js/ui.js", "js/create.js", "js/gear.js", "js/amulets.js", "js/upgrade.js", "js/sigils.js", "js/capstones.js", "js/infusions.js", "js/equip.js", "js/classes.js", "js/tiers.js", "js/elements.js", "js/combos.js", "js/religion.js", "js/holy.js", "js/puzzles.js", "js/sheets.js", "js/swapsets.js", "js/cores.js", "js/runes.js", "js/surprise.js", "js/crypt.js", "js/cryptset.js", "js/cryptrooms.js", "js/cryptprops.js", "js/forgeui.js", "js/hud.js", "js/automap.js", "js/travel.js", "js/floors.js", "js/planes.js", "js/portals.js", "js/planeterrain.js", "js/statusicons.js", "js/options.js", "js/save.js", "js/boot.js", "js/godart.js", "js/enchtext.js", "js/spellench.js", "js/shieldench.js", "js/searchfx.js", "js/rangedslot.js", "js/enchslots.js", "js/ticks.js", "js/luck.js", "js/offline.js", "js/mobile.js", "js/touchui.js", "js/autoaim.js", "js/reach.js", "js/caverns.js", "js/cavernrender.js", "js/cavernmobs.js", "js/chasmedges.js", "js/chasmsmooth.js", "js/objanim.js", "js/cavefixes.js", "js/cryptpack.js", "js/mapview.js", "js/vegetation.js", "js/vegart.js", "js/lightrules.js", "js/foods.js", "js/deep.js", "js/deeprender.js", "js/deepmobs.js", "js/planesfwa.js", "js/sylla.js", "js/update.js"];
+(function(){ var v=Date.now(), f=["art/packed/assets.js", "js/keybind.js", "game.js", "js/data.js", "js/world.js", "js/render.js", "js/surface.js", "js/fx.js", "js/pacing.js", "js/audio.js", "js/combat.js", "js/systems.js", "js/gods.js", "js/forge.js", "js/ui.js", "js/create.js", "js/gear.js", "js/amulets.js", "js/upgrade.js", "js/sigils.js", "js/capstones.js", "js/infusions.js", "js/equip.js", "js/classes.js", "js/tiers.js", "js/elements.js", "js/combos.js", "js/religion.js", "js/holy.js", "js/puzzles.js", "js/sheets.js", "js/swapsets.js", "js/cores.js", "js/runes.js", "js/surprise.js", "js/crypt.js", "js/cryptset.js", "js/cryptrooms.js", "js/cryptprops.js", "js/forgeui.js", "js/hud.js", "js/automap.js", "js/travel.js", "js/floors.js", "js/planes.js", "js/portals.js", "js/planeterrain.js", "js/statusicons.js", "js/options.js", "js/recovery-audio.js", "js/save.js", "js/boot.js", "js/godart.js", "js/enchtext.js", "js/spellench.js", "js/shieldench.js", "js/searchfx.js", "js/rangedslot.js", "js/enchslots.js", "js/ticks.js", "js/luck.js", "js/offline.js", "js/mobile.js", "js/touchui.js", "js/autoaim.js", "js/reach.js", "js/caverns.js", "js/cavernrender.js", "js/cavernmobs.js", "js/chasmedges.js", "js/chasmsmooth.js", "js/objanim.js", "js/cavefixes.js", "js/cryptpack.js", "js/mapview.js", "js/vegetation.js", "js/vegart.js", "js/lightrules.js", "js/foods.js", "js/deep.js", "js/deeprender.js", "js/deepmobs.js", "js/planesfwa.js", "js/sylla.js", "js/update.js", "js/recovery.js", "js/balance-rulings.js", "js/world-time.js", "js/install.js", "js/level-lighting.js", "js/level-art.js", "js/public-mode.js"];
   for(var i=0;i<f.length;i++) document.write('<script src="'+f[i]+'?v='+v+'"><\/script>'); })();
 </script>

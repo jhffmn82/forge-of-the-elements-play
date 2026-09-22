@@ -29,6 +29,14 @@ function cursorFor(kind){
 /* ---------------------------------------------------------------- what a click on a tile means */
 function tileAt(ev){ var r=cv.getBoundingClientRect(); return {x:camX+Math.floor((ev.clientX-r.left+camOX)/TS), y:camY+Math.floor((ev.clientY-r.top+camOY)/TS)}; }
 function knownTile(x,y){ return inb(x,y) && (revealAll || seen[idxOf(x,y)]); }
+/* Player travel can cross a gap while Floating (or carried by Air 3).
+   Keep world walkability unchanged for grounded actors and floor generation. */
+function travelWalkable(x,y){
+  if(walkable(x,y)) return true;
+  if(!inb(x,y) || at(x,y)!==CHASM || !player) return false;
+  if(!(player.levitate>0 || (typeof aff==='function' && aff('air')>=3))) return false;
+  var p=propAt(x,y); return !(p && p.b);
+}
 function useTile(t){ return t===DOOR || t===CHEST || t===SHRINE || t===FORGE || t===LOCKED || t===SEALED || t===ICEDOOR || t===THORNS || t===TOLL || (t===EXIT && !floorMeta.exitOpen); }
 function clickSpellReady(foe){
   var k=player.clickSpell; if(!k || player.abilities.indexOf(k)<0) return false;
@@ -59,7 +67,7 @@ function clickIntent(x, y){
   if(t===DOOR || t===OPEN || t===LOCKED || t===SEALED || t===ICEDOOR || t===THORNS || t===TOLL) return {kind:'door'};
   if(useTile(t) || (propAt(x,y) && propAt(x,y).lever)) return {kind:'use'};
   if(items.some(function(it){ return it.x===x && it.y===y && it.kind!=='heart' && it.kind!=='managlobe'; })) return {kind:'grab'};
-  if(passable(x,y) || t===OPEN) return {kind:'move'};
+  if(travelWalkable(x,y) || passable(x,y) || t===OPEN) return {kind:'move'};
   return null;
 }
 
@@ -76,7 +84,7 @@ function travelPath(tx, ty, stopAdjacent){
       if(!dx && !dy) continue; var nx=x+dx, ny=y+dy; if(!inb(nx,ny)) continue; var ni=idxOf(nx,ny);
       if(prev[ni]>=0 || !knownTile(nx,ny)) continue;
       var t=at(nx,ny), isGoal = ni===goal;
-      var ok = walkable(nx,ny) || t===DOOR || t===OPEN || (isGoal && (useTile(t) || t===EXIT));
+      var ok = travelWalkable(nx,ny) || t===DOOR || t===OPEN || (isGoal && (useTile(t) || t===EXIT));
       if(!ok || (knownTrap[ni] && !isGoal)) continue;
       if(!isGoal && ents.some(function(e){ return e!==player && e.x===nx && e.y===ny && !e.ally; })) continue;
       prev[ni]=i; q.push(ni);
@@ -89,13 +97,16 @@ function travelPath(tx, ty, stopAdjacent){
 
 /* ---------------------------------------------------------------- walking */
 function visibleFoeIds(){ return ents.filter(function(e){ return e.foe && vis[idxOf(e.x,e.y)] && e.state!=='asleep'; }).map(function(e){ return e.id; }); }
-function stopTravel(why){ if(TRAVEL){ TRAVEL=null; if(why) log(why,'c-info'); } }
+var TRAVEL_TIMER=null;
+function queueTravel(ms){clearTimeout(TRAVEL_TIMER);TRAVEL_TIMER=setTimeout(function(){TRAVEL_TIMER=null;travelStep();},ms);}
+function stopTravel(why){clearTimeout(TRAVEL_TIMER);TRAVEL_TIMER=null;if(TRAVEL){ TRAVEL=null; if(why) log(why,'c-info'); } }
 /* 2026-09-20: Justin - a misclick during a fight was killing people. Clicking a tile several steps off while
    something is awake and watching used to walk the whole route, so a finger that meant "shoot that" instead
    strolled past two monsters and took a free hit from each. With any awake foe in sight a click is now worth
    exactly one step along the path: the walk stops there and you choose again. Nothing in sight walks as before. */
 function travelOneStep(){ return visibleFoeIds().length > 0; }
 function startTravel(path, then){
+  stopTravel();
   if(!path || !path.length){ if(then) then(); return; }
   if(path.length>1 && travelOneStep()){
     path=path.slice(0,1);
@@ -106,8 +117,8 @@ function startTravel(path, then){
 }
 function travelStep(){
   var T=TRAVEL; if(!T) return;
-  if(modalOpen || openSheet || RUN.over || player.hp<=0){ stopTravel(); return; }
-  if(typeof animBusy==='function' && animBusy()){ setTimeout(travelStep, 30); return; }
+  if(uiOpen() || RUN.over || player.hp<=0){ stopTravel(); return; }
+  if(typeof animBusy==='function' && animBusy()){ queueTravel(30); return; }
   /* what stops a walk */
   if(player.hp < T.hp){ stopTravel('You stop: you are hurt.'); return; }
   var foes=visibleFoeIds().filter(function(id){ return T.foes.indexOf(id)<0; });
@@ -123,12 +134,12 @@ function travelStep(){
   if(!T.path.length && (player.x!==step.x || player.y!==step.y)){ var th=T.then; TRAVEL=null; if(th && turn===bt) th(); return; }
   if(player.x===bx && player.y===by){
     if(turn===bt){ stopTravel(); return; }
-    if(at(step.x,step.y)===OPEN){ T.path.unshift(step); setTimeout(travelStep, ANIM.reduce ? 0 : 60); return; }   /* opened a door on the way: walk on through */
+    if(at(step.x,step.y)===OPEN){ T.path.unshift(step); queueTravel(ANIM.reduce ? 0 : 60); return; }
     stopTravel(); return;
   }
   T.hp=Math.min(T.hp, player.hp);
   if(!T.path.length){ var then2=T.then; TRAVEL=null; if(then2) then2(); return; }
-  setTimeout(travelStep, ANIM.reduce ? 0 : Math.max(20, MOVE_MS*0.35));
+  queueTravel(ANIM.reduce ? 0 : Math.max(20, MOVE_MS*0.35));
 }
 
 /* ---------------------------------------------------------------- the click itself */

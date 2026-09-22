@@ -135,7 +135,8 @@ applyStatus = function(e, key, turns, extra){
    turn it ends on makes n mean n for both sides. */
 var _tickStatusSyl = tickStatus;
 tickStatus = function(e){
-  if(e && e.st && e.st.slow && e.st.slow.until !== undefined && turn >= e.st.slow.until) delete e.st.slow;
+  if(typeof WORLD_TICK!=='undefined'&&!WORLD_TICK)return true;
+  if(typeof WORLD_TICK==='undefined' && e && e.st && e.st.slow && e.st.slow.until !== undefined && turn >= e.st.slow.until) delete e.st.slow;
   var r=_tickStatusSyl(e);
   if(r!==false && e && e.hp>0 && e.syllaWeb>0 && !(e.st && e.st.root)){ var n=e.syllaWeb; e.syllaWeb=0; applyStatus(e, 'slow', n); }
   return r;
@@ -189,8 +190,8 @@ attack = function(att, def, mult, label){
 /* a spiderling's bite is the same web you throw, and venom on top: they are Sylla's own children */
 function broodBite(def){
   var r=Math.max(1, godRank());
-  if(rng() < SYLLA.webChance*r) syllaWeb(def, r);
-  else syllaPoison(def, SYLLA.poisonTurns, r);   /* PLACEHOLDER: Justin said "web on attack and poison", not how often */
+  if(rng() < .5) syllaWeb(def, r);
+  else syllaPoison(def, SYLLA.poisonTurns, r);
 }
 
 /* ---------------------------------------------------------------- the invoke */
@@ -199,7 +200,7 @@ castSelf = function(key, A){
   if(key==='intothedark'){
     var r=godRank();
     player.mp -= costOf(A); setClip(player,'cast');
-    player.hidden = Math.max(player.hidden||0, SYLLA.darkTurns);
+    player.hidden = Math.max(player.hidden||0, divineDuration(SYLLA.darkTurns));
     ents.forEach(function(e){ if(e.foe && e.state==='hunt'){ e.state='wander'; e.lastSeen=null; } });
     player.syllaDark = r;
     sfx('vanish'); sparkleFx(player.x, player.y, 'dark', 30); ringFx(player.x, player.y, GODS.sylla.color, 2.5);
@@ -220,9 +221,9 @@ function prayTheBrood(){
     /* deepSpawnRaw skips the Underdark's region swap, so a spiderling stays a spiderling on floors 16-20 */
     var s=(typeof deepSpawnRaw==='function' ? deepSpawnRaw : spawn)('spiderling', c.x, c.y);
     s.foe=false; s.ally=true; s.state='ally'; s.broodling=true; s.noXp=true; s.name='Spiderling';
-    s.maxhp=s.hp=S.hp; s.dmg=[S.dmg[0], S.dmg[1]]; s.syllaResist=S.resist;
+    s.maxhp=s.hp=Math.round(S.hp*divineStrength()); s.dmg=[Math.round(S.dmg[0]*divineStrength()), Math.round(S.dmg[1]*divineStrength())]; s.syllaResist=S.resist;
     s.base=Object.assign({}, s.base, {armor:S.armor});          /* armorOf() reads the base, so give it its own */
-    s.t=player.t; s.life=SYLLA.broodLife;   /* they are called, not kept */
+    s.t=player.t; s.life=divineDuration(SYLLA.broodLife);   /* they are called, not kept */
     sparkleFx(c.x, c.y, (typeof TRAIL!=='undefined' && TRAIL.web) ? 'web' : 'dark', 18);
     got++;
   }
@@ -279,7 +280,7 @@ godConductEquip = function(kind, data){
   var r=_godConductEquipSyl(kind, data);
   if(syllaOn() && data){
     if(data.enchant==='fire') pietyViolation('fire-touched gear', SYLLA.violation);
-    if(kind==='off' && isShield(data)) pietyViolation('you carrying a shield', SYLLA.violation);
+    if(kind==='off' && data.block>0) pietyViolation('you carrying a shield', SYLLA.violation);
     if(kind==='armor' && data.weight && data.weight!=='cloth' && data.weight!=='light')
       pietyViolation('you wearing armor heavier than leather', SYLLA.violation);
   }

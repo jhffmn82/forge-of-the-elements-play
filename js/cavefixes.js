@@ -17,7 +17,7 @@ function drawOccluders(now){
   props.forEach(function(p){
     if(p.flat || !(revealAll||seen[idxOf(p.x,p.y)])) return;
     var o=caveArt(p.name); if(!o) return;
-    var w=p.w||1, h=p.h||1, rise=Math.ceil(o.fullH/64) - h;   /* rows the art stands above its footprint */
+    var w=p.w||1, h=p.h||1, rise=o.nm==='kobold-crate'?0:Math.ceil(o.fullH*caveArtScale(o)/TS) - h;   /* rows the art stands above its footprint */
     if(rise<1) return;
     var base=p.y+h-1;
     var hit=bodies.some(function(e){ var rp=renderPos(e); return rp.x>p.x-0.8 && rp.x<p.x+w-0.2 && rp.y<p.y-0.05 && rp.y>=p.y-rise-0.5; });
@@ -82,7 +82,7 @@ function caveBottomPad(o){
 }
 var _drawCaveArtStand = drawCaveArt;
 drawCaveArt = function(o, cx, bottom, alpha, flipX){
-  if(o && o.nm && CAVE_STANDING.test(o.nm)) bottom += caveBottomPad(o)*TS/64;
+  if(o && o.nm && o.nm!=='kobold-crate' && CAVE_STANDING.test(o.nm)) bottom += caveBottomPad(o)*caveArtScale(o);
   if(o && o.nm && /^cl-cave-pearls/.test(o.nm)) alpha *= 0.3;   /* 2026-09-19: faint, like the lichen - full strength they read as stamps */
   return _drawCaveArtStand(o, cx, bottom, alpha, flipX);
 };
@@ -94,7 +94,11 @@ drawCaveArt = function(o, cx, bottom, alpha, flipX){
 var _gatherLightsCave = gatherLights;
 gatherLights = function(now, prp){
   var L=_gatherLightsCave.apply(this, arguments);
-  if(typeof inCaverns==='function' && inCaverns() && L && L.length) for(var i=1;i<L.length;i++){ L[i].s*=0.55; L[i].r*=0.85; }
+  if(typeof inCaverns==='function' && inCaverns() && L && L.length) for(var i=1;i<L.length;i++){
+    /* PR #4: emitted light describes the cave; dim only carried light and fill. */
+    var emitted=L[i].em || !(L[i].x===prp.x && L[i].y===prp.y);
+    L[i].s*=emitted?1.35:0.55; L[i].r*=emitted?1.25:0.85;
+  }
   return L;
 };
 

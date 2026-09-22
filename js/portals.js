@@ -196,7 +196,7 @@ function leavePlane(){
   restoreFloor(floorNo, RUN.planeFrom);
   floorMeta.portalUsed=true;
   log('You step back into the '+biomeName()+'. Behind you the portal gutters and goes dark.','c-kill');
-  playMusic('dungeon');
+  playSceneMusic();
   if(typeof writeSlot==='function') writeSlot('auto','floor '+floorNo);
 }
 /* the plane's treasure */
@@ -246,7 +246,7 @@ var PLANE_ROSTER = {
   /* 2026-09-17: 180 HP and 10-15 was an attrition fight a level 9 character could not win - builds are not
      online yet at that depth. 110 and 8-12 keeps him lethal if you stand there and finishes in a reasonable
      number of exchanges. */
-  M.mountainheart= mk({name:'Heart of the Mountain', sprite:'m-mountain-heart', col:'#C08A40', ch:'M', hp:160, dmg:[11,15], acc:68, eva:0, armor:6, xp:320, elite:true, big:2, still:true, el:'earth', art:1.9});
+  M.mountainheart= mk({name:'Heart of the Mountain', sprite:'m-mountain-heart', col:'#C08A40', ch:'M', hp:160, dmg:[12,16], acc:68, eva:0, armor:6, xp:320, elite:true, big:2, still:true, el:'earth', art:1.9});
   M.crystalnode  = mk({name:'Crystal Node', sprite:'m-crystal-golem', col:'#C8A0FF', ch:'*', hp:30, dmg:[0,0], acc:0, eva:0, armor:3, xp:20, object:true, art:0.6});
   ['dawnsentinel','halowisp','prismscarab','radiantwarden','stalker','gloommoth','umbralhound','nightwarden','burrower','crystalgolem','mosstroll','mountainheart','crystalnode'].forEach(function(k){ DROPS[k]=DROPS[k]||{chance:0.3, table:{essence:8, sigil:2, gear:3}}; });
 })();
@@ -425,6 +425,7 @@ aiAct = function(e){
     }
   }
   if(b.still){
+    if(e.st.stun || e.st.frozen || e.st.fear){e.t+=actCost(e);return;}
     if(e.state!=='hunt'){
       /* dormant until struck or stood next to: a boss that cannot chase you should not start the fight
          either, so you get to clear its crystal nodes and its escort first (2026-09-17) */
@@ -441,7 +442,7 @@ aiAct = function(e){
     if(see && d<=6 && e.spikeCd<=0){
       e.spikeCd=3; setClip(e,'attack'); SHAKE=4;
       if(typeof burst==='function') burst(player.x, player.y, 'earth', 20, 0.06);
-      var sd=applyDamage(player, roll(6,10)+Math.floor(floorNo/2), 'phys', e);
+      var sd=applyDamage(player, roll(7,11)+Math.floor(floorNo/2), 'phys', e);
       floatText(player.x, player.y, String(sd), 'phys');
       log('<b>'+e.name+'</b> drives stone spikes up through the floor &mdash; <b>'+sd+'</b>.','c-you');
       if(rng()<0.35) applyStatus(player,'root',2);
@@ -461,8 +462,36 @@ drawCharacter = function(e, px, py, opts){
     var b=e.base||{};
     if((b.lurks && dist(e,player)>1) || (b.burrows && e.burrowed) || e.parent) return true;   /* nothing drawn, tile still lit */
   }
+  if(e && e.kind==='mountainheart' && e._clip && e._clip.name==='attack' && !ANIM.reduce){
+    var age=performance.now()-e._clip.t0, p=age/540;
+    if(p>=0 && p<1){
+      var lift=p<.32?Math.sin(p/.32*Math.PI/2):0;
+      var slam=p>=.32?Math.sin(Math.min(1,(p-.32)/.68)*Math.PI):0;
+      var cx=px+TS*.5, feet=py+TS*.97;
+      ctx.save();ctx.translate(cx,feet-TS*.12*lift);ctx.scale(1+.07*slam,1+.05*lift-.13*slam);ctx.translate(-cx,-feet);
+      var result=_drawCharacterPlane(e,px,py,opts);ctx.restore();
+      if(p>=.32){
+        ctx.save();ctx.globalAlpha=(opts&&opts.alpha!==undefined?opts.alpha:1)*(1-p)*.6;
+        ctx.strokeStyle='#C6A26B';ctx.lineWidth=Math.max(1,TS*.025);
+        ctx.beginPath();ctx.ellipse(cx,feet,TS*(.45+p*.65),TS*(.13+p*.18),0,0,Math.PI*2);ctx.stroke();ctx.restore();
+      }
+      return result;
+    }
+  }
   return _drawCharacterPlane(e, px, py, opts);
 };
+
+/* Saved actors retain their old base records; apply only the requested tuning. */
+function refreshEncounterTuning(){
+  ents.forEach(function(e){
+    if(!e.base || e.hp<=0)return;
+    if(e.kind==='bonearcher')e.base=Object.assign({},e.base,{poisons:MONSTERS.bonearcher.poisons});
+    if(e.kind==='mountainheart'){
+      e.base=Object.assign({},e.base,{dmg:MONSTERS.mountainheart.dmg.slice()});
+      e.dmg=MONSTERS.mountainheart.dmg.map(function(n){return sDMG(n);});
+    }
+  });
+}
 
 /* ---------------------------------------------------------------- 2x2: the Heart of the Mountain */
 function setupHeart(h){

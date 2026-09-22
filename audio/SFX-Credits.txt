@@ -1,0 +1,8 @@
+Astra SFX pass — sources (CC0)
+Kenney: RPG Audio https://kenney.nl/assets/rpg-audio
+Kenney: Impact Sounds https://kenney.nl/assets/impact-sounds
+rubberduck: 80 CC0 RPG SFX https://opengameart.org/content/80-cc0-rpg-sfx
+artisticdude (uploaded by Ogrebane): Battle Sound Effects https://opengameart.org/content/battle-sound-effects — used under the offered CC0 option.
+Peludo: Water Splash and sand footsteps https://opengameart.org/content/water-splash-and-sand-footsteps
+CC0: https://creativecommons.org/publicdomain/zero/1.0/
+Sources were trimmed, filtered, resampled to mono 44.1 kHz, gain-adjusted, and in some cases rate-shifted. Specific mappings and processing are recorded in docs/sfx-pass-measurements.json in the source repository. Damped chimes and filtered elemental textures were generated for Astra. Music and ambient loops were not edited.

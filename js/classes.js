@@ -18,30 +18,16 @@ CLASSES.mage.kit        = {main:'staff', alt:null, armor:'robe', off:null};
 CLASSES.scoundrel.passive = 'Sneaky: surprise attacks x2. Enemies notice you 2 tiles closer and half as often. Shadowstep hides you when no enemy is adjacent.';
 CLASSES.scoundrel.blurb = 'A dagger in each hand and a bow across the back. Sap knocks a target out; the hit that wakes it is a surprise critical.';
 CLASSES.tourist.passive = 'Well-Traveled: +1 stat point every 2 levels, +25% experience, and 1 free stat point to start.';
-RACES.human.blurb = 'Adaptable. +1 to every stat, +1 stat point every 3 levels, piety +25%, and once per biome survives a killing blow at 1 HP.';
+RACES.human.blurb = 'Adaptable. +1 to every stat, +1 stat point every 3 levels, piety +25%.';
 RACES.fae.blurb   = RACES.fae.blurb + ' Takes 25% more damage from the element opposite its court.';
 
-/* 2026-09-21: Justin - two kits, chosen by god. Censer: Short Sword and a Bone Censer in the off hand. Symbol: Mace and
-   a Holy Symbol. Grom forbids weapons, so his faithful get the Symbol and their fists. Armour is each god's as before;
-   Sylla and Wobbles had none, and take leather. */
-var CLERIC_KITS = {
-  wobbles: {main:'sword',  armor:'leather', off:'censer'},
-  sylla:   {main:'sword',  armor:'leather', off:'censer'},
-  murk:    {main:'sword',  armor:'robe',    off:'censer'},
-  glimmer: {main:'sword',  armor:'leather', off:'censer'},
-  grom:    {main:null,     armor:'robe',    off:'holy'},
-  grumbok: {main:'mace',   armor:'leather', off:'holy'},
-  reginald:{main:'mace',   armor:'leather', off:'holy'},
-  anvil:   {main:'mace',   armor:'chain',   off:'holy'},
-  vellum:  {main:'mace',   armor:'robe',    off:'holy'}
-};
 /* 2026-09-20: Justin - "scoundrel shouldn't have two paths, the starting set should just be 2 daggers and a bow".
    One kit: a dagger in each hand and a bow slung, which the ranged slot fires without swapping. */
 var SCOUNDREL_KITS = {
   melee: {main:'dagger', armor:'leather', off:'dagger', alt:'bow', label:'Knife work', d:'Two daggers, a short bow, leather armor'}
 };
 function kitFor(c){
-  if(c.cls==='cleric') return CLERIC_KITS[c.god] || CLASSES.cleric.kit;
+  if(c.cls==='cleric') return startingKit(c);
   if(c.cls==='scoundrel') return SCOUNDREL_KITS.melee;   /* one kit, always */
   return CLASSES[c.cls].kit;
 }
@@ -60,7 +46,7 @@ ABILITIES.sap.cost = 7;
 /* 2026-09-17: Sap reaches 2 tiles whatever you hold (a bow no longer makes it a 6-tile knockout), and an enemy
    that has been sapped is immune to stuns from then on */
 ABILITIES.sap.range = 2; delete ABILITIES.sap.useWeaponRange;
-ABILITIES.sap.desc = 'Range 2: knocks the target out for 3 turns (6 if it was unaware). The hit that wakes it is a surprise critical. A sapped enemy can never be stunned again.';
+ABILITIES.sap.desc = 'Range 2: knocks the target out for 3 turns (6 if it was unaware). The hit that wakes it is a surprise critical. A target can only be Sapped once; other Stuns still work.';
 ABILITIES.double.desc = 'An attack: two weapon hits on an adjacent enemy for the time of one attack.';
 ABILITIES.missile.desc = 'Always hits; magic damage nothing resists. +1 base damage per affinity point. For each element you hold, a 25% chance (+5% per point) to add its effect: Burning, Chill, an arc, Root, Blind or Fear.';
 ABILITIES.shadowstep = {name:'Shadowstep', cost:0, cd:15, kind:'self', tech:true, icon:'ic-shadowstep', desc:'With no enemy next to you, slip into hiding for 3 turns; hunting enemies lose you. 15-turn cooldown.'};
@@ -89,13 +75,14 @@ newRun = function(seed, choice){
   var alt=item(WEAPONS,k.alt);
   player.ranged = (alt && (alt.range||0)>1) ? alt : null;
   if(alt && !player.ranged && typeof addBag==='function') addBag('⚔', gearName(alt), {kind:'weapon', data:alt});
-  player.armorItem=item(ARMORS,k.armor) || item(ARMORS,'robe');
+  player.armorItem=item(ARMORS,k.armor);
   /* an off-hand kit slot may name a light weapon now that there is no separate off-hand dagger */
   player.off = k.off ? (OFFHANDS[k.off] ? item(OFFHANDS, k.off)
                         : (WEAPONS[k.off] ? offHandWeapon(item(WEAPONS, k.off)) : EMPTY_OFF))
                      : EMPTY_OFF;
   player.kit=c.kit;
   if(c.cls==='tourist') player.points=(player.points||0)+1;
+  RUN.xpCurveVersion=XP_CURVE_VERSION;
   player.cds={}; player.xpNext=xpToNext(1);
   derive(player);
   player.hp=player.maxhp; player.mp=player.maxmp; player.guard=player.guardMax||0;
@@ -120,13 +107,36 @@ playerShield = function(){ return _playerShieldCls() + Math.max(0, Math.floor(pl
    piety grows - it gets stronger. Saint Glimmer's Heal already scales (+5% a rank, combat.js castSelf) and
    Sylla's Into the Dark does the same; that is what rank buys. */
 var _gainPietyCls = gainPiety;
-gainPiety = function(n, why){ return _gainPietyCls(player && player.cls==='cleric' ? n*1.25 : n, why); };
+gainPiety = function(n, why){ return _gainPietyCls(n, why); };
 
-/* Experience curve (level cap 20), refit 2026-09-17 after doubling monster density: XP for the next level =
-   50 x 1.55^(level-1), rounded to 5 (50, 80, 120, 185, 290, 450, 695, 1075 ...). Measured biome 1 full clears on the
-   56x34 floors average about 135/240/400/660/620 XP (floor 5 includes the 330 XP boss), cumulative 135/375/775/1435/2055:
-   level 3 on floor 1, 4 after floor 2, 6 after floor 3, 7 after floor 4 and 8 after the boss. */
-function xpToNext(level){ return Math.round(50*Math.pow(1.55, level-1)/5)*5; }
+/* Experience curve (level cap 20). The former 1.55 growth stranded a full-clear
+   floor-18 character at level 12. Growth 1.267 mapped that same lifetime XP to
+   level 18 and put level 20 before the end of biome four.
+   2026-09-22 (Justin): level 20 should land on the biome-4 boss. Iris's full-clear
+   export reached the Matron's death with 18,409 lifetime XP, having hit 20 some
+   1,800 earlier; growth 1.275 asks 18,210 for level 20, so that run dings 20 as
+   the Matron falls. Each version's curve is kept so an older save can be
+   re-levelled from its lifetime XP; a save is never demoted by a steeper curve. */
+var XP_CURVE_VERSION=3, XP_GROWTH=1.275;
+var XP_GROWTH_BY_VERSION={1:1.55, 2:1.267, 3:XP_GROWTH};
+function xpToNextAt(growth, level){ return Math.round(50*Math.pow(growth, level-1)/5)*5; }
+function xpToNext(level){ return xpToNextAt(XP_GROWTH, level); }
+function legacyXpToNext(level){ return xpToNextAt(1.55, level); }
+function lifetimeXp(p, cost){
+  var total=p.xp||0;for(var level=1;level<(p.level||1);level++)total+=cost(level);return total;
+}
+function migrateXpCurve(){
+  if(!RUN||!player)return false;
+  if((RUN.xpCurveVersion||0)>=XP_CURVE_VERSION){player.xpNext=xpToNext(player.level);return false;}
+  var was=XP_GROWTH_BY_VERSION[RUN.xpCurveVersion||1]||1.55;
+  var total=lifetimeXp(player,function(l){ return xpToNextAt(was,l); }),oldLevel=player.level||1,newLevel=1;
+  while(newLevel<20&&total>=xpToNext(newLevel)){total-=xpToNext(newLevel);newLevel++;}
+  for(var level=oldLevel+1;level<=newLevel;level++)player.points=(player.points||0)+levelStatPoints(player,level);
+  if(newLevel<oldLevel){newLevel=oldLevel;total=0;}   /* stat points are spent; the level stays, the bar restarts */
+  player.level=newLevel;player.xp=newLevel>=20?Math.min(total,xpToNext(20)-1):total;player.xpNext=xpToNext(newLevel);
+  RUN.xpCurveVersion=XP_CURVE_VERSION;
+  return newLevel!==oldLevel;
+}
 
 /* Tourist: +25% experience */
 var _gainXPCls = gainXP;
@@ -174,7 +184,7 @@ endTurn = function(){
   if(!player || player.hp<=0) return;
   player.noisy=false;
   if(player.guardMax>0 && (player.guard||0)<player.guardMax){
-    var fighting=ents.some(function(e){ return e.foe && e.state==='hunt' && vis[idxOf(e.x,e.y)]; });
+    var fighting=player.t-(player.lastDamageTime||0)<500;
     if(!fighting) player.guard=Math.min(player.guardMax, (player.guard||0)+1);
   }
 };
@@ -238,4 +248,4 @@ function noticeChance(e, see, d, asleep){
 
 /* a sapped enemy shrugs off every later stun (Sap, Spark, Bellow, Pummel...) */
 var _applyStatusSap = applyStatus;
-applyStatus = function(e, key, turns, extra){ if(key==='stun' && e && e!==player && e.stunImmune) return; return _applyStatusSap(e, key, turns, extra); };
+applyStatus = function(e, key, turns, extra){ return _applyStatusSap(e, key, turns, extra); };

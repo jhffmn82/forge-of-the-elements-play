@@ -239,7 +239,7 @@ endTurn = function(){
     if(player.off && player.off!==EMPTY_OFF && ents.some(function(e){ return e.foe && e.state==='hunt' && vis[idxOf(e.x,e.y)]; })) useCount(player.off, 'off');
     /* mending ring: a little extra regen; sustenance ring: give back part of the hunger this turn will cost */
     var mend=ringVal('mending'); if(mend && player.hunger>0 && !player.st.poison){ healPlayer(player.maxhp*0.0033*mend); }
-    var sus=ringVal('sustenance'); if(sus){ player.hunger=Math.min(HUNGER_MAX, player.hunger + (player.movedThisTurn?moveCost():actCost(player))/100*sus); }
+    var sus=ringVal('sustenance'); if(sus){ player.hunger=Math.min(HUNGER_MAX, player.hunger + hungerCost(player.movedThisTurn?moveCost():actCost(player))*sus); }
   }
   _endTurnBase();
   if(player && player.hp>0 && ringVal('keeneyes')>0){
@@ -463,7 +463,7 @@ if(SIGILS.identify) SIGILS.identify.desc='Identify every sigil you carry, and re
 /* enchanting an item at the Forge burns a curse out of it */
 var _enchantItemBase = enchantItem;
 enchantItem = function(slot, el){
-  var item = slot==='weapon' ? player.weapon : player.armorItem;   /* the ranged and off-hand roads break their own curses in enchslots.js */
+  var item = slot==='weapon' ? player.weapon : player.armorItem;
   var was = item && item.cursed;
   _enchantItemBase(slot, el);
   if(was && item.enchant===el){ breakCurse(item); }

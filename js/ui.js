@@ -178,8 +178,12 @@ if($('bMute')) $('bMute').onclick=function(){ audioInit(); toggleMute(); syncAud
 if($('bMusic')) $('bMusic').onclick=function(){ audioInit(); toggleMusic(); syncAudioButtons(); };
 syncAudioButtons();
 
+function activeBossEncounter(){
+  if(!player || player.hp<=0 || (RUN && (RUN.over||RUN.victory)))return null;
+  return ents.filter(function(e){return e.hp>0 && e.base && e.base.boss && e.state!=='throne';})[0]||null;
+}
 function bossBar(){
-  var b=ents.filter(function(e){ return e.base && e.base.boss && e.state!=='throne'; })[0];
+  var b=activeBossEncounter();
   var el=$('bossbar');
   if(!b){ if(el) el.style.display='none'; return; }
   if(!el){ el=document.createElement('div'); el.id='bossbar'; el.className='bossbar'; $('map').appendChild(el); }
@@ -217,7 +221,6 @@ function bars(){
   var mc=Object.keys(player.motes).filter(function(m){ return player.motes[m]>0; });
   if(mc.length) h+='<span class="chip" title="Motes">'+mc.map(function(m){ return '<span class="dot" style="background:'+AFF_COL[m]+';width:8px;height:8px"></span>'+player.motes[m]; }).join(' ')+'</span>';
   if(player.god) h+=faithChipHTML();
-  var bc=$('bClose'); if(bc){ var canClose=false; for(var cy=-1;cy<=1;cy++) for(var cx=-1;cx<=1;cx++) if((cx||cy) && at(player.x+cx,player.y+cy)===OPEN) canClose=true; bc.disabled=!canClose; bc.title = canClose ? 'Close the open door next to you (Shift+C, or click the door)' : 'Stand next to an open door (not in the doorway) to close it'; }
   hud.innerHTML=h;
 }
 
@@ -243,7 +246,7 @@ function playerShield(){ return Math.max(0,Math.floor(player.iceArmor||0)) + ((p
 function faithChipHTML(){
   var g=GODS[player.god], r=godRank();
   var h='<span class="chip faithchip" title="'+g.name+' \u2014 open with P" style="color:'+g.color+'" onclick="showSheet(\'Faith\')">'+
-        '<span class="gdot"></span><span class="gname">'+g.name.replace(/^(Mother|Father|Lord|Lady|Old|The)\s+/,'').split(/[ ,]/)[0]+'</span>';
+        '<span class="gdot"></span>';   /* 2026-09-22 (Justin): no name on the chip - it is the hover title, and the row needs the room */
   if(g.chaos){
     var am=Math.round(player.amusement||0);
     var nx=PIETY_RANKS[r]||null, pv=PIETY_RANKS[r-1]||0, pp=nx ? clamp(((player.piety||0)-pv)/(nx-pv),0,1) : 1;
@@ -305,10 +308,10 @@ function abilityBar(){
     s=player.hotbar[i];
     if(!s){ html+='<div class="slot empty" data-i="'+i+'"><span class="k">'+(i+1)+'</span><span class="n">empty</span></div>'; continue; }
     if(s.type==='ability'){
-      var A=ABILITIES[s.key], off = player.mp<costOf(A) ? ' disabled' : '';
+      var A=ABILITIES[s.key], off = (A.favor ? (player.favor||0)<A.favor : player.mp<costOf(A)) ? ' disabled' : '';
       var armed = (aiming && player.abilities[aiming.i]===s.key) ? ' armed' : '';
       html+='<button class="slot hasico'+armed+'" data-i="'+i+'" data-ico="'+(A.icon||'')+'"'+off+' title="'+A.desc.replace(/"/g,'&quot;')+'">'+
-            '<span class="ico"></span><span class="k">'+(i+1)+'</span><span class="n">'+A.name+'</span><span class="c">'+costOf(A)+' mana</span></button>';
+            '<span class="ico"></span><span class="k">'+(i+1)+'</span><span class="n">'+A.name+'</span><span class="c">'+(A.favor ? A.favor+' Favor' : costOf(A)+' mana')+'</span></button>';
     } else if(s.type==='prayer'){
       var PR=PRAYERS[s.key], gcol=GODS[player.god] ? GODS[player.god].color : '#8A6FB0';
       html+='<button class="slot hasico prayer-slot" style="--gc:'+gcol+'" data-i="'+i+'" data-ico="'+prayerIcon(s.key)+'"'+(canPray(s.key)?'':' disabled')+' title="'+PR.desc.replace(/"/g,'&quot;')+'">'+
@@ -503,6 +506,8 @@ function weaponCard(w, worn){
     '<div class="row"><span>Hands</span><b>'+(w.hands||1)+'</b></div>'+
     (w.range?'<div class="row"><span>Range</span><b>'+(w.range+(player.rangeBonus||0))+'</b></div>':'')+
     (w.enchant?'<div class="row"><span>Enchant</span><b style="color:'+AFF_COL[w.enchant]+'">'+cap(w.enchant)+'</b></div><div class="hint">'+(typeof enchantLive==='function' ? enchantLive('weapon', w.enchant) : ENCHANT_TEXT.weapon[w.enchant])+'</div>':'')+
+    (w.divine?'<div class="row"><span>Invoke &amp; prayer strength</span><b>+'+Math.round(w.divine*100)+'%</b></div>':'')+
+    (w.divine?'<div class="row"><span>Beneficial prayer duration</span><b>+'+((w.plus||0)>=3?2:1)+' turns</b></div>':'')+
     '<div class="hint">'+(w.note||'')+(worn?'':' &middot; click to equip')+'</div>';
 }
 function armorCard(a, worn){
@@ -521,7 +526,7 @@ function bagCard(it){
   if(!it) return '';
   if(it.kind==='weapon') return weaponCard(it.data);
   if(it.kind==='armor') return armorCard(it.data);
-  if(it.kind==='off') return '<div class="nm">'+gearName(it.data)+'</div><div class="hint">'+(it.data.note||'')+'</div>';
+  if(it.kind==='off') return it.data.weapon?weaponCard(it.data)+'<div class="hint">Off-hand strike: 60% damage.</div>':'<div class="nm">'+gearName(it.data)+'</div><div class="hint">'+(it.data.note||'')+'</div>';
   if(it.kind==='sigil'){ var k=sigilKnown[it.data.use]; return '<div class="nm">'+it.name+'</div><div class="hint">'+(k?SIGILS[it.data.use].desc:'Unidentified. Use it to learn what it does.')+'</div>'; }
   if(it.kind==='food'){ var f=FOODS[it.data.food]; return '<div class="nm">'+f.name+'</div><div class="hint">'+(f.desc ? f.desc+' Also eases hunger.' : 'Eat to stave off hunger'+(f.heal?' and heal a little':'')+'.')+'</div>'; }
   return '<div class="nm">'+it.name+'</div>';
@@ -533,7 +538,7 @@ var TILE_NAMES = {0:'Wall',1:'Floor',2:'Closed door',3:'Stairs down',4:'Chest',5
   19:'Stairs up',20:'Portal'};
 var TILE_HINTS = {5:'Bump it to fuse motes, enchant gear or craft sigils.',9:'Needs this floor\'s iron key.',10:'Bump it to learn about the god.',11:'Fire melts it. Blows crack it slowly.',
   12:'Fire clears it; pushing through hurts.',14:'Costs half your current HP to pass. Real treasure behind.',16:'Slows you. Puts out fire. Lightning hurts more here.',
-  8:'A sheer drop. Float across or find a bridge.',18:'Opened by a mechanism nearby.',3:'Step on it to descend.',13:'Opens when the Warchief falls.',
+  8:'A sheer drop. Float across or find a bridge.',18:'Opened by a mechanism nearby.',3:'Step on it to descend.',13:'Opens when the floor boss falls.',
   19:'Step on it to climb back to the floor above.',20:'Step in to cross into the plane beyond. Its guardian holds a treasure grotto.'};
 function inspectHTML(mx,my){
   if(!inb(mx,my) || !(revealAll||seen[idxOf(mx,my)])) return '';
@@ -541,7 +546,7 @@ function inspectHTML(mx,my){
   if(e && e.parent) e=e.parent;   /* a big elite's other cells report the creature itself, not its proxy */
   if(e && (revealAll||vis[idxOf(mx,my)])){
     if(e.ally) return '<div class="nm">'+e.name+'</div><div class="row"><span>HP</span><b>'+Math.max(0,e.hp)+' / '+e.maxhp+'</b></div><div class="hint">Fights for you.</div>';
-    var ch=Math.round(hitChance(player.acc,e.base.eva)*100), back=Math.round(Math.max(0.15, hitChance(e.base.acc,player.eva)*(hasP('blur')?0.8:1))*100);
+    var ch=Math.round(hitChance(player.acc,e.base.eva)*100), back=Math.round(hitChance(e.base.acc,player.eva)*100);
     var lo=Math.max(1,Math.round(player.dmg[0]-Math.min(armorOf(e),player.dmg[0]*0.5))), hi=Math.max(1,Math.round(player.dmg[1]-Math.min(armorOf(e),player.dmg[1]*0.5)));
     var st=Object.keys(e.st).filter(function(k){ return k.indexOf('imm_')!==0; }).map(function(k){ return '<span class="tag t-'+k+'">'+k+'</span>'; }).join(' ');
     return '<div class="nm">'+e.name+'</div>'+
@@ -557,7 +562,7 @@ function inspectHTML(mx,my){
   if(it){
     if(it.kind==='weapon') return weaponCard(it.it);
     if(it.kind==='armor') return armorCard(it.it);
-    if(it.kind==='off') return '<div class="nm">'+gearName(it.it)+'</div><div class="hint">'+(it.it.note||'')+'</div>';
+    if(it.kind==='off') return bagCard({kind:'off',data:it.it});
     return '<div class="nm">'+cap(itemLabel(it))+'</div><div class="hint">'+(it.kind==='sigil'&&!sigilKnown[it.use]?'Unidentified sigil.':it.kind==='mote'?'Fuse, enchant or craft with it at the Forge.':'')+'</div>';
   }
   var p=propAt(mx,my);
@@ -572,14 +577,15 @@ function inspectHTML(mx,my){
   }
   var tr=feats.filter(function(f){ return f.x===mx && f.y===my && (f.found||revealAll); })[0];
   if(tr) return '<div class="nm">'+trapName(tr.kind)+' trap</div><div class="hint">Walk around it.</div>';
-  var t=at(mx,my), g=gAt(mx,my);
+  var t=at(mx,my);
+  /* Map cards belong to things you can inspect or use, not terrain. */
+  if([2,3,4,5,7,9,10,11,12,13,14,18,19,20].indexOf(t)<0) return '';
   var label=TILE_NAMES[t]||'Floor';
   if(t===SHRINE) label='Shrine to '+GODS[RUN.shrineGod].name;
   if(typeof PORTAL!=='undefined' && t===PORTAL && floorMeta.portal && typeof PLANE_TITLE!=='undefined') label='Portal to '+PLANE_TITLE[floorMeta.portal];
-  var gname={1:'Tall grass: blocks sight, burns fast',2:'Trampled grass',3:'Ash',4:'Puddle',5:'Blood',6:'Scorch mark',7:'Moss',8:'Scattered bones',9:'Ice',10:'Uneven stones: a draft blows here',11:'Web'}[g];
-  if(typeof cryptShrooms==='function' && cryptShrooms() && (g===1||g===2)) gname = g===1 ? 'Glowing mushrooms: squash underfoot, burn fast' : 'Squashed mushrooms';
-  return '<div class="nm">'+label+'</div>'+(gname?'<div class="row"><span>'+gname+'</span></div>':'')+
-    (TILE_HINTS[t]?'<div class="hint">'+TILE_HINTS[t]+'</div>':'')+
+  var tileHint=t===EXIT ? 'Opens when '+bossNameForFloor()+' falls.' : TILE_HINTS[t];
+  return '<div class="nm">'+label+'</div>'+
+    (tileHint?'<div class="hint">'+tileHint+'</div>':'')+
     '<div class="row"><span>'+(vis[idxOf(mx,my)]?'In sight':'From memory')+'</span><b>'+mx+','+my+'</b></div>';
 }
 

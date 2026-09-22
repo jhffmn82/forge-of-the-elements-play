@@ -30,11 +30,15 @@ function stashFloor(){
 function restoreFloor(n, at){
   var s=RUN.floorStash[n]; if(!s) return false;
   FLOOR_KEYS.forEach(function(k){ if(s[k]!==undefined) window[k]=s[k]; });
+  if(typeof repairWallMemorials==='function')repairWallMemorials();
   ents = s.ents.concat([player]);
   player.keys = {iron:s.keys.iron, crystal:s.keys.crystal};
   delete RUN.floorStash[n];
   if(floorMeta && floorMeta.shrineGod) RUN.shrineGod=floorMeta.shrineGod;
   floorNo = n;
+  if(typeof repairCoreProgress==='function')repairCoreProgress();
+  if(typeof refreshCavernResidents==='function')refreshCavernResidents();
+  if(typeof refreshEncounterTuning==='function')refreshEncounterTuning();
   if(typeof SURF_CACHE!=='undefined') SURF_CACHE.key=null;
   ents.forEach(function(e){ e._lx=undefined; e._ly=undefined; e.t=player.t; });
   fx=[]; PARTS.length=0; aiming=null;
@@ -57,7 +61,7 @@ descend = function(fell){
     var up=RUN.floorStash[target].floorMeta && RUN.floorStash[target].floorMeta.upAt;
     restoreFloor(target, up);
     log('You climb back down to <b>floor '+floorNo+'</b>. It is as you left it.','c-kill');
-    playMusic(floorMeta.boss ? 'dungeon' : floorMeta.forge ? 'forge' : 'dungeon');
+    playSceneMusic();
     return;
   }
   stashFloor();
@@ -86,24 +90,19 @@ function ascend(){
   restoreFloor(target, down);
   log('You climb back up to <b>floor '+floorNo+'</b>. It is as you left it.','c-kill');
   if(floorMeta.forge) log('The Elemental Forge still burns on this floor.','c-info');
-  playMusic(floorMeta.forge ? 'forge' : 'dungeon');
+  playSceneMusic();
   if(typeof writeSlot==='function' && !RUN.over) writeSlot('auto', 'floor '+floorNo);
 }
 function findTileIn(stash, t){ var m=stash.map; for(var i=0;i<m.length;i++) if(m[i]===t) return {x:i%MW, y:(i/MW)|0}; return null; }
 
 /* stepping on it, the key, the button */
 var _stepOnFloors = stepOn;
-stepOn = function(){ var r=_stepOnFloors(); if(at(player.x,player.y)===UPSTAIRS) log('Stairs up to floor '+(floorNo-1)+'. '+(document.body.classList.contains('touch') ? 'Tap them to climb.' : 'Press <b>&lt;</b> or click <b>Stairs</b> to climb.'),'c-kill'); return r; };
+stepOn = function(){ var r=_stepOnFloors(); if(at(player.x,player.y)===UPSTAIRS) log('Stairs up to floor '+(floorNo-1)+'. '+(document.body.classList.contains('touch') ? 'Tap them to climb.' : 'Press <b>&lt;</b> to climb.'),'c-kill'); return r; };
 window.addEventListener('keydown', function(ev){
   var tgt=ev.target && ev.target.tagName; if(tgt==='INPUT'||tgt==='SELECT'||tgt==='TEXTAREA') return;
   if(ev.key!=='<' || !player || player.hp<=0 || (typeof uiOpen==='function' && uiOpen())) return;
   ev.preventDefault(); ascend();
 });
-(function(){
-  var b=$('bStairs'); if(!b) return;
-  var old=b.onclick;
-  b.onclick=function(ev){ if(at(player.x,player.y)===UPSTAIRS){ ascend(); return; } if(old) return old.call(b, ev); };
-})();
 
 /* light and the map overlay */
 var _gatherLightsUp = gatherLights;

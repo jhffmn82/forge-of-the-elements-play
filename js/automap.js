@@ -81,7 +81,7 @@ draw = function(){ var r=_drawAutomap.apply(this, arguments); if(AUTOMAP_ON) dra
 window.addEventListener('keydown', function(ev){
   var tgt=ev.target && ev.target.tagName; if(tgt==='INPUT'||tgt==='SELECT'||tgt==='TEXTAREA') return;
   if(ev.key!=='v' && ev.key!=='V') return;
-  if(typeof modalOpen!=='undefined' && modalOpen) return;
+  if((typeof modalOpen!=='undefined' && modalOpen) || openSheet) return;
   if($('title') && $('title').classList.contains('on')) return;
   if($('create') && $('create').classList.contains('on')) return;
   ev.preventDefault(); toggleAutomap();

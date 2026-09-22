@@ -45,8 +45,6 @@
       ' body.touch #ctl{display:flex!important;flex-direction:row;align-items:stretch;justify-content:space-between;gap:8px;order:2}',
       ' body.touch #ctl #fx{display:none}',                    /* the status tags float over the map instead */
       ' body.touch #dpad{grid-template-columns:repeat(3,44px)!important;grid-auto-rows:34px!important;gap:4px!important}',
-      ' body.touch #extra{display:grid!important;grid-template-columns:1fr 1fr;gap:5px;flex:1 1 auto}',
-      ' body.touch #extra button{min-height:0;font-size:12.5px;padding:0 10px}',
       /* the log is the bottom row and gets the room the hotbar's second row used to take */
       ' body.touch #log{order:3;grid-column:auto;contain:none;height:clamp(84px,12vh,112px)!important;font-size:12.5px;padding:6px 9px}',
       '}',
@@ -54,8 +52,6 @@
       '@media (orientation:landscape){',
       ' body.touch #strip{grid-template-columns:minmax(0,1fr) auto!important}',
       ' body.touch #ctl{display:flex!important;flex-direction:row;align-items:flex-end;gap:6px}',
-      ' body.touch #extra{display:grid!important;grid-template-columns:1fr 1fr;gap:4px;max-width:184px}',
-      ' body.touch #extra button{min-height:36px;font-size:11.5px;padding:0 8px}',
       ' body.touch #log{position:absolute;z-index:5;left:8px;top:54px;width:min(44%,320px);height:auto!important;',
       '   max-height:72px;contain:none;background:rgba(10,9,8,.55);border:none;pointer-events:none}',
       '}',
@@ -155,9 +151,9 @@
   function sync(){
     var on=wantTouch(), was=document.body.classList.contains('touch');
     document.body.classList.toggle('touch', on);
-    /* portrait only: a phone held sideways is a letterbox you cannot see far enough in, so it gets the
-       "turn it upright" card instead. A wide desktop window is never touch, so it is never blocked. */
-    document.body.classList.toggle('needs-portrait', on && innerWidth > innerHeight && innerHeight <= 560);
+    /* Wide phones have a separate three-column landscape layout. Smaller landscape
+       viewports retain the upright prompt because the touch targets cannot fit. */
+    document.body.classList.toggle('needs-portrait', on && innerWidth > innerHeight && innerHeight <= 560 && innerWidth < 740);
     if(on && !was) shortenTop();
     applyZoom();
   }
@@ -171,11 +167,9 @@
     window.addEventListener('pointerdown', function once(){
       window.removeEventListener('pointerdown', once, true);
       var el=document.documentElement;
-      function lockPortrait(){ try{ if(screen.orientation && screen.orientation.lock) screen.orientation.lock('portrait').catch(function(){}); }catch(e){} }
       try{
-        if(!document.fullscreenElement && el.requestFullscreen) el.requestFullscreen({navigationUI:'hide'}).then(lockPortrait, lockPortrait);
-        else lockPortrait();
-      }catch(e){ lockPortrait(); }
+        if(!document.fullscreenElement && el.requestFullscreen) el.requestFullscreen({navigationUI:'hide'}).catch(function(){});
+      }catch(e){}
     }, true);
 
     /* no pinch zoom, no double-tap zoom, no long-press menu on the map */
@@ -300,7 +294,7 @@
       if(held){ dismiss(); closedAt=performance.now(); return; }       /* a tap after a long press only closes it */
       var t=ev.target;
       if(!t || (t.closest && t.closest('#hotbar'))) return;           /* travel.js owns the hotbar's long press */
-      if(t.closest && t.closest('#top,#dpad,#extra,.sheet header')) return;
+      if(t.closest && t.closest('#top,#dpad,.sheet header')) return;
       sx=ev.clientX; sy=ev.clientY;
       cancel();
       timer=setTimeout(function(){

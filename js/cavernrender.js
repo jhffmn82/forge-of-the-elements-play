@@ -39,8 +39,17 @@ var _setArtCave = setArt;
 setArt = function(name){ var o=_setArtCave(name); if(o) return o; return caveArt(name); };
 
 /* draw a piece at its natural size: the canvas's bottom centre on the footprint's bottom centre */
+function caveArtScale(o){ return TS/64*(o.nm && /^(giant-mushroom|mushroom-pair)/.test(o.nm)?.65:1); }
 function drawCaveArt(o, cx, bottom, alpha, flipX){
-  var s=TS/64, left=cx-o.fullW*s/2, top=bottom-o.fullH*s;
+  if(o.nm==='kobold-crate'){
+    ctx.save();ctx.globalAlpha=alpha;ctx.imageSmoothingEnabled=false;
+    var cs=Math.min(TS*.46/o.sw,TS*.53/o.sh), cw=o.sw*cs,ch=o.sh*cs;
+    var boxes=[[-.24,-.20],[.23,-.14]];
+    if(Math.abs(Math.round(cx/TS)+Math.round(bottom/TS))%2===0)boxes.push([0,0]);
+    boxes.forEach(function(b){ctx.drawImage(o.img,o.sx,o.sy,o.sw,o.sh,cx+b[0]*TS-cw/2,bottom+b[1]*TS-ch,cw,ch);});
+    ctx.restore();return;
+  }
+  var s=caveArtScale(o), left=cx-o.fullW*s/2, top=bottom-o.fullH*s;
   ctx.save(); ctx.globalAlpha=alpha; ctx.imageSmoothingEnabled=false;
   if(flipX){ ctx.translate(cx, 0); ctx.scale(-1, 1); ctx.translate(-cx, 0); }
   ctx.drawImage(o.img, o.sx, o.sy, o.sw, o.sh, left+o.ox*s, top+o.oy*s, o.sw*s, o.sh*s);
@@ -56,7 +65,6 @@ drawPropSurface = function(p, px, py, alpha){
     drawCaveArt(o, X+TS/2, Y+TS/2+o.fullH*TS/128, alpha, flip);
     return true;
   }
-  /* the piece stands on the bottom edge of its footprint; no contact shadow - a map object casts none (Justin, 2026-09-21) */
   drawCaveArt(o, X+w*TS/2, Y+h*TS-TS*0.02, alpha, flip);
   if(typeof flashOf==='function' && p.br){ var fl=flashOf(p); if(fl>0){ ctx.save(); ctx.globalAlpha=fl*0.6; ctx.fillStyle='#FFF'; ctx.fillRect(X+TS*0.25, Y+TS*0.25, TS*0.5, TS*0.5); ctx.restore(); } }
   return true;
@@ -172,6 +180,22 @@ function drawCaveDecals(){
     drawCaveArt(o, px+TS/2, py+TS/2+o.fullH*TS/128, a, hash2(d.x,d.y,31)<0.5);
   });
 }
+function drawGlowwormCurtain(w,px,py,alpha,now){
+  var warm=/-2$/.test(w.n);
+  ctx.save();ctx.globalAlpha=alpha;ctx.lineWidth=Math.max(.6,TS/90);
+  for(var k=0;k<8;k++){
+    var h=hash2(w.x,w.y,850+k), x=px+TS*(.14+k*.1), y=py+TS*.12;
+    var len=TS*(.25+h*.5), bend=TS*(hash2(w.x,w.y,880+k)-.5)*.09;
+    ctx.strokeStyle=warm?'#706340':'#405d50';ctx.beginPath();ctx.moveTo(x,y);ctx.quadraticCurveTo(x+bend,y+len*.5,x+bend,y+len);ctx.stroke();
+    for(var j=1;j<=3;j++){
+      var pulse=ANIM.reduce?1:.8+.2*Math.sin((now||0)/750+k*2+j);
+      ctx.globalAlpha=alpha*pulse;ctx.fillStyle=warm?'#C5B978':'#80CBB0';
+      var dot=Math.max(1,TS*.024);ctx.fillRect(x+bend*j/3-dot/2,y+len*j/3,dot,dot);
+    }
+    ctx.globalAlpha=alpha;
+  }
+  ctx.restore();
+}
 function drawCaveWalls(now){
   var D=floorMeta.caveDeco; if(!D) return;
   D.walls.forEach(function(w){
@@ -179,6 +203,7 @@ function drawCaveWalls(now){
     var i=idxOf(w.x,w.y); if(!(revealAll||seen[i]) || !isWallLike(at(w.x,w.y))) return;
     var o=caveArt(w.n); if(!o) return;
     var below=idxOf(w.x,w.y+1), a=(revealAll||vis[i]||vis[below]) ? 1 : memA(0.42), px=(w.x-camX)*TS, py=(w.y-camY)*TS, s=TS/64;
+    if(/^wf-glowworm-curtain/.test(w.n)){drawGlowwormCurtain(w,px,py,a,now);return;}
     ctx.save(); ctx.globalAlpha=a; ctx.imageSmoothingEnabled=false;
     /* wall art attaches at its top: the waterfall's lip sits at the top of the rock and its basin on the floor below */
     var top = w.fall ? py : py+TS*0.18;

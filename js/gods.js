@@ -23,9 +23,8 @@ function joinGod(id, startPiety){
 function gainPiety(n, why){
   if(!player.god || n<=0) return;
   var g=GODS[player.god];
-  if(g.chaos) player.amusement=Math.min(100,(player.amusement||0)+n);
-  if(player.race==='human') n*=1.25;
-  if(g.loves===player.race) n*=1.25;
+  // Amusement has its own event table; ordinary piety does not award it.
+  n*=1+(player.race==='human'?.25:0)+(g.loves===player.race?.25:0)+(player.cls==='cleric'?.25:0);
   var before=godRank();
   player.piety=(player.piety||0)+n; player.favor=Math.min(100,(player.favor||0)+n);
   var after=godRank();
@@ -40,7 +39,7 @@ function pietyViolation(what, amount){
   if(!player.god) return;
   var g=GODS[player.god];
   if(g.chaos) return;
-  player.piety=Math.max(0,(player.piety||0)-amount); player.favor=Math.max(0,(player.favor||0)-amount);
+  player.piety=Math.max(0,(player.piety||0)-amount); player.favor=0;
   player.violations=(player.violations||0)+1;
   log('<b>'+g.name+'</b> disapproves of '+what+'. (&minus;'+amount+' piety)','c-you'); sfx('wrath');
   if(player.violations>=6 && player.piety<=0){
@@ -53,13 +52,13 @@ function godConductEquip(kind, data){
   var g=player.god; if(!g) return true;
   if(g==='grom'){
     if(kind==='weapon' && data && !data.unarmed) pietyViolation('you taking up a weapon', 15);
-    if(kind==='off' && data && (isShield(data) || data.weapon)) pietyViolation('you carrying a shield or blade', 15);
-    if(kind==='armor' && data && data.weight && data.weight!=='cloth') pietyViolation('you wearing real armor', 15);
+    if(kind==='off' && data && ((data.block>0 && itemKey(data)!=='holy') || data.weapon)) pietyViolation('you carrying a shield or blade', 15);
+    if(kind==='armor' && data && data!==EMPTY_OFF) pietyViolation('you wearing real armor', 15);
   }
   if(g==='glimmer' && data && data.enchant==='shadow') pietyViolation('shadow-touched gear', 15);
   if(g==='murk' && data && data.enchant==='light') pietyViolation('light-touched gear', 15);
   if(g==='vellum'){
-    if(kind==='off' && data && isShield(data)) pietyViolation('you carrying a shield', 15);
+    if(kind==='off' && data && data.block>0 && itemKey(data)!=='holy') pietyViolation('you carrying a shield', 15);
     if(kind==='armor' && data && (data.weight==='medium' || data.weight==='heavy')) pietyViolation('you wearing heavy armor', 15);
   }
   return true;
@@ -73,7 +72,7 @@ function spellConduct(A){
     player.castTurn=turn;
     player.manaSpent=(player.manaSpent||0)+costOf(A);
     while(player.manaSpent>=25){ player.manaSpent-=25; gainPiety(1); }
-    if(godRank()>=3 && costOf(A)>0 && rng()<(godRank()>=5?0.35:0.2)){ player.mp=Math.min(player.maxmp, player.mp+costOf(A)); log('<b>Spell Echo.</b> The mana comes back to you.','c-good'); }
+    // Spell Echo repeats resolution in balance-rulings.js; it no longer refunds mana.
   }
 }
 function sigilConduct(use){
@@ -99,12 +98,11 @@ function godOnKill(e, by){
   var g=player.god; if(!g) return;
   var byPlayer = by===player, byAlly = by && by.ally, big = e.elite || e.base.elite || e.base.boss, r=godRank();
   var aware = e.state!=='asleep' && !(e.st.stun) && !(e.st.frozen);
-  if(g==='grom'){ /* paid per damaging unarmed hit in religion.js, not per kill (2026-09-21) */ }
+  if(g==='grom'){ /* Grom earns piety on damaging unarmed hits, not kills. */ }
   else if(g==='grumbok'){ if(byPlayer||byAlly) gainPiety((e.base.spellcaster||e.base.el?5:2)+(big?15:0)); if(r>=3 && e.base.spellcaster && byPlayer){ var h=Math.round(player.maxhp*0.1); healPlayer(h); } }
   else if(g==='glimmer'){ if(byPlayer||byAlly) gainPiety((e.base.undead||e.base.shadowy?4:2)+(big?15:0)); }
   else if(g==='murk'){ if(byAlly && by.undeadServant) gainPiety(4+(big?15:0)); else if((byPlayer||byAlly) && !e.base.undead) gainPiety(2+(big?15:0));
-    /* 2026-09-21: Justin - Life Drain is 2 HP a rank, from a living hostile, felled by Mother Murk herself or her servant */
-    if((byPlayer || (byAlly && by.undeadServant)) && r>0 && e.foe && !e.base.undead){ healPlayer(2*r); } }
+    if((byPlayer || (byAlly && by.undeadServant)) && e.foe && !e.base.undead && r>0){ healPlayer(2*r); } }
   else if(g==='reginald'){ if(byPlayer && aware) gainPiety(2+(big?15:0)); }
   else if(g==='vellum'){ if(byPlayer) gainPiety((player.castTurn===turn?2:0)+(big?15:0)); }
   else if(g==='wobbles'){ gainPiety(big?15:2); }
@@ -116,15 +114,10 @@ function godTick(seesFoe){
       var dmg=Math.max(1,Math.round(player.maxhp*0.08)); player.hp=Math.max(1,player.hp-dmg); floatText(player.x,player.y,String(dmg),'dark'); applyStatus(player, pick(['blind','chill','root']), 3); }
     if(player.wrath.t<=0){ log('The wrath of '+GODS[player.wrath.god].name+' passes.','c-info'); player.wrath=null; }
   }
-  if(player.god==='wobbles'){
-    if(seesFoe && player.hp<player.maxhp*0.4) player.amusement=Math.min(100,player.amusement+1.5);
-    else if(!seesFoe) player.amusement=Math.max(0, player.amusement-0.08);
-    if(player.amusement>=60 && rng()<0.015){ player.amusement-=25; wobblesIntervention(false); }
-  }
   if(player.blessed>0){ player.blessed--; if(player.blessed===0) log('The shrine\'s blessing fades.','c-info'); }
 }
 function wobblesIntervention(big){
-  var good = rng() < (big ? 0.7 : 0.6) + (godRank()>=3 ? 0.1 : 0) + (typeof WOBBLE_BONUS==='number' ? WOBBLE_BONUS : 0);   /* Favourite Toy */
+  var good = rng() < (big ? 0.7 : 0.6) + wobbleBias(godRank()) + (typeof WOBBLE_BONUS==='number' ? WOBBLE_BONUS : 0);   /* Favourite Toy */
   sfx('wobbles-giggle');
   var foes=ents.filter(function(e){ return e.foe && vis[idxOf(e.x,e.y)]; });
   if(good){
@@ -162,12 +155,12 @@ function canPray(pid){
 }
 function usePrayer(pid){
   if(!canPray(pid)){ log('You cannot offer that prayer right now.','c-info'); sfx('ui-error'); return; }
-  var P=PRAYERS[pid], div=1+((player.weapon.divine||0)+((player.off&&player.off.divine)||0));
+  var P=PRAYERS[pid], div=divineStrength();
   if(P.favor) player.favor-=P.favor;
   if(P.essence) spendEssence(P.essence);
   if(P.amusement) player.amusement-=P.amusement;
   sfx('pray'); setClip(player,'cast'); ringFx(player.x,player.y,GODS[player.god].color,2.5);
-  if(pid==='ironhide'){ player.buffs.ironhide=12; derive(player); log('Iron Hide: +5 armor.','c-good'); }
+  if(pid==='ironhide'){ player.buffs.ironhide=divineDuration(12); derive(player); log('Iron Hide: +5 armor.','c-good'); }
   else if(pid==='pummel'){ player.pummel=3; log('Pummel: your next three unarmed hits deal double and stun.','c-good'); }
   else if(pid==='rampage'){ player.buffs.rampage=10; derive(player); log('Rampage! +40% melee damage and speed.','c-good'); }
   else if(pid==='trollblood'){ var h=Math.round(player.maxhp*0.4*div); healPlayer(h); clearBad(); floatText(player.x,player.y,'+'+h,'heal'); log('Trollblood: +'+h+' HP.','c-good'); }
