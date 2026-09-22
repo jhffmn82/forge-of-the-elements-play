@@ -467,8 +467,8 @@ function panes(){
   var slotEls=$('mEquip').querySelectorAll('.eslot');
   if(slotEls[0]) hoverCard(slotEls[0], function(){ return weaponCard(player.weapon, true); });
   if(slotEls[1]) hoverCard(slotEls[1], function(){ return '<div class="nm">'+gearName(player.off||EMPTY_OFF)+'</div>'+
-    (player.block?'<div class="row"><span>Block</span><b>'+Math.round(player.block*100)+'%</b></div>':'')+
-    (player.parry?'<div class="row"><span>Parry</span><b>'+Math.round(player.parry*100)+'%</b></div>':'')+
+    (player.block?'<div class="row"><span>Your block</span><b>'+Math.round(player.block*100)+'%</b></div>':'')+
+    (player.parry?'<div class="row"><span>Your parry</span><b>'+Math.round(player.parry*100)+'%</b></div>':'')+
     '<div class="hint">'+((player.off||{}).note||'')+'</div>'; });
   if(slotEls[2]) hoverCard(slotEls[2], function(){ return armorCard(player.armorItem, true); });
   $('mEquip').querySelectorAll('.eslot[data-tr]').forEach(function(ts){

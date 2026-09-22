@@ -223,7 +223,9 @@ function slotCard(key){
   if(key==='main' || key==='stow') return weaponCard(it, key==='main');
   if(key==='armor') return armorCard(it, true);
   if(key==='amulet' || key==='ring0' || key==='ring1') return trinketCard(it);
-  return bagCard({kind:'off', data:it}) + (player.block?'<div class="row"><span>Block</span><b>'+Math.round(player.block*100)+'%</b></div>':'') + (player.parry?'<div class="row"><span>Parry</span><b>'+Math.round(player.parry*100)+'%</b></div>':'');
+  /* 2026-09-22 (Justin): the card showed Block twice - the shield's own (from bagCard) and the wearer's total with Might
+     and the Fighter's bonus - under the same label. The total is named for what it is. */
+  return bagCard({kind:'off', data:it}) + (player.block?'<div class="row"><span>Your block</span><b>'+Math.round(player.block*100)+'%</b></div>':'') + (player.parry?'<div class="row"><span>Your parry</span><b>'+Math.round(player.parry*100)+'%</b></div>':'');
 }
 function wireEquip(root){
   /* the doll box is wider now, so the figure is drawn bigger to match (2026-09-17) */
