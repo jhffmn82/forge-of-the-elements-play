@@ -413,8 +413,9 @@ function mortyAct(e){
     setClip(e,'attack'); log('<b>Morty</b> points at the floor around you. "Hands, please!" Step off the marked stones.','c-you');
     e.t+=actCost(e); return;
   }
-  /* soul bolts at range, otherwise keep his distance (2026-09-22: not through his own skeletons) */
-  if(d>=2 && d<=7 && clearShot(e,player)){
+  /* soul bolts at range, otherwise keep his distance. 2026-09-22 (Justin): the boss may cast over his skeletons - the
+     clear-lane rule for shooters stops at the Necro-Acolyte */
+  if(d>=2 && d<=7){
     setClip(e,'attack'); boltFx(e.x,e.y,player.x,player.y,'dark'); sfx('shaman-cast');
     if(rng()<hostileHitChance(hitChance(e.base.acc, player.eva))){ var sd=applyDamage(player, roll(6,10)+Math.floor(floorNo/2), 'dark', e); floatText(player.x,player.y,String(sd),'dark'); log('Morty\'s soul bolt hits you: '+sd+'.','c-you'); if(player.hp<=0) kill(player,e); }
     else log('Morty\'s soul bolt misses.','c-miss');

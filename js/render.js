@@ -892,29 +892,6 @@ function draw(){
     drawTrap(f, fpx, fpy, fa, now);
   });
   drawTelegraphs(now);   /* boss attack markings sit on the floor, under whoever stands there */
-  /* items */
-  items.forEach(function(it){
-    if(!(revealAll||vis[idxOf(it.x,it.y)])) return;
-    var ipx=(it.x-camX)*TS, ipy=(it.y-camY)*TS, ia=(revealAll||vis[idxOf(it.x,it.y)])?1:memA(0.45);
-    var bob = ANIM.reduce ? 0 : Math.sin(now/400 + it.x*2 + it.y)*TS*0.03;
-    if(it.kind==='key'){
-      /* 2026-09-17: a key on a stone floor was almost impossible to spot, and missing one locks the vault
-         for the rest of the floor. It sits in a blue glow that breathes. */
-      var kp = ANIM.reduce ? 1 : 0.75 + 0.25*Math.sin(now/420 + it.x + it.y);
-      var kc = it.key==='crystal' ? '160,230,255' : '120,190,255';
-      var kg = ctx.createRadialGradient(ipx+TS/2, ipy+TS*0.58, TS*0.05, ipx+TS/2, ipy+TS*0.58, TS*0.62);
-      kg.addColorStop(0, 'rgba('+kc+','+(0.55*kp*ia)+')');
-      kg.addColorStop(0.55, 'rgba('+kc+','+(0.18*kp*ia)+')');
-      kg.addColorStop(1, 'rgba('+kc+',0)');
-      ctx.fillStyle=kg; ctx.beginPath(); ctx.arc(ipx+TS/2, ipy+TS*0.58, TS*0.62, 0, 7); ctx.fill();
-      if(!ANIM.reduce && Math.random()<0.10) sparkleFx(it.x, it.y, 'ice', 1);
-    }
-    if(it.kind==='heart' || it.kind==='managlobe'){ drawGlobe(it, ipx, ipy+bob, ia, now); return; }
-    var o=spriteOn ? (objArt('items', itemArtName(it))) : null;
-    if(o) drawObj(o, ipx, ipy+TS*0.08+bob, {fit: ITEM_FIT[it.kind]||0.5, alpha:ia});
-    else { ctx.globalAlpha=ia; glyph(it.kind==='essence'?'\u2022':it.kind==='mote'?'\u25C6':it.kind==='food'?'%':it.kind==='sigil'?'?':it.kind==='armor'?'[':'/', ipx, ipy, it.kind==='mote'?AFF_COL[it.el]:'#E8B44A'); ctx.globalAlpha=1; }
-    if(it.kind==='mote' && !ANIM.reduce){ ctx.save(); ctx.globalCompositeOperation='lighter'; ctx.globalAlpha=0.18+0.08*Math.sin(now/200+it.x); ctx.fillStyle=AFF_COL[it.el]; ctx.beginPath(); ctx.arc(ipx+TS/2,ipy+TS*0.58,TS*0.2,0,7); ctx.fill(); ctx.restore(); }
-  });
   /* props */
   function paintProp(p){
     if(!(revealAll||seen[idxOf(p.x,p.y)])) return;
@@ -937,6 +914,31 @@ function draw(){
     else standing(p.y+(p.h||1),function(){paintProp(p);});
   });
 
+  /* items: after the flat props, so a pickup dropped on rubble, bones or moss lies on top of them rather than
+     under them (2026-09-22, Justin: a mana globe under a rock); standing props and creatures are deferred and
+     still cover it */
+  items.forEach(function(it){
+    if(!(revealAll||vis[idxOf(it.x,it.y)])) return;
+    var ipx=(it.x-camX)*TS, ipy=(it.y-camY)*TS, ia=(revealAll||vis[idxOf(it.x,it.y)])?1:memA(0.45);
+    var bob = ANIM.reduce ? 0 : Math.sin(now/400 + it.x*2 + it.y)*TS*0.03;
+    if(it.kind==='key'){
+      /* 2026-09-17: a key on a stone floor was almost impossible to spot, and missing one locks the vault
+         for the rest of the floor. It sits in a blue glow that breathes. */
+      var kp = ANIM.reduce ? 1 : 0.75 + 0.25*Math.sin(now/420 + it.x + it.y);
+      var kc = it.key==='crystal' ? '160,230,255' : '120,190,255';
+      var kg = ctx.createRadialGradient(ipx+TS/2, ipy+TS*0.58, TS*0.05, ipx+TS/2, ipy+TS*0.58, TS*0.62);
+      kg.addColorStop(0, 'rgba('+kc+','+(0.55*kp*ia)+')');
+      kg.addColorStop(0.55, 'rgba('+kc+','+(0.18*kp*ia)+')');
+      kg.addColorStop(1, 'rgba('+kc+',0)');
+      ctx.fillStyle=kg; ctx.beginPath(); ctx.arc(ipx+TS/2, ipy+TS*0.58, TS*0.62, 0, 7); ctx.fill();
+      if(!ANIM.reduce && Math.random()<0.10) sparkleFx(it.x, it.y, 'ice', 1);
+    }
+    if(it.kind==='heart' || it.kind==='managlobe'){ drawGlobe(it, ipx, ipy+bob, ia, now); return; }
+    var o=spriteOn ? (objArt('items', itemArtName(it))) : null;
+    if(o) drawObj(o, ipx, ipy+TS*0.08+bob, {fit: ITEM_FIT[it.kind]||0.5, alpha:ia});
+    else { ctx.globalAlpha=ia; glyph(it.kind==='essence'?'\u2022':it.kind==='mote'?'\u25C6':it.kind==='food'?'%':it.kind==='sigil'?'?':it.kind==='armor'?'[':'/', ipx, ipy, it.kind==='mote'?AFF_COL[it.el]:'#E8B44A'); ctx.globalAlpha=1; }
+    if(it.kind==='mote' && !ANIM.reduce){ ctx.save(); ctx.globalCompositeOperation='lighter'; ctx.globalAlpha=0.18+0.08*Math.sin(now/200+it.x); ctx.fillStyle=AFF_COL[it.el]; ctx.beginPath(); ctx.arc(ipx+TS/2,ipy+TS*0.58,TS*0.2,0,7); ctx.fill(); ctx.restore(); }
+  });
   /* fire on the ground */
   for(y=camY;y<=camY+viewH;y++) for(x=camX;x<=camX+viewW;x++){
     if(!inb(x,y) || !fireT[idxOf(x,y)] || !(revealAll||vis[idxOf(x,y)])) continue;
