@@ -275,6 +275,7 @@ function attack(att, def, mult, label){
   /* 2026-09-20: Justin - "surprise attacks shouldn't miss". Striking something that has not noticed you always
      lands: the same rule frozen and stunned targets already had. */
   if(att===player && def!==player && (typeof offGuard==='function' && offGuard(def) || player.hidden>0 || def.surprised)) ch = 1;
+  if(att===player && player._sureHit) ch = 1;   /* 2026-09-22: the Fighter's Charge cannot miss */
   var who = att===player ? 'You' : att.name;
   var foe = def===player ? 'you' : def.name;
   var tAt = fxClock;

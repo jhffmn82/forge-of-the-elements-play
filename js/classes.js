@@ -98,6 +98,7 @@ derive = function(p){
   if(p.guard===undefined) p.guard=p.guardMax;
   p.guard=Math.min(p.guard, p.guardMax);
   if(p.cls==='scoundrel' && p.abilities.indexOf('shadowstep')<0) p.abilities.splice(1, 0, 'shadowstep');
+  if(p.cls==='fighter' && p.abilities.indexOf('charge')<0) p.abilities.splice(1, 0, 'charge');
 };
 var _playerShieldCls = playerShield;
 playerShield = function(){ return _playerShieldCls() + Math.max(0, Math.floor(player.guard||0)); };
@@ -170,8 +171,59 @@ abilityBar = function(){
   if(!player || !player.hotbar || !$('hotbar')) return;
   $('hotbar').querySelectorAll('.slot[data-i]').forEach(function(b){
     var s=player.hotbar[+b.getAttribute('data-i')];
-    if(s && s.key==='shadowstep'){ var c=b.querySelector('.c'), left=cdLeft('shadowstep'); if(c) c.textContent = left ? left+' turns' : 'ready'; if(left) b.style.opacity='0.6'; }
+    if(s && s.type==='ability' && ABILITIES[s.key] && ABILITIES[s.key].cd){ var c=b.querySelector('.c'), left=cdLeft(s.key); if(c) c.textContent = left ? left+' turns' : 'ready'; if(left) b.style.opacity='0.6'; }
   });
+};
+
+/* ---------------------------------------------------------------- Charge (2026-09-22)
+   Justin: warriors need a charge - in an open space anything ranged just kites them forever, and there has to be a
+   reason to play a Fighter over a Cleric. The Fighter rushes up to five tiles in a straight line at an enemy, the
+   blow cannot miss, and every enemy next to where they land is stunned for two turns. No mana; a 20-turn cooldown.
+   The run has to be a clear straight line (boltPath's, the same line an arrow flies) over walkable, empty tiles. */
+ABILITIES.charge = {name:'Charge', cost:0, cd:20, kind:'charge', range:6, tech:true, icon:'ic-charge',
+  desc:'Rush up to 5 tiles in a straight line at an enemy. The blow cannot miss, and every enemy next to you where you land is stunned for 2 turns. 20-turn cooldown.'};
+function chargeLane(f){
+  var path=boltPath(player.x,player.y,f.x,f.y), end=path[path.length-1];
+  if(!end || end.x!==f.x || end.y!==f.y) return null;                 /* something stands in the line */
+  var run=path.slice(0,-1);                                           /* every tile short of the target */
+  if(run.length>ABILITIES.charge.range-1) return null;
+  for(var i=0;i<run.length;i++){ var t=run[i]; if(!walkable(t.x,t.y) || occupied(t.x,t.y)) return null; }
+  return run;
+}
+var _useAbilityCharge = useAbility;
+useAbility = function(i){
+  var key=player.abilities[i];
+  if(key!=='charge') return _useAbilityCharge(i);
+  if(cdLeft(key)>0){ log('Charge is not ready ('+cdLeft(key)+' turns).','c-info'); sfx('ui-error'); return; }
+  if(player.st.root || player.st.frozen){ log('You cannot charge while held fast.','c-info'); sfx('ui-error'); return; }
+  if(aiming && aiming.i===i){ cancelAim(); return; }
+  aiming={i:i, A:ABILITIES.charge};
+  log('<b>Charge</b> &mdash; click an enemy within '+ABILITIES.charge.range+' tiles in a straight line, or press Esc.','c-info');
+  abilityBar(); draw();
+};
+var _inRangeCharge = inRange;
+inRange = function(x,y){
+  if(aiming && aiming.A.kind==='charge') return dist(player,{x:x,y:y})<=ABILITIES.charge.range && inb(x,y) && (revealAll || vis[idxOf(x,y)]);
+  return _inRangeCharge(x,y);
+};
+var _castAtCharge = castAt;
+castAt = function(x,y){
+  if(!aiming || aiming.A.kind!=='charge') return _castAtCharge(x,y);
+  var f=ents.filter(function(e){ return e.foe && e.hp>0 && e.x===x && e.y===y; })[0];
+  if(!f){ log('Charge at an enemy.','c-info'); return false; }
+  if(!inRange(x,y)){ log('Too far to charge.','c-info'); sfx('ui-error'); return false; }
+  var run=chargeLane(f);
+  if(!run){ log('No clear straight run at the '+f.name+'.','c-info'); sfx('ui-error'); return false; }
+  aiming=null; player.cds=player.cds||{}; player.cds.charge=turn+ABILITIES.charge.cd;
+  var from={x:player.x,y:player.y};
+  if(run.length){ var stop=run[run.length-1]; player.x=stop.x; player.y=stop.y; if(typeof computeFOV==='function') computeFOV(); }
+  if(typeof faceOf==='function'){ var cf=faceOf(f.x-from.x, f.y-from.y); if(cf) player.face=cf; }
+  sfx('swing'); if(typeof SHAKE!=='undefined') SHAKE=5; if(typeof ringFx==='function') ringFx(player.x,player.y,'#E8B44A',1.6);
+  player._sureHit=true;
+  try{ attack(player, f, 1, 'Charge'); } finally{ player._sureHit=false; }
+  var stunned=0; ents.forEach(function(e){ if(e.foe && e.hp>0 && dist(e,player)<=1){ applyStatus(e,'stun',2); stunned++; } });
+  log('<b>Charge!</b>'+(stunned ? ' Everything around you reels.' : ''),'c-good');
+  player.hidden=0; endTurn(); return true;
 };
 
 /* ---------------------------------------------------------------- Double Strike is one attack action */
