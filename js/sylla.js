@@ -291,6 +291,11 @@ spellConduct = function(A){
   if(syllaOn() && A && (A.el==='fire' || A.type==='fire')) pietyViolation('fire magic', SYLLA.violation);
   return _spellConductSyl(A);
 };
+var _spellForbiddenSyl = spellForbidden;
+spellForbidden = function(A){
+  if(syllaOn() && A && (A.el==='fire' || A.type==='fire')) return 'Fire';   /* 2026-09-23 (Justin): a fire spell will not come to her follower */
+  return _spellForbiddenSyl(A);
+};
 var _sigilConductSyl = sigilConduct;
 sigilConduct = function(use){
   if(syllaOn() && syllaFireSigil(use)) pietyViolation('a fire sigil', SYLLA.sigilViolation);

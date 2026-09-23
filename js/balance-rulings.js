@@ -40,7 +40,11 @@ castAt=function(x,y){
   return withSpellEcho(a.A,function(){return _balanceCast(x,y);},function(){var previous=aiming;aiming=Object.assign({},a);try{_balanceCast(x,y);}finally{aiming=previous;}});
 };
 var _balanceUseAbility=useAbility;
-useAbility=function(i){var A=ABILITIES[player.abilities[i]];return withSpellEcho(A,function(){return _balanceUseAbility(i);},function(){_balanceUseAbility(i);});};
+useAbility=function(i){var A=ABILITIES[player.abilities[i]];
+  /* 2026-09-23 (Justin): a spell of the element your god forbids is refused here, before mana, piety or the turn go */
+  var forb=(A&&typeof spellForbidden==='function')?spellForbidden(A):null;
+  if(forb){if(aiming&&aiming.i===i&&typeof cancelAim==='function')cancelAim();log('<b>'+GODS[player.god].name+'</b> forbids '+forb+'. '+A.name+' will not come to you.','c-info');sfx('ui-error');return;}
+  return withSpellEcho(A,function(){return _balanceUseAbility(i);},function(){_balanceUseAbility(i);});};
 function castArcaneLance(x,y){
   if(dist(player,{x:x,y:y})>6 || !inb(x,y) || !vis[idxOf(x,y)])return false;
   var path=boltPath(player.x,player.y,x,y),end=path[path.length-1],target=end&&foeAt(end.x,end.y);

@@ -78,6 +78,14 @@ function spellConduct(A){
     // Spell Echo repeats resolution in balance-rulings.js; it no longer refunds mana.
   }
 }
+/* 2026-09-23 (Justin): a spell of the element your god forbids will not come at all: no mana, no piety, no turn.
+   The outermost useAbility (balance-rulings.js) asks this before anything is spent; Sylla adds Fire in sylla.js. */
+function spellForbidden(A){
+  var g=player.god; if(!g || !A) return null;
+  if((g==='glimmer'||g==='reginald') && A.el==='shadow') return 'Shadow';
+  if(g==='murk' && A.el==='light') return 'Light';
+  return null;
+}
 function sigilConduct(use){
   var g=player.god; if(!g) return true;
   if(g==='grumbok') pietyViolation('you using a magic sigil', 10);

@@ -17,7 +17,7 @@ function isScoundrel(){ return player.cls==='scoundrel'; }
 PASSIVES={
   mig:[{at:12,id:'heavyHands',name:'Heavy Hands',d:'+10% melee damage'},
        {at:15,id:'crushing',  name:'Crushing Blows',d:'+25% damage to targets below half HP'},
-       {at:18,id:'spellWard', name:'Spell Ward',d:'block spells and abilities in addition to melee and ranged attacks. Allows two-handed weapons to block spells and abilities (25% + 1% per Might above 10, up to 40%)'},
+       {at:18,id:'spellWard', name:'Spell Ward',d:'block spells and abilities in addition to melee and ranged attacks. Without a shield (two-handers, dual wield) you block spells and abilities at 25% + 1% per Might above 10, up to 40%'},
        {at:21,id:'cleaving',  name:'Cleaving Swings',d:'your attacks also hit one other adjacent enemy for half'},
        {at:25,id:'unstoppable',name:'Unstoppable',d:'immune to stun, slow and knockback, +20% melee damage'}],
   agi:[{at:12,id:'lightFeet',name:'Light Feet',d:'+8 evasion'},
@@ -185,9 +185,10 @@ function applyDamage(target, amount, type, source){
   var d=amount;
   /* Spell Ward (Might 18, Justin 2026-09-22): the shield also rolls against spells and abilities, everything a
      foe does to you outside the attack roll. Ticks, traps, clouds and sigils have no attacker and stay as they are. */
-  /* 2026-09-23 (Justin): a two-hander has no block, so Spell Ward gives it a guard of its own for this roll: 25% plus 1%
-     per Might above 10, up to 40% (33% at Might 18); a shield keeps its block chance. */
-  var wardChance = player.block>0 ? player.block : (player.twoHanded ? Math.min(0.40, 0.25+0.01*Math.max(0,(player.stats&&player.stats.mig||10)-10)) : 0);
+  /* 2026-09-23 (Justin): without a shield (a two-hander, two weapons, a free or focus off-hand) there is no block, so
+     Spell Ward gives a guard of its own for this roll: 25% plus 1% per Might above 10, up to 40% (33% at Might 18);
+     a shield keeps its block chance. */
+  var wardChance = player.block>0 ? player.block : Math.min(0.40, 0.25+0.01*Math.max(0,(player.stats&&player.stats.mig||10)-10));
   if(target===player && !ATTACK_ROLLED && !AOE_HIT && source && source!==player && source.foe && hasP('spellWard') && wardChance>0 && combatRoll(wardChance,true)){
     d*=0.25; if(typeof onShieldBlock==='function') onShieldBlock(source, player, amount);   /* the shield's proc reads the whole blow, as a weapon block does */
     log('Your shield turns the '+(type==='phys'?'blow':type)+' from '+(source.name||'the attack')+'.','c-good');
