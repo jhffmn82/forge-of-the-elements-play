@@ -275,11 +275,13 @@ function renderTitleMenu(){
     '<button id="tNew">New Game</button>'+
     '<button id="tLoad">Load Game</button>'+
     '<button id="tAbout">About</button>'+
+    '<button id="tUpdate">Update</button>'+   /* 2026-09-22 (Justin): installed clients pull the latest build by hand */
     '<button id="tExit">Exit Game</button></div>';
   if($('tContinue')) $('tContinue').onclick=function(){ audioInit(); loadFrom(last); };
   $('tNew').onclick=function(){ audioInit(); sfx('ui-click'); closeTitle(); openCreate(); };
   $('tLoad').onclick=function(){ audioInit(); sfx('ui-click'); renderLoadPanel(); };
   $('tAbout').onclick=function(){ audioInit(); sfx('ui-click'); renderAbout(); };
+  $('tUpdate').onclick=function(){ audioInit(); sfx('ui-click'); if(typeof forceUpdate==='function') forceUpdate($('tUpdate')); };
   $('tExit').onclick=exitGame;
   var first=el.querySelector('.menu button'); if(first) first.focus();
 }

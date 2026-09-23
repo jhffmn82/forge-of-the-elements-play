@@ -31,3 +31,25 @@
     }).catch(function(){});                                /* offline: play the copy we have */
   });
 })();
+
+/* 2026-09-22 (Justin): an Update button on the title screen. It asks the server for build.json past every cache,
+   and if that build is not the one running it drops the service worker and the app caches and reloads on the new
+   build, exactly as the automatic check does, but on demand: an installed app that has sat closed for a while
+   gets the latest build without waiting for the worker to notice. */
+function forceUpdate(btn){
+  var mine=(document.querySelector('meta[name="fote-build"]')||{}).content||'';
+  function say(t){ if(btn) btn.textContent=t; }
+  say('Checking\u2026');
+  if(!window.fetch){ say('Update'); return; }
+  fetch('build.json?t='+Date.now(), {cache:'no-store'}).then(function(r){ return r.ok ? r.json() : null; }).then(async function(b){
+    if(!b || !b.built){ say('Could not reach the server'); setTimeout(function(){ say('Update'); }, 2500); return; }
+    if(b.built===mine){ say('Up to date ('+b.built+')'); setTimeout(function(){ say('Update'); }, 4000); return; }
+    say('Updating to '+b.built+'\u2026');
+    try{
+      if(navigator.serviceWorker){ var regs=await navigator.serviceWorker.getRegistrations(); await Promise.all(regs.map(function(r){ return r.unregister(); })); }
+      if(window.caches){ var ks=await caches.keys(); await Promise.all(ks.filter(function(k){ return k.indexOf('astra-temple-')===0; }).map(function(k){ return caches.delete(k); })); }
+    }catch(e){}
+    location.replace(location.pathname+'?b='+(b.epoch||Date.now()));
+  }).catch(function(){ say('Offline: playing the copy you have'); setTimeout(function(){ say('Update'); }, 4000); });
+}
+

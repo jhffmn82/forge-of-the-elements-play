@@ -247,33 +247,33 @@ var PROPS = {
 
 /* ---------------------------------------------------------------- monsters, biome 1 */
 var MONSTERS = {
-  rat:     {name:'Dungeon Rat', sprite:'m-rat', col:'#8C7A63', ch:'r', hp:8, dmg:[2,3], acc:56, eva:22, armor:0, speed:100, range:1, xp:6,
+  rat:     {name:'Dungeon Rat', sprite:'m-rat', col:'#8C7A63', ch:'r', hp:8, dmg:[4,5], acc:56, eva:22, armor:0, speed:100, range:1, xp:4,
             band:[1,3], w:26, pack:[2,3], art:0.75, sfx:'rat', living:true},
-  bat:     {name:'Cave Bat', sprite:'m-bat', col:'#9E8CA8', ch:'b', hp:8, dmg:[2,3], acc:58, eva:32, armor:0, speed:170, range:1, xp:8,
+  bat:     {name:'Cave Bat', sprite:'m-bat', col:'#9E8CA8', ch:'b', hp:8, dmg:[2,3], acc:58, eva:32, armor:0, speed:170, range:1, xp:6,
             band:[1,2], w:6, erratic:true, flying:true, art:0.7, sfx:'bat', living:true},
-  goblin:  {name:'Goblin', sprite:'m-goblin', col:'#6F9350', ch:'g', hp:16, dmg:[3,5], acc:60, eva:16, armor:1, speed:100, range:1, xp:12,
+  goblin:  {name:'Goblin', sprite:'m-goblin', col:'#6F9350', ch:'g', hp:16, dmg:[5,7], acc:60, eva:16, armor:1, speed:100, range:1, xp:8,
             band:[1,5], w:26, art:0.9, sfx:'goblin', living:true, artLeft:true},
-  archer:  {name:'Goblin Archer', sprite:'m-goblin-archer', col:'#B8894A', ch:'a', hp:14, dmg:[3,5], acc:60, eva:18, armor:0, speed:100, range:6, xp:14,
+  archer:  {name:'Goblin Archer', sprite:'m-goblin-archer', col:'#B8894A', ch:'a', hp:14, dmg:[3,5], acc:60, eva:18, armor:0, speed:100, range:6, xp:10,
             band:[2,5], w:18, kiter:true, art:0.9, sfx:'goblin', living:true},
-  brute:   {name:'Goblin Brute', sprite:'m-goblin-brute', col:'#4E7A3C', ch:'G', hp:30, dmg:[5,8], acc:58, eva:10, armor:2, speed:100, range:1, xp:26,
+  brute:   {name:'Goblin Brute', sprite:'m-goblin-brute', col:'#4E7A3C', ch:'G', hp:30, dmg:[5,8], acc:58, eva:10, armor:2, speed:100, range:1, xp:18,
             band:[3,5], w:14, art:1.05, sfx:'brute', living:true},
-  slime:   {name:'Rock Slime', sprite:'m-slime', col:'#7C8C9E', ch:'s', hp:22, dmg:[4,6], acc:54, eva:8, armor:3, speed:70, range:1, xp:20,
+  slime:   {name:'Rock Slime', sprite:'m-slime', col:'#7C8C9E', ch:'s', hp:22, dmg:[4,6], acc:54, eva:8, armor:3, speed:70, range:1, xp:14,
             band:[2,5], w:12, splits:true, art:0.8, sfx:'slime'},
-  shaman:  {name:'Goblin Shaman', sprite:'m-goblin-shaman', col:'#C25A3A', ch:'h', hp:16, dmg:[3,5], acc:64, eva:14, armor:0, speed:100, range:1, xp:26,
+  shaman:  {name:'Goblin Shaman', sprite:'m-goblin-shaman', col:'#C25A3A', ch:'h', hp:16, dmg:[3,5], acc:64, eva:14, armor:0, speed:100, range:1, xp:18,
             band:[3,5], w:10, caster:'firebolt', castRange:6, castEvery:4, el:'fire', art:0.9, sfx:'shaman', living:true, spellcaster:true},
   skeleton:{name:'Skeleton', sprite:'m-skeleton', col:'#D8CEBC', ch:'k', hp:16, dmg:[3,5], acc:62, eva:18, armor:2, speed:100, range:1, xp:18,
             band:[9,9], w:0, undead:true, art:0.95, sfx:'skeleton'},
   mimic:   {name:'Mimic', sprite:'m-mimic', col:'#8A5A2A', ch:'m', hp:30, dmg:[5,8], acc:64, eva:10, armor:3, speed:100, range:1, xp:30,
             band:[9,9], w:0, art:0.85, sfx:'mimic'},
-  warchief:{name:'Grukk the Warchief', sprite:'m-goblin-warchief', col:'#A8452A', ch:'W', hp:110, dmg:[7,12], acc:68, eva:14, armor:3, speed:100, range:1, xp:220,
+  warchief:{name:'Grukk the Warchief', sprite:'m-goblin-warchief', col:'#A8452A', ch:'W', hp:143, dmg:[7,12], acc:68, eva:14, armor:3, speed:100, range:1, xp:220,
             band:[9,9], w:0, boss:true, elite:true, art:1.35, sfx:'warchief', living:true},
   /* elementalings: rare, drop a mote */
-  emberling:{name:'Emberling', sprite:'m-emberling', col:'#E2622B', ch:'*', hp:16, dmg:[3,5], acc:62, eva:22, armor:0, speed:100, range:1, xp:30, band:[2,5], rare:true, el:'fire', drop:'mote', art:0.7, sfx:'elementaling'},
-  tideling: {name:'Dropling', sprite:'m-tideling', col:'#62A8D8', ch:'*', hp:16, dmg:[3,5], acc:60, eva:20, armor:1, speed:100, range:1, xp:30, band:[2,5], rare:true, el:'water', drop:'mote', art:0.7, sfx:'elementaling'},
-  galeling: {name:'Puffling', sprite:'m-galeling', col:'#E8D27A', ch:'*', hp:14, dmg:[3,5], acc:64, eva:30, armor:0, speed:140, range:1, xp:30, band:[2,5], rare:true, el:'air', drop:'mote', erratic:true, flying:true, art:0.7, sfx:'elementaling'},
-  stoneling:{name:'Pebbling', sprite:'m-stoneling', col:'#7FA05A', ch:'*', hp:20, dmg:[3,5], acc:56, eva:8, armor:3, speed:100, range:1, xp:30, band:[2,5], rare:true, el:'earth', drop:'mote', art:0.7, sfx:'elementaling'},
-  wisp:     {name:'Inking', sprite:'m-wisp', col:'#8A6FB0', ch:'*', hp:16, dmg:[3,5], acc:64, eva:26, armor:0, speed:100, range:1, xp:30, band:[3,5], rare:true, el:'shadow', drop:'mote', shadowy:true, art:0.7, sfx:'elementaling'},
-  lumenling:{name:'Glimmerling', sprite:'m-lumenling', col:'#F6E7B0', ch:'*', hp:16, dmg:[3,5], acc:64, eva:24, armor:0, speed:100, range:1, xp:34, band:[3,5], rare:true, el:'light', drop:'mote', art:0.7, sfx:'elementaling'}
+  emberling:{name:'Emberling', sprite:'m-emberling', col:'#E2622B', ch:'*', hp:16, dmg:[3,5], acc:62, eva:22, armor:0, speed:100, range:1, xp:21, band:[2,5], rare:true, el:'fire', drop:'mote', art:0.7, sfx:'elementaling'},
+  tideling: {name:'Dropling', sprite:'m-tideling', col:'#62A8D8', ch:'*', hp:16, dmg:[3,5], acc:60, eva:20, armor:1, speed:100, range:1, xp:21, band:[2,5], rare:true, el:'water', drop:'mote', art:0.7, sfx:'elementaling'},
+  galeling: {name:'Puffling', sprite:'m-galeling', col:'#E8D27A', ch:'*', hp:14, dmg:[3,5], acc:64, eva:30, armor:0, speed:140, range:1, xp:21, band:[2,5], rare:true, el:'air', drop:'mote', erratic:true, flying:true, art:0.7, sfx:'elementaling'},
+  stoneling:{name:'Pebbling', sprite:'m-stoneling', col:'#7FA05A', ch:'*', hp:20, dmg:[3,5], acc:56, eva:8, armor:3, speed:100, range:1, xp:21, band:[2,5], rare:true, el:'earth', drop:'mote', art:0.7, sfx:'elementaling'},
+  wisp:     {name:'Inking', sprite:'m-wisp', col:'#8A6FB0', ch:'*', hp:16, dmg:[3,5], acc:64, eva:26, armor:0, speed:100, range:1, xp:21, band:[3,5], rare:true, el:'shadow', drop:'mote', shadowy:true, art:0.7, sfx:'elementaling'},
+  lumenling:{name:'Glimmerling', sprite:'m-lumenling', col:'#F6E7B0', ch:'*', hp:16, dmg:[3,5], acc:64, eva:24, armor:0, speed:100, range:1, xp:24, band:[3,5], rare:true, el:'light', drop:'mote', art:0.7, sfx:'elementaling'}
 };
 /* ---------------------------------------------------------------- drop tables
    chance: odds that a kill drops anything at all (the Ring of Luck raises it). Then one pick from table,

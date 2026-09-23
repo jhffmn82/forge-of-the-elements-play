@@ -310,7 +310,7 @@ function triggerTrap(tr,e){
     burst(e.x,e.y,'poison',40,0.05); log('Poison gas hisses from a vent.', isP?'c-you':'c-info'); sfx('trap-gas'); }
   else if(tr.kind==='web'){ applyStatus(e,'root',3); log('Webs! '+(isP?'You are':'The '+e.name+' is')+' stuck.','c-info'); sfx('trap-web'); }
   else if(tr.kind==='alarm'){ ents.forEach(function(o){ if(o.foe && dist(o,e)<=16){ o.state='hunt'; o.lastSeen={x:e.x,y:e.y}; } }); log('An alarm bell clangs! Everything nearby comes running.','c-you'); sfx('trap-alarm'); }
-  else if(tr.kind==='teleport'){ var o2=[]; for(var y=0;y<MH;y++) for(var x=0;x<MW;x++) if(walkable(x,y)&&!occupied(x,y)&&inRoom(x,y)) o2.push({x:x,y:y});
+  else if(tr.kind==='teleport'){ var o2=[]; for(var y=0;y<MH;y++) for(var x=0;x<MW;x++) if(walkable(x,y)&&!occupied(x,y)&&inRoom(x,y)&&!roomAt(x,y).special) o2.push({x:x,y:y});   /* 2026-09-22 (Justin): never into a vault, toll room or hidden pocket - a locked room was an instant game over */
     var s=pick(o2); if(s){ sparkleFx(e.x,e.y,'magic',20); e.x=s.x; e.y=s.y; if(isP){ e._lx=undefined; computeFOV(); } sparkleFx(s.x,s.y,'magic',20); }
     log(who+(isP?' are':' is')+' whisked away by a teleport rune!', isP?'c-you':'c-info'); sfx('trap-teleport'); }
   else if(tr.kind==='pit'){
