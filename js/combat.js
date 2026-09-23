@@ -333,7 +333,9 @@ function attack(att, def, mult, label){
     var critCh = player.crit + (unaware && player.aff.shadow ? 0.05*player.aff.shadow : 0);
     crit = combatRoll(critCh,true);
     if(unaware){ surprise=true; base *= isScoundrel() ? 2.0 : 1.5; if(player.weapon.name.indexOf('Dagger')>=0) base*=1.2;
-      if(hasGod('reginald')) pietyViolation('a surprise attack', 12); }
+      /* 2026-09-22 (Justin): every opening was a "surprise" (a stunned foe, a frozen one, the "!" of a monster that just
+         noticed you), so Reginald was impossible to keep. His foul is stealth: striking from hiding or a sleeping foe. */
+      if(hasGod('reginald') && (player.hidden>0 || def.state==='asleep' || (typeof smokeAmbush==='function' && smokeAmbush(def)))) pietyViolation('a stealth attack', 12); }
   } else {
     crit = !(def===player && hasP('bulwark')) && rng() < 0.05;
   }

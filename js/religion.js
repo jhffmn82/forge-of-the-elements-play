@@ -25,7 +25,7 @@ GODS.murk.prayers = ['raisedead','corpsefeast'];
 GODS.murk.boons = ['Life Drain: living hostile kills by you or your servant heal you 2 HP per rank, and your undead have +10% HP and damage per rank.',
                    'Undying Servants: Raise Dead brings up a Zombie Bruiser instead of a skeleton.',
                    'Lich-Mother: Raise Dead calls a Lich, and your servant rises again once when it is destroyed.'];
-GODS.reginald.rule = 'No surprise attacks and no stealth kills. Refuses Scoundrels and anyone touched by Shadow.';
+GODS.reginald.rule = 'No stealth: no striking from hiding, no striking the sleeping. Refuses Scoundrels and anyone touched by Shadow.';
 GODS.reginald.boons = ['Fair Fight: +4 accuracy, +2% crit and +10% damage against elites and bosses, per rank.',
                        'Called Out: elites and bosses that can see you take 15% more damage from you and your allies.',
                        'Champion: while only one enemy is in view you deal 30% more damage and take 20% less.'];

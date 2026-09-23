@@ -97,7 +97,9 @@ function spendEssence(n){
 function godOnKill(e, by){
   var g=player.god; if(!g) return;
   var byPlayer = by===player, byAlly = by && by.ally, big = e.elite || e.base.elite || e.base.boss, r=godRank();
-  var aware = e.state!=='asleep' && !(e.st.stun) && !(e.st.frozen);
+  /* 2026-09-22 (Justin): Reginald's rule is no surprise attacks and no stealth kills. A stunned or frozen enemy was
+     awake and fighting; only a sleeping one is a stealth kill (a surprise attack already costs piety in attack()). */
+  var aware = e.state!=='asleep';
   if(g==='grom'){ /* Grom earns piety on damaging unarmed hits, not kills. */ }
   else if(g==='grumbok'){ if(byPlayer||byAlly) gainPiety((e.base.spellcaster||e.base.el?5:2)+(big?15:0)); if(r>=3 && e.base.spellcaster && byPlayer){ var h=Math.round(player.maxhp*0.1); healPlayer(h); } }
   else if(g==='glimmer'){ if(byPlayer||byAlly) gainPiety((e.base.undead||e.base.shadowy?4:2)+(big?15:0)); }
