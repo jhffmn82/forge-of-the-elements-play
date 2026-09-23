@@ -20,6 +20,9 @@ var STATUS_INFO = {
   hollow: {name:'Hollowed', icon:'ic-shadow-bolt', bad:1, d:'Shadow damage finds its weak spots.'},
   stone:  {name:'Stone skin', icon:'st-stone', d:'Physical hits deal 3 less damage.'},
   aura:   {name:'Unholy Aura', icon:'pr-unholyaura', d:'Enemies next to you take dark damage each turn.'},
+  /* 2026-09-23 (Justin): the Challenge and Coward's Mark show on the foe as debuffs */
+  challenged:{name:'Challenged', icon:'ic-challenge', bad:1, d:'Called out: it must come to you and fight. A follower of Sir Reginald deals it +25% and, from rank 3, takes 15 / 20 / 25% less from it.'},
+  coward:    {name:"Coward's Mark", icon:'ic-challenge', bad:1, d:'It struck from afar and Sir Reginald marked it: it must come to you, deals 15 / 20 / 25% less to you and takes +25% from you.'},
   /* buffs (player.buffs) */
   rampage:   {name:'Rampage', icon:'pr-rampage', d:'+40% melee damage and faster attacks.'},
   ironhide:  {name:'Iron Hide', icon:'pr-ironhide', d:'+5 armor and a shield.'},
@@ -56,6 +59,7 @@ function statusList(e){
   var out=[];
   if(!e) return out;
   for(var k in (e.st||{})){ if(k.indexOf('imm_')===0) continue; var s=e.st[k]; if(!s || !(s.t>0)) continue; out.push({k:k, t:s.t}); }
+  if(e!==player && e.challenged) out.push({k:e.cowardMark?'coward':'challenged', t:e.challengeT||0});   /* a Cleric's Challenge has no timer: 0 shows no count */
   if(e===player){
     for(var b in (player.buffs||{})) if(player.buffs[b]>0) out.push({k:b, t:player.buffs[b]});
     if(player.hidden>0) out.push({k:'hidden', t:player.hidden});
@@ -114,7 +118,7 @@ inspectHTML = function(mx, my){
   /* drop the old plain-text tag line; the icon rows replace it */
   h=h.replace(/<div style="margin-top:4px">(<span class="tag[^>]*>[^<]*<\/span>\s*)+<\/div>/, '');
   if(!list.length) return h;
-  var rows=list.map(function(s){ var url=statusIconURL(s.icon); return '<div class="tipstat">'+(url?'<img src="'+url+'" alt="">':'')+'<b class="'+(s.bad?'bad':'')+'">'+s.name+'</b><span class="t">'+s.t+' turn'+(s.t===1?'':'s')+'</span></div>'; }).join('');
+  var rows=list.map(function(s){ var url=statusIconURL(s.icon); return '<div class="tipstat">'+(url?'<img src="'+url+'" alt="">':'')+'<b class="'+(s.bad?'bad':'')+'">'+s.name+'</b>'+(s.t>0?'<span class="t">'+s.t+' turn'+(s.t===1?'':'s')+'</span>':'')+'</div>'; }).join('');
   var at=h.indexOf('<div class="odds">');
   return at>=0 ? h.slice(0,at)+rows+h.slice(at) : h+rows;
 };

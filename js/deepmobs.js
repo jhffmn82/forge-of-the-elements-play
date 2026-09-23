@@ -70,7 +70,7 @@ var DEEP_HINT = {
   webspitter:'A landed web shot always pins you for a turn, then slows you for three. Its bite can bleed.',
   spiderling:'Weak alone, never alone.',
   drider:'Shoots from range, poisons with its fangs up close, and webs you in place.',
-  fireimp:'Hurls fire bolts that burn you and set webs and grass alight.',
+  fireimp:'Hurls a fire bolt every turn from up to 6 tiles; a hit always sets you burning and lights webs and grass. Backs away from melee.',
   emberspider:'Its bite burns.',
   matron:'Channels rituals on the circles: hit her hard, or stun her, to break them. Calls driders and spiderlings.'
 };
@@ -82,7 +82,7 @@ var PRIEST  = {healPct:0.30, healFlat:10, healCd:4, ward:8, wardTurns:8, wardCd:
 var WEBSHOT = {cd:4, range:5, pin:1, slow:3};
 var DRIDER  = {webCd:6, poison:[4,3]};                     /* fangs: poison 4 turns, 3 a turn */
 var SAP     = {cd:3, range:6, base:6, per:0.5, heal:2};    /* drains 6 + half the floor in MP (14 at 16); heals 2 HP per MP */
-var IMP     = {cd:2, range:6, burn:0.40};
+var IMP     = {cd:1, range:6, burn:1.0};    /* 2026-09-23 (Justin): a bolt every turn, and a hit always burns */
 var MATRON  = {phase:[0.66, 0.33], ritTurns:3, ritBreak:0.08, ritEvery:[8,6,5], tithe:[18,26], titheCap:0.30, titheHeal:2,
                venom:[12,18], venomCap:0.30, venomCd:5, webCd:5, broodDriders:2, broodSpiderlings:[2,3]};
 
@@ -441,7 +441,7 @@ var DEEP_AI = {
       }
       e.t+=actCost(e); return true;
     }
-    if(d<=1 && rng()<0.5 && !e.st.root && deepCanFlee(e)){ if(!tickStatus(e)) return true; fleeStep(e); e.t+=actCost(e); return true; }
+    if(d<=1 && !e.st.root && deepCanFlee(e)){ if(!tickStatus(e)) return true; fleeStep(e); e.t+=actCost(e); return true; }   /* 2026-09-23 (Justin): it fights from range, so it always backs off when it can */
     return false;
   }
 };

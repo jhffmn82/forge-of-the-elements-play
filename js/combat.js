@@ -224,7 +224,7 @@ function applyDamage(target, amount, type, source){
     if(hasGod('reginald') && godRank()>=3 && source && source.foe && source.challenged) d*=1-.05*godRank();
     if(hasGod('reginald') && godRank()>=5 && source && source.foe) d*=1-0.10*Math.min(3, Math.max(0, adjacentFoes()-1));
     if(hasGod('reginald') && godRank()>=3 && source && source.foe && source.hp>0 && !source.challenged && typeof dist==='function' && dist(source,player)>1){
-      source.challenged=true; source.challengeT=5; source.state='hunt';
+      source.challenged=true; source.challengeT=5; source.state='hunt'; source.cowardMark=true;
       log('<b>'+(source.name||'It')+'</b> strikes from afar. Sir Reginald marks the coward: it must face you.','c-good');
     }
     if(capstone('grumbok') && type!=='phys' && source && source.foe)d*=.5;
@@ -673,7 +673,7 @@ function castAt(x,y){
   if(!A.tech && !A.divine && typeof spellConduct==='function') spellConduct(A);
   setClip(player, A.tech && A.useWeaponRange && player.range<=1 ? 'melee' : 'cast');
   if(key==='challenge'){
-    ents.forEach(function(e){ e.challenged=false; });
+    ents.forEach(function(e){ e.challenged=false; e.cowardMark=false; });
     f.challenged=true; f.challengeBoost = false; f.state='hunt'; f.challengeT=0;
     log('You challenge '+f.name+'. It must face you.','c-good'); sfx('shrine-open'); ringFx(f.x,f.y,'#E8B44A',1.2);
     endTurn(); return true;
@@ -755,7 +755,7 @@ function offGuard(e){
 }
 function aiAct(e){
   if(!tickStatus(e)) return;
-  if(e.challengeT && --e.challengeT<=0) e.challenged=false;
+  if(e.challengeT && --e.challengeT<=0){ e.challenged=false; e.cowardMark=false; }
   if(e.st.stun || e.st.frozen){ e.t+=actCost(e); return; }
   var see = canSeePlayer(e), d=dist(e,player);
   if(e.state==='throne'){

@@ -79,7 +79,7 @@ function blitTile(o, px, py, alpha){
 function lightingOn(){ try { return localStorage.getItem('astra-temple-light')!=='off'; } catch(e){ return true; } }
 
 /* the colour behind each condition's icon: light where the art is dark, deep where the art is pale */
-var STATUS_CHIP = {burn:'#FFC27A', chill:'#BFE4F0', frozen:'#DCF2FF', root:'#C8E0A0', stun:'#FFE9A8', fear:'#C8B4E0',
+var STATUS_CHIP = {challenged:'#E8B44A', coward:'#E8B44A', burn:'#FFC27A', chill:'#BFE4F0', frozen:'#DCF2FF', root:'#C8E0A0', stun:'#FFE9A8', fear:'#C8B4E0',
                    blind:'#FFFFFF', poison:'#C6E39A', web:'#E4DCF0', slow:'#E4DCF0', bleed:'#F0B0B0'};
 
 /* ---- terrain choices ---- */
@@ -1007,7 +1007,6 @@ function draw(){
       if(e.surprised && e.foe) { mark('!',px0+TS*0.78,py0+TS*0.02,'#FFD24A'); }
       if(e.state==='asleep') { mark('z',px0+TS*0.78,py0+TS*0.08+(ANIM.reduce?0:Math.sin(now/400+e.id)*2),'#CFE0FF'); }
       if(e.keyholder){ drawObj(objArt('items','item-key-iron'), px0+TS*0.52, py0-TS*0.34, {fit:0.4}); }
-      if(e.challenged){ mark('!',px0+TS*0.5,py0-TS*0.1,'#E8B44A'); }
       /* 2026-09-20: Justin - "we need some art for conditions and not just a black placeholder symbol". The icons
          were drawn straight onto the scene, so a dark one over a dark creature read as a black box. Each sits on a
          small chip of its own colour now, with a dark rim, so it reads against anything. */
