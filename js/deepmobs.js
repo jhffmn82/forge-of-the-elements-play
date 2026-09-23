@@ -66,7 +66,7 @@ var DEEP_KINDS = ['drowblade','drowpriestess','thoughteater','webspitter','spide
 var DEEP_HINT = {
   drowblade:'A duelist. Its cuts bleed, and it throws globes of darkness it can see through.',
   drowpriestess:'Heals and wards the drow, calls spiderlings, and drinks from the blood bolts she throws. Kill her first.',
-  thoughteater:'Saps your mana to heal itself. With no mana left, it dazes you instead. Fragile.',
+  thoughteater:'Saps your mana to heal itself, and half of what it takes tears you as magic damage. With no mana left, it dazes you instead. Fragile.',
   webspitter:'A landed web shot always pins you for a turn, then slows you for three. Its bite can bleed.',
   spiderling:'Weak alone, never alone.',
   drider:'Shoots from range, poisons with its fangs up close, and webs you in place.',
@@ -396,6 +396,8 @@ var DEEP_AI = {
           var h=Math.min(e.maxhp-e.hp, Math.round(n*SAP.heal)); e.hp+=h;
           floatText(player.x,player.y,'-'+n+' mp','magic'); if(h>0) floatText(e.x,e.y,'+'+h,'heal');
           log('The <b>Thought Eater</b> saps <b>'+n+' mana</b> out of your head'+(h>0 ? ' and swells (+'+h+' HP)' : '')+'.','c-you');
+          /* 2026-09-23 (Justin): the sap hurts too - half the mana taken lands as magic damage (past armour, Spell Ward may turn it) */
+          if(n>0) deepHurt(player, Math.round(n*0.5), 'magic', e, 'The <b>Thought Eater</b> feeds on the torn thoughts');
         } else {
           applyStatus(player,'stun',1); floatText(player.x,player.y,'dazed','magic');
           log('The <b>Thought Eater</b> finds no mana left to eat and rattles your empty mind: <b>dazed</b> for a turn.','c-you');
