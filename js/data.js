@@ -184,7 +184,7 @@ var PRAYERS = {
   consecrate: {name:'Consecrate', favor:10, rank:2, desc:'Cleanse your statuses; undead and shadow creatures within 3 take 8 light damage and flee.'},
   sanctuary:  {name:'Sanctuary', favor:25, rank:4, desc:'Every enemy within 5 is Feared for 4 turns.'},
   corpsefeast:{name:'Corpse Feast', favor:25, rank:4, desc:'Heal 30% of max HP; your undead are fully restored.'},
-  laststand:  {name:'Last Stand', favor:10, rank:2, desc:'Take 35% less damage for 10 turns.'},
+  laststand:  {name:'Last Stand', favor:10, rank:2, desc:'Take 50% less damage for 10 turns.'},   /* balance-rulings.js rewrites the card: half health only, 50% */
   rally:      {name:'Rally', favor:25, rank:4, desc:'Heal 25% of max HP, remove statuses, +10 accuracy for 10 turns.'},
   offering:   {name:'Offering', favor:0, rank:2, essence:15, desc:'Offer 15 essence: +10 piety and favor (x2 at a shrine).'},
   reforge:    {name:'Reforge', favor:25, rank:4, desc:'Permanently add +1 to your main-hand weapon.'},

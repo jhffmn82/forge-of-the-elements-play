@@ -181,7 +181,7 @@ function usePrayer(pid){
   else if(pid==='sanctuary'){ ents.forEach(function(e){ if(e.foe && dist(e,player)<=5) applyStatus(e,'fear',4); }); sparkleFx(player.x,player.y,'light',50); log('Sanctuary: nothing dares approach.','c-good'); }
   else if(pid==='unholyaura'){ player.st.aura={t:8}; sparkleFx(player.x,player.y,'dark',40); log('An unholy aura seeps from you.','c-good'); }
   else if(pid==='corpsefeast'){ var h2=Math.round(player.maxhp*0.3*div); healPlayer(h2); ents.forEach(function(e){ if(e.ally) e.hp=e.maxhp; }); floatText(player.x,player.y,'+'+h2,'heal'); log('Corpse Feast: you and your dead are restored.','c-good'); }
-  else if(pid==='laststand'){ player.buffs.laststand=10; log('Last Stand: you take 35% less damage.','c-good'); }
+  else if(pid==='laststand'){ player.buffs.laststand=10; log('Last Stand: you take 50% less damage.','c-good'); }   /* 2026-09-23: the log said 35%; applyDamage halves */
   else if(pid==='rally'){ var h3=Math.round(player.maxhp*0.25*div); healPlayer(h3); clearBad(); player.buffs.rally=10; derive(player); floatText(player.x,player.y,'+'+h3,'heal'); log('Rally!','c-good'); }
   else if(pid==='offering'){ var atShrine = at(player.x,player.y-1)===SHRINE||at(player.x,player.y+1)===SHRINE||at(player.x-1,player.y)===SHRINE||at(player.x+1,player.y)===SHRINE;
     gainPiety(Math.max(atShrine?20:10, Math.round((P.essence||0)/(atShrine?5:10)))); log('Old Anvil accepts your offering'+(atShrine?' gladly at his shrine':'')+'.','c-good'); sfx('forge-open'); }
