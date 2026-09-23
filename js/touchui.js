@@ -122,7 +122,10 @@
     '#hmenu .hm-btns button.on{border-color:var(--gold);color:var(--gold)}',
 
     /* ---- long-press cards: across the screen, on the half away from the finger (see showCard below) */
-    'body.touch #dtip{left:8px!important;right:8px!important;max-width:none!important;width:auto!important;font-size:14px;padding:10px 12px!important;z-index:85!important}',   /* over the docked hotbar and tabs (60) */
+    /* 2026-09-22 (Justin): the card sits bottom-left, above the hotbar, over the empty lower part of the sheet, where it can be read; it carries the item's buttons */
+    'body.touch #dtip{left:8px!important;right:auto!important;top:auto!important;bottom:var(--cardb,8px)!important;width:min(440px,calc(100vw - 16px))!important;max-width:none!important;font-size:14px;padding:10px 12px!important;z-index:85!important;pointer-events:auto!important}',   /* over the docked hotbar and tabs (60) */
+    'body.touch #dtip .tc-btns{display:flex;gap:8px;margin-top:10px}',
+    'body.touch #dtip .tc-btns button{flex:1 1 auto;min-height:44px;font-size:15px}',
     'body.touch #dtip .nm{font-size:18px!important}',
 
     /* ---- one type size up across the strip (2026-09-18: it had room to spare) */
@@ -440,6 +443,48 @@
     if(hmSwallow && !(hm && hm.contains(ev.target))){ hmSwallow=false; ev.stopImmediatePropagation(); ev.preventDefault(); }
   }, true);
   document.addEventListener('contextmenu', function(ev){ if(touch() && ev.target.closest && ev.target.closest('#hotbar')) ev.preventDefault(); });
+
+  /* ---- 2026-09-22 (Justin): on the tablet, holding a bag item to read it dropped it (a long press fires the
+     browser's contextmenu, which the mouse wiring uses for "drop"), and a tap equipped it before it could be read.
+     On touch a tap on a bag item or a worn slot opens its card; the card carries the actions (Equip or Use, Drop;
+     Take off); a long press never drops; hold-and-drag onto a worn slot or the hotbar still equips or docks. */
+  (function(){
+    function placeCard(){
+      var hb=document.getElementById('hotbar'), r=hb && hb.offsetParent ? hb.getBoundingClientRect() : null;
+      document.body.style.setProperty('--cardb', (r && r.top<innerHeight && r.height>0 ? Math.round(innerHeight-r.top)+8 : 8)+'px');
+    }
+    var _showCardTouch=showCard;
+    showCard=function(html, ev){ var r=_showCardTouch.apply(this, arguments); if(touch()) placeCard(); return r; };
+    function verb(it){ return it.kind==='weapon'?'Equip':it.kind==='armor'?'Wear':it.kind==='off'?'Take up':it.kind==='food'?'Eat':'Use'; }
+    function openCard(el, bi, slot){
+      try{ el.dispatchEvent(new MouseEvent('mousemove', {clientX:0, clientY:0, bubbles:true})); }catch(e){ return; }   /* the hover card, placed by showCard above */
+      var t=document.getElementById('dtip'); if(!t || t.style.display==='none') return;
+      var btns=document.createElement('div'); btns.className='tc-btns';
+      function add(label, fn){ var b=document.createElement('button'); b.textContent=label; b.onclick=function(ev){ ev.stopPropagation(); hideCard(); fn(); sfx('ui-click'); if(typeof updateUI==='function') updateUI(); if(typeof refreshSheet==='function') refreshSheet(); }; btns.appendChild(b); }
+      if(bi!==null){ var it=player.bag[bi]; if(!it) return; add(verb(it), function(){ useBagItem(bi); }); add('Drop', function(){ dropBagItem(bi); }); }
+      else if(slot==='stow' && typeof unequipRanged==='function') add('Take off', unequipRanged);
+      else if(slot==='amulet' && player.amulet) add('Take off', takeOffAmulet);
+      else if((slot==='ring0'||slot==='ring1') && slotItem(slot)) add('Take off', function(){ takeOffRing(slot==='ring0'?0:1); });
+      if(btns.children.length) t.appendChild(btns);
+    }
+    /* a tap reads; the mouse wiring's tap-to-equip and long-press-to-drop never run on touch */
+    document.addEventListener('click', function(ev){
+      if(!touch() || !ev.target.closest) return;
+      if(ev.target.closest('#dtip')) return;
+      var cel=ev.target.closest('.cell[data-b]'), gs=cel?null:ev.target.closest('.gslot[data-slot]');
+      if(!cel && !gs) return;
+      ev.stopImmediatePropagation(); ev.preventDefault();
+      if(cel) openCard(cel, +cel.getAttribute('data-b'), null); else openCard(gs, null, gs.getAttribute('data-slot'));
+    }, true);
+    document.addEventListener('contextmenu', function(ev){
+      if(touch() && ev.target.closest && ev.target.closest('.cell[data-b], .gslot[data-slot], .eslot')){ ev.stopImmediatePropagation(); ev.preventDefault(); }
+    }, true);
+    /* a touch anywhere off the card closes it */
+    document.addEventListener('pointerdown', function(ev){
+      if(!touch() || ev.clientX<0) return;
+      var t=document.getElementById('dtip'); if(t && t.style.display!=='none' && !(ev.target.closest && ev.target.closest('#dtip'))) hideCard();
+    }, true);
+  })();
 
   var n=0, t=setInterval(function(){ var a=hookDpad(), m=moveMap(), c=hookMapHover(); if((a && m && c) || ++n>600) clearInterval(t);   /* up to a minute: the art takes a while to load */ }, 100);
 })();
