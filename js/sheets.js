@@ -130,11 +130,11 @@ function charHTML(){
     h+='<div class="sec">Elements</div>';
     els.forEach(function(e){
       var n=player.aff[e];
-      h+='<div class="prow"><span class="k" style="color:'+AFF_COL[e]+'">1</span><span><span class="n">'+cap(e)+' 1</span><div class="d">'+(T1_TEXT[e]||'')+'</div></span><span class="s" style="color:var(--moss)">on</span></div>';
+      h+='<div class="prow"><span class="k" style="color:'+AFF_COL[e]+'">'+n+'</span><span><span class="n">'+cap(e)+' '+n+'</span><div class="d">'+(typeof t1Text==='function' ? t1Text(e,n) : (T1_TEXT[e]||''))+'</div></span><span class="s" style="color:var(--moss)">on</span></div>';   /* 2026-09-23 (Justin): the live total at this affinity */
       [3,6].forEach(function(r){
         if(typeof RANK_TEXT==='undefined' || !RANK_TEXT[r][e]) return;
         var on=n>=r; if(!on) return;
-        h+='<div class="prow'+(on?'':' off')+'"><span class="k" style="color:'+AFF_COL[e]+'">'+r+'</span><span><span class="n">'+cap(e)+' '+r+'</span><div class="d">'+RANK_TEXT[r][e]+'</div></span><span class="s" style="color:'+(on?'var(--moss)':'var(--dim)')+'">'+(on?'on':'rank '+r)+'</span></div>';
+        h+='<div class="prow'+(on?'':' off')+'"><span class="k" style="color:'+AFF_COL[e]+'">'+r+'</span><span><span class="n">'+cap(e)+' '+r+' mastery</span><div class="d">'+RANK_TEXT[r][e]+'</div></span><span class="s" style="color:'+(on?'var(--moss)':'var(--dim)')+'">'+(on?'on':'rank '+r)+'</span></div>';
       });
     });
     if(typeof COMBOS!=='undefined') combosHeld().forEach(function(k){
