@@ -114,7 +114,7 @@ function renderForge(){
       h+='</div>';
     });
   } else {
-    h+='<p class="c-info">Carve motes into sigils. Crafted sigils are always identified. The carving costs essence as well as motes: 100 for one mote, 200 for two, 500 for Ascension, 1000 for Wisdom.</p>';
+    h+='<p class="c-info">Carve motes into sigils. Crafted sigils are always identified. The carving costs essence as well as motes: 100 for one mote, 200 for two, 500 for Ascension, 5000 for Wisdom.</p>';
     Object.keys(SIGILS).forEach(function(k){
       var s=SIGILS[k], need={}, ok=true; s.motes.forEach(function(m){ need[m]=(need[m]||0)+1; });
       for(var m in need) if((player.motes[m]||0)<need[m]) ok=false;

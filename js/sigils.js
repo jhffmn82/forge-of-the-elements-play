@@ -53,8 +53,8 @@ var SIGIL_ORDER = {
 })();
 /* 2026-09-17: motes alone made sigils feel free, so carving one costs essence by grade:
    100 a single-element sigil, 200 anything needing two motes (including the doubles and the Aegis),
-   500 the Ascension (a free upgrade) and 1000 the Wisdom (a free level). */
-var SIGIL_ESSENCE = {common:100, uncommon:200, upgrade:500, levelup:1000};
+   500 the Ascension (a free upgrade) and 5000 the Wisdom (a free level, raised from 1000 on 2026-09-23). */
+var SIGIL_ESSENCE = {common:100, uncommon:200, upgrade:500, levelup:5000};   /* 2026-09-23 (Justin): a free level is worth 5,000, not 1,000 */
 function sigilEssence(key){
   if(key==='ascension') return SIGIL_ESSENCE.upgrade;
   if(key==='wisdom') return SIGIL_ESSENCE.levelup;
