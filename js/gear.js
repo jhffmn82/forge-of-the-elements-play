@@ -127,12 +127,12 @@ function trinketCard(it){
     return '<div class="nm">'+gearName(it)+'</div>'+(known?'<div class="hint">'+RINGS[it.ring].desc+'</div>':'')+
       (!it.unid?'<div class="row"><span>Effect</span><b'+(it.cursed?' style="color:#D0605A"':'')+'>'+ringLine(it)+'</b></div>':'')+
       (it.cursed && !it.unid?'<div class="hint" style="color:#D0605A">Cursed: it will not come off until the curse is broken.</div>':'')+unidHint(it)+
-      '<div class="hint">A ring works on its own while worn. Two ring slots.</div>';
+      '';   /* 2026-09-22 (Justin): no slot lecture on the card */
   }
   var a=it, knownA=!a.unid || RUN.amuletKnown[a.amulet];
   return '<div class="nm">'+gearName(a)+'</div>'+(knownA?'<div class="hint">'+AMULETS[a.amulet].desc+'</div><div class="row"><span>Recharge</span><b>'+(a.unid?'?':amuletRecharge(a)+' turns')+'</b></div>':'')+
     (a.cursed && !a.unid?'<div class="hint" style="color:#D0605A">Cursed: recharges slowly, sometimes fizzles, and will not come off.</div>':'')+unidHint(a)+
-    '<div class="hint">Put it on, then use it from the hotbar.</div>';
+    '';
 }
 var _weaponCardBase = weaponCard;
 weaponCard = function(w, worn){

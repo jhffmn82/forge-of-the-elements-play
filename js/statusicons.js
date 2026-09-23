@@ -8,6 +8,7 @@ var STATUS_INFO = {
   /* statuses (player.st / enemy.st) */
   burn:   {name:'Burning', icon:'st-burn', bad:1, d:'Takes fire damage every turn.'},
   chill:  {name:'Chilled', icon:'st-chill', bad:1, d:'Acts more slowly; takes more ice damage.'},
+  slow:   {name:'Slowed', icon:'st-slow', bad:1, d:'Acts more slowly.'},
   frozen: {name:'Frozen', icon:'st-frozen', bad:1, d:'Can\'t act. A physical hit shatters the ice for double damage.'},
   root:   {name:'Rooted', icon:'st-root', bad:1, d:'Can\'t move, but can still attack.'},
   stun:   {name:'Stunned', icon:'st-stun', bad:1, d:'Can\'t act.'},

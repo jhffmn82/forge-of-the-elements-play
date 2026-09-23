@@ -50,7 +50,7 @@ trinketCard = function(it){
     '<div class="row"><span>Charges</span><b>'+it.charges+' / '+AMULET_MAX_CHARGES+'</b></div>'+
     (it.charges<AMULET_MAX_CHARGES && !it.unid?'<div class="row"><span>Next charge</span><b>'+(amuletKillsNeeded(it)-(it.progress||0))+' more kills</b></div>':'')+
     (it.cursed && !it.unid?'<div class="hint" style="color:#D0605A">Cursed: charges build 30% slower, every use costs 10% of your current HP, and it will not come off.</div>':'')+unidHint(it)+
-    '<div class="hint">Put it on, then use it from the hotbar. Stores up to 3 charges; kills build them (elites and bosses count 3).</div>';
+    '<div class="hint">Up to 3 charges; kills build them, elites and bosses count 3.</div>';
 };
 
 /* ---------------------------------------------------------------- recharge from kills */

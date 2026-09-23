@@ -485,7 +485,7 @@ function panes(){
   if(slotEls[2]) hoverCard(slotEls[2], function(){ return armorCard(player.armorItem, true); });
   $('mEquip').querySelectorAll('.eslot[data-tr]').forEach(function(ts){
     var key=ts.getAttribute('data-tr'), get=function(){ return key==='amulet' ? player.amulet : (player.rings||[])[key==='ring0'?0:1]; };
-    hoverCard(ts, function(){ var it=get(); return it ? trinketCard(it) : '<div class="nm">'+(key==='amulet'?'Amulet':'Ring')+'</div><div class="hint">'+(key==='amulet'?'Activated from the hotbar, then recharges.':'Works passively while worn.')+' Drag one here from your bag.</div>'; });
+    hoverCard(ts, function(){ var it=get(); return it ? trinketCard(it) : '<div class="nm">'+(key==='amulet'?'Amulet':'Ring')+'</div><div class="hint">Empty.</div>'; });
     ts.style.cursor='pointer';
     ts.onclick=function(){ if(!get()) return; hideCard(); if(key==='amulet') takeOffAmulet(); else takeOffRing(key==='ring0'?0:1); updateUI(); refreshSheet(); };
     dropTarget(ts, function(tag){ var bi=bagIndexFromTag(tag); if(bi<0) return; hideCard(); equipFromBag(bi, key); updateUI(); refreshSheet(); });
@@ -511,7 +511,7 @@ function weaponCard(w, worn){
     '<div class="row"><span>Hands</span><b>'+(w.hands||1)+'</b></div>'+
     (w.range?'<div class="row"><span>Range</span><b>'+(w.range+(player.rangeBonus||0))+'</b></div>':'')+
     (typeof unidHint==='function' ? unidHint(w) : '')+
-    '<div class="hint">'+(worn?'':'click to equip')+'</div>';
+    '';
   return '<div class="nm">'+gearName(w)+'</div>'+
     '<div class="row"><span>Damage</span><b>'+(w.dmg[0]+plus)+'&ndash;'+(w.dmg[1]+plus)+'</b></div>'+
     '<div class="row"><span>Accuracy</span><b>'+(w.acc>=0?'+':'')+(w.acc||0)+'</b></div>'+
@@ -520,14 +520,14 @@ function weaponCard(w, worn){
     (w.enchant?'<div class="row"><span>Enchant</span><b style="color:'+AFF_COL[w.enchant]+'">'+cap(w.enchant)+'</b></div><div class="hint">'+(typeof enchantLive==='function' ? enchantLive('weapon', w.enchant) : ENCHANT_TEXT.weapon[w.enchant])+'</div>':'')+
     (w.divine?'<div class="row"><span>Invoke &amp; prayer strength</span><b>+'+Math.round(w.divine*100)+'%</b></div>':'')+
     (w.divine?'<div class="row"><span>Beneficial prayer duration</span><b>+'+((w.plus||0)>=3?2:1)+' turns</b></div>':'')+
-    '<div class="hint">'+(w.note||'')+(worn?'':' &middot; click to equip')+'</div>';
+    (w.note?'<div class="hint">'+w.note+'</div>':'');
 }
 function armorCard(a, worn){
   if(!a) return '';
   if(a.unid) return '<div class="nm">'+gearName(a)+'</div>'+
     '<div class="row"><span>Armor</span><b>?</b></div>'+
     (typeof unidHint==='function' ? unidHint(a) : '')+
-    '<div class="hint">'+(worn?'':'click to equip')+'</div>';
+    '';
   return '<div class="nm">'+gearName(a)+'</div>'+
     '<div class="row"><span>Armor</span><b>'+(a.armor+(a.armor>0?itemPlus(a):0))+'</b></div>'+
     '<div class="row"><span>Evasion</span><b>'+((a.eva||0)>=0?'+':'')+(a.eva||0)+'</b></div>'+
@@ -539,8 +539,8 @@ function bagCard(it){
   if(it.kind==='weapon') return weaponCard(it.data);
   if(it.kind==='armor') return armorCard(it.data);
   if(it.kind==='off') return it.data.weapon?weaponCard(it.data)+'<div class="hint">Off-hand strike: 60% damage.</div>':'<div class="nm">'+gearName(it.data)+'</div><div class="hint">'+(it.data.note||'')+'</div>';
-  if(it.kind==='sigil'){ var k=sigilKnown[it.data.use]; return '<div class="nm">'+it.name+'</div><div class="hint">'+(k?SIGILS[it.data.use].desc:'Unidentified. Use it to learn what it does.')+'</div>'; }
-  if(it.kind==='food'){ var f=FOODS[it.data.food]; return '<div class="nm">'+f.name+'</div><div class="hint">'+(f.desc ? f.desc+' Also eases hunger.' : 'Eat to stave off hunger'+(f.heal?' and heal a little':'')+'.')+'</div>'; }
+  if(it.kind==='sigil'){ var k=sigilKnown[it.data.use]; return '<div class="nm">'+it.name+'</div><div class="hint">'+(k?SIGILS[it.data.use].desc:'Unidentified.')+'</div>'; }
+  if(it.kind==='food'){ var f=FOODS[it.data.food]; return '<div class="nm">'+f.name+'</div><div class="hint">'+(f.desc ? f.desc+' ' : '')+'Restores '+f.nutrition+' hunger'+(f.heal?', heals '+Math.round(f.heal*100)+'%':'')+'.</div>'; }
   return '<div class="nm">'+it.name+'</div>';
 }
 
@@ -575,7 +575,7 @@ function inspectHTML(mx,my){
     if(it.kind==='weapon') return weaponCard(it.it);
     if(it.kind==='armor') return armorCard(it.it);
     if(it.kind==='off') return bagCard({kind:'off',data:it.it});
-    return '<div class="nm">'+cap(itemLabel(it))+'</div><div class="hint">'+(it.kind==='sigil'&&!sigilKnown[it.use]?'Unidentified sigil.':it.kind==='mote'?'Fuse, enchant or craft with it at the Forge.':'')+'</div>';
+    return '<div class="nm">'+cap(itemLabel(it))+'</div><div class="hint">'+(it.kind==='sigil'&&!sigilKnown[it.use]?'Unidentified sigil.':'')+'</div>';
   }
   var p=propAt(mx,my);
   if(p){

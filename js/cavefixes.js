@@ -95,9 +95,11 @@ var _gatherLightsCave = gatherLights;
 gatherLights = function(now, prp){
   var L=_gatherLightsCave.apply(this, arguments);
   if(typeof inCaverns==='function' && inCaverns() && L && L.length) for(var i=1;i<L.length;i++){
-    /* PR #4: emitted light describes the cave; dim only carried light and fill. */
+    /* 2026-09-22 (Justin): "the light sources in the caverns are too bright". A later pass had turned the scenery
+       lights UP (x1.35 strength, x1.25 reach) and the crystals washed whole chambers to grey. Back to the intent
+       above: scenery burns at 55% strength and 85% reach; a light carried at the hero's feet is left alone. */
     var emitted=L[i].em || !(L[i].x===prp.x && L[i].y===prp.y);
-    L[i].s*=emitted?1.35:0.55; L[i].r*=emitted?1.25:0.85;
+    if(emitted){ L[i].s*=0.55; L[i].r*=0.85; }
   }
   return L;
 };

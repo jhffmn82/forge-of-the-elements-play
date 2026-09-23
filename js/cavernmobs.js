@@ -284,8 +284,10 @@ endTurn = function(){
   _endTurnCaveSpores();
   if(!floorMeta || !player || player.hp<=0 || typeof cloudAt!=='function') return;
   var c=cloudAt(idxOf(player.x,player.y));
-  if(c && c.src==='spores' && !player.st.chill && !player.st.frozen && !(typeof aff==='function' && aff('earth')>=6)){
-    player.st.chill={t:2, n:1}; floatText(player.x,player.y,'slowed','poison');
+  /* 2026-09-22 (Justin): spores slow, they do not chill - a real Slowed status through applyStatus, so Unstoppable
+     refuses it and it wears its own icon rather than the snowflake */
+  if(c && c.src==='spores' && !player.st.slow && !player.st.frozen && !(typeof aff==='function' && aff('earth')>=6)){
+    var before=player.st.slow; applyStatus(player,'slow',2); if(player.st.slow && player.st.slow!==before){ player.st.slow.mult=0.8; floatText(player.x,player.y,'slowed','poison'); }   /* 20% slower, about what one chill stack did */
   }
 };
 
