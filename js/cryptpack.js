@@ -264,7 +264,9 @@ function packWallAt(x, y){ return inb(x,y) && isWallLike(at(x,y)) && at(x,y)!==D
 function repairWallMemorials(){
   var changed=false;
   props.slice().forEach(function(p){
-    if(!p.wall || !/^(wall-plaque|wall-niche)$/.test(p.name) || isWallLike(at(p.x,p.y)))return;
+    /* 2026-09-22 (Justin): a silk banner in the Underdark blocked the only passage. Every wall-mounted piece that
+       blocks (plaques, niches, banners, web corners) is repaired the same way, not only the Crypt's two. */
+    if(!p.wall || !p.b || isWallLike(at(p.x,p.y)))return;
     var ox=p.x,oy=p.y,best=null,score=Infinity;
     for(var dy=-2;dy<=2;dy++)for(var dx=-2;dx<=2;dx++){
       var x=ox+dx,y=oy+dy,d=Math.abs(dx)+Math.abs(dy);
