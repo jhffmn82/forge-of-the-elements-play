@@ -139,6 +139,9 @@ function fwaSprite(kind){
   /* --- Water ------------------------------------------------------------------------------------ */
   M.tidecrab     = mk({name:'Tide Crab', sprite:fwaSprite('tidecrab'), col:'#5CC8D8', ch:'C', hp:130, dmg:[11,15], acc:70, eva:8, armor:10, xp:105,
                        fwa:'crab', shellGuard:true, living:true, art:1.0, sfx:'spider'});
+  /* 2026-09-23 (Justin): the PixelLab rows for these five drifted off their packet-04 stills (a lizard for the crawler,
+     a knight for the Emberlord); they hold the still in every state (render.js clipFrame) until re-animated on model */
+  ['cinderimp','magmacrawler','flamedancer','emberlord','tidecrab'].forEach(function(k){ M[k].stillPose=true; });
   M.siren        = mk({name:'Siren', sprite:fwaSprite('siren'), col:'#9FF0E8', ch:'S', hp:70, dmg:[8,11], acc:72, eva:26, armor:1, range:5, xp:110,
                        fwa:'siren', living:true, spellcaster:true, art:0.95, sfx:'shaman'});
   M.drownedone   = mk({name:'Drowned One', sprite:fwaSprite('drownedone'), col:'#4E667C', ch:'d', hp:70, dmg:[8,11], acc:70, eva:14, armor:4, xp:100,

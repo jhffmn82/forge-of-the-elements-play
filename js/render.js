@@ -407,6 +407,10 @@ function castSheet(look){ var m=AS.cast && AS.cast[look]; if(!m) return null; va
 function mobSheet(name){ var m=AS.mobs && AS.mobs[name]; if(!m) return null; var img=atl('mob-'+name+'.png'); return img ? {img:img, m:m} : null; }
 function clipFrame(sheet, e, sliding){
   var m=sheet.m, now=performance.now(), cell=m.cell;
+  /* 2026-09-23 (Justin: the Magma Crawler changed art between asleep and awake): a creature whose animation rows
+     drifted off its still (packet 04's fire and water five, stillPose in planesfwa.js) holds the still in every
+     state, mid-clip included, until it is re-animated on model. */
+  if(e.base && e.base.stillPose && m.static_row!==undefined) return {sx:0, sy:m.static_row*cell};
   if(e._clip){
     var c=m.clips[e._clip.name];
     if(c){
@@ -449,7 +453,7 @@ function drawCharacter(e, px, py, opts){
     var dx2=px+TS/2-(box[0]+box[2]/2)*s2, dy2=py+TS*0.97-feet*s2;
     /* Tier-two reference art has a single pose: give it a restrained breath,
        attack compression and recoil without altering simulation state. */
-    if(e.base.elementTier && !ANIM.reduce && e.state!=='asleep'){
+    if((e.base.elementTier || e.base.stillPose) && !ANIM.reduce && e.state!=='asleep'){
       var msNow=performance.now(), age2=e._clip?msNow-e._clip.t0:9999;
       var action2=e._clip&&e._clip.name==='attack'&&age2>=0&&age2<540?Math.sin(age2/540*Math.PI):0;
       var pulse2=Math.sin(msNow/330+(e.id||0))*.012;
