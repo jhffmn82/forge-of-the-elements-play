@@ -39,6 +39,7 @@ PASSIVES={
 var AOE_HIT=false;   /* set while resolving area attacks, so Magic Barrier ignores them */
 var ATTACK_ROLLED=false;   /* set while attack() applies a hit it has already rolled block for, so Spell Ward does not roll twice */
 function godRank(){ return player.god ? pietyRank(player.piety||0) : 0; }
+function adjacentFoes(){ var n=0; ents.forEach(function(e){ if(e.foe && e.hp>0 && dist(e,player)<=1) n++; }); return n; }
 function hasGod(id){ return player.god===id; }
 function totalAffinity(){ var t=0; for(var k in player.aff) t+=player.aff[k]||0; return t; }
 function affinityCap(){
@@ -213,9 +214,15 @@ function applyDamage(target, amount, type, source){
   }
   if(target===player){
     if(buff('laststand')) d*=0.5;
-    /* 2026-09-22 (Justin): Called Out only worked on a Challenged foe, and only a Cleric has Challenge. Any elite or boss
-       hunting a rank-3 follower counts; a Cleric's Challenge marks one that is not hunting yet. */
-    if(hasGod('reginald') && godRank()>=3 && source && (source.challenged || source.state==='hunt') && (source.elite || source.base && (source.base.elite||source.base.boss))) d*=1-.05*godRank();
+    /* 2026-09-23 (Justin): Coward's Mark (rank 3). A marked foe deals 15/20/25% less to you; the Challenge invoke marks one
+       by hand, and any foe that strikes you from more than a tile away marks itself below. Wall of One (rank 5): each foe
+       adjacent to you beyond the first is 10% less damage taken, up to three. */
+    if(hasGod('reginald') && godRank()>=3 && source && source.foe && source.challenged) d*=1-.05*godRank();
+    if(hasGod('reginald') && godRank()>=5 && source && source.foe) d*=1-0.10*Math.min(3, Math.max(0, adjacentFoes()-1));
+    if(hasGod('reginald') && godRank()>=3 && source && source.foe && source.hp>0 && !source.challenged && typeof dist==='function' && dist(source,player)>1){
+      source.challenged=true; source.challengeT=5; source.state='hunt';
+      log('<b>'+(source.name||'It')+'</b> strikes from afar. Sir Reginald marks the coward: it must face you.','c-good');
+    }
     if(capstone('grumbok') && type!=='phys' && source && source.foe)d*=.5;
     d=Math.max(0,d-barrier);
     if(d>0 && source && source.foe && hasP('fortitude') && !(player.fortUntil>player.t)){d*=.5;player.fortUntil=player.t+1500;log('Fortitude blunts the blow.','c-good');}
@@ -324,6 +331,7 @@ function attack(att, def, mult, label){
     if(melee && buff('rampage')) statPool += 0.40;
     if(hasP('crushing') && def.hp < def.maxhp/2) statPool += 0.25;
     if(def.challenged && hasGod('reginald')) statPool += 0.25;
+    if(hasGod('reginald') && godRank()>=5) statPool += 0.10*Math.min(3, Math.max(0, adjacentFoes()-1));   /* Wall of One */
     if(buff('rally')) statPool += 0.10;
     if(melee && capstone('grumbok') && player.spellbreakUntil>player.t){base*=1.5;player.spellbreakUntil=0;log('<b>Spellbreaker!</b>','c-good');}
     if(hasGod('glimmer') && (def.base.undead||def.base.shadowy)) statPool += 0.10*godRank();

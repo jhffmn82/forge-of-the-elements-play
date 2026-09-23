@@ -114,7 +114,7 @@ var GODS = {
              boons:['Life Drain: kills heal 1 HP per rank, and your undead have +10% HP and damage per rank.','Undying Servants: Raise Dead brings up a Zombie Bruiser instead of a skeleton.','Lich-Mother: Raise Dead calls a Lich, and your servant rises again once when it is destroyed.'],
              gain:'Kills of the living, extra for kills by your undead.'},
   reginald: {name:'Sir Reginald the Unsneaky', title:'patron of the fair fight', sprite:'shrine-reginald', color:'#9FB0C0',
-             rule:'No surprise attacks and no stealth kills.', invoke:'challenge', prayers:['laststand','rally'],
+             rule:'No surprise attacks and no stealth kills.', invoke:'challenge', prayers:['laststand','lance'],
              boons:['Fair Fight: +4 accuracy and +10% damage against elites and bosses, per rank.','Called Out: a Challenged enemy takes +20% damage from everyone.','Champion: while only one enemy is in view you deal 30% more damage and take 20% less.'],
              gain:'Kills of enemies that see you coming, extra for elites and bosses.'},
   anvil:    {name:'Old Anvil', title:'the smith below', sprite:'shrine-anvil', color:'#E8B44A', tithe:true,

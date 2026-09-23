@@ -9,6 +9,8 @@ GODS.anvil.prayers=['fieldsmelt','anviltoll'];   /* 2026-09-23 (Justin): Anvil's
 PRAYERS.fieldsmelt={name:'Field Smelt',rank:2,favor:0,desc:'Outside combat, recycle one carried item for its full normal value. Free and instant.'};
 PRAYERS.reforge.favor=100;
 PRAYERS.anviltoll={name:"Anvil's Toll",rank:4,favor:20,desc:'20 Favor, one action: you bring the hammer down. Every enemy within 2 tiles takes a full weapon attack, is thrown back 2 tiles and stunned for 1 turn.'};
+PRAYERS.lance={name:'Lance',rank:4,favor:20,desc:'20 Favor, one action: aim at any tile up to 5 away. Every enemy on the straight line to it takes a full weapon attack.'};
+var LANCE={name:'Lance',kind:'bolt',type:'phys',range:5,divine:true,cost:0};
 PRAYERS.reforge.desc='Outside combat, spend 100 Favor to permanently add +1 to your main-hand weapon, up to +3.';
 PRAYERS.bonespear={name:'Bone Spear',rank:4,favor:5,desc:'A piercing straight-line spell: 10–16 Dark damage, range 6. Costs 5 Favor and one action.'};
 // Old hotbar entries retain usable links after the approved prayer replacements.
@@ -109,6 +111,11 @@ usePrayer=function(pid){
     aiming={A:BONE_SPEAR,prayer:'bonespear'};if(openSheet)showSheet(openSheet);
     log('Bone Spear: choose a target within 6 tiles.','c-info');draw();return;
   }
+  if(pid==='lance'){
+    if(!canPray(pid)){log('Lance requires rank 4 and 20 Favor.','c-info');return;}
+    aiming={A:LANCE,prayer:'lance'};if(openSheet)showSheet(openSheet);
+    log('Lance: aim at any tile within 5. Everything on the line takes your weapon.','c-info');draw();return;
+  }
   return _usePrayerRecovery(pid);
 };
 function spearPath(ax,ay,bx,by){
@@ -119,6 +126,16 @@ function spearPath(ax,ay,bx,by){
 }
 var _castAtRecovery=castAt;
 castAt=function(x,y){
+  if(aiming && aiming.prayer==='lance'){
+    /* Reginald's Lance (2026-09-23): a weapon attack on every enemy along a straight line to any tile within 5 */
+    if(!canPray('lance') || !inb(x,y) || dist(player,{x:x,y:y})>5 || !(revealAll||vis[idxOf(x,y)]) || (x===player.x && y===player.y))return false;
+    var lpath=spearPath(player.x,player.y,x,y).slice(0,5);if(!lpath.length)return false;
+    player.favor-=PRAYERS.lance.favor;aiming=null;setClip(player,'melee');sfx('swing');
+    var lend=lpath[lpath.length-1];boltFx(player.x,player.y,lend.x,lend.y,'phys');
+    var struck=0;lpath.forEach(function(p){ents.slice().forEach(function(e){if(e.foe&&e.hp>0&&e.x===p.x&&e.y===p.y){attack(player,e,1,'Lance');struck++;}});});
+    log('<b>Lance.</b> '+(struck?'Your weapon runs through '+struck+(struck===1?' foe.':' foes.'):'Nothing stood in the line.'),'c-good');
+    player.hidden=0;endTurn();return true;
+  }
   if(!aiming || aiming.prayer!=='bonespear')return _castAtRecovery(x,y);
   if(!canPray('bonespear') || !inb(x,y) || dist(player,{x:x,y:y})>6 || !(revealAll||vis[idxOf(x,y)]))return false;
   var path=spearPath(player.x,player.y,x,y);if(!path.length)return false;
