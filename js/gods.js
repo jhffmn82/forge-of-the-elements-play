@@ -55,7 +55,7 @@ function godConductEquip(kind, data){
     if(kind==='off' && data && ((data.block>0 && itemKey(data)!=='holy') || data.weapon)) pietyViolation('you carrying a shield or blade', 15);
     if(kind==='armor' && data && data!==EMPTY_OFF) pietyViolation('you wearing real armor', 15);
   }
-  if(g==='glimmer' && data && data.enchant==='shadow') pietyViolation('shadow-touched gear', 15);
+  if((g==='glimmer'||g==='reginald') && data && data.enchant==='shadow') pietyViolation('shadow-touched gear', 15);
   if(g==='murk' && data && data.enchant==='light') pietyViolation('light-touched gear', 15);
   if(g==='vellum'){
     if(kind==='off' && data && data.block>0 && itemKey(data)!=='holy') pietyViolation('you carrying a shield', 15);
@@ -66,7 +66,7 @@ function godConductEquip(kind, data){
 function spellConduct(A){
   var g=player.god; if(!g) return;
   if(g==='grumbok') pietyViolation('you casting a spell', 15);
-  if(g==='glimmer' && A.el==='shadow') pietyViolation('shadow magic', 15);
+  if((g==='glimmer'||g==='reginald') && A.el==='shadow') pietyViolation('shadow magic', 15);
   if(g==='murk' && A.el==='light') pietyViolation('light magic', 15);
   if(g==='vellum'){
     player.castTurn=turn;

@@ -280,6 +280,7 @@ applyDamage = function(target, amount, type, source){
 /* ---------------------------------------------------------------- stealth: everyone has a stealth score */
 function stealthScore(){
   if(!player || player.noisy) return 0;
+  if(typeof hasGod==='function' && hasGod('reginald')) return 0;   /* 2026-09-22 (Justin): the Unsneaky cannot sneak; not written on any card */
   var s=0.02*Math.max(0, player.stats.agi-10);
   if(isScoundrel()) s+=0.25;
   if(!player.movedLast) s+=0.20;

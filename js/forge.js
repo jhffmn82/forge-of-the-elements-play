@@ -33,7 +33,7 @@ function fuseCheck(el){
 }
 function fuseMote(el){
   var why=fuseCheck(el); if(why){ log(why,'c-info'); sfx('ui-error'); return; }
-  if(player.god==='glimmer' && el==='shadow') pietyViolation('you taking Shadow into yourself', 30);
+  if((player.god==='glimmer'||player.god==='reginald') && el==='shadow') pietyViolation('you taking Shadow into yourself', 30);
   if(player.god==='murk' && el==='light') pietyViolation('you taking Light into yourself', 30);
   player.motes[el]--; if(player.motes[el]<=0) delete player.motes[el];
   if(!Object.keys(player.aff).length) player.primary=el;
