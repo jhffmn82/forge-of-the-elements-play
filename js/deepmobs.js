@@ -27,24 +27,24 @@ function deepMobsOn(){ return typeof bidx==='function' && bidx()===3 && !(floorM
   /* region: 0 temple, 1 Underdark, 2 volcanic. deepAI names the special turn (DEEP_AI below). bleeds: chance a
      landed hit opens a Bleed. darksight: sees through a globe of darkness. */
   M.drowblade    = {name:'Drow Blade', sprite:'m-drow-blade', col:'#6A3A5A', ch:'d', hp:90, dmg:[10,14], acc:70, eva:24, armor:3, speed:100, range:1, xp:48,
-                    band:[16,20], w:24, region:0, deepAI:'blade', bleeds:0.30, darksight:true, living:true, art:0.95, artLeft:true, sfx:'drow'};
-  M.drowpriestess= {name:'Drow Priestess', sprite:'m-drow-priestess', col:'#9A2A4A', ch:'p', hp:70, dmg:[8,11], acc:68, eva:18, armor:1, speed:100, range:1, xp:56,
+                    band:[16,20], w:24, region:0, deepAI:'blade', bleeds:0.50, darksight:true, living:true, art:0.95, artLeft:true, sfx:'drow'};
+  M.drowpriestess= {name:'Drow Priestess', sprite:'m-drow-priestess', col:'#9A2A4A', ch:'p', hp:70, dmg:[12,17], acc:68, eva:18, armor:1, speed:100, range:1, xp:56,
                     band:[16,20], w:12, region:0, deepAI:'priestess', darksight:true, living:true, spellcaster:true, art:0.95, artLeft:true, sfx:'shaman'};
   M.thoughteater = {name:'Thought Eater', sprite:'m-thought-eater', col:'#C89AD0', ch:'t', hp:55, dmg:[8,11], acc:72, eva:28, armor:0, speed:100, range:1, xp:50,
-                    band:[17,20], w:10, region:0, deepAI:'eater', flying:true, hover:true, living:true, spellcaster:true, art:0.8, artLeft:true, sfx:'imp'};
+                    band:[17,20], w:10, region:0, deepAI:'eater', el:'shadow', flying:true, hover:true, living:true, spellcaster:true, art:0.8, artLeft:true, sfx:'imp'};
   M.webspitter   = {name:'Web Spitter', sprite:'m-web-spitter', col:'#4A3A5A', ch:'w', hp:70, dmg:[8,11], acc:68, eva:20, armor:2, speed:100, range:1, xp:40,
-                    band:[16,20], w:18, region:1, deepAI:'spitter', bleeds:0.20, living:true, spider:true, art:0.85, artLeft:true, sfx:'spider'};
+                    band:[16,20], w:18, region:1, deepAI:'spitter', bleeds:0.35, living:true, spider:true, art:0.85, artLeft:true, sfx:'spider'};
   M.spiderling   = {name:'Spiderling', sprite:'m-spiderling', col:'#5A3A4A', ch:'s', hp:15, dmg:[3,4], acc:64, eva:26, armor:0, speed:100, range:1, xp:8,
-                    band:[16,20], w:16, pack:[3,5], region:1, bleeds:0.15, living:true, spider:true, art:0.5, artLeft:true, sfx:'spider'};
+                    band:[16,20], w:16, pack:[3,5], region:1, bleeds:0.30, living:true, spider:true, art:0.5, artLeft:true, sfx:'spider'};
   M.drider       = {name:'Drider', sprite:'m-drider', col:'#3A2A3A', ch:'D', hp:180, dmg:[13,18], acc:70, eva:14, armor:4, speed:100, range:6, xp:120,
-                    band:[17,20], w:6, region:1, deepAI:'drider', elite:true, fangs:0.35, darksight:true, living:true, spider:true, art:1.4, artLeft:true, sfx:'brute'};
-  M.fireimp      = {name:'Fire Imp', sprite:'m-fire-imp', col:'#E2522B', ch:'i', hp:60, dmg:[8,11], acc:70, eva:30, armor:0, speed:100, range:1, xp:42,
+                    band:[17,20], w:6, region:1, deepAI:'drider', elite:true, heavy:true, el:'earth', fangs:0.35, darksight:true, living:true, spider:true, art:1.4, artLeft:true, sfx:'brute'};
+  M.fireimp      = {name:'Fire Imp', sprite:'m-fire-imp', col:'#E2522B', ch:'i', hp:60, dmg:[12,17], acc:70, eva:30, armor:0, speed:100, range:1, xp:42,
                     band:[16,20], w:18, region:2, deepAI:'imp', el:'fire', flying:true, hover:true, living:true, spellcaster:true, art:0.75, artLeft:true, sfx:'imp'};
   M.emberspider  = {name:'Ember Spider', sprite:'m-ember-spider', col:'#B8482A', ch:'e', hp:90, dmg:[10,13], acc:68, eva:18, armor:3, speed:100, range:1, xp:46,
                     band:[16,20], w:20, region:2, el:'fire', emberBite:0.30, living:true, spider:true, art:0.9, artLeft:true, sfx:'spider'};
   /* the Matron of the Web: tuned by hand for floor 20, so no floor curve (fixed, like the other bosses) */
   M.matron       = {name:'The Matron of the Web', sprite:'m-matron', col:'#8A1A3A', ch:'M', hp:380, dmg:[15,21], acc:74, eva:12, armor:5, speed:100, range:1, xp:900,
-                    band:[20,20], w:0, boss:true, elite:true, fixed:true, bleeds:0.5, darksight:true, living:true, spellcaster:true, art:2.1, artLeft:true, sfx:'matron'};
+                    band:[20,20], w:0, boss:true, elite:true, fixed:true, heavy:true, bleeds:0.5, darksight:true, living:true, spellcaster:true, art:2.1, artLeft:true, sfx:'matron'};
   DROPS.drowblade     = {chance:0.25, table:{essence:10, gear:5, sigil:1}};
   DROPS.drowpriestess = {chance:0.35, table:{essence:8, sigil:3, gear:3, food:1}};
   DROPS.thoughteater  = {chance:0.30, table:{essence:12, sigil:3}};
@@ -76,7 +76,7 @@ var DEEP_HINT = {
 };
 
 /* ---------------------------------------------------------------- tunables (placeholders, all of them) */
-var BLEED   = {turns:4, base:2, per:0.15};                 /* damage a turn = 2 + 0.15 per floor (4 at floor 16), 4 turns */
+var BLEED   = {turns:4, base:3, per:0.25};                 /* 2026-09-23 (Justin): 3 + 0.25 per floor (7 at floor 16), 4 turns; it ignores armour */
 var GLOBE   = {r:1, turns:5, cd:[10,14], first:[1,3]};     /* 3x3 of darkness on you for 5 turns */
 var PRIEST  = {healPct:0.30, healFlat:10, healCd:4, ward:8, wardTurns:8, wardCd:7, callCd:9, callN:[1,2], capEach:2, capFloor:8, range:6};
 var WEBSHOT = {cd:4, range:5, pin:1, slow:3};

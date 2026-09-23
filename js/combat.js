@@ -196,8 +196,10 @@ function applyDamage(target, amount, type, source){
     if(source===player && player.weapon.pierce) arm -= player.weapon.pierce;
     if(source && source.base && source.base.pierce) arm -= source.base.pierce;
     arm = Math.max(0, arm);
-    var flat = Math.ceil(arm/2);
-    if(target===player && player.aff.earth) flat += player.aff.earth;
+    /* 2026-09-23 (Justin): a heavy blow (Drider, Deep Maw, Matron) is not turned by the flat of the armour, only its percentage and a block */
+    var heavy = !!(source && source.base && source.base.heavy);
+    var flat = heavy ? 0 : Math.ceil(arm/2);
+    if(target===player && player.aff.earth && !heavy) flat += player.aff.earth;
     if(target===player && player.st.stone) flat += 3;
     d = Math.max(0, d - flat) * (1 - Math.min(0.5, 0.02*arm));
     if(target.st && target.st.frozen){ d *= 2;   /* Freeze vulnerability; the former Shatter bonus is superseded. */
@@ -398,7 +400,7 @@ function attack(att, def, mult, label){
   }
   if(att!==player && att.base && att.base.el){
     el = att.base.el;
-    var add = Math.max(1, Math.round(base*0.25*resistMult(def, elemToType(el))));
+    var add = Math.max(1, Math.round(base*0.50*resistMult(def, elemToType(el))));   /* 2026-09-23 (Justin): half the blow as its element, past armour */
     if(rng() < 0.22){
       if(el==='fire'){ applyStatus(def,'burn',3,sDMG(2)); note=' <span class="c-fire">burning</span>'; }
       else if(el==='water'){ addChill(def); note=' chilled'; }
