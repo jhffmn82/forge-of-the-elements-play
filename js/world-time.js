@@ -11,7 +11,7 @@ function repairSavedEffectClocks(){
   if(!player)return;
   var now=Number.isFinite(player.t)?player.t:0,actors=[player].concat((ents||[]).filter(function(e){return e!==player;}));
   actors.forEach(function(e){
-    Object.keys(e&&e.st||{}).forEach(function(k){var s=e.st[k];if(s&&s.bornAt!==undefined&&s.bornAt>now)s.bornAt=now;});
+    Object.keys(e&&e.st||{}).forEach(function(k){var s=e.st[k];if(s&&s.bornAt!==undefined&&s.bornAt>now)s.bornAt=now-100;});   /* a turn back, so the next pulse resumes the countdown (a stamp inside the current interval is spared by it) */
   });
   player._worldBuffBorn=player._worldBuffBorn||{};
   Object.keys(player.buffs||{}).forEach(function(k){if(player.buffs[k]>0&&(!(player._worldBuffBorn[k]<=now)))player._worldBuffBorn[k]=now;});
@@ -48,7 +48,13 @@ function knockback(e,dx,dy,n){
 }
 function worldStatusPulse(e,clock){
   if(!e||e.hp<=0||e.tomb>0)return;
-  var held={};Object.keys(e.st||{}).forEach(function(k){var s=e.st[k];if(s.bornAt!==undefined&&s.bornAt>=clock){held[k]=s;delete e.st[k];}});
+  /* 2026-09-22 (Justin): a status born inside the interval that ends at this pulse is not ticked by it. The old
+     rule only spared a status born exactly on the boundary, so anything an enemy applied mid-turn lost a turn at
+     the very next pulse: a one-turn stun on the player never cost an action, a three-turn root cost two.
+     The player acts on the boundary, after the pulse, so for the player the interval includes its start: a stun
+     from a same-speed goblin acting on the boundary still costs the action that follows. Monsters act inside
+     the interval, so for them the start belongs to the previous pulse. */
+  var held={};Object.keys(e.st||{}).forEach(function(k){var s=e.st[k];if(s.bornAt!==undefined&&(e===player?s.bornAt>=clock-100:s.bornAt>clock-100)){held[k]=s;delete e.st[k];}});
   WORLD_TICK=true;
   try{tickStatus(e);}finally{WORLD_TICK=false;Object.keys(held).forEach(function(k){if(!e.st[k])e.st[k]=held[k];});}
 }
