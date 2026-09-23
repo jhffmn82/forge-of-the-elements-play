@@ -25,6 +25,17 @@ var PACK_PLANE = {};
 ['rune-stone-light','rune-stone-shadow','rune-stone-earth','stalagmite-light','stalagmite-shadow','stalagmite-earth','crystal-gold','crystal-violet',
  'crystal-amber','crystal-gold-small','crystal-violet-small','crystal-amber-small','sun-dais','stepping-stone','mossy-boulder','fern','root-tangle',
  'glow-mushrooms'].forEach(function(n){ PACK_PLANE[n]=1; });
+/* 2026-09-23 (Justin: the central pedestals had animated high-quality sprites made on 09-22, yet the fire plane still
+   showed the small one): the three centrepieces are plane-pack pieces too, so packNameFor routes them into packDraw
+   and the 256px frames on map-planeset-anim.png show. Until now nothing sent them there and the map drew their
+   62px props-grid cells. */
+['lava-fountain','signature-water','signature-air'].forEach(function(n){ PACK_PLANE[n]=1; });
+/* 2026-09-23 (Justin: "you missed this one too", the fire rune stone): the packet-04 fire, water and air pieces are
+   plane-pack pieces like their light, shadow and earth kin. The 64px props grid only holds a shrunken copy of the
+   128px rune stones, the 64x128 stalagmites and the 64x96 crystals; the flat slag and scatter clusters are 64px
+   native and keep their route. */
+['rune-stone-fire','rune-stone-water','rune-stone-air','stalagmite-fire','stalagmite-water','stalagmite-air',
+ 'crystal-fire','crystal-water','crystal-air','crystal-fire-small','crystal-water-small','crystal-air-small'].forEach(function(n){ PACK_PLANE[n]=1; });
 
 /* the walkable clusters and wall pieces */
 ['candles-1','candles-2','candles-3','candles-4','grave-flowers-moss-1','grave-flowers-moss-2','grave-flowers-moss-3','grave-flowers-moss-4','wall-cobweb']
@@ -108,7 +119,9 @@ function packNameFor(p){
   return PACK_CRYPT[n] ? n : null;
 }
 /* the planes' wall formations: a crystal or a stalagmite of this plane for the big one, small crystals beside it */
-var PACK_PLANE_KIT = {light:['crystal-gold','crystal-gold-small','stalagmite-light'], shadow:['crystal-violet','crystal-violet-small','stalagmite-shadow'], earth:['crystal-amber','crystal-amber-small','stalagmite-earth']};
+var PACK_PLANE_KIT = {light:['crystal-gold','crystal-gold-small','stalagmite-light'], shadow:['crystal-violet','crystal-violet-small','stalagmite-shadow'], earth:['crystal-amber','crystal-amber-small','stalagmite-earth'],
+                      /* 2026-09-23: packet 04's crystals and chimneys stand in the fire, water and air wall clusters too */
+                      fire:['crystal-fire','crystal-fire-small','stalagmite-fire'], water:['crystal-water','crystal-water-small','stalagmite-water'], air:['crystal-air','crystal-air-small','stalagmite-air']};
 function packPlaneCluster(p){
   var K=PACK_PLANE_KIT[floorMeta.plane]; if(!K) return null;
   if((p.size||1)<1) return K[1];
