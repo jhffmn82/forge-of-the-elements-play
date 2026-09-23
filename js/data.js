@@ -23,7 +23,7 @@ var RACES = {
              blurb:'Quick and arcane. +10% speed, spells cost 15% less, +1 range on every ranged attack and spell.',
              sexes:{m:'elf-m', f:'elf-f'}},
   dwarf:    {name:'Dwarf', mods:{mig:1, vit:2}, speed:100,
-             blurb:'Sturdy masters of the forge. Weapons and armor count as +1, and heavy armor costs no evasion.',
+             blurb:'Sturdy masters of the forge. Weapon damage counts as +1, heavy armor costs no evasion, innate Armor is +1, and Forge upgrades cost 25% less.',
              sexes:{m:'dwarf-m', f:'dwarf-f'}},
   fae:      {name:'Fae', mods:{agi:2, foc:1}, speed:100, locked:true, capBonus:1,
              blurb:'Born of one court\'s element: starts with 1 affinity in it and can hold one more affinity point than other races.',
@@ -128,7 +128,7 @@ var GODS = {
   wobbles:  {name:'Wobbles, the Giggling Chaos', title:'god of whatever happens next', sprite:'shrine-wobbles', color:'#D98BD0', chaos:true,
              rule:'No rule and no tithe. The cost is that you never know.', invoke:'rolldice', prayers:['rolldice2'],
              boons:['Amused: occasional gifts (and pranks) when things get dramatic; gifts get better as amusement rises. Never kills you directly.','Favourite Toy: interventions lean helpful more often.','Beloved Toy: once per floor, Wobbles snatches you from a killing blow with a random rescue.'],
-             gain:'Every kill (elites count for more) and every new floor. Separately, Amusement rises with drama - low HP, big fights - and drains when nothing is happening; high Amusement brings his gifts and pranks.'}
+             gain:'Every kill (elites count for more) and every new floor. Separately, Amusement rises when things go badly for you - springing a trap, putting on something cursed or unidentified, learning a sigil by using it, taking a status, landing a critical - and drains when nothing is happening; high Amusement brings his gifts and pranks.'}
 };
 var PIETY_RANKS = [0, 100, 390, 1099, 2636];   /* 2026-09-23 (Justin): ranks 3-5 cost 30% more per rank (x1.3^(rank-2)); piety gain grows 30% per biome, favor does not */   /* rank 1 on joining; ranks 2-5 at these totals. 2026-09-17: doubled monster density made ranks come
    too fast (rank 3 by floor 3); now about rank 2 by floor 3, rank 3 early in biome 2, and rank 5 is a late-run goal */
@@ -199,7 +199,7 @@ var SIGILS = {
   mana:     {name:'Water sigil', motes:['water'], desc:'Restore 50% of your mana.'},
   levitate: {name:'Air sigil', motes:['air'], desc:'Float for 25 turns: cross chasms and water, ignore floor traps.'},
   stoneskin:{name:'Earth sigil', motes:['earth'], desc:'Stone skin: -3 physical damage per hit for 15 turns.'},
-  heal:     {name:'Light sigil', motes:['light'], desc:'Heal 35% of max HP, then 5% a turn for 15 turns. (Hurts Gloomlings.)'},
+  heal:     {name:'Light sigil', motes:['light'], desc:'Heal 35% of max HP, then 5% a turn for 15 turns.'},
   vanish:   {name:'Shadow sigil', motes:['shadow'], desc:'Vanish for 10 turns; enemies lose track of you.'},
   identify: {name:'Sigil of Knowing', motes:['light','shadow'], desc:'Identify every sigil you carry.'},
   mapping:  {name:'Sigil of the Deep Map', motes:['shadow','earth'], desc:'Reveal this floor\'s layout.'},

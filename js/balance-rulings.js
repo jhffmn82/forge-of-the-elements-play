@@ -145,7 +145,7 @@ endTurn=function(){
 };
 var _balanceDerive=derive;
 derive=function(p){var hp=p.hp,mp=p.mp,r=_balanceDerive(p);if(p===player&&p.race==='dwarf')p.armor+=1;if(Number.isFinite(hp))p.hp=Math.min(hp,p.maxhp);if(Number.isFinite(mp))p.mp=Math.min(mp,p.maxmp);return r;};
-RACES.dwarf.blurb='Sturdy masters of the forge. Weapon damage counts as +1, heavy armor costs no evasion, and innate Armor is +1.';
+RACES.dwarf.blurb='Sturdy masters of the forge. Weapon damage counts as +1, heavy armor costs no evasion, innate Armor is +1, and Forge upgrades cost 25% less.';
 var _balanceGodKill=godOnKill;
 godOnKill=function(e,by){if(e && (e.noXp||e.noReward||e.ally))return;return _balanceGodKill(e,by);};
 var _balanceSigil=useSigil;
