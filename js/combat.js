@@ -211,7 +211,9 @@ function applyDamage(target, amount, type, source){
   }
   if(target===player){
     if(buff('laststand')) d*=0.5;
-    if(hasGod('reginald') && godRank()>=3 && source && source.challenged && (source.elite || source.base && (source.base.elite||source.base.boss))) d*=1-.05*godRank();
+    /* 2026-09-22 (Justin): Called Out only worked on a Challenged foe, and only a Cleric has Challenge. Any elite or boss
+       hunting a rank-3 follower counts; a Cleric's Challenge marks one that is not hunting yet. */
+    if(hasGod('reginald') && godRank()>=3 && source && (source.challenged || source.state==='hunt') && (source.elite || source.base && (source.base.elite||source.base.boss))) d*=1-.05*godRank();
     if(capstone('grumbok') && type!=='phys' && source && source.foe)d*=.5;
     d=Math.max(0,d-barrier);
     if(d>0 && source && source.foe && hasP('fortitude') && !(player.fortUntil>player.t)){d*=.5;player.fortUntil=player.t+1500;log('Fortitude blunts the blow.','c-good');}

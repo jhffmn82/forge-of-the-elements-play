@@ -163,7 +163,7 @@ GODS.murk.boons[1]='Grave Strength: your permanent servant retains its rank-scal
 GODS.glimmer.boonRanks=[1,3,5];
 smiteBonus=function(){return hasGod('glimmer')&&godRank()>=3?.05*godRank():0;};
 GODS.glimmer.boons[1]='Guiding Light: +15 / 20 / 25 percentage points of Smite chance at ranks 3 / 4 / 5.';
-GODS.reginald.boons[1]='Called Out: a challenged elite or boss deals 15 / 20 / 25% less damage to you at ranks 3 / 4 / 5.';
+GODS.reginald.boons[1]='Called Out: an elite or boss that hunts you deals 15 / 20 / 25% less damage to you at ranks 3 / 4 / 5.';
 GODS.grumbok.boons=['Thick Hide: +8% nonphysical resistance and +20% natural regeneration per rank.','Wizard Hunter: after nonphysical damage, +15 / 20 / 25% movement and attack speed for 3 world turns.','Spellbreaker: halve enemy nonphysical damage; your next connected melee hit within 10 world turns deals +50% damage.'];
 PRAYERS.laststand.desc='Instant, 10 Favor: at or below half health, take 50% less damage for 10 turns. Cannot refresh while active.';
 PRAYERS.rally.desc='25 Favor, one action: visible allies and you heal 25%, cleanse negative conditions and deal +10% damage for 10 turns.';
