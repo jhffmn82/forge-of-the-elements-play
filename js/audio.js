@@ -5,11 +5,13 @@
    ========================================================================== */
 
 var AUDIO = { ctx:null, master:null, sfxBus:null, musicBus:null, verb:null, muted:false, musicOn:true,
-              files:{}, missing:{}, music:null, musicKind:null, vol:{sfx:0.8, music:0.5} };
+              files:{}, missing:{}, music:null, musicKind:null, vol:{sfx:0.5, music:0.5} };   /* 2026-09-23 (Justin): both sliders start at 50% */
 /* Justin, 2026-09-22: music softer by default, slider at 50%. Every music loop now sits at -24 LUFS (tools/level-music.py)
    instead of -14..-22 with a hidden -3 dB on some kinds. A saved 0.45 is the old default nobody touched: it becomes 0.5 once. */
 try { var _m=localStorage.getItem('astra-temple-audio'); if(_m){ var o=JSON.parse(_m); AUDIO.muted=!!o.muted; AUDIO.musicOn=o.musicOn!==false; AUDIO.vol=o.vol||AUDIO.vol;
-  if(!o.levelled && AUDIO.vol && Math.abs(AUDIO.vol.music-0.45)<1e-6){ AUDIO.vol.music=0.5; } AUDIO.levelled=true; } } catch(e){}
+  if(!o.levelled && AUDIO.vol && Math.abs(AUDIO.vol.music-0.45)<1e-6){ AUDIO.vol.music=0.5; } AUDIO.levelled=true;
+  /* 2026-09-23: a saved 0.8 is the old effects default nobody touched: it becomes 0.5 once */
+  if(!o.effects && AUDIO.vol && Math.abs(AUDIO.vol.sfx-0.8)<1e-6){ AUDIO.vol.sfx=0.5; } } } catch(e){}
 
 function audioInit(){
   if(AUDIO.ctx) { if(AUDIO.ctx.state==='suspended') AUDIO.ctx.resume(); return; }
@@ -28,7 +30,7 @@ function audioInit(){
   if(AUDIO.pendingMusic){ var requested=AUDIO.pendingMusic; AUDIO.pendingMusic=null; playMusic(requested); }
 }
 ['pointerdown','keydown'].forEach(function(ev){ window.addEventListener(ev, audioInit, {passive:true}); });
-function audioSave(){ try{ localStorage.setItem('astra-temple-audio', JSON.stringify({muted:AUDIO.muted, musicOn:AUDIO.musicOn, vol:AUDIO.vol, levelled:true})); }catch(e){} }
+function audioSave(){ try{ localStorage.setItem('astra-temple-audio', JSON.stringify({muted:AUDIO.muted, musicOn:AUDIO.musicOn, vol:AUDIO.vol, levelled:true, effects:true})); }catch(e){} }
 function toggleMute(){ AUDIO.muted=!AUDIO.muted; if(AUDIO.master) AUDIO.master.gain.value=AUDIO.muted?0:1; audioSave(); return AUDIO.muted; }
 function toggleMusic(){ AUDIO.musicOn=!AUDIO.musicOn; if(AUDIO.musicBus) AUDIO.musicBus.gain.setTargetAtTime(AUDIO.musicOn?AUDIO.vol.music:0, AUDIO.ctx.currentTime, 0.3); audioSave(); return AUDIO.musicOn; }
 

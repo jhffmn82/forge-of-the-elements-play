@@ -193,7 +193,7 @@ drawPropSurface = function(p, px, py, alpha){
 var _damagePropBush = damageProp;
 damageProp = function(p, src, type){
   if(!p || !p.bush) return _damagePropBush.apply(this, arguments);
-  removeProp(p); sfx('step-grass');
+  removeProp(p); sfx('step-grass',{vol:0.5});   /* 2026-09-23 (Justin): cutting a bush at half volume; the walking rustle stays */
   if(typeof burst==='function') burst(p.x, p.y, 'heal', 14, 0.05);
   (floorMeta.regrow=floorMeta.regrow||[]).push({x:p.x, y:p.y, at:turn+VEG_REGROW.bush});
   if(type==='fire'){ setG(p.x,p.y,G_ASH); return; }
