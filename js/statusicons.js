@@ -21,8 +21,8 @@ var STATUS_INFO = {
   stone:  {name:'Stone skin', icon:'st-stone', d:'Physical hits deal 3 less damage.'},
   aura:   {name:'Unholy Aura', icon:'pr-unholyaura', d:'Enemies next to you take dark damage each turn.'},
   /* 2026-09-23 (Justin): the Challenge and Coward's Mark show on the foe as debuffs */
-  challenged:{name:'Challenged', icon:'ic-challenge', bad:1, d:'Called out: it must come to you and fight. A follower of Sir Reginald deals it +25% and, from rank 3, takes 15 / 20 / 25% less from it.'},
-  coward:    {name:"Coward's Mark", icon:'ic-challenge', bad:1, d:'It struck from afar and Sir Reginald marked it: it must come to you, deals 15 / 20 / 25% less to you and takes +25% from you.'},
+  challenged:{name:'Challenged', icon:'st-challenged', bad:1, d:'Called out: it must come to you and fight. A follower of Sir Reginald deals it +25% and, from rank 3, takes 15 / 20 / 25% less from it.'},
+  coward:    {name:"Coward's Mark", icon:'st-coward', bad:1, d:'It struck from afar and Sir Reginald marked it: it must come to you, deals 15 / 20 / 25% less to you and takes +25% from you.'},
   /* buffs (player.buffs) */
   rampage:   {name:'Rampage', icon:'pr-rampage', d:'+40% melee damage and faster attacks.'},
   ironhide:  {name:'Iron Hide', icon:'pr-ironhide', d:'+5 armor and a shield.'},
