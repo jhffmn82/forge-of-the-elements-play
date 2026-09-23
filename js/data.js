@@ -141,7 +141,7 @@ var ABILITIES = {
   /* class */
   double:  {name:'Double Strike', cost:12, tech:true, kind:'melee2', icon:'ic-double-strike', sfx:'double-strike',
             desc:'Two weapon attacks on an adjacent enemy in one turn.'},
-  missile: {name:'Magic Missile', cost:6, kind:'bolt', range:6, type:'magic', base:[5,8], always:true, perAffinity:1, icon:'ic-magic-missile', el:'magic',
+  missile: {name:'Magic Missile', cost:6, kind:'bolt', range:6, type:'magic', base:[3,6],   /* 2026-09-23 (Justin): 2 less base damage, was 5-8 */ always:true, perAffinity:1, icon:'ic-magic-missile', el:'magic',
             desc:'Always hits. Magic damage that nothing resists. +1 damage for every affinity point you hold.'},
   sap:     {name:'Sap', cost:7, tech:true, kind:'bolt', range:1, useWeaponRange:true, type:'phys', base:[2,4], status:{stun:3}, icon:'ic-sap',
             desc:'Melee or ranged: knocks the target out for 3 turns (6 if it was unaware). A knocked-out target takes surprise attacks.'},
