@@ -117,7 +117,7 @@ joinGod = function(id, startPiety){
   derive(player); updateUI();
 };
 var _gainPietyRel = gainPiety;
-gainPiety = function(n, why){ var r=_gainPietyRel(n, why); syncGlimmerLight(); return r; };
+gainPiety = function(n, why){ var r=_gainPietyRel.apply(this, arguments); syncGlimmerLight(); return r; };
 var _pietyViolationRel = pietyViolation;
 pietyViolation = function(what, amount){
   var was=player.god;
@@ -152,7 +152,7 @@ var _attackRel = attack;
 attack = function(att, def, mult, label){
   var hp0 = def ? def.hp : 0;
   _attackRel(att, def, mult, label);
-  if(att===player && hasGod('grom') && player.weapon.unarmed && def && def.foe && hp0>0 && def.hp<hp0) gainPiety(1);
+  if(att===player && hasGod('grom') && player.weapon.unarmed && def && def.foe && hp0>0 && def.hp<hp0) gainPiety(1, 'punch', {pietyOnly:true});   /* piety only; favor comes from kills (DESIGN 12, step 8a) */
 };
 var _usePrayerRel = usePrayer;
 usePrayer = function(pid){

@@ -135,6 +135,8 @@ function afterPlayerHit(def, H){
     }
   }
 }
+/* 2026-09-23 (audit): the spell paths ask this; the cast wrapper below still sets hidden=1 so the crit side follows */
+function numbingDark(f){ return !!(f && f.st && f.st.chill && combo('water','shadow')); }
 var _castAtCombo = castAt;
 castAt = function(x,y){
   var f=ents.filter(function(e){ return e.foe && e.x===x && e.y===y; })[0];

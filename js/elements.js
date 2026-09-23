@@ -232,8 +232,14 @@ endTurn = function(){
 function spellRoll(A){ var b=sDMG(roll(AOE_BASE[0],AOE_BASE[1])) + (aff('fire') && !A.divine ? aff('fire') : 0); return Math.round(b*spellPower(A)); }
 function spellHit(f, A, amount, type){
   if(!f || f.hp<=0) return 0;
-  var crit = combatRoll(player.crit + (!A.tech && hasP('archmage')?0.05:0),true), base=amount;
+  /* 2026-09-23 (design-log audit): the bolt path had these three and the area spells did not. Night's Edge crit
+     against the unaware (DESIGN 12, step 6f), Numbing Dark's x1.5 on a Chilled target (step 7), and the Shadow
+     orb's bonus below half HP (step 5f), which spellPower only sees for an aimed bolt. */
+  var unaware = (typeof offGuard==='function' ? offGuard(f) : f.state==='asleep') || (f.st && (f.st.stun || f.st.frozen)) || player.hidden>0;
+  var crit = combatRoll(player.crit + (!A.tech && hasP('archmage')?0.05:0) + (unaware && player.aff.shadow ? 0.05*player.aff.shadow : 0),true), base=amount;
   if(crit){base=Math.round(base*1.6);if(typeof gainAmusement==='function')gainAmusement(1);}
+  if(typeof numbingDark==='function' && numbingDark(f)) base=Math.round(base*1.5);
+  if(typeof infusion==='function' && infusion('orb')==='shadow' && !player._spellTarget && f.hp < f.maxhp/2) base=Math.round(base*(1+0.10+0.03*aff('shadow')));
   LAST_HIT={att:player, def:f, crit:crit, surprise:(typeof offGuard==='function' ? offGuard(f) : f.state==='asleep')||player.hidden>0, spell:true};
   if(A.el==='light' && (f.base.undead||f.base.shadowy)) base=Math.round(base*1.5);
   if(f.state!=='hunt' && f.state!=='throne') f.state='hunt';

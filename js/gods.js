@@ -20,7 +20,7 @@ function joinGod(id, startPiety){
   player.lastRank=godRank();
   derive(player); player.hotbar=null; updateUI();
 }
-function gainPiety(n, why){
+function gainPiety(n, why, opts){
   if(!player.god || n<=0) return;
   var g=GODS[player.god];
   // Amusement has its own event table; ordinary piety does not award it.
@@ -28,7 +28,8 @@ function gainPiety(n, why){
   var before=godRank();
   /* 2026-09-23 (Justin): piety grows 30% per biome so a follower who switched gods can catch up; favor never does */
   var deep = typeof bidx==='function' ? Math.pow(1.3, Math.max(0, bidx())) : 1;
-  player.piety=(player.piety||0)+n*deep; player.favor=Math.min(100,(player.favor||0)+n);
+  player.piety=(player.piety||0)+n*deep;
+  if(!(opts && opts.pietyOnly)) player.favor=Math.min(100,(player.favor||0)+n);   /* Grom's punches pay piety only (DESIGN 12, step 8a) */
   var after=godRank();
   if(after>before){
     log('<b>'+g.name+' is pleased.</b> Piety rank '+after+'.','c-kill'); sfx('piety-rank'); ringFx(player.x,player.y,g.color,3);
@@ -111,13 +112,13 @@ function godOnKill(e, by){
   /* 2026-09-22 (Justin): Reginald's rule is no surprise attacks and no stealth kills. A stunned or frozen enemy was
      awake and fighting; only a sleeping one is a stealth kill (a surprise attack already costs piety in attack()). */
   var aware = e.state!=='asleep';
-  if(g==='grom'){ /* Grom earns piety on damaging unarmed hits, not kills. */ }
+  if(g==='grom'){ if(byPlayer && player.weapon && player.weapon.unarmed) gainPiety(2+(big?15:0)); }   /* 2026-09-23 audit: kills made unarmed pay, on top of the punch piety (DESIGN 12, step 8a) */
   else if(g==='grumbok'){ if(byPlayer||byAlly) gainPiety((e.base.spellcaster||e.base.el?5:2)+(big?15:0)); if(r>=3 && e.base.spellcaster && byPlayer){ var h=Math.round(player.maxhp*0.1); healPlayer(h); } }
   else if(g==='glimmer'){ if(byPlayer||byAlly) gainPiety((e.base.undead||e.base.shadowy?4:2)+(big?15:0)); }
   else if(g==='murk'){ if(byAlly && by.undeadServant) gainPiety(4+(big?15:0)); else if((byPlayer||byAlly) && !e.base.undead) gainPiety(2+(big?15:0));
     if((byPlayer || (byAlly && by.undeadServant)) && e.foe && !e.base.undead && r>0){ healPlayer(2*r); } }
   else if(g==='reginald'){ if(byPlayer && aware) gainPiety(2+(big?15:0)); }
-  else if(g==='vellum'){ if(byPlayer) gainPiety((player.castTurn===turn?2:0)+(big?15:0)); }
+  else if(g==='vellum'){ if(byPlayer && player.castTurn===turn) gainPiety(2+(big?15:0)); }   /* 2026-09-23 audit: the elite bonus needs a spell kill too (DESIGN 6.5) */
   else if(g==='wobbles'){ gainPiety(big?15:2); }
 }
 function godTick(seesFoe){

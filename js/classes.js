@@ -108,7 +108,7 @@ playerShield = function(){ return _playerShieldCls() + Math.max(0, Math.floor(pl
    piety grows - it gets stronger. Saint Glimmer's Heal already scales (+5% a rank, combat.js castSelf) and
    Sylla's Into the Dark does the same; that is what rank buys. */
 var _gainPietyCls = gainPiety;
-gainPiety = function(n, why){ return _gainPietyCls(n, why); };
+gainPiety = function(n, why){ return _gainPietyCls.apply(this, arguments); };
 
 /* Experience curve (level cap 20). The former 1.55 growth stranded a full-clear
    floor-18 character at level 12. Growth 1.267 mapped that same lifetime XP to

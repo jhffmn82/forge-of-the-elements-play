@@ -19,7 +19,7 @@ attack = function(att, def, mult, label){
   mult = mult || 1;
   var knock=false;
   if(att===player && def && def.hp>0){
-    if(capstone('reginald') && foesInView()===1) mult*=1.3;
+    /* 2026-09-23 audit: Reginald's rank 5 is Wall of One (combat.js); the old Champion x1.3 with one foe in view is retired */
   }
   var hp0 = def ? def.hp : 0;
   var r=_attackCap(att, def, mult, label);
@@ -34,9 +34,6 @@ attack = function(att, def, mult, label){
 /* ---------------------------------------------------------------- damage you take */
 var _applyDamageCap = applyDamage;
 applyDamage = function(target, amount, type, source){
-  if(target===player){
-    if(capstone('reginald') && foesInView()===1) amount*=0.8;
-  }
   var d=_applyDamageCap(target, amount, type, source);
   if(target===player && player.hp<=0){
     if(undyingLight() && !floorMeta.undyingUsed){

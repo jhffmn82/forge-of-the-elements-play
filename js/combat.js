@@ -207,6 +207,7 @@ function applyDamage(target, amount, type, source){
     if(target===player && player.aff.earth && !heavy) flat += player.aff.earth;
     if(target===player && player.st.stone) flat += 3;
     d = Math.max(0, d - flat) * (1 - Math.min(0.5, 0.02*arm));
+    if(amount>0 && d<1) d=1;   /* 2026-09-23 (design-log audit): a hit deals at least 1; armour cannot swallow it whole (DESIGN 12, step 1) */
     if(target.st && target.st.frozen){ d *= 2;   /* Freeze vulnerability; the former Shatter bonus is superseded. */
       delete target.st.frozen; if(target!==player) target.st.imm_frozen={t:3}; floatText(target.x,target.y,'shatter','ice'); }
   } else {
@@ -228,7 +229,7 @@ function applyDamage(target, amount, type, source){
       log('<b>'+(source.name||'It')+'</b> strikes from afar. Sir Reginald marks the coward: it must face you.','c-good');
     }
     if(capstone('grumbok') && type!=='phys' && source && source.foe)d*=.5;
-    d=Math.max(0,d-barrier);
+    d = d>0 && barrier>0 ? Math.max(1, d-barrier) : Math.max(0, d);   /* Magic Barrier leaves at least 1 too (DESIGN 12, step 3d) */
     if(d>0 && source && source.foe && hasP('fortitude') && !(player.fortUntil>player.t)){d*=.5;player.fortUntil=player.t+1500;log('Fortitude blunts the blow.','c-good');}
     if(player.ward>0 && d>0){ if(!(player.buffs.arcaneward>0)) player.ward=0; else { var wa=Math.min(player.ward, d); player.ward-=wa; d-=wa; if(wa>0) floatText(player.x,player.y,'-'+Math.round(wa),'magic'); if(player.ward<=0) log('Your Arcane Ward shatters.','c-info'); } }
     if(player.iceArmor>0 && d>0){ var ab=Math.min(player.iceArmor, d); player.iceArmor-=ab; d-=ab; if(ab>0) floatText(player.x,player.y,'-'+Math.round(ab),'ice'); }
@@ -697,6 +698,7 @@ function castAt(x,y){
   if(key==='smite' && (f.base.undead||f.base.shadowy)) base=Math.round(base*1.5);
   if(player.aff.fire && !A.divine) base += player.aff.fire;   /* Kindled: +1 per Fire point on spells too */
   var unaware = offGuard(f) || f.st.stun || f.st.frozen || player.hidden>0;
+  if(typeof numbingDark==='function' && numbingDark(f)) base=Math.round(base*1.5);   /* 2026-09-23 audit: Numbing Dark makes a spell on a Chilled target a surprise attack, x1.5 (DESIGN 12, step 7) */
   var crit = combatRoll(player.crit + (!A.tech && hasP('archmage')?0.05:0) + (unaware&&player.aff.shadow?0.05*player.aff.shadow:0),true);   /* spells use the normal crit chance */
   if(crit){base=Math.round(base*1.6);if(typeof gainAmusement==='function')gainAmusement(1);}
   else if(!A.tech && !A.divine && rng()<orbCrit()){ crit=true; base=Math.round(base*1.5); }
