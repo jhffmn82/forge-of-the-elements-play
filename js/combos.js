@@ -104,7 +104,7 @@ attack = function(att, def, mult, label){
   if(numb) player.hidden=1;
   var hp0=def.hp, php0=player.hp;
   _attackCombo(att, def, mult, label);
-  if(numb) player.hidden=0;
+  if(numb && player.hidden===1) player.hidden=0;   /* 2026-09-22 audit: hiding gained by the swing itself (Smolder) is kept */
   var H=LAST_HIT, landed = H && H.def===def && def.hp<hp0;
   if(att===player){
     if(landed) afterPlayerHit(def, H);
@@ -121,7 +121,7 @@ function afterPlayerHit(def, H){
   if(H.crit && alive && combo('air','light')) _applyStatusCombo(def,'blind',1);
   if(H.surprise && alive){
     if(combo('shadow','water')){ if(def.base.boss){ addChill(def); addChill(def); } else { delete def.st.imm_frozen; _applyStatusCombo(def,'frozen',2); floatText(def.x,def.y,'frozen','ice'); } }
-    if(combo('shadow','earth') && typeof applyPoison==='function') applyPoison(def);
+    if(combo('shadow','earth') && typeof applyPoison==='function') applyPoison(def, false, 3);   /* the card says 3 turns (2026-09-22 audit) */
   }
   if(H.surprise && combo('shadow','air')) player.freeStep=true;
   if(!H.spell && H.melee!==false){
@@ -152,7 +152,7 @@ castAt = function(x,y){
 function onSmiteProc(def){
   var extra=0;
   if(def.hp>0 && combo('light','fire')) _applyStatusCombo(def,'burn',3,burnDmg());
-  if(def.hp>0 && combo('light','earth') && (def.base.range>1 || def.base.caster)) _applyStatusCombo(def,'root',1);
+  if(def.hp>0 && combo('light','earth') && (def.base.range>1 || def.base.caster || def.base.spellcaster)) _applyStatusCombo(def,'root',1);   /* 2026-09-22 audit: spellcasters are ranged attackers too */
   if(def.hp>0 && combo('light','air')){ extra=applyDamage(def, smiteDamage(), 'light', player); sparkleFx(def.x,def.y,'light',10); }
   return extra;
 }
@@ -207,7 +207,7 @@ var _deriveCombo = derive;
 derive = function(p){
   _deriveCombo(p);
   if(p!==player) return;
-  if(combo('earth','water')){ p.iceArmorMax += 3*aff('earth'); }
+  /* Silt Shield's extra cap lives in derive() itself now (js/combat.js), so it is never clipped */
 };
 var _moveCostCombo = moveCost;
 moveCost = function(){ return player.freeStep ? 0 : _moveCostCombo(); };
@@ -224,7 +224,7 @@ endTurn = function(){
   if(player.forgeHeat){
     if(--player.forgeHeat.t <= 0){ player.forgeHeat=null; derive(player); log('The forge heat fades.','c-info'); }
   }
-  if(combo('earth','water') && !fighting && player.iceArmor<player.iceArmorMax) player.iceArmor=Math.min(player.iceArmorMax, player.iceArmor+0.25);
+  if(combo('earth','water') && !fighting && player.iceArmor<player.iceArmorMax) player.iceArmor=Math.min(player.iceArmorMax, player.iceArmor+1);   /* "refilling twice as fast": the base refill is one a turn (2026-09-22 audit) */
   if(combo('water','earth')) ents.slice().forEach(function(e){ if(e.foe && e.hp>0 && e.st.root) addChill(e); });
 };
 /* Holy Water: overheal becomes Ice Armor. Heals report themselves as "+N" heal numbers. */

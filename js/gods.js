@@ -57,6 +57,7 @@ function godConductEquip(kind, data){
   }
   if((g==='glimmer'||g==='reginald') && data && data.enchant==='shadow') pietyViolation('shadow-touched gear', 15);
   if(g==='murk' && data && data.enchant==='light') pietyViolation('light-touched gear', 15);
+  if(g==='grumbok' && kind==='weapon' && data && typeof itemKey==='function' && itemKey(data)==='wand') pietyViolation('you taking up a wand', 15);   /* "no spells, wands or magic sigils" (2026-09-22 audit) */
   if(g==='vellum'){
     if(kind==='off' && data && data.block>0 && itemKey(data)!=='holy') pietyViolation('you carrying a shield', 15);
     if(kind==='armor' && data && (data.weight==='medium' || data.weight==='heavy')) pietyViolation('you wearing heavy armor', 15);
@@ -71,7 +72,7 @@ function spellConduct(A){
   if(g==='vellum'){
     player.castTurn=turn;
     player.manaSpent=(player.manaSpent||0)+costOf(A);
-    while(player.manaSpent>=25){ player.manaSpent-=25; gainPiety(1); }
+    while(player.manaSpent>=20){ player.manaSpent-=20; gainPiety(1); }   /* the card says 20 (2026-09-22 audit) */
     // Spell Echo repeats resolution in balance-rulings.js; it no longer refunds mana.
   }
 }
@@ -216,7 +217,7 @@ function openShrine(){
   }
   if(!mine && !floorMeta.shrineTithed) buttons.push({label:'Tithe 20 essence for a blessing', disabled:player.essence<20, fn:function(){
     spendEssence(20); floorMeta.shrineTithed=true; player.blessed=120; player.buffs.rally=40; derive(player);
-    log('The shrine blesses you: +10 accuracy for a while.','c-good'); sfx('pray'); closeModal(); updateUI(); }});
+    log('The shrine blesses you: +10% damage for a while.','c-good'); sfx('pray'); closeModal(); updateUI(); }});
   buttons.push({label:'Leave', fn:closeModal});
   openModal('Shrine', html, buttons);
   var holder=document.querySelector('.shrine-art'); if(holder) paintArt(holder, 'structures', g.sprite, 120);

@@ -112,4 +112,4 @@ endTurn = function(){
   if(items.some(function(it){ return it.until && turn>=it.until; })) items=items.filter(function(it){ return !(it.until && turn>=it.until); });
 };
 var _itemLabelGlobes = itemLabel;
-itemLabel = function(it){ return it.kind==='heart' ? 'a heart (+10 HP)' : it.kind==='managlobe' ? 'a mana globe (+20 mana)' : _itemLabelGlobes(it); };
+itemLabel = function(it){ return it.kind==='heart' ? 'a heart (+25% HP)' : it.kind==='managlobe' ? 'a mana globe (+25% mana)' : _itemLabelGlobes(it); };

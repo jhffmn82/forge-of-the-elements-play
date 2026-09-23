@@ -12,9 +12,9 @@ var RINGS = {
   evasion:    {name:'Ring of Evasion',    step:5,    unit:'evasion',          desc:'Evasion.'},
   accuracy:   {name:'Ring of Accuracy',   step:5,    unit:'accuracy',         desc:'Accuracy.'},
   vitality:   {name:'Ring of Vitality',   step:0.08, unit:'% max HP',         pct:true, desc:'Maximum HP.'},
-  wizardry:   {name:'Ring of Wizardry',   step:0.08, unit:'% max mana, spell damage', pct:true, desc:'Maximum mana and spell damage.'},
+  wizardry:   {name:'Ring of Wizardry',   step:0.08, unit:'% max mana, two thirds of that to spell damage', pct:true, desc:'Maximum mana and spell damage.'},
   striking:   {name:'Ring of Striking',   step:1,    unit:'weapon damage',    desc:'Weapon damage.'},
-  mending:    {name:'Ring of Mending',    step:0.30, unit:'% HP regeneration',pct:true, desc:'HP regeneration.'},
+  mending:    {name:'Ring of Mending',    step:0.33, unit:'% of max HP healed each turn',pct:true, desc:'HP regeneration.'},
   sustenance: {name:'Ring of Sustenance', step:0.15, unit:'% less hunger',    pct:true, desc:'You get hungry more slowly.'},
   haste:      {name:'Ring of Haste',      step:0.05, unit:'% speed',          pct:true, desc:'Speed.'},
   warding:    {name:'Ring of Warding',    step:0.10, unit:'% elemental resistance', pct:true, desc:'Resistance to fire, ice, lightning, poison, light and dark.'},
@@ -242,9 +242,7 @@ endTurn = function(){
     var sus=ringVal('sustenance'); if(sus){ player.hunger=Math.min(HUNGER_MAX, player.hunger + hungerCost(player.movedThisTurn?moveCost():actCost(player))*sus); }
   }
   _endTurnBase();
-  if(player && player.hp>0 && ringVal('keeneyes')>0){
-    feats.forEach(function(f){ if(!f.found && vis[idxOf(f.x,f.y)] && dist(player,f)<=3 && rng()<ringVal('keeneyes')){ f.found=true; log('Your ring tingles: a <b>'+trapName(f.kind)+' trap</b>.','c-info'); } });
-  }
+  /* 2026-09-22 audit: the near-range roll was superseded by the full-vision roll in js/upgrade.js; two rolls doubled the odds up close */
 };
 
 /* identify weapons by fighting with them and armor by being hit in it */

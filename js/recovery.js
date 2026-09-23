@@ -13,7 +13,7 @@ PRAYERS.bonespear={name:'Bone Spear',rank:4,favor:5,desc:'A piercing straight-li
 // Old hotbar entries retain usable links after the approved prayer replacements.
 PRAYERS.corpsefeast=PRAYERS.bonespear;
 PRAYERS.offering=PRAYERS.fieldsmelt;
-ABILITIES.temper.favor=8;ABILITIES.unholyaura.favor=8;
+ABILITIES.temper.favor=8;ABILITIES.unholyaura.favor=8;if(ABILITIES.arcaneward){ABILITIES.arcaneward.favor=8;ABILITIES.arcaneward.cost=0;}   /* 2026-09-22 audit: the card said 8 Favor, the code took 8 mana */
 ABILITIES.temper.desc='Invoke (Old Anvil): 8 Favor, instant. +2 base damage and +4 Armour for 12 turns.';
 ABILITIES.unholyaura.desc='Invoke (Mother Murk): 8 Favor, one action. For 8 turns, enemies within 2 take (5 + rank) × divine scaling Dark damage; heal 1 HP per enemy.';
 
@@ -54,6 +54,7 @@ if(typeof STATUS_INFO!=='undefined')STATUS_INFO.hardened={name:'Hardened',icon:'
 var _useAbilityRecovery=useAbility;
 useAbility=function(i){
   var key=player.abilities[i];
+  if(key==='arcaneward'){ if((player.favor||0)<8){log('Not enough Favor (8 required).','c-info');return;} player.favor-=8; return _useAbilityRecovery(i); }
   if(key!=='temper' && key!=='unholyaura')return _useAbilityRecovery(i);
   if((player.favor||0)<8){log('Not enough Favor (8 required).','c-info');return;}
   player.favor-=8;setClip(player,'cast');

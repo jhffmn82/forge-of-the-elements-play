@@ -19,7 +19,7 @@ ENCHANT_TEXT.tome = {
   water: '+30% mana regeneration (grows with Water)',
   air:   '5% chance per Air point (min 5%) that a spell costs no mana',
   earth: '+10% max mana (grows with Earth)',
-  light: 'Mana Ward: 10% of the mana you spend (+5% per Light point) becomes a shield',
+  light: 'Mana Ward: 10% of the mana you spend (+5% per Light point) becomes a shield, up to 30% of your max HP',
   shadow:'Spell kills heal 1% of max HP per Shadow point (min 1%)'
 };
 function offKind(){ var o=player.twoHanded ? null : player.off; if(!o || o===EMPTY_OFF) return null; var ic=(o.icon||'').replace(/^item-/,''); return (ic==='orb'||ic==='tome') ? ic : null; }
@@ -142,6 +142,7 @@ function stealthExtra(){ var a=bodyArmor(player); if(!a || a.enchant!=='shadow')
 var _bagCardInf = bagCard;
 bagCard = function(it){
   var h=_bagCardInf(it);
-  if(it && it.kind==='off' && it.data.enchant && !it.data.unid){ var ic=(it.data.icon||'').replace(/^item-/,''); if(ENCHANT_TEXT[ic]) h+='<div class="row"><span>Infusion</span><b style="color:'+AFF_COL[it.data.enchant]+'">'+cap(it.data.enchant)+'</b></div><div class="hint">'+ENCHANT_TEXT[ic][it.data.enchant]+'</div>'; }
+  if(it && it.kind==='off' && it.data.enchant && !it.data.unid){ var ic=(it.data.icon||'').replace(/^item-/,''); if(it.data.block>0 && ENCHANT_TEXT.shield) ic='shield';   /* 2026-09-22 audit: a shield's infusion was never on its card */
+    if(ENCHANT_TEXT[ic]) h+='<div class="row"><span>Infusion</span><b style="color:'+AFF_COL[it.data.enchant]+'">'+cap(it.data.enchant)+'</b></div><div class="hint">'+ENCHANT_TEXT[ic][it.data.enchant]+'</div>'; }
   return h;
 };

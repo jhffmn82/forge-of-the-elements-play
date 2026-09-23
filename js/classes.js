@@ -10,8 +10,8 @@
 var FIGHTER_NO_BLOCK = true;   /* Shield Training is gone; tiers.js reads this */
 
 /* ---------------------------------------------------------------- tables */
-CLASSES.fighter.passive = 'Guard: a shield of overhealth (5 + half your level) that refills out of combat.';
-CLASSES.cleric.passive  = 'Starts sworn to a god (rank 1, 20 piety). Gains piety 25% faster, and Invoke costs 1 less mana per piety rank.';
+CLASSES.fighter.passive = 'Guard: a shield of overhealth (12% of your max HP) that refills out of combat.';
+CLASSES.cleric.passive  = 'Starts sworn to a god (rank 1, 20 piety). Gains piety 25% faster.';
 CLASSES.mage.passive    = 'Deep Reserves: +30% max mana.';
 CLASSES.mage.blurb      = 'A staff and a robe. Magic Missile always hits, and can carry your elements’ effects.';
 CLASSES.mage.kit        = {main:'staff', alt:null, armor:'robe', off:null};
@@ -48,7 +48,7 @@ ABILITIES.sap.cost = 7;
 ABILITIES.sap.range = 2; delete ABILITIES.sap.useWeaponRange;
 ABILITIES.sap.desc = 'Range 2: knocks the target out for 3 turns (6 if it was unaware). The hit that wakes it is a surprise critical. A target can only be Sapped once; other Stuns still work.';
 ABILITIES.double.desc = 'An attack: two weapon hits on an adjacent enemy for the time of one attack.';
-ABILITIES.missile.desc = 'Always hits; magic damage nothing resists. +1 base damage per affinity point. For each element you hold, a 25% chance (+5% per point) to add its effect: Burning, Chill, an arc, Root, Blind or Fear.';
+ABILITIES.missile.desc = 'Always hits; magic damage nothing resists. +1 base damage per affinity point.';
 ABILITIES.shadowstep = {name:'Shadowstep', cost:0, cd:15, kind:'self', tech:true, icon:'ic-shadowstep', desc:'With no enemy next to you, slip into hiding for 3 turns; hunting enemies lose you. 15-turn cooldown.'};
 ['firebolt','frostshard','spark','root','smite','shadowbolt'].forEach(function(k){ ABILITIES[k].cost=20; ABILITIES[k].base=[14,22]; });
 
@@ -213,6 +213,7 @@ castAt = function(x,y){
   var f=ents.filter(function(e){ return e.foe && e.hp>0 && e.x===x && e.y===y; })[0];
   if(!inRange(x,y)){ log('Too far to charge.','c-info'); sfx('ui-error'); return false; }
   if(!f && (x===player.x && y===player.y || !walkable(x,y) || occupied(x,y))){ log('Charge at an enemy or onto open ground.','c-info'); sfx('ui-error'); return false; }
+  if(!f && dist(player,{x:x,y:y})>ABILITIES.charge.range-1){ log('Too far to charge.','c-info'); sfx('ui-error'); return false; }
   var run=chargeLane(f||{x:x,y:y}, !f);
   if(!run){ log(f ? 'No clear straight run at the '+f.name+'.' : 'No clear straight run to that tile.','c-info'); sfx('ui-error'); return false; }
   aiming=null; player.cds=player.cds||{}; player.cds.charge=turn+ABILITIES.charge.cd;

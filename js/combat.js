@@ -91,7 +91,7 @@ function derive(p){
   var pool = Math.ceil(s.foc * (1 + p.level/5));
   if(p.cls==='mage') pool = Math.ceil(pool*1.3);
   if(hasP('archmage')) pool = Math.ceil(pool*1.2);
-  if(p.off && p.off.manaPct) pool = Math.ceil(pool*(1+p.off.manaPct));
+  if(p.off && p.off.manaPct && !p.twoHanded) pool = Math.ceil(pool*(1+p.off.manaPct));   /* 2026-09-22 audit: a tome needs a free hand like every other off-hand */
   if(p.god==='vellum') pool = Math.ceil(pool*(1+0.05*pietyRank(p.piety||0)));
   p.maxmp = sHP(pool);
   var rank=godRank();
@@ -115,7 +115,7 @@ function derive(p){
   p.dmg = [sDMG(p.weapon.dmg[0])+plus, sDMG(p.weapon.dmg[1])+plus];
   p.element = p.primary || Object.keys(p.aff)[0] || null;
   p.affLevel = p.element ? p.aff[p.element] : 0;
-  p.iceArmorMax = (p.aff.water||0)*3;
+  p.iceArmorMax = (p.aff.water||0)*3 + (typeof combo==='function' && combo('earth','water') ? 3*(p.aff.earth||0) : 0);   /* Silt Shield's extra is part of the cap, so it is never clipped (2026-09-22 audit) */
   if(p.iceArmor===undefined) p.iceArmor=p.iceArmorMax;
   p.iceArmor=Math.min(p.iceArmor, p.iceArmorMax);
 }
@@ -185,7 +185,7 @@ function applyDamage(target, amount, type, source){
   /* Spell Ward (Might 18, Justin 2026-09-22): the shield also rolls against spells and abilities, everything a
      foe does to you outside the attack roll. Ticks, traps, clouds and sigils have no attacker and stay as they are. */
   if(target===player && !ATTACK_ROLLED && !AOE_HIT && source && source!==player && source.foe && hasP('spellWard') && player.block>0 && combatRoll(player.block,true)){
-    d*=0.25; if(typeof onShieldBlock==='function') onShieldBlock(source, player, d);
+    d*=0.25; if(typeof onShieldBlock==='function') onShieldBlock(source, player, amount);   /* the shield's proc reads the whole blow, as a weapon block does */
     log('Your shield turns the '+(type==='phys'?'blow':type)+' from '+(source.name||'the attack')+'.','c-good');
     if(typeof floatText==='function') floatText(player.x,player.y,'block','miss'); if(typeof sfx==='function') sfx('block');
   }
@@ -206,6 +206,7 @@ function applyDamage(target, amount, type, source){
     var rm = resistMult(target, type);
     if(target===player && rm<1) rm = Math.max(0.25, rm);    /* total resistance capped at 75% */
     d = Math.max(0, d) * rm;
+    if(type==='dark' && target.st && target.st.corrupt) d *= 1.25;   /* 2026-09-22 audit: Corrupt "takes extra dark damage" had no reader */
     if(d>0 && target.st && target.st.frozen){ delete target.st.frozen; if(target!==player) target.st.imm_frozen={t:3}; }
   }
   if(target===player){
@@ -391,7 +392,7 @@ function attack(att, def, mult, label){
     }
     if(player.aff.shadow && def.hp>0) addHollow(def, 0);
     if(player.weapon.unarmed && hasGod('grom') && def.hp>0 && rng() < (buff('ironbody')?0.3:0) + (godRank()>=3?0.15:0)){ applyStatus(def,'stun',1); note+=' staggered'; }
-    if(extra>0) { def.hp -= extra; }
+    if(extra>0) { def.hp -= Math.round(extra * (el && typeof resistMult==='function' ? resistMult(def, el) : 1)); }   /* 2026-09-22 audit: the enchant's fire/light/dark share honours resistance */
   }
   if(att!==player && att.base && att.base.el){
     el = att.base.el;
@@ -418,7 +419,7 @@ function attack(att, def, mult, label){
   if(def!==player) def.caughtOff=-1;   /* the surprise is spent: it knows now */
   if(def!==player && def.living && rng()<0.3) setG(def.x,def.y,G_BLOOD);
   if(def.hp<=0){ kill(def, att); }
-  else if(att===player && hasP('cleaving') && !label){
+  if(att===player && hasP('cleaving') && !label){   /* 2026-09-22 audit: the swing carries on through a killing blow too */
     var other=ents.filter(function(o){ return o.foe && o!==def && dist(player,o)<=1; })[0];
     if(other){ log('Your swing carries into '+other.name+'.','c-info'); attack(player, other, 0.5, 'Cleave'); }
   }
@@ -683,7 +684,7 @@ function castAt(x,y){
   var crit = combatRoll(player.crit + (!A.tech && hasP('archmage')?0.05:0) + (unaware&&player.aff.shadow?0.05*player.aff.shadow:0),true);   /* spells use the normal crit chance */
   if(crit){base=Math.round(base*1.6);if(typeof gainAmusement==='function')gainAmusement(1);}
   else if(!A.tech && !A.divine && rng()<orbCrit()){ crit=true; base=Math.round(base*1.5); }
-  var wasAsleep = f.state==='asleep';
+  var wasAsleep = f.state==='asleep' || (typeof offGuard==='function' && offGuard(f));   /* 2026-09-22 audit: "6 if it was unaware", not only asleep */
   LAST_HIT={att:player, def:f, crit:crit, surprise:unaware, spell:true};
   var d=applyDamage(f, base, dmgType==='phys'?'phys':dmgType, player);
   if(!A.tech && !A.divine && typeof spellOnHit==='function') spellOnHit(f, d, crit, A);

@@ -74,6 +74,16 @@ function offHandWeapon(d){
 /* 2026-09-20: Justin - "the random name button does nothing". It did fire; it just drew from a list of three or
    four and handed back the name already in the box about a third of the time, three times running often enough
    to look broken. A reroll now always lands on a different name (and survives a race with no list at all). */
+/* 2026-09-22 audit: what a shrine would refuse, creation refuses too (a Gloomling starts with Shadow 1, an Ember-court Fae with Fire 1) */
+function creationRefuses(c, g){
+  var G=GODS[g]; if(!G) return true;
+  if(G.refuses && G.refuses===c.race) return true;
+  if(g==='reginald' && (c.cls==='scoundrel' || c.race==='gloomling')) return true;
+  if(g==='glimmer' && c.race==='gloomling') return true;
+  if(g==='vellum' && (c.cls==='fighter' || c.cls==='scoundrel')) return true;
+  if(g==='sylla' && c.race==='fae' && c.court==='fire') return true;
+  return false;
+}
 function rollName(c){
   var list=(NAMES[c.race]||{})[c.sex] || (NAMES[c.race]||{}).m || ['Adventurer'];
   var other=list.filter(function(n){ return n!==c.name; });
@@ -124,7 +134,7 @@ function renderCreate(){
   if(c.cls==='cleric'){
     h+='<div class="step">Your god</div><div class="cards">';
     Object.keys(GODS).forEach(function(g){
-      var G=GODS[g], bad=G.refuses===c.race;
+      var G=GODS[g], bad=creationRefuses(c, g);
       h+='<button class="card'+(c.god===g?' on':'')+'" data-god="'+g+'" '+(bad?'disabled style="opacity:.4"':'')+'><div class="port" data-shrine="'+G.sprite+'"></div><b style="color:'+G.color+'">'+G.name+'</b><span><b style="font-family:inherit;font-size:11px;color:var(--ink)">Rule:</b> '+G.rule+'</span><span>Invoke: '+ABILITIES[G.invoke].name+'</span>'+(bad?'<span class="c-you">Refuses '+RACES[c.race].name+'s.</span>':'')+(G.loves===c.race?'<span class="c-good">Loves '+RACES[c.race].name+'s: +25% piety gain.</span>':'')+'</button>';
     });
     h+='</div>';
@@ -139,7 +149,7 @@ function renderCreate(){
      '<span>Starting kit</span><b style="text-align:left">'+kitNames.join(', ')+'</b><span>Passive</span><b style="text-align:left;font-weight:400">'+C2.passive+'</b></div>'+
      '<button class="go btn-primary" id="begin">Enter the Dungeon</button> <span class="c-info" style="font-size:11px;margin-left:8px">Sound and music start with your first click. M mutes, N toggles music.</span></div></div></div>';
   el.innerHTML=h;
-  el.querySelectorAll('[data-race]').forEach(function(b){ b.onclick=function(){ sfx('ui-click'); c.race=b.getAttribute('data-race'); c.name=''; if(GODS[c.god].refuses===c.race) c.god='murk'; renderCreate(); }; });
+  el.querySelectorAll('[data-race]').forEach(function(b){ b.onclick=function(){ sfx('ui-click'); c.race=b.getAttribute('data-race'); c.name=''; if(creationRefuses(c, c.god)) c.god='murk'; renderCreate(); }; });
   el.querySelectorAll('[data-sex]').forEach(function(b){ b.onclick=function(){ sfx('ui-click'); c.sex=b.getAttribute('data-sex'); c.name=''; renderCreate(); }; });
   el.querySelectorAll('[data-court]').forEach(function(b){ b.onclick=function(){ sfx('ui-click'); c.court=b.getAttribute('data-court'); renderCreate(); }; });
   el.querySelectorAll('[data-cls]').forEach(function(b){ b.onclick=function(){ sfx('ui-click'); c.cls=b.getAttribute('data-cls'); renderCreate(); }; });

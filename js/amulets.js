@@ -14,7 +14,7 @@ var AMULETS = {
   stillness:{name:'Amulet of Stillness',  kills:15,                    desc:'Freeze time for 3 turns. Moving is free; attacking or any other action breaks the stillness.'},
   echo:     {name:'Amulet of Echoes',     kills:10,                    desc:'Read the last sigil you used again, without using one up.'},
   thorns:   {name:'Amulet of Thorns',     kills:8,                    desc:'Root yourself for 5 turns: a shield of 35% of your max HP, and melee attackers take half of their damage back.'},
-  plenty:   {name:'Amulet of Plenty',     kills:20,                   desc:'Conjure a small ration at your feet.'}
+  plenty:   {name:'Amulet of Plenty',     kills:20,                   desc:'Conjure a ration at your feet.'}
 };
 var AMULET_LOOKS = ['sun','fang','eye','feather','skull','tear','star','knot','wheat'];
 

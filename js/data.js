@@ -38,8 +38,8 @@ var RACES = {
 function W(name, dmg, acc, hands, extra){ var w={name:name, dmg:dmg, acc:acc, hands:hands, kind:'weapon'}; for(var k in (extra||{})) w[k]=extra[k]; return w; }
 var WEAPONS = {
   sword:    W('Short Sword',[4,8],0,1,{note:'+5% crit', critBonus:0.05, icon:'item-sword'}),
-  dagger:   W('Dagger',[3,6],10,1,{note:'surprise attacks x1.5; off-hand eligible', icon:'item-dagger', light:true}),
-  mace:     W('Mace',[4,7],-5,1,{note:'ignores 2 armor', pierce:2, icon:'item-mace'}),
+  dagger:   W('Dagger',[3,6],10,1,{note:'surprise attacks +20% on top; off-hand eligible', icon:'item-dagger', light:true}),
+  mace:     W('Mace',[4,7],-5,1,{note:'ignores 2 armor (3 Fine, 4 Masterwork)', pierce:2, icon:'item-mace'}),
   wand:     W('Wand',[1,3],0,1,{note:'spells cost less mana; a little spell damage', spell:0.10, icon:'item-wand'}),
   longsword:W('Long Sword',[7,12],0,2,{note:'+10% crit', critBonus:0.10, icon:'item-longsword'}),
   axe:      W('Battle Axe',[8,14],-10,2,{note:'+25% damage to wounded targets', executioner:0.25, icon:'item-axe'}),
@@ -56,10 +56,10 @@ var ARMORS = {
   plate:   {name:'Plate Armor', armor:5, eva:-10, weight:'heavy', note:'heavy', icon:'item-plate', kind:'armor'}
 };
 var OFFHANDS = {
-  buckler: {name:'Buckler', block:0.10, note:'10% block', icon:'item-buckler', kind:'off'},
-  kite:    {name:'Kite Shield', block:0.20, eva:-5, note:'20% block, -5 evasion', icon:'item-kite', kind:'off'},
+  buckler: {name:'Buckler', block:0.10, note:'light shield', icon:'item-buckler', kind:'off'},
+  kite:    {name:'Kite Shield', block:0.20, eva:-5, note:'heavy shield, -5 evasion', icon:'item-kite', kind:'off'},
   orb:     {name:'Orb', block:0, spell:0.10, note:'spell critical hits', icon:'item-orb', kind:'off'},
-  tome:    {name:'Tome', block:0, manaPct:0.15, note:'+15% max mana', icon:'item-tome', kind:'off'},
+  tome:    {name:'Tome', block:0, manaPct:0.15, note:'+10% max mana', icon:'item-tome', kind:'off'},
   holy:    {name:'Holy Symbol', block:0, divine:0.15, note:'+15% Invoke and prayer strength', icon:'item-holy', kind:'off'},
   /* 2026-09-17: there is no separate off-hand dagger any more. Any light one-handed weapon goes in the off
      hand (see equipFromBag in systems.js), so a plain Dagger from WEAPONS is what the kits hand out and
@@ -96,7 +96,7 @@ var GODS = {
   grom:     {name:'Grom the Unclad', title:'god of the bare fist', sprite:'shrine-grom', color:'#C98A5A',
              rule:'No weapons or shields. Cloth armor only.', invoke:'ironbody', prayers:['ironhide','pummel'],
              boons:['Iron Flesh: +1 unarmed damage and +1 armor per rank.','Staggering Blows: unarmed hits stun 15% of the time.','Mountain’s Fists: every third unarmed attack in a row strikes as a critical hit and knocks the target back a tile.'],
-             gain:'Unarmed kills.'},
+             gain:'Every damaging unarmed hit.'},
   grumbok:  {name:'Grumbok, Who Hates Wizards', title:'god of honest violence', sprite:'shrine-grumbok', color:'#B8453A',
              rule:'No spells, wands or magic sigils. Techniques are fine.', invoke:'bellow', prayers:['rampage','trollblood'],
              boons:['Thick Hide: take 8% less elemental and magic damage, and regenerate HP 25% faster, per rank.','Wizard Hunter: killing a spellcaster restores 10% of your max HP.','Spellbreaker: enemy spells deal half damage to you, and each one that hurts you doubles your next melee hit.'],
@@ -120,7 +120,7 @@ var GODS = {
   anvil:    {name:'Old Anvil', title:'the smith below', sprite:'shrine-anvil', color:'#E8B44A', tithe:true,
              rule:'No rule. Old Anvil wants essence.', invoke:'temper', prayers:['offering','reforge'],
              boons:['Smith\'s Blessing: +1 weapon damage and enchantments 10% stronger, per rank.','Second Heat: the Forge lets you enchant twice per visit.','Masterwork: Forge upgrades cost 30% less, and gear can be raised to +4.'],
-             gain:'Offering essence (prayer, better at a shrine) and enchanting at the Forge.'},
+             gain:'Spending essence anywhere (1 piety per 5) and enchanting at the Forge.'},
   vellum:   {name:'Vellum, the Open Book', title:'keeper of every spell ever spoken', sprite:'shrine-vellum', color:'#7FA8FF', loves:'elf',
              rule:'No shields, and nothing heavier than light armor. A caster keeps their hands and shoulders free.', invoke:'arcaneward', prayers:['manatide','unbound'],
              boons:['Deep Well: +8% max mana and +8% spell damage per rank.','Spell Echo: a spell you cast has a 20% chance to refund its mana.','Archmage: spells cost 25% less mana, and Spell Echo triggers 35% of the time.'],
@@ -195,7 +195,7 @@ var PRAYERS = {
 
 /* ---------------------------------------------------------------- sigils (crafted at the Forge, found unidentified) */
 var SIGILS = {
-  firestorm:{name:'Fire sigil', motes:['fire'], desc:'Flames burst out to 3 tiles: 8 fire damage and Burning.'},
+  firestorm:{name:'Fire sigil', motes:['fire'], desc:'Flames burst out to 2 tiles: 8 fire damage plus the floor number, and Burning.'},
   mana:     {name:'Water sigil', motes:['water'], desc:'Restore 50% of your mana.'},
   levitate: {name:'Air sigil', motes:['air'], desc:'Float for 25 turns: cross chasms and water, ignore floor traps.'},
   stoneskin:{name:'Earth sigil', motes:['earth'], desc:'Stone skin: -3 physical damage per hit for 15 turns.'},
@@ -203,7 +203,7 @@ var SIGILS = {
   vanish:   {name:'Shadow sigil', motes:['shadow'], desc:'Vanish for 10 turns; enemies lose track of you.'},
   identify: {name:'Sigil of Knowing', motes:['light','shadow'], desc:'Identify every sigil you carry.'},
   mapping:  {name:'Sigil of the Deep Map', motes:['shadow','earth'], desc:'Reveal this floor\'s layout.'},
-  blink:    {name:'Sigil of Blinking', motes:['air','shadow'], desc:'Teleport to a spot you can see within 6 tiles.'}
+  blink:    {name:'Sigil of Blinking', motes:['air','shadow'], desc:'Teleport to a random spot you can see, 3 to 6 tiles away.'}
 };
 var SIGIL_LOOKS = ['ashen','coiled','cracked','weeping','humming','bone','tarnished','woven','gilded'];
 
