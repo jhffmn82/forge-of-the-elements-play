@@ -194,7 +194,7 @@ applyDamage = function(target, amount, type, source){
   var d=_applyDamageCrypt(target, amount, type, source);
   if(target===player && source && source.base && d>0){
     if(source.base.phases){ var drain=Math.min(Math.floor(player.mp), 4); if(drain>0){ player.mp-=drain; floatText(player.x,player.y,'-'+drain+' mp','magic'); } }
-    if(source.base.rots){ player.st.rot={t:20}; }
+    if(source.base.rots){ applyStatus(player,'rot',20); }   /* through applyStatus, so Iron Constitution halves it (2026-09-22) */
   }
   return d;
 };

@@ -449,7 +449,7 @@ function addChill(e){
   if(e===player && hasP('unstoppable')) return;   /* chill never stacks toward a freeze on an Unstoppable fighter (2026-09-22) */
   var c=e.st.chill; var n=(c?c.n:0)+1;
   if(n>=3){ delete e.st.chill; applyStatus(e,'frozen',2); if(e!==player) e.st.imm_frozen={t:5}; sfx('status-freeze'); floatText(e.x,e.y,'frozen','ice'); }
-  else e.st.chill={t:4, n:n};
+  else e.st.chill={t:(e===player && hasP('ironConst'))?2:4, n:n};   /* Iron Constitution halves a chill too (2026-09-22) */
 }
 /* Hollowing (Shadow 6): n stacks are added, n=0 only refreshes a stack the target already carries - a
    melee shadow build keeps its own Hollow alive by swinging. 5 stacks, 5 turns; each is +5% damage taken
