@@ -199,6 +199,7 @@ function drawGlowwormCurtain(w,px,py,alpha,now){
 function drawCaveWalls(now){
   var D=floorMeta.caveDeco; if(!D) return;
   D.walls.forEach(function(w){
+    if(/^wf-fossil/.test(w.n)) return;   /* 2026-09-22 (Justin): fossils dropped; floors already built keep the entry but never draw it */
     if(w.x<camX-1 || w.x>camX+viewW+1 || w.y<camY-2 || w.y>camY+viewH+1) return;
     var i=idxOf(w.x,w.y); if(!(revealAll||seen[i]) || !isWallLike(at(w.x,w.y))) return;
     var o=caveArt(w.n); if(!o) return;

@@ -433,6 +433,21 @@ function caveTallPiece(room){
   return s ? cavePlace(s.x, s.y, name) : null;
 }
 var CAVE_WALL_HUGGERS = /^(crystal-shards|rubble|small-mushrooms)$/;
+/* another cluster piece within two tiles: a new group there would read as one long line with it */
+function caveGroupNear(x, y){ return props.some(function(p){ return /^cl-/.test(p.name) && Math.abs(p.x-x)<=2 && Math.abs(p.y-y)<=2; }); }
+/* a compact blob of up to n cells around an anchor: the anchor, then ring cells around it that pass ok(x,y), chosen
+   so three pieces are never in one row or column (2026-09-22) */
+function caveClusterCells(c, n, ok){
+  var cells=[{x:c.x, y:c.y}];
+  var ring=shuffled([[1,0],[-1,0],[0,1],[0,-1],[1,1],[-1,1],[1,-1],[-1,-1]].map(function(d){ return {x:c.x+d[0], y:c.y+d[1]}; }));
+  function collinear(list){ return list.length>=3 && (list.every(function(q){ return q.x===list[0].x; }) || list.every(function(q){ return q.y===list[0].y; })); }
+  for(var i=0; i<ring.length && cells.length<n; i++){
+    var q=ring[i]; if(!ok(q.x,q.y)) continue;
+    if(collinear(cells.concat([q]))) continue;
+    cells.push(q);
+  }
+  return cells;
+}
 /* the per-floor pass while laying out: decals, wall features, a waterfall, walkable clusters */
 function caveDecorate(){
   var salt=Math.floor(rng()*1e6), deco={decals:[], walls:[]}, x, y, i;
@@ -476,7 +491,8 @@ function caveDecorate(){
       continue;
     }
     var h=hash2(x,y,salt+11); if(h>0.09) continue;
-    var r=hash2(x,y,salt+13), name = r<0.55 ? 'wf-stalactite-drapery-'+(1+Math.floor(hash2(x,y,salt+17)*3)) : r<0.85 ? 'wf-glowworm-curtain-'+(1+Math.floor(hash2(x,y,salt+19)*2)) : 'wf-fossil-'+(1+Math.floor(hash2(x,y,salt+23)*2));
+    /* 2026-09-22 (Justin): the wall fossils are dropped - the ammonite read as a spiral in a dark box */
+    var r=hash2(x,y,salt+13), name = r<0.6 ? 'wf-stalactite-drapery-'+(1+Math.floor(hash2(x,y,salt+17)*3)) : 'wf-glowworm-curtain-'+(1+Math.floor(hash2(x,y,salt+19)*2));
     deco.walls.push({x:x, y:y, n:name});
     if(/glowworm/.test(name)) floorMeta.planeLights.push({x:x, y:y+0.9, col:/-2$/.test(name) ? '#FFC870' : '#7FE8D8', r:2.6, s:0.45});
   }
@@ -493,13 +509,14 @@ function caveDecorate(){
       if(kind==='lost-miner' && miners++>=1) kind='rubble';
       /* 2026-09-19: crystals, rubble and mushrooms grow where the floor meets the rock - never out in the open */
       var hugs = CAVE_WALL_HUGGERS.test(kind);
-      var c = hugs ? edge.pop() : ((rng()<0.75 ? edge.pop() : inner.pop()) || edge.pop()); if(!c) break;
-      var n2 = kind==='lost-miner' ? 1 : ri(1,3), px=c.x, py=c.y;
-      for(var m=0; m<n2; m++){
-        var againstRock = caveWallAt(px-1,py)||caveWallAt(px+1,py)||caveWallAt(px,py-1)||caveWallAt(px,py+1);
-        if(caveFree(px,py) && floorMeta.caveRoom[idxOf(px,py)]===room.id && (!hugs || againstRock)) addProp(px, py, caveVariant('cl-'+kind, 4));
-        var nb=[[1,0],[-1,0],[0,1],[0,-1],[1,1],[-1,1]][Math.floor(rng()*6)]; px+=nb[0]; py+=nb[1];
-      }
+      /* 2026-09-22 (Justin): groups came out as lines along the rock. A group is small (one piece half the time,
+         three only now and then) and is a compact blob around its anchor, never three in a row, and never
+         within two tiles of another group so two cannot join into a line. Only the anchor has to touch the rock. */
+      var c; while((c = hugs ? edge.pop() : ((rng()<0.75 ? edge.pop() : inner.pop()) || edge.pop())) && caveGroupNear(c.x, c.y)){}
+      if(!c) break;
+      var n2 = kind==='lost-miner' ? 1 : (rng()<0.3 ? 1 : rng()<0.75 ? 2 : 3);
+      caveClusterCells(c, n2, function(x,y){ return caveFree(x,y) && floorMeta.caveRoom[idxOf(x,y)]===room.id; })
+        .forEach(function(q){ addProp(q.x, q.y, caveVariant('cl-'+kind, 4)); });
     }
     /* 2026-09-19: glow moss creeps along the foot of the rock in a streak, now and then - one tuft alone in
        the middle of a chamber read as a stray snowflake */
