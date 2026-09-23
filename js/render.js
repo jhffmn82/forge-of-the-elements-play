@@ -250,9 +250,13 @@ function drawTrap(f, px, py, alpha, now){
   var t = ANIM.reduce ? 0 : now/1000, H=function(k){ return grassHash(f.x,f.y,k); };
   var cx=px+TS/2, cy=py+TS/2, u=TS/32;              /* u: one pixel of a 32px tile */
   var P=function(x,y,w,h,c){ ctx.fillStyle=c; ctx.fillRect(Math.round(px+x*u), Math.round(py+y*u), Math.ceil(w*u), Math.ceil(h*u)); };
+  /* 2026-09-22 (Justin): a trap under a prop (a gas vent under a brazier) drew its sunken plate as a dark box around
+     the prop's feet. Under a prop only the glow and what leaks out are drawn; the plate and grate stay hidden. */
+  var covered = typeof propAt==='function' && !!propAt(f.x,f.y);
   ctx.save(); ctx.globalAlpha=alpha;
   /* a sunken stone plate: dark seam, lit lower-right lip, flat face */
   function plate(face, x0, y0, w, h){
+    if(covered) return;
     P(x0-1, y0-1, w+2, h+2, 'rgba(8,6,6,.75)');
     P(x0, y0, w, h, face);
     P(x0, y0, w, 1, 'rgba(0,0,0,.35)'); P(x0, y0, 1, h, 'rgba(0,0,0,.35)');
@@ -265,12 +269,12 @@ function drawTrap(f, px, py, alpha, now){
   var k=f.kind, pulse=0.5+0.5*Math.sin(t*2.4 + f.x + f.y*1.7);
   if(k==='dart'){
     plate('#4A4540', 8, 8, 16, 16);
-    for(var i=0;i<3;i++) for(var j=0;j<3;j++){ P(10+i*5, 10+j*5, 2, 2, '#15110F'); P(10+i*5, 12+j*5, 2, 1, 'rgba(255,255,255,.08)'); }
+    if(!covered) for(var i=0;i<3;i++) for(var j=0;j<3;j++){ P(10+i*5, 10+j*5, 2, 2, '#15110F'); P(10+i*5, 12+j*5, 2, 1, 'rgba(255,255,255,.08)'); }
   } else if(k==='fire' || k==='gas' || k==='frost'){
     /* an iron vent grate; what leaks out tells you which */
     var col = k==='fire' ? '#FF7A30' : k==='gas' ? '#7FC05A' : '#9FD8FF';
     plate('#2E2A28', 8, 9, 16, 14);
-    for(var b=0;b<4;b++) P(10+b*4, 11, 2, 10, '#5A534C');
+    if(!covered) for(var b=0;b<4;b++) P(10+b*4, 11, 2, 10, '#5A534C');
     glowDot(16, 16, 9, col, 0.25+0.2*pulse);
     if(!ANIM.reduce) for(var w=0; w<3; w++){
       var ph=((t*0.6 + H(w)) % 1), wx=11+H(w+5)*10 + Math.sin(t*2+w)*1.5, wy=16 - ph*14;
@@ -278,7 +282,7 @@ function drawTrap(f, px, py, alpha, now){
     }
   } else if(k==='spark'){
     plate('#5C5A58', 7, 7, 18, 18);
-    P(9, 9, 14, 14, '#6E6B66');
+    if(!covered) P(9, 9, 14, 14, '#6E6B66');
     var sc = pulse>0.75 ? '#FFF1A8' : '#E8B44A';
     [[17,10],[15,13],[18,14],[14,18],[16,21]].forEach(function(q,i2,arr){ if(i2) { var a=arr[i2-1]; ctx.strokeStyle=sc; ctx.lineWidth=Math.max(1.5,1.6*u); ctx.beginPath(); ctx.moveTo(px+a[0]*u,py+a[1]*u); ctx.lineTo(px+q[0]*u,py+q[1]*u); ctx.stroke(); } });
     glowDot(16, 16, 8, '#E8B44A', 0.15+0.25*pulse);
