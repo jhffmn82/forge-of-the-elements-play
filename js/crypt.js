@@ -29,11 +29,11 @@
                   band:[10,10], w:0, still:true, object:true, art:0.9};
   /* elementalings roam every biome */
   ['emberling','tideling','galeling','stoneling','wisp','lumenling'].forEach(function(k){ if(M[k]) M[k].band=[M[k].band[0], 25]; });
-  DROPS.shambler   = {chance:0.12, table:{essence:10, food:2}};
+  DROPS.shambler   = {chance:0.12, table:{essence:10, food:4}};
   DROPS.gravebeetle= {chance:0.14, table:{essence:12, sigil:1}};
   DROPS.bonearcher = {chance:0.22, table:{essence:8, gear:6, sigil:1}};
   DROPS.shade      = {chance:0.20, table:{essence:10, sigil:3}};
-  DROPS.gravebloat = {chance:0.35, table:{essence:6, gear:5, food:1}};
+  DROPS.gravebloat = {chance:0.35, table:{essence:6, gear:5, food:2}};
   DROPS.acolyte    = {chance:0.40, table:{essence:6, sigil:4, gear:4}};
   DROPS.phylactery = {chance:0, table:{essence:1}};
 })();

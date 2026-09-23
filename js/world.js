@@ -286,8 +286,9 @@ function generateOnce(seed){
   for(i=0;i<3;i++) drop({kind:'essence', n:ri(5,12)+floorNo*2});
   drop(randomGear()); if(rng()<0.6) drop(randomGear());
   if(rng()<0.25) drop({kind:'sigil', use:randomSigilUse()});   /* about one loose sigil every other floor; chests, crates and monsters add the rest */
-  /* food is meant to be a little scarce: about one meal a floor, so hunger nudges you downward */
-  if(rng()<0.45) drop({kind:'food', food: randomFood()});
+  /* 2026-09-22 (Justin, starving all game): one meal on every floor and a 45% chance of a second. Hunger is a
+     reason to keep moving, not a clock you lose to; the meals themselves are unchanged (a Ration is 47%). */
+  drop({kind:'food', food: randomFood()}); if(rng()<0.45) drop({kind:'food', food: randomFood()});
   ((biomePlan().motes||{})[floorNo]||[]).forEach(function(el){ drop({kind:'mote', el:el}); });
 
   /* ---- start ---- */

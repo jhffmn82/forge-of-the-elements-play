@@ -280,11 +280,11 @@ var MONSTERS = {
    weighted: essence (currency), gear (a random weapon, armor, off-hand, ring or amulet), sigil, food.
    Elementalings always drop their mote instead; the boss has his own hoard. */
 var DROPS = {
-  rat:     {chance:0.10, table:{essence:8, food:2}},
+  rat:     {chance:0.10, table:{essence:8, food:4}},
   bat:     {chance:0.08, table:{essence:18, sigil:1}},
-  goblin:  {chance:0.18, table:{essence:12, gear:4, sigil:1, food:2}},
+  goblin:  {chance:0.18, table:{essence:12, gear:4, sigil:1, food:4}},
   archer:  {chance:0.20, table:{essence:10, gear:6, sigil:1}},
-  brute:   {chance:0.35, table:{essence:4, gear:5, food:1}},
+  brute:   {chance:0.35, table:{essence:4, gear:5, food:2}},
   slime:   {chance:0.15, table:{essence:16, sigil:1}},
   shaman:  {chance:0.35, table:{essence:6, sigil:3, gear:4}},
   skeleton:{chance:0.25, table:{essence:4, gear:6}},
