@@ -185,7 +185,10 @@ function applyDamage(target, amount, type, source){
   var d=amount;
   /* Spell Ward (Might 18, Justin 2026-09-22): the shield also rolls against spells and abilities, everything a
      foe does to you outside the attack roll. Ticks, traps, clouds and sigils have no attacker and stay as they are. */
-  if(target===player && !ATTACK_ROLLED && !AOE_HIT && source && source!==player && source.foe && hasP('spellWard') && player.block>0 && combatRoll(player.block,true)){
+  /* 2026-09-23 (Justin): a two-hander has no block, so Spell Ward gives it a guard of its own for this roll: 25% plus 1%
+     per Might above 10, up to 40% (33% at Might 18); a shield keeps its block chance. */
+  var wardChance = player.block>0 ? player.block : (player.twoHanded ? Math.min(0.40, 0.25+0.01*Math.max(0,(player.stats&&player.stats.mig||10)-10)) : 0);
+  if(target===player && !ATTACK_ROLLED && !AOE_HIT && source && source!==player && source.foe && hasP('spellWard') && wardChance>0 && combatRoll(wardChance,true)){
     d*=0.25; if(typeof onShieldBlock==='function') onShieldBlock(source, player, amount);   /* the shield's proc reads the whole blow, as a weapon block does */
     log('Your shield turns the '+(type==='phys'?'blow':type)+' from '+(source.name||'the attack')+'.','c-good');
     if(typeof floatText==='function') floatText(player.x,player.y,'block','miss'); if(typeof sfx==='function') sfx('block');
