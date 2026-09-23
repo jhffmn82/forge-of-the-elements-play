@@ -713,7 +713,7 @@ endTurn = function(){
 var _damagePropDeep = damageProp;
 damageProp = function(p, src, type){
   if(!p || !p.curtain) return _damagePropDeep.apply(this, arguments);
-  removeProp(p); sfx('step-grass');
+  removeProp(p); sfx('step-grass',{vol:0.5});
   if(typeof burst==='function') burst(p.x, p.y, 'ice', 12, 0.04);
   if(type==='fire') setG(p.x, p.y, G_ASH);
   log('You cut through the web.','c-info');
