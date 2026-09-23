@@ -322,11 +322,11 @@ function abilityBar(){
     if(s.type==='ability'){
       var A=ABILITIES[s.key], off = (A.favor ? (player.favor||0)<A.favor : player.mp<costOf(A)) ? ' disabled' : '';
       var armed = (aiming && player.abilities[aiming.i]===s.key) ? ' armed' : '';
-      html+='<button class="slot hasico'+armed+'" data-i="'+i+'" data-ico="'+(A.icon||'')+'"'+off+' title="'+A.desc.replace(/"/g,'&quot;')+'">'+
+      html+='<button class="slot hasico'+armed+'" data-i="'+i+'" data-ico="'+(A.icon||'')+'"'+off+' title="'+(typeof liveDesc==='function' ? liveDesc(A) : A.desc).replace(/"/g,'&quot;')+'">'+
             '<span class="ico"></span><span class="k">'+(i+1)+'</span><span class="n">'+A.name+'</span><span class="c">'+(A.favor ? A.favor+' Favor' : costOf(A)+' mana')+'</span></button>';
     } else if(s.type==='prayer'){
       var PR=PRAYERS[s.key], gcol=GODS[player.god] ? GODS[player.god].color : '#8A6FB0';
-      html+='<button class="slot hasico prayer-slot" style="--gc:'+gcol+'" data-i="'+i+'" data-ico="'+prayerIcon(s.key)+'"'+(canPray(s.key)?'':' disabled')+' title="'+PR.desc.replace(/"/g,'&quot;')+'">'+
+      html+='<button class="slot hasico prayer-slot" style="--gc:'+gcol+'" data-i="'+i+'" data-ico="'+prayerIcon(s.key)+'"'+(canPray(s.key)?'':' disabled')+' title="'+(typeof prayerLive==='function' ? prayerLive(PR) : PR.desc).replace(/"/g,'&quot;')+'">'+
             '<span class="ico"></span><span class="k">'+(i+1)+'</span><span class="n">'+PR.name+'</span><span class="c">'+prayerCost(s.key)+'</span></button>';
     } else if(s.type==='amulet'){
       html+='<button class="slot" data-i="'+i+'"><span class="k">'+(i+1)+'</span><span class="n">Amulet</span></button>';   /* filled in by gear.js */
@@ -434,7 +434,7 @@ function panes(){
       '<div><p class="sub">Abilities</p>'+(player.abilities.map(function(k,i){
           var A=ABILITIES[k];
           return '<div class="abrow" data-ab="'+k+'" draggable="true"><span class="k">'+(i+1)+'</span><span><span style="color:var(--ink)">'+A.name+
-                 '</span><div class="d">'+A.desc+'</div></span><span style="color:var(--ice)">'+costOf(A)+'</span></div>';
+                 '</span><div class="d">'+(typeof liveDesc==='function' ? liveDesc(A) : A.desc)+'</div></span><span style="color:var(--ice)">'+costOf(A)+'</span></div>';
         }).join('') || '<div class="c-info" style="font-size:11.5px">No active abilities.</div>')+'</div></div>';
     var abEls=$('mChar').querySelectorAll('.abrow[data-ab]');
     for(var ai2=0; ai2<abEls.length; ai2++) dragSource(abEls[ai2], 'abil:'+abEls[ai2].getAttribute('data-ab'));

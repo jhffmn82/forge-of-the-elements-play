@@ -96,14 +96,14 @@ function charHTML(){
   player.abilities.forEach(function(k){
     var A=ABILITIES[k]; if(!A) return;
     var cost = A.cd ? (typeof cdLeft==='function' && cdLeft(k) ? cdLeft(k)+' turns' : A.cd+'-turn cooldown') : (A.favor ? A.favor+' Favor' : costOf(A)+' mana');
-    h+='<div class="arow" data-ab="'+k+'" draggable="true"><span class="ic" data-icon="'+(A.icon||'')+'"></span><span><span class="n">'+A.name+'</span><div class="d">'+A.desc+'</div></span><span class="c" style="color:var(--ice)">'+cost+'</span></div>';
+    h+='<div class="arow" data-ab="'+k+'" draggable="true"><span class="ic" data-icon="'+(A.icon||'')+'"></span><span><span class="n">'+A.name+'</span><div class="d">'+(typeof liveDesc==='function' ? liveDesc(A) : A.desc)+'</div></span><span class="c" style="color:var(--ice)">'+cost+'</span></div>';
   });
   if(player.god){
     var g=GODS[player.god];
     h+='<div class="sec">Prayers &middot; <span style="color:'+g.color+';text-transform:none;letter-spacing:0">'+g.name+'</span></div>';
     (g.prayers||[]).forEach(function(pid){
       var P=PRAYERS[pid]; if(!P) return; var ok=godRank()>=P.rank; if(!ok) return;
-      h+='<div class="arow'+(ok?'':' locked')+'" data-pr="'+pid+'"'+(ok?' draggable="true"':'')+'><span class="ic" data-icon="'+prayerIcon(pid)+'"></span><span><span class="n">'+P.name+'</span><div class="d">'+P.desc+'</div></span><span class="c" style="color:var(--gold)">'+(ok?prayerCost(pid):'rank '+P.rank)+'</span></div>';
+      h+='<div class="arow'+(ok?'':' locked')+'" data-pr="'+pid+'"'+(ok?' draggable="true"':'')+'><span class="ic" data-icon="'+prayerIcon(pid)+'"></span><span><span class="n">'+P.name+'</span><div class="d">'+(typeof prayerLive==='function' ? prayerLive(P) : P.desc)+'</div></span><span class="c" style="color:var(--gold)">'+(ok?prayerCost(pid):'rank '+P.rank)+'</span></div>';
     });
   }
   if(player.amulet && typeof AMULETS!=='undefined' && AMULETS[player.amulet.amulet]){
@@ -134,7 +134,7 @@ function charHTML(){
       [3,6].forEach(function(r){
         if(typeof RANK_TEXT==='undefined' || !RANK_TEXT[r][e]) return;
         var on=n>=r; if(!on) return;
-        h+='<div class="prow'+(on?'':' off')+'"><span class="k" style="color:'+AFF_COL[e]+'">'+r+'</span><span><span class="n">'+cap(e)+' '+r+' mastery</span><div class="d">'+RANK_TEXT[r][e]+'</div></span><span class="s" style="color:'+(on?'var(--moss)':'var(--dim)')+'">'+(on?'on':'rank '+r)+'</span></div>';
+        h+='<div class="prow'+(on?'':' off')+'"><span class="k" style="color:'+AFF_COL[e]+'">'+r+'</span><span><span class="n">'+cap(e)+' '+r+' mastery</span><div class="d">'+(typeof rankLive==='function' ? rankLive(r,e) : RANK_TEXT[r][e])+'</div></span><span class="s" style="color:'+(on?'var(--moss)':'var(--dim)')+'">'+(on?'on':'rank '+r)+'</span></div>';
       });
     });
     if(typeof COMBOS!=='undefined') combosHeld().forEach(function(k){
