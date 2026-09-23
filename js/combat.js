@@ -17,7 +17,7 @@ function isScoundrel(){ return player.cls==='scoundrel'; }
 PASSIVES={
   mig:[{at:12,id:'heavyHands',name:'Heavy Hands',d:'+10% melee damage'},
        {at:15,id:'crushing',  name:'Crushing Blows',d:'+25% damage to targets below half HP'},
-       {at:18,id:'spellWard', name:'Spell Ward',d:'block spells and abilities in addition to melee and ranged attacks'},
+       {at:18,id:'spellWard', name:'Spell Ward',d:'block spells and abilities in addition to melee and ranged attacks. Allows two-handed weapons to block spells and abilities (25% + 1% per Might above 10, up to 40%)'},
        {at:21,id:'cleaving',  name:'Cleaving Swings',d:'your attacks also hit one other adjacent enemy for half'},
        {at:25,id:'unstoppable',name:'Unstoppable',d:'immune to stun, slow and knockback, +20% melee damage'}],
   agi:[{at:12,id:'lightFeet',name:'Light Feet',d:'+8 evasion'},
