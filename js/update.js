@@ -5,6 +5,11 @@
    is live; if the page is older, it drops the service worker and the cached copy (never the saves - those live
    in localStorage, which is left alone) and reloads once. The build shows in the corner of the title screen,
    so you can see at a glance which one a device is running. */
+/* The released version, shown on the title screen ahead of the build stamp. The build stamp answers "which
+   copy is this device running"; this answers "which release is it" - the one a player quotes in a bug report
+   (Justin, 2026-09-23). Bump it by hand on a release. */
+var FOTE_VERSION = 'Beta 1.0';
+
 (function(){
   var meta=document.querySelector('meta[name="fote-build"]'), mine=meta ? meta.getAttribute('content') : 'dev';
 
@@ -12,7 +17,7 @@
   var d=document.createElement('div'); d.id='buildTag';
   d.style.cssText='position:fixed;right:12px;bottom:calc(10px + env(safe-area-inset-bottom,0px));z-index:46;display:none;'+
     'font:12px "IBM Plex Mono",monospace;color:rgba(242,217,160,.55);pointer-events:none';
-  d.textContent='build '+(mine==='dev' ? 'dev' : mine.slice(0,16));
+  d.textContent=FOTE_VERSION+' · build '+(mine==='dev' ? 'dev' : mine.slice(0,16));
   function show(){ var t=document.getElementById('title'); if(!d.parentNode && document.body) document.body.appendChild(d); d.style.display = t && t.classList.contains('on') ? 'block' : 'none'; }
   setInterval(show, 500);
 

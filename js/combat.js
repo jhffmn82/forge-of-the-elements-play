@@ -761,8 +761,11 @@ function aiAct(e){
   if(e.st.stun || e.st.frozen){ e.t+=actCost(e); return; }
   var see = canSeePlayer(e), d=dist(e,player);
   if(e.state==='throne'){
+    /* He holds the throne until you walk in - that is the staging. But the room check alone let you stand in
+       the corridor and shoot him to death for free, since nothing outside the room could ever wake him
+       (Justin, 2026-09-23). Anything that has actually hurt him ends the staging too. */
     var rm=roomAt(player.x,player.y);
-    if(see && d<=7 && rm && rm.role==='boss'){ e.state='hunt'; log('<b>'+e.name+'</b> rises from his throne with a roar!','c-you'); sfx('warchief-roar'); playMusic('boss');
+    if((see && d<=7 && rm && rm.role==='boss') || e.hp<e.maxhp){ e.state='hunt'; log('<b>'+e.name+'</b> rises from his throne with a roar!','c-you'); sfx('warchief-roar'); playMusic('boss');
       ents.forEach(function(o){ if(o.guard) o.state='hunt'; }); SHAKE=8; }
     e.t+=actCost(e); return;
   }
