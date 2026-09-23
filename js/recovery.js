@@ -5,9 +5,10 @@ GODS.grom.rule='No weapons, shields, or body armour, including cloth. Holy Symbo
 GODS.murk.boons[1]='Grave Strength: your servant becomes a Zombie Bruiser at rank 3.';
 GODS.murk.boons[2]='Lich: your servant becomes a Lich at rank 5 and returns once, one turn after destruction, at half health.';
 GODS.murk.prayers=['raisedead','bonespear'];
-GODS.anvil.prayers=['fieldsmelt','reforge'];
+GODS.anvil.prayers=['fieldsmelt','anviltoll'];   /* 2026-09-23 (Justin): Anvil's Toll replaces Reforge at rank 4 */
 PRAYERS.fieldsmelt={name:'Field Smelt',rank:2,favor:0,desc:'Outside combat, recycle one carried item for its full normal value. Free and instant.'};
 PRAYERS.reforge.favor=100;
+PRAYERS.anviltoll={name:"Anvil's Toll",rank:4,favor:20,desc:'20 Favor, one action: you bring the hammer down. Every enemy within 2 tiles takes a full weapon attack, is thrown back 2 tiles and stunned for 1 turn.'};
 PRAYERS.reforge.desc='Outside combat, spend 100 Favor to permanently add +1 to your main-hand weapon, up to +3.';
 PRAYERS.bonespear={name:'Bone Spear',rank:4,favor:5,desc:'A piercing straight-line spell: 10–16 Dark damage, range 6. Costs 5 Favor and one action.'};
 // Old hotbar entries retain usable links after the approved prayer replacements.
@@ -65,6 +66,21 @@ useAbility=function(i){
     log('Unholy Aura surrounds you.','c-good');sfx('shadow-cast');endTurn();
   }
   updateUI();
+};
+/* Anvil's Toll: a weapon attack on everything within two tiles, each thrown back and stunned (2026-09-23) */
+var _usePrayerToll=usePrayer;
+usePrayer=function(pid){
+  if(pid!=='anviltoll') return _usePrayerToll.apply(this, arguments);
+  if(!canPray(pid)){ log('You cannot offer that prayer right now.','c-info'); sfx('ui-error'); return; }
+  player.favor-=PRAYERS.anviltoll.favor;
+  sfx('forge-craft'); setClip(player,'melee'); ringFx(player.x,player.y,GODS.anvil.color,2.5); if(typeof SHAKE!=='undefined') SHAKE=8;
+  var foes=ents.filter(function(e){ return e.foe && e.hp>0 && dist(e,player)<=2; }), struck=0;
+  foes.forEach(function(e){
+    attack(player, e, 1, "Anvil's Toll"); struck++;
+    if(e.hp>0){ knockback(e, e.x-player.x, e.y-player.y, 2); applyStatus(e,'stun',1); }
+  });
+  log("<b>Anvil's Toll.</b> The hammer comes down"+(struck ? ' on '+struck+(struck===1?' foe.':' foes.') : ', and nothing is near enough to feel it.'),'c-good');
+  player.hidden=0; endTurn(); updateUI();
 };
 var _canPrayRecovery=canPray;
 canPray=function(pid){

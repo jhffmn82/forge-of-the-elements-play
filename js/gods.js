@@ -26,7 +26,9 @@ function gainPiety(n, why){
   // Amusement has its own event table; ordinary piety does not award it.
   n*=1+(player.race==='human'?.25:0)+(g.loves===player.race?.25:0)+(player.cls==='cleric'?.25:0);
   var before=godRank();
-  player.piety=(player.piety||0)+n; player.favor=Math.min(100,(player.favor||0)+n);
+  /* 2026-09-23 (Justin): piety grows 30% per biome so a follower who switched gods can catch up; favor never does */
+  var deep = typeof bidx==='function' ? Math.pow(1.3, Math.max(0, bidx())) : 1;
+  player.piety=(player.piety||0)+n*deep; player.favor=Math.min(100,(player.favor||0)+n);
   var after=godRank();
   if(after>before){
     log('<b>'+g.name+' is pleased.</b> Piety rank '+after+'.','c-kill'); sfx('piety-rank'); ringFx(player.x,player.y,g.color,3);

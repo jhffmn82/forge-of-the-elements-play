@@ -130,7 +130,7 @@ var GODS = {
              boons:['Amused: occasional gifts (and pranks) when things get dramatic; gifts get better as amusement rises. Never kills you directly.','Favourite Toy: interventions lean helpful more often.','Beloved Toy: once per floor, Wobbles snatches you from a killing blow with a random rescue.'],
              gain:'Every kill (elites count for more) and every new floor. Separately, Amusement rises with drama - low HP, big fights - and drains when nothing is happening; high Amusement brings his gifts and pranks.'}
 };
-var PIETY_RANKS = [0, 100, 300, 650, 1200];   /* rank 1 on joining; ranks 2-5 at these totals. 2026-09-17: doubled monster density made ranks come
+var PIETY_RANKS = [0, 100, 390, 1099, 2636];   /* 2026-09-23 (Justin): ranks 3-5 cost 30% more per rank (x1.3^(rank-2)); piety gain grows 30% per biome, favor does not */   /* rank 1 on joining; ranks 2-5 at these totals. 2026-09-17: doubled monster density made ranks come
    too fast (rank 3 by floor 3); now about rank 2 by floor 3, rank 3 early in biome 2, and rank 5 is a late-run goal */
 /* what each rank unlocks: 1 passive (grows every rank), 2 first prayer, 3 signature boon, 4 second prayer, 5 capstone passive */
 var BOON_RANKS = [1, 3, 5];
