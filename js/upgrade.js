@@ -102,7 +102,7 @@ endTurn = function(){
   feats.forEach(function(f){ if(!f.found && vis[idxOf(f.x,f.y)] && rng()<ch){ f.found=true; log('Your ring tingles: a <b>'+trapName(f.kind)+' trap</b>.','c-info'); } });
   for(var y=0;y<MH;y++) for(var x=0;x<MW;x++){ if(at(x,y)===SECRET && vis[idxOf(x,y)] && rng()<ch*0.5){ setT(x,y,DOOR); log('Your ring tingles: a <b>hidden door</b>.','c-kill'); sfx('door-secret'); computeFOV(); } }
 };
-RINGS.keeneyes.desc='Spot traps and hidden doors anywhere you can see.';
+RINGS.keeneyes.desc='Spot traps anywhere you can see, and find hidden doors more often when you search.';   /* 2026-09-23 audit: doors are found by searching, not in passing */
 RINGS.keeneyes.unit='% chance a turn to spot traps you can see';
 
 /* ---------------------------------------------------------------- upgrades at the Forge */

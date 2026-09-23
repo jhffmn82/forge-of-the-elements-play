@@ -36,7 +36,7 @@ var RANK_TEXT = {
   3:{fire:'Searing: Burning enemies take 15% more damage from you. Immune to Burning.',
      water:'Shatter: Frozen enemies take a further +50% physical damage. Immune to Chill and Freeze.',
      air:'Arc: 5% per Air point that any hit or spell arcs to a nearby enemy for 50%. Immune to Stun.',
-     earth:'Venom: anything you Root is poisoned as it is pinned (10% of max HP a turn for 3 turns; half on elites and bosses). Immune to Root.',
+     earth:'Venom: anything you Root is poisoned as it is pinned (10% of max HP a turn; half on bosses). Immune to Root.',
      light:'Radiance: heal 1 HP per Light point whenever you deal light damage. Immune to Blind.',
      shadow:'Fade: after 50 turns out of combat you are fully hidden. Immune to Fear.'},
   6:{fire:'Wildfire: when a Burning enemy dies its fire leaps to the nearest enemy within 3. Fire spells leave flames for 3 turns. Immune to fire.',

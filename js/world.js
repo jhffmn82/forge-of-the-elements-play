@@ -260,7 +260,7 @@ function generateOnce(seed){
   /* ---- terrain patches ---- */
   var gn=ri(2,4); for(i=0;i<gn;i++){ var gr=pick(rooms); blob(gr.x+ri(0,gr.w-1), gr.y+ri(0,gr.h-1), ri(5,14), function(xx,yy){ if(at(xx,yy)===FLOOR && !gAt(xx,yy) && !propAt(xx,yy)) setG(xx,yy,G_GRASS); }); }
   var wn=ri(1,2); for(i=0;i<wn;i++){ var wr=pick(rooms.filter(function(r){ return r.role!=='start' && r.role!=='boss'; }))||pick(rooms);
-    blob(wr.x+ri(1,Math.max(1,wr.w-2)), wr.y+ri(1,Math.max(1,wr.h-2)), ri(3,8), function(xx,yy){ if(at(xx,yy)===FLOOR && !propAt(xx,yy)) { setT(xx,yy,WATER); setG(xx,yy,0); } }); }
+    blob(wr.x+ri(1,Math.max(1,wr.w-2)), wr.y+ri(1,Math.max(1,wr.h-2)), ri(3,8), function(xx,yy){ if(at(xx,yy)===FLOOR && !propAt(xx,yy) && gAt(xx,yy)!==G_TELL) { setT(xx,yy,WATER); setG(xx,yy,0); } }); }   /* the uneven-stone hint beside a hidden door survives a pool (2026-09-23 audit) */
   for(i=0;i<8;i++){ var pr=pick(rooms), px=pr.x+ri(0,pr.w-1), py=pr.y+ri(0,pr.h-1); if(at(px,py)===FLOOR && !gAt(px,py)) setG(px,py,pick([G_PUDDLE,G_MOSS,G_MOSS,G_BONES,G_BLOOD])); }
 
   /* ---- chests ---- */

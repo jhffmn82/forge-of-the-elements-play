@@ -83,6 +83,8 @@ function saveApply(data){
   if(typeof refreshCavernResidents==='function')refreshCavernResidents();
   if(typeof refreshEncounterTuning==='function')refreshEncounterTuning();
   if(typeof repairSavedEffectClocks==='function')repairSavedEffectClocks();
+  /* 2026-09-23 audit: the puzzle list points at entries of rooms; after a decode they must be the same objects again */
+  if(typeof floorMeta!=='undefined' && floorMeta && floorMeta.puzzles && typeof rooms!=='undefined' && rooms) floorMeta.puzzles=rooms.filter(function(r){ return r && r.puzzle; });
   /* everything derived or visual is rebuilt rather than restored */
   rng=mulberry32(Number.isInteger(data.rngState)?data.rngState:((worldSeed||1) ^ (turn*2654435761))>>>0);
   fx=[]; PARTS.length=0; aiming=null; LAST_HIT=null;

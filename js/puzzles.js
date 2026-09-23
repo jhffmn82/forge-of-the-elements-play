@@ -269,7 +269,8 @@ endTurn = function(){
   if(!room || room.puzzle.solved) return;
   var k=room.puzzle.kind;
   if(k==='darktraps' && mastered(k)) solvePuzzle(room, 'your inner light shows every trap.');
-  else if(k==='baths' && !(room.cooledUntil>turn) && !(player.levitate>0) && aff('water')<3){
+  else if(k==='baths' && mastered(k)) solvePuzzle(room, 'the scalding stone cannot warm your cool blood.');   /* 2026-09-23 audit: mastery solves this room like the other ten (DESIGN 12, step 10) */
+  else if(k==='baths' && !(room.cooledUntil>turn) && !(player.levitate>0)){
     var d=applyDamage(player, roll(1,3)+floorNo, 'fire', null); floatText(player.x,player.y,String(d),'fire'); log('The scalding stone burns you: '+d+'.','c-you');
     if(player.hp<=0){ heroicResolve(); if(player.hp<=0) death(); }
   }
