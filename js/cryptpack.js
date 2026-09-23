@@ -259,6 +259,21 @@ if(_ptSparklePack) ptSparkle = function(p, X, Y, W, H, alpha){ if(p.name==='pt-c
    converted props (barrels to urns, the dungeon's bone scatter) slip through. */
 function packLight(x, y, col, r, s){ floorMeta.planeLights=floorMeta.planeLights||[]; floorMeta.planeLights.push({x:x, y:y, col:col, r:r, s:s}); }
 function packWallAt(x, y){ return inb(x,y) && isWallLike(at(x,y)) && at(x,y)!==DOOR; }
+/* 2026-09-22 (Justin): fix it at the source as well. Whenever a tile that held a wall-mounted piece stops being a
+   wall (a corridor carved after decoration, a door cut, a dead end opened), the piece and its light go with it,
+   and a Caverns wall feature drawn on that tile is dropped. The repair below stays for floors saved before this. */
+var _setTWallPieces = setT;
+setT = function(x, y, v){
+  _setTWallPieces(x, y, v);
+  if(typeof isWallLike==='function' && isWallLike(v)) return;
+  if(typeof props!=='undefined' && props.length){
+    for(var i=props.length-1; i>=0; i--){ var p=props[i]; if(p.wall && p.b && p.x===x && p.y===y){
+      props.splice(i,1);
+      if(floorMeta && floorMeta.planeLights) floorMeta.planeLights=floorMeta.planeLights.filter(function(l){ return !(l.x===x && Math.abs(l.y-(y+.9))<.001); });
+    } }
+  }
+  if(floorMeta && floorMeta.caveDeco && floorMeta.caveDeco.walls) floorMeta.caveDeco.walls=floorMeta.caveDeco.walls.filter(function(w){ return !(w.x===x && w.y===y); });
+};
 /* Corridors carved after room decoration can leave a wall memorial on floor.
    Repair deterministically, including old saves, without moving gameplay objects. */
 function repairWallMemorials(){
