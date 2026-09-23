@@ -54,7 +54,7 @@ function tryMove(dx,dy){
   if(t===WALL && gAt(player.x,player.y)===G_TELL){ log('A draft whispers through the stones here. Something is behind this wall.','c-info'); }
   if(!walkable(nx,ny)) return;
   player.x=nx; player.y=ny; player.movedThisTurn=true;
-  if(gAt(nx,ny)===G_GRASS){ setG(nx,ny,G_SHORT); sfx('step-grass'); }
+  if(gAt(nx,ny)===G_GRASS){ setG(nx,ny,G_SHORT); sfx('step-grass',{vol:0.5}); }   /* 2026-09-23 (Justin): half as loud, like cutting a bush */
   else if(t===WATER) sfx('step-water',{vol:0.8}); else sfx('step-stone',{vol:0.8});
   stepOn(); endTurn();
 }
