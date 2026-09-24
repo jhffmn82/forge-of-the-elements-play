@@ -1,5 +1,7 @@
 # Beta 1.1
 
+- Replaced Morty’s boss theme with a more driving orchestral loop and subtle crypt ambience to give the fight a stronger sense of menace.
+
 - Pet movement no longer pauses your next action or the enemy sequence. Companions follow smoothly while their attacks remain animated.
 
 - Enemies now finish each visible move or attack before the next creature acts, making crowded fights easier to follow. Turn order and creature speeds are unchanged.
