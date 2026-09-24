@@ -37,7 +37,7 @@ function animBusy(move){
   var now=performance.now();
   if(typeof fxClock==='number' && fxClock > now+40) return true;              /* queued swings, bolts, hits */
   if(move ? slideFrac(player,now)<STEP_RELEASE : motionActive(player,now)) return true;   /* the hero still sliding */
-  for(var i=0;i<ents.length;i++){ var e=ents[i]; if(move ? slideFrac(e,now)<STEP_RELEASE : motionActive(e,now)) return true; }   /* includes slides still waiting to start */
+  for(var i=0;i<ents.length;i++){ var e=ents[i]; if(e.ally)continue; if(move ? slideFrac(e,now)<STEP_RELEASE : motionActive(e,now)) return true; }   /* pet movement never holds input */
   for(var j=0;j<fx.length;j++){ var f=fx[j];
     if(f.k==='d' && now < f.t0+f.dur*0.6) return true;                          /* someone is still falling */
     if((f.k==='p' || f.k==='l') && now < f.t0+f.dur) return true;               /* projectile or lunge in flight */

@@ -1,5 +1,7 @@
 # Beta 1.1
 
+- Pet movement no longer pauses your next action or the enemy sequence. Companions follow smoothly while their attacks remain animated.
+
 - Enemies now finish each visible move or attack before the next creature acts, making crowded fights easier to follow. Turn order and creature speeds are unchanged.
 
 - Removed duplicate terrain redraws that caused Caverns stutter. Held inputs, travel, resting and saves now wait for a complete enemy turn.

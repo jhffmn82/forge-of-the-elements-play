@@ -3,6 +3,7 @@ var FOTE_VERSION = 'Beta 1.1';
 /* Keep newest first; describe only changes already present in this build. */
 var FOTE_PATCHES = [
   {version:'Beta 1.1', notes:[
+    "Pet movement no longer pauses your next action or the enemy sequence. Companions follow smoothly while their attacks remain animated.",
     "Enemies now finish each visible move or attack before the next creature acts, making crowded fights easier to follow. Turn order and creature speeds are unchanged.",
     "Removed duplicate terrain redraws that caused Caverns stutter. Held inputs, travel, resting and saves now wait for a complete enemy turn.",
     "Rebuilt the core engine to make combat, equipment, summons and turn timing more consistent while preserving the existing interface and artwork.",

@@ -56,7 +56,8 @@ function turnAnimationEffectVisible(f){
 function turnFiniteAnimationWait(actor){
   if(turnAnimationImmediate())return 0;
   var actors=turnAnimationActors(),playerAction=actor===player,visible=turnAnimationVisible(actor),before=playerAction?null:TURN_ANIMATION_BEFORE;
-  var waitForMovement=!playerAction||ents.some(function(e){return e!==player&&(e.foe||e.ally)&&e.hp>0&&e.t<player.t&&turnAnimationVisible(e);});
+  var sequential=visible&&!actor.ally;
+  var waitForMovement=!playerAction||ents.some(function(e){return e!==player&&e.foe&&e.hp>0&&e.t<player.t&&turnAnimationVisible(e);});
   var now=performance.now(),end=now,changed=false;
   actors.forEach(function(e){
     var prior=before&&before.actors.get(e),oldMotion=MOTION_STATE.get(e),clip=e._clip;
@@ -65,11 +66,12 @@ function turnFiniteAnimationWait(actor){
     if(moved||newClip&&turnAnimationClipEnd(e,now)>now)changed=true;
     renderPos(e);
     var motion=MOTION_STATE.get(e);
-    if(waitForMovement&&(playerAction||visible||moved)&&motion&&motion.mt&&Number.isFinite(motion.mt)&&motion.floor===floorMeta)end=Math.max(end,motion.mt+(motion.dur||MOVE_MS));
-    if(playerAction||visible||newClip)end=Math.max(end,turnAnimationClipEnd(e,now));
+    // Following pets slide alongside the player; only their attacks hold a turn.
+    if(!e.ally&&waitForMovement&&(playerAction||sequential||moved)&&motion&&motion.mt&&Number.isFinite(motion.mt)&&motion.floor===floorMeta)end=Math.max(end,motion.mt+(motion.dur||MOVE_MS));
+    if(playerAction||sequential||e===actor||newClip)end=Math.max(end,turnAnimationClipEnd(e,now));
   });
   fx.forEach(function(f){
-    if((playerAction||visible||!before||!before.effects.has(f))&&turnAnimationEffectVisible(f)&&Number.isFinite(f.t0)&&Number.isFinite(f.dur)&&f.dur>0)end=Math.max(end,f.t0+f.dur);
+    if((playerAction||sequential||!before||!before.effects.has(f))&&turnAnimationEffectVisible(f)&&Number.isFinite(f.t0)&&Number.isFinite(f.dur)&&f.dur>0)end=Math.max(end,f.t0+f.dur);
   });
   /* Unseen, idle actors have no presentation work. In particular they must
    * not force a full terrain/light redraw on every scheduler decision. */
