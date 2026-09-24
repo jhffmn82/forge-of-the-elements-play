@@ -472,7 +472,12 @@ function showCard(html, ev){
 function hideCard(){ if(dtip) dtip.style.display='none'; }
 function hoverCard(el, htmlFn){
   el.addEventListener('mousemove', function(ev){ showCard(htmlFn(), ev); });
-  el.addEventListener('mouseleave', hideCard);
+  el.addEventListener('mouseleave', function(ev){
+    /* Touch compatibility mouse events must not dismiss an actionable card
+       between pointerup and its button click. Outside taps close it explicitly. */
+    if(ev.isTrusted&&document.body.classList.contains('touch'))return;
+    hideCard();
+  });
 }
 
 /* ============ interface ============ */

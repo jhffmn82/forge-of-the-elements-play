@@ -14,7 +14,7 @@ var RINGS = {
   vitality:   {name:'Ring of Vitality',   step:0.08, unit:'% max HP',         pct:true, desc:'Maximum HP.'},
   wizardry:   {name:'Ring of Wizardry',   step:0.08, unit:'% max mana, two thirds of that to spell damage', pct:true, desc:'Maximum mana and spell damage.'},
   striking:   {name:'Ring of Striking',   step:1,    unit:'weapon damage',    desc:'Weapon damage.'},
-  mending:    {name:'Ring of Mending',    step:0.33, unit:'% of max HP healed each turn',pct:true, desc:'HP regeneration.'},
+  mending:    {name:'Ring of Mending',    step:0.33, unit:'% of max HP healed each turn',pct:true, desc:'Extra HP regeneration while fed and not poisoned.'},
   sustenance: {name:'Ring of Sustenance', step:0.15, unit:'% less hunger',    pct:true, desc:'You get hungry more slowly.'},
   haste:      {name:'Ring of Haste',      step:0.05, unit:'% speed',          pct:true, desc:'Speed.'},
   warding:    {name:'Ring of Warding',    step:0.10, unit:'% elemental resistance', pct:true, desc:'Resistance to fire, ice, lightning, poison, light and dark.'},
@@ -117,8 +117,12 @@ function unidHint(it){
   var how = it.kind==='ring' ? 'wear it for a while' : it.kind==='amulet' ? 'use it a few times' : (it.dmg ? 'fight with it' : it.armor!==undefined ? 'take hits in it' : 'carry it into a few fights');
   return '<div class="hint" style="color:#C9A8FF">Unidentified: its bonus'+(it.kind==='ring'||it.kind==='amulet'?'':' and enchantment')+' are unknown, and it could be cursed. To learn it: '+how+', or read a Sigil of Knowing.</div>';
 }
+/* Mending's stored ring bonus is a regeneration coefficient, not an HP fraction.
+   Keep its existing healing rate shared by the simulation and item description. */
+function mendingRate(value){return .0033*value;}
 function ringLine(r){
   var R=RINGS[r.ring], pw=ringPower(r), v=R.step*pw*gearPassiveBonus();
+  if(r.ring==='mending')return (v>=0?'+':'')+Number((mendingRate(v)*100).toFixed(2))+R.unit;
   return (v>=0?'+':'')+(R.pct?Math.round(v*100):Math.round(v*100)/100)+(R.pct?'':' ')+R.unit;
 }
 function trinketCard(it){
@@ -238,7 +242,7 @@ endTurn = function(){
     (player.rings||[]).forEach(function(r){ useCount(r, 'ring'); });
     if(player.off && player.off!==EMPTY_OFF && ents.some(function(e){ return e.foe && e.state==='hunt' && vis[idxOf(e.x,e.y)]; })) useCount(player.off, 'off');
     /* mending ring: a little extra regen; sustenance ring: give back part of the hunger this turn will cost */
-    var mend=ringVal('mending'); if(mend && player.hunger>0 && !player.st.poison){ healPlayer(player.maxhp*0.0033*mend); }
+    var mend=ringVal('mending'); if(mend && player.hunger>0 && !player.st.poison){ healPlayer(player.maxhp*mendingRate(mend)); }
     var sus=ringVal('sustenance'); if(sus){ player.hunger=Math.min(HUNGER_MAX, player.hunger + hungerCost(player.movedThisTurn?moveCost():actCost(player))*sus); }
   }
   _endTurnBase();

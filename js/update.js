@@ -3,6 +3,9 @@ var FOTE_VERSION = 'Beta 1.1';
 /* Keep newest first; describe only changes already present in this build. */
 var FOTE_PATCHES = [
   {version:'Beta 1.1', notes:[
+    "Barricade inspect cards now describe flammable wood instead of a nearby mechanism.",
+    "Fixed touch inventory cards closing before Drop or Use could activate.",
+    "Corrected Ring of Mending’s exaggerated healing tooltip to show its actual regeneration rate.",
     "Added Nature’s Bounty, a craftable sigil that creates a Honeycake, Mushroom Skewer, and Moonberry Tart nearby.",
     "Restored food satiety so meals fill the hunger bar as much as they originally did.",
     "Prayers now have explicit ability icons, including new artwork for Bone Spear and Vellum’s divine attacks.",

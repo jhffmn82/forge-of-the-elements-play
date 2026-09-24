@@ -623,6 +623,8 @@ function inspectHTML(mx,my){
   if(t===SHRINE) label='Shrine to '+GODS[RUN.shrineGod].name;
   if(typeof PORTAL!=='undefined' && t===PORTAL && floorMeta.portal && typeof PLANE_TITLE!=='undefined') label='Portal to '+PLANE_TITLE[floorMeta.portal];
   var tileHint=t===EXIT ? 'Opens when '+bossNameForFloor()+' falls.' : TILE_HINTS[t];
+  var puzzleDoor=t===SEALED&&puzzleAtDoor(mx,my);
+  if(puzzleDoor&&puzzleDoor.puzzle.kind==='barricade'&&!puzzleDoor.puzzle.solved){label='Wooden barricade';tileHint='A wooden barricade. It looks flammable.';}
   return '<div class="nm">'+label+'</div>'+
     (tileHint?'<div class="hint">'+tileHint+'</div>':'')+
     '<div class="row"><span>'+(vis[idxOf(mx,my)]?'In sight':'From memory')+'</span><b>'+mx+','+my+'</b></div>';

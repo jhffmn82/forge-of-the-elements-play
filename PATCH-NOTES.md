@@ -1,5 +1,11 @@
 # Beta 1.1
 
+- Barricade inspect cards now describe flammable wood instead of a nearby mechanism.
+
+- Fixed touch inventory cards closing before Drop or Use could activate.
+
+- Corrected Ring of Mending’s exaggerated healing tooltip to show its actual regeneration rate.
+
 - Added Nature’s Bounty, a craftable sigil that creates a Honeycake, Mushroom Skewer, and Moonberry Tart nearby.
 
 - Restored food satiety so meals fill the hunger bar as much as they originally did.

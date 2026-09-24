@@ -45,7 +45,7 @@ function enchantPanelHTML(){
   var have=ELEMENTS.filter(function(el){ return (player.motes[el]||0)>0; });
   if(forgeMote && !(player.motes[forgeMote]>0)) forgeMote=null;
   if(!forgeMote && have.length) forgeMote=have[0];
-  var h='<p class="c-info">Choose a mote, then click the gear to set it into. Enchantments grow with your affinity in that element (&times;1 + 0.3 per point).</p>';
+  var h='<p class="c-info">Choose a mote, then click the gear to set it into. Each enchantment shows how its bonuses grow with elemental mastery.</p>';
   h+='<div class="moterow">'+ELEMENTS.map(function(el){
     var n=player.motes[el]||0;
     return '<button data-emote="'+el+'" class="'+(forgeMote===el?'on':'')+'" '+(n?'':'disabled')+'><span class="dot" style="background:'+AFF_COL[el]+'"></span>'+cap(el)+' &times;'+n+'</button>';
