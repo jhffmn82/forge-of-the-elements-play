@@ -67,6 +67,7 @@ function doorClosable(x, y){
   return true;
 }
 function closeDoorAt(x, y){
+  if(gameTurns.busy())return false;
   if(at(x,y)!==OPEN) return false;
   if(Math.max(Math.abs(x-player.x), Math.abs(y-player.y))!==1){ log('You need to stand next to the door.','c-info'); return true; }
   if(!doorClosable(x,y)){ log(x===player.x&&y===player.y ? 'Step out of the doorway first.' : 'Something is in the way of the door.','c-info'); return true; }
@@ -424,6 +425,7 @@ function identifySigil(use){
 
 
 function grab(){
+  if(gameTurns.busy())return false;
   var got=false;
   items.filter(function(it){ return it.x===player.x && it.y===player.y; }).forEach(function(it){
     var e=bagEntryFor(it); if(!e) return;

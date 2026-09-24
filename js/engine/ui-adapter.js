@@ -161,6 +161,8 @@ function compactHUDChips(){
 }
 
 function updateUI(){renderPlayerUI();compactHUDChips();renderStatusBar();}
+/* Refresh combat feedback between actors without rebuilding inventory/hotbar. */
+function updateTurnUI(){bars();compactHUDChips();renderStatusBar();}
 
 function paintArt(el,group,name,size){
  if(el&&el.closest&&el.closest('#hotbar'))size=Math.max(size||32,document.body.classList.contains('touch')?72:64);

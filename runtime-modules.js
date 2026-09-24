@@ -118,6 +118,7 @@ var FOTE_RUNTIME = {
   "js/engine/costs-adapter.js",
   "js/engine/progression-adapter.js",
   "js/engine/actor-adapter.js",
+  "js/engine/turn-presentation.js",
   "js/engine/turn-adapter.js",
   "js/engine/inventory-adapter.js",
   "js/engine/forge-adapter.js",

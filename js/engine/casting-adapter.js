@@ -76,6 +76,7 @@ function useShadowstep(){
   setClip(player,'cast');sfx('vanish');sparkleFx(player.x,player.y,'dark',18);log('You <b>Shadowstep</b> into hiding.','c-good');endTurn();
 }
 function useAbility(i){
+  if(gameTurns.busy())return false;
   var key=player.abilities[i],A=ABILITIES[key];if(!A)return;
   var forbidden=spellForbidden(A);
   if(forbidden){if(aiming&&aiming.i===i)cancelAim();log('<b>'+GODS[player.god].name+'</b> forbids '+forbidden+'. '+A.name+' will not come to you.','c-info');sfx('ui-error');return;}
@@ -117,6 +118,7 @@ function resolveTargetedCast(x,y,selection){
   return castBoltTarget(x,y);
 }
 function castAt(x,y){
+  if(gameTurns.busy())return false;
   var selection=aiming;if(!selection)return false;
   var A=selection.A;
   if(!selection.amulet&&!selection.prayer){
@@ -128,7 +130,7 @@ function castAt(x,y){
   var before=turn,tiles=effectFootprint(A,x,y),event=gameActions.run('cast',player,foeAt(x,y),{ability:A},function(context){
     player.noisy=true;context.result=resolveTargetedCast(x,y,selection);
   });
-  if(turn!==before){puzzleSpellTiles(A,tiles);if(tiles.length>1)floorMeta.lastCastTiles={tiles:tiles,until:performance.now()+650};}
+  if(turn!==before)afterTurn(function(){puzzleSpellTiles(A,tiles);if(tiles.length>1)floorMeta.lastCastTiles={tiles:tiles,until:performance.now()+650};});
   return event.result;
 }
 

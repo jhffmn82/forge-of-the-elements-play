@@ -470,15 +470,21 @@ window.addEventListener('keydown', function(ev){
   if(k==='C'){ closeAdjacentDoors(); updateUI(); ev.stopImmediatePropagation(); return; }
   if(k==='>' || k==='.' && ev.shiftKey){ if(at(player.x,player.y)===STAIRS) descend(); else log('No stairs here.','c-info'); ev.stopImmediatePropagation(); return; }
 }, true);
+var REST_SEQUENCE=0;
+function stopRest(){REST_SEQUENCE++;}
 function rest(){
   if(ents.some(function(e){ return e.foe && vis[idxOf(e.x,e.y)]; })){ log('You cannot rest with enemies in sight.','c-info'); return; }
-  var n=0; log('You rest...','c-info');
+  var n=0,restRun=RUN,restPlayer=player,restId=++REST_SEQUENCE; log('You rest...','c-info');
   (function step(){
+    if(restId!==REST_SEQUENCE || RUN!==restRun || player!==restPlayer || uiOpen())return;
+    if(turnSequenceBusy()){afterTurn(function(){setTimeout(step,0);});return;}
     if(n++>=150 || player.hp<=0) return;
     if(player.hp>=player.maxhp && player.mp>=player.maxmp){ log('Rested.','c-good'); return; }
     if(ents.some(function(e){ return e.foe && vis[idxOf(e.x,e.y)]; })){ log('Something approaches! You stop resting.','c-you'); return; }
     if(player.hunger<300 && n>1){ log('You are too hungry to rest well.','c-info'); return; }
     if(typeof searchAround==='function') searchAround(true, true); else endTurn();   /* resting searches at half chance */
-    if(n%10===0) setTimeout(step, 0); else step();
+    /* Schedule only the next rest action. A save flush finishes the current
+       action without recursively simulating the entire rest before saving. */
+    afterTurn(function(){setTimeout(step,0);});
   })();
 }

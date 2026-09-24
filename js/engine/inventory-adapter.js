@@ -28,6 +28,7 @@ function bagEntryFor(it){
   return null;
 }
 function dropBagItem(index){
+  if(gameTurns.busy())return false;
   var b=player.bag[index];if(!b)return false;
   var it=FoteInventory.gear(b.kind)?{kind:b.kind,it:b.data}:b.kind==='sigil'?{kind:'sigil',use:b.data.use}:b.kind==='food'?{kind:'food',food:b.data.food}:null;
   if(!it)return false;it.x=player.x;it.y=player.y;items.push(it);consume(index);log('You drop '+itemLabel(it)+'.','c-info');return true;
@@ -58,8 +59,9 @@ function commitEquipment(plan){
   if(plan.stowOff)log('Both hands are on the '+item.name+' &mdash; the '+plan.displaced[plan.displaced.length-1].item.name+' goes into your bag.','c-info');
   endTurn();return true;
 }
-function equipFromBag(index,slot){var plan=FoteInventory.planEquip(player,index,slot,inventorySlotPolicy());return plan.error?inventoryFailure(plan):commitEquipment(plan);}
+function equipFromBag(index,slot){if(gameTurns.busy())return false;var plan=FoteInventory.planEquip(player,index,slot,inventorySlotPolicy());return plan.error?inventoryFailure(plan):commitEquipment(plan);}
 function useBagItem(index){
+  if(gameTurns.busy())return false;
   var entry=player.bag[index];if(!entry)return false;
   if(FoteInventory.gear(entry.kind))return equipFromBag(index);
   if(entry.kind==='food')return useBagFood(index);
@@ -69,6 +71,7 @@ function useBagItem(index){
 function putOnRing(index,slot){return equipFromBag(index,slot===undefined?undefined:'ring'+slot);}
 function putOnAmulet(index){return equipFromBag(index,'amulet');}
 function removeEquipment(slot,spendTurn){
+  if(gameTurns.busy())return false;
   var item=FoteInventory.slotItem(player,slot);if(!item||item===EMPTY_OFF||item.unarmed)return false;
   if(item.cursed)return inventoryFailure({error:'cursed',item:item});
   if(player.bag.length>=BAG_MAX)return inventoryFailure({error:'full'});

@@ -182,6 +182,7 @@ function createRunCharacter(choice){
   return {actor:p,bagWeapon:alt&&!p.ranged?alt:null};
 }
 function newRun(seed,choice){
+  gameTurns.cancel();PACING.pending=null;stopTravel();fxClock=0;
   choice=choice||LAST_CHOICE||CHOICE;LAST_CHOICE=JSON.parse(JSON.stringify(choice));
   if(typeof SANDBOX!=='undefined')SANDBOX.normalTitle=false;
   if(typeof MAPVIEW!=='undefined')MAPVIEW.on=false;

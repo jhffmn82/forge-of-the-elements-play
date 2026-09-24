@@ -200,6 +200,7 @@ function spendPrayer(id){
   if(P.amusement)player.amusement-=P.amusement;
 }
 function usePrayer(id){
+  if(gameTurns.busy())return false;
   var before=player.t;
   var key=prayerId(id);
   try{return gameActions.run('prayer',player,null,{prayer:key},function(event){event.result=performPrayer(key);}).result;}

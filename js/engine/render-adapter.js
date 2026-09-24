@@ -146,17 +146,31 @@ var renderActor=FoteRendering.layered([
 ]);
 function drawCharacter(entity,x,y,options){return renderActor({entity:entity,x:x,y:y,options:options});}
 
+var terrainRedrawFrame=null;
+function sharedAnimationWillDraw(){
+  return !ANIM.reduce||fx.length>0||PARTS.length>0||fxIdleFrames>0;
+}
+function requestTerrainRedraw(){
+  /* fxTick already repaints animated scenes. A second RAF chain repeats the
+     entire scene in the same browser frame and multiplies after action draws.
+     Only an idle reduced-motion scene needs its own cache-completion frame. */
+  if(sharedAnimationWillDraw()||terrainRedrawFrame!==null)return;
+  terrainRedrawFrame=requestAnimationFrame(function terrainRedrawTick(){
+    terrainRedrawFrame=null;
+    if(!sharedAnimationWillDraw())draw();
+  });
+}
 function drawFramePasses(){
-  if(DC&&DEEP_RAF===null)DC.built=document.body.classList.contains('touch')?DEEP_BUDGET-8:0;
+  if(DC)DC.built=document.body.classList.contains('touch')?DEEP_BUDGET-8:0;
   try{
     speedFxList();PT_CACHE.built=0;
     var restoreVisibility=prepareShadeVisibility();
     try{drawScene();}finally{restoreVisibility();}
     if(AUTOMAP_ON)drawAutomap();
-    if(ptMat()&&PT_CACHE.built>=PT_BUDGET)requestAnimationFrame(function(){draw();});
+    if(ptMat()&&PT_CACHE.built>=PT_BUDGET)requestTerrainRedraw();
     drawBowAimOverlay();drawAutoAimOverlay();
   }finally{DEEP_RC=false;DEEP_AT=-1;}
-  if(inDeep()&&DC.built>=DEEP_BUDGET&&DEEP_RAF===null)DEEP_RAF=requestAnimationFrame(function(){DEEP_RAF=null;draw();});
+  if(inDeep()&&DC.built>=DEEP_BUDGET)requestTerrainRedraw();
 }
 var renderPreviousMap=null,renderPreviousMeta=null;
 function draw(){

@@ -260,6 +260,7 @@ grab = function(){
 
 /* ---------------------------------------------------------------- Search */
 function searchAround(resting, quiet){
+  if(gameTurns.busy())return false;
   if(!player || player.hp<=0) return;
   var spot=idxOf(player.x,player.y);
   floorMeta.searched=floorMeta.searched||{};

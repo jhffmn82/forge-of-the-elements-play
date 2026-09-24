@@ -320,6 +320,7 @@
   }, {capture:true, passive:false});
   ['pointerup','pointercancel'].forEach(function(n){ document.addEventListener(n, function(ev){
     if(hmTimer){ clearTimeout(hmTimer); hmTimer=null; }
+    if(turnSequenceBusy()){if(lift)endLift();return;}
     if(lift){
       var L=lift;
       if(n==='pointerup' && L.moved && L.over){
@@ -404,6 +405,7 @@
   ['pointerup','pointercancel'].forEach(function(n){ document.addEventListener(n, function(){
     if(blTimer){ clearTimeout(blTimer); blTimer=null; }
     if(!bl) return;
+    if(turnSequenceBusy()){endBL();return;}
     var B=bl;
     if(n==='pointerup' && B.moved && B.over){
       hotbarPut(+B.over.getAttribute('data-i'), B.entry); sfx('ui-click');

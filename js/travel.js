@@ -133,6 +133,8 @@ function travelStep(){
   if(Math.max(Math.abs(dx),Math.abs(dy))!==1){ stopTravel(); return; }
   var bx=player.x, by=player.y, bt=turn;
   lastDir=[dx,dy]; tryMove(dx,dy);
+  return afterTurn(function(){
+  if(TRAVEL!==T)return;
   /* an interaction at the end (door, chest...) happens on the bump itself */
   if(!T.path.length && (player.x!==step.x || player.y!==step.y)){ var th=T.then; TRAVEL=null; if(th && turn===bt) th(); return; }
   if(player.x===bx && player.y===by){
@@ -143,6 +145,7 @@ function travelStep(){
   T.hp=Math.min(T.hp, player.hp);
   if(!T.path.length){ var then2=T.then; TRAVEL=null; if(then2) then2(); return; }
   queueTravel(ANIM.reduce ? 0 : Math.max(20, MOVE_MS*0.35));
+  });
 }
 
 /* ---------------------------------------------------------------- the click itself */

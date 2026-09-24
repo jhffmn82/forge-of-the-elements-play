@@ -34,6 +34,7 @@ function amuletOk(a){ return a && AMULETS[a.amulet]; }
 /* ---------------------------------------------------------------- using one */
 
 useAmulet = function(){
+  if(gameTurns.busy())return false;
   var a=player.amulet; if(!a){ log('You are not wearing an amulet.','c-info'); return; }
   if(!amuletOk(a)){ log('This amulet has lost its power.','c-info'); return; }
   amuletSync(a);

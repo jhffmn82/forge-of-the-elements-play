@@ -82,7 +82,7 @@ var movementEntry=FoteTransitions.stages([
     if(!c.puzzleEntry)return;
     if(player.windCarry&&at(player.x,player.y)!==CHASM)player.windCarry=false;
     // Puzzle water damage historically follows the movement's elapsed turn.
-    if(player.x!==x||player.y!==y)enterTile();
+    if(player.x!==x||player.y!==y)afterTurn(enterTile);
   }}
 ]);
-function tryMove(dx,dy){movementEntry.run({dx:dx,dy:dy});}
+function tryMove(dx,dy){if(!gameTurns.busy())movementEntry.run({dx:dx,dy:dy});}

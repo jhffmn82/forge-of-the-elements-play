@@ -93,6 +93,7 @@ var gameTurns=FoteTurns.create({
   snapshot:function(){return {actionId:turn,hpBefore:player.hp,moved:!!player.movedThisTurn,noisy:!!player.noisy,freeStep:!!(player.movedThisTurn&&player.freeStep)};},
   actors:function(){return ents;},active:function(e){return (e.foe||e.ally)&&e.hp>0;},
   beforeSchedule:function(){ents.forEach(betaEnemyBalance);},
+  beforeActors:turnPlayerAnimationWait,beforeActor:turnPrimeAnimations,afterActor:turnActorAnimationWait,
   act:function(e){aiAct(e);},
   actorCost:function(e){return actCost(e);},pulse:turnWorldPulse,
   cost:function(context){return context.stillness?0:player.tombed?100:context.moved?moveCost():actCost(player);},
@@ -109,6 +110,15 @@ var gameTurns=FoteTurns.create({
   ],
   finalize:[turnPhase('finalize-action',turnFinalizeAction)]
 });
-function endTurn(){return gameActions.suspend(function(){return gameTurns.action();});}
+function endTurn(){
+  var result=gameActions.suspend(function(){return gameTurns.action();});
+  if(result&&typeof result.catch==='function')result.catch(function(error){console.error('Enemy turn failed',error);stopTravel();PACING.pending=null;});
+  return result;
+}
+/* Post-action work must also run after a synchronous save flush. */
+function afterTurn(fn){
+  var run=RUN,hero=player;
+  return gameTurns.after(function(){if(RUN===run&&player===hero)return fn();});
+}
 function worldAdvance(from,to){return gameTurns.advance(from,to);}
 function worldRunActors(from,to){return gameTurns.schedule(from,to);}

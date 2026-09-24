@@ -258,10 +258,22 @@ function castElementTarget(x,y){
       beginCast(A);
       log('<b>Glacial Tomb.</b> Ice closes over you.','c-good'); sfx('status-freeze');
       player.tombed=true;
-      var savedConditions=player.st;player.st={};
-      try{for(var r=0;r<3 && player.hp>0;r++){player.movedThisTurn=false;endTurn();}}finally{player.st=savedConditions;player.tombed=false;}
-      healPlayer(player.maxhp*.25);player.mp=Math.min(player.maxmp,player.mp+Math.round(player.maxmp*.25)); log('The tomb melts away.','c-info');
-      return true;
+      var tombPlayer=player,savedConditions=player.st,tombTurns=0;player.st={};
+      function restoreTomb(){tombPlayer.st=savedConditions;tombPlayer.tombed=false;}
+      function finishTomb(){
+        restoreTomb();
+        healPlayer(player.maxhp*.25);player.mp=Math.min(player.maxmp,player.mp+Math.round(player.maxmp*.25));log('The tomb melts away.','c-info');return true;
+      }
+      function advanceTomb(){
+        try{
+          if(tombTurns>=3 || player.hp<=0)return finishTomb();
+          tombTurns++;player.movedThisTurn=false;endTurn();
+          var completion=afterTurn(advanceTomb);
+          if(completion && typeof completion.catch==='function')completion.catch(restoreTomb);
+          return completion;
+        }catch(error){restoreTomb();throw error;}
+      }
+      advanceTomb();return true;
     }
     if(!f){ log('Glacial Tomb needs an enemy, or yourself.','c-info'); return false; }
     beginCast(A);

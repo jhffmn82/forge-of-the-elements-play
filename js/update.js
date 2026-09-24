@@ -3,6 +3,8 @@ var FOTE_VERSION = 'Beta 1.1';
 /* Keep newest first; describe only changes already present in this build. */
 var FOTE_PATCHES = [
   {version:'Beta 1.1', notes:[
+    "Enemies now finish each visible move or attack before the next creature acts, making crowded fights easier to follow. Turn order and creature speeds are unchanged.",
+    "Removed duplicate terrain redraws that caused Caverns stutter. Held inputs, travel, resting and saves now wait for a complete enemy turn.",
     "Rebuilt the core engine to make combat, equipment, summons and turn timing more consistent while preserving the existing interface and artwork.",
     "Improved Caverns terrain rendering to reduce stutter when exploring new areas.",
     "Unified status-effect rules so frost counts as a slow for Unstoppable and webs count as roots for abilities that benefit from rooted enemies.",

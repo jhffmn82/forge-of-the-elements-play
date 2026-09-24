@@ -252,7 +252,6 @@ function deepBuiltWall(x, y){ var C=deepCache(), i=idxOf(x,y); return !!C.lock[i
 /* wall torches only on built temple and volcanic walls drawn as tiles (a raster cell has no sconce to hold one) */
 
 
-var DEEP_RAF=null;
 
 
 /* ---------------------------------------------------------------- lava */

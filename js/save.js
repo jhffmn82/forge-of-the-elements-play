@@ -18,6 +18,8 @@ function saveDecode(root){return FoteCodec.decode(root);}
 
 /* ---------------------------------------------------------------- snapshot and restore */
 function saveSnapshot(label){
+  // Never persist a half-resolved enemy phase, including unload/recovery saves.
+  gameTurns.flush();
   var g=gameState.snapshot();
   var logHtml=[]; var L=$('log'); if(L) for(var i=Math.max(0,L.children.length-40); i<L.children.length; i++) logHtml.push([L.children[i].className, L.children[i].innerHTML]);
   return {format:SAVE_FORMAT, savedAt:new Date().toISOString(), label:label||'',
@@ -34,6 +36,7 @@ function saveApply(data){
       saveMigrateSigils,sigilNamesRefresh,ensureRuneLooks,migrateRangedSlot,hideRetiredSwapSlots,restorePuzzleState],
     recompute:function(){derive(player);}
   });
+  gameTurns.cancel();PACING.pending=null;stopTravel();fxClock=0;
   if(typeof SANDBOX!=='undefined')SANDBOX.normalTitle=false;
   /* Presentation is rebuilt only after every migration and validation succeeds. */
   fx=[]; PARTS.length=0; aiming=null; LAST_HIT=null;
@@ -115,6 +118,8 @@ function readSlot(s){
   }catch(e){ return null; }
 }
 function writeSlot(s, label){
+  if(gameTurns.running()){afterTurn(function(){writeSlot(s,label);});return true;}
+  gameTurns.flush();
   if(!player || !RUN){ return false; }
   if(RUN.over){ log('The dead cannot be saved.','c-info'); return false; }
   try{ localStorage.setItem(slotKey(s), JSON.stringify(saveSnapshot(label))); return true; }
@@ -134,7 +139,9 @@ function slotSummary(d){
     (s.god && GODS[s.god] ? ' &middot; '+GODS[s.god].name.split(',')[0] : '')+(when && !isNaN(when) ? '<div class="when">'+when.toLocaleString()+'</div>' : '');
 }
 function exportSave(){
+  gameTurns.flush();
   if(!player || !RUN) return;
+  if(RUN.over){log('The dead cannot be saved.','c-info');return;}
   var blob=new Blob([JSON.stringify(saveSnapshot('export'))], {type:'application/json'});
   var a=document.createElement('a'); a.href=URL.createObjectURL(blob);
   a.download='fote-'+(player.name||'save').replace(/[^A-Za-z0-9]+/g,'-').toLowerCase()+'-L'+player.level+'-F'+floorNo+'.json';
