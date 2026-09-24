@@ -77,103 +77,30 @@ function syllaPoison(t, turns, r){
 function syllaWeb(t, r){
   if(!t || t.hp<=0 || t===player) return;
   r = (r===undefined ? godRank() : r);
-  applyStatus(t, 'root', SYLLA.webRoot);
-  t.syllaWeb = SYLLA.webSlow;
+  gameEffects.applyWeb(t,{rootTurns:SYLLA.webRoot,slowTurns:SYLLA.webSlow,bleedTurns:SYLLA.webBleedTurns,bleedDamage:Math.max(1,Math.round((SYLLA.poisonBase+r)*divineStrength()))});
   floatText(t.x, t.y, 'webbed', 'web');
   if(typeof sparkleFx==='function') sparkleFx(t.x, t.y, (typeof TRAIL!=='undefined' && TRAIL.web) ? 'web' : 'magic', 12);
-  applyStatus(t,'bleed',SYLLA.webBleedTurns,Math.max(1,Math.round((SYLLA.poisonBase+r)*divineStrength())));
-  if(t.st.root)t.st.root.effect='web';
   floatText(t.x,t.y,'bleeding','blood');
 }
 
 /* ---------------------------------------------------------------- the slow status
    Chill already scales speed inside actCost(); slow is the same idea one step harder, and it has to reach
    moveCost() as well or a slowed player would still walk at full pace. */
-var _actCostSyl = actCost;
-actCost = function(e){
-  var c=_actCostSyl(e);
-  if(e && e.st && e.st.slow) c=Math.round(c/(e.st.slow.mult||SYLLA.slowMult));   /* a slow may carry its own strength (spores: 0.8) */
-  return c;
-};
-var _moveCostSyl = moveCost;
-moveCost = function(){
-  var c=_moveCostSyl();
-  if(player && player.st && player.st.slow) c=Math.round(c/(player.st.slow.mult||SYLLA.slowMult));
-  return c;
-};
+
+
 var _clearBadSyl = clearBad;
 clearBad = function(){ _clearBadSyl(); delete player.st.slow; player.syllaWeb=0; };
-
-/* rank 5, The Long Patience: every status you put on an enemy runs a round longer */
-var _applyStatusSyl = applyStatus;
-applyStatus = function(e, key, turns, extra){
-  if(e && e!==player && e.foe && syllaOn() && godRank()>=5 && turns>0) turns=turns+1;
-  var r = _applyStatusSyl(e, key, turns, extra);
-  /* slow counts game turns, not the bearer's actions - see the tickStatus wrapper below */
-  if(key==='slow' && e && e.st && e.st.slow && turns>0) e.st.slow.until = turn + turns;
-  return r;
-};
-/* the held-back half of the web goes on the moment the root expires.
-   2026-09-20: slow is also spent here, in turns of the game rather than in the bearer's own actions.
-   Slow works by doubling what an action costs, so a slowed creature acts half as often - and a status
-   ticked on the bearer's turn therefore ticked half as often too, which made "3 turns of slow" last five
-   or six against a monster while costing the player exactly three. Justin: "should last n". Stamping the
-   turn it ends on makes n mean n for both sides. */
-var _tickStatusSyl = tickStatus;
-tickStatus = function(e){
-  if(typeof WORLD_TICK!=='undefined'&&!WORLD_TICK)return true;
-  if(typeof WORLD_TICK==='undefined' && e && e.st && e.st.slow && e.st.slow.until !== undefined && turn >= e.st.slow.until) delete e.st.slow;
-  var r=_tickStatusSyl(e);
-  if(r!==false && e && e.hp>0 && e.syllaWeb>0 && !(e.st && e.st.root)){ var n=e.syllaWeb; e.syllaWeb=0; applyStatus(e, 'slow', n); }
-  return r;
-};
 
 /* ---------------------------------------------------------------- boons 2 and 3, and the brood's toughness
    Venomtouch and Fangs in the Dark both answer one landed blow, and a blow is one LAST_HIT: combat.js sets it
    just before the damage goes in, for a swing, a shot and a spell alike, so hooking applyDamage catches all
    three with the target's statuses still as they were before this hit. _syl marks a LAST_HIT already paid out,
    so a smite proc or the venom's own damage cannot trigger it a second time. */
-var _applyDamageSyl = applyDamage;
-applyDamage = function(target, amount, type, source){
-  if(target && target.syllaResist>0 && amount>0) amount *= (1 - target.syllaResist);
-  var wasStatused=syllaStatused(target);
-  var d=_applyDamageSyl(target, amount, type, source);
-  if(!syllaOn() || !target || target===player || target.ally || target.hp===undefined) return d;
-  var L=LAST_HIT;
-  if(!L || L.att!==player || L.def!==target || L._syl) return d;
-  L._syl=true;
-  /* 2026-09-20: Venomtouch is the rank 3 boon now (Justin: "the boon at 3 was supposed to be poison on attack").
-     From rank 3 every strike of yours poisons, and it bites harder against anything already suffering. */
-  var r=godRank();
-  if(r>=3 && target.hp>0){
-    syllaPoison(target, SYLLA.poisonTurns, r);
-    if(wasStatused && target.hp>0){
-      var vd=_applyDamageSyl(target, r, 'poison', player);        /* +1 poison damage per rank */
-      if(vd>0) floatText(target.x, target.y, String(vd), 'poison');
-    }
-  }
-  return d;
-};
+
 
 /* ---------------------------------------------------------------- boon 1, the brood's bite, Into the Dark's opener */
-var _attackSyl = attack;
-attack = function(att, def, mult, label){
-  mult = mult || 1;
-  var dark = (att===player && syllaOn() && player.syllaDark>0 && player.hidden>0 && def && def.hp>0) ? player.syllaDark : 0;
-  if(dark) mult *= 1 + SYLLA.darkPerRank*dark*divineStrength();
-  var hp0 = def ? def.hp : 0, wasHidden=player.hidden>0;
-  var r = _attackSyl(att, def, mult, label);
-  if(dark && def && def.hp<hp0){ player.syllaDark=0; log('<b>Into the Dark.</b> You come out of the black: +'+Math.round(SYLLA.darkPerRank*dark*100)+'% on the strike.','c-good'); }
-  if(!def || !(def.hp < hp0)) return r;                            /* it missed, or nothing landed */
-  if(att===player && syllaOn()){
-    var gr=godRank();
-    if(gr>0 && def.hp>0 && rng() < SYLLA.webChance*gr) syllaWeb(def, gr);
-    if(LAST_HIT && LAST_HIT.att===player && LAST_HIT.def===def && LAST_HIT.surprise)
-      gainPiety(wasHidden ? SYLLA.pietyUnseen : SYLLA.pietySurprise);
-  }
-  if(att && att.broodling && def!==player && def.hp>0) broodBite(def);
-  return r;
-};
+
+
 /* a spiderling's bite is the same web you throw, and venom on top: they are Sylla's own children */
 function broodBite(def){
   var r=Math.max(1, godRank());
@@ -182,21 +109,7 @@ function broodBite(def){
 }
 
 /* ---------------------------------------------------------------- the invoke */
-var _castSelfSyl = castSelf;
-castSelf = function(key, A){
-  if(key==='intothedark'){
-    var r=godRank();
-    spendSpellMana(A); setClip(player,'cast');
-    player.hidden = Math.max(player.hidden||0, divineDuration(SYLLA.darkTurns));
-    ents.forEach(function(e){ if(e.foe && e.state==='hunt'){ e.state='wander'; e.lastSeen=null; } });
-    player.syllaDark = r;player.castingSpell=false;
-    sfx('vanish'); sparkleFx(player.x, player.y, 'dark', 30); ringFx(player.x, player.y, GODS.sylla.color, 2.5);
-    log('<b>Into the Dark.</b> The dark closes over you for '+SYLLA.darkTurns+' turns; nothing can keep your trail. Your next strike comes out of it'+
-        (r ? ' (+'+Math.round(SYLLA.darkPerRank*r*100)+'%)' : '')+'.','c-good');
-    return true;
-  }
-  return _castSelfSyl(key, A);
-};
+
 
 /* ---------------------------------------------------------------- the prayers */
 function prayTheBrood(){
@@ -230,17 +143,7 @@ function prayVenomBurst(){
 }
 
 /* ---------------------------------------------------------------- piety */
-var _godOnKillSyl = godOnKill;
-godOnKill = function(e, by){
-  _godOnKillSyl(e, by);
-  if(!syllaOn() || !e) return;
-  var byPlayer = by===player || by==='player', byAlly = by && by.ally;
-  if(!(byPlayer || byAlly)) return;
-  var s=e.st||{}, held = s.slow || s.root || s.poison || e.syllaWeb>0;
-  if(!held) return;
-  var big = e.elite || (e.base && (e.base.elite || e.base.boss));
-  gainPiety(SYLLA.pietyKill + (big ? SYLLA.pietyBig : 0));
-};
+
 
 /* ---------------------------------------------------------------- her rule
    No fire (affinity, enchantment, sigil, spell or a torch put to the grass), no shields, nothing heavier
@@ -275,12 +178,7 @@ refusalText = function(id){
 
 /* ---------------------------------------------------------------- housekeeping
    Into the Dark's opener and a half-thrown web do not survive leaving the floor or abandoning her. */
-var _joinGodSyl = joinGod;
-joinGod = function(id, startPiety){
-  if(clericGodLocked(id)) return false;
-  var r=_joinGodSyl(id, startPiety);
-  if(id!=='sylla'){ player.syllaDark=0; }
-  return r;
-};
-var _generateSyl = generate;
-generate = function(seed){ var r=_generateSyl.apply(this, arguments); if(player) player.syllaDark=0; return r; };
+
+
+/* Named floor-generation stages; ordered by generation-adapter.js. */
+function resetGeneratedConcealment(seed){  if(player) player.syllaDark=0; return; }

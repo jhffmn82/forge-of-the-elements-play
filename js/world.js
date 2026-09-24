@@ -17,10 +17,14 @@ function idxOf(x,y){ return y*MW+x; }
 function gAt(x,y){ return inb(x,y) ? ground[idxOf(x,y)] : 0; }
 function setG(x,y,v){ if(inb(x,y)) ground[idxOf(x,y)]=v; }
 function propAt(x,y){ if(!inb(x,y)) return null; var i=propGrid[idxOf(x,y)]; return i>=0 ? props[i] : null; }
-function rebuildPropGrid(){ propGrid.fill(-1); for(var i=0;i<props.length;i++) propGrid[idxOf(props[i].x,props[i].y)]=i; }
+function rebuildPropGrid(){
+  propGrid.fill(-1);
+  for(var i=0;i<props.length;i++)propGrid[idxOf(props[i].x,props[i].y)]=i;
+  for(var j=0;j<props.length;j++){var p=props[j];if(!p.set)continue;for(var y=p.y;y<p.y+p.h;y++)for(var x=p.x;x<p.x+p.w;x++)if(inb(x,y))propGrid[idxOf(x,y)]=j;}
+}
 /* tiles that hold their own object: a prop never shares one (a torch stand once stood inside a chest) */
-function objectTile(t){ return t===CHEST || t===STAIRS || t===FORGE || t===DOOR || t===OPEN || (typeof SHRINE!=='undefined' && t===SHRINE) || (typeof EXIT!=='undefined' && t===EXIT); }
-function addProp(x,y,name,extra){
+function objectTile(t){ return t===CHEST || t===STAIRS || t===FORGE || t===DOOR || t===OPEN || (typeof UPSTAIRS!=='undefined' && t===UPSTAIRS) || (typeof PORTAL!=='undefined' && t===PORTAL) || (typeof SHRINE!=='undefined' && t===SHRINE) || (typeof EXIT!=='undefined' && t===EXIT); }
+function createProp(x,y,name,extra){
   if(!inb(x,y) || propAt(x,y) || objectTile(at(x,y))) return null;
   var d=PROPS[name]||{}, p={x:x,y:y,name:name};
   for(var k in d) p[k]=d[k];
@@ -30,23 +34,17 @@ function addProp(x,y,name,extra){
 function removeProp(p){ var i=props.indexOf(p); if(i<0) return; props.splice(i,1); rebuildPropGrid(); }
 
 /* ---- movement and sight rules ---- */
-function walkable(x,y){
-  var t=at(x,y);
-  if(!(t===FLOOR||t===OPEN||t===STAIRS||t===RUBBLE||t===WATER||t===BRIDGE||(t===EXIT&&floorMeta.exitOpen))) return false;
-  var p=propGrid ? propAt(x,y) : null;
-  return !(p && p.b);
-}
-function passable(x,y){ var t=at(x,y); return walkable(x,y) || t===DOOR || t===CHEST; }
-function opaque(x,y){
-  var t=at(x,y);
-  if(t===WALL||t===DOOR||t===LOCKED||t===ICEDOOR||t===THORNS||t===SECRET||t===SEALED||t===TOLL) return true;
-  if(ground && gAt(x,y)===G_GRASS) return true;
-  return false;
-}
+
+
 function isDoorish(t){ return t===DOOR||t===OPEN||t===LOCKED||t===ICEDOOR||t===THORNS||t===TOLL||t===SEALED||t===SECRET; }
-function roomAt(x,y){ for(var i=0;i<rooms.length;i++){ var r=rooms[i]; if(x>=r.x&&x<r.x+r.w&&y>=r.y&&y<r.y+r.h) return r; } return null; }
+function findRectangularRoom(x,y){ for(var i=0;i<rooms.length;i++){ var r=rooms[i]; if(x>=r.x&&x<r.x+r.w&&y>=r.y&&y<r.y+r.h) return r; } return null; }
 function inRoom(x,y){ return !!roomAt(x,y); }
-function occupied(x,y){ return ents.some(function(e){ return e.x===x && e.y===y; }); }
+function occupied(x,y){
+  if(ents.some(function(e){return e.x===x && e.y===y;}))return true;
+  if(!fx || !fx.length)return false;
+  var now=performance.now();
+  return fx.some(function(f){return f.k==='d' && f.e && f.e.x===x && f.e.y===y && now<f.t0+f.dur;});
+}
 function itemAt(x,y){ for(var i=0;i<items.length;i++) if(items[i].x===x && items[i].y===y) return items[i]; return null; }
 function freeCell(x,y){ return at(x,y)===FLOOR && !propAt(x,y) && !itemAt(x,y) && !occupied(x,y) && !feats.some(function(f){return f.x===x&&f.y===y;}); }
 
@@ -123,24 +121,14 @@ function newRunState(seed){
 }
 
 /* ============================================================== generation */
-function generate(seed){
-  /* Status/buff timing uses this scheduler clock across the whole run.  Resetting
-     it on every new floor left carried effects with timestamps far in the future,
-     so they stopped counting down and affected saves preserved the mismatch. */
-  var floorClock=(typeof player!=='undefined' && player && Number.isFinite(player.t))?player.t:0;
-  for(var attempt=0; attempt<8; attempt++){
-    if(generateOnce((seed + attempt*7919)>>>0)){
-      /* later room builders can wall over a cell chosen earlier: drop traps and loot left inside walls */
-      feats = feats.filter(function(f){ return at(f.x,f.y)===FLOOR && !propAt(f.x,f.y); });
-      items = items.filter(function(it){ return walkable(it.x,it.y) || at(it.x,it.y)===STAIRS; });
-      /* a chest, stairs or door placed after a prop takes the tile */
-      props = props.filter(function(p){ return !objectTile(at(p.x,p.y)); }); rebuildPropGrid();
-      /* everyone on a fresh floor starts on the same, run-wide clock */
-      if(typeof player!=='undefined' && player) player.t=floorClock;
-      ents.forEach(function(e){ e.t=floorClock; });
-      return;
-    }
-  }
+function commitGeneratedFloor(floorClock){
+  /* Room builders can overwrite earlier placements. Commit only a valid layout. */
+  feats=feats.filter(function(f){return at(f.x,f.y)===FLOOR&&!propAt(f.x,f.y);});
+  items=items.filter(function(it){return walkable(it.x,it.y)||at(it.x,it.y)===STAIRS;});
+  props=props.filter(function(p){return !objectTile(at(p.x,p.y));});rebuildPropGrid();
+  /* Carried effects and every new actor keep the run-wide scheduler clock. */
+  if(typeof player!=='undefined'&&player)player.t=floorClock;
+  ents.forEach(function(e){e.t=floorClock;});
 }
 
 function generateOnce(seed){
@@ -234,8 +222,9 @@ function generateOnce(seed){
   /* ---- pockets: vaults, puzzles, toll rooms, hidden rooms ---- */
   if(floorNo>=2) buildLockedVault();
   var fb=bfloor();
+  /* Preserve the retired puzzle selection draws so published seeds remain stable. */
   var puzzles = fb===1 ? [] : fb===2 ? ['icedoor','plates'] : fb===3 ? ['elemlock','thorns','chasm'] : fb===4 ? ['chasm','plates','elemlock','icedoor'] : ['thorns'];
-  if(puzzles.length){ var pz=pick(puzzles); buildPuzzle(pz); if(fb===4 && rng()<0.5) buildPuzzle(pick(puzzles.filter(function(p){return p!==pz;}))); }
+  if(puzzles.length){ var pz=pick(puzzles); if(fb===4 && rng()<0.5) pick(puzzles.filter(function(p){return p!==pz;})); }
   if(floorNo>=3 && rng()<0.55) buildTollRoom();
   if(rng()<0.45) buildHiddenRoom();
 
@@ -400,7 +389,7 @@ function blob(x,y,size,paint){
   }
 }
 /* edge cells: inside a room, on its border, not in front of an entrance */
-function edgeCells(r){
+function rectangularEdgeCells(r){
   var out=[];
   for(var y=r.y;y<r.y+r.h;y++) for(var x=r.x;x<r.x+r.w;x++){
     if(!(x===r.x||x===r.x+r.w-1||y===r.y||y===r.y+r.h-1)) continue;
@@ -410,7 +399,7 @@ function edgeCells(r){
   }
   return out;
 }
-function interiorCells(r){
+function rectangularInteriorCells(r){
   var out=[];
   for(var y=r.y+1;y<r.y+r.h-1;y++) for(var x=r.x+1;x<r.x+r.w-1;x++) if(at(x,y)===FLOOR && !propAt(x,y) && !(x===r.cx&&y===r.cy)) out.push({x:x,y:y});
   return out;
@@ -433,26 +422,13 @@ function decoratePlain(r){
 }
 
 /* ---- gear, sigils ---- */
-function randomGear(){
-  var roll=rng();
-  var it;
-  if(roll<0.5){ var k=pick(['sword','dagger','mace','longsword','axe','bow','staff','wand','spear','censer']); it={kind:'weapon', it:clone(WEAPONS[k])}; }
-  else if(roll<0.8){ var a=pick(['leather','chain','plate','robe']); it={kind:'armor', it:clone(ARMORS[a])}; }
-  else { var o=pick(['buckler','kite','orb','tome','holy']); it={kind:'off', it:clone(OFFHANDS[o])}; }   /* daggers drop as weapons and can be worn in either hand */
-  var tierRoll=rng();
-  if(floorNo>=3 && tierRoll<0.25){ it.it.tier='Trusty'; } else it.it.tier='Rusty';
-  it.it.plus = rollEnhancement(0);
-  if(it.kind!=='off'){
-    if(rng()<0.15+floorNo*0.03) it.it.enchant=pick(ELEMENTS);
-  }
-  return it;
-}
+
 function randomSigilUse(){ return pick(['firestorm','mana','levitate','stoneskin','heal','vanish','heal','identify','mapping','blink']); }
 
 /* ---- pockets: carve a small room off an existing one, behind one door tile ---- */
 /* a dead-end hallway 3-5 tiles long leading out of a room, solid rock on both sides; returns its far end.
    From biome 2 on, stairs sit at the end of one (2026-09-17, from the Crypt concept art; biome 1 keeps stairs in the room) */
-function carveDeadEnd(room){
+function carveRectangularPassage(room){
   var sides=shuffled([0,1,2,3]);
   for(var t=0;t<120;t++){
     var side=sides[t%4], len=ri(3,5), sx, sy, dx=0, dy=0;
@@ -562,72 +538,10 @@ function buildHiddenRoom(){
   if(c.length){ setT(c[0].x,c[0].y,CHEST); chestKind[idxOf(c[0].x,c[0].y)]='chest-wood'; }
   if(c.length>1) items.push({x:c[1].x,y:c[1].y,kind:'essence',n:ri(15,30)});
 }
-function buildPuzzle(kind){
-  var pk=carvePocket(3,3,5,4); if(!pk) return;
-  pk.room.special='puzzle-'+kind;
-  var ent=pk.inside;
-  if(kind==='icedoor'){
-    setT(pk.door.x,pk.door.y,ICEDOOR); floorMeta.icedoor={x:pk.door.x,y:pk.door.y,hits:0};
-    floorMeta.notes.push('A doorway sealed in thick ice. Fire would melt it; enough blows would crack it.');
-    lootRoom(pk.room, false);
-  } else if(kind==='thorns'){
-    setT(pk.door.x,pk.door.y,THORNS);
-    floorMeta.notes.push('A doorway choked with thorns. Fire clears it; pushing through hurts.');
-    lootRoom(pk.room, false);
-  } else if(kind==='elemlock'){
-    setT(pk.door.x,pk.door.y,SEALED);
-    var el=pick(ELEMENTS);
-    var host=pk.host, spots=edgeCells(host).filter(function(p){ return Math.abs(p.x-ent.x)+Math.abs(p.y-ent.y)<=3 && !(p.x===ent.x&&p.y===ent.y); });
-    var s=spots.length ? pick(spots) : null;
-    if(!s) { setT(pk.door.x,pk.door.y,DOOR); return; }
-    addProp(s.x,s.y,'elemental-lock',{element:el, door:{x:pk.door.x,y:pk.door.y}, keep:true});
-    /* the answer is guaranteed on this floor */
-    var o=[]; for(var y=0;y<MH;y++) for(var x=0;x<MW;x++) if(freeCell(x,y) && inRoom(x,y) && !roomAt(x,y).pocket) o.push({x:x,y:y});
-    if(o.length){ var m=pick(o); items.push({x:m.x,y:m.y,kind:'mote',el:el}); }
-    var c=shuffled(interiorCells(pk.room).concat(edgeCells(pk.room)));
-    if(c.length){ setT(c[0].x,c[0].y,CHEST); chestKind[idxOf(c[0].x,c[0].y)]='chest-elemental'; }
-    for(var i=1;i<3 && i<c.length;i++) items.push({x:c[i].x,y:c[i].y,kind:'mote',el:el});
-  } else if(kind==='plates'){
-    setT(pk.door.x,pk.door.y,SEALED);
-    var hostCells=shuffled(interiorCells(pk.host).filter(function(p){ return freeCell(p.x,p.y) && !nearDoor(p.x,p.y); }));
-    if(hostCells.length<4){ setT(pk.door.x,pk.door.y,DOOR); return; }
-    var symbols=shuffled(['moon','sun','star']);
-    var order=shuffled([0,1,2]);
-    plates={cells:[], order:order.map(function(i){ return symbols[i]; }), progress:0, door:{x:pk.door.x,y:pk.door.y}, solved:false};
-    for(var p2=0;p2<3;p2++){ var pc=hostCells[p2]; plates.cells.push({x:pc.x,y:pc.y,symbol:symbols[p2],pressed:false}); }
-    var tab=edgeCells(pk.host).filter(function(p){ return freeCell(p.x,p.y); });
-    if(tab.length){ var tb=pick(tab); addProp(tb.x,tb.y,'statue-broken',{tablet:true, keep:true}); }
-    var c2=shuffled(interiorCells(pk.room).concat(edgeCells(pk.room)));
-    if(c2.length){ setT(c2[0].x,c2[0].y,CHEST); chestKind[idxOf(c2[0].x,c2[0].y)]='chest-crystal'; }
-    if(c2.length>1){ var g=randomGear(); g.x=c2[1].x; g.y=c2[1].y; items.push(g); }
-  } else if(kind==='chasm'){
-    /* a chasm band splits the pocket room; a lever elsewhere lowers a bridge, an Air sigil floats you over */
-    setT(pk.door.x,pk.door.y,DOOR);
-    var r=pk.room, band=[];
-    if(r.h>=4 && r.w>=3){
-      var by = (ent.y < r.y) ? r.y+1 : (ent.y >= r.y+r.h ? r.y+r.h-2 : r.cy);
-      if(pk.door.y===r.y-1) by=r.y+1; else if(pk.door.y===r.y+r.h) by=r.y+r.h-2;
-      else { /* door on a side: split vertically instead */ var bx = pk.door.x===r.x-1 ? r.x+1 : r.x+r.w-2; for(var yy=r.y;yy<r.y+r.h;yy++){ setT(bx,yy,CHASM); band.push({x:bx,y:yy}); } }
-      if(!band.length) for(var xx=r.x;xx<r.x+r.w;xx++){ setT(xx,by,CHASM); band.push({x:xx,y:by}); }
-    } else { for(var yy2=r.y;yy2<r.y+r.h;yy2++){ setT(r.cx,yy2,CHASM); band.push({x:r.cx,y:yy2}); } }
-    var mid=band[Math.floor(band.length/2)];
-    /* loot on the far side */
-    var farCells=interiorCells(r).concat(edgeCells(r)).filter(function(p){ return at(p.x,p.y)===FLOOR && Math.abs(p.x-pk.door.x)+Math.abs(p.y-pk.door.y) > Math.abs(mid.x-pk.door.x)+Math.abs(mid.y-pk.door.y); });
-    if(farCells.length){ var fc=pick(farCells); setT(fc.x,fc.y,CHEST); chestKind[idxOf(fc.x,fc.y)]='chest-ornate'; }
-    farCells.forEach(function(p,i){ if(i<2 && freeCell(p.x,p.y)) items.push({x:p.x,y:p.y,kind:i===0?'mote':'essence', el:pick(ELEMENTS), n:ri(15,25)}); });
-    var leverRooms=rooms.filter(function(rr){ return !rr.pocket && rr!==pk.host && rr.role!=='boss'; });
-    var lr=pick(leverRooms), le=lr ? shuffled(edgeCells(lr))[0] : null;
-    if(le){ addProp(le.x,le.y,'lever-up',{lever:true, bridge:[mid], keep:true}); }
-    var o2=[]; for(var y2=0;y2<MH;y2++) for(var x2=0;x2<MW;x2++) if(freeCell(x2,y2) && inRoom(x2,y2) && !roomAt(x2,y2).pocket) o2.push({x:x2,y:y2});
-    if(o2.length){ var a=pick(o2); items.push({x:a.x,y:a.y,kind:'sigil',use:'levitate'}); }
-    floorMeta.notes.push('A chasm splits a side room. Somewhere a lever creaks; an Air sigil would float you across.');
-    return;
-  }
-  floorMeta.entrances=(floorMeta.entrances||[]).concat([ent]);
-}
+
 
 /* ---- special rooms inside ordinary rooms ---- */
-function buildSpecial(kind, r){
+function buildDefaultSpecial(kind, r){
   r.special=kind;
   var e=shuffled(edgeCells(r)), inner=shuffled(interiorCells(r)), i;
   function place(list, names, n, extra){ for(var k=0;k<n && list.length;k++){ var c=list.pop(); addProp(c.x,c.y,names[k%names.length],extra); } }
@@ -707,7 +621,7 @@ function buildSpecial(kind, r){
 function nearFreeRoomCell(r, p){
   var nb=[[1,0],[-1,0],[0,1],[0,-1]]; for(var i=0;i<4;i++){ var x=p.x+nb[i][0], y=p.y+nb[i][1]; if(at(x,y)===FLOOR && roomAt(x,y)===r && !propAt(x,y)) return {x:x,y:y}; } return null;
 }
-function populateSpecialMonsters(){
+function populateRoomResidents(){
   rooms.forEach(function(r){
     var cells=shuffled(interiorCells(r).concat(edgeCells(r))).filter(function(p){ return walkable(p.x,p.y) && !occupied(p.x,p.y); });
     function sp(kind, state){ var c=cells.pop(); if(!c) return null; var m=spawn(kind,c.x,c.y); m.state=state||'asleep'; return m; }
@@ -723,7 +637,7 @@ function populateSpecialMonsters(){
     }
   });
 }
-function buildBossRoom(r){
+function buildDungeonBossRoom(r){
   floorMeta.bossAt={x:r.cx, y:r.y+1};
   addProp(r.cx, r.y, 'boss-throne', {keep:true});
   decorateEdges(r, ['brazier-lit','banner-stand','torch-stand'], 5);
@@ -735,8 +649,14 @@ function buildBossRoom(r){
 
 /* ---- the monster table, floor-banded ---- */
 function rollMonster(){
-  var d=floorNo, pool=[];
-  for(var k in MONSTERS){ var b=MONSTERS[k]; if(b.rare||!b.w) continue; if(d<b.band[0]||d>b.band[1]) continue; pool.push([k,b.w]); }
+  var pool=deepMobsOn()?deepPool(-1):[];
+  if(!pool.length)pool=caveRoster();
+  if(!pool.length){
+    for(var k in MONSTERS){var b=MONSTERS[k];if(b.rare||!b.w)continue;if(floorNo<b.band[0]||floorNo>b.band[1])continue;pool.push([k,b.w]);}
+  }
+  return weightedMonster(pool);
+}
+function weightedMonster(pool){
   var tot=0,i; for(i=0;i<pool.length;i++) tot+=pool[i][1];
   var r=rng()*tot; for(i=0;i<pool.length;i++){ r-=pool[i][1]; if(r<=0) return pool[i][0]; }
   return pool.length ? pool[pool.length-1][0] : 'rat';
@@ -745,18 +665,11 @@ function rollRare(){
   var out=[]; for(var k in MONSTERS){ var b=MONSTERS[k]; if(b.rare && floorNo>=b.band[0] && floorNo<=b.band[1]) out.push(k); }
   return out.length ? pick(out) : null;
 }
-function spawn(kind,x,y){
+function spawnRaw(kind,x,y){
   var b=MONSTERS[kind];
-  /* the plane creatures are tuned by hand for the plane they guard (js/portals.js), so the floor curve that
-     grows dungeon monsters does not apply to them - it was turning a 110 HP boss into 207 (2026-09-17) */
-  /* 2026-09-18 (Justin): +5% HP and +3% damage a floor, from +8% / +5% - biomes 1-2 ramped faster than a
-     build outside the strong early combos could keep up with. */
-  /* 2026-09-20: no curve. Justin, after his first full run: every creature's health, damage and armour is set by
-     hand (DESIGN §20), so a Goblin is a Goblin on floor 1 and floor 5; a floor gets harder because nastier
-     creatures appear in its band, not because the same ones quietly inflate. */
-  var hpScale = 1, dmgScale = 1;
+  /* Creature stats come from the content table; depth selects the roster. */
   var e={id:nextId++, kind:kind, name:b.name, ch:b.ch, col:b.col, x:x, y:y,
-         hp:sHP(b.hp*hpScale), maxhp:sHP(b.hp*hpScale), base:b, t:(typeof player!=='undefined' && player && player.t) ? player.t : 0, state:'asleep', st:{}, foe:true,
-         dmg:[sDMG(b.dmg[0]*dmgScale), sDMG(b.dmg[1]*dmgScale)], castCd:ri(1,3)};
+         hp:sHP(b.hp), maxhp:sHP(b.hp), base:b, t:(typeof player!=='undefined' && player && player.t) ? player.t : 0, state:'asleep', st:{}, foe:true,
+         dmg:[sDMG(b.dmg[0]), sDMG(b.dmg[1])], castCd:ri(1,3)};
   ents.push(e); return e;
 }

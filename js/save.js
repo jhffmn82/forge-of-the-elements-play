@@ -10,99 +10,35 @@
 var SAVE_FORMAT = 'fote-save-1';
 var SAVE_SLOTS = ['auto', '1', '2', '3'];
 /* run state only: data tables (ABILITIES, SIGILS...) always come from the current code */
-var SAVE_KEYS = ['player','RUN','floorNo','turn','revealAll','worldSeed','nextId','lastDir','spawnedExtra','nextSpawn',
-  'map','seen','vis','feats','items','ents','rooms','ground','fireT','fireSrc','props','propGrid','chestKind','floorMeta',
-  'levers','plates','altars','iceG','rootG','holyG','sigilLook','sigilKnown','pendingExtra','LAST_CHOICE'];
+var SAVE_KEYS = FoteState.fields;
 
 /* ---------------------------------------------------------------- graph encoding */
-function saveEncode(root){
-  var ids=new Map(), n=0;
-  function enc(v){
-    if(v===null || typeof v!=='object') return (typeof v==='function' || typeof v==='symbol') ? undefined : (typeof v==='number' && !isFinite(v)) ? {$num:String(v)} : v;
-    if(v instanceof Node || v instanceof CanvasRenderingContext2D || (window.ImageBitmap && v instanceof ImageBitmap) || (window.AudioNode && v instanceof AudioNode)) return undefined;
-    if(ids.has(v)) return {$ref:ids.get(v)};
-    var id=++n; ids.set(v, id);
-    if(ArrayBuffer.isView(v)) return {$id:id, $ta:v.constructor.name, d:Array.from(v)};
-    if(v instanceof Set) return {$id:id, $set:Array.from(v).map(enc)};
-    if(v instanceof Map) return {$id:id, $map:Array.from(v).map(function(p){ return [enc(p[0]), enc(p[1])]; })};
-    if(Array.isArray(v)) return {$id:id, $arr:v.map(function(x){ var e=enc(x); return e===undefined ? null : e; })};
-    var o={$id:id};
-    for(var k in v){ if(!Object.prototype.hasOwnProperty.call(v,k)) continue; var e=enc(v[k]); if(e!==undefined) o[k]=e; }
-    return o;
-  }
-  return enc(root);
-}
-function saveDecode(root){
-  var byId={}, fix=[];
-  function dec(v){
-    if(v===null || typeof v!=='object') return v;
-    if(v.$num!==undefined) return Number(v.$num);
-    if(v.$ref!==undefined){ if(byId[v.$ref]!==undefined) return byId[v.$ref]; var ph={__ref:v.$ref}; fix.push(ph); return ph; }
-    var out;
-    if(v.$ta){ var C=window[v.$ta] || Array; out=new C(v.d); byId[v.$id]=out; return out; }
-    if(v.$set){ out=new Set(); byId[v.$id]=out; v.$set.forEach(function(x){ out.add(dec(x)); }); return out; }
-    if(v.$map){ out=new Map(); byId[v.$id]=out; v.$map.forEach(function(p){ out.set(dec(p[0]), dec(p[1])); }); return out; }
-    if(v.$arr){ out=[]; if(v.$id!==undefined) byId[v.$id]=out; v.$arr.forEach(function(x){ out.push(dec(x)); }); return out; }
-    out={}; if(v.$id!==undefined) byId[v.$id]=out;
-    for(var k in v){ if(k!=='$id') out[k]=dec(v[k]); }
-    return out;
-  }
-  var r=dec(root);
-  /* a reference met before its object was finished (a cycle): patch it in place */
-  if(fix.length){
-    var seen=new Set();
-    (function walk(o){
-      if(!o || typeof o!=='object' || seen.has(o) || ArrayBuffer.isView(o)) return; seen.add(o);
-      if(Array.isArray(o)){ for(var i=0;i<o.length;i++){ if(o[i] && o[i].__ref!==undefined) o[i]=byId[o[i].__ref]; else walk(o[i]); } return; }
-      if(o instanceof Set || o instanceof Map) return;
-      for(var k in o){ var x=o[k]; if(x && x.__ref!==undefined) o[k]=byId[x.__ref]; else walk(x); }
-    })(r);
-  }
-  return r;
-}
+function saveEncode(root){return FoteCodec.encode(root,function(value){return value instanceof Node || value instanceof CanvasRenderingContext2D || (window.ImageBitmap && value instanceof ImageBitmap) || (window.AudioNode && value instanceof AudioNode);});}
+function saveDecode(root){return FoteCodec.decode(root);}
 
 /* ---------------------------------------------------------------- snapshot and restore */
 function saveSnapshot(label){
-  var g={};
-  SAVE_KEYS.forEach(function(k){ if(typeof window[k]!=='undefined') g[k]=window[k]; });
+  var g=gameState.snapshot();
   var logHtml=[]; var L=$('log'); if(L) for(var i=Math.max(0,L.children.length-40); i<L.children.length; i++) logHtml.push([L.children[i].className, L.children[i].innerHTML]);
   return {format:SAVE_FORMAT, savedAt:new Date().toISOString(), label:label||'',
     summary:{runId:runId(), name:player.name, who:player.who, cls:player.cls, race:player.race, god:player.god||null, level:player.level, floor:floorNo, turns:RUN.turns||turn},
     state:saveEncode(g), rngState:typeof rng.state==='function'?rng.state():null, log:logHtml};
 }
 function saveApply(data){
-  if(!data) throw new Error('No save data.');
-  var g;
-  if(data.format===SAVE_FORMAT) g=saveDecode(data.state);
-  else if(data.format==='fote-rescue-1') g=saveDecode(data.globals);   /* one id space across every global, so decode them together */
-  else throw new Error('Not a Forge of the Elements save.');
-  SAVE_KEYS.forEach(function(k){ if(g[k]!==undefined) window[k]=g[k]; });
-  if(player && player.buffs)delete player.buffs.unbound;
-  if(typeof migrateXpCurve==='function')migrateXpCurve();
-  if(typeof repairCoreProgress==='function')repairCoreProgress();
-  if(typeof repairWallMemorials==='function')repairWallMemorials();
-  if(typeof refreshCavernResidents==='function')refreshCavernResidents();
-  if(typeof refreshEncounterTuning==='function')refreshEncounterTuning();
-  if(typeof repairSavedEffectClocks==='function')repairSavedEffectClocks();
-  /* 2026-09-23 audit: the puzzle list points at entries of rooms; after a decode they must be the same objects again */
-  if(typeof floorMeta!=='undefined' && floorMeta && floorMeta.puzzles && typeof rooms!=='undefined' && rooms) floorMeta.puzzles=rooms.filter(function(r){ return r && r.puzzle; });
-  /* everything derived or visual is rebuilt rather than restored */
-  rng=mulberry32(Number.isInteger(data.rngState)?data.rngState:((worldSeed||1) ^ (turn*2654435761))>>>0);
+  FotePersistence.restore(data,{
+    decode:saveDecode,validate:FoteState.validate,state:gameState,
+    getRandom:function(){return rng;},setRandom:function(value){rng=value;},
+    restoreRandom:function(document,state){rng=mulberry32(Number.isInteger(document.rngState)?document.rngState:((state.worldSeed||1)^(state.turn*2654435761))>>>0);},
+    migrations:[restoreRunReferences,migrateXpCurve,repairCoreProgress,repairWallMemorials,
+      refreshCavernResidents,refreshEncounterTuning,repairSavedEffectClocks,
+      saveMigrateSigils,sigilNamesRefresh,ensureRuneLooks,migrateRangedSlot,hideRetiredSwapSlots,restorePuzzleState],
+    recompute:function(){derive(player);}
+  });
+  if(typeof SANDBOX!=='undefined')SANDBOX.normalTitle=false;
+  /* Presentation is rebuilt only after every migration and validation succeeds. */
   fx=[]; PARTS.length=0; aiming=null; LAST_HIT=null;
   if(typeof modalOpen!=='undefined' && modalOpen && typeof closeModal==='function') closeModal();
   if(typeof SURF_CACHE!=='undefined') SURF_CACHE.key=null;
-  ents.forEach(function(e){ e._lx=undefined; e._ly=undefined; });
-  player._lx=undefined;
-  if(RUN){ RUN.over=false; }
-  /* shared singletons don't survive a save: point back at the live ones */
-  if(player.off && !player.off.kind && player.off.name===EMPTY_OFF.name) player.off=EMPTY_OFF;
-  saveMigrateSigils();
-  if(typeof ensureRuneLooks==='function') ensureRuneLooks();
-  var savedHP=player.hp, savedMP=player.mp;
-  derive(player);
-  // Inner derive layers clamp against intermediate pools before later gear bonuses.
-  // Loading must preserve the saved resources, bounded by the FINAL derived pools.
-  player.hp=Math.min(savedHP,player.maxhp);player.mp=Math.min(savedMP,player.maxmp);
   var L=$('log'); if(L){ L.innerHTML=''; (data.log||[]).forEach(function(p){ log(p[1], p[0]); }); }
   log('<b>Game loaded.</b> '+player.name+', level '+player.level+', floor '+floorNo+'.','c-kill');
   var ov=$('over'); if(ov) ov.style.display='none';
@@ -110,6 +46,13 @@ function saveApply(data){
   if(openSheet) showSheet(openSheet);
   resize(); if(typeof abilityBar==='function') abilityBar(); updateUI(); draw();
   playSceneMusic();
+}
+function restoreRunReferences(){
+  if(player.buffs)delete player.buffs.unbound;
+  floorMeta.puzzles=rooms.filter(function(room){return room&&room.puzzle;});
+  ents.forEach(function(entity){entity._lx=undefined;entity._ly=undefined;});
+  RUN.over=false;
+  if(player.off&&!player.off.kind&&player.off.name===EMPTY_OFF.name)player.off=EMPTY_OFF;
 }
 
 /* sigils cut or renamed since a save was made become their nearest current sigil, and new sigils get a look */
@@ -139,13 +82,7 @@ function deleteRunSaves(){
   SAVE_SLOTS.concat(['rescue']).forEach(function(s){ if(saveBelongsToRun(readSlot(s))){ deleteSlot(s); gone++; } });
   return gone;
 }
-var _deathSave = death;
-death = function(){
-  var was = RUN && RUN.over;
-  var r=_deathSave.apply(this, arguments);
-  if(!was && RUN && RUN.over){ runId(); if(deleteRunSaves()) log('Death is final: this character&rsquo;s saves crumble to dust.','c-you'); }
-  return r;
-};
+
 
 /* ---------------------------------------------------------------- the original game's saves, once
    2026-09-22 (Justin): this build goes back to the original address, jhffmn82.github.io/forge-of-the-elements-play/.
@@ -215,8 +152,7 @@ function importSave(){
 }
 
 /* autosave on every new floor */
-var _descendSave = descend;
-descend = function(fell){ var r=_descendSave(fell); if(RUN && !RUN.over) writeSlot('auto', 'floor '+floorNo); return r; };
+
 
 /* ---------------------------------------------------------------- title screen */
 (function(){
@@ -338,21 +274,3 @@ wireOptions = function(root){
 };
 
 /* the end screen: a winner can save the character to carry on later */
-var _showEndSave = showEnd;
-showEnd = function(won){
-  _showEndSave(won);
-  var box=document.querySelector('#over .box'); if(!box) return;
-  var old=$('bSaveWin'); if(old) old.remove();
-  var tb=$('bTitleEnd'); if(!tb){ tb=document.createElement('button'); tb.id='bTitleEnd'; tb.textContent='Title screen'; tb.style.marginLeft='8px'; box.appendChild(tb); }
-  tb.onclick=function(){ $('over').style.display='none'; openTitle(); };
-  if(won){
-    var b=document.createElement('button'); b.id='bSaveWin'; b.textContent='Save this character'; b.style.marginLeft='8px';
-    b.onclick=function(){
-      /* never overwrite another character: the first empty slot, or this run's own slot */
-      var slot=['1','2','3'].filter(function(k){ var d=readSlot(k); return !d || saveBelongsToRun(d); })[0];
-      if(!slot){ b.textContent='All slots full: free one in Load Game'; b.disabled=true; return; }
-      if(writeSlot(slot,'victory')){ b.textContent='Saved to slot '+slot; b.disabled=true; }
-    };
-    box.insertBefore(b, tb);
-  }
-};

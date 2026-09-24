@@ -33,14 +33,7 @@ function forgeConfirm(title, text, yesLabel, onYes){
 }
 
 /* ---------------------------------------------------------------- enchanting */
-function enchantTargets(){
-  var out=[];
-  var w=player.sets[player.activeSet]; if(w && !w.unarmed) out.push({slot:'weapon', label:'Main hand', it:w, text:ENCHANT_TEXT.weapon});
-  var ok=typeof offKind==='function' ? offKind() : null;
-  if(player.off && player.off!==EMPTY_OFF) out.push({slot:'off', label:'Off hand', it:player.off, text: ok ? ENCHANT_TEXT[ok] : null});
-  if(player.armorItem) out.push({slot:'armor', label:'Armor', it:player.armorItem, text:ENCHANT_TEXT.armor});
-  return out;
-}
+
 function enchantPanelHTML(){
   var have=ELEMENTS.filter(function(el){ return (player.motes[el]||0)>0; });
   if(forgeMote && !(player.motes[forgeMote]>0)) forgeMote=null;
@@ -126,18 +119,15 @@ function wireRecyclePanel(panel){
 }
 
 /* ---------------------------------------------------------------- hook the Forge window */
-var _renderForgeUI = renderForge;
-renderForge = function(){
-  var tab=forgeTab;
-  _renderForgeUI();
-  var body=$('forgeBody'); if(!body) return;
-  var tabs=body.querySelector('.ftabs');
-  if(tabs && !tabs.querySelector('[data-ft="recycle"]')){
-    var rb=document.createElement('button'); rb.setAttribute('data-ft','recycle'); rb.textContent='Recycle'; if(tab==='recycle') rb.className='on';
-    rb.onclick=function(){ forgeTab='recycle'; sfx('ui-click'); renderForge(); };
-    tabs.appendChild(rb);
-  }
-  var panel=body.querySelector('.fpanel'); if(!panel) return;
-  if(tab==='enchant'){ panel.innerHTML=enchantPanelHTML(); wireEnchantPanel(panel); }
-  else if(tab==='recycle'){ panel.innerHTML=recyclePanelHTML(); wireRecyclePanel(panel); }
-};
+
+
+function wireForgePanels(body){
+ var tabs=body.querySelector('.ftabs');
+ if(tabs&&!tabs.querySelector('[data-ft="recycle"]')){
+  var button=document.createElement('button');button.setAttribute('data-ft','recycle');button.textContent='Recycle';if(forgeTab==='recycle')button.className='on';
+  button.onclick=function(){forgeTab='recycle';sfx('ui-click');renderForge();};tabs.appendChild(button);
+ }
+ var panel=body.querySelector('.fpanel');if(!panel)return;
+ if(forgeTab==='enchant')wireEnchantPanel(panel);
+ else if(forgeTab==='recycle')wireRecyclePanel(panel);
+}

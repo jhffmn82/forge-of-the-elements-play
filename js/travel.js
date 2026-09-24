@@ -48,8 +48,9 @@ function clickIntent(x, y){
   var foe=ents.filter(function(e){ return e.foe && e.x===x && e.y===y && (revealAll||vis[idxOf(x,y)]); })[0];
   if(foe){
     if(clickSpellReady(foe)) return {kind:'cast', foe:foe};
-    if(player.range>1 && dist(player,foe)<=player.range) return {kind:'shoot', foe:foe};
     if(dist(player,foe)<=1) return {kind:'attack', foe:foe};
+    if(reachLen()>=2 && reachDir(foe)) return {kind:'attack', foe:foe};
+    if(player.range>1 && dist(player,foe)<=player.range) return {kind:'shoot', foe:foe};
     return {kind:'move', foe:foe};
   }
   var t=at(x,y);
@@ -213,30 +214,10 @@ function toggleClickSpell(key){
   log(player.clickSpell ? 'Clicking an enemy now casts <b>'+ABILITIES[key].name+'</b>.' : 'Clicking an enemy no longer casts a spell.','c-info');
   sfx('ui-click'); abilityBar();
 }
-var _abilityBarTravel = abilityBar;
-abilityBar = function(){
-  _abilityBarTravel();
-  if(!$('hotbar') || !player || !player.hotbar) return;
-  $('hotbar').querySelectorAll('.slot[data-i]').forEach(function(b){
-    var s=player.hotbar[+b.getAttribute('data-i')];
-    if(!s || s.type!=='ability' || !clickSpellable(s.key)) return;
-    b.oncontextmenu=function(ev){ ev.preventDefault(); toggleClickSpell(s.key); };
-    var timer=null;
-    b.addEventListener('touchstart', function(){ timer=setTimeout(function(){ timer=null; b._longPress=true; toggleClickSpell(s.key); }, 550); }, {passive:true});
-    b.addEventListener('click', function(ev){ if(b._longPress){ b._longPress=false; ev.stopImmediatePropagation(); ev.preventDefault(); } }, true);
-    b.addEventListener('touchend', function(){ if(timer){ clearTimeout(timer); timer=null; } });
-    if(player.clickSpell===s.key){ var m=document.createElement('span'); m.className='clickmark'; m.textContent='◎'; m.title='Your click spell'; b.appendChild(m); }
-  });
-};
+
+
 (function(){
   var st=document.createElement('style');
   st.textContent='#hotbar .slot .clickmark{position:absolute;left:3px;bottom:1px;font-size:12px;color:#9FD8FF;text-shadow:0 0 4px #3A8FD0}';
   document.head.appendChild(st);
 })();
-var _hotbarCardTravel = hotbarCard;
-hotbarCard = function(i){
-  var h=_hotbarCardTravel(i), s=player.hotbar && player.hotbar[i];
-  if(s && s.type==='ability' && clickSpellable(s.key))
-    h+='<div class="hint">'+(player.clickSpell===s.key ? 'Your click spell. Right-click or long-press to unset.' : 'Right-click or long-press: click enemies to cast this.')+'</div>';
-  return h;
-};

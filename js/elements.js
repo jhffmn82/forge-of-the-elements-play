@@ -35,7 +35,6 @@ var RANK_TEXT = {
      light:'Consecration: your Light spells and your Smite sanctify the ground for 3 turns, burning enemies on it (undead double). Immune to light.',
      shadow:'Hollowing: your dark damage stacks Hollow (max 5, 5 turns): +5% damage taken and -1 armor per stack. Immune to dark.'}
 };
-var STATUS_EL = {burn:'fire', chill:'water', frozen:'water', stun:'air', root:'earth', blind:'light', fear:'shadow'};
 var IMMUNE_TYPE = {fire:'fire', water:'ice', air:'lightning', earth:'poison', light:'light', shadow:'dark'};
 function aff(el){ return (player && player.aff && player.aff[el]) || 0; }
 
@@ -58,11 +57,10 @@ function markGround(tiles, A){
     if(A.el==='light' && aff('light')>=6) holyG[i]=3;
   });
 }
-var _generateEl = generate;
-generate = function(seed){ _generateEl(seed); groundReset(); if(floorMeta) floorMeta.upheaval=[]; };
-var _drawTelegraphsEl = drawTelegraphs;
-drawTelegraphs = function(now){
-  _drawTelegraphsEl(now);
+
+
+function drawElementGroundTelegraphs(now){
+
   if(!iceG || iceG.length!==MW*MH) return;
   ctx.save();
   for(var i=0;i<iceG.length;i++){
@@ -75,40 +73,15 @@ drawTelegraphs = function(now){
   }
   ents.forEach(function(e){ if(e.tomb>0 && (revealAll||vis[idxOf(e.x,e.y)])){ var rp=renderPos(e), px=(rp.x-camX)*TS, py=(rp.y-camY)*TS; ctx.fillStyle='rgba(170,220,255,0.35)'; ctx.fillRect(px+2,py+2,TS-4,TS-4); ctx.strokeStyle='rgba(220,245,255,0.9)'; ctx.lineWidth=2; ctx.strokeRect(px+3,py+3,TS-6,TS-6); } });
   ctx.restore();
-};
+
+}
 
 /* ---------------------------------------------------------------- statuses: immunities, Deep Freeze, Petrify, poison */
-var _applyStatusEl = applyStatus;
-applyStatus = function(e, key, turns, extra){
-  if(!e || e.hp<=0) return;
-  if(e===player && STATUS_EL[key] && aff(STATUS_EL[key])>=3) return;
-  if(e===player && key==='poison' && aff('earth')>=6) return;
-  if(e!==player && key==='root' && aff('earth')>=6 && e.st.root && !(e.stoneImm>turn)){
-    e.st.stone={t:2}; e.stoneImm=turn+4; floatText(e.x,e.y,'stone','earth'); log(e.name+' turns to stone.','c-good'); sfx('earth-cast');
-  }
-  var r = _applyStatusEl(e, key, turns, extra);
-  /* 2026-09-18: Venom answers the ROOT, not a later hit on something already rooted. Earth Root poisons the
-     moment it lands, and so does the earth weapon enchant's root and Earth 6's root ground - you no longer
-     have to spend a second turn hitting what you just pinned. */
-  if(e!==player && key==='root' && aff('earth')>=3 && e.st && e.st.root && !e.st.poison) applyPoison(e, true);
-  return r;
-};
-addChill = function(e){
-  if(!e || e.hp<=0) return;
-  if(e===player && aff('water')>=3) return;
-  if(e===player && hasP('unstoppable')) return;                       /* nothing holds an Unstoppable fighter (2026-09-22) */
-  if(e.tomb>0) return;
-  /* 2026-09-22 audit: four chills freeze; Water 6 "Deep Freeze: three Chills freeze" is the rank that lowers it */
-  var need = e===player ? 3 : (aff('water')>=6 ? 3 : 4);
-  var c=e.st.chill, n=(c?c.n:0)+1;
-  if(n>=need && !(e.st.imm_frozen)){ delete e.st.chill; applyStatus(e,'frozen',2); if(e!==player) e.st.imm_frozen={t:5}; sfx('status-freeze'); floatText(e.x,e.y,'frozen','ice'); }
-  else e.st.chill={t:(e===player && hasP('ironConst'))?2:4, n:Math.min(n, need-1),waterRank:e===player?0:aff('water')};   /* Iron Constitution halves a chill too */
-};
 function applyPoison(e, announce, turns){
   if(!e || e.hp<=0 || e===player) return;
   var big=e.base && e.base.boss;
   /* once it is in, the root wearing off does not stop it (2026-09-17); a caller may set the duration (Venom Strike: 3) */
-  e.st.poison={t:turns || Math.min(3,Math.max(1,aff('earth')-2)), d:Math.max(1, Math.round(e.maxhp*0.10*(big?0.5:1)))};
+  gameEffects.apply(e,'poison',turns||Math.min(3,Math.max(1,aff('earth')-2)),Math.max(1,Math.round(e.maxhp*0.10*(big?0.5:1))),{durationModifiers:false,refresh:'replace'});
   if(announce){
     if(typeof floatText==='function') floatText(e.x, e.y, 'poisoned', 'poison');
     if(typeof log==='function' && vis[idxOf(e.x,e.y)]) log('<b>Venom.</b> The rooted '+e.name+' is poisoned: '+e.st.poison.d+' a turn for '+e.st.poison.t+' turn'+(e.st.poison.t===1?'':'s')+'.','c-good');
@@ -117,63 +90,17 @@ function applyPoison(e, announce, turns){
 
 /* ---------------------------------------------------------------- damage: immunities, Searing, Hollow, Venom, Arc, Radiance, Reflexes */
 var ARCING=false;
-var _applyDamageEl = applyDamage;
-applyDamage = function(target, amount, type, source){
-  if(target===player && player.tombed) return 0;
-  if(target && target.tomb>0) return 0;
-  if(target===player){ for(var el in IMMUNE_TYPE) if(IMMUNE_TYPE[el]===type && aff(el)>=6){ floatText(player.x,player.y,'immune','miss'); return 0; } }
-  var byPlayer = source===player || source==='player';
-  if(target && target!==player){
-    if(byPlayer && aff('fire')>=3 && target.st && target.st.burn) amount*=1+0.05*aff('fire');
-    if(target.st && target.st.hollow) amount*=1+0.05*target.st.hollow.n;
-  }
-  var d=_applyDamageEl(target, amount, type, source);
-  if(!target || target===player || !byPlayer || d<=0) return d;
-  if(type==='dark' && aff('shadow')>=6 && target.hp>0){ var h=target.st.hollow; target.st.hollow={t:5, n:Math.min(5,(h?h.n:0)+1)}; }
-  if(type==='light' && aff('light')>=3){ healPlayer(aff('light')); }
-  if(type==='lightning' && aff('air')>=6 && target.hp>0 && rng()<0.15) applyStatus(target,'stun',1);
-  if(aff('air')>=3 && !ARCING && rng()<0.05*aff('air')){
-    var o=ents.filter(function(e){ return e.foe && e!==target && e.hp>0 && dist(e,target)<=3 && vis[idxOf(e.x,e.y)]; }).sort(function(a,b){ return dist(a,target)-dist(b,target); })[0];
-    if(o){ ARCING=true; var ad=applyDamage(o, Math.max(1,Math.round(d*0.5)), 'lightning', player); ARCING=false; boltFx(target.x,target.y,o.x,o.y,'lightning'); floatText(o.x,o.y,String(ad),'lightning'); if(o.hp<=0) kill(o,player); }
-  }
-  return d;
-};
-var _resistMultEl = resistMult;
-resistMult = function(target, type){
-  if(target===player){ for(var el in IMMUNE_TYPE) if(IMMUNE_TYPE[el]===type && aff(el)>=6) return 0; }
-  return _resistMultEl(target, type);
-};
+
+
 /* spell and ability status chances grow with the element */
-var _deriveEl = derive;
-derive = function(p){
-  _deriveEl(p);
-  if(p!==player) return;
-  ABILITIES.spark.stunChance = 0.05*aff('air');
-  ABILITIES.smite.blindChance = 0.10*aff('light');
-};
+
 
 /* Wildfire */
-var _killEl = kill;
-kill = function(e, by){
-  var burning = e && e!==player && e.foe && e.st && e.st.burn && aff('fire')>=6 && ents.indexOf(e)>=0;
-  _killEl(e, by);
-  if(burning){
-    var o=ents.filter(function(n){ return n.foe && n.hp>0 && dist(n,e)<=3; }).sort(function(a,b){ return dist(a,e)-dist(b,e); })[0];
-    if(o){ applyStatus(o,'burn',3,burnDmg()); boltFx(e.x,e.y,o.x,o.y,'fire'); log('Wildfire leaps to '+o.name+'.','c-fire'); }
-  }
-};
+
 
 /* ---------------------------------------------------------------- enemies: tomb, stone, ground */
-var _aiActEl = aiAct;
-aiAct = function(e){
-  if(e.tomb>0){ if(typeof WORLD_TICK==='undefined')e.tomb--; if(e.tomb===0){ log('The ice around '+e.name+' shatters.','c-info'); sfx('ice-melt'); } e.t+=actCost(e); return; }
-  if(e.st && e.st.stone){ tickStatus(e); e.t+=actCost(e); return; }
-  var ox=e.x, oy=e.y;
-  _aiActEl(e);
-  if(!iceG || ents.indexOf(e)<0) return;
-  var i=idxOf(e.x,e.y);
-  if((e.x!==ox || e.y!==oy) && rootG[i]) applyStatus(e,'root',1);
-};
+
+
 /* rank 6 ground ticks once a world turn */
 function groundTick(){
   if(!iceG || iceG.length!==MW*MH) return;
@@ -187,29 +114,11 @@ function groundTick(){
 
 /* ---------------------------------------------------------------- the player's turn: Fade, Reflexes, Storm Form, Upheaval */
 var FREE_ACTION=false;
-var _actCostEl = actCost;
-actCost = function(e){
-  var c=_actCostEl(e);
-  if(e===player){
-    if(FREE_ACTION) return 0;
-    if(player.stormUntil>player.t) c=Math.max(20, Math.round(c*0.5));
-  }
-  return c;
-};
-var _moveCostEl = moveCost;
-moveCost = function(){ var c=_moveCostEl(); if(player.stormUntil>player.t) c=Math.round(c*0.5); return c; };
-var _endTurnEl = endTurn;
-endTurn = function(){
-  if(!player || player.hp<=0) return _endTurnEl();
-  FREE_ACTION = FREE_ACTION || (!player.movedThisTurn && (player.lastAttack || player.noisy) && aff('air')>=6 && rng()<0.15);
-  var before=turn;
-  _endTurnEl();
-  FREE_ACTION=false;
-  if(!player || player.hp<=0 || turn===before) return;
-  if(typeof WORLD_TICK==='undefined')groundTick();
-  /* Fade (Shadow 3) */
+
+
+function turnElementAfterAction(context){  /* Fade (Shadow 3) */
   var fighting=ents.some(function(e){ return e.foe && e.state==='hunt' && vis[idxOf(e.x,e.y)]; });
-  player.calm = fighting || player.noisy ? 0 : (player.calm||0)+1;
+  player.calm = fighting || context.noisy ? 0 : (player.calm||0)+1;
   if(aff('shadow')>=3 && player.calm>=(16-2*aff('shadow')) && !(player.hidden>1)) player.hidden=2;
   /* Upheaval walls crumble */
   var up=floorMeta && floorMeta.upheaval;
@@ -221,29 +130,12 @@ endTurn = function(){
     });
     if(floorMeta.upheaval.length!==up.length){ log('The raised stone crumbles.','c-info'); computeFOV(); }
   }
-};
+
+}
 
 /* ---------------------------------------------------------------- casting the new spells */
 function spellRoll(A){ var b=sDMG(roll(AOE_BASE[0],AOE_BASE[1])) + (aff('fire') && !A.divine ? aff('fire') : 0); return Math.round(b*spellPower(A)); }
-function spellHit(f, A, amount, type){
-  if(!f || f.hp<=0) return 0;
-  /* Area spells share crit chance, critical damage, and Numbing Dark with bolts. */
-  var unaware = (typeof offGuard==='function' ? offGuard(f) : f.state==='asleep') || (f.st && (f.st.stun || f.st.frozen)) || player.hidden>0;
-  var crit = combatRoll(player.crit + orbRootCrit(f) + (unaware && player.aff.shadow ? 0.05*player.aff.shadow : 0),true), base=amount;
-  if(crit){base=Math.round(base*criticalMultiplier());}
-  if(typeof numbingDark==='function' && numbingDark(f)) base=Math.round(base*1.5);
 
-  LAST_HIT={att:player, def:f, crit:crit, surprise:(typeof offGuard==='function' ? offGuard(f) : f.state==='asleep')||player.hidden>0, spell:true};
-  if(A.el==='light' && (f.base.undead||f.base.shadowy)) base=Math.round(base*1.5);
-  if(f.state!=='hunt' && f.state!=='throne') f.state='hunt';
-  f.caughtOff=-1;
-  var d=applyDamage(f, base, type, player);
-  floatText(f.x,f.y,String(d), type==='phys'?'phys':type, crit);
-  f.lastHitBy=player;
-  if(typeof spellOnHit==='function') spellOnHit(f, d, crit, A);
-  if(d>0)playerHitRewards(f,A.kind==='bolt' && A!==BONE_SPEAR);
-  return d;
-}
 function finishHit(f){ if(f && f.hp<=0 && ents.indexOf(f)>=0) kill(f, player); }
 function beginCast(A){
   aiming=null;
@@ -256,54 +148,39 @@ function beginCast(A){
 function foeAt(x,y){ return ents.filter(function(e){ return e.foe && e.x===x && e.y===y; })[0]; }
 function summonCount(){ return ents.filter(function(e){ return e.ally && (e.undeadServant || e.livingFlame); }).length; }
 
-var _useAbilityEl = useAbility;
-useAbility = function(i){
-  var key=player.abilities[i], A=ABILITIES[key];
-  if(!A || !(AIM_KINDS[A.kind] || A.kind==='quake' || A.kind==='storm' || A.kind==='dawn')) return _useAbilityEl(i);
-  if(player.mp < costOf(A)){ log('Not enough mana for '+A.name+' ('+costOf(A)+').','c-info'); sfx('no-mana'); return; }
-  if(AIM_KINDS[A.kind]){
-    if(aiming && aiming.i===i){ cancelAim(); return; }
-    aiming={i:i, A:A};
-    log('<b>'+A.name+'</b> &mdash; '+(A.kind==='umbral'?'click any tile you have seen':A.kind==='tomb'?'click an enemy, or yourself':'click a target within '+spellRange(A)+' tiles')+', or press Esc.','c-info');
-    abilityBar(); draw(); return;
-  }
-  beginCast(A);
-  if(A.kind==='quake'){
-    SHAKE=10; var tiles=[];
-    for(var y=player.y-A.radius;y<=player.y+A.radius;y++) for(var x=player.x-A.radius;x<=player.x+A.radius;x++){ if(!inb(x,y)) continue; tiles.push([x,y]); burst(x,y,'earth',3,0.04); }
-    var dmg=spellRoll(A);
-    ents.slice().forEach(function(e){ if(e===player || e.hp<=0 || dist(e,player)>A.radius) return;
-      if(e.foe){ spellHit(e, A, dmg, 'phys'); finishHit(e); }
-      else if(e.ally){ var ad=applyDamage(e, dmg, 'phys', player); floatText(e.x,e.y,String(ad),'phys'); if(e.hp<=0) kill(e,null); } });
-    markGround(tiles, A);
-    log('<b>Earthquake.</b> The ground heaves.','c-hit');
-  } else if(A.kind==='storm'){
-    player.stormUntil=player.t+600;
-    sparkleFx(player.x,player.y,'lightning',40); ringFx(player.x,player.y,'#E8D27A',2.5);
-    log('<b>Storm Form.</b> The world slows around you.','c-good');
-    updateUI(); draw(); return;   /* instant: no time passes */
-  } else if(A.kind==='dawn'){
-    var n=0;
-    ents.forEach(function(e){ if(e.foe && vis[idxOf(e.x,e.y)]){ applyStatus(e,'blind',3); n++; } });
-    player.dawnUntil=turn+20;
-    sparkleFx(player.x,player.y,'light',60); ringFx(player.x,player.y,'#F6E7B0',5);
-    log('<b>Dawn.</b> '+n+' enem'+(n===1?'y is':'ies are')+' blinded, and nothing on this floor can hide from you.','c-good');
-  }
-  endTurn();
-};
-var _inRangeEl = inRange;
-inRange = function(x,y){
-  if(aiming && aiming.A.kind==='umbral') return inb(x,y) && !!seen[idxOf(x,y)];
-  if(aiming && aiming.A.kind==='upheaval') return dist(player,{x:x,y:y})<=7 && inb(x,y) && (revealAll||vis[idxOf(x,y)]);
-  return _inRangeEl(x,y);
-};
+
 function lineTiles(dx,dy,len){ var out=[], x=player.x, y=player.y; for(var i=0;i<len;i++){ x+=dx; y+=dy; if(!inb(x,y) || opaque(x,y)) break; out.push([x,y]); } return out; }
 function bresenham(x0,y0,x1,y1,len){ var pts=[], dx=Math.abs(x1-x0), dy=Math.abs(y1-y0), sx=x0<x1?1:-1, sy=y0<y1?1:-1, err=dx-dy, x=x0, y=y0;
   while(pts.length<len && !(x===x1 && y===y1)){ var e2=2*err; if(e2>-dy){ err-=dy; x+=sx; } if(e2<dx){ err+=dx; y+=sy; } pts.push([x,y]); } return pts; }
 
-var _castAtEl = castAt;
-castAt = function(x,y){
-  if(!aiming || !AIM_KINDS[aiming.A.kind]) return _castAtEl(x,y);
+
+/* ranged summons (Living Flame) */
+
+function livingFlameBehavior(e){
+  if(!e.rangedAlly) return false;
+  if(e.hp<=0)return true; if(e.life<=0){ ents=ents.filter(function(o){ return o!==e; }); log('Your '+e.name+' gutters out.','c-info'); return true; }
+
+  var tgt=ents.filter(function(o){ if(!o.foe || o.hp<=0 || !vis[idxOf(o.x,o.y)] || dist(e,o)>e.rangedAlly) return false; var pth=boltPath(e.x,e.y,o.x,o.y), en=pth[pth.length-1]; return en && en.x===o.x && en.y===o.y; })
+    .sort(function(a,b){ return dist(a,e)-dist(b,e); })[0];
+  if(tgt){
+    setClip(e,'attack'); boltFx(e.x,e.y,tgt.x,tgt.y,'fire');
+    var rolled=roll(e.dmg[0],e.dmg[1]);e.flameShots=(e.flameShots||0)+1;
+    if(e.flameShots%3===0){ringFx(tgt.x,tgt.y,'#FF943F',1.5);ents.slice().forEach(function(o){if(o!==tgt&&o.foe&&o.hp>0&&dist(o,tgt)<=1){var splash=applyDamage(o,Math.round(rolled*.5),'fire',e);floatText(o.x,o.y,String(splash),'fire');if(o.hp<=0)kill(o,e);}});}
+    var d=applyDamage(tgt, rolled, 'fire', e); floatText(tgt.x,tgt.y,String(d),'fire');
+    if(tgt.hp>0 && rng()<0.22) applyStatus(tgt,'burn',3,burnDmg());
+    if(tgt.hp<=0) kill(tgt,e);
+  } else if(dist(e,player)>2 && canActorMove(e)) stepToward(e, player.x, player.y);
+
+
+}
+
+/* ---------------------------------------------------------------- the character sheet lists rank 3 and 6 passives */
+
+
+/* Named floor-generation stages; ordered by generation-adapter.js. */
+function resetGeneratedElementalGround(seed){  groundReset(); if(floorMeta) floorMeta.upheaval=[]; }
+
+function castElementTarget(x,y){
   var A=aiming.A, cf=faceOf(x-player.x, y-player.y); if(cf) player.face=cf;
   if(!inRange(x,y)){ log(((revealAll||vis[idxOf(x,y)]) ? 'Out of range.' : 'You cannot see that tile.'),'c-info'); sfx('ui-error'); return false; }
   var f=foeAt(x,y);
@@ -418,36 +295,4 @@ castAt = function(x,y){
     log('<b>Umbral Passage.</b> You step through the dark.','c-good');
   }
   endTurn(); return true;
-};
-
-/* ranged summons (Living Flame) */
-var _allyActEl = allyAct;
-allyAct = function(e){
-  if(!e.rangedAlly) return _allyActEl(e);
-  if(!tickStatus(e)) return;
-  if(typeof WORLD_TICK==='undefined')e.life--; if(e.life<=0){ ents=ents.filter(function(o){ return o!==e; }); log('Your '+e.name+' gutters out.','c-info'); return; }
-  if(e.st.stun || e.st.frozen){ e.t+=actCost(e); return; }
-  var tgt=ents.filter(function(o){ if(!o.foe || o.hp<=0 || !vis[idxOf(o.x,o.y)] || dist(e,o)>e.rangedAlly) return false; var pth=boltPath(e.x,e.y,o.x,o.y), en=pth[pth.length-1]; return en && en.x===o.x && en.y===o.y; })
-    .sort(function(a,b){ return dist(a,e)-dist(b,e); })[0];
-  if(tgt){
-    setClip(e,'attack'); boltFx(e.x,e.y,tgt.x,tgt.y,'fire');
-    var rolled=roll(e.dmg[0],e.dmg[1]);e.flameShots=(e.flameShots||0)+1;
-    if(e.flameShots%3===0){ringFx(tgt.x,tgt.y,'#FF943F',1.5);ents.slice().forEach(function(o){if(o!==tgt&&o.foe&&o.hp>0&&dist(o,tgt)<=1){var splash=applyDamage(o,Math.round(rolled*.5),'fire',e);floatText(o.x,o.y,String(splash),'fire');if(o.hp<=0)kill(o,e);}});}
-    var d=applyDamage(tgt, rolled, 'fire', e); floatText(tgt.x,tgt.y,String(d),'fire');
-    if(tgt.hp>0 && rng()<0.22) applyStatus(tgt,'burn',3,burnDmg());
-    if(tgt.hp<=0) kill(tgt,e);
-  } else if(dist(e,player)>2 && !e.st.root) stepToward(e, player.x, player.y);
-  e.t+=actCost(e);
-};
-
-/* ---------------------------------------------------------------- the character sheet lists rank 3 and 6 passives */
-var _panesEl = panes;
-panes = function(){
-  _panesEl();
-  if(openSheet!=='Char' || !$('mChar')) return;
-  var add='';
-  for(var el in player.aff){ [3,6].forEach(function(r){ if(player.aff[el]>=r) add+='<div style="font-size:11px;color:'+AFF_COL[el]+';margin:2px 0">T'+r+': <span style="color:var(--ash)">'+RANK_TEXT[r][el]+'</span></div>'; }); }
-  if(!add) return;
-  var subs=$('mChar').querySelectorAll('.sub');
-  for(var i=0;i<subs.length;i++) if(/^Race/.test(subs[i].textContent)){ subs[i].insertAdjacentHTML('beforebegin', add); break; }
-};
+}

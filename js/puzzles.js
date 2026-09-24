@@ -43,25 +43,11 @@ function puzzlePlan(){
   if(b===0) RUN.puzzlePlan=plan; else RUN.puzzlePlans[b]=plan;
   return plan;
 }
-buildPuzzle = function(){};   /* the old puzzle rooms are retired */
+   /* the old puzzle rooms are retired */
 
-var _generatePz = generate;
-generate = function(seed){
-  _generatePz(seed);
-  floorMeta.puzzles=[]; floorMeta.searched={};
-  if(floorMeta.boss || !RUN) return;
-  var plan=puzzlePlan()[floorNo]; if(!plan) return;
-  var saved=rng; rng=mulberry32(((seed||0)^0x51c1)>>>0);
-  try{ if(plan.sigilRoom) buildSigilRoom(plan.sigilRoom); if(plan.crystal) buildCrystalVault(); }
-  finally{ rng=saved; }
-};
+
 /* last word on a new floor: no prop may share a tile with a chest, stairs, door or the Forge */
-var _generatePropSweep = generate;
-generate = function(seed){
-  _generatePropSweep(seed);
-  var n=props.length; props=props.filter(function(p){ return !objectTile(at(p.x,p.y)); });
-  if(props.length!==n) rebuildPropGrid();
-};
+
 
 /* ---------------------------------------------------------------- building */
 function pzCells(room){ return interiorCells(room).concat(edgeCells(room)); }
@@ -81,7 +67,7 @@ function pzLoot(cells, n){
              : {x:p.x,y:p.y,kind:'mote',el:pick(ELEMENTS)});
   }
 }
-function buildSigilRoom(kind){
+function placeSigilRoom(kind){
   var pk=carvePocket(4,3,6,5)||carvePocket(3,3,5,4); if(!pk) return;
   var room=pk.room, P=PUZZLE_KINDS[kind], door=pk.door;
   room.special='puzzle'; room.puzzle={kind:kind, solved:false, door:door};
@@ -163,10 +149,10 @@ function buildCrystalVault(){
 /* ---------------------------------------------------------------- helpers */
 function puzzleRoomAt(x,y){ var r=roomAt(x,y); return r && r.puzzle ? r : null; }
 function solvePuzzle(room, how){
+  if(room && room.puzzle.kind==='barricade'){setT(room.puzzle.door.x,room.puzzle.door.y,OPEN);burst(room.puzzle.door.x,room.puzzle.door.y,'fire',24,.06);}
   if(!room || room.puzzle.solved) return;
   var k=room.puzzle.kind, P=PUZZLE_KINDS[k];
   room.puzzle.solved=true;
-  if(k==='barricade'){ var d=room.puzzle.door; if(at(d.x,d.y)===THORNS){ setT(d.x,d.y,OPEN); burst(d.x,d.y,'fire',24,0.06); } }
   if(k==='everburn'){ var e=floorMeta.everburn; if(e){ fireT[idxOf(e.x,e.y)]=0; floorMeta.everburn=null; burst(e.x,e.y,'ice',24,0.06); } }
   if(k==='darktraps'){ room.dark=false; feats.forEach(function(f){ if(f.puzzle && roomAt(f.x,f.y)===room) f.found=true; }); }
   if(k==='hoard'){ props.filter(function(p){ return p.hoard; }).forEach(function(p){ removeProp(p); burst(p.x,p.y,'ice',16,0.05); }); }
@@ -176,56 +162,16 @@ function nearRoom(room, r){ return player.x>=room.x-r && player.x<room.x+room.w+
 function mastered(kind){ return kind!=='drowned'&&kind!=='baths'&&aff(PUZZLE_KINDS[kind].el)>=3; }
 
 /* ---------------------------------------------------------------- sigils solve rooms */
-var _useSigilPz = useSigil;
-useSigil = function(use){
-  var r=_useSigilPz(use);
-  if(r===false) return r;
-  if(use==='identify') douseAround(3);
-  var solveAs = use==='identify2' ? 'identify' : use;   /* the Water sigil+ works on water puzzles too */
-  (floorMeta.puzzles||[]).forEach(function(room){
-    var k=room.puzzle.kind; if(room.puzzle.solved || PUZZLE_KINDS[k].sigil!==solveAs) return;
-    if(k==='everburn' && floorMeta.everburn && dist(player, floorMeta.everburn)<=3) solvePuzzle(room, 'the undying flame gutters out.');
-    else if(k==='barricade' && dist(player, room.puzzle.door)<=2) solvePuzzle(room, 'the barricade goes up in flames.');
-    else if(k==='hoard' && nearRoom(room, 1)) solvePuzzle(room, 'the ice runs away as water.');
-    else if(k==='darktraps' && nearRoom(room, 2)) solvePuzzle(room, 'light floods the room and shows every trap.');
-    else if(k==='baths' && nearRoom(room, 2)){ room.cooledUntil=turn+10; log('<b>Scalding baths:</b> the stone cools for 10 turns.','c-kill'); sfx('ice-melt'); }
-  });
-  return r;
-};
+
 
 /* ---------------------------------------------------------------- stepping and bumping */
-var _tryMovePz = tryMove;
-tryMove = function(dx, dy){
-  if(!player || player.hp<=0) return _tryMovePz(dx,dy);
-  var nx=player.x+dx, ny=player.y+dy, t=at(nx,ny), room=puzzleRoomAt(nx,ny);
-  /* Air 3: the wind carries you over a chasm */
-  if(t===CHASM && aff('air')>=3 && !(player.levitate>0)){ player.levitate=1; player.windCarry=true; }
-  /* Fire 3 burns a barricade on contact */
-  if(t===THORNS && aff('fire')>=3){ var br=(floorMeta.puzzles||[]).filter(function(r){ return r.puzzle.kind==='barricade' && r.puzzle.door.x===nx && r.puzzle.door.y===ny; })[0];
-    setT(nx,ny,OPEN); burst(nx,ny,'fire',20,0.06); if(br) solvePuzzle(br, 'your fire burns the barricade away.'); else log('Your fire burns the thorns away.','c-kill'); endTurn(); return; }
-  /* ice blocks: only fire melts them (Fire 3 at a touch, a Fire sigil, or flames beside a block); blows glance off */
-  var pr=propAt(nx,ny);
-  if(pr && pr.hoard){
-    var hr=(floorMeta.puzzles||[]).filter(function(r){ return r.puzzle.kind==='hoard'; })[0];
-    if(aff('fire')>=3){ if(hr) solvePuzzle(hr, 'the ice melts at your touch.'); endTurn(); return; }
-    sfx('ice-hit'); burst(nx,ny,'ice',6,0.03);
-    log('The ice is too hard to break. Only fire will melt it.','c-info');
-    return;   /* bumping costs no turn */
-  }
-  /* Water 3 walks through the undying flame and puts it out */
-  if(floorMeta.everburn && nx===floorMeta.everburn.x && ny===floorMeta.everburn.y && aff('water')>=3){
-    var er=(floorMeta.puzzles||[]).filter(function(r){ return r.puzzle.kind==='everburn'; })[0]; if(er) solvePuzzle(er, 'the flame dies at your touch.');
-  }
-  var px=player.x, py=player.y;
-  _tryMovePz(dx,dy);
-  if(player.windCarry && at(player.x,player.y)!==CHASM){ player.windCarry=false; }
-  if(player.x!==px || player.y!==py) enterTile();
-};
+
+
 function enterTile(){
   var room=puzzleRoomAt(player.x,player.y), inWater=at(player.x,player.y)===WATER;
   /* the drowned cellar: swimming costs HP */
   if(room && room.deep && inWater && !(player.levitate>0) && player.hp>0){
-    var d=Math.max(1,Math.round(player.maxhp*0.08)); player.hp-=d; floatText(player.x,player.y,String(d),'ice');
+    var d=Math.max(1,Math.round(player.maxhp*0.08)); dealDirectDamage(player,d,'ice',null,{tags:['environment','drowning']}); floatText(player.x,player.y,String(d),'ice');
     log('The cold water saps you: '+d+' damage.','c-you');
     if(player.hp<=0){  if(player.hp<=0) death(); }
   }
@@ -233,36 +179,21 @@ function enterTile(){
 
 /* spikes: harmless on stone skin or with Earth 3; heavy traps in the dark room hurt twice */
 var SPIKES_SRC = {name:'Spikes', base:{pierce:99}};
-var _triggerTrapPz = triggerTrap;
-triggerTrap = function(tr, e){
-  if(tr.kind==='spikes'){
-    if(e===player && (player.levitate>0 || player.st.stone || aff('earth')>=3)){ return; }
-    /* 2026-09-17: spikes go straight through armor and hit harder (armor had cut them to ~3) */
-    var d=applyDamage(e, roll(4,7)+floorNo, 'phys', SPIKES_SRC); floatText(e.x,e.y,String(d),'phys'); sfx('trap-dart');
-    if(e===player){ log('Spikes drive up through your boots: '+d+' damage.','c-you'); if(player.hp<=0){  if(player.hp<=0) death(); } }
-    else if(e.hp<=0) kill(e,null);
-    return;
-  }
-  _triggerTrapPz(tr, e);
-  if(tr.heavy && e.hp>0){ var hd=applyDamage(e, roll(3,6)+floorNo, 'phys', null); floatText(e.x,e.y,String(hd),'phys'); if(e===player){ log('The trap bites deep: '+hd+' more.','c-you'); if(player.hp<=0){  if(player.hp<=0) death(); } } else if(e.hp<=0) kill(e,null); }
-};
-var _drawTrapPz = drawTrap;
-drawTrap = function(f, px, py, alpha, now){
-  if(f.kind!=='spikes') return _drawTrapPz(f, px, py, alpha, now);
+
+
+function drawTrap(f,px,py,alpha,now){
+  if(f.kind!=='spikes') return drawOrdinaryTrap(f, px, py, alpha, now);
   var u=TS/32; ctx.save(); ctx.globalAlpha=alpha;
   ctx.fillStyle='#2A2522'; ctx.fillRect(px+4*u,py+4*u,24*u,24*u);
   ctx.fillStyle='#B9B3AA';
   for(var i=0;i<3;i++) for(var j=0;j<3;j++){ var sx=px+(7+i*8)*u, sy=py+(9+j*8)*u; ctx.beginPath(); ctx.moveTo(sx,sy+5*u); ctx.lineTo(sx+2.5*u,sy-2*u); ctx.lineTo(sx+5*u,sy+5*u); ctx.closePath(); ctx.fill(); }
   ctx.restore();
-};
+
+}
 
 /* ---------------------------------------------------------------- the turn: rooms that act */
-var _endTurnPz = endTurn;
-endTurn = function(){
-  var before=turn;
-  _endTurnPz();
-  if(!player || player.hp<=0 || turn===before) return;
-  if(player.windCarry && at(player.x,player.y)===CHASM) player.levitate=Math.max(player.levitate,1);
+
+function turnPuzzleHazards(context){  if(player.windCarry && at(player.x,player.y)===CHASM) player.levitate=Math.max(player.levitate,1);
   var e=floorMeta.everburn;
   if(e){ fireT[idxOf(e.x,e.y)]=Math.max(fireT[idxOf(e.x,e.y)],3); }
   var room=puzzleRoomAt(player.x,player.y);
@@ -306,25 +237,14 @@ endTurn = function(){
   else if(k==='chasm' && (player.levitate>0 || mastered(k)) && at(player.x,player.y)!==CHASM){ var far=farFrom(pzCells(room),room.puzzle.door)[0]; if(far && dist(player,far)<=1) solvePuzzle(room, 'you cross the chasm.'); }
   else if(k==='drowned' && (player.levitate>0 || mastered(k))){ solvePuzzle(room, 'you cross the water untouched.'); }
   else if(k==='spikes' && (player.st.stone || mastered(k))){ solvePuzzle(room, 'the spikes break on your stone skin.'); }
-};
+
+}
 /* the dark room hides its tiles from the lightmap too */
-var _computeFOVPz = computeFOV;
-computeFOV = function(radius){
-  var r=roomAt(player.x,player.y);
-  if(r && r.puzzle && r.puzzle.kind==='darktraps' && r.dark) return _computeFOVPz(1);
-  return _computeFOVPz(radius);
-};
+
 
 /* ---------------------------------------------------------------- the crystal vault */
-var _bumpSealedPz = bumpSealed;
-bumpSealed = function(x,y){
-  var cd=floorMeta.crystalDoor;
-  if(cd && cd.x===x && cd.y===y){
-    if(player.keys.crystal>0){ player.keys.crystal--; setT(x,y,OPEN); floorMeta.crystalDoor=null; log('The crystal key rings true. <b>Take one treasure</b>; the rest will shatter.','c-kill'); sfx('door-unlock'); sparkleFx(x,y,'ice',30); computeFOV(); endTurn(); return; }
-    log('A door of solid crystal. A <b>crystal key</b> on this floor opens it.','c-info'); sfx('door-locked'); return;
-  }
-  return _bumpSealedPz(x,y);
-};
+
+
 var _grabPz = grab;
 grab = function(){
   var here=items.filter(function(it){ return it.x===player.x && it.y===player.y && it.crystal; });
@@ -370,9 +290,8 @@ window.addEventListener('keydown', function(ev){
 }, true);
 
 /* flames on or beside a frozen-hoard block melt that block */
-var _endTurnIce = endTurn;
-endTurn = function(){
-  _endTurnIce();
+
+function turnMeltHoard(context){
   if(!props || !props.some(function(p){ return p.hoard; })) return;
   var melted=0;
   props.filter(function(p){ return p.hoard; }).forEach(function(p){
@@ -383,4 +302,47 @@ endTurn = function(){
   if(melted){ log('Fire melts '+(melted>1?melted+' blocks':'a block')+' of ice.','c-kill'); sfx('ice-melt');
     if(!props.some(function(p){ return p.hoard; })){ var hr=(floorMeta.puzzles||[]).filter(function(r){ return r.puzzle.kind==='hoard' && !r.puzzle.solved; })[0]; if(hr) solvePuzzle(hr, 'the last of the ice runs away as water.'); }
     draw(); }
-};
+
+}
+
+/* Named floor-generation stages; ordered by generation-adapter.js. */
+function buildGeneratedPuzzles(seed){
+
+  floorMeta.puzzles=[]; floorMeta.searched={};
+  if(floorMeta.boss || !RUN) return;
+  var plan=puzzlePlan()[floorNo]; if(!plan) return;
+  var saved=rng; rng=mulberry32(((seed||0)^0x51c1)>>>0);
+  try{ if(plan.sigilRoom) buildSigilRoom(plan.sigilRoom); if(plan.crystal) buildCrystalVault(); }
+  finally{ rng=saved; }
+}
+
+function clearGeneratedObjectProps(seed){
+
+  var n=props.length; props=props.filter(function(p){ return !objectTile(at(p.x,p.y)); });
+  if(props.length!==n) rebuildPropGrid();
+}
+
+/* Named travel and entry stages; ordered by transition-adapter.js. */
+function movePuzzleGate(dx,dy){
+  if(!player || player.hp<=0) return false;
+  var nx=player.x+dx, ny=player.y+dy, t=at(nx,ny), room=puzzleRoomAt(nx,ny);
+  /* Air 3: the wind carries you over a chasm */
+  if(t===CHASM && aff('air')>=3 && !(player.levitate>0)){ player.levitate=1; player.windCarry=true; }
+  /* Fire 3 burns a barricade on contact */
+  if(t===THORNS && aff('fire')>=3){ var br=(floorMeta.puzzles||[]).filter(function(r){ return r.puzzle.kind==='barricade' && r.puzzle.door.x===nx && r.puzzle.door.y===ny; })[0];
+    setT(nx,ny,OPEN); burst(nx,ny,'fire',20,0.06); if(br) solvePuzzle(br, 'your fire burns the barricade away.'); else log('Your fire burns the thorns away.','c-kill'); endTurn(); return true; }
+  /* ice blocks: only fire melts them (Fire 3 at a touch, a Fire sigil, or flames beside a block); blows glance off */
+  var pr=propAt(nx,ny);
+  if(pr && pr.hoard){
+    var hr=(floorMeta.puzzles||[]).filter(function(r){ return r.puzzle.kind==='hoard'; })[0];
+    if(aff('fire')>=3){ if(hr) solvePuzzle(hr, 'the ice melts at your touch.'); endTurn(); return true; }
+    sfx('ice-hit'); burst(nx,ny,'ice',6,0.03);
+    log('The ice is too hard to break. Only fire will melt it.','c-info');
+    return true;   /* bumping costs no turn */
+  }
+  /* Water 3 walks through the undying flame and puts it out */
+  if(floorMeta.everburn && nx===floorMeta.everburn.x && ny===floorMeta.everburn.y && aff('water')>=3){
+    var er=(floorMeta.puzzles||[]).filter(function(r){ return r.puzzle.kind==='everburn'; })[0]; if(er) solvePuzzle(er, 'the flame dies at your touch.');
+  }
+  return false;
+}

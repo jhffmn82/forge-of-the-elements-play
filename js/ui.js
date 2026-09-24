@@ -122,7 +122,7 @@ function confirmBox(title, text, yesLabel, onYes){
 }
 
 /* ---------------------------------------------------------------- art helpers */
-function paintArt(el, group, name, size){
+function paintArtCanvas(el, group, name, size){
   var o = group==='cast' ? null : (objArt(group,name) || anyObj(name));
   var c=document.createElement('canvas'), d=window.devicePixelRatio||1, S=size||32;
   c.width=S*d; c.height=S*d; c.style.width=S+'px'; c.style.height=S+'px';
@@ -244,15 +244,9 @@ function trinketSlots(){
 }
 
 /* shield points on top of HP: Water's ice armor plus any active ward (Arcane Ward, Amulet of Thorns) */
-function playerShield(){ return Math.max(0,Math.floor(player.iceArmor||0)) + ((player.buffs && player.buffs.arcaneward>0) ? Math.max(0,player.ward||0) : 0); }
+
 /* 2026-09-22 (Justin): the HP bar's shield tooltip named ice armor whatever the source; a Fighter's is Guard */
-function shieldParts(){
-  var parts=[], ice=Math.floor(player.iceArmor||0), ward=(player.buffs && player.buffs.arcaneward>0) ? Math.max(0,player.ward||0) : 0, guard=Math.floor(player.guard||0);
-  if(guard>0) parts.push('Guard '+guard+' of '+(player.guardMax||guard)+', the Fighter footing that rebuilds out of combat');
-  if(ice>0) parts.push('Ice Armor '+ice+' from Water affinity');
-  if(ward>0) parts.push('Ward '+ward);
-  return parts;
-}
+
 
 /* ---------------------------------------------------------------- faith in the HUD */
 function faithChipHTML(){
@@ -298,43 +292,10 @@ function prayerIcon(pid){pid=prayerId(pid);return PRAYER_ICONS[pid]||'pr-'+pid;}
 function prayerCost(pid){ var P=PRAYERS[pid]; return P.favor ? P.favor+' favor' : P.essence ? P.essence+' essence' : P.amusement ? P.amusement+' amusement' : 'prayer'; }
 
 /* every ability or prayer you gain drops into the first empty hotbar slot once; clearing a slot keeps it cleared */
-function syncHotbar(){
-  var i, s;
-  if(!player.hotbar) player.hotbar=[null,null,null,null,null,null,null,null];
-  var prayers = (typeof prayerList==='function' ? prayerList() : []).filter(function(pid){ return godRank()>=PRAYERS[pid].rank; });
-  for(i=0;i<8;i++){
-    s=player.hotbar[i]; if(!s) continue;
-    if(s.type==='ability' && player.abilities.indexOf(s.key)<0) player.hotbar[i]=null;
-    if(s.type==='prayer' && prayers.indexOf(s.key)<0) player.hotbar[i]=null;
-    if(s.type==='item' && player.bag.indexOf(s.ref)<0) player.hotbar[i]=null;
-  }
-  if(!player.hotKnown) player.hotKnown={};
-  /* every ability and prayer you know keeps a slot: one that is missing goes back into the first empty slot */
-  function offer(type, key){
-    player.hotKnown[type.charAt(0)+':'+key]=true;
-    for(var j=0;j<8;j++){ var h=player.hotbar[j]; if(h && h.type===type && h.key===key) return; }
-    for(var j2=0;j2<8;j2++) if(!player.hotbar[j2]){ player.hotbar[j2]={type:type, key:key}; return; }
-  }
-  player.abilities.forEach(function(k){ offer('ability', k); });
-  prayers.forEach(function(pid){ offer('prayer', pid); });
-}
-function pressSlotIndex(i){
-  var s=player.hotbar && player.hotbar[i];
-  if(!s) return;
-  if(s.type==='ability'){ var ai=player.abilities.indexOf(s.key); if(ai>=0) useAbility(ai); return; }
-  if(s.type==='prayer'){ usePrayer(s.key); updateUI(); return; }
-  if(s.type==='swap'){ swapWeapon(); return; }
-  /* 2026-09-20: the equipped bow can live on the hotbar; pressing it shoots (js/rangedslot.js) */
-  if(s.type==='ranged'){ if(typeof bowSlotPress==='function') bowSlotPress(); return; }
-  if(s.type==='item'){
-    var bi=player.bag.indexOf(s.ref);
-    if(bi<0){ player.hotbar[i]=null; abilityBar(); return; }
-    useBagItem(bi); updateUI();
-  }
-}
+
 
 /* ---------------------------------------------------------------- hotbar with icons */
-function abilityBar(){
+function renderHotbarSlots(){
   syncHotbar();
   var html='', i, s;
   for(i=0;i<8;i++){
@@ -419,150 +380,7 @@ function spendPoint(key){
   fresh.forEach(function(id){ for(var k in PASSIVES) PASSIVES[k].forEach(function(p){ if(p.id===id){ log('<b>New passive: '+p.name+'</b> &mdash; '+p.d,'c-kill'); sfx('new-ability'); } }); });
   updateUI(); refreshSheet();
 }
-function panes(){
-  if(openSheet==='Faith'){
-    $('mFaith').innerHTML=faithHTML();
-    /* 2026-09-20: paint the god's own statue at the top of the sheet */
-    var fart=$('mFaith').querySelector('.faith-art');
-    if(fart && player.god && GODS[player.god]) paintArt(fart, 'structures', GODS[player.god].sprite, 96);
-    $('mFaith').querySelectorAll('.prayer').forEach(function(b){ b.onclick=function(){ var pid=b.getAttribute('data-p'); showSheet('Faith'); usePrayer(pid); updateUI(); }; });
-    $('mFaith').querySelectorAll('.abrow[data-pr]').forEach(function(row){
-      var pid=row.getAttribute('data-pr'), ic=row.querySelector('.pico');
-      if(ic) paintArt(ic, objArt('icons',prayerIcon(pid)) ? 'icons' : 'icons', prayerIcon(pid), 28);
-      if(godRank()>=PRAYERS[pid].rank){ row.classList.add('dragp'); dragSource(row, 'pray:'+pid); row.title='Drag onto the hotbar'; }
-    });
-    return;
-  }
-  if(openSheet!=='Char' && openSheet!=='Equip') return;
-  if(openSheet==='Char'){
-    var pips=Object.keys(player.aff).map(function(e){
-      var n=player.aff[e], dots='';
-      for(var i=0;i<5;i++) dots+='<span class="pip" style="'+(i<n?'background:'+AFF_COL[e]+';border-color:'+AFF_COL[e]:'')+'"></span>';
-      return '<div class="aff"><span class="nm">'+cap(e)+'</span><span class="pips">'+dots+'</span><span style="color:var(--dim)">'+n+'</span></div>'+
-             '<div class="abrow" style="border:0;padding:0 0 4px"><span></span><span class="d" style="color:var(--dim);font-size:11px">T1: '+T1_TEXT[e]+'</span><span></span></div>';
-    }).join('') || '<div class="c-info" style="font-size:11.5px">None yet. Carry a mote to the Elemental Forge (floor '+RUN.forgeFloor+').</div>';
-    $('mChar').innerHTML='<div class="cols">'+
-      '<div><h2 class="head">'+player.name+'</h2><div class="who">'+player.who+' &middot; Level '+player.level+
-        (player.points?' &middot; <span style="color:var(--gold)">'+player.points+' unspent</span>':'')+'</div>'+
-        '<p class="sub">Attributes</p><div class="grid4">'+
-        statBox('Might',player.stats.mig,'mig')+statBox('Agility',player.stats.agi,'agi')+statBox('Vitality',player.stats.vit,'vit')+statBox('Focus',player.stats.foc,'foc')+'</div>'+
-        '<p class="sub" style="margin-top:10px">Affinity ('+totalAffinity()+' / '+affinityCap()+')</p>'+pips+
-        '<p class="sub" style="margin-top:10px">Race &amp; class</p><div style="font-size:11px;color:var(--ash);line-height:1.45">'+RACES[player.race].blurb+'<br>'+CLASSES[player.cls].passive+'</div></div>'+
-      '<div><p class="sub">Derived</p>'+kv([['HP',Math.round(player.hp)+' / '+player.maxhp],['Mana',Math.floor(player.mp)+' / '+player.maxmp],['Accuracy',player.acc],['Evasion',player.eva],['Armor',player.armor],
-        ['Block',Math.round(player.block*100)+'%'],['Parry',Math.round(player.parry*100)+'%'],['Weapon damage',player.dmg[0]+'&ndash;'+player.dmg[1]],['Crit',Math.round(player.crit*100)+'%'],
-        ['Spell power','&times;'+spellPower({}).toFixed(2)],['Divine power','&times;'+divineStrength().toFixed(2)],['Range',player.range],['Speed',Math.round(player.speed)],['XP',player.xp+' / '+player.xpNext]])+'</div>'+
-      '<div><p class="sub">Passives</p>'+passiveList()+'</div>'+
-      '<div><p class="sub">Abilities</p>'+(player.abilities.map(function(k,i){
-          var A=ABILITIES[k];
-          return '<div class="abrow" data-ab="'+k+'" draggable="true"><span class="k">'+(i+1)+'</span><span><span style="color:var(--ink)">'+A.name+
-                 '</span><div class="d">'+(typeof liveDesc==='function' ? liveDesc(A) : A.desc)+'</div></span><span style="color:var(--ice)">'+costOf(A)+'</span></div>';
-        }).join('') || '<div class="c-info" style="font-size:11.5px">No active abilities.</div>')+'</div></div>';
-    var abEls=$('mChar').querySelectorAll('.abrow[data-ab]');
-    for(var ai2=0; ai2<abEls.length; ai2++) dragSource(abEls[ai2], 'abil:'+abEls[ai2].getAttribute('data-ab'));
-    return;
-  }
-  /* equipment */
-  var w=player.weapon, ar=player.armorItem||ARMORS.robe, of=player.off||EMPTY_OFF;
-  var stow=player.sets[1-player.activeSet];
-  var el=w.enchant;
-  var doll='<div class="doll">'+
-    eslot('Main hand', gearName(w), player.dmg[0]+'&ndash;'+player.dmg[1]+' dmg'+(player.twoHanded?' &middot; two-handed':'')+(w.note?' &middot; '+w.note:''), el, 'main')+
-    '<div class="dollart" id="dollArt"></div>'+
-    eslot('Off hand', player.twoHanded ? 'Empty' : gearName(of), player.twoHanded ? 'both hands on the '+w.name : (of.note||''), of.enchant, 'off')+
-    eslot('Armor', gearName(ar), player.armor+' armor total'+(ar.note?' &middot; '+ar.note:''), ar.enchant, 'armor')+
-    trinketSlots()+'</div>'+
-    '<p class="sub" style="margin-top:10px">Stowed set <span style="color:var(--dim)">(click to draw it)</span></p>'+
-    '<div id="stowSlot">'+eslot('Swap to', stow?gearName(stow):null, stow?stow.dmg[0]+'&ndash;'+stow.dmg[1]+' dmg'+(stow.range?' &middot; range '+stow.range:''):'', stow&&stow.enchant)+'</div>';
-  var cells=player.bag.map(function(it,idx){
-    var act = it.kind==='weapon'?'equip':it.kind==='armor'?'wear':it.kind==='off'?'take up':it.kind==='food'?'eat':'use';
-    return '<div class="cell" data-b="'+idx+'" draggable="true" title="'+it.name+' - click to '+act+', right-click to drop, drag to the hotbar">'+(it.n>1?'<b>'+it.n+'</b>':'')+'</div>'; });
-  while(cells.length<BAG_MAX) cells.push('<div class="cell empty"></div>');
-  var motes=ELEMENTS.filter(function(m){ return player.motes[m]>0; }).map(function(m){
-    return '<span class="mote"><span class="mart" data-mote="'+m+'"></span>'+m+' &times;'+player.motes[m]+'</span>'; }).join('');
-  $('mEquip').innerHTML='<div class="equip"><div><p class="sub">Worn</p>'+doll+'</div><div>'+
-    '<p class="sub">Bag ('+player.bag.length+' / '+BAG_MAX+')</p><div class="invgrid">'+cells.join('')+'</div>'+
-    '<p class="sub" style="margin-top:10px">Pouch &middot; '+player.essence+' essence'+(player.keys.iron?' &middot; '+player.keys.iron+' iron key':'')+'</p>'+
-    '<div class="pouch">'+(motes||'<span class="mote">no motes yet</span>')+'</div></div></div>';
-  if(typeof paintDoll==='function') paintDoll($('dollArt'),150); else paintArt($('dollArt'),'cast',player.look,150);
-  $('mEquip').querySelectorAll('[data-mote]').forEach(function(e){ paintArt(e,'items','mote-'+e.getAttribute('data-mote'),16); });
-  var cellEls=$('mEquip').querySelectorAll('.cell[data-b]');
-  for(var ci=0;ci<cellEls.length;ci++){
-    (function(cel){
-      var bi=+cel.getAttribute('data-b'), it=player.bag[bi];
-      cel.style.cursor='pointer';
-      var nm=iconNameForBag(it); cel.appendChild(iconCanvas(nm, 38, it.icon||'?'));
-      cel.onclick=function(){ hideCard(); useBagItem(bi); refreshSheet(); };
-      cel.oncontextmenu=function(ev){ ev.preventDefault(); hideCard(); dropBagItem(bi); updateUI(); refreshSheet(); };
-      hoverCard(cel, function(){ return bagCard(player.bag[bi]); });
-      dragSource(cel, 'bag:'+bi);
-    })(cellEls[ci]);
-  }
-  var slotEls=$('mEquip').querySelectorAll('.eslot');
-  if(slotEls[0]) hoverCard(slotEls[0], function(){ return weaponCard(player.weapon, true); });
-  if(slotEls[1]) hoverCard(slotEls[1], function(){ return '<div class="nm">'+gearName(player.off||EMPTY_OFF)+'</div>'+
-    (player.block?'<div class="row"><span>Your block</span><b>'+Math.round(player.block*100)+'%</b></div>':'')+
-    (player.parry?'<div class="row"><span>Your parry</span><b>'+Math.round(player.parry*100)+'%</b></div>':'')+
-    '<div class="hint">'+((player.off||{}).note||'')+'</div>'; });
-  if(slotEls[2]) hoverCard(slotEls[2], function(){ return armorCard(player.armorItem, true); });
-  $('mEquip').querySelectorAll('.eslot[data-tr]').forEach(function(ts){
-    var key=ts.getAttribute('data-tr'), get=function(){ return key==='amulet' ? player.amulet : (player.rings||[])[key==='ring0'?0:1]; };
-    hoverCard(ts, function(){ var it=get(); return it ? trinketCard(it) : '<div class="nm">'+(key==='amulet'?'Amulet':'Ring')+'</div><div class="hint">Empty.</div>'; });
-    ts.style.cursor='pointer';
-    ts.onclick=function(){ if(!get()) return; hideCard(); if(key==='amulet') takeOffAmulet(); else takeOffRing(key==='ring0'?0:1); updateUI(); refreshSheet(); };
-    dropTarget(ts, function(tag){ var bi=bagIndexFromTag(tag); if(bi<0) return; hideCard(); equipFromBag(bi, key); updateUI(); refreshSheet(); });
-    if(key==='amulet' && player.amulet) dragSource(ts, 'amulet');   /* drag the worn amulet onto a hotbar slot */
-  });
-  var stowEl=$('stowSlot');
-  if(stowEl && stow){ hoverCard(stowEl, function(){ return weaponCard(player.sets[1-player.activeSet]); });
-    stowEl.style.cursor='pointer'; stowEl.title='Draw this weapon (costs a turn)'; stowEl.onclick=function(){ hideCard(); swapWeapon(); refreshSheet(); }; }
-  var wslot=$('mEquip').querySelector('.eslot');
-  if(wslot){ wslot.style.cursor='grab'; dragSource(wslot, 'weapons'); }
-  $('mEquip').querySelectorAll('.eslot[data-eq]').forEach(function(eq){
-    var key=eq.getAttribute('data-eq');
-    dropTarget(eq, function(tag){ var bi=bagIndexFromTag(tag); if(bi<0) return; hideCard(); equipFromBag(bi, key); updateUI(); refreshSheet(); });
-  });
-}
-function weaponCard(w, worn){
-  if(!w) return '';
-  var plus=itemPlus(w);
-  /* 2026-09-20: an unidentified piece gives nothing away - not its damage, not its enchantment. That is the
-     whole point of carrying it into a fight (or reading a Sigil of Knowledge). */
-  if(w.unid) return '<div class="nm">'+gearName(w)+'</div>'+
-    '<div class="row"><span>Damage</span><b>?</b></div>'+
-    '<div class="row"><span>Hands</span><b>'+(w.hands||1)+'</b></div>'+
-    (w.range?'<div class="row"><span>Range</span><b>'+(w.range+(player.rangeBonus||0))+'</b></div>':'')+
-    (typeof unidHint==='function' ? unidHint(w) : '')+
-    '';
-  return '<div class="nm">'+gearName(w)+'</div>'+
-    '<div class="row"><span>Damage</span><b>'+(w.dmg[0]+plus)+'&ndash;'+(w.dmg[1]+plus)+'</b></div>'+
-    '<div class="row"><span>Accuracy</span><b>'+(w.acc>=0?'+':'')+(w.acc||0)+'</b></div>'+
-    '<div class="row"><span>Hands</span><b>'+(w.hands||1)+'</b></div>'+
-    (w.range?'<div class="row"><span>Range</span><b>'+(w.range+(player.rangeBonus||0))+'</b></div>':'')+
-    (w.enchant?'<div class="row"><span>Enchant</span><b style="color:'+AFF_COL[w.enchant]+'">'+cap(w.enchant)+'</b></div><div class="hint">'+(typeof enchantLive==='function' ? enchantLive('weapon', w.enchant) : ENCHANT_TEXT.weapon[w.enchant])+'</div>':'')+
-    (w.divine?'<div class="row"><span>Invoke &amp; prayer strength</span><b>+'+Math.round(w.divine*gearPassiveBonus()*100)+'%</b></div>':'')+
-    (w.note?'<div class="hint">'+w.note+'</div>':'');
-}
-function armorCard(a, worn){
-  if(!a) return '';
-  if(a.unid) return '<div class="nm">'+gearName(a)+'</div>'+
-    '<div class="row"><span>Armor</span><b>?</b></div>'+
-    (typeof unidHint==='function' ? unidHint(a) : '')+
-    '';
-  return '<div class="nm">'+gearName(a)+'</div>'+
-    '<div class="row"><span>Armor</span><b>'+(a.armor+(a.armor>0?itemPlus(a):0))+'</b></div>'+
-    '<div class="row"><span>Evasion</span><b>'+((a.eva||0)>=0?'+':'')+(a.eva||0)+'</b></div>'+
-    (a.enchant?'<div class="row"><span>Enchant</span><b style="color:'+AFF_COL[a.enchant]+'">'+cap(a.enchant)+'</b></div><div class="hint">'+(typeof enchantLive==='function' ? enchantLive('armor', a.enchant) : ENCHANT_TEXT.armor[a.enchant])+'</div>':'')+
-    '<div class="hint">'+(a.note||'')+'</div>';
-}
-function bagCard(it){
-  if(!it) return '';
-  if(it.kind==='weapon') return weaponCard(it.data);
-  if(it.kind==='armor') return armorCard(it.data);
-  if(it.kind==='off') return it.data.weapon?weaponCard(it.data)+'<div class="hint">Off-hand strike: 60% damage.</div>':'<div class="nm">'+gearName(it.data)+'</div><div class="hint">'+(it.data.note||'')+'</div>';
-  if(it.kind==='sigil'){ var k=sigilKnown[it.data.use]; return '<div class="nm">'+it.name+'</div><div class="hint">'+(k?SIGILS[it.data.use].desc:'Unidentified.')+'</div>'; }
-  if(it.kind==='food'){ var f=FOODS[it.data.food]; return '<div class="nm">'+f.name+'</div><div class="hint">'+(f.desc ? f.desc+' ' : '')+'Restores '+f.nutrition+' hunger'+(f.heal?', heals '+Math.round(f.heal*100)+'%':'')+'.</div>'; }
-  return '<div class="nm">'+it.name+'</div>';
-}
+
 
 /* ---------------------------------------------------------------- inspect */
 var TILE_NAMES = {0:'Wall',1:'Floor',2:'Closed door',3:'Stairs down',4:'Chest',5:'Elemental Forge',6:'Rubble',7:'Open door',8:'Chasm',9:'Locked iron door',

@@ -306,25 +306,12 @@ function cpOn(){ return typeof inCrypt==='function' && inCrypt() && !(floorMeta 
 PROPS['sarc'] = {b:1};
 PROPS['pedestal'] = {b:1};
 /* the old one-cell coffins and sarcophagi become two-cell sarcophagi when there is room, else a pedestal */
-var _addPropCP = addProp;
-addProp = function(x, y, name, extra){
-  if(cpOn() && !(extra && extra.cp)){
-    var mapped=(typeof CRYPT_PROP!=='undefined' && CRYPT_PROP[name]) || name;
-    if(mapped==='sarcophagus' || mapped==='sarcophagus-open' || mapped==='coffin'){
-      var kind = mapped==='sarcophagus-open' ? 'open' : (rng()<0.3 ? 'cracked' : 'intact');
-      var horiz = inb(x+1,y) && freeCell(x+1,y) && !nearDoor(x+1,y), vert = inb(x,y+1) && freeCell(x,y+1) && !nearDoor(x,y+1);
-      if(horiz && (!vert || rng()<0.5)){ var ph=addSetPiece(x, y, 'sarc', 2, 1, {cp:true, kind:kind, horiz:true, seed:Math.floor(rng()*97)}); if(ph) return ph; }
-      else if(vert){ var pv=addSetPiece(x, y, 'sarc', 1, 2, {cp:true, kind:kind, horiz:false, seed:Math.floor(rng()*97)}); if(pv) return pv; }
-      return _addPropCP(x, y, 'pedestal', {cp:true, top:rng()<0.5?'skull':'none', seed:Math.floor(rng()*97)});
-    }
-    if(mapped==='grave-pillar') return _addPropCP(x, y, 'pedestal', Object.assign({cp:true, top:rng()<0.6?'skull':'none', seed:Math.floor(rng()*97)}, extra||{}));
-  }
-  return _addPropCP(x, y, name, extra);
-};
+
+
 /* generated tomb set pieces are drawn with the same recipe */
 var CP_TOMB = {'tomb-v':['intact',false], 'tomb-h':['intact',true], 'tomb-rune':['intact',false], 'tomb-crumbled-v':['cracked',false], 'tomb-crumbled-h':['cracked',true], 'tomb-open-h':['open',true]};
-var _drawPropSurfaceCP = drawPropSurface;
-drawPropSurface = function(p, px, py, alpha){
+
+function drawCryptStoneProp(p, px, py, alpha){
   if(cpOn()){
     var img=null, cw=1, ch=1, lift=0;
     if(p.name==='sarc'){ img=cpSarcophagus(p.kind||'intact', !!p.horiz, p.seed||0); cw=p.horiz?2:1; ch=p.horiz?1:2; lift=img.lift||0; }
@@ -339,21 +326,18 @@ drawPropSurface = function(p, px, py, alpha){
       return true;
     }
   }
-  return _drawPropSurfaceCP(p, px, py, alpha);
-};
-/* grave posts (the wisp torches) become pedestals too, keeping their wisps and light */
-var _addPropCP2 = addProp;
-addProp = function(x, y, name, extra){
-  if(cpOn() && name==='grave-post') return _addPropCP2(x, y, 'pedestal', Object.assign({}, extra||{}, {cp:true, set:false, top:'none', seed:(x*13+y*7)%97}));
-  return _addPropCP2(x, y, name, extra);
-};
-/* urn vessels: shaded copies */
-if(typeof setArt==='function'){
-  var _setArtCP = setArt;
-  setArt = function(name){ var o=_setArtCP(name); if(o && cpOn() && /^urn-(tall|squat|ornate|shattered)$/.test(name)) return cpVessel(name, o) || o; return o; };
+  return false;
+
 }
-var _objArtCP = objArt;
-objArt = function(group, name){ var o=_objArtCP(group, name); if(o && group==='props' && name==='urn' && cpOn()) return cpVessel('urn', o) || o; return o; };
+/* grave posts (the wisp torches) become pedestals too, keeping their wisps and light */
+
+
+/* urn vessels: shaded copies */
+function tintCryptSet(o, name){ if(o && cpOn() && /^urn-(tall|squat|ornate|shattered)$/.test(name)) return cpVessel(name, o) || o; return o;
+}
+
+function tintCryptObject(o, group, name){ if(o && group==='props' && name==='urn' && cpOn()) return cpVessel('urn', o) || o; return o;
+}
 
 /* ---------------------------------------------------------------- a small test room showing the whole set with creatures */
 function buildCryptPropTest(){
@@ -390,57 +374,16 @@ function buildCryptPropTest(){
 /* ---------------------------------------------------------------- tight spaces get fewer, smaller pieces
    A corridor or a cramped burial chamber keeps the same palette and prop scale, but two-cell sarcophagi never
    block a corridor and clutter thins out, so narrow routes stay readable and walkable. */
-var _addPropTight = addProp;
-addProp = function(x, y, name, extra){
-  if(cpOn() && !(extra && extra.keep)){
-    var room = typeof roomAt==='function' ? roomAt(x,y) : null, tight = !room || room.w*room.h<=20;
-    if(tight){
-      var big = name==='sarc' || /^tomb-/.test(name);
-      if(!room && big) return null;                                            /* no tombs across a corridor */
-      if(!room && (name==='urn-group' || name==='stack-group') && rng()<0.55) return null;
-      if(room && rng()<0.4 && (name==='urn-group' || name==='pedestal' || big)) return null;
-      if(!room && name==='pedestal' && rng()<0.35) return null;
-    }
-  }
-  return _addPropTight(x, y, name, extra);
-};
+
 
 /* ---------------------------------------------------------------- biome 1: no blue mushroom props, and iron chains drawn in code
    The dungeon's vegetation is grass and moss, so a mushroom prop becomes a patch of one of those.
    The chain sprite read as bright red rope; a chain is now drawn as dull iron links with a little rust. */
-var _addPropB1 = addProp;
-addProp = function(x, y, name, extra){
-  var plain = !(typeof inCrypt==='function' && inCrypt()) && !(floorMeta && floorMeta.plane);
-  if(plain && name==='mushrooms' && !(extra && extra.keep)){
-    if(inb(x,y) && at(x,y)===FLOOR){
-      var kind = rng()<0.6 ? G_GRASS : G_MOSS;
-      blob(x, y, ri(3,8), function(xx,yy){ if(at(xx,yy)===FLOOR && !gAt(xx,yy) && !propAt(xx,yy)) setG(xx,yy,kind); });
-    }
-    return null;
-  }
-  return _addPropB1(x, y, name, extra);
-};
+
+
 /* chains belong to the walls: a shackle set in the stone with links hanging from it, never a coil dropped on open floor */
-var _addPropChain = addProp;
-addProp = function(x, y, name, extra){
-  if(name==='chains' && !(extra && extra.keep)){
-    var dirs=[[0,-1],[-1,0],[1,0]].filter(function(d){ return inb(x+d[0],y+d[1]) && isWallLike(at(x+d[0],y+d[1])); });
-    if(!dirs.length){
-      /* move it to the nearest wall it could hang from */
-      var best=null;
-      for(var rr=1; rr<=3 && !best; rr++) for(var oy=-rr; oy<=rr && !best; oy++) for(var ox=-rr; ox<=rr; ox++){
-        var nx=x+ox, ny=y+oy; if(!inb(nx,ny) || !freeCell(nx,ny) || nearDoor(nx,ny)) continue;
-        var nd=[[0,-1],[-1,0],[1,0]].filter(function(d){ return inb(nx+d[0],ny+d[1]) && isWallLike(at(nx+d[0],ny+d[1])); });
-        if(nd.length){ best={x:nx, y:ny, dirs:nd}; break; }
-      }
-      if(!best) return null;
-      x=best.x; y=best.y; dirs=best.dirs;
-    }
-    var d=dirs[Math.floor(rng()*dirs.length)];
-    return _addPropChain(x, y, name, Object.assign({chainDir:d, chainSeed:Math.floor(rng()*89)}, extra||{}));
-  }
-  return _addPropChain(x, y, name, extra);
-};
+
+
 var CHAIN_CACHE = {};
 function chainRaster(seed, dir){
   var key=seed+':'+dir.join(','); if(CHAIN_CACHE[key]) return CHAIN_CACHE[key];
@@ -472,8 +415,8 @@ function chainRaster(seed, dir){
   g.beginPath(); g.ellipse(x, y+1.5, 5, 2, 0, 0, 7); g.fill();
   return (CHAIN_CACHE[key]=c);
 }
-var _drawPropSurfaceChain = drawPropSurface;
-drawPropSurface = function(p, px, py, alpha){
+
+function drawChainProp(p, px, py, alpha){
   if(p.name==='chains'){
     var img=chainRaster(p.chainSeed===undefined ? (p.x*17+p.y*11)%89 : p.chainSeed, p.chainDir || [0,-1]);
     ctx.save(); ctx.globalAlpha=alpha; ctx.imageSmoothingEnabled=true; // solid metal; scene lighting and memory still apply
@@ -482,8 +425,9 @@ drawPropSurface = function(p, px, py, alpha){
     ctx.restore();
     return true;
   }
-  return _drawPropSurfaceChain(p, px, py, alpha);
-};
+  return false;
+
+}
 
 /* ---------------------------------------------------------------- biome 1 props: the same weathering treatment
    Dungeon stone and timber props get a 1px dark edge, dirt gathering at the foot, grime under overhangs and the
@@ -517,12 +461,12 @@ function b1Weather(name, o){
   g.putImageData(im,0,0);
   return (B1_WEATHER[key]={img:c, sx:0, sy:0, sw:W, sh:H});
 }
-var _objArtB1 = objArt;
-objArt = function(group, name){
-  var o=_objArtB1(group, name);
+
+function weatherDungeonObject(o, group, name){
   if(o && group==='props' && B1_LIST[name] && !(typeof inCrypt==='function' && inCrypt()) && !(floorMeta && floorMeta.plane)) return b1Weather(name, o) || o;
   return o;
-};
+
+}
 
 /* ---------------------------------------------------------------- the straw bed is bedding, not an object
    The sprite read as a pasted crate of straw sitting on the stone. A pallet of straw has no silhouette: it is a
@@ -597,8 +541,8 @@ function strawRaster(seed, side){
   g.globalCompositeOperation='source-over';
   return (STRAW_CACHE[key]={c:c, R:R, O:O});
 }
-var _drawPropSurfaceStraw = drawPropSurface;
-drawPropSurface = function(p, px, py, alpha){
+
+function drawStrawProp(p, px, py, alpha){
   if(p.name==='bed-straw'){
     var r=strawRaster(((p.x*29+p.y*17)%89), p.bedSide);
     ctx.save(); ctx.globalAlpha=alpha; ctx.imageSmoothingEnabled=false;
@@ -607,40 +551,13 @@ drawPropSurface = function(p, px, py, alpha){
     ctx.restore();
     return true;
   }
-  return _drawPropSurfaceStraw(p, px, py, alpha);
-};
+  return false;
+
+}
 
 /* ---------------------------------------------------------------- straw beds lie against walls, in rows
    A single bed in the middle of a room read as a stray object; a prison or barracks lays them head to the wall. */
-var _addPropBed = addProp;
-addProp = function(x, y, name, extra){
-  if(name==='bed-straw' && !(extra && extra.keep)){
-    function wallSide(cx, cy){ return [[0,-1],[-1,0],[1,0],[0,1]].filter(function(d){ return inb(cx+d[0],cy+d[1]) && isWallLike(at(cx+d[0],cy+d[1])); })[0]; }
-    var side=wallSide(x,y);
-    if(!side){
-      var best=null;
-      for(var rr=1; rr<=3 && !best; rr++) for(var oy=-rr; oy<=rr && !best; oy++) for(var ox=-rr; ox<=rr; ox++){
-        var nx=x+ox, ny=y+oy; if(!inb(nx,ny) || !freeCell(nx,ny) || nearDoor(nx,ny)) continue;
-        var sd=wallSide(nx,ny); if(sd){ best={x:nx, y:ny, side:sd}; break; }
-      }
-      if(!best) return null;
-      x=best.x; y=best.y; side=best.side;
-    }
-    var p=_addPropBed(x, y, name, Object.assign({bedSide:side}, extra||{}));
-    /* a second or third bed further along the same wall, with a gap */
-    if(p && rng()<0.7){
-      var along = side[1]!==0 ? [1,0] : [0,1], n=1+(rng()<0.45?1:0);
-      for(var k=1;k<=n;k++){
-        var gx=x+along[0]*(k+ (rng()<0.35?1:0)), gy=y+along[1]*(k+ (rng()<0.35?1:0));
-        if(!inb(gx,gy) || !freeCell(gx,gy) || nearDoor(gx,gy)) break;
-        if(!(inb(gx+side[0],gy+side[1]) && isWallLike(at(gx+side[0],gy+side[1])))) break;
-        _addPropBed(gx, gy, name, {bedSide:side});
-      }
-    }
-    return p;
-  }
-  return _addPropBed(x, y, name, extra);
-};
+
 
 /* ---------------------------------------------------------------- nothing a prop does may seal off part of a floor
    Two-cell sarcophagi, urn groups and crate stacks all block. If one of them cuts a region off, it is moved to a free
@@ -682,8 +599,9 @@ function propsKeepOpen(){
     if(!moved) removeProp(p);
   }
 }
-var _generateKeepOpen = generate;
-generate = function(seed){
-  _generateKeepOpen(seed);
+
+/* Named floor-generation stages; ordered by generation-adapter.js. */
+function openGeneratedCryptPaths(seed){
+
   if(floorMeta && !floorMeta.plane) propsKeepOpen();
-};
+}

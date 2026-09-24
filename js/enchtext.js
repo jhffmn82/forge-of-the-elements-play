@@ -8,76 +8,13 @@
    ===================================================================== */
 
 function ePts(el){ return (player && player.aff && player.aff[el]) || 0; }
-function eSc(el){ return typeof enchantScale==='function' ? enchantScale(el) : 1; }
-function ePct(v){ return Math.round(v*100) + '%'; }
-
-var ENCH_LIVE = {
-  holy: {
-    fire:function(){return '+'+ePct(.08*eSc('fire'))+' damage while buffed';},
-    water:function(){return '+'+ePct(.15*eSc('water'))+' mana regeneration while buffed';},
-    air:function(){return ePct(.05*eSc('air'))+' less action time while buffed';},
-    earth:function(){return ePct(Math.min(.5,.05*eSc('earth')))+' less damage taken while buffed';},
-    light:function(){return 'Gaining a buff heals '+ePct(.03*eSc('light'))+' of maximum HP';},
-    shadow:function(){return '+'+ePct(.03*eSc('shadow'))+' crit chance while buffed';}
-  },
-  weapon: {
-    fire:  function(){ var p=ePts('fire'); return '+'+ePct((0.10+0.03*p)*enchantGodBonus())+' of each hit as fire' + (p ? ', '+ePct(0.05*p*enchantGodBonus())+' chance to set Burning' : ''); },
-    water: function(){ return ePct((0.15+0.05*ePts('water'))*enchantGodBonus())+' chance to Chill'; },
-    air:   function(){ return ePct(Math.max(0.05, 0.05*ePts('air'))*enchantGodBonus())+' chance of an instant extra attack, or a spell landing twice'; },
-    earth: function(){ return ePct(0.15*eSc('earth'))+' chance to Root for 2 turns'; },
-    light: function(){ return '+'+Math.round(10*eSc('light'))+' accuracy, +'+ePct(.25*enchantGodBonus())+' damage to undead and shadow'; },
-    shadow:function(){ return ePct(Math.max(0.05, 0.05*ePts('shadow'))*enchantGodBonus())+' chance of +'+ePct(.25*enchantGodBonus())+' dark damage and Corrupt; +1 damage to Hollowed'; }
-  },
-  armor: {fire:function(){return '+'+ePct((.10+.05*ePts('fire'))*enchantGodBonus())+' fire resistance; '+('+'+ePct((.05+.03*ePts('fire'))*enchantGodBonus())+' maximum HP');},
-water:function(){return '+'+ePct((.10+.05*ePts('water'))*enchantGodBonus())+' ice resistance; '+('+'+Math.round(8*eSc('water'))+' evasion');},
-air:function(){return '+'+ePct((.10+.05*ePts('air'))*enchantGodBonus())+' Lightning resistance; '+(ePct((.05+.03*ePts('air'))*enchantGodBonus())+' ranged projectile deflection');},
-earth:function(){return '+'+ePct((.10+.05*ePts('earth'))*enchantGodBonus())+' poison resistance; '+('+'+Math.round(eSc('earth'))+' armor');},
-light:function(){return '+'+ePct((.10+.05*ePts('light'))*enchantGodBonus())+' light resistance; '+('+'+ePct(.5*eSc('light'))+' HP regeneration');},
-shadow:function(){return '+'+ePct((.10+.05*ePts('shadow'))*enchantGodBonus())+' shadow resistance; '+('+'+ePct(.05*Math.max(1,ePts('shadow'))*enchantGodBonus())+' stealth');}},
-  orb: {
- fire:function(){return 'Critical hits ignite the target tile and inflict Burning for 2 turns ('+burnDmg()+' damage per turn).';},
- water:function(){return 'Critical hits restore '+Math.round((1+ePts('water'))*enchantGodBonus())+' Ice Armor, up to capacity.';},
- air:function(){return 'Critical hits stun for 1 turn.';},
- earth:function(){return '+'+ePct((.05+.03*ePts('earth'))*enchantGodBonus())+' crit chance against Rooted targets.';},
- light:function(){return 'Critical hits restore '+Math.round(3*eSc('light'))+' mana.';},
- shadow:function(){return '+'+ePct((.10+.05*ePts('shadow'))*enchantGodBonus())+' crit damage multiplier.';}
-},
-  tome: {
- fire:function(){return '+'+ePct((.05+.03*ePts('fire'))*enchantGodBonus())+' spell power';},
- water:function(){return '+'+Math.round((2+ePts('water'))*enchantGodBonus())+' evasion';},
- air:function(){return ePct((.02+.01*ePts('air'))*enchantGodBonus())+' less casting time';},
- earth:function(){return '+'+ePct((.02+.01*ePts('earth'))*enchantGodBonus())+' all elemental resistances';},
- light:function(){return ePct((.10+.05*ePts('light'))*enchantGodBonus())+' of mana spent becomes a shield (up to '+Math.round(player.maxhp*.3)+' HP)';},
- shadow:function(){return 'Spell kills heal '+ePct(.01*Math.max(1,ePts('shadow'))*enchantGodBonus())+' of maximum HP';}
+function enchantLive(slot,el){
+  if(typeof player==='undefined'||!player)return FoteEnchantments.formula(slot,el);
+  var context=enchantContext();
+  context.maxhp=player.maxhp;
+  if(slot==='orb'&&el==='fire')context.burnDamage=burnDmg();
+  return FoteEnchantments.describe(slot,el,ePts(el),context);
 }
-};
-
-/* slot is 'weapon', 'armor', 'orb' or 'tome'; falls back to the Forge wording for anything unknown */
-function enchantLive(slot, el){
-  var f = ENCH_LIVE[slot] && ENCH_LIVE[slot][el];
-  if(f) { try { return f(); } catch(e){} }
-  return (typeof ENCHANT_TEXT!=='undefined' && ENCHANT_TEXT[slot] && ENCHANT_TEXT[slot][el]) || '';
-}
-
-/* ---------------------------------------------------------------- the item cards read the live numbers */
-(function(){
-  if(typeof ENCHANT_TEXT==='undefined') return;
-  /* ui.js builds the weapon and armor cards straight out of ENCHANT_TEXT, so hand those two lookups a proxy
-     that answers with live values instead. The Forge reads ENCHANT_TEXT.weapon / .armor directly and is
-     untouched, because it asks for the tables by name before an item exists. */
-  var liveProxy = function(slot){
-    var out = {};
-    ELEMENTS.forEach(function(el){
-      Object.defineProperty(out, el, { get: function(){ return enchantLive(slot, el); }, enumerable: true });
-    });
-    return out;
-  };
-  if(typeof itemCardHTML==='function'){ /* nothing: hook below covers it */ }
-  ENCHANT_TEXT.weaponLive = liveProxy('weapon');
-  ENCHANT_TEXT.armorLive  = liveProxy('armor');
-  ENCHANT_TEXT.orbLive    = liveProxy('orb');
-  ENCHANT_TEXT.tomeLive   = liveProxy('tome');
-})();
 
 /* ---------------------------------------------------------------- 2026-09-23 (Justin): "do that for every ability and
    infusion description in the game". Every description that states a rate shows the number you have right now, with

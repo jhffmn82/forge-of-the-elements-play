@@ -86,15 +86,16 @@ function runeAtlas(){
   RUNE_ATLAS={img:cv2, pos:pos};
   return RUNE_ATLAS;
 }
-var _objArtRune = objArt;
-objArt = function(group, name){
+
+function runeObjectArt(group, name){
   if(name && name.indexOf('rune-')===0){
     var A=runeAtlas(), n=name.slice(5);
-    if(A.pos[n]===undefined) return _objArtRune(group, name);   /* not a sigil rune (rune-stone-light and friends are props) */
+    if(A.pos[n]===undefined) return false;   /* not a sigil rune (rune-stone-light and friends are props) */
     return {img:A.img, sx:A.pos[n]+RUNE_CELL*0.16, sy:RUNE_CELL*0.08, sw:RUNE_CELL*0.68, sh:RUNE_CELL*0.84};
   }
-  return _objArtRune(group, name);
-};
+  return false;
+
+}
 
 /* ---------------------------------------------------------------- which rune each sigil wears this run */
 function assignRunes(r){
@@ -121,14 +122,14 @@ function ensureRuneLooks(){
 sigilArtName = function(use){ var look=RUN && RUN.sigilLooks && RUN.sigilLooks[use]; return look && RUNES[look] ? 'rune-'+look : 'item-sigil'; };
 
 /* soft blue light around a rune stone lying on the floor */
-var _gatherLightsRune = gatherLights;
-gatherLights = function(now, prp){
-  var L=_gatherLightsRune(now, prp);
+
+function addSigilLights(L, now, prp){
   items.forEach(function(it){
     if(it.kind!=='sigil' || !(revealAll||vis[idxOf(it.x,it.y)])) return;
     var use=it.use || (it.it && it.it.use), rare=RARE_SIGILS.indexOf(use)>=0, fl=ANIM.reduce ? 1 : 1+0.08*Math.sin(now/400+it.x*2+it.y);
     L.push({x:it.x, y:it.y, c:hexRGB(rare ? '#B9A2FF' : '#6FC4FF'), r:2.4, s:0.6*fl, tx:it.x, ty:it.y});
   });
   return L;
-};
+
+}
 ITEM_FIT.sigil = 0.56;

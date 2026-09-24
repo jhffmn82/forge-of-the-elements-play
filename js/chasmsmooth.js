@@ -42,7 +42,7 @@ function chsRaster(x, y){
   return c;
 }
 function chsNear(x, y){ for(var oy=-1;oy<=1;oy++) for(var ox=-1;ox<=1;ox++) if(chsVoidCell(x+ox,y+oy)) return true; return false; }
-drawCaveChasms = function(now){
+function drawCaveChasms(now){
   var t=(typeof ANIM!=='undefined' && ANIM.reduce) ? 0 : now/1000, tag='chs'+bidx()+(floorMeta && floorMeta.plane ? 'p' : '')+'@';
   for(var y=camY-1; y<=camY+viewH+1; y++) for(var x=camX-1; x<=camX+viewW+1; x++){
     if(!inb(x,y) || !chsNear(x,y) || (isWallLike(at(x,y)) && !chsVoidCell(x,y))) continue;
@@ -59,4 +59,4 @@ drawCaveChasms = function(now){
     }
   }
   ctx.globalAlpha=1;
-};
+}

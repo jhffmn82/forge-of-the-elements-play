@@ -30,7 +30,7 @@
                                        tile coords of the hall; throne is the floor cell she holds; each circle is a
                                        2x2 WALKABLE set piece named 'ritual-circle' with its top-left tile at {x,y} - swap
                                        p.name to 'ritual-circle-active' and back (find it with propAt(x,y))
-     spawnMatron(floorMeta.bossArena)  called once the floor is built, if it is defined; otherwise a stand-in elite
+     spawnMatron(floorMeta.bossArena)  creates the Matron after the room population stage
      The hall's EXIT gate opens when she dies (world bossDefeated / exitOpen); stepping in wins the run.
    ===================================================================== */
 
@@ -43,7 +43,6 @@ var DEEP_REGIONS = ['temple', 'underdark', 'volcanic'];
 var DEEP_STYLE = ['rect', 'smooth', 'jag'];
 
 function inDeep(){ return typeof floorNo!=='undefined' && bidx()===3 && !(floorMeta && floorMeta.plane); }
-function deepRegionAt(x, y){ var R=floorMeta && floorMeta.deepRegion; if(!R || !inb(x,y)) return 0; return R[idxOf(x,y)]; }
 function deepLavaAdjacent(x, y){ return at(x-1,y)===LAVA || at(x+1,y)===LAVA || at(x,y-1)===LAVA || at(x,y+1)===LAVA; }
 
 /* ---------------------------------------------------------------- the pieces (art in art/map/biome4, map-deep.png)
@@ -84,14 +83,7 @@ var DEEP_PROP = [
   /* volcanic */    {'torch-stand':'brazier-lit', 'banner-stand':null, 'statue':'drow-obelisk', 'table-candle':['basalt-embers-1','basalt-embers-2','basalt-embers-3','basalt-embers-4'],
                      'mushrooms':null, 'vines':null, 'bookshelf':'drow-obelisk'}
 ];
-var _addPropDeep = addProp;
-addProp = function(x, y, name, extra){
-  if(inDeep() && floorMeta.deepRegion && !(extra && (extra.keep || extra.tablet || extra.lever || extra.prisoner || extra.deep))){
-    var T=DEEP_PROP[deepRegionAt(x,y)]||{};
-    if(name in T){ var m=T[name]; if(m===null) return null; name = typeof m==='string' ? m : m[Math.floor(rng()*m.length)]; }
-  }
-  return _addPropDeep(x, y, name, extra);
-};
+
 
 /* ---------------------------------------------------------------- regions */
 /* 2026-09-19: how many themes a floor has is 1, 2 or 3 at random (30/40/30). Which ones: volcanic grows likelier
@@ -130,8 +122,7 @@ function deepLayout(){
   for(var t=0; t<16; t++){ if(deepTry()){ floorMeta.deepLaid=t+1; return true; } }
   return false;                                                 /* never seen: the BSP rooms take over (all temple) */
 }
-var _caveLayoutDeep = caveLayout;
-caveLayout = function(){ if(bidx()===3 && !(floorMeta && floorMeta.plane)) return deepLayout(); return _caveLayoutDeep.apply(this, arguments); };
+
 
 function deepPlanRooms(R, boss){
   var ch=[], want = boss ? 3 : ri(7,9);
@@ -289,11 +280,12 @@ function deepTry(){
   /* the regions as laid out; each room's cells take its own region */
   floorMeta.deepRegion=R;
   rooms.forEach(function(r){ deepRoomCells(r).forEach(function(c){ R[idxOf(c.x,c.y)]=r.region; }); });
-  /* lava in some of the volcanic caves, never in the first room, never cutting anything off */
+  /* Beta's lava carver was shadowed by the deepLava tile predicate, so this stage
+     never changed terrain. Preserve its candidate shuffle and one draw per room;
+     activating carveDeepLavaRoom is a separate content change (see floor-transitions.md). */
   if(!boss){
-    var lavaRooms=shuffled(rooms.filter(function(r){ return r.region===2 && r!==start && r.cave && r.n>=22; })), nl=0;
-    for(var li=0; li<lavaRooms.length && nl<3; li++){ if(rng()<0.85 && deepLava(lavaRooms[li], start)){ lavaRooms[li].lava=true; nl++; } }
-    if(nl){ floorMeta.lava=true; floorMeta.notes.push('The rock runs hot here. Rivers of lava light the volcanic caves; do not linger beside them.'); }
+    var lavaRooms=shuffled(rooms.filter(function(r){ return r.region===2 && r!==start && r.cave && r.n>=22; }));
+    for(var li=0;li<lavaRooms.length;li++)rng();
   }
   if(caveUnreachedDeep(start.cx, start.cy)) return false;
   return true;
@@ -317,7 +309,7 @@ function deepRoomCells(r){
 /* ---------------------------------------------------------------- lava */
 /* a channel wandering along the cave's long axis, or a pool; kept two tiles clear of the cave's heart (the Forge or
    the shrine may stand there), off every tunnel mouth, and undone if it would cut any ground off from the start */
-function deepLava(room, start){
+function carveDeepLavaRoom(room, start){
   var G=floorMeta.caveRoom, saved=[];
   function inRoom(x,y){ return inb(x,y) && G[idxOf(x,y)]===room.id && at(x,y)===FLOOR; }
   function okCell(x,y){
@@ -369,37 +361,11 @@ function deepLava(room, start){
 /* ---------------------------------------------------------------- the shared generator, told about the Underdark */
 /* stairs (down and up) stand at the end of a short passage cut north into the rock, so the drow stairway's arch sits
    in the rock face at its end; any room shape */
-var _carveDeadEndDeep = carveDeadEnd;
-carveDeadEnd = function(room){
-  if(!inDeep() || !room) return _carveDeadEndDeep(room);
-  var cells=shuffled(deepRoomCells(room)).filter(function(c){ return at(c.x,c.y)===FLOOR && !propAt(c.x,c.y) && isWallLike(at(c.x,c.y-1)) && !deepLavaAdjacent(c.x,c.y) && !(c.x===room.cx && c.y===room.cy); });
-  for(var t=0; t<cells.length; t++){
-    var c=cells[t], len=ri(2,4), ok=true, run=[];
-    for(var i=1;i<=len && ok;i++){
-      var y=c.y-i;
-      if(y<2 || at(c.x,y)!==WALL || at(c.x-1,y)!==WALL || at(c.x+1,y)!==WALL) ok=false; else run.push({x:c.x, y:y});
-    }
-    var ey=c.y-len-1;
-    if(!ok || ey<1 || at(c.x,ey)!==WALL || at(c.x-1,ey)!==WALL || at(c.x+1,ey)!==WALL) continue;
-    run.forEach(function(p){ setT(p.x,p.y,FLOOR); });
-    return run[run.length-1];
-  }
-  return room.cave ? null : _carveDeadEndDeep(room);
-};
+
+
 /* the special rooms: the furniture maps through DEEP_PROP; a few kinds become the region's own rooms */
-var _buildSpecialDeep = buildSpecial;
-buildSpecial = function(kind, r){
-  if(!inDeep()) return _buildSpecialDeep(kind, r);
-  var reg=r.region||0;
-  if(/^(garden|library|nest|statues|storage|prison)$/.test(kind) && (reg!==0 || /^(garden|nest)$/.test(kind))){ r.special=kind==='nest' ? 'nest-deep' : kind; deepThemeRoom(r, true); return; }
-  var res=_buildSpecialDeep(kind, r);
-  /* the sacrifice altar is a drow altar running with blood (the altar mechanics keep working: altars[] by its tile) */
-  if(kind==='sacrifice'){
-    var sp=props.filter(function(p){ return p.name==='altar-spikes' && p.x===r.cx && p.y===r.cy; })[0];
-    if(sp && at(r.cx+1,r.cy)===FLOOR && !propAt(r.cx+1,r.cy)){ removeProp(sp); addSetPiece(r.cx, r.cy, 'drow-altar-blood', 2, 1, {keep:true, altar:1, deep:1}); }
-  }
-  return res;
-};
+
+
 var _decoratePlainDeep = decoratePlain;
 decoratePlain = function(r){ if(!inDeep()) return _decoratePlainDeep(r); deepThemeRoom(r, false); };
 
@@ -651,31 +617,7 @@ vegGrow = function(){
 };
 
 /* ---------------------------------------------------------------- the last word on a new floor */
-var _generateDeep = generate;
-generate = function(seed){
-  var r=_generateDeep.apply(this, arguments);
-  if(!inDeep() || !map) return r;
-  if(!floorMeta.deepRegion){ floorMeta.deepRegion=new Uint8Array(MW*MH); rooms.forEach(function(q){ q.region=0; q.shape='rect'; }); }   /* BSP fallback: all temple */
-  deepFinishRegions();
-  if(!floorMeta.boss){ deepDress(); deepCurtains(); }
-  else if(floorMeta.bossArena){
-    /* the Matron's hall is a stage: no traps on it */
-    var A=floorMeta.bossArena; feats=feats.filter(function(f){ return !(f.x>=A.x && f.x<A.x+A.w && f.y>=A.y && f.y<A.y+A.h); });
-  }
-  /* no grass beside lava; it would only burn */
-  for(var i=0;i<map.length;i++){ if(map[i]!==LAVA) continue; var x=i%MW, y=(i/MW)|0;
-    [[1,0],[-1,0],[0,1],[0,-1]].forEach(function(o){ var n=idxOf(x+o[0],y+o[1]); if(inb(x+o[0],y+o[1]) && (ground[n]===G_GRASS || ground[n]===G_SHORT)) ground[n]=0; }); }
-  /* standing water has no place in the volcanic caves (the shared generator drops pools anywhere) */
-  for(var wi=0; wi<map.length; wi++) if(map[wi]===WATER && floorMeta.deepRegion[wi]===2 && !(roomAt(wi%MW,(wi/MW)|0)||{}).pocket) map[wi]=FLOOR;
-  deepLavaLights();
-  if(typeof lightRulesPass==='function'){ try{ lightRulesPass(); }catch(e){} }
-  /* deepDress() lays its props down after the greenery grew, so a clump can end up under one: the tile keeps the
-     prop and loses the clump (2026-09-20, one piece of vegetation per tile) */
-  if(floorMeta.vegSpots) floorMeta.vegSpots=floorMeta.vegSpots.filter(function(sp){ return !propAt(sp.x,sp.y); });
-  if(typeof vegRemember==='function'){ try{ vegRemember(); }catch(e){} }
-  if(typeof SURF_CACHE!=='undefined') SURF_CACHE.key=null;
-  return r;
-};
+
 
 /* ---------------------------------------------------------------- lava burns */
 /* 2026-09-19: whoever ends a turn beside lava (orthogonally) takes fire damage; grass and webs beside it catch.
@@ -698,27 +640,24 @@ function deepLavaIgnite(){
     });
   }
 }
-var _endTurnDeep = endTurn;
-endTurn = function(){
-  if(!inDeep() || !floorMeta.lava || !player || player.hp<=0) return _endTurnDeep.apply(this, arguments);
-  if(deepLavaBurn(player) && player.hp<=0){  if(player.hp<=0){ death(); return; } }
-  var r=_endTurnDeep.apply(this, arguments);
-  if(player.hp<=0) return r;
+
+function turnDeepLavaEnemies(context){
+  if(!inDeep()||!floorMeta.lava||player.hp<=0)return;
   ents.slice().forEach(function(e){ if(e!==player && e.hp>0 && ents.indexOf(e)>=0 && deepLavaBurn(e) && e.hp<=0) kill(e, null); });
   deepLavaIgnite();
-  return r;
-};
+
+}
 
 /* ---------------------------------------------------------------- web curtains: cut with one blow, burned by fire */
-var _damagePropDeep = damageProp;
-damageProp = function(p, src, type){
-  if(!p || !p.curtain) return _damagePropDeep.apply(this, arguments);
+
+function cutWebCurtain(p,src,type){
   removeProp(p); sfx('step-grass',{vol:0.5});
   if(typeof burst==='function') burst(p.x, p.y, 'ice', 12, 0.04);
   if(type==='fire') setG(p.x, p.y, G_ASH);
   log('You cut through the web.','c-info');
   computeFOV();
-};
+
+}
 
 /* ---------------------------------------------------------------- floor 20: the Matron of the Web's hall */
 function buildDeepHall(r){
@@ -748,84 +687,16 @@ function buildDeepHall(r){
   floorMeta.bossArena={x:x0, y:y0, w:w, h:h, throne:throne, circles:circles};
   for(var i=0;i<6;i++){ var c2=pick(interiorCells(r)); if(c2 && !propAt(c2.x,c2.y)) setG(c2.x,c2.y,G_BLOOD); }
 }
-var _buildBossRoomDeep = buildBossRoom;
-buildBossRoom = function(r){ if(inDeep() && r && r.hall) return buildDeepHall(r); return _buildBossRoomDeep(r); };
-var _populateDeep = populateSpecialMonsters;
-populateSpecialMonsters = function(){
-  if(!inDeep() || !floorMeta.boss) return _populateDeep();
-  var hall=rooms.filter(function(r){ return r.role==='boss'; })[0];
-  rooms.forEach(function(r){ if(r.role==='boss') r.role='boss-deep'; });   /* no Warchief and goblin guards here */
-  _populateDeep();
-  if(hall) hall.role='boss';
-  if(!floorMeta.bossArena) return;
-  if(typeof spawnMatron==='function') spawnMatron(floorMeta.bossArena);
-  else deepStandInBoss();
-};
-/* until the Matron exists: an elite stand-in so the hall, the fight and the victory can be played end to end */
-function deepStandInBoss(){
-  var kind=MONSTERS.brute ? 'brute' : Object.keys(MONSTERS)[0], b=floorMeta.bossAt, c=walkable(b.x,b.y) && !occupied(b.x,b.y) ? b : nearFree(b.x,b.y,3);
-  if(!c) return null;
-  var m=spawn(kind, c.x, c.y);
-  m.name='The Matron of the Web (stand-in)'; m.elite=true; m.deepBoss=true; m.state='asleep';
-  m.maxhp=m.hp=Math.round(m.hp*4);                            /* placeholder toughness, not a balance number */
-  floorMeta.bossId=m.id;
-  return m;
-}
+
+
 /* the stand-in is not base.boss: its death opens the gate the way a boss's does */
-var _killDeep = kill;
-kill = function(e, by){
-  var standIn = e && e.deepBoss;
-  var boss15 = e && e!==player && ((e.base && e.base.boss) || e.caveBoss) && floorNo===15 && typeof inCaverns==='function' && inCaverns();
-  var r=_killDeep.apply(this, arguments);
-  if(standIn && inDeep() && floorMeta.boss && ents.indexOf(e)<0 && !floorMeta.exitOpen){ floorMeta.exitOpen=true; RUN.bossDead=true; log('<b>The Matron falls.</b> The gate in the south wall grinds open.','c-kill'); }
-  /* 2026-09-19: the Caverns' own hook fired on LAST_FLOOR, which is 20 now: the Maw's burrow still opens on 15 */
-  if(boss15 && ents.indexOf(e)<0 && typeof caveBossesLeft==='function' && !caveBossesLeft() && typeof caveBossDown==='function') caveBossDown();
-  return r;
-};
+
+
 /* floor 15's burrow now leads down into the Underdark, not out of the world */
-if(typeof caveBossDown==='function'){
-  var _caveBossDownDeep = caveBossDown;
-  caveBossDown = function(){
-    var logSaved=log;
-    log=function(html, cls){ if(/The Deep Maw is dead/.test(html) && floorNo<LAST_FLOOR) html='<b>The Deep Maw is dead.</b> Its burrow gapes open, and warm air breathes up from far below: the way down into the Underdark. Gather what it left, then step in.'; return logSaved.call(this, html, cls); };
-    try{ return _caveBossDownDeep.apply(this, arguments); } finally { log=logSaved; }
-  };
-}
+
 
 /* ---------------------------------------------------------------- words */
-var _floorIntroDeep = floorIntro;
-floorIntro = function(){
-  if(!inDeep()) return _floorIntroDeep();
-  var logSaved=log, skip=/Warchief's hall/;
-  log=function(html, cls){ if(skip.test(html)) return; return logSaved.apply(this, arguments); };
-  try{ _floorIntroDeep(); } finally { log=logSaved; }
-  if(floorMeta.boss) log('<b>The Matron\'s hall.</b> Candles burn scarlet before the idol of the spider goddess. Ritual circles wait on the floor.','c-you');
-  else if(bfloor()===1) log('Warm air rises from below, and somewhere silk rustles in the dark.','c-info');
-};
-var _bossDefeatedDeep = typeof bossDefeated==='function' ? bossDefeated : null;
-if(_bossDefeatedDeep) bossDefeated = function(e){
-  if(!inDeep()) return _bossDefeatedDeep.apply(this, arguments);
-  var logSaved=log;
-  log=function(html, cls){ if(/Grukk the Warchief falls/.test(html)) html='<b>The Matron of the Web falls.</b> The gate in the south wall grinds open.'; return logSaved.call(this, html, cls); };
-  try{ return _bossDefeatedDeep.apply(this, arguments); } finally { log=logSaved; }
-};
-var _showEndDeep = showEnd;
-showEnd = function(won){
-  _showEndDeep(won);
-  if(won && floorNo>=LAST_FLOOR && inDeep()){
-    var tt=$('overT'); if(tt) tt.textContent='The Underdark is behind you';
-    var p=$('overP'); if(p) p.innerHTML=p.innerHTML.replace(/^[\s\S]*?<br><br>/, player.name+' cut down the Matron of the Web beneath her goddess\'s idol. The Underdark is behind you.<br><br>');
-  }
-};
-var _tryMoveDeep = tryMove;
-tryMove = function(dx, dy){
-  if(inDeep() && player){
-    var nx=player.x+dx, ny=player.y+dy;
-    if(at(nx,ny)===LAVA && !ents.some(function(e){ return e.foe && e.x===nx && e.y===ny; })){ log('Molten rock. You cannot cross it.','c-info'); return; }
-    if(at(nx,ny)===EXIT && !floorMeta.exitOpen && floorMeta.boss){ log('The gate is sealed. It opens when the Matron of the Web is dead.','c-info'); sfx('door-locked'); return; }
-  }
-  return _tryMoveDeep.apply(this, arguments);
-};
+
 
 /* ---------------------------------------------------------------- hover cards */
 var _inspectHTMLDeep = inspectHTML;
@@ -836,3 +707,56 @@ inspectHTML = function(mx, my){
   }
   return _inspectHTMLDeep.apply(this, arguments);
 };
+
+/* Named floor-generation stages; ordered by generation-adapter.js. */
+function finishGeneratedDeep(seed){
+
+  if(!inDeep() || !map) return;
+  if(!floorMeta.deepRegion){ floorMeta.deepRegion=new Uint8Array(MW*MH); rooms.forEach(function(q){ q.region=0; q.shape='rect'; }); }   /* BSP fallback: all temple */
+  deepFinishRegions();
+  if(!floorMeta.boss){ deepDress(); deepCurtains(); }
+  else if(floorMeta.bossArena){
+    /* the Matron's hall is a stage: no traps on it */
+    var A=floorMeta.bossArena; feats=feats.filter(function(f){ return !(f.x>=A.x && f.x<A.x+A.w && f.y>=A.y && f.y<A.y+A.h); });
+  }
+  /* no grass beside lava; it would only burn */
+  for(var i=0;i<map.length;i++){ if(map[i]!==LAVA) continue; var x=i%MW, y=(i/MW)|0;
+    [[1,0],[-1,0],[0,1],[0,-1]].forEach(function(o){ var n=idxOf(x+o[0],y+o[1]); if(inb(x+o[0],y+o[1]) && (ground[n]===G_GRASS || ground[n]===G_SHORT)) ground[n]=0; }); }
+  /* standing water has no place in the volcanic caves (the shared generator drops pools anywhere) */
+  for(var wi=0; wi<map.length; wi++) if(map[wi]===WATER && floorMeta.deepRegion[wi]===2 && !(roomAt(wi%MW,(wi/MW)|0)||{}).pocket) map[wi]=FLOOR;
+  deepLavaLights();
+  if(typeof lightRulesPass==='function'){ try{ lightRulesPass(); }catch(e){} }
+  /* deepDress() lays its props down after the greenery grew, so a clump can end up under one: the tile keeps the
+     prop and loses the clump (2026-09-20, one piece of vegetation per tile) */
+  if(floorMeta.vegSpots) floorMeta.vegSpots=floorMeta.vegSpots.filter(function(sp){ return !propAt(sp.x,sp.y); });
+  if(typeof vegRemember==='function'){ try{ vegRemember(); }catch(e){} }
+  if(typeof SURF_CACHE!=='undefined') SURF_CACHE.key=null;
+  return;
+}
+
+/* Named travel and entry stages; ordered by transition-adapter.js. */
+function moveDeepTerrain(dx,dy){
+  if(inDeep() && player){
+    var nx=player.x+dx, ny=player.y+dy;
+    if(at(nx,ny)===LAVA && !ents.some(function(e){ return e.foe && e.x===nx && e.y===ny; })){ log('Molten rock. You cannot cross it.','c-info'); return true; }
+    if(at(nx,ny)===EXIT && !floorMeta.exitOpen && floorMeta.boss){ log('The gate is sealed. It opens when the Matron of the Web is dead.','c-info'); sfx('door-locked'); return true; }
+  }
+  return false;
+}
+
+/* Named floor-content helpers; selected by content-adapter.js. */
+function carveDeepPassage(room){
+  var cells=shuffled(deepRoomCells(room)).filter(function(c){ return at(c.x,c.y)===FLOOR && !propAt(c.x,c.y) && isWallLike(at(c.x,c.y-1)) && !deepLavaAdjacent(c.x,c.y) && !(c.x===room.cx && c.y===room.cy); });
+  for(var t=0; t<cells.length; t++){
+    var c=cells[t], len=ri(2,4), ok=true, run=[];
+    for(var i=1;i<=len && ok;i++){
+      var y=c.y-i;
+      if(y<2 || at(c.x,y)!==WALL || at(c.x-1,y)!==WALL || at(c.x+1,y)!==WALL) ok=false; else run.push({x:c.x, y:y});
+    }
+    var ey=c.y-len-1;
+    if(!ok || ey<1 || at(c.x,ey)!==WALL || at(c.x-1,ey)!==WALL || at(c.x+1,ey)!==WALL) continue;
+    run.forEach(function(p){ setT(p.x,p.y,FLOOR); });
+    return run[run.length-1];
+  }
+  return null;
+}

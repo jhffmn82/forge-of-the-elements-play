@@ -11,7 +11,6 @@
    All numbers are first picks for Justin to tune (see the report of 2026-09-19).
    ===================================================================== */
 
-function inCaverns(){ return typeof bidx==='function' && bidx()===2 && !(floorMeta && floorMeta.plane); }
 
 /* ---------------------------------------------------------------- the bestiary */
 (function(){
@@ -63,8 +62,8 @@ CAVE_ELEMENT_TIERS.forEach(function(r){
 /* special rooms and fallbacks ask for Dungeon kinds by name; in the Caverns they get Caverns ones */
 var CAVE_SWAP = {rat:'caverat', bat:'cavebat', slime:'caveslime', goblin:'stormbeetle', archer:'sparkjelly', brute:'stormbeetle', shaman:'myconid'};
 CAVE_ELEMENT_TIERS.forEach(function(r){CAVE_SWAP[r.old]=r.kind;});
-var _spawnCaveMobs = spawn;
-spawn = function(kind, x, y){ if(CAVE_SWAP[kind] && inCaverns()) kind=CAVE_SWAP[kind]; return _spawnCaveMobs(kind, x, y); };
+
+
 /* Older saves stored the Dungeon copies as actor bases. Preserve damage taken,
    status and timing while refreshing only these two obsolete Caverns kinds. */
 function refreshCavernResidents(){
@@ -99,36 +98,11 @@ function eelWater(x,y){
 }
 
 /* ---------------------------------------------------------------- damage rules */
-var _applyDamageCave = applyDamage;
-applyDamage = function(target, amount, type, source){
-  if(target && target!==player && target.base){
-    /* Storm Beetles are insulated: half damage from lightning */
-    if(target.base.grounded && type==='lightning') amount*=0.5;
-    /* fungus folk breathe spores: the clouds (source-less poison) do not hurt them. Not base.fumes - the
-       Crypt reads that as "vents a cloud when struck" (the Grave Beetle). */
-    if(target.base.sporeproof && type==='poison' && !source) return 0;
-    /* the Maw's body is four tiles: an area spell that covers several of them hits it once, not four times */
-    if(target.parent && target.parent.kind==='deepmaw' && target.parent._hitFlag && target.parent._hitKey===turn) return 0;
-    if(target.kind==='deepmaw'){
-      target._hitKey=turn;
-      if(!target._hitFlag){ target._hitFlag=true; setTimeout(function(){ target._hitFlag=false; }, 0); }
-    }
-    if(target.kind==='shockeel') target._surfT=turn;
-  }
-  return _applyDamageCave(target, amount, type, source);
-};
+
 
 /* ---------------------------------------------------------------- attacks: beetle arcs, jelly chains, eel splash */
-var _attackCave = attack;
-attack = function(att, def, mult, label){
-  var hp0 = def ? def.hp : 0;
-  var r=_attackCave(att, def, mult, label);
-  if(!att || !att.base || !def || !(def.hp<hp0) || player.hp<=0) return r;
-  if(att.base.arcs && def===player) beetleArc(att);
-  if(att.base.stingChain) jellyChain(att, def);
-  if(att.base.aquatic){ att._surfT=turn; if(def===player && eelWater(att.x,att.y)){ applyStatus(player,'wet',3); } }
-  return r;
-};
+
+
 /* Storm Beetle: its hit sets every Storm Beetle within 3 tiles crackling, and if another one is standing
    next to you the arc jumps into you too: 3-5 lightning, once a turn however many beetles there are
    (2026-09-19 sim: two arcs per hit per beetle was 25 a turn from three beetles on a level 14 fighter).
@@ -161,29 +135,27 @@ function jellyChain(j, first){
 
 /* ---------------------------------------------------------------- monster turns */
 var SHROOM_CAP_EACH = 2, SHROOM_CAP_FLOOR = 6;
-var _aiActCave = aiAct;
-aiAct = function(e){
+
+function caveCreatureBehavior(e){
   var b=e.base||{};
-  if(e.kind==='deepmaw') return mawAct(e);
-  if(e.kind==='mawlimb'){ e.t+=actCost(e); return; }
-  if(b.aquatic && e.state!=='asleep') return eelAct(e);
-  if(e.state==='hunt' && !e.st.stun && !e.st.frozen && !e.st.fear && (e.stormCharge || canSeePlayer(e))){
-    if(e.kind==='stormbeetle' && stormBeetleAct(e)) return;
-    if(e.kind==='sparkjelly' && sparkJellyAct(e)) return;
+  if(b.aquatic && e.state!=='asleep'){eelAct(e);return true;}
+  if(e.state==='hunt' && (e.stormCharge || canSeePlayer(e))){
+    if(e.kind==='stormbeetle' && stormBeetleAct(e)) return true;
+    if(e.kind==='sparkjelly' && sparkJellyAct(e)) return true;
   }
-  if(b.spores && e.state==='hunt' && !e.st.stun && !e.st.frozen && !e.st.fear && canSeePlayer(e)){
-    if(myconidAct(e)) return;
+  if(b.spores && e.state==='hunt' && canSeePlayer(e)){
+    if(myconidAct(e)) return true;
   }
-  return _aiActCave(e);
-};
+  return false;
+
+}
 
 /* A visible wind-up gives one action to leave the beetle's fixed charge lane. */
 function stormBeetleAct(e){
-  if(e.st.root){ e.stormCharge=null; return false; }
+  if(!canActorMove(e)){ e.stormCharge=null; return false; }
   if(e.stormCharge){
-    if(turn<=e.stormChargeAt){ e.t+=actCost(e); return true; }
-    if(!tickStatus(e)) return true;
-    var path=e.stormCharge; e.stormCharge=null; e.stormChargeAt=0; e.stormReady=turn+5;
+    if(turn<=e.stormChargeAt){  return true; }
+    if(e.hp<=0)return true;var path=e.stormCharge; e.stormCharge=null; e.stormChargeAt=0; e.stormReady=turn+5;
     floorMeta.marks=(floorMeta.marks||[]).filter(function(m){return m.kind!=='storm'+e.id;});
     setClip(e,'attack'); sfx('lightning-cast');
     for(var k=0;k<path.length;k++){
@@ -198,46 +170,44 @@ function stormBeetleAct(e){
       burst(e.x,e.y,'lightning',24,.06);
       log('The <b>Storm Beetle</b> charges and releases a crackling shock cloud!','c-you');
     }
-    e.t+=actCost(e); return true;
+     return true;
   }
   var d=dist(e,player);
   if(d<2 || d>5 || turn<(e.stormReady||0)) return false;
   var lane=boltPath(e.x,e.y,player.x,player.y), last=lane[lane.length-1];
   if(!last || last.x!==player.x || last.y!==player.y) return false;
-  if(!tickStatus(e)) return true;
-  e.stormCharge=lane.filter(function(p){return p.x!==e.x||p.y!==e.y;}).slice(0,5);
+  if(e.hp<=0)return true;e.stormCharge=lane.filter(function(p){return p.x!==e.x||p.y!==e.y;}).slice(0,5);
   e.stormChargeAt=turn;
   floorMeta.marks=(floorMeta.marks||[]).concat([{cells:e.stormCharge.map(function(p){return idxOf(p.x,p.y);}),col:'#7FD8FF',until:turn+2,kind:'storm'+e.id}]);
   setClip(e,'attack'); sfx('lightning-cast');
   log('The <b>Storm Beetle</b> crackles and lowers its shell. Move out of its charge lane!','c-you');
-  e.t+=actCost(e); return true;
+   return true;
 }
 function sparkJellyAct(e){
   var d=dist(e,player); if(d<=1 || d>5 || turn<(e.sparkReady||0)) return false;
   var path=boltPath(e.x,e.y,player.x,player.y), last=path[path.length-1];
   if(!last || last.x!==player.x || last.y!==player.y) return false;
-  if(!tickStatus(e)) return true;
-  e.sparkReady=turn+3; setClip(e,'attack'); sfx('lightning-cast');
+  if(e.hp<=0)return true;e.sparkReady=turn+3; setClip(e,'attack'); sfx('lightning-cast');
   boltFx(e.x,e.y,player.x,player.y,'lightning');
   if(rng()<hostileHitChance(hitChance(e.base.acc+5,player.eva),true)){
     caveZap(player,sDMG(roll(5,8)),e,'The <b>Spark Jelly</b> hurls an electric bolt');
   }else{ floatText(player.x,player.y,'miss','miss'); log('The Spark Jelly\'s electric bolt misses.','c-miss'); }
-  e.t+=actCost(e); return true;
+   return true;
 }
-var _endTurnShockCloud=endTurn;
-endTurn=function(){
-  var before=turn; _endTurnShockCloud();
-  if(turn===before || !floorMeta || !player || player.hp<=0)return;
+
+function turnShockClouds(context){
+  if(!floorMeta || !player || player.hp<=0)return;
   floorMeta.shockClouds=(floorMeta.shockClouds||[]).filter(function(c){return turn<c.until;});
   [player].concat(ents.filter(function(e){return e.ally&&e.hp>0;})).forEach(function(e){
     if(!floorMeta.shockClouds.some(function(c){return c.cells.indexOf(idxOf(e.x,e.y))>=0;}))return;
     caveZap(e,sDMG(roll(6,10)),null,e===player?'The shock cloud arcs through you':null);
     if(e.hp>0 && !e.st.stun && rng()<.25)applyStatus(e,'stun',1);
   });
-};
-var _drawShockClouds=drawTelegraphs;
-drawTelegraphs=function(now){
-  _drawShockClouds(now); if(!floorMeta)return;
+
+}
+
+function drawShockCloudTelegraphs(now){
+   if(!floorMeta)return;
   ctx.save();
   (floorMeta.shockClouds||[]).forEach(function(c){if(turn>=c.until)return;c.cells.forEach(function(i){
     if(!(revealAll||vis[i]))return;
@@ -247,7 +217,8 @@ drawTelegraphs=function(now){
     var f=ANIM.reduce?0:Math.floor((now||0)/130)%3;
     ctx.beginPath();ctx.moveTo(x+TS*.2,y+TS*(.3+f*.08));ctx.lineTo(x+TS*.55,y+TS*.45);ctx.lineTo(x+TS*.4,y+TS*.6);ctx.lineTo(x+TS*.8,y+TS*.7);ctx.stroke();
   });});ctx.restore();
-};
+
+}
 
 /* Myconid: lobs a spore cloud onto you every few turns (poison, and it slows you while you stand in it),
    and sprouts Shroomlings (two each, six a floor). Up close it just swats. */
@@ -256,32 +227,29 @@ function myconidAct(e){
   e.sporeCd=(e.sporeCd===undefined ? 1 : e.sporeCd)-1;
   e.sproutCd=(e.sproutCd===undefined ? 3 : e.sproutCd)-1;
   if(d>=2 && d<=5 && e.sporeCd<=0){   /* it lobs them: close in and it just swats */
-    if(!tickStatus(e)) return true;
-    e.sporeCd=4; setClip(e,'attack'); sfx('trap-gas');
+    if(e.hp<=0)return true;e.sporeCd=4; setClip(e,'attack'); sfx('trap-gas');
     boltFx(e.x,e.y,player.x,player.y,'poison');
     addCloud(player.x, player.y, 1, 5, sDMG(2+Math.floor(floorNo/4)), 'spores');
     log('The <b>Myconid</b> puffs a cloud of spores over you. Get out of it!','c-you');
-    e.t+=actCost(e); return true;
+     return true;
   }
   if(e.sproutCd<=0 && d>1){
     var mine=ents.filter(function(o){ return o.hp>0 && o.kind==='shroomling' && o.owner===e.id; }).length;
     var all=ents.filter(function(o){ return o.hp>0 && o.kind==='shroomling'; }).length;
     var c=nearFree(player.x,player.y,1);
     if(mine<SHROOM_CAP_EACH && all<SHROOM_CAP_FLOOR && c){
-      if(!tickStatus(e)) return true;
-      e.sproutCd=6;
+      if(e.hp<=0)return true;e.sproutCd=6;
       var s=spawn('shroomling', c.x, c.y); s.state='hunt'; s.noXp=true; s.owner=e.id; s.t=e.t;
       setClip(e,'attack'); sparkleFx(c.x,c.y,'poison',16);
       if(caveVis(e.x,e.y)) log('The <b>Myconid</b> shakes its cap and a <b>Shroomling</b> pops up out of the moss.','c-info');
-      e.t+=actCost(e); return true;
+       return true;
     }
   }
   return false;
 }
 /* spores slow: standing in a spore cloud chills you (one stack at a time, it never freezes) */
-var _endTurnCaveSpores = endTurn;
-endTurn = function(){
-  _endTurnCaveSpores();
+
+function turnCaveSpores(context){
   if(!floorMeta || !player || player.hp<=0 || typeof cloudAt!=='function') return;
   var c=cloudAt(idxOf(player.x,player.y));
   /* 2026-09-22 (Justin): spores slow, they do not chill - a real Slowed status through applyStatus, so Unstoppable
@@ -289,14 +257,14 @@ endTurn = function(){
   if(c && c.src==='spores' && !player.st.slow && !player.st.frozen && !(typeof aff==='function' && aff('earth')>=6)){
     var before=player.st.slow; applyStatus(player,'slow',2); if(player.st.slow && player.st.slow!==before){ player.st.slow.mult=0.8; floatText(player.x,player.y,'slowed','poison'); }   /* 20% slower, about what one chill stack did */
   }
-};
+
+}
 
 /* Shock Eel: lives in water and only moves through it. Mostly under the surface (drawn faint). Every few
    turns it lights up the water around it: the connected water within 4 tiles is marked for one turn, then
    everything standing in it takes lightning (and anything in water is Wet: +50% lightning). */
 function eelAct(e){
-  if(!tickStatus(e)) return;
-  if(e.st.stun || e.st.frozen){ e.t+=actCost(e); return; }
+  if(e.hp<=0)return;
   var see=canSeePlayer(e), d=dist(e,player);
   if(see && e.state!=='hunt'){ e.state='hunt'; e.caughtOff=turn; }
   /* a charge that was marked last turn goes off now */
@@ -313,12 +281,12 @@ function eelAct(e){
         hitAny=true; caveZap(t, roll(e.dmg[0], e.dmg[1]), e, t===player ? 'The <b>Shock Eel</b> electrifies the water' : null);
       });
       if(!hitAny && caveVis(e.x,e.y)) log('The water crackles with lightning, but nothing is standing in it.','c-info');
-      e.t+=actCost(e); return;
+       return;
     }
   }
   var onLand=!eelWater(e.x,e.y);
   if(e.state==='hunt'){
-    if(d<=1 && !e.st.fear){ attack(e,player); e.t+=actCost(e); return; }
+    if(d<=1 && !e.st.fear){ attack(e,player);  return; }
     e.zapCd=(e.zapCd===undefined ? 2 : e.zapCd)-1;
     if(!onLand && e.zapCd<=0 && d<=6){
       var cells=eelField(e, 4);
@@ -329,12 +297,12 @@ function eelAct(e){
         floorMeta.marks=(floorMeta.marks||[]).concat([{cells:cells, col:'#7FD8FF', until:turn+1, kind:'eel'+e.id}]);
         setClip(e,'attack');
         log('The water around the <b>Shock Eel</b> starts to crackle and glow. Get out of the water!','c-you');
-        e.t+=actCost(e); return;
+         return;
       }
     }
   }
   /* move: only through water; stranded on land, it flops back to the nearest water */
-  if(!e.st.root){
+  if(canActorMove(e)){
     var nb=[[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]], best=null, bd=1e9;
     var goal = e.state==='hunt' ? player : (e.goal || null);
     if(!goal || (e.goal && e.x===e.goal.x && e.y===e.goal.y) || (e.state!=='hunt' && rng()<0.1)){
@@ -350,7 +318,7 @@ function eelAct(e){
     var here = goal ? Math.max(Math.abs(goal.x-e.x), Math.abs(goal.y-e.y)) : 1e9;
     if(best && (onLand || bd<here || e.state!=='hunt')){ e.x=best.x; e.y=best.y; }
   }
-  e.t+=actCost(e);
+
 }
 /* the water connected to the eel within r tiles (through water, 8-way) */
 function eelField(e, r){
@@ -389,36 +357,22 @@ function eelPlacement(){
     e.state = rng()<0.5 ? 'asleep' : 'wander'; e.t=player ? player.t : 0; placed++;
   });
 }
-var _generateCaveMobs = generate;
-generate = function(seed){ var r=_generateCaveMobs.apply(this, arguments); try{ eelPlacement(); }catch(err){ } return r; };
-var _endTurnCaveEels = endTurn;
-endTurn = function(){ _endTurnCaveEels(); try{ eelPlacement(); }catch(err){ } };
+
 
 /* ---------------------------------------------------------------- drawing */
-var _drawCharacterCave = drawCharacter;
-drawCharacter = function(e, px, py, opts){
-  if(e && e!==player && e.kind){
-    if(e.kind==='mawlimb') return true;                          /* the Maw's other three tiles: nothing drawn */
-    if(e.kind==='deepmaw') return drawMaw(e, px, py, opts||{});
-    if(e.kind==='shockeel' && eelWater(e.x,e.y) && !revealAll && (e._surfT===undefined || turn-e._surfT>=2)){
-      /* under the surface: faint and a little low */
-      var o=Object.assign({}, opts||{}); o.alpha=(o.alpha===undefined?1:o.alpha)*0.42;
-      return _drawCharacterCave(e, px, py+TS*0.1, o);
-    }
-  }
-  return _drawCharacterCave(e, px, py, opts);
-};
+
+
 /* the Maw stands on its 2x2 block (its entity sits on the top-left tile; planeterrain.js draws base.big
    creatures across their whole footprint) and rises out of the ground when it erupts */
-function drawMaw(e, px, py, opts){
+function prepareMawActor(job){
+  var e=job.entity;if(!e||e.kind!=='deepmaw')return;
+  var px=job.x, py=job.y;
   var now=performance.now(), p=e._rise ? Math.min(1, (now-e._rise)/500) : 1, ease=1-Math.pow(1-p,3);
   var ground=py+TS*2, bob=ANIM.reduce ? 0 : Math.sin(now/260)*TS*0.03;
   ctx.save();
   ctx.beginPath(); ctx.rect(px-TS*3, py-TS*5, TS*8, ground-(py-TS*5)); ctx.clip();
   ctx.translate(0, (1-ease)*TS*2.2 + bob);
-  var r=_drawCharacterCave(e, px, py, opts);
-  ctx.restore();
-  return r;
+  return function(){ctx.restore();};
 }
 
 /* ---------------------------------------------------------------- The Deep Maw
@@ -507,7 +461,7 @@ function mawErupt(M){
   if(ents.indexOf(e)<0) ents.push(e);
   M.limbs=[];
   [[1,0],[0,1],[1,1]].forEach(function(o){
-    var l=_spawnCaveMobs('mawlimb', s.x+o[0], s.y+o[1]); l.parent=e; l.name=e.name; l.noXp=true; l.state='hunt'; l.t=player.t; M.limbs.push(l);
+    var l=spawnRaw('mawlimb', s.x+o[0], s.y+o[1]); l.parent=e; l.name=e.name; l.noXp=true; l.state='hunt'; l.t=player.t; M.limbs.push(l);
   });
   /* anything standing where the body comes up is thrown clear */
   ents.slice().forEach(function(t){
@@ -547,32 +501,28 @@ function mawTick(){
   }
   if(M.phase==='up' && turn>=M.at) mawDive(M);
 }
-var _endTurnMaw = endTurn;
-endTurn = function(){ _endTurnMaw(); try{ mawTick(); }catch(err){ if(window.console) console.error(err); } };
+
+
 /* surfaced: it bites whatever is touching it (you first, then your allies) */
 function mawTouching(e, o){ return o.x>=e.x-1 && o.x<=e.x+2 && o.y>=e.y-1 && o.y<=e.y+2; }
 function mawAct(e){
-  if(!tickStatus(e)) return;
-  var M=mawState();
-  if(e.st.stun || e.st.frozen || !M || M.phase!=='up'){ e.t+=actCost(e); return; }
+  if(e.hp<=0)return;var M=mawState();
+  if(e.st.stun || e.st.frozen || !M || M.phase!=='up'){  return; }
   var tgt = mawTouching(e, player) ? player : ents.filter(function(o){ return o.ally && o.hp>0 && mawTouching(e,o); })[0];
   if(tgt){ setClip(e,'attack'); attack(e, tgt); }
-  e.t+=actCost(e);
+
 }
-var _killCaveMobs = kill;
-kill = function(e, by){
-  if(e && e.kind==='deepmaw'){
-    var M=floorMeta && floorMeta.maw;
-    if(M){ M.phase='dead'; }
-    floorMeta.marks=(floorMeta.marks||[]).filter(function(k){ return k.kind!=='maw'; });
-    if(ents.indexOf(e)<0) ents.push(e);                                          /* the base kill() only removes what is in the world */
-    ents=ents.filter(function(o){ return o.parent!==e; });
-    SHAKE=12; burst(e.x+1, e.y+1, 'earth', 60, 0.1);
-    var r=_killCaveMobs(e, by);
-    log('<b>The Deep Maw</b> shudders, groans, and goes still. The Caverns fall quiet.','c-kill');
-    if(typeof caveBossDown==='function') caveBossDown();
-    return r;
+
+/* Named floor-generation stages; ordered by generation-adapter.js. */
+function placeGeneratedCavernEels(seed){  try{ eelPlacement(); }catch(err){ } return; }
+
+/* Named character presentation passes; composed by render-adapter.js. */
+
+function drawCavernActor(job){
+  var e=job.entity;if(!e||e===player||!e.kind)return;
+  if(e.kind==='mawlimb')return true;
+  if(e.kind==='shockeel'&&eelWater(e.x,e.y)&&!revealAll&&(e._surfT===undefined||turn-e._surfT>=2)){
+    var options=Object.assign({},job.options||{});options.alpha=(options.alpha===undefined?1:options.alpha)*.42;
+    job.options=options;job.y+=TS*.1;
   }
-  if(e && e.kind==='shockeel' || e && e.kind==='sparkjelly'){ if(floorMeta && floorMeta.marks) floorMeta.marks=floorMeta.marks.filter(function(k){ return k.kind!=='eel'+e.id; }); }
-  return _killCaveMobs(e, by);
-};
+}

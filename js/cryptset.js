@@ -7,7 +7,7 @@
    - buildCryptShowcase(): the concept's burial hall rebuilt as a playable room, for review.
    ===================================================================== */
 
-function setArt(name){
+function packedSetArt(name){
   var g=AS.map && AS.map.set;
   if(!g || !g.items[name]){ var po=objArt('props', name); return po ? {img:po.img, sx:po.sx, sy:po.sy, sw:po.sw, sh:po.sh} : null; }   /* props can be set pieces too */
   var img=atl('map-set.png'); if(!img) return null;
@@ -23,12 +23,9 @@ function addSetPiece(x, y, name, w, h, extra){
   for(var yy=y; yy<y+h; yy++) for(var xx=x; xx<x+w; xx++){ if(inb(xx,yy)) propGrid[idxOf(xx,yy)]=idx; }
   return p;
 }
-var _rebuildPropGridSet = rebuildPropGrid;
-rebuildPropGrid = function(){
-  _rebuildPropGridSet();
-  for(var i=0;i<props.length;i++){ var p=props[i]; if(!p.set) continue; for(var yy=p.y; yy<p.y+p.h; yy++) for(var xx=p.x; xx<p.x+p.w; xx++) if(inb(xx,yy)) propGrid[idxOf(xx,yy)]=i; }
-};
-function drawSetPiece(p, alpha){
+
+
+function drawSetSprite(p, alpha){
   var o=setArt(p.name); if(!o) return false;
   if(p.half){ o={img:o.img, sx:o.sx+(p.half==='r'?Math.floor(o.sw/2):0), sy:o.sy, sw:Math.ceil(o.sw/2), sh:o.sh}; }   /* one urn of the pair */
   /* the art itself (its trimmed box) fills the piece's tiles, standing on their bottom edge */
@@ -182,24 +179,22 @@ function drawSoulSmoke(p, now){
 }
 
 /* ---------------------------------------------------------------- hooking the renderer */
-var _drawTelegraphsSet = drawTelegraphs;
-drawTelegraphs = function(now){ drawGrime(); drawOoze(now); _drawTelegraphsSet(now); };
-var _drawPropSurfaceSet = typeof drawPropSurface==='function' ? drawPropSurface : null;
-drawPropSurface = function(p, px, py, alpha){
-  if(p.set){ if(drawSetPiece(p, alpha)){ if(p.soulSmoke) drawSoulSmoke(p, performance.now()); return true; } }
-  if(p.soulSmoke){ var r=_drawPropSurfaceSet ? _drawPropSurfaceSet(p, px, py, alpha) : false; if(!r){ var o=objArt('props',p.name)||setArtAsObj(p.name); if(o){ drawObj(o, px, py, {feet:true, fit:0.9, alpha:alpha}); } } drawSoulSmoke(p, performance.now()); return true; }
-  return _drawPropSurfaceSet ? _drawPropSurfaceSet(p, px, py, alpha) : false;
-};
+
+function drawCryptFloorStains(now){ drawGrime(); drawOoze(now);
+}
+
+function drawSetProp(p, px, py, alpha){
+  function finish(drawn){if(drawn&&p.wisps)drawSoulWisps(p,performance.now());return drawn;}
+  if(p.set){ if(drawSetPiece(p, alpha)){ if(p.soulSmoke) drawSoulSmoke(p, performance.now()); return finish(true); } }
+  if(p.soulSmoke){ var r=drawStoneProp(p, px, py, alpha); if(!r){ var o=objArt('props',p.name)||setArtAsObj(p.name); if(o){ drawObj(o, px, py, {feet:true, fit:0.9, alpha:alpha}); } } drawSoulSmoke(p, performance.now()); return finish(true); }
+  return finish(drawStoneProp(p, px, py, alpha));
+
+}
 function setArtAsObj(name){ var o=setArt(name); return o ? {img:o.img, sx:o.sx, sy:o.sy, sw:o.sw, sh:o.sh} : null; }
 
 
-
 /* Crypt doors */
-var _tileSpriteSet = tileSprite;
-tileSprite = function(x,y,t){
-  if(typeof inCrypt==='function' && inCrypt() && (t===DOOR)){ var o=setArtAsObj('crypt-door'); if(o) return o; }
-  return _tileSpriteSet(x,y,t);
-};
+
 
 /* ---------------------------------------------------------------- the showcase: the concept's burial hall */
 /* laid out from the concept: a top chapel, the central hall, two side chapels behind doors, a hallway to the stairs */
@@ -281,14 +276,8 @@ function stampCryptBossHall(){
   return hall;
 }
 /* after the rest of the generator has run, keep chests, traps, loot and grass out of the hall itself */
-var _generateHall = generate;
-generate = function(seed){
-  _generateHall(seed);
-  var R=floorMeta && floorMeta.hallRect; if(!R) return;
-  function inR(o){ return o.x>=R.x && o.x<R.x+R.w && o.y>=R.y && o.y<R.y+R.h; }
-  feats=feats.filter(function(f){ return !inR(f); }); items=items.filter(function(it){ return !inR(it); });
-  for(var y=R.y;y<R.y+R.h;y++) for(var x=R.x;x<R.x+R.w;x++){ var i=idxOf(x,y); if(map[i]===CHEST){ map[i]=FLOOR; delete chestKind[i]; } ground[i]=0; }
-};
+
+
 function buildCryptShowcase(){
   var W=MW, H=MH, ox=Math.floor((W-CRYPT_HALL[0].length)/2), oy=Math.floor((H-CRYPT_HALL.length)/2);
   map=new Uint8Array(W*H); seen=new Uint8Array(W*H); vis=new Uint8Array(W*H); ground=new Uint8Array(W*H); fireT=new Uint8Array(W*H);
@@ -304,19 +293,19 @@ function buildCryptShowcase(){
 }
 
 /* ---------- ooze: 1 poison damage for each turn a living creature ends in it (the dead and oozes don't care) ---------- */
-var _endTurnOoze = endTurn;
-endTurn = function(){
-  _endTurnOoze();
+
+function turnGraveOoze(context){
   if(!floorMeta || !floorMeta.ooze || !player || player.hp<=0) return;
   ents.slice().forEach(function(e){
     if(e.hp<=0 || !isOozeAt(e.x,e.y)) return;
     if(e!==player && (e.base.undead || e.base.object || e.base.ooze || e.base.flying)) return;
-    var d=1; e.hp-=d; e._hit=Math.max(performance.now(), fxClock);   /* a flat tick like poison status: guards and wards don't soak it */
+    var d=dealDirectDamage(e,1,'poison',null); e._hit=Math.max(performance.now(), fxClock);   /* a flat tick like poison status: guards and wards don't soak it */
     floatText(e.x,e.y,String(d),'poison');
     if(e===player){ log('The grave ooze stings: '+d+' poison damage.','c-you'); if(player.hp<=0){  if(player.hp<=0) death(); } }
     else if(e.hp<=0) kill(e, null);
   });
-};
+
+}
 
 /* ---------- soul wisps: glowing green smoke curling up out of grave posts ---------- */
 function drawSoulWisps(p, now){
@@ -340,21 +329,12 @@ function drawSoulWisps(p, now){
   ctx.fillStyle=gg; ctx.beginPath(); ctx.arc(cx, top+TS*0.05, TS*0.3, 0, 7); ctx.fill();
   ctx.restore();
 }
-var _drawPropSurfaceWisp = drawPropSurface;
-drawPropSurface = function(p, px, py, alpha){
-  var r=_drawPropSurfaceWisp(p, px, py, alpha);
-  if(r && p.wisps) drawSoulWisps(p, performance.now());
-  return r;
-};
+
 
 /* ---------- ordinary Crypt floors: grave posts as soul-wisp torches, crumbled tombs scattered through rooms ---------- */
 PROPS['grave-post'] = PROPS['grave-post'] || {b:1};
-var _addPropPost = addProp;
-addProp = function(x, y, name, extra){
-  if(inCrypt() && !(floorMeta && floorMeta.plane) && (name==='torch-stand' || name==='candelabra') && !(extra && extra.set) && rng()<0.35 && setArt('grave-post'))
-    return _addPropPost(x, y, 'grave-post', Object.assign({set:true, w:1, h:1, b:1, wisps:true, light:'#7CFFA0', dim:1}, extra||{}));
-  return _addPropPost(x, y, name, extra);
-};
+
+
 var CRUMBLED = [['tomb-crumbled-v',1,2], ['tomb-crumbled-h',2,1], ['tomb-open-h',2,1]];
 function scatterCrumbledTomb(r){
   var kind=pick(CRUMBLED), w=kind[1], h=kind[2];
@@ -417,9 +397,9 @@ function shroomGlowRaster(x, y){
    bobbing on its own clock (vegart.js), over the same violet glow the patch always had. */
 var CRYPT_SHROOM_ART = 6;
 function cryptShroomArt(i){ return (typeof vegArt==='function') ? vegArt('crypt-shroom-'+i) : null; }
-var _drawGrassTileShroom = drawGrassTile;
-drawGrassTile = function(x, y, px, py, alpha, layer, now){
-  if(!cryptShrooms()) return _drawGrassTileShroom(x, y, px, py, alpha, layer, now);
+
+function drawMushroomGrass(x,y,px,py,alpha,layer,now){
+  if(!cryptShrooms()) return false;
   if(layer==='front') return;   /* mushrooms are short: nothing to draw over whoever stands in them */
   now=now||performance.now();
   var t=ANIM.reduce ? 0 : now/1000, pulse=0.65+0.35*Math.sin(t*1.8 + hash2(x,y,5)*6.28);
@@ -435,29 +415,26 @@ drawGrassTile = function(x, y, px, py, alpha, layer, now){
     var sw=vegSway(x+k*0.3, y, now, 0)*0.5;
     vegDraw(o, px+TS*ox, py+TS*oy, sc, sw, alpha, hash2(k,x,306)<0.5);
   }
-};
-var _drawGroundDecalShroom = drawGroundDecal;
-drawGroundDecal = function(gv, x, y, px, py, alpha, now){
+
+}
+
+function drawMushroomGroundDecal(gv, x, y, px, py, alpha, now){
   if(gv===G_SHORT && cryptShrooms()){
     var sq=(typeof vegArt==='function') && vegArt('crypt-shroom-squashed-'+(1+Math.floor(hash2(x,y,307)*3)));
     if(sq){ vegDraw(sq, px+TS*0.5, py+TS*0.8, 0.6, 0, alpha*0.9, hash2(x,y,308)<0.5); return true; }
     blitRaster(cachedRaster('shs@', x, y, function(a,b){ return shroomRaster(a,b,true); }), px, py, alpha*0.9); return true;
   }
-  return _drawGroundDecalShroom(gv, x, y, px, py, alpha, now);
-};
+  return false;
+
+}
 var _setGShroom = setG;
 setG = function(x, y, v){
   if(v===G_SHORT && inb(x,y) && ground[idxOf(x,y)]===G_GRASS && cryptShrooms() && typeof burst==='function' && (revealAll||vis[idxOf(x,y)])) burst(x, y, 'magic', 10, 0.035);
   return _setGShroom(x, y, v);
 };
-var _opaqueShroom = opaque;
-opaque = function(x, y){
-  if(cryptShrooms() && ground && gAt(x,y)===G_GRASS){ var t=at(x,y); if(!(t===WALL||t===DOOR||t===LOCKED||t===ICEDOOR||t===THORNS||t===SECRET||t===SEALED||t===TOLL)) return false; }
-  return _opaqueShroom(x, y);
-};
-var _gatherLightsShroom = gatherLights;
-gatherLights = function(now, prp){
-  var L=_gatherLightsShroom(now, prp);
+
+
+function addCryptMushroomLights(L, now, prp){
   if(!cryptShrooms()) return L;
   var x0=Math.max(0,camX-4), x1=Math.min(MW-1,camX+viewW+4), y0=Math.max(0,camY-4), y1=Math.min(MH-1,camY+viewH+4);
   for(var y=y0;y<=y1;y++) for(var x=x0;x<=x1;x++){
@@ -465,7 +442,8 @@ gatherLights = function(now, prp){
     L.push({x:x, y:y, c:hexRGB('#B070FF'), r:2.4, s:0.5*(0.8+0.2*Math.sin(now/600 + x*1.3 + y)), tx:x, ty:y});
   }
   return L;
-};
+
+}
 
 /* 2026-09-20: Justin - the mushroom patches sat straight on the flagstones. This is the moss bed the Dungeon's
    grass got (vegart.js drawVegMoss), in the Crypt's colours: one smooth, mostly transparent field over every
@@ -499,43 +477,18 @@ function drawCryptMoss(){
     blitRaster(cachedRaster('cm'+sig+'@', x, y, cryptMossRaster), (x-camX)*TS, (y-camY)*TS, (revealAll||vis[i])?1:memA(0.4));
   }
 }
-var _drawSurfaceDecoCryptMoss = drawSurfaceDeco;
-drawSurfaceDeco = function(){ var r=_drawSurfaceDecoCryptMoss.apply(this, arguments); drawCryptMoss(); return r; };
+
 
 /* ---------- Crypt floors: ooze instead of standing water, mushroom patches instead of the blue mushroom prop, more moss ---------- */
-var _addPropShroom = addProp;
-addProp = function(x, y, name, extra){
-  if(name==='mushrooms' && cryptShrooms() && !(extra && extra.keep)){   /* puzzle mushrooms (keep:true) stay as they are */
-    if(inb(x,y) && at(x,y)===FLOOR) blob(x, y, ri(4,9), function(xx,yy){ if(at(xx,yy)===FLOOR && !gAt(xx,yy) && !propAt(xx,yy)) setG(xx,yy,G_GRASS); });
-    return null;
-  }
-  return _addPropShroom(x, y, name, extra);
-};
+
+
 var _decoratePlainMoss = decoratePlain;
 decoratePlain = function(r){
   _decoratePlainMoss(r);
   if(!cryptShrooms() || r.hall) return;
   if(rng()<0.6){ var e=pick(edgeCells(r)); if(e) blob(e.x, e.y, ri(3,8), function(xx,yy){ if(at(xx,yy)===FLOOR && !gAt(xx,yy)) setG(xx,yy,G_MOSS); }); }
 };
-var _generateOoze = generate;
-generate = function(seed){
-  _generateOoze(seed);
-  if(!cryptShrooms()) return;
-  floorMeta.ooze = floorMeta.ooze || {};
-  var n=0;
-  for(var i=0;i<map.length;i++){
-    if(map[i]!==WATER) continue;
-    var x=i%MW, y=(i/MW)|0;
-    if(typeof puzzleRoomAt==='function' && puzzleRoomAt(x,y)) continue;   /* flooded puzzle rooms keep their water */
-    map[i]=FLOOR; ground[i]=0; floorMeta.ooze[i]=1; n++;
-  }
-  /* a floor with no pools gets one or two of its own, away from the start */
-  for(var k=0; k<(n?0:2); k++){
-    var r=pick(rooms.filter(function(q){ return q.role!=='start' && q.role!=='boss' && !q.hall && q.w*q.h>=16; }));
-    if(!r) break;
-    blob(r.x+ri(1,Math.max(1,r.w-2)), r.y+ri(1,Math.max(1,r.h-2)), ri(3,7), function(xx,yy){ var j=idxOf(xx,yy); if(at(xx,yy)===FLOOR && !propAt(xx,yy) && !itemAt(xx,yy) && !feats.some(function(f){ return f.x===xx&&f.y===yy; })){ floorMeta.ooze[j]=1; ground[j]=0; } });
-  }
-};
+
 
 /* ---------------------------------------------------------------- shelf fungus and hanging roots (packet 08, 2026-09-20)
    The Crypt's walls get the rest of the mushroom pack: bracket fungus stepping down a wall face, and pale roots
@@ -564,11 +517,11 @@ function cryptGrowWallVeg(){
     used[s.x+','+s.y]=1; put++;
   }
 }
-var _generateCryptWallVeg = generate;
-generate = function(seed){ var r=_generateCryptWallVeg.apply(this, arguments); try{ cryptGrowWallVeg(); }catch(e){ if(window.console) console.warn('crypt wall veg', e); } return r; };
+
+
 /* drawn hanging from the top of the wall face */
-var _drawPropSurfaceCryptWallVeg = drawPropSurface;
-drawPropSurface = function(p, px, py, alpha){
+
+function drawCryptWallPlantProp(p, px, py, alpha){
   if(p && p.cryptWallVeg && typeof vegArt==='function'){
     var o=vegArt(p.name);
     if(o){
@@ -577,7 +530,38 @@ drawPropSurface = function(p, px, py, alpha){
       return true;
     }
   }
-  return _drawPropSurfaceCryptWallVeg(p, px, py, alpha);
-};
+  return false;
+
+}
 ['crypt-shelf-fungus-1','crypt-shelf-fungus-2','crypt-shelf-fungus-3','crypt-roots-1','crypt-roots-2','crypt-roots-3']
   .forEach(function(n){ PROPS[n]={flat:1}; });
+
+/* Named floor-generation stages; ordered by generation-adapter.js. */
+function clearGeneratedCryptHall(seed){
+
+  var R=floorMeta && floorMeta.hallRect; if(!R) return;
+  function inR(o){ return o.x>=R.x && o.x<R.x+R.w && o.y>=R.y && o.y<R.y+R.h; }
+  feats=feats.filter(function(f){ return !inR(f); }); items=items.filter(function(it){ return !inR(it); });
+  for(var y=R.y;y<R.y+R.h;y++) for(var x=R.x;x<R.x+R.w;x++){ var i=idxOf(x,y); if(map[i]===CHEST){ map[i]=FLOOR; delete chestKind[i]; } ground[i]=0; }
+}
+
+function buildGeneratedCryptOoze(seed){
+
+  if(!cryptShrooms()) return;
+  floorMeta.ooze = floorMeta.ooze || {};
+  var n=0;
+  for(var i=0;i<map.length;i++){
+    if(map[i]!==WATER) continue;
+    var x=i%MW, y=(i/MW)|0;
+    if(typeof puzzleRoomAt==='function' && puzzleRoomAt(x,y)) continue;   /* flooded puzzle rooms keep their water */
+    map[i]=FLOOR; ground[i]=0; floorMeta.ooze[i]=1; n++;
+  }
+  /* a floor with no pools gets one or two of its own, away from the start */
+  for(var k=0; k<(n?0:2); k++){
+    var r=pick(rooms.filter(function(q){ return q.role!=='start' && q.role!=='boss' && !q.hall && q.w*q.h>=16; }));
+    if(!r) break;
+    blob(r.x+ri(1,Math.max(1,r.w-2)), r.y+ri(1,Math.max(1,r.h-2)), ri(3,7), function(xx,yy){ var j=idxOf(xx,yy); if(at(xx,yy)===FLOOR && !propAt(xx,yy) && !itemAt(xx,yy) && !feats.some(function(f){ return f.x===xx&&f.y===yy; })){ floorMeta.ooze[j]=1; ground[j]=0; } });
+  }
+}
+
+function growGeneratedCryptWalls(seed){  try{ cryptGrowWallVeg(); }catch(e){ if(window.console) console.warn('crypt wall veg', e); } return; }

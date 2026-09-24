@@ -89,7 +89,7 @@ var MATRON  = {phase:[0.66, 0.33], ritTurns:3, ritBreak:0.08, ritEvery:[8,6,5], 
 /* ---------------------------------------------------------------- helpers */
 function deepVis(x,y){ return !!(revealAll || (vis && vis[idxOf(x,y)])); }
 function deepShot(e){ var path=boltPath(e.x,e.y,player.x,player.y), end=path[path.length-1]; return !!(end && end.x===player.x && end.y===player.y); }
-function deepWeighted(pool){ var tot=0, i; for(i=0;i<pool.length;i++) tot+=pool[i][1]; var r=rng()*tot; for(i=0;i<pool.length;i++){ r-=pool[i][1]; if(r<=0) return pool[i][0]; } return pool[pool.length-1][0]; }
+
 /* the floor's region at a tile, or -1 when the world has not told us */
 function deepRegionAt(x,y){
   var R=floorMeta && floorMeta.deepRegion;
@@ -130,24 +130,9 @@ function deepHurt(t, n, type, src, why){
    (a pack for a pack kind, one creature otherwise; key holders and guards are left alone). Later single spawns
    (wanderers) are swapped on the spot. Summons skip all of it (deepSpawnRaw). */
 var DEEP_SWAP = {goblin:'drowblade', archer:'webspitter', brute:'drider', shaman:'drowpriestess', rat:'spiderling', bat:'spiderling'};
-var DEEP_RAW=false, DEEP_GEN=false;
-var _rollMonsterDeep = rollMonster;
-rollMonster = function(){
-  if(!deepMobsOn()) return _rollMonsterDeep();
-  var pool=deepPool(-1); return pool.length ? deepWeighted(pool) : _rollMonsterDeep();
-};
-var _spawnDeep = spawn;
-spawn = function(kind, x, y){
-  if(!DEEP_RAW && deepMobsOn()){
-    if(DEEP_SWAP[kind]) kind=DEEP_SWAP[kind];
-    else if(!DEEP_GEN && MONSTERS[kind] && MONSTERS[kind].region!==undefined){
-      var R=deepRegionAt(x,y);
-      if(R>=0 && MONSTERS[kind].region!==R){ var pool=deepPool(R); if(pool.length) kind=deepWeighted(pool); }
-    }
-  }
-  return _spawnDeep(kind, x, y);
-};
-function deepSpawnRaw(kind, x, y){ DEEP_RAW=true; try{ return _spawnDeep(kind, x, y); } finally { DEEP_RAW=false; } }
+var DEEP_GEN=false;
+
+
 function deepRegionalize(){
   if(!deepHasRegions()) return 0;
   var done=[], swapped=0;
@@ -159,32 +144,17 @@ function deepRegionalize(){
     var group=[e].concat(e.base.pack ? list.filter(function(o){ return o!==e && done.indexOf(o)<0 && o.kind===e.kind && ents.indexOf(o)>=0 && dist(o,e)<=2; }) : []);
     group.forEach(function(o){ done.push(o); });
     var pool=deepPool(R); if(!pool.length) return;
-    var k=deepWeighted(pool), b=MONSTERS[k], n=b.pack ? Math.min(b.pack[1], Math.max(group.length, b.pack[0])) : 1, st=e.state, x=e.x, y=e.y;
+    var k=weightedMonster(pool), b=MONSTERS[k], n=b.pack ? Math.min(b.pack[1], Math.max(group.length, b.pack[0])) : 1, st=e.state, x=e.x, y=e.y;
     ents=ents.filter(function(o){ return group.indexOf(o)<0; });
     for(var q=0;q<n;q++){ var s=q===0 ? {x:x,y:y} : nearFree(x,y,2); if(!s || deepLava(s.x,s.y)) break; var m=deepSpawnRaw(k, s.x, s.y); m.state=st; done.push(m); }
     swapped++;
   });
   return swapped;
 }
-var _generateDeepMobs = generate;
-generate = function(seed){
-  DEEP_GEN=true;
-  var r;
-  try{ r=_generateDeepMobs.apply(this, arguments); } finally { DEEP_GEN=false; }
-  if(deepMobsOn()){
-    try{ deepRegionalize(); }catch(err){ if(window.console) console.error(err); }
-    try{ matronRehome(); }catch(err){ if(window.console) console.error(err); }
-  }
-  return r;
-};
+
 
 /* no creature walks into lava (the world adds the tile; walkable() may already refuse it) */
-var _stepEntDeep = stepEnt;
-stepEnt = function(e, dx, dy){
-  var ox=e.x, oy=e.y, r=_stepEntDeep.apply(this, arguments);
-  if(deepLava(e.x,e.y) && !(e.x===ox && e.y===oy)){ e.x=ox; e.y=oy; }
-  return r;
-};
+
 
 /* ---------------------------------------------------------------- Bleed
    Damage every turn for a few turns (ignores armour), dealt by drow blades, spiders and the Matron. Any heal
@@ -197,30 +167,13 @@ function inflictBleed(t, src, turns){
   applyStatus(t, 'bleed', turns||BLEED.turns, sDMG(BLEED.base + floorNo*BLEED.per));
   if(fresh){ floatText(t.x, t.y, 'bleeding', 'blood'); if(t===player) log('You are <b>bleeding</b>. Any healing will close the wound.','c-you'); }
 }
-var _tickStatusDeep = tickStatus;
-tickStatus = function(e){
-  if(typeof WORLD_TICK!=='undefined'&&!WORLD_TICK)return true;
-  var s=e && e.st;
-  if(s && s.bleed && s.bleed.t>0 && e.hp>0){
-    var bd=Math.max(1, s.bleed.d||2);
-    e.hp-=bd; e._hit=performance.now(); floatText(e.x, e.y, String(bd), 'blood');
-    if(e===player) log('Bleeding: '+bd+' damage.','c-you');
-    if(rng()<0.35 && typeof setG==='function' && gAt(e.x,e.y)===G_NONE) setG(e.x, e.y, G_BLOOD);
-    if(e.hp<=0){
-      if(e===player){  if(player.hp<=0){ kill(e, null); return false; } }
-      else { kill(e, e.lastHitBy||null); return false; }
-    }
-  }
-  return _tickStatusDeep(e);
-};
 function deepStanch(t){ if(t && t.st && t.st.bleed){ delete t.st.bleed; if(t===player) log('The bleeding stops.','c-good'); else if(deepVis(t.x,t.y)) log('The '+t.name+' stops bleeding.','c-info'); } }
-var _healPlayerDeep = healPlayer;
+
 /* 2026-09-20: this used to tell natural regeneration from a real heal by size (n>=1), which works only
    while max HP stays small - regen is maxhp*0.002 a turn, so anything over 500 max HP would have started
    stanching its own wounds. healPlayer's second argument now says so outright. */
-healPlayer = function(n, natural){ var r=_healPlayerDeep.apply(this, arguments); if(!natural && n>=1) deepStanch(player); return r; };
-var _stepOnDeep = stepOn;
-stepOn = function(){ var hp0=player.hp, r=_stepOnDeep.apply(this, arguments); if(player.hp>hp0) deepStanch(player); return r; };
+
+
 if(typeof STATUS_INFO!=='undefined'){
   /* no bleed icon was drawn yet: the bleeding-heart icon stands in (flagged for Justin) */
   STATUS_INFO.bleed = {name:'Bleeding', icon:'pr-corpsefeast', bad:1, d:'Loses HP every turn. Any healing stops it.'};
@@ -228,28 +181,10 @@ if(typeof STATUS_INFO!=='undefined'){
 }
 
 /* ---------------------------------------------------------------- hits: bleed, fangs, ember bite */
-var _attackDeep = attack;
-attack = function(att, def, mult, label){
-  var hp0 = def ? def.hp : 0;
-  var r=_attackDeep.apply(this, arguments);
-  if(!att || att===player || !att.base || !def || !(def.hp<hp0) || def.hp<=0) return r;
-  var b=att.base;
-  if(b.bleeds && rng()<b.bleeds) inflictBleed(def, att);
-  if(b.fangs && dist(att,def)<=1 && rng()<b.fangs){ applyStatus(def, 'poison', DRIDER.poison[0], sDMG(DRIDER.poison[1])); floatText(def.x,def.y,'poisoned','poison'); if(def===player) log('The <b>Drider</b>\'s fangs sink in: you are poisoned.','c-you'); }
-  if(b.emberBite && rng()<b.emberBite && !(def.st && def.st.burn)){ applyStatus(def, 'burn', 3, sDMG(2+Math.floor(floorNo/5))); if(def===player) log('The <b>Ember Spider</b>\'s bite sets you <span class="c-fire">burning</span>.','c-you'); }
-  return r;
-};
+
+
 /* a priestess's Blood Ward soaks damage before it lands */
-var _applyDamageDeep = applyDamage;
-applyDamage = function(target, amount, type, source){
-  if(target && target!==player && target.st && target.st.wardshield && amount>0){
-    var w=target.st.wardshield, ab=Math.min(w.n, amount); w.n-=ab; amount-=ab;
-    if(ab>0) floatText(target.x, target.y, '-'+Math.round(ab), 'magic');
-    if(w.n<=0){ delete target.st.wardshield; if(deepVis(target.x,target.y)) log('The blood ward around the '+target.name+' shatters.','c-good'); }
-    if(amount<=0) return 0;
-  }
-  return _applyDamageDeep(target, amount, type, source);
-};
+
 
 /* ---------------------------------------------------------------- globes of darkness
    floorMeta.dark = [{cells:[tile indexes], until:turn}]. Like the Sigil of Smoke: standing inside, you see one
@@ -267,27 +202,10 @@ function throwDarkness(e){
   computeFOV();
 }
 function inDeepDark(x,y){ var i=idxOf(x,y); return deepDarkActive().some(function(g){ return g.cells.indexOf(i)>=0; }); }
-var _computeFOVDeep = computeFOV;
-computeFOV = function(radius){
-  _computeFOVDeep(radius);
-  var G=deepDarkActive(); if(!G.length || !vis){ DEEP_RAWVIS=null; return; }
-  DEEP_RAWVIS=vis.slice();
-  var mask=new Uint8Array(MW*MH); G.forEach(function(g){ g.cells.forEach(function(i){ mask[i]=1; }); });
-  var me=mask[idxOf(player.x,player.y)];
-  for(var i=0;i<vis.length;i++){
-    if(!vis[i]) continue;
-    var x=i%MW, y=(i/MW)|0; if(Math.max(Math.abs(x-player.x),Math.abs(y-player.y))<=1) continue;
-    if(me || mask[i]) vis[i]=0;
-  }
-};
-var _canSeePlayerDeep = canSeePlayer;
-canSeePlayer = function(e){
-  if(e && e.base && e.base.darksight && DEEP_RAWVIS && !(player.hidden>0)) return !!DEEP_RAWVIS[idxOf(e.x,e.y)];
-  return _canSeePlayerDeep(e);
-};
-var _drawTelegraphsDeep = drawTelegraphs;
-drawTelegraphs = function(now){
-  _drawTelegraphsDeep(now);
+
+
+function drawDarknessTelegraphs(now){
+
   var G=deepDarkActive(); if(!G.length) return;
   var t=(now||0)/1000;
   ctx.save();
@@ -304,7 +222,8 @@ drawTelegraphs = function(now){
     });
   });
   ctx.restore();
-};
+
+}
 
 /* ---------------------------------------------------------------- webs: pinned for a turn (you can still attack) */
 function webShot(e, who){
@@ -327,8 +246,7 @@ var DEEP_AI = {
   blade: function(e, d){
     e.globeCd=(e.globeCd===undefined ? ri(GLOBE.first[0],GLOBE.first[1]) : e.globeCd)-1;
     if(e.globeCd<=0 && d>=2 && d<=5 && !inDeepDark(player.x,player.y) && deepShot(e)){
-      if(!tickStatus(e)) return true;
-      e.globeCd=ri(GLOBE.cd[0],GLOBE.cd[1]); throwDarkness(e); e.t+=actCost(e); return true;
+      if(e.hp<=0)return true;e.globeCd=ri(GLOBE.cd[0],GLOBE.cd[1]); throwDarkness(e);  return true;
     }
     return false;
   },
@@ -339,56 +257,51 @@ var DEEP_AI = {
     var near=function(o){ return o!==player && o.foe && o.hp>0 && !o.parent && dist(o,e)<=PRIEST.range; };
     var hurt=ents.filter(function(o){ return near(o) && o.hp<o.maxhp*0.65 && o.base && !o.base.object; }).sort(function(a,z){ return a.hp/a.maxhp - z.hp/z.maxhp; })[0];
     if(hurt && e.healCd<=0){
-      if(!tickStatus(e)) return true;
-      e.healCd=PRIEST.healCd; setClip(e,'attack'); sfx('shaman-cast');
+      if(e.hp<=0)return true;e.healCd=PRIEST.healCd; setClip(e,'attack'); sfx('shaman-cast');
       var h=Math.min(Math.round(hurt.maxhp*PRIEST.healPct), sHP(PRIEST.healFlat+floorNo));
       hurt.hp=Math.min(hurt.maxhp, hurt.hp+h); floatText(hurt.x, hurt.y, '+'+h, 'heal'); sparkleFx(hurt.x, hurt.y, 'blood', 20); deepStanch(hurt);
       if(deepVis(e.x,e.y)) log('The <b>Drow Priestess</b> '+(hurt===e ? 'mends her own wounds' : 'mends the '+hurt.name)+' with blood magic (+'+h+').','c-info');
-      e.t+=actCost(e); return true;
+       return true;
     }
     if(e.callCd<=0){
       var mine=ents.filter(function(o){ return o.kind==='spiderling' && o.owner===e.id; }).length;
       var all=ents.filter(function(o){ return o.kind==='spiderling'; }).length;
       if(mine<PRIEST.capEach && all<PRIEST.capFloor){
-        if(!tickStatus(e)) return true;
-        e.callCd=PRIEST.callCd; setClip(e,'attack'); sfx('shaman-cast');
+        if(e.hp<=0)return true;e.callCd=PRIEST.callCd; setClip(e,'attack'); sfx('shaman-cast');
         var n=Math.min(ri(PRIEST.callN[0],PRIEST.callN[1]), PRIEST.capEach-mine), got=0;
         for(var k=0;k<n;k++){ var c=nearFree(e.x,e.y,1) || nearFree(e.x,e.y,2); if(!c || deepLava(c.x,c.y)) break; var s=deepSpawnRaw('spiderling', c.x, c.y); s.state='hunt'; s.noXp=true; s.owner=e.id; s.t=e.t; sparkleFx(c.x,c.y,'web',14); got++; }
         if(got && deepVis(e.x,e.y)) log('The <b>Drow Priestess</b> hisses a prayer and '+(got>1 ? got+' <b>Spiderlings</b> scuttle' : 'a <b>Spiderling</b> scuttles')+' out of the dark to her.','c-info');
-        e.t+=actCost(e); return true;
+         return true;
       }
     }
     if(e.wardCd<=0){
       var front=ents.filter(function(o){ return near(o) && o!==e && o.base && !o.base.object && !o.st.wardshield && o.state==='hunt'; }).sort(function(a,z){ return dist(a,player)-dist(z,player); })[0];
       if(front){
-        if(!tickStatus(e)) return true;
-        e.wardCd=PRIEST.wardCd; setClip(e,'attack'); sfx('shaman-cast');
+        if(e.hp<=0)return true;e.wardCd=PRIEST.wardCd; setClip(e,'attack'); sfx('shaman-cast');
         front.st.wardshield={t:PRIEST.wardTurns, n:sDMG(PRIEST.ward+floorNo*0.5)};
         ringFx(front.x, front.y, '#C0203A', 1); sparkleFx(front.x, front.y, 'blood', 16);
         if(deepVis(e.x,e.y)) log('The <b>Drow Priestess</b> wraps the '+front.name+' in a <b>blood ward</b>.','c-info');
-        e.t+=actCost(e); return true;
+         return true;
       }
     }
-    if(d<=2 && !e.st.root && deepCanFlee(e)){ if(!tickStatus(e)) return true; fleeStep(e); e.t+=actCost(e); return true; }
+    if(d<=2 && canActorMove(e) && deepCanFlee(e)){ if(e.hp<=0)return true;fleeStep(e);  return true; }
     if(d>=2 && d<=PRIEST.range && deepShot(e)){
-      if(!tickStatus(e)) return true;
-      setClip(e,'attack'); boltFx(e.x,e.y,player.x,player.y,'blood'); sfx('shaman-cast');
+      if(e.hp<=0)return true;setClip(e,'attack'); boltFx(e.x,e.y,player.x,player.y,'blood'); sfx('shaman-cast');
       if(rng()<hostileHitChance(hitChance(e.base.acc+6, player.eva),true)){
         var bd=deepHurt(player, roll(e.dmg[0], e.dmg[1]), 'dark', e, 'The <b>Drow Priestess</b>\'s blood bolt hits you');
         if(bd>0 && e.hp>0 && e.hp<e.maxhp){ var hh=Math.min(bd, e.maxhp-e.hp); e.hp+=hh; floatText(e.x,e.y,'+'+hh,'heal'); }
       } else { log('The Drow Priestess\'s blood bolt misses.','c-miss'); floatText(player.x,player.y,'miss','miss'); }
-      e.t+=actCost(e); return true;
+       return true;
     }
     return false;
   },
   /* Thought Eater: saps your mana to heal itself (dazes you if you have none), lashes your mind otherwise */
   eater: function(e, d){
     e.sapCd=(e.sapCd===undefined ? 1 : e.sapCd)-1;
-    if(d<=2 && !e.st.root && deepCanFlee(e)){ if(!tickStatus(e)) return true; fleeStep(e); e.t+=actCost(e); return true; }
+    if(d<=2 && canActorMove(e) && deepCanFlee(e)){ if(e.hp<=0)return true;fleeStep(e);  return true; }
     if(d>=2 && d<=SAP.range && deepShot(e)){
-      if(!tickStatus(e)) return true;
-      setClip(e,'attack'); boltFx(e.x,e.y,player.x,player.y,'magic'); sfx('shaman-cast');
-      if(rng() >= hostileHitChance(hitChance(e.base.acc+10, player.eva),true)){ log('The Thought Eater\'s '+(e.sapCd<=0 ? 'mana sap' : 'lash')+' slides off your mind.','c-miss'); floatText(player.x,player.y,'miss','miss'); if(e.sapCd<=0) e.sapCd=1; e.t+=actCost(e); return true; }
+      if(e.hp<=0)return true;setClip(e,'attack'); boltFx(e.x,e.y,player.x,player.y,'magic'); sfx('shaman-cast');
+      if(rng() >= hostileHitChance(hitChance(e.base.acc+10, player.eva),true)){ log('The Thought Eater\'s '+(e.sapCd<=0 ? 'mana sap' : 'lash')+' slides off your mind.','c-miss'); floatText(player.x,player.y,'miss','miss'); if(e.sapCd<=0) e.sapCd=1;  return true; }
       if(e.sapCd<=0){
         e.sapCd=SAP.cd;
         if(player.mp>=1){
@@ -403,7 +316,7 @@ var DEEP_AI = {
           log('The <b>Thought Eater</b> finds no mana left to eat and rattles your empty mind: <b>dazed</b> for a turn.','c-you');
         }
       } else deepHurt(player, roll(e.dmg[0], e.dmg[1]), 'magic', e, 'The <b>Thought Eater</b> lashes your mind');
-      e.t+=actCost(e); return true;
+       return true;
     }
     return false;
   },
@@ -411,8 +324,7 @@ var DEEP_AI = {
   spitter: function(e, d){
     e.webCd=(e.webCd===undefined ? 1 : e.webCd)-1;
     if(e.webCd<=0 && d>=2 && d<=WEBSHOT.range && !player.st.root && deepShot(e)){
-      if(!tickStatus(e)) return true;
-      e.webCd=WEBSHOT.cd; webShot(e); e.t+=actCost(e); return true;
+      if(e.hp<=0)return true;e.webCd=WEBSHOT.cd; webShot(e);  return true;
     }
     return false;
   },
@@ -420,8 +332,7 @@ var DEEP_AI = {
   drider: function(e, d){
     e.webCd=(e.webCd===undefined ? 3 : e.webCd)-1;
     if(e.webCd<=0 && d>=2 && d<=WEBSHOT.range && !player.st.root && deepShot(e)){
-      if(!tickStatus(e)) return true;
-      e.webCd=DRIDER.webCd; webShot(e); e.t+=actCost(e); return true;
+      if(e.hp<=0)return true;e.webCd=DRIDER.webCd; webShot(e);  return true;
     }
     return false;
   },
@@ -429,8 +340,7 @@ var DEEP_AI = {
   imp: function(e, d){
     e.boltCd=(e.boltCd===undefined ? 1 : e.boltCd)-1;
     if(e.boltCd<=0 && d>=2 && d<=IMP.range && deepShot(e)){
-      if(!tickStatus(e)) return true;
-      e.boltCd=IMP.cd; setClip(e,'attack'); boltFx(e.x,e.y,player.x,player.y,'fire'); sfx('shaman-cast');
+      if(e.hp<=0)return true;e.boltCd=IMP.cd; setClip(e,'attack'); boltFx(e.x,e.y,player.x,player.y,'fire'); sfx('shaman-cast');
       if(rng()<hostileHitChance(hitChance(e.base.acc+6, player.eva),true)){
         var fd=deepHurt(player, roll(e.dmg[0], e.dmg[1]), 'fire', e, 'The <b>Fire Imp</b>\'s fire bolt hits you');
         if(player.hp>0 && rng()<IMP.burn){ applyStatus(player,'burn',3,sDMG(2)); log('You are <span class="c-fire">burning</span>.','c-you'); }
@@ -439,21 +349,21 @@ var DEEP_AI = {
         log('The Fire Imp\'s fire bolt misses and splashes the floor.','c-miss');
         var c=nearFree(player.x,player.y,1); if(c) ignite(c.x, c.y, null);
       }
-      e.t+=actCost(e); return true;
+       return true;
     }
-    if(d<=1 && !e.st.root && deepCanFlee(e)){ if(!tickStatus(e)) return true; fleeStep(e); e.t+=actCost(e); return true; }   /* 2026-09-23 (Justin): it fights from range, so it always backs off when it can */
+    if(d<=1 && canActorMove(e) && deepCanFlee(e)){ if(e.hp<=0)return true;fleeStep(e);  return true; }   /* 2026-09-23 (Justin): it fights from range, so it always backs off when it can */
     return false;
   }
 };
-var _aiActDeep = aiAct;
-aiAct = function(e){
-  if(e.kind==='matron') return matronAct(e);
+
+function deepCreatureBehavior(e){
   var b=e.base||{};
-  if(b.deepAI && DEEP_AI[b.deepAI] && e.state==='hunt' && !e.st.stun && !e.st.frozen && !e.st.fear && canSeePlayer(e)){
-    if(DEEP_AI[b.deepAI](e, dist(e,player))) return;
+  if(b.deepAI && DEEP_AI[b.deepAI] && e.state==='hunt' && canSeePlayer(e)){
+    if(DEEP_AI[b.deepAI](e, dist(e,player))) return true;
   }
-  return _aiActDeep(e);
-};
+  return false;
+
+}
 
 /* ---------------------------------------------------------------- cocoons hatch
    A cocoon the world tagged p.hatch bursts when you come within 2 tiles of it in sight: the prop goes, webbing
@@ -478,8 +388,7 @@ function deepHatchTick(){
     log('A cocoon splits open with a wet tearing sound, and '+(got>1 ? '<b>'+got+' Spiderlings</b> spill' : 'a <b>Spiderling</b> spills')+' out of it!','c-you');
   });
 }
-var _endTurnDeepHatch = endTurn;
-endTurn = function(){ _endTurnDeepHatch(); try{ deepHatchTick(); }catch(err){ if(window.console) console.error(err); } };
+
 
 /* ---------------------------------------------------------------- The Matron of the Web (floor 20)
    Vex's ritual mechanic, kept (DESIGN.md 18). She waits on her throne until you step into the hall, then:
@@ -527,14 +436,8 @@ function matronRehome(){
   var th=A.throne || {x:A.x+(A.w>>1), y:A.y+1}, c=(walkable(th.x,th.y) && !occupied(th.x,th.y)) ? th : nearFree(th.x,th.y,2);
   if(c){ e.x=c.x; e.y=c.y; M.throne={x:c.x, y:c.y}; }
 }
-var _populateDeepMobs = populateSpecialMonsters;
-populateSpecialMonsters = function(){
-  if(!deepMobsOn() || !floorMeta.boss) return _populateDeepMobs();
-  var halls=rooms.filter(function(r){ return r.role==='boss'; });
-  halls.forEach(function(r){ r.role='boss-deep'; });                  /* no Warchief and goblin guards here */
-  try{ _populateDeepMobs(); } finally { halls.forEach(function(r){ r.role='boss'; }); }
-  if(!floorMeta.matron) spawnMatron(floorMeta.bossArena || null);
-};
+
+
 function matronCircleProp(c){ return c ? props.filter(function(p){ return p.x===c.x && p.y===c.y && /^ritual-circle/.test(p.name); })[0] : null; }
 function matronCircleCells(c){ var out=[]; for(var y=c.y;y<=c.y+1;y++) for(var x=c.x;x<=c.x+1;x++) if(inb(x,y)) out.push(idxOf(x,y)); return out; }
 function matronWake(e, M){
@@ -546,7 +449,7 @@ function matronWake(e, M){
 function matronStartRitual(e, M){
   var kinds = M.phase>=2 ? ['tithe','brood','tithe'] : ['tithe','brood'], kind=kinds[M.n%kinds.length];
   var circle=null, spot=null;
-  if(M.circles.length){
+  if(canActorMove(e)&&M.circles.length){
     var cs=M.circles.slice().sort(function(a,z){ return dist(z,player)-dist(a,player); });
     for(var i=0;i<cs.length && !spot;i++){
       var free=matronCircleCells(cs[i]).map(function(k){ return {x:k%MW, y:(k/MW)|0}; })
@@ -626,31 +529,30 @@ function matronVenomTick(){
   });
 }
 function matronAct(e){
-  /* read the stagger before tickStatus: a one-turn stun is counted down (and gone) inside it */
+  /* Status expiry belongs to the world scheduler, never this creature action. */
   var reeled=!!(e.st.stun || e.st.frozen || e.st.fear), held=!!(e.st.stun || e.st.frozen);
-  if(!tickStatus(e)) return;
-  var M=matronState(); if(!M){ e.t+=actCost(e); return; }
+  if(e.hp<=0)return;var M=matronState(); if(!M){  return; }
   var see=canSeePlayer(e), d=dist(e,player);
   if(e.state==='throne' || e.state==='asleep'){
     if(matronInArena(M, player) || (see && d<=7)) matronWake(e, M);
-    e.t+=actCost(e); return;
+     return;
   }
   if(e.state!=='hunt') e.state='hunt';
-  if(M.rit && (reeled || M.rit.hp0-e.hp>=M.rit.need)){ matronBreak(e, M); e.t+=actCost(e); return; }
-  if(held || e.st.stun || e.st.frozen){ e.t+=actCost(e); return; }
+  if(M.rit && (reeled || M.rit.hp0-e.hp>=M.rit.need)){ matronBreak(e, M);  return; }
+  if(held || e.st.stun || e.st.frozen){  return; }
   /* phase shrieks */
   var pct=e.hp/e.maxhp;
   if(M.phase<2 && pct<MATRON.phase[M.phase]){
     M.phase++; setClip(e,'attack'); sfx('matron-intro'); SHAKE=10; ringFx(e.x, e.y, '#8A1A3A', 4);
     matronBrood(e, 1, M.phase===1 ? 2 : 3, '<b>The Matron shrieks</b>, and the webs overhead shake.');
-    e.t+=actCost(e); return;
+     return;
   }
   if(M.rit){
     if(turn>=M.rit.at) matronFinish(e, M);
     else { burst(e.x, e.y, 'blood', 12, 0.05); if(deepVis(e.x,e.y)) log('The Matron\'s chant rises. <b>'+(M.rit.at-turn)+'</b> turn'+(M.rit.at-turn===1?'':'s')+' left ('+Math.max(0,M.rit.hp0-e.hp)+'/'+M.rit.need+' damage to break it).','c-you'); }
-    e.t+=actCost(e); return;
+     return;
   }
-  if(turn>=M.nextRit && matronStartRitual(e, M)){ e.t+=actCost(e); return; }
+  if(turn>=M.nextRit && matronStartRitual(e, M)){  return; }
   M.venomCd--; M.webCd--;
   if(!M.venom && M.venomCd<=0 && see && d>=2){
     var cells=[]; for(var y=player.y-1;y<=player.y+1;y++) for(var x=player.x-1;x<=player.x+1;x++) if(inb(x,y) && walkable(x,y)) cells.push(idxOf(x,y));
@@ -658,17 +560,17 @@ function matronAct(e){
     floorMeta.marks=(floorMeta.marks||[]).filter(function(k){ return k.kind!=='matron-venom'; }).concat([{cells:cells, col:'#FF3A2A', until:turn+2, kind:'matron-venom'}]);
     setClip(e,'attack'); sfx('trap-gas'); boltFx(e.x, e.y, player.x, player.y, 'poison');
     log('The Matron spits a spray of <b>venom</b> high into the air above you. <b>Move off the red!</b>','c-you');
-    e.t+=actCost(e); return;
+     return;
   }
-  if(M.webCd<=0 && see && d>=2 && d<=6 && !player.st.root && deepShot(e)){ M.webCd=MATRON.webCd; webShot(e, 'Matron'); e.t+=actCost(e); return; }
-  if(d<=1){ attack(e, player); e.t+=actCost(e); return; }
+  if(M.webCd<=0 && see && d>=2 && d<=6 && !player.st.root && deepShot(e)){ M.webCd=MATRON.webCd; webShot(e, 'Matron');  return; }
+  if(d<=1){ attack(e, player);  return; }
   var guard=ents.filter(function(o){ return o.ally && dist(o,e)<=1; })[0];
-  if(guard){ attack(e, guard); e.t+=actCost(e); return; }
-  if(!e.st.root) chaseStep(e);
-  e.t+=actCost(e);
+  if(guard){ attack(e, guard);  return; }
+  if(canActorMove(e)) chaseStep(e);
+
 }
-var _endTurnMatron = endTurn;
-endTurn = function(){ _endTurnMatron(); try{ matronVenomTick(); }catch(err){ if(window.console) console.error(err); } };
+
+
 /* the boss bar says what she is channelling and how close you are to breaking it */
 var _bossBarDeep = bossBar;
 bossBar = function(){
@@ -688,58 +590,13 @@ function deepEnsureExit(e){
   setT(c.x, c.y, EXIT); floorMeta.exitAt={x:c.x, y:c.y};
   log('Behind the throne, the webs part over a stair leading up and out of the Underdark.','c-kill');
 }
-var _killDeepMobs = kill;
-kill = function(e, by){
-  if(e && e.kind==='matron' && ents.indexOf(e)>=0){
-    var M=floorMeta.matron;
-    if(M){ if(M.rit) matronEndRitual(M); M.venom=null; M.phase='dead'; }
-    floorMeta.marks=(floorMeta.marks||[]).filter(function(k){ return !/^matron-/.test(k.kind); });
-    ents.forEach(function(o){ if(o!==e && o.foe && (o.guard || o.base.spider || o.owner)) applyStatus(o,'fear',6); });
-    SHAKE=12; burst(e.x, e.y, 'blood', 60, 0.1);
-    var logSaved=log, r;
-    log=function(h, c){ return logSaved.call(this, String(h).replace(/ His <b>/, ' Her <b>'), c); };   /* cores.js writes "His Core" */
-    try{ r=_killDeepMobs.apply(this, arguments); } finally { log=logSaved; }
-    log('<b>The Matron of the Web</b> curls her legs in and is still. Across the Underdark, the webs fall quiet.','c-kill');
-    try{ deepEnsureExit(e); }catch(err){ if(window.console) console.error(err); }
-    return r;
-  }
-  return _killDeepMobs.apply(this, arguments);
-};
+
 
 /* ---------------------------------------------------------------- drawing
    The Matron is one still (256px, not animated): she breathes and sways in code, and while she channels she
    rises on her silk with a red glow under her. Hovering creatures (the imp, the thought eater) bob. */
-var _drawCharacterDeep = drawCharacter;
-drawCharacter = function(e, px, py, opts){
-  if(e && e!==player && e.base){
-    var now=performance.now(), still=ANIM.reduce;
-    if(e.kind==='matron'){
-      var M=matronState(), chan=!!(M && M.rit), ph=(e.id||0)*0.7;
-      var breathe=still ? 0 : Math.sin(now/520+ph), sway=still ? 0 : Math.sin(now/1300+ph)*0.018;
-      var lift=chan ? TS*(0.22+(still?0:0.05*Math.sin(now/300))) : 0;
-      ctx.save();
-      if(chan){
-        var cx=px+TS/2, cy=py+TS*0.85, g=ctx.createRadialGradient(cx,cy,TS*0.1,cx,cy,TS*1.5);
-        g.addColorStop(0,'rgba(220,30,50,'+(0.45+(still?0:0.15*Math.sin(now/180)))+')'); g.addColorStop(1,'rgba(120,0,20,0)');
-        ctx.fillStyle=g; ctx.fillRect(cx-TS*1.5, cy-TS*1.5, TS*3, TS*3);
-        ctx.strokeStyle='rgba(235,230,220,0.55)'; ctx.lineWidth=Math.max(1, TS*0.03);   /* the silk line she hangs from */
-        ctx.beginPath(); ctx.moveTo(cx, py-TS*3); ctx.lineTo(cx, py-lift+TS*0.1); ctx.stroke();
-      }
-      var fx0=px+TS/2, fy0=py+TS;
-      ctx.translate(fx0, fy0-lift); ctx.rotate(sway); ctx.scale(1+0.012*breathe, 1-0.018*breathe); ctx.translate(-fx0, -fy0);
-      var r=_drawCharacterDeep(e, px, py, opts);
-      ctx.restore();
-      return r;
-    }
-    if(e.base.hover){
-      var bob=still ? 0 : Math.sin(now/280+(e.id||0))*TS*0.05;
-      ctx.save(); ctx.translate(0, bob-TS*0.06);
-      var r2=_drawCharacterDeep(e, px, py, opts);
-      ctx.restore(); return r2;
-    }
-  }
-  return _drawCharacterDeep(e, px, py, opts);
-};
+
+
 /* weak generated clips (see tools/deepart.py): these death clips darken or morph instead of falling, so the
    game's own topple-and-fade plays; the ember spider's idle and attack drift dark in their last frames */
 var DEEP_TOPPLE = {'m-web-spitter':1, 'm-drider':1, 'm-thought-eater':1};
@@ -748,12 +605,7 @@ var DEEP_TRIM = {'m-ember-spider':{idle:5, attack:6}, 'm-spiderling':{idle:4, hu
   if(!(typeof AS!=='undefined' && AS && AS.mobs)){ setTimeout(trimDeepClips, 200); return; }
   for(var k in DEEP_TRIM){ var m=AS.mobs[k]; if(!m) continue; for(var c in DEEP_TRIM[k]) if(m.clips[c]) m.clips[c].frames=Math.min(m.clips[c].frames, DEEP_TRIM[k][c]); }
 })();
-var _drawCorpseDeep = drawCorpse;
-drawCorpse = function(f, p){
-  var m = f && f.e && f.e.sprite && DEEP_TOPPLE[f.e.sprite] && AS.mobs ? AS.mobs[f.e.sprite] : null;
-  if(m && m.clips.death){ var d=m.clips.death; delete m.clips.death; try { return _drawCorpseDeep(f, p); } finally { m.clips.death=d; } }
-  return _drawCorpseDeep(f, p);
-};
+
 
 /* ---------------------------------------------------------------- words: hover cards and the boss floor */
 var _inspectHTMLDeepMobs = inspectHTML;
@@ -772,11 +624,33 @@ inspectHTML = function(mx, my){
   }
   return h;
 };
-var _floorIntroDeepMobs = floorIntro;
-floorIntro = function(){
-  if(!deepMobsOn() || !floorMeta.boss) return _floorIntroDeepMobs();
-  var logSaved=log, skip=/Warchief's hall/;
-  log=function(html, cls){ if(skip.test(html)) return; return logSaved.apply(this, arguments); };
-  try{ _floorIntroDeepMobs(); } finally { log=logSaved; }
-  log('<b>The Matron\'s hall.</b> Ritual circles glow faintly in the dark. Break her rituals before they finish.','c-you');
-};
+
+
+/* Named floor-generation stages; ordered by generation-adapter.js. */
+function regionalizeGeneratedDeep(seed){if(deepMobsOn()){
+    try{ deepRegionalize(); }catch(err){ if(window.console) console.error(err); }
+    try{ matronRehome(); }catch(err){ if(window.console) console.error(err); }
+  }
+  return;
+}
+
+/* Named character presentation passes; composed by render-adapter.js. */
+
+function prepareUnderdarkActor(job){
+  var e=job.entity,px=job.x,py=job.y;if(!e||e===player||!e.base)return;
+  var now=performance.now(),still=ANIM.reduce;
+  if(e.kind==='matron'){
+    var M=matronState(),chan=!!(M&&M.rit),ph=(e.id||0)*.7;
+    var breathe=still?0:Math.sin(now/520+ph),sway=still?0:Math.sin(now/1300+ph)*.018;
+    var lift=chan?TS*(.22+(still?0:.05*Math.sin(now/300))):0;ctx.save();
+    if(chan){
+      var cx=px+TS/2,cy=py+TS*.85,g=ctx.createRadialGradient(cx,cy,TS*.1,cx,cy,TS*1.5);
+      g.addColorStop(0,'rgba(220,30,50,'+(.45+(still?0:.15*Math.sin(now/180)))+')');g.addColorStop(1,'rgba(120,0,20,0)');
+      ctx.fillStyle=g;ctx.fillRect(cx-TS*1.5,cy-TS*1.5,TS*3,TS*3);
+      ctx.strokeStyle='rgba(235,230,220,0.55)';ctx.lineWidth=Math.max(1,TS*.03);ctx.beginPath();ctx.moveTo(cx,py-TS*3);ctx.lineTo(cx,py-lift+TS*.1);ctx.stroke();
+    }
+    var fx0=px+TS/2,fy0=py+TS;ctx.translate(fx0,fy0-lift);ctx.rotate(sway);ctx.scale(1+.012*breathe,1-.018*breathe);ctx.translate(-fx0,-fy0);
+    return function(){ctx.restore();};
+  }
+  if(e.base.hover){var bob=still?0:Math.sin(now/280+(e.id||0))*TS*.05;ctx.save();ctx.translate(0,bob-TS*.06);return function(){ctx.restore();};}
+}

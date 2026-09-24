@@ -814,9 +814,6 @@ var FOODS = {
   meat:  {name:'Roast Meat', nutrition:550, heal:0.10, icon:'item-meat'}
 };
 var HUNGER_MAX = 1500;
-/* what a food drop turns out to be. js/foods.js replaces this with the real roll (one in five is a special food);
-   it is defined here because the first floor is generated at boot, before that file loads. */
-function randomFood(){ return 'ration'; }
 
 /* ---------------------------------------------------------------- traps */
 var TRAPS = {
@@ -893,7 +890,5 @@ var DROPS = {
 /* summoned forms for Mother Murk's Raise Dead, by piety rank */
 var UNDEAD_FORMS = [
   {rank:1, kind:'skeleton', name:'Risen Skeleton', hp:14, dmg:[3,6]},
-  {rank:3, kind:'skeleton', name:'Zombie Bruiser', hp:30, dmg:[4,7], taunt:true, sprite:'m-zombie-bruiser', art:1.05},
-  {rank:4, kind:'skeleton', name:'Vampire', hp:22, dmg:[5,9], lifesteal:true},
-  {rank:5, kind:'skeleton', name:'Lich', hp:26, dmg:[5,9], caster:'shadowbolt', sprite:'m-lich', art:1.0}   /* casts at range 6; must out-do the Bruiser */
+  {rank:5, kind:'skeleton', name:'Lich', hp:26, dmg:[5,9], caster:'shadowbolt', sprite:'m-lich', art:1.0}
 ];

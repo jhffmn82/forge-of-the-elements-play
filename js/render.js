@@ -12,7 +12,7 @@ function atl(file){
 function hash2(x,y,s){ var h=(x*374761393 + y*668265263 + (s||0)*2147483647)|0; h=(h^(h>>>13))*1274126177|0; return ((h^(h>>>16))>>>0)/4294967295; }
 
 /* ---- sprite lookups ---- */
-function objArt(group, name){
+function packedObjectArt(group, name){
   if(group==='icons'&&AS.map&&AS.map[name]&&AS.map[name].items[name])group=name;
   if(name==='item-censer'||name==='held-censer'){group='knife';name='ceremonial-knife';}
   if(group==='structures'&&name==='stairs-up'&&AS.map&&AS.map.stairs)group='stairs';
@@ -42,7 +42,7 @@ function placementRect(x,y,w,h){
   var left=Math.round(x),top=Math.round(y);
   return {x:left,y:top,w:Math.max(1,Math.round(x+w)-left),h:Math.max(1,Math.round(y+h)-top)};
 }
-function drawObj(o, px, py, opt){
+function drawObjectSprite(o, px, py, opt){
   if(!o) return false;
   opt=opt||{};
   var fit=(opt.fit||0.92)*TS, s=Math.min(fit/o.sw, fit/o.sh);
@@ -69,7 +69,7 @@ function tileFrom(key, i){
   var t=AS[key]; if(!t) return null; var img=atl(key==='floor2'?'floor2.png':key+'.png'); if(!img) return null;
   var c=t.tiles[i]; if(!c) return null; return {img:img, sx:c[0], sy:c[1], sw:t.cell, sh:t.cell};
 }
-function blitTile(o, px, py, alpha){
+function blitSpriteTile(o, px, py, alpha){
   if(!o) return false;
   ctx.globalAlpha=alpha; ctx.imageSmoothingEnabled=true;
   ctx.drawImage(o.img,o.sx,o.sy,o.sw,o.sh,px,py,TS+0.6,TS+0.6);
@@ -85,13 +85,13 @@ var STATUS_CHIP = {challenged:'#E8B44A', coward:'#E8B44A', burn:'#FFC27A', chill
 
 /* ---- terrain choices ---- */
 var FLOOR_PLAIN=[0,12], FLOOR_ACCENT=[2,2,6,6,14,10,11,15,9,1,3,7,13,5];
-function floorTile(x,y){
+function atlasFloorTile(x,y){
   var h=hash2(x,y,floorNo);
   if(h<0.93) return tileFrom('floor', FLOOR_PLAIN[Math.floor(hash2(x,y,7)*FLOOR_PLAIN.length)]);
   return tileFrom('floor', FLOOR_ACCENT[Math.floor(hash2(y,x,3)*FLOOR_ACCENT.length)]);
 }
 var WALL_TOP=[0,4,3,7], WALL_FACE=[11,13,15,8,11,13], WALL_FACE_RARE=[1,2,6,9,10,12];
-function wallTile(x,y){
+function atlasWallTile(x,y){
   var south=at(x,y+1), faceBelow = !(south===WALL || south===SECRET) ;
   if(at(x,y)===SECRET) return faceBelow ? tileFrom('walls',14) : tileFrom('walls',WALL_TOP[0]);
   if(faceBelow){
@@ -107,7 +107,7 @@ function isWallLike(t){ return t===WALL || t===SECRET; }
    so tiles draw at full strength; with lighting off they keep the old fade. */
 function memA(fade){ return (typeof lightingOn==='function' && lightingOn()) ? 1 : fade; }
 var TILE_SPRITE = {};
-function tileSprite(x,y,t){
+function baseTileSprite(x,y,t){
   /* 2026-09-19: a door set in a wall that runs up-down (walls above and below it) is seen edge-on */
   var sideDoor = (t===DOOR || t===LOCKED) && isWallLike(at(x,y-1)) && isWallLike(at(x,y+1)) && !(isWallLike(at(x-1,y)) && isWallLike(at(x+1,y)));
   if(t===DOOR) return (sideDoor && objArt('structures','door-wood-side')) || objArt('structures','door-wood');
@@ -167,7 +167,7 @@ function drawOpenDoor(x, y, px, py, alpha){
 }
 
 /* ---- dual-grid overlays for water and chasm (corner-based wang tiles) ---- */
-function drawWangLayer(key, tileType){
+function drawAtlasWangLayer(key, tileType){
   var set=AS['wang_'+key]; var img=set && atl('wang-'+key+'.png');
   for(var vy=camY; vy<=camY+viewH+1; vy++) for(var vx=camX; vx<=camX+viewW+1; vx++){
     var c=[[vx-1,vy-1],[vx,vy-1],[vx-1,vy],[vx,vy]], any=false, known=false, lit=false, bits='';
@@ -187,7 +187,7 @@ function drawWangLayer(key, tileType){
 /* ---- tall grass: procedural blades that sway in a slow wind and part around whoever walks through ---- */
 var GRASS_COLS = ['#1F3D1A','#2B5222','#3A6A2B','#4E8434','#6C9F42'];
 function grassHash(x, y, k){ var h=(x*73856093) ^ (y*19349663) ^ (k*83492791); h=(h^(h>>>13))*1274126177; return ((h^(h>>>16))>>>0)/4294967296; }
-function drawGrassTile(x, y, px, py, alpha, layer, now){
+function drawOrdinaryGrass(x, y, px, py, alpha, layer, now){
   var front = layer==='front';
   var stand = null;
   if(front){
@@ -247,7 +247,7 @@ function drawVines(x, y, px, py, alpha, now){
 }
 
 /* ---- traps: set into the floor, drawn flat so they sit in the tile like the flagstones around them ---- */
-function drawTrap(f, px, py, alpha, now){
+function drawOrdinaryTrap(f, px, py, alpha, now){
   var t = ANIM.reduce ? 0 : now/1000, H=function(k){ return grassHash(f.x,f.y,k); };
   var cx=px+TS/2, cy=py+TS/2, u=TS/32;              /* u: one pixel of a 32px tile */
   var P=function(x,y,w,h,c){ ctx.fillStyle=c; ctx.fillRect(Math.round(px+x*u), Math.round(py+y*u), Math.ceil(w*u), Math.ceil(h*u)); };
@@ -333,7 +333,7 @@ function drawPillar(p, px, py, alpha, now){
 }
 
 /* ---- flat ground decals, drawn top-down so they sit in the floor instead of standing on it ---- */
-function drawGroundDecal(gv, x, y, px, py, alpha, now){
+function drawBaseGroundDecal(gv, x, y, px, py, alpha, now){
   var H=function(k){ return grassHash(x,y,k); }, i, a, r, cx, cy;
   ctx.save(); ctx.globalAlpha=alpha; ctx.lineCap='round';
   if(gv===G_SHORT){
@@ -441,7 +441,7 @@ function clipFrame(sheet, e, sliding){
   if(m.clips.idle){ var id=m.clips.idle, ph=((e.id||0)*97)%500; return {sx:(Math.floor((now+ph)/CLIP_MS.idle)%id.frames)*cell, sy:id.row*cell}; }
   return {sx:0, sy:(m.static_row||0)*cell};
 }
-function drawCharacter(e, px, py, opts){
+function drawCharacterSprite(e, px, py, opts){
   if(e.livingFlame)return drawLivingFlame(e,px,py,opts);
   opts=opts||{};
   if(e===player){
@@ -570,12 +570,12 @@ function lightLOS(x0,y0,x1,y1){
   }
   return true;
 }
-function wallTorchAt(x,y){
+function masonryTorchAt(x,y){
   if(!isWallLike(at(x,y)) || at(x,y)===SECRET) return false;
   var south=at(x,y+1); if(south===WALL || south===SECRET) return false;
   return hash2(x,y,11)<0.12 && WALL_FACE_RARE[Math.floor(hash2(x,y,5)*WALL_FACE_RARE.length)]===12;
 }
-function gatherLights(now, prp){
+function gatherBaseLights(now, prp){
   var L=[], x, y;
   function add(lx,ly,col,rad,str,src){ L.push({em:L.length>0, x:lx, y:ly, c:hexRGB(col), r:rad, s:str, tx:src?src[0]:Math.round(lx), ty:src?src[1]:Math.round(ly)}); }
   function fl(k){ return ANIM.reduce ? 1 : 1 + 0.07*Math.sin(now/130 + k*1.7) + 0.04*Math.sin(now/47 + k*3.1); }
@@ -607,94 +607,10 @@ function gatherLights(now, prp){
   });
   return L;
 }
-function drawLightmap(now, prp){
-  var S=2, W=(viewW+3)*S, H=(viewH+3)*S, ox=camX-1, oy=camY-1;   /* S texels per tile */
-  if(!LM.c){ LM.c=document.createElement('canvas'); LM.x=LM.c.getContext('2d'); LM.bloom=document.createElement('canvas'); LM.bx=LM.bloom.getContext('2d'); }
-  if(LM.c.width!==W || LM.c.height!==H){ LM.c.width=W; LM.c.height=H; LM.bloom.width=W; LM.bloom.height=H; }
-  var img=LM.x.createImageData(W,H), bl=LM.bx.createImageData(W,H), D=img.data, B=bl.data;
-  var lights=gatherLights(now, prp);
-  var room=roomAt(player.x,player.y), darkRoom = room && room.dark && !(player.aff.light>0) && !(player.aff.fire>0);
-  /* how dark each biome is: the dungeon is a lived-in, torch-lit place; the crypt and caverns are not */
-  var BL = [ {amb:[0.50,0.51,0.58], mem:[0.55,0.58,0.70]},    /* dungeon */
-             {amb:[0.34,0.35,0.44], mem:[0.46,0.48,0.62]},    /* crypt: brighter, cooler, like the concept art */
-             {amb:[0.20,0.21,0.26], mem:[0.38,0.40,0.50]} ][Math.min(2, biomeIdx())];
-  /* the elemental planes set their own mood: Light is bright and warm, Shadow near-black, Earth a dim green */
-  var PL = floorMeta && floorMeta.plane ? {light:{amb:[0.90,0.89,0.88], mem:[0.60,0.60,0.64]}, shadow:{amb:[0.30,0.26,0.40], mem:[0.40,0.36,0.52]}, earth:{amb:[0.42,0.44,0.34], mem:[0.46,0.48,0.40]}}[floorMeta.plane] : null;
-  if(PL) BL=PL;
-  var AMB = darkRoom ? [0.08,0.08,0.12] : BL.amb, MEM=BL.mem.map(function(v){ return v*0.45; });   /* the tile fade moved in here (memA) */
-  var vals=new Float32Array(W*H*3), isWall=new Uint8Array(W*H);
-  var tx, ty, k, j;
-  for(ty=0; ty<H; ty++) for(tx=0; tx<W; tx++){
-    var x=ox+Math.floor(tx/S), y=oy+Math.floor(ty/S), o=(ty*W+tx)*3, cell=ty*W+tx;
-    var fx0=ox+(tx+0.5)/S-0.5, fy0=oy+(ty+0.5)/S-0.5;
-    if(!inb(x,y)){ continue; }
-    var i=idxOf(x,y);
-    if(!(revealAll||seen[i])) continue;
-    var wall=isWallLike(at(x,y)); isWall[cell]=wall?1:0;
-    var r, g, b;
-    if(!(revealAll||vis[i])){ r=MEM[0]; g=MEM[1]; b=MEM[2]; }
-    else {
-      r=AMB[0]; g=AMB[1]; b=AMB[2];
-      /* 2026-09-19: the Underdark lights its regions differently - a dull red glow over the lava rock (deeprender.js) */
-      if(typeof deepAmbAt==='function'){ var da=deepAmbAt(x,y); if(da){ r=da[0]; g=da[1]; b=da[2]; } }
-      /* a wall face takes its light from the floor in front of it; a wall top is lit later from its neighbours */
-      var face = wall && !isWallLike(at(x,y+1));
-      if(!wall || face){
-        var sx=fx0, sy=face ? y+1 : fy0, stx=x, sty=face ? y+1 : y;
-        for(k=0;k<lights.length;k++){
-          var L=lights[k], ddx=L.x-sx, ddy=L.y-sy, d=Math.sqrt(ddx*ddx+ddy*ddy);
-          if(d>=L.r) continue;
-          if(face && L.y < y+0.5) continue;
-          if(k===0 ? !(revealAll||vis[idxOf(stx,sty)]) : !lightLOS(L.tx, L.ty, stx, sty)) continue;
-          var f=1-d/L.r; f=Math.pow(f,1.6)*L.s;
-          r+=L.c[0]*f; g+=L.c[1]*f; b+=L.c[2]*f;
-        }
-        if(face){ r*=0.9; g*=0.9; b*=0.9; }
-        else { var n=0.93+0.09*(typeof ptVal==='function' ? ptVal(fx0*0.7, fy0*0.7, 21) : hash2(x,y,21)); r*=n; g*=n; b*=n; }   /* smooth across tiles (a per-tile value showed as a grid) */
-      } else { r=-1; g=0; b=0; }
-    }
-    vals[o]=r; vals[o+1]=g; vals[o+2]=b;
-  }
-  /* wall tops: dark masses, faintly picking up the light of the open ground beside them */
-  for(ty=0; ty<H; ty++) for(tx=0; tx<W; tx++){
-    var o2=(ty*W+tx)*3; if(vals[o2]!==-1) continue;
-    var sr=0, sg=0, sb=0, cnt=0;
-    for(j=0;j<4;j++){
-      var nx=tx+[1,-1,0,0][j], ny=ty+[0,0,1,-1][j]; if(nx<0||ny<0||nx>=W||ny>=H) continue;
-      var no=(ny*W+nx)*3; if(isWall[ny*W+nx] || vals[no]<0) continue;
-      sr+=vals[no]; sg+=vals[no+1]; sb+=vals[no+2]; cnt++;
-    }
-    /* 2026-09-19: in the Underdark the rock keeps its own (already dimmed) ambient and takes far less of the cave's
-       light, so a wall stops the glow instead of glowing with it */
-    var wx2=ox+Math.floor(tx/S), wy2=oy+Math.floor(ty/S);
-    var dAmb = typeof deepAmbAt==='function' ? deepAmbAt(wx2, wy2) : null, A2 = dAmb || AMB, bleed = dAmb ? 0.16 : 0.45;
-    vals[o2] = A2[0]*0.7 + (cnt? sr/cnt*bleed : 0); vals[o2+1] = A2[1]*0.7 + (cnt? sg/cnt*bleed : 0); vals[o2+2] = A2[2]*0.7 + (cnt? sb/cnt*bleed : 0);
-  }
-  /* soft ceiling: stacked lights (braziers beside a shrine) roll off instead of washing the tiles out */
-  for(j=0;j<W*H*3;j++){ var v=vals[j]; if(v>1) vals[j]=1+(v-1)*0.3; }
-  for(j=0;j<W*H;j++){
-    var q=j*3, p4=j*4;
-    D[p4]=Math.min(255, vals[q]*255); D[p4+1]=Math.min(255, vals[q+1]*255); D[p4+2]=Math.min(255, vals[q+2]*255); D[p4+3]=255;
-    var ex=Math.max(0, Math.max(vals[q],vals[q+1],vals[q+2])-1.1);
-    B[p4]=Math.min(255, vals[q]*ex*110); B[p4+1]=Math.min(255, vals[q+1]*ex*110); B[p4+2]=Math.min(255, vals[q+2]*ex*110); B[p4+3]=255;
-  }
-  LM.x.putImageData(img,0,0); LM.bx.putImageData(bl,0,0);
-  ctx.save();
-  ctx.imageSmoothingEnabled=true; ctx.imageSmoothingQuality='high';
-  ctx.globalCompositeOperation='multiply';
-  /* 2026-09-19: the light is worked out a tile at a time, so a wall or blocking object cast a square-edged
-     shadow and stretching two texels a tile left square steps along walls and objects. A blur before it is
-     laid over the scene melts the steps into gradients. */
-  ctx.filter='blur('+Math.max(2, Math.round(TS*0.38))+'px)';
-  ctx.drawImage(LM.c, 0, 0, W, H, -TS, -TS, W*TS/S, H*TS/S);
-  ctx.filter='none';
-  ctx.globalCompositeOperation='lighter'; ctx.globalAlpha=0.3;
-  ctx.drawImage(LM.bloom, 0, 0, W, H, -TS, -TS, W*TS/S, H*TS/S);
-  ctx.restore();
-}
+
 
 /* ---- telegraphs: the floor a boss is about to hit glows red, brighter as the blow gets close ---- */
-function drawTelegraphs(now){
+function drawBossTelegraphs(now){
   ents.forEach(function(e){
     if(!e.windup || !e.windup.tiles) return;
     var urgent = e.windup.due<=1, pulse = ANIM.reduce ? 0.7 : 0.5+0.5*Math.sin(now/(urgent?110:220));
@@ -724,6 +640,7 @@ function beaconAt(x, y){
   return null;
 }
 function drawBeacons(now){
+  objGlintsFlush();
   var list=[], x, y;
   for(y=camY-1;y<=camY+viewH+1;y++) for(x=camX-1;x<=camX+viewW+1;x++){
     if(!inb(x,y)) continue; var i=idxOf(x,y); if(!(revealAll||seen[i])) continue;
@@ -794,7 +711,7 @@ function drawStairsPointer(now){
 function hexA(hex, a){ var n=parseInt(hex.slice(1),16); return 'rgba('+((n>>16)&255)+','+((n>>8)&255)+','+(n&255)+','+a+')'; }
 
 /* ============================================================== draw */
-function draw(){
+function drawScene(){
   if(!map || !ground) return;
   var x, y, now=performance.now();
   var prp=renderPos(player);

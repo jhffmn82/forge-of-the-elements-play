@@ -58,11 +58,11 @@ function mapviewGo(reroll){
 })();
 
 /* monsters stand still */
-var _aiActMapview = aiAct;
-aiAct = function(e){ if(MAPVIEW.on){ e.t += (typeof actCost==='function' ? actCost(e) : 100); return; } return _aiActMapview(e); };
+
+
 /* you cannot be hurt */
-var _applyDamageMapview = applyDamage;
-applyDamage = function(e, n, type, src){ if(MAPVIEW.on && e===player) return 0; return _applyDamageMapview.apply(this, arguments); };
+
+
 /* never save a map-mode run */
 var _writeSlotMapview = writeSlot;
 writeSlot = function(){ if(RUN && RUN.mapViewed) return false; return _writeSlotMapview.apply(this, arguments); };

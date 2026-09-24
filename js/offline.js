@@ -66,5 +66,5 @@
   }
 
   /* after the first turn or two, not during loading */
-  window.addEventListener('load', function(){ setTimeout(function(){ fill(); }, 3000); });
+  FoteLifecycle.whenReady(function(){ setTimeout(function(){ fill(); }, 3000); });
 })();

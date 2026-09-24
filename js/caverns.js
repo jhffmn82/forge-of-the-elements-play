@@ -51,11 +51,7 @@ var CAVE_PROP = {
   'mushrooms':['cl-small-mushrooms-1','cl-small-mushrooms-2','cl-small-mushrooms-3','cl-small-mushrooms-4'],
   'vines':['cl-glow-moss-1','cl-glow-moss-2','cl-glow-moss-3','cl-glow-moss-4']
 };
-var _addPropCave = addProp;
-addProp = function(x, y, name, extra){
-  if(inCaverns() && CAVE_PROP[name] && !(extra && (extra.keep || extra.tablet || extra.lever || extra.prisoner))) name=pick(CAVE_PROP[name]);
-  return _addPropCave(x, y, name, extra);
-};
+
 
 /* ---------------------------------------------------------------- the monsters
    2026-09-19: rollMonster (world.js) read every monster's band as an absolute floor and ignored the biome, so
@@ -81,23 +77,10 @@ function caveRoster(){
   }
   return out;
 }
-var _rollMonsterCave = rollMonster;
-rollMonster = function(){
-  var pool=caveRoster(); if(!pool.length) return _rollMonsterCave();
-  var tot=0, i; for(i=0;i<pool.length;i++) tot+=pool[i][1];
-  var r=rng()*tot; for(i=0;i<pool.length;i++){ r-=pool[i][1]; if(r<=0) return pool[i][0]; }
-  return pool[pool.length-1][0];
-};
+
+
 /* barracks, dark rooms and vault guards ask for goblins: in the Caverns they get whatever lives here */
-var CAVE_NOSWAP=false;
-var _spawnCave = spawn;
-spawn = function(kind, x, y){
-  if(inCaverns() && !CAVE_NOSWAP && /^(goblin|archer|brute|shaman)$/.test(kind)){
-    var pool=caveRoster().filter(function(p){ return !MONSTERS[p[0]].boss; });
-    if(pool.length) kind = kind==='brute' ? pool.slice().sort(function(a,b){ return MONSTERS[b[0]].hp-MONSTERS[a[0]].hp; })[0][0] : pool[Math.floor(rng()*pool.length)][0];
-  }
-  return _spawnCave(kind, x, y);
-};
+
 
 /* ---------------------------------------------------------------- noise and small helpers */
 function caveNoise(wx, wy, s){
@@ -161,7 +144,7 @@ function caveTunnel(grid, a, b, wide){
     dig(x,y);
   }
 }
-function caveLayout(){
+function generateCavernLayout(){
   if(bidx()!==2) return false;
   for(var t=0; t<14; t++){ if(caveTry()){ caveDecorate(); return true; } }
   return false;                                               /* never: the BSP rooms take over rather than no floor */
@@ -351,39 +334,13 @@ function caveVoidPit(room, start){
 }
 
 /* ---------------------------------------------------------------- the shared room code, told about caves */
-var _roomAtCave = roomAt;
-roomAt = function(x, y){
-  var G=floorMeta && floorMeta.caveRoom;
-  if(!G || G.length!==MW*MH) return _roomAtCave(x, y);
-  if(x>=0 && y>=0 && x<MW && y<MH){
-    var k=G[y*MW+x];
-    if(k>=0) for(var i=0;i<rooms.length;i++){ var r=rooms[i]; if(r.cave && r.id===k) return r; }
-  }
-  for(var j=0;j<rooms.length;j++){ var q=rooms[j]; if(!q.cave && x>=q.x && x<q.x+q.w && y>=q.y && y<q.y+q.h) return q; }   /* vaults and puzzle pockets */
-  return null;
-};
+
+
 function caveWallAt(x,y){ return isWallLike(at(x,y)); }
-var _edgeCellsCave = edgeCells;
-edgeCells = function(r){
-  if(!r || !r.cave) return _edgeCellsCave(r);
-  return caveRoomCells(r).filter(function(c){
-    var x=c.x, y=c.y;
-    if(at(x,y)!==FLOOR || propAt(x,y) || nearDoor(x,y) || (x===r.cx && y===r.cy)) return false;
-    return caveWallAt(x-1,y) || caveWallAt(x+1,y) || caveWallAt(x,y-1) || caveWallAt(x,y+1);
-  });
-};
-var _interiorCellsCave = interiorCells;
-interiorCells = function(r){
-  if(!r || !r.cave) return _interiorCellsCave(r);
-  return caveRoomCells(r).filter(function(c){
-    var x=c.x, y=c.y;
-    if(at(x,y)!==FLOOR || propAt(x,y) || (x===r.cx && y===r.cy)) return false;
-    return !(caveWallAt(x-1,y) || caveWallAt(x+1,y) || caveWallAt(x,y-1) || caveWallAt(x,y+1));
-  });
-};
+
+
 /* stairs stand in the chamber itself: no dead-end hallway cut straight through the rock */
-var _carveDeadEndCave = carveDeadEnd;
-carveDeadEnd = function(room){ if(room && room.cave) return null; return _carveDeadEndCave(room); };
+
 
 /* ---------------------------------------------------------------- scenery */
 function caveFree(x, y){ return at(x,y)===FLOOR && !propAt(x,y) && !itemAt(x,y); }
@@ -557,25 +514,7 @@ function caveKoboldCamp(r){
 }
 
 /* ---------------------------------------------------------------- after the whole floor is built */
-var _generateCave = generate;
-generate = function(seed){
-  _generateCave(seed);
-  if(!inCaverns() || !map) return;
-  /* no grass underground: the shared patches become moss; standing water glows */
-  for(var i=0;i<ground.length;i++){ if(ground[i]===G_GRASS) ground[i]=G_MOSS; else if(ground[i]===G_SHORT) ground[i]=0; }
-  floorMeta.planeLights=floorMeta.planeLights||[];
-  floorMeta.ptPool={};
-  var seenW=new Uint8Array(MW*MH);
-  for(var j=0;j<map.length;j++){
-    if(map[j]!==WATER) continue;
-    floorMeta.ptPool[j]=1;
-    if(seenW[j]) continue;
-    var q=[j], sx=0, sy=0; seenW[j]=1;
-    for(var h=0; h<q.length; h++){ var c=q[h], cx=c%MW, cy=(c/MW)|0; sx+=cx; sy+=cy;
-      [[1,0],[-1,0],[0,1],[0,-1]].forEach(function(o){ var nx=cx+o[0], ny=cy+o[1]; if(!inb(nx,ny)) return; var n=idxOf(nx,ny); if(!seenW[n] && map[n]===WATER){ seenW[n]=1; q.push(n); } }); }
-    floorMeta.planeLights.push({x:sx/q.length, y:sy/q.length, col:'#5FE0E0', r:Math.min(5, 2.6+q.length*0.25), s:0.75});
-  }
-};
+
 
 /* ---------------------------------------------------------------- floor 15: the Deep Maw's arena
    Interface with the creature agent (agreed 2026-09-19):
@@ -605,64 +544,63 @@ function buildCaveArena(r){
   decorateEdges(r, ['torch-stand'], 4, true);                 /* glowing mushrooms and crystal pylons round the walls */
   floorMeta.planeLights.push({x:centre.x, y:centre.y, col:'#7A9CB0', r:7, s:0.35});   /* a faint cold light over the hall */
 }
-var _buildBossRoomCave = buildBossRoom;
-buildBossRoom = function(r){ if(inCaverns() && r && r.cave) return buildCaveArena(r); return _buildBossRoomCave(r); };
-var _populateCave = populateSpecialMonsters;
-populateSpecialMonsters = function(){
-  if(!inCaverns() || !floorMeta.boss) return _populateCave();
-  var arena=rooms.filter(function(r){ return r.role==='boss'; })[0];
-  rooms.forEach(function(r){ if(r.role==='boss') r.role='boss-cave'; });   /* no Warchief and goblin guards here */
-  _populateCave();
-  if(arena) arena.role='boss';
-  if(!floorMeta.bossArena) return;
-  if(typeof spawnDeepMaw==='function') spawnDeepMaw(floorMeta.bossArena);
-  else caveStandInBoss();
-};
-/* until the Deep Maw exists: an elite stand-in so the arena, the fight and the victory can be played end to end */
-function caveStandInBoss(){
-  var kind = MONSTERS.trog ? 'trog' : 'brute', b=floorMeta.bossAt, c=walkable(b.x,b.y) && !occupied(b.x,b.y) ? b : nearFree(b.x,b.y,3);
-  if(!c) return null;
-  CAVE_NOSWAP=true; var m; try{ m=spawn(kind, c.x, c.y); } finally { CAVE_NOSWAP=false; }
-  m.name='The Deep Maw (stand-in)'; m.elite=true; m.caveBoss=true; m.state='asleep';
-  m.maxhp=m.hp=Math.round(m.hp*3);                            /* placeholder toughness, not a balance number */
-  floorMeta.bossId=m.id;
-  return m;
-}
+
+
 function caveBossesLeft(){ return ents.filter(function(e){ return e.foe && e.hp>0 && ((e.base && e.base.boss) || e.caveBoss); }).length; }
-function caveBossDown(){
-  if(!RUN || RUN.victory || RUN.over || !floorMeta || floorMeta.caveWon) return;
-  floorMeta.caveWon=true; RUN.bossDead=true;
-  log('<b>The Deep Maw is dead.</b> The caverns fall silent.','c-kill');
-  setTimeout(function(){ if(RUN && !RUN.over && !RUN.victory) victory(); }, 1500);
-}
-var _killCave = kill;
-kill = function(e, by){
-  var boss = e && e!==player && ((e.base && e.base.boss) || e.caveBoss);
-  var r=_killCave.apply(this, arguments);
-  if(boss && floorNo===LAST_FLOOR && inCaverns() && ents.indexOf(e)<0 && !caveBossesLeft()) caveBossDown();
-  return r;
-};
+
 
 /* ---------------------------------------------------------------- words */
-var _floorIntroCave = floorIntro;
-floorIntro = function(){
-  if(!inCaverns()) return _floorIntroCave();
-  var logSaved=log, skip=/Warchief's hall/;
-  log=function(html, cls){ if(skip.test(html)) return; return logSaved.apply(this, arguments); };
-  try{ _floorIntroCave(); } finally { log=logSaved; }
-  if(floorMeta.boss) log('<b>The Deep Maw\'s hall.</b> The ground here is riddled with burrows. Something vast moves under the stone.','c-you');
-};
-var _showEndCave = showEnd;
-showEnd = function(won){
-  _showEndCave(won);
-  if(won && floorNo>=LAST_FLOOR && inCaverns()){
-    var tt=$('overT'); if(tt) tt.textContent='The Caverns are behind you';
-    var p=$('overP'); if(p) p.innerHTML=p.innerHTML.replace(/^[\s\S]*?<br><br>/, player.name+' brought down the Deep Maw in the dark beneath the world. The Caverns are behind you.<br><br>');
-  }
-};
+
 
 /* the sandbox's floor jump reaches every built floor */
 setTimeout(function(){
   var s=typeof $==='function' ? $('jump') : null; if(!s) return;
   for(var n=s.options.length; n<=LAST_FLOOR; n++){ var o=document.createElement('option'); o.textContent=String(n); s.appendChild(o); }
 }, 0);
+
+/* Named floor-generation stages; ordered by generation-adapter.js. */
+function finishGeneratedCaverns(seed){
+
+  if(!inCaverns() || !map) return;
+  /* no grass underground: the shared patches become moss; standing water glows */
+  for(var i=0;i<ground.length;i++){ if(ground[i]===G_GRASS) ground[i]=G_MOSS; else if(ground[i]===G_SHORT) ground[i]=0; }
+  floorMeta.planeLights=floorMeta.planeLights||[];
+  floorMeta.ptPool={};
+  var seenW=new Uint8Array(MW*MH);
+  for(var j=0;j<map.length;j++){
+    if(map[j]!==WATER) continue;
+    floorMeta.ptPool[j]=1;
+    if(seenW[j]) continue;
+    var q=[j], sx=0, sy=0; seenW[j]=1;
+    for(var h=0; h<q.length; h++){ var c=q[h], cx=c%MW, cy=(c/MW)|0; sx+=cx; sy+=cy;
+      [[1,0],[-1,0],[0,1],[0,-1]].forEach(function(o){ var nx=cx+o[0], ny=cy+o[1]; if(!inb(nx,ny)) return; var n=idxOf(nx,ny); if(!seenW[n] && map[n]===WATER){ seenW[n]=1; q.push(n); } }); }
+    floorMeta.planeLights.push({x:sx/q.length, y:sy/q.length, col:'#5FE0E0', r:Math.min(5, 2.6+q.length*0.25), s:0.75});
+  }
+}
+
+/* Named floor-content helpers; selected by content-adapter.js. */
+function findCaveRoom(x,y){
+  var G=floorMeta && floorMeta.caveRoom;
+  if(x>=0 && y>=0 && x<MW && y<MH){
+    var k=G[y*MW+x];
+    if(k>=0) for(var i=0;i<rooms.length;i++){ var r=rooms[i]; if(r.cave && r.id===k) return r; }
+  }
+  for(var j=0;j<rooms.length;j++){ var q=rooms[j]; if(!q.cave && x>=q.x && x<q.x+q.w && y>=q.y && y<q.y+q.h) return q; }   /* vaults and puzzle pockets */
+  return null;
+}
+
+function caveEdgeCells(r){
+  return caveRoomCells(r).filter(function(c){
+    var x=c.x, y=c.y;
+    if(at(x,y)!==FLOOR || propAt(x,y) || nearDoor(x,y) || (x===r.cx && y===r.cy)) return false;
+    return caveWallAt(x-1,y) || caveWallAt(x+1,y) || caveWallAt(x,y-1) || caveWallAt(x,y+1);
+  });
+}
+
+function caveInteriorCells(r){
+  return caveRoomCells(r).filter(function(c){
+    var x=c.x, y=c.y;
+    if(at(x,y)!==FLOOR || propAt(x,y) || (x===r.cx && y===r.cy)) return false;
+    return !(caveWallAt(x-1,y) || caveWallAt(x+1,y) || caveWallAt(x,y-1) || caveWallAt(x,y+1));
+  });
+}

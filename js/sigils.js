@@ -103,68 +103,14 @@ function natureBountySpots(){
   return spots;
 }
 
-var _useSigilFull = useSigil;
-useSigil = function(use){
-  var NEW = ['firestorm2','identify2','levitate2','stoneskin2','heal2','vanish2','cinder','magma','sunburst','smoke','storm','mire','purify','rot','recall','aegis','ascension','wisdom','naturesbounty'];
-  if(use==='mana'){ var okm=_useSigilFull(use); if(okm!==false){ player.buffs.manaflow=Math.max(player.buffs.manaflow||0, 20); } return okm; }
-  if(NEW.indexOf(use)<0) return _useSigilFull(use);
-  var F=floorNo, bountySpots;
-  if(use==='naturesbounty'){ bountySpots=natureBountySpots(); if(bountySpots.length<3){ log('Nature’s Bounty needs three empty spaces on nearby ground.','c-info'); return false; } }
-  /* checks that decide whether the sigil can be read at all, before anything is spent */
-  if(use==='ascension' && !allUpgradeTargets().some(function(o){ return upgradeCost(o.it)!==null; })){ log('Nothing you carry can be raised any higher.','c-info'); return false; }
-  if(use==='wisdom' && player.level>=20){ log('Your wisdom can no longer grow. This sigil would do nothing.','c-info'); return false; }
-  if(use==='rot' && !wornGear().some(function(it){ return it.cursed; })){ log('Nothing you wear is cursed. The sigil stays quiet.','c-info'); return false; }
-  if(use==='recall'){ var goal=null; for(var i=0;i<map.length;i++){ if(map[i]===STAIRS || (map[i]===EXIT && floorMeta.exitOpen)){ goal={x:i%MW, y:(i/MW)|0}; break; } } if(!goal){ log('There is nowhere to be carried to.','c-info'); return false; } }
-  var ok=_useSigilFull(use);       /* conduct, sound, cast animation, identification */
-  if(ok===false) return false;
-  if(use==='naturesbounty'){
-    ['honeycake','skewer','moontart'].forEach(function(food,i){var spot=bountySpots[i];items.push({kind:'food',food:food,x:spot.x,y:spot.y});sparkleFx(spot.x,spot.y,'heal',12);});
-    log('Nature’s Bounty provides a Honeycake, Mushroom Skewer, and Moonberry Tart.','c-good');
-  }
-  else if(use==='firestorm2'){ burst(player.x,player.y,'fire',90,0.14); visibleFoes(4).forEach(function(e){ hurt(e, 14+F, 'fire'); if(e.hp>0) applyStatus(e,'burn',4,sDMG(3)); });
-    for(var dy=-3;dy<=3;dy++) for(var dx=-3;dx<=3;dx++) if(dx||dy) ignite(player.x+dx,player.y+dy,'player'); log('A firestorm roars out around you.','c-fire'); }
-  else if(use==='identify2'){
-    Object.keys(SIGILS).forEach(function(k){ identifySigilQuiet(k); });
-    var list=wornGear().concat(player.bag.filter(function(b){ return b.data && b.data.unid; }).map(function(b){ return b.data; }));
-    var n=0; list.forEach(function(it){ if(identifyGear(it, true)) n++; }); refreshBagNames();
-    douseAround(5); log('Clear water runs over everything you own. You know every sigil'+(n?' and '+n+' piece'+(n>1?'s':'')+' of gear':'')+'.','c-kill'); }
-  else if(use==='levitate2'){ player.levitate=Math.max(player.levitate||0,60); player.buffs.haste=10; derive(player); log('You rise on the wind, light and quick.','c-good'); sparkleFx(player.x,player.y,'lightning',30); }
-  else if(use==='stoneskin2'){ applyStatus(player,'stone',30); giveWard(player.maxhp*0.2, 30); log('Your skin hardens to granite.','c-good'); }
-  else if(use==='heal2'){
-    if(player.race==='gloomling'){ var hd=applyDamage(player,Math.round(player.maxhp*0.3),'light',null); floatText(player.x,player.y,String(hd),'light'); log('The blazing light scorches you!','c-you'); if(player.hp<=0) death(); }
-    else { player.hp=player.maxhp; cleanseAll(); floatText(player.x,player.y,'full heal','heal'); sparkleFx(player.x,player.y,'heal',40); player.buffs.afterglow=15; log('Light pours through you. You are whole, and the light lingers: 5% a turn for 15 turns.','c-good'); } }
-  else if(use==='vanish2'){ player.hidden=5; ents.forEach(function(e){ if(e.foe && e.state==='hunt'){ e.state='wander'; e.lastSeen=null; } }); log('You fold into the shadows.','c-good'); }
-  else if(use==='cinder'){ player.buffs.cinder=10; derive(player); player._cinderAt={x:player.x,y:player.y}; log('Your feet catch fire. Run.','c-fire'); }
-  else if(use==='magma'){ for(var my=-2;my<=2;my++) for(var mx=-2;mx<=2;mx++){ var tx=player.x+mx, ty=player.y+my; if((mx||my) && inb(tx,ty) && walkable(tx,ty)) fireT[idxOf(tx,ty)]=Math.max(fireT[idxOf(tx,ty)],5); }
-    ents.forEach(function(e){ if(e.foe && dist(e,player)<=2) applyStatus(e,'burn',3,sDMG(2)); }); log('The floor around you melts into a ring of fire.','c-fire'); }
-  else if(use==='smoke'){ raiseSmoke(); }
-  else if(use==='rot'){ rotPicker(); }
-  else if(use==='sunburst'){ ringFx(player.x,player.y,'#FFF1CC',5); visibleFoes().forEach(function(e){ hurt(e, 6+F, 'light'); if(e.hp>0) applyStatus(e,'blind',3); }); log('A blinding sun flares from your hand.','c-good'); }
-  else if(use==='storm'){ var foes=visibleFoes().sort(function(a,b){ return dist(player,a)-dist(player,b); });
-    foes.slice(0,3).forEach(function(e){ var wet=isWet(e); hurt(e, Math.round((10+F)*(wet?1.5:1)), 'lightning'); if(e.hp>0 && rng()<0.5) applyStatus(e,'stun',1); burst(e.x,e.y,'lightning',16,0.06); });
-    foes.forEach(function(e){ if(e.hp>0){ e.st.wet={t:5}; } }); log('Thunder cracks and rain hammers down.','c-good'); }
-  else if(use==='mire'){ ents.forEach(function(e){ if(e.foe && dist(e,player)<=3){ applyStatus(e,'root',3); e.st.wet={t:6}; burst(e.x,e.y,'earth',8,0.04); } }); log('The ground turns to sucking mud.','c-good'); }
-  else if(use==='purify'){ cleanseAll(); var ph=Math.round(player.maxhp*0.2); { healPlayer(ph); floatText(player.x,player.y,'+'+ph,'heal'); }
-    var broke=0; wornGear().forEach(function(it){ if(breakCurse(it)) broke++; }); log('Clear water washes over you'+(broke?' and your gear':'')+'.','c-good'); }
-  else if(use==='recall'){ var g2=null; for(var j=0;j<map.length;j++){ if(map[j]===STAIRS || (map[j]===EXIT && floorMeta.exitOpen)){ g2={x:j%MW, y:(j/MW)|0}; break; } }
-    var land=(!occupied(g2.x,g2.y) && walkable(g2.x,g2.y)) ? g2 : nearFree(g2.x,g2.y,2);
-    if(land){ sparkleFx(player.x,player.y,'lightning',20); player.x=land.x; player.y=land.y; player._lx=undefined; seen[idxOf(g2.x,g2.y)]=1; sparkleFx(player.x,player.y,'lightning',20); computeFOV(); log('The wind lifts you and sets you down by the way onward.','c-good'); } }
-  else if(use==='aegis'){ giveWard(player.maxhp*0.5, 15); applyStatus(player,'stone',15); ringFx(player.x,player.y,'#F6E7B0',2.5); log('A shining aegis settles around you ('+player.ward+').','c-good'); }
-  /* 2026-09-18: read the requirement from xpToNext(), not from player.xpNext - gainXP()'s wrapper resets
-     xpNext to xpToNext(level) before spending anything, so a stale xpNext made this sigil a no-op. */
-  else if(use==='wisdom'){ var progress=player.xp,need=(typeof xpToNext==='function' ? xpToNext(player.level) : player.xpNext);player.xp=0;gainXP(player.cls==='tourist'?Math.ceil(need/1.25):need);player.xp=progress; log('Understanding floods in.','c-kill'); }
-  else if(use==='ascension'){ sigilUpgradePicker(); }
-  updateUI();
-  return true;
-};
 
 /* Sigil of Ascension: choose what to raise */
-function sigilUpgradePicker(){
+function sigilUpgradePicker(context){
   var list=allUpgradeTargets().filter(function(o){ return upgradeCost(o.it)!==null; });
-  var done=false;
+  var done=false,echo=!!(context&&context.echo);
   var html='<p class="c-info">Choose one piece of gear to raise by +1. A cursed item is cleansed instead.</p>'+list.map(function(o,i){
     return '<div class="frow"><div class="ftext"><b>'+gearName(o.it)+'</b> <span class="c-info">('+o.where+')</span></div><button data-asc="'+i+'">'+(o.it.cursed?'Cleanse':'Raise')+'</button></div>'; }).join('');
-  openModal('Sigil of Ascension', html, [{label:'Keep the sigil', fn:function(){ if(!done){ done=true; addBag('✦', SIGILS.ascension.name, {kind:'sigil', data:{use:'ascension'}, uid:'sigil:ascension'}); log('You set the sigil aside.','c-info'); } closeModal(); updateUI(); }}]);
+  openModal('Sigil of Ascension', html, [{label:echo?'Cancel':'Keep the sigil', fn:function(){ if(!done){ done=true; if(!echo){addBag('✦', SIGILS.ascension.name, {kind:'sigil', data:{use:'ascension'}, uid:'sigil:ascension'}); log('You set the sigil aside.','c-info');} } closeModal(); updateUI(); }}]);
   document.querySelectorAll('[data-asc]').forEach(function(b){ b.onclick=function(){
     if(done) return; done=true;
     var it=list[+b.getAttribute('data-asc')].it, cost=upgradeCost(it);
@@ -174,17 +120,15 @@ function sigilUpgradePicker(){
 }
 
 /* ---------------------------------------------------------------- lasting effects: haste, mana flow, cinder trail */
-var _deriveSig = derive;
-derive = function(p){ _deriveSig(p); if(p.buffs){ if(p.buffs.cinder>0) p.speed=Math.round(p.speed*1.5); else if(p.buffs.haste>0) p.speed=Math.round(p.speed*1.3); } };
-var _endTurnSig = endTurn;
-endTurn = function(){
+
+
+function turnPrepareCinder(context){
   if(player && player.buffs && player.buffs.cinder>0 && player._cinderAt && (player._cinderAt.x!==player.x || player._cinderAt.y!==player.y)){
     var c=player._cinderAt; if(!(c.x===player.x&&c.y===player.y)) fireT[idxOf(c.x,c.y)]=Math.max(fireT[idxOf(c.x,c.y)],3);
   }
   if(player) player._cinderAt={x:player.x, y:player.y};
-  var before=turn;_endTurnSig();if(turn===before)return;
-  if(player && player.buffs && player.buffs.manaflow>0 && player.hp>0){ player.mp=Math.min(player.maxmp, player.mp + player.maxmp*0.009); }
-};
+
+}
 
 
 /* ---------------------------------------------------------------- 2026-09-17: Water, Smoke and Rot helpers */
@@ -214,32 +158,22 @@ function raiseSmoke(){
   log('Choking smoke pours out and swallows the room.'+(lost?' Your pursuers lose you.':''),'c-good');
   computeFOV();
 }
-var _computeFOVSmoke = computeFOV;
-computeFOV = function(radius){
-  _computeFOVSmoke(radius);
-  var sm=smokeActive(); if(!sm || !vis) return;
-  var me=sm._mask[idxOf(player.x,player.y)];
-  for(var i=0;i<vis.length;i++){
-    if(!vis[i]) continue;
-    var x=i%MW, y=(i/MW)|0; if(Math.max(Math.abs(x-player.x),Math.abs(y-player.y))<=1) continue;
-    if(me || sm._mask[i]) vis[i]=0;   /* inside: nothing past 1 tile; outside: nothing inside the smoke */
-  }
-};
+
+
 /* stealth counts smoke as a dark room; an enemy that lost you in the smoke can be surprised */
-if(typeof stealthScore==='function'){ var _stealthSmoke=stealthScore; stealthScore=function(){ var s=_stealthSmoke(); if(s>0 && inSmoke(player.x,player.y)){ var rm=roomAt(player.x,player.y); if(!(rm && rm.dark)) s+=0.25; } return s; }; }
+
 function smokeAmbush(def){ return !!(def && def.smokeLost && def.state!=='hunt' && smokeActive()); }
-var _aiActSmoke = aiAct;
-aiAct = function(e){ if(e.smokeLost && (e.state==='hunt' || !smokeActive())) e.smokeLost=false; return _aiActSmoke(e); };
-var _endTurnSmoke = endTurn;
-endTurn = function(){
-  _endTurnSmoke();
+
+
+function turnExpireSmoke(context){
   var sm=floorMeta && floorMeta.smoke; if(!sm) return;
   if(turn===sm.until){ log('The smoke thins.','c-info'); computeFOV(); }
   if(turn>=sm.until+2) floorMeta.smoke=null;
-};
-var _drawTelegraphsSmoke = drawTelegraphs;
-drawTelegraphs = function(now){
-  _drawTelegraphsSmoke(now);
+
+}
+
+function drawSmokeTelegraphs(now){
+
   var sm=smokeMask(); if(!sm) return;
   var fade = turn<sm.until ? 1 : Math.max(0, 1-(turn-sm.until+1)/3), t=(now||0)/1000;
   ctx.save();
@@ -252,21 +186,22 @@ drawTelegraphs = function(now){
     ctx.fillRect(px,py,TS,TS);
   }
   ctx.restore();
-};
+
+}
 
 /* Rot: choose a cursed worn item to destroy */
-function knowPicker(){
+function knowPicker(context){
   var list=[];
   wornGear().forEach(function(it){ if(it && it.unid) list.push({it:it, where:'worn'}); });
   player.bag.forEach(function(b){ if(b.data && b.data.unid) list.push({it:b.data, where:'in your bag'}); });
   if(!list.length){ log('Nothing you carry or wear is a mystery.','c-info'); return; }
   if(list.length===1){ identifyGear(list[0].it); refreshBagNames(); updateUI(); refreshSheet && refreshSheet(); return; }
-  var done=false;
+  var done=false,echo=!!(context&&context.echo);
   var html='<p class="c-info">Clear water runs over one piece. Choose what to read - a curse shows before you put it on.</p>'+
     list.map(function(o,i){ return '<div class="frow"><div class="ftext"><b>'+gearName(o.it)+'</b> <span class="c-info">('+o.where+')</span></div>'+
       '<button data-know="'+i+'">Read it</button></div>'; }).join('');
-  openModal(SIGILS.identify.name, html, [{label:'Keep the sigil', fn:function(){
-    if(!done){ done=true; addBag('✦', SIGILS.identify.name, {kind:'sigil', data:{use:'identify'}, uid:'sigil:identify'}); log('You set the sigil aside.','c-info'); }
+  openModal(SIGILS.identify.name, html, [{label:echo?'Cancel':'Keep the sigil', fn:function(){
+    if(!done){ done=true; if(!echo){addBag('✦', SIGILS.identify.name, {kind:'sigil', data:{use:'identify'}, uid:'sigil:identify'}); log('You set the sigil aside.','c-info');} }
     closeModal(); updateUI(); }}]);
   document.querySelectorAll('[data-know]').forEach(function(b){ b.onclick=function(){
     if(done) return; done=true;
@@ -275,18 +210,18 @@ function knowPicker(){
     sfx('identify'); closeModal(); updateUI(); if(typeof refreshSheet==='function') refreshSheet();
   }; });
 }
-function rotPicker(){
+function rotPicker(context){
   var slots=[];
   var main=player.sets[player.activeSet]; if(main) slots.push({it:main, where:'main hand', gone:function(){ player.sets[player.activeSet]=null; }});
   if(player.off && player.off!==EMPTY_OFF) slots.push({it:player.off, where:'off hand', gone:function(){ player.off=EMPTY_OFF; }});
   if(player.armorItem) slots.push({it:player.armorItem, where:'armor', gone:function(){ var r=clone(ARMORS.robe); r.name='Rags'; r.plus=0; player.armorItem=r; }});
   if(player.amulet) slots.push({it:player.amulet, where:'amulet', gone:function(){ player.amulet=null; }});
   (player.rings||[]).forEach(function(r, n){ if(r) slots.push({it:r, where:'ring '+(n+1), gone:function(){ player.rings[n]=null; }}); });
-  var done=false;
+  var done=false,echo=!!(context&&context.echo);
   var html='<p class="c-info">Choose a cursed item. It rots away and is gone for good.</p>'+slots.map(function(o,i){
     return '<div class="frow"><div class="ftext"><b>'+gearName(o.it)+'</b> <span class="c-info">('+o.where+')</span></div>'+
       '<button data-rot="'+i+'"'+(o.it.cursed?'':' disabled title="Only cursed items can be rotted away"')+'>'+(o.it.cursed?'Rot away':'Not cursed')+'</button></div>'; }).join('');
-  openModal('Sigil of Rot', html, [{label:'Keep the sigil', fn:function(){ if(!done){ done=true; addBag('✦', SIGILS.rot.name, {kind:'sigil', data:{use:'rot'}, uid:'sigil:rot'}); log('You set the sigil aside.','c-info'); } closeModal(); updateUI(); }}]);
+  openModal('Sigil of Rot', html, [{label:echo?'Cancel':'Keep the sigil', fn:function(){ if(!done){ done=true; if(!echo){addBag('✦', SIGILS.rot.name, {kind:'sigil', data:{use:'rot'}, uid:'sigil:rot'}); log('You set the sigil aside.','c-info');} } closeModal(); updateUI(); }}]);
   document.querySelectorAll('[data-rot]').forEach(function(b){ b.onclick=function(){
     if(done) return; var o=slots[+b.getAttribute('data-rot')]; if(!o.it.cursed) return; done=true;
     var nm=gearName(o.it); o.gone(); derive(player); if(typeof refreshBagNames==='function') refreshBagNames();
@@ -313,10 +248,3 @@ function sigilNamesRefresh(){
   if(typeof player==='undefined' || !player || !player.bag || typeof sigilKnown==='undefined') return;
   player.bag.forEach(function(b){ if(b.kind==='sigil' && b.data && sigilKnown[b.data.use] && SIGILS[b.data.use]) b.name=SIGILS[b.data.use].name; });
 }
-/* save.js loads after this file: wrap its loader once everything is in */
-window.addEventListener('load', function(){
-  if(typeof loadFrom!=='function' || loadFrom._sigilNames) return;
-  var _loadFromSigilNames=loadFrom;
-  loadFrom=function(){ var r=_loadFromSigilNames.apply(this, arguments); try{ sigilNamesRefresh(); }catch(e){} return r; };
-  loadFrom._sigilNames=true;
-});

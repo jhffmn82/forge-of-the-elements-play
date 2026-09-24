@@ -8,19 +8,7 @@ RANK_TEXT[3].shadow='Fade: become Hidden after 10 / 8 / 6 / 4 consecutive unseen
 
 var ARCANE_LANCE={name:'Arcane Lance',kind:'bolt',type:'magic',range:6,base:[10,16],cost:0,prayerSpell:true,icon:'ic-magic-missile'};
 
-var _balanceCast=castAt;
-castAt=function(x,y){
-  var a=aiming;if(!a)return _balanceCast(x,y);
-  if(a.prayer==='arcanelance')return castArcaneLance(x,y);
-  if(a.prayer==='arcanenova')return castArcaneNova(x,y);
-  return _balanceCast(x,y);
-};
-var _balanceUseAbility=useAbility;
-useAbility=function(i){var A=ABILITIES[player.abilities[i]];
-  /* 2026-09-23 (Justin): a spell of the element your god forbids is refused here, before mana, piety or the turn go */
-  var forb=(A&&typeof spellForbidden==='function')?spellForbidden(A):null;
-  if(forb){if(aiming&&aiming.i===i&&typeof cancelAim==='function')cancelAim();log('<b>'+GODS[player.god].name+'</b> forbids '+forb+'. '+A.name+' will not come to you.','c-info');sfx('ui-error');return;}
-  return _balanceUseAbility(i);};
+
 function castArcaneLance(x,y){
  if(dist(player,{x:x,y:y})>6||!inb(x,y)||!vis[idxOf(x,y)]||!canPray('arcanelance'))return false;
  var path=boltPath(player.x,player.y,x,y),p=path[path.length-1],target=p&&foeAt(p.x,p.y);if(!target||target.tomb>0)return false;
@@ -34,7 +22,7 @@ function combatRoll(chance,eligible){
   if(eligible && player.buffs && player.buffs.luckystreak>0 && player.luckyTurn!==turn){player.luckyTurn=turn;return rng()<ch;}
   return false;
 }
-pRoll=function(chance){return combatRoll((chance||0)+luckBonus(),true);};
+function pRoll(chance){return combatRoll((chance||0)+luckBonus(),true);}
 
 if(typeof STATUS_INFO!=='undefined')STATUS_INFO.luckystreak={name:'Lucky Streak',icon:'ic-pray',d:'Reroll the first failed qualifying combat roll once per turn.'};
 
@@ -55,77 +43,33 @@ function lastLaugh(){
   else {healPlayer(player.maxhp*.4);clearBad();log('<b>Last Laugh: Second Wind.</b>','c-good');}
   sfx('wobbles-giggle');return true;
 }
-var _balanceDamage=applyDamage;
-applyDamage=function(target,amount,type,source){
-  var d=_balanceDamage(target,amount,type,source);
-  if(target===player && d>0){
-    player.lastDamageTime=player.t;
-    if(hasGod('grumbok') && godRank()>=3 && type!=='phys')player.wizardHunterUntil=player.t+300;
-    if(capstone('grumbok') && type!=='phys' && source && source.foe)player.spellbreakUntil=player.t+1000;
-  }
-  if(target===player && player.hp<=0)lastLaugh();
-  return d;
-};
-var _balanceDeath=death;
-death=function(){if(lastLaugh())return;return _balanceDeath.apply(this,arguments);};
-var _balanceEnd=endTurn;
-endTurn=function(){
 
-  var before=turn,hp=player.hp,time=player.t,r=_balanceEnd.apply(this,arguments);
-  if(player.hp<hp)player.lastDamageTime=player.t;
 
-  return r;
-};
-var _balanceDerive=derive;
-derive=function(p){var hp=p.hp,mp=p.mp,r=_balanceDerive(p);if(p===player&&p.race==='dwarf')p.armor+=1;if(Number.isFinite(hp))p.hp=Math.min(hp,p.maxhp);if(Number.isFinite(mp))p.mp=Math.min(mp,p.maxmp);return r;};
 RACES.dwarf.blurb='Sturdy masters of the forge. Weapon damage counts as +1, heavy armor costs no evasion, innate Armor is +1, and Forge upgrades cost 25% less.';
-var _balanceGodKill=godOnKill;
-godOnKill=function(e,by){if(e && (e.noXp||e.noReward||e.ally))return;return _balanceGodKill(e,by);};
-var _balanceSigil=useSigil;
-useSigil=function(use){
-  if(sigilConduct(use)===false)return false;
 
-  if(use==='heal'||use==='heal2'){
-    if(sigilConduct(use)===false)return false;sfx('sigil-use');setClip(player,'cast');
-    if(use==='heal2'){player.hp=player.maxhp;cleanseAll();}
-    else {healPlayer(Math.round(player.maxhp*.35));player.buffs.afterglow=15;}
-    identifySigil(use);(floorMeta.puzzles||[]).forEach(function(room){if(room.puzzle.kind==='darktraps'&&!room.puzzle.solved&&nearRoom(room,2))solvePuzzle(room,'light reveals every trap.');});sparkleFx(player.x,player.y,'heal',30);updateUI();return true;
-  }
-  return _balanceSigil(use);
-};
-UNDEAD_FORMS=UNDEAD_FORMS.filter(function(f){return f.name!=='Zombie Bruiser';});
 
 // The servant's existing rank scaling is applied in castRaiseDead before it acts.
 
 /* 2026-09-23 (Justin): Reginald's ladder is groups and range; the texts live in js/religion.js */
 
 function inSanctuary(e){var s=floorMeta.sanctuary;return !!(s&&s.until>(typeof worldNow==='function'?worldNow():player.t)&&(e===player||e.ally)&&dist(e,s)<=3);}
-var _rulingResist=resistMult;
-resistMult=function(e,type){var r=_rulingResist(e,type);return type!=='phys'&&inSanctuary(e)?Math.max(.25,r-.15*divineStrength()):r;};
-var _rulingHeal=healPlayer;
-healPlayer=function(n,natural){return _rulingHeal(n*(inSanctuary(player)?1+.25*divineStrength():1),natural);};
 
-
-var _rulingAttack=attack;
-attack=function(a,d,m,l){return _rulingAttack(a,d,(m||1)*(a.ally&&a.rallyUntil>player.t?1.1:1),l);};
-var _rulingSpellPower=spellPower;
-spellPower=function(A){return _rulingSpellPower(A)*(buff('rally')?1.1:1);};
 
 // Recovered description specifies a direct hit but no base. Match Bone Spear's
 // 10–16 base as a balance choice, separate from percentage-based Poison.
 var VENOM_BURST={name:'Venom Burst',base:[10,16],kind:'aoe',type:'poison',divine:true,cost:0};
 
 
-var _sanctuaryGround=typeof drawSurfaceDeco==='function'?drawSurfaceDeco:function(){};
-drawSurfaceDeco=function(){
-  _sanctuaryGround();var s=floorMeta&&floorMeta.sanctuary;if(!s||s.until<=player.t)return;
+function drawSanctuarySurface(){
+  var s=floorMeta&&floorMeta.sanctuary;if(!s||s.until<=player.t)return;
   ctx.save();ctx.strokeStyle='rgba(245,219,142,.55)';ctx.fillStyle='rgba(245,219,142,.06)';ctx.lineWidth=1;
   for(var y=s.y-3;y<=s.y+3;y++)for(var x=s.x-3;x<=s.x+3;x++){
     if(!inb(x,y)||!vis[idxOf(x,y)]||!walkable(x,y)||dist({x:x,y:y},s)>3)continue;
     var px=(x-camX)*TS,py=(y-camY)*TS;ctx.fillRect(px,py,TS,TS);
     ctx.beginPath();ctx.moveTo(px+TS*.4,py+TS*.5);ctx.lineTo(px+TS*.6,py+TS*.5);ctx.moveTo(px+TS*.5,py+TS*.4);ctx.lineTo(px+TS*.5,py+TS*.6);ctx.stroke();
   }ctx.restore();
-};
+
+}
 
 function castArcaneNova(x,y){
  if(aiming&&aiming.prayer==='arcanenova'){

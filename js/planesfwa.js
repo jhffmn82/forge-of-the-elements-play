@@ -67,30 +67,8 @@ PROPS['signature-air']={b:1, w:2, h:2, light:'#E8F4FF'};
 var FWA_CLUSTERS = {fire:['embers-slag-1','embers-slag-2','embers-slag-3','embers-slag-4'],
                     water:['scatter-water-1','scatter-water-2','scatter-water-3','scatter-water-4'],
                     air:['scatter-air-1','scatter-air-2','scatter-air-3','scatter-air-4']};
-var _buildPlaneFloorFwaClu = buildPlaneFloor;
-buildPlaneFloor = function(el, seed){
-  var r=_buildPlaneFloorFwaClu.apply(this, arguments);
-  try{
-    var list=FWA_CLUSTERS[el]; if(!list || !list.length || typeof setArt!=='function' || !setArt(list[0])) return r;
-    var spots=[];
-    for(var y=1;y<MH-1;y++) for(var x=1;x<MW-1;x++){
-      if(at(x,y)!==FLOOR || propAt(x,y) || (typeof LAVA!=='undefined' && at(x,y)===LAVA)) continue;
-      if(Math.max(Math.abs(x-player.x), Math.abs(y-player.y))<3) continue;
-      var wall=0; for(var d=0;d<4;d++){ var o=[[1,0],[-1,0],[0,1],[0,-1]][d]; if(isWallLike(at(x+o[0],y+o[1]))) wall++; }
-      if(wall) spots.push({x:x, y:y});
-    }
-    spots=shuffled(spots);
-    for(var k=0, put=0; k<spots.length && put<5; k++){
-      var sp=spots[k], run=ri(3,4);                     /* streaks of 3-4, never a lone piece */
-      for(var j=0;j<run;j++){
-        var cx=sp.x+j, cy=sp.y; if(at(cx,cy)!==FLOOR || propAt(cx,cy)) break;
-        addProp(cx, cy, list[Math.floor(rng()*list.length)], {flat:1});
-      }
-      put++;
-    }
-  }catch(e){ if(window.console) console.warn('fwa clusters', e); }
-  return r;
-};
+
+
 PROPS['updraft-vent']={flat:1};
 
 PLANE_HAZARD_TEXT.fire  = 'The basalt is split with molten rock: it cannot be crossed, and standing beside it scorches you. When the roof glows, get out from under it.';
@@ -197,43 +175,15 @@ function fwaFromStairs(){
   }
   return d;
 }
-var _fwaGenerate = generate;
-generate = function(seed){
-  var r=_fwaGenerate(seed);
-  if(!floorMeta || !floorMeta.portal || floorMeta.boss || bidx()!==3) return r;
-  var reach=fwaFromStairs(); if(!reach) return r;
-  var p=floorMeta.portalAt;
-  if(p && reach[idxOf(p.x,p.y)]>=0) return r;                              /* placed, and you can walk to it */
-  var best=null, bs=-1;
-  for(var y=1;y<MH-1;y++) for(var x=1;x<MW-1;x++){
-    if(at(x,y)!==FLOOR || reach[idxOf(x,y)]<0) continue;
-    if(propAt(x,y) || itemAt(x,y) || occupied(x,y) || nearDoor(x,y)) continue;
-    if(feats.some(function(f){ return f.x===x && f.y===y; })) continue;
-    var open=0; for(var oy=-1;oy<=1;oy++) for(var ox=-1;ox<=1;ox++) if(walkable(x+ox,y+oy)) open++;
-    if(open<7) continue;                                                   /* not in a passage or a corner */
-    if(typeof deepLavaAdjacent==='function' && deepLavaAdjacent(x,y)) continue;
-    if(reach[idxOf(x,y)]>bs){ bs=reach[idxOf(x,y)]; best={x:x, y:y}; }     /* the furthest walk from the stairs */
-  }
-  if(!best) return r;
-  if(p && at(p.x,p.y)===PORTAL) setT(p.x, p.y, FLOOR);
-  setT(best.x, best.y, PORTAL); floorMeta.portalAt=best;
-  var rm=roomAt(best.x,best.y); if(rm) rm.role=rm.role||'portal';
-  if(!(floorMeta.notes||[]).some(function(n){ return /portal to/.test(n); }))
-    floorMeta.notes.push('Something hums on this floor: <b>a portal to '+PLANE_TITLE[floorMeta.portal]+'</b> stands open.');
-  return r;
-};
+
 
 /* ---------------------------------------------------------------- building the floor
    buildPlaneFloor() (portals.js) does the whole floor including the creatures, so the hazards go in after it:
    they have to know where everything already stands, and a lava seam may not seal a creature - or the treasure
    - away from the portal. Everything written here is plain data on floorMeta or in map, so it saves and loads
    with the floor like any other terrain. */
-var _fwaBuildPlaneFloor = buildPlaneFloor;
-buildPlaneFloor = function(el, seed){
-  var r=_fwaBuildPlaneFloor(el, seed);
-  if(FWA_PLANES[el]) fwaDress(el, seed);
-  return r;
-};
+
+
 /* is every walkable cell still reachable from where the player stands? */
 function fwaAllReachable(){
   var d=bfsFrom(player.x, player.y);
@@ -349,6 +299,7 @@ function fwaDress(el, seed){
 /* ---------------------------------------------------------------- the hazards, turn by turn */
 /* push a creature (or you) n tiles along a direction. Returns how far it actually went. */
 function fwaPush(t, dx, dy, n){
+  if(gameEffects.blocked(t,'knockback'))return 0;
   dx=Math.sign(dx); dy=Math.sign(dy); if(!dx && !dy) return 0;
   var moved=0;
   for(var i=0;i<n;i++){
@@ -445,34 +396,26 @@ function fwaTick(){
   floorMeta.marks=(floorMeta.marks||[]).concat([{cells:cells, col: el==='fire' ? '#FF7A2A' : el==='water' ? '#5CC8FF' : '#DCEEFF', until:turn+2, kind:'fwa'}]);
   log(el==='fire' ? 'The roof above you glows red...' : el==='water' ? 'The water draws back around you...' : 'The air goes still, and then it starts to move...','c-you');
 }
-var _fwaEndTurn = endTurn;
-endTurn = function(){ var r=_fwaEndTurn.apply(this, arguments); fwaTick(); return r; };
+
 
 /* molten rock is not something you walk into by accident */
-var _fwaTryMove = tryMove;
-tryMove = function(dx, dy){
-  if(inFwa() && player && fwaIsLava(player.x+dx, player.y+dy) && !ents.some(function(e){ return e.foe && e.x===player.x+dx && e.y===player.y+dy; })){
-    log('Molten rock. You cannot cross it.','c-info'); return;
-  }
-  return _fwaTryMove.apply(this, arguments);
-};
+
 
 /* ---------------------------------------------------------------- the creatures' turns
    Each of these returns after spending the creature's action; anything they do not handle falls through to
    the AI the rest of the game uses. */
 function fwaSees(e){ var p=boltPath(e.x,e.y,player.x,player.y), end=p[p.length-1]; return !!(end && end.x===player.x && end.y===player.y); }
 function fwaBurnGround(x,y){ if(inb(x,y) && walkable(x,y) && at(x,y)!==WATER) fireT[idxOf(x,y)]=Math.max(fireT[idxOf(x,y)], 3); }
-var _fwaAiAct = aiAct;
-aiAct = function(e){
+
+function elementalPlaneBehavior(e){
   var b=e&&e.base||{};
-  if(!inFwa() || !b.fwa) return _fwaAiAct(e);
-  if(typeof MAPVIEW!=='undefined' && MAPVIEW.on) return _fwaAiAct(e);
+  if(!inFwa() || !b.fwa) return false;
   var kind=b.fwa, d=dist(e,player), see=canSeePlayer(e);
 
   /* the Thunder Totem never moves: it wakes when it sees you and zaps down its row or column */
   if(kind==='totem'){
-    if(e.st.stun || e.st.frozen){ e.t+=actCost(e); return; }
-    if(e.state!=='hunt'){ if(see && d<=7){ e.state='hunt'; log('The <b>Thunder Totem</b> hums awake.','c-info'); } e.t+=actCost(e); return; }
+
+    if(e.state!=='hunt'){ if(see && d<=7){ e.state='hunt'; log('The <b>Thunder Totem</b> hums awake.','c-info'); }  return true; }
     var inLine=(e.x===player.x || e.y===player.y);
     e.zapCd=(e.zapCd||0)-1;
     if(inLine && see && d<=6 && e.zapCd<=0){
@@ -480,13 +423,13 @@ aiAct = function(e){
       if(typeof boltFx==='function') boltFx(e.x, e.y, player.x, player.y, 'lightning', {});
       fwaHurt(player, roll(e.dmg[0], e.dmg[1]), 'lightning', e, 'The totem discharges down the line');
       if(player.hp>0 && rng()<0.25) applyStatus(player,'stun',1);
-      e.t+=actCost(e); return;
+       return true;
     }
-    e.t+=actCost(e); return;
+     return true;
   }
-  if(e.state==='asleep' || e.st.stun || e.st.frozen || e.st.fear) return _fwaAiAct(e);
+  if(e.state==='asleep') return false;
 
-  if(kind==='hop' && e.state==='hunt' && d>=2 && d<=4 && see && (e.hopCd=(e.hopCd||0)-1)<=0){
+  if(kind==='hop' && canActorMove(e) && e.state==='hunt' && d>=2 && d<=4 && see && (e.hopCd=(e.hopCd||0)-1)<=0){
     var land=nearFree(player.x, player.y, 1);
     if(land){
       fwaBurnGround(e.x, e.y);                                         /* it leaves the ground burning behind it */
@@ -494,15 +437,15 @@ aiAct = function(e){
       fwaBurnGround(e.x, e.y);
       burst(e.x, e.y, 'fire', 14, 0.05);
       if(vis[idxOf(e.x,e.y)]) log('The <b>Cinder Imp</b> hops at you, and the stone burns where it lands.','c-you');
-      e.t+=actCost(e); return;
+       return true;
     }
   }
-  if(kind==='dancer' && e.state==='hunt' && d<=1 && rng()<0.35){
+  if(kind==='dancer' && canActorMove(e) && e.state==='hunt' && d<=1 && rng()<0.35){
     /* it will not stand and trade: a step aside, then it comes back in */
     var side=[[1,1],[1,-1],[-1,1],[-1,-1],[1,0],[-1,0],[0,1],[0,-1]].filter(function(o){ return walkable(e.x+o[0],e.y+o[1]) && !occupied(e.x+o[0],e.y+o[1]) && dist({x:e.x+o[0],y:e.y+o[1]}, player)<=2; });
     if(side.length){ var o2=side[Math.floor(rng()*side.length)]; e.x+=o2[0]; e.y+=o2[1]; e._lx=undefined;
       if(vis[idxOf(e.x,e.y)]) log('The <b>Flame Dancer</b> spins out of reach.','c-info');
-      e.t+=actCost(e); return; }
+       return true; }
   }
   if(kind==='siren' && e.state==='hunt' && see && d>=2 && d<=5 && (e.songCd=(e.songCd||0)-1)<=0 && fwaSees(e)){
     e.songCd=4; setClip(e,'attack');
@@ -510,28 +453,28 @@ aiAct = function(e){
     var step=fwaPush(player, e.x-player.x, e.y-player.y, 1);
     applyStatus(player, 'stun', 1);
     log('The <b>Siren</b> sings. You take a step toward her'+(step?'':' but your feet will not move')+' and lose your turn.','c-you');
-    e.t+=actCost(e); return;
+     return true;
   }
   if(kind==='drowned' && e.state==='hunt' && d>=2 && d<=4 && see && (e.pullCd=(e.pullCd||0)-1)<=0 && fwaSees(e)){
     e.pullCd=4; setClip(e,'attack');
     var got=fwaPush(player, e.x-player.x, e.y-player.y, 2);
     if(got){ log('The <b>Drowned One</b> hauls you '+got+' tile'+(got>1?'s':'')+' toward it.','c-you'); sfx('trap-web'); }
-    e.t+=actCost(e); return;
+     return true;
   }
-  if(kind==='hawk' && e.state==='hunt' && d>=3 && d<=5 && see && (e.swoopCd=(e.swoopCd||0)-1)<=0){
+  if(kind==='hawk' && canActorMove(e) && e.state==='hunt' && d>=3 && d<=5 && see && (e.swoopCd=(e.swoopCd||0)-1)<=0){
     var spot=nearFree(player.x, player.y, 1);
     if(spot){
       e.swoopCd=4; e.x=spot.x; e.y=spot.y; e._lx=undefined; setClip(e,'attack');
       var hd=fwaHurt(player, roll(e.dmg[0], e.dmg[1]), 'phys', e, 'The <b>Storm Hawk</b> stoops on you');
       if(player.hp>0 && hd>0) fwaPush(player, player.x-e.x, player.y-e.y, 1);
-      e.t+=actCost(e); return;
+       return true;
     }
   }
   if(kind==='wisp' && e.state==='hunt' && d<=2 && (e.gustCd=(e.gustCd||0)-1)<=0){
     e.gustCd=3;
     var g=fwaPush(player, player.x-e.x, player.y-e.y, 1);
     if(g){ log('The <b>Wind Wisp</b> shoves you back a tile.','c-you'); burst(player.x, player.y, 'lightning', 10, 0.04); }
-    e.t+=actCost(e); return;
+     return true;
   }
   /* --- the elites ------------------------------------------------------------------------------- */
   if(kind==='emberlord' && e.state==='hunt'){
@@ -549,7 +492,7 @@ aiAct = function(e){
           if(t.hp>0) applyStatus(t,'burn',3,sDMG(4)); } });
         if(rng()<0.5) fireT[i]=Math.max(fireT[i], 3);
       });
-      e.t+=actCost(e); return;
+       return true;
     }
     if(!e.erupt && e.eruptCd<=0 && see && d<=8){
       var ec=[]; for(var ey2=player.y-1; ey2<=player.y+1; ey2++) for(var ex2=player.x-1; ex2<=player.x+1; ex2++) if(inb(ex2,ey2) && walkable(ex2,ey2)) ec.push(idxOf(ex2,ey2));
@@ -557,32 +500,33 @@ aiAct = function(e){
         e.erupt={cells:ec, at:turn+2}; e.eruptCd=6; setClip(e,'attack');
         floorMeta.marks=(floorMeta.marks||[]).concat([{cells:ec, col:'#FF5A10', until:turn+2, kind:'erupt'}]);
         log('<b>The Emberlord</b> drives a fist into the basalt. The ground under you splits.','c-you');
-        e.t+=actCost(e); return;
+         return true;
       }
     }
   }
   if(kind==='leviathan' && e.state==='hunt'){
     e.diveCd=(e.diveCd||0)-1;
     if(e.submerged){
+      if(!canActorMove(e))return true;
       /* it comes up beside you; while it is under, nothing can reach it (applyDamage below) */
       var up=nearFree(player.x, player.y, 1) || nearFree(e.x, e.y, 2);
       if(up){ e.x=up.x; e.y=up.y; e._lx=undefined; }
       e.submerged=false; e.diveCd=5; SHAKE=6;
       burst(e.x, e.y, 'ice', 30, 0.07);
       log('<b>The Leviathan Eel</b> bursts up out of the water beside you!','c-you');
-      e.t+=actCost(e); return;
+       return true;
     }
-    if(e.diveCd<=0 && at(e.x,e.y)===WATER && d>1){
+    if(canActorMove(e)&&e.diveCd<=0 && at(e.x,e.y)===WATER && d>1){
       e.submerged=true; e.diveCd=2; burst(e.x, e.y, 'ice', 20, 0.05);
       log('<b>The Leviathan Eel</b> slides under the water. Nothing can touch it down there.','c-info');
-      e.t+=actCost(e); return;
+       return true;
     }
     e.sweepCd=(e.sweepCd||0)-1;
     if(d<=1 && e.sweepCd<=0){
       e.sweepCd=4; setClip(e,'attack'); SHAKE=7;
       fwaHurt(player, roll(e.dmg[0], e.dmg[1]), 'phys', e, '<b>The Leviathan\'s tail</b> sweeps you off your feet');
       if(player.hp>0){ fwaPush(player, player.x-e.x, player.y-e.y, 3); applyStatus(player,'stun',1); }
-      e.t+=actCost(e); return;
+       return true;
     }
   }
   if(kind==='djinn' && e.state==='hunt'){
@@ -592,58 +536,24 @@ aiAct = function(e){
       var pulled=fwaPush(player, e.x-player.x, e.y-player.y, 3);
       applyStatus(player,'stun',1); burst(player.x, player.y, 'lightning', 24, 0.06); SHAKE=6;
       log('<b>The Tempest Djinn</b> opens the whirlwind and drags you '+pulled+' tile'+(pulled===1?'':'s')+' in. You cannot keep your feet.','c-you');
-      e.t+=actCost(e); return;
+       return true;
     }
     if(d>=2 && see && e.boltCd<=0 && fwaSees(e)){
       e.boltCd=3; setClip(e,'attack');
       if(typeof boltFx==='function') boltFx(e.x, e.y, player.x, player.y, 'lightning', {});
       fwaHurt(player, roll(e.dmg[0], e.dmg[1]), 'lightning', e, '<b>The Tempest Djinn</b> throws lightning at you');
-      e.t+=actCost(e); return;
+       return true;
     }
   }
-  return _fwaAiAct(e);
-};
+  return false;
+
+}
 
 /* ---------------------------------------------------------------- damage rules */
-var _fwaApplyDamage = applyDamage;
-applyDamage = function(target, amount, type, source){
-  var b=target && target.base;
-  if(b && target!==player && inFwa()){
-    if(b.fwa==='leviathan' && target.submerged){
-      if(source===player) log('The water closes over <b>the Leviathan Eel</b>. Wait for it to come up.','c-info');
-      return 0;
-    }
-    /* the Tide Crab turns the first blow of each turn on its shell */
-    if(b.shellGuard && target._shellTurn!==turn && amount>0){
-      target._shellTurn=turn; floatText(target.x, target.y, 'shell', 'miss');
-      if(vis[idxOf(target.x,target.y)]) log('The <b>Tide Crab</b> takes it on the shell.','c-info');
-      return 0;
-    }
-  }
-  var d=_fwaApplyDamage(target, amount, type, source);
-  /* the Flame Dancer's touch sets you alight */
-  if(target===player && source && source.base && source.base.kindles && d>0 && player.hp>0){
-    applyStatus(player, 'burn', 3, sDMG(3));
-    if(!player._fwaLitMsg || player._fwaLitMsg<turn-8){ player._fwaLitMsg=turn; log('The <b>Flame Dancer</b> sets you alight.','c-you'); }
-  }
-  return d;
-};
+
+
 /* the Magma Crawler bursts when it dies */
-var _fwaKill = kill;
-kill = function(e, by){
-  if(e && e.base && e.base.magmaBurst && e.hp<=0 && ents.indexOf(e)>=0 && inFwa()){
-    burst(e.x, e.y, 'fire', 34, 0.09); SHAKE=6;
-    if(vis[idxOf(e.x,e.y)]) log('The <b>Magma Crawler</b> bursts open.','c-kill');
-    ents.slice().forEach(function(o){
-      if(o===e || o.hp<=0 || dist(o,e)>1) return;
-      if(o!==player && fwaNative(o)) return;                        /* its own kin are at home in fire */
-      fwaHurt(o, roll(8,13), 'fire', null, o===player ? 'Molten rock sprays over you' : null);
-      if(o.hp>0) applyStatus(o, 'burn', 2, sDMG(3));
-    });
-    for(var ky=-1;ky<=1;ky++) for(var kx=-1;kx<=1;kx++) if(rng()<0.5) fwaBurnGround(e.x+kx, e.y+ky);
-  }
-  return _fwaKill(e, by);
-};
+
 
 /* ---------------------------------------------------------------- placeholder art, all drawn from the terrain
    None of packet 04's pieces exist yet, so the rune stone, the lava, the deep water and the updraft vents are
@@ -688,8 +598,8 @@ function fwaRuneCanvas(el){
   g.strokeStyle=fwaRGB(M.vein, 0.5); g.lineWidth=1;
   FWA_RUNE[el]=c; return c;
 }
-var _fwaDrawPropSurface = drawPropSurface;
-drawPropSurface = function(p, px, py, alpha){
+
+function drawElementPlaneProp(p, px, py, alpha){
   if(inFwa() && p && /^rune-stone-(fire|water|air)$/.test(p.name) && !(typeof packArt==='function' && packArt(p.name))){
     var img=fwaRuneCanvas(floorMeta.plane), cells=p.w||1, W=Math.round(cells*TS*0.95), H=W;
     var X=Math.round((p.x-camX)*TS + (cells*TS-W)/2), Y=Math.round((p.y-camY+(p.h||1))*TS)-H;
@@ -716,8 +626,9 @@ drawPropSurface = function(p, px, py, alpha){
     ctx.restore(); ctx.globalAlpha=1;
     return true;
   }
-  return _fwaDrawPropSurface(p, px, py, alpha);
-};
+  return false;
+
+}
 /* lava, deep water and the vents' glow go down with the floor, under everything that stands on it */
 /* the lava's base colour is painted by planeterrain (the cells are in floorMeta.ptPool, PT_MAT.fire's pool
    palette is molten rock). This only adds what a still raster cannot: crust drifting on the flow, and a soft
@@ -808,15 +719,15 @@ function fwaDrawWind(){
   });
   ctx.restore(); ctx.globalAlpha=1;
 }
-var _fwaDrawSurfaceDeco = drawSurfaceDeco;
-drawSurfaceDeco = function(){
-  var r=_fwaDrawSurfaceDeco.apply(this, arguments);
-  if(!inFwa()) return r;
+
+function drawElementPlaneSurface(){
+  if(!inFwa()) return;
   if(floorMeta.plane==='fire') fwaDrawLava();
   else if(floorMeta.plane==='water') fwaDrawDeep();
   else if(floorMeta.plane==='air') fwaDrawWind();
-  return r;
-};
+  return;
+
+}
 
 /* ---------------------------------------------------------------- words */
 var _fwaInspectHTML = inspectHTML;
@@ -830,3 +741,65 @@ inspectHTML = function(mx, my){
   }
   return h;
 };
+
+/* Named floor-generation stages; ordered by generation-adapter.js. */
+function repairGeneratedDeepPortal(seed){
+
+  if(!floorMeta || !floorMeta.portal || floorMeta.boss || bidx()!==3) return;
+  var reach=fwaFromStairs(); if(!reach) return;
+  var p=floorMeta.portalAt;
+  if(p && reach[idxOf(p.x,p.y)]>=0) return;                              /* placed, and you can walk to it */
+  var best=null, bs=-1;
+  for(var y=1;y<MH-1;y++) for(var x=1;x<MW-1;x++){
+    if(at(x,y)!==FLOOR || reach[idxOf(x,y)]<0) continue;
+    if(propAt(x,y) || itemAt(x,y) || occupied(x,y) || nearDoor(x,y)) continue;
+    if(feats.some(function(f){ return f.x===x && f.y===y; })) continue;
+    var open=0; for(var oy=-1;oy<=1;oy++) for(var ox=-1;ox<=1;ox++) if(walkable(x+ox,y+oy)) open++;
+    if(open<7) continue;                                                   /* not in a passage or a corner */
+    if(typeof deepLavaAdjacent==='function' && deepLavaAdjacent(x,y)) continue;
+    if(reach[idxOf(x,y)]>bs){ bs=reach[idxOf(x,y)]; best={x:x, y:y}; }     /* the furthest walk from the stairs */
+  }
+  if(!best) return;
+  if(p && at(p.x,p.y)===PORTAL) setT(p.x, p.y, FLOOR);
+  setT(best.x, best.y, PORTAL); floorMeta.portalAt=best;
+  var rm=roomAt(best.x,best.y); if(rm) rm.role=rm.role||'portal';
+  if(!(floorMeta.notes||[]).some(function(n){ return /portal to/.test(n); }))
+    floorMeta.notes.push('Something hums on this floor: <b>a portal to '+PLANE_TITLE[floorMeta.portal]+'</b> stands open.');
+  return;
+}
+
+/* Named travel and entry stages; ordered by transition-adapter.js. */
+function dressPlaneClusters(el,seed){
+  try{
+    var list=FWA_CLUSTERS[el]; if(!list || !list.length || typeof setArt!=='function' || !setArt(list[0])) return;
+    var spots=[];
+    for(var y=1;y<MH-1;y++) for(var x=1;x<MW-1;x++){
+      if(at(x,y)!==FLOOR || propAt(x,y) || (typeof LAVA!=='undefined' && at(x,y)===LAVA)) continue;
+      if(Math.max(Math.abs(x-player.x), Math.abs(y-player.y))<3) continue;
+      var wall=0; for(var d=0;d<4;d++){ var o=[[1,0],[-1,0],[0,1],[0,-1]][d]; if(isWallLike(at(x+o[0],y+o[1]))) wall++; }
+      if(wall) spots.push({x:x, y:y});
+    }
+    spots=shuffled(spots);
+    for(var k=0, put=0; k<spots.length && put<5; k++){
+      var sp=spots[k], run=ri(3,4);                     /* streaks of 3-4, never a lone piece */
+      for(var j=0;j<run;j++){
+        var cx=sp.x+j, cy=sp.y; if(at(cx,cy)!==FLOOR || propAt(cx,cy)) break;
+        addProp(cx, cy, list[Math.floor(rng()*list.length)], {flat:1});
+      }
+      put++;
+    }
+  }catch(e){ if(window.console) console.warn('fwa clusters', e); }
+  return;
+}
+
+function dressElementalPlane(el,seed){
+  if(FWA_PLANES[el]) fwaDress(el, seed);
+  return;
+}
+
+function movePlaneTerrain(dx,dy){
+  if(inFwa() && player && fwaIsLava(player.x+dx, player.y+dy) && !ents.some(function(e){ return e.foe && e.x===player.x+dx && e.y===player.y+dy; })){
+    log('Molten rock. You cannot cross it.','c-info'); return true;
+  }
+  return false;
+}

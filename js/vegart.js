@@ -9,6 +9,7 @@
      Earth    - the plane's grass, bushes, ferns, mushroom clusters and root tangles
    The Crypt and the other planes keep their own ground cover. Options > Motion off stops the sway. */
 function vegSet(){
+  if(inDeep())return 'underdark';
   if(typeof floorMeta==='undefined' || !floorMeta) return null;
   if(floorMeta.plane) return floorMeta.plane==='earth' ? 'earth' : null;
   if(typeof inCaverns==='function' && inCaverns()) return 'caverns';
@@ -59,12 +60,12 @@ function vegBody(x, y){
 function vegBend(x, y){ var b=vegBody(x,y); if(!b) return 0; var rp=renderPos(b); return (rp.x <= x ? -1 : 1)*0.35; }
 
 /* tall grass: back row beneath, front row over whoever stands in it */
-var _drawGrassTileVeg = drawGrassTile;
-drawGrassTile = function(x, y, px, py, alpha, layer, now){
-  var set=vegSet(); if(!set) return _drawGrassTileVeg.apply(this, arguments);
+
+function drawVegetationGrass(x,y,px,py,alpha,layer,now){
+  var set=vegSet(); if(!set) return false;
   /* the Crypt has no grass: its patches are the purple mushrooms, drawn by js/cryptset.js. It only borrows this
      file's sway and grading (vegSet returns 'crypt' for those). */
-  if(set==='crypt') return _drawGrassTileVeg.apply(this, arguments);
+  if(set==='crypt') return false;
   alpha*=VEG_GRASS_A;
   now=now||performance.now();
   var bend=vegBend(x,y), sw=vegSway(x,y,now,bend), flip=hash2(x,y,51)<0.5;
@@ -76,12 +77,13 @@ drawGrassTile = function(x, y, px, py, alpha, layer, now){
   vegDraw(vegPick(set,'grass-back',3,x,y,55), px+TS*(0.1+0.8*hash2(x,y,56)), py+TS*0.62, 0.9, sw*0.9, alpha*0.95, !flip);
   vegDraw(vegPick(set,'grass-back',3,x,y,57), px+TS*(0.05+0.9*hash2(x,y,58)), py+TS*0.82, 1.05, sw, alpha, flip);
   vegDraw(vegPick(set,'grass-back',3,x,y,54), px+TS*0.5, py+TS*1.0, 1.2, sw, alpha, flip);
-};
+
+}
 /* short grass: a low tuft or two, under everything */
-var _drawGroundDecalVeg = drawGroundDecal;
-drawGroundDecal = function(gv, x, y, px, py, alpha, now){
+
+function drawVegetationGroundDecal(gv, x, y, px, py, alpha, now){
   var set=vegSet();
-  if(gv===G_SHORT && set==='crypt') return _drawGroundDecalVeg.apply(this, arguments);
+  if(gv===G_SHORT && set==='crypt') return false;
   if(gv===G_SHORT && set){
     now=now||performance.now(); alpha*=VEG_GRASS_A;
     var sw=vegSway(x,y,now,vegBend(x,y))*0.8;
@@ -90,11 +92,12 @@ drawGroundDecal = function(gv, x, y, px, py, alpha, now){
     if(hash2(x,y,65)<0.6) vegDraw(vegPick(set,'grass-front',3,x,y,70), px+TS*(0.0+hash2(x,y,71)), py+TS*(0.95+0.1*hash2(x,y,72)), 1.0, sw, alpha, hash2(x,y,73)<0.5);
     return true;
   }
-  return _drawGroundDecalVeg.apply(this, arguments);
-};
+  return false;
+
+}
 
 /* plants: Dungeon bushes and ferns, Caverns mushroom groups (spots from vegetation.js), drawn on the ground layer */
-function drawVegSpots(now){
+function drawOrdinaryPlants(now){
   var set=vegSet(), S=floorMeta && floorMeta.vegSpots; if(!set || !S || !S.length) return;
   S.forEach(function(sp){
     if(sp.x<camX-1 || sp.x>camX+viewW+1 || sp.y<camY-1 || sp.y>camY+viewH+1) return;
@@ -155,13 +158,14 @@ function drawVegMoss(){
     blitRaster(cachedRaster('vm'+sig+'@', x, y, vegMossRaster), (x-camX)*TS, (y-camY)*TS, (revealAll||vis[i])?1:memA(0.4));
   }
 }
-var _drawSurfaceDecoVeg = drawSurfaceDeco;
-drawSurfaceDeco = function(){ var r=_drawSurfaceDecoVeg.apply(this, arguments); drawVegMoss(); drawVegSpots(performance.now()); return r; };
+
+function drawVegetationSurface(){ drawVegMoss(); drawVegSpots(performance.now()); return;
+}
 
 /* the Earth plane's plants: its fern, root tangle and mushroom props wear the pack's art and sway */
 var VEG_EARTH_PROP = {'fern':['fern','bush'], 'root-tangle':['root-tangle'], 'glow-mushrooms':['mushroom-cluster']};
-var _drawPropSurfaceVeg = drawPropSurface;
-drawPropSurface = function(p, px, py, alpha){
+
+function drawEarthPlantProp(p, px, py, alpha){
   if(p && floorMeta && floorMeta.plane==='earth' && VEG_EARTH_PROP[p.name]){
     var kinds=VEG_EARTH_PROP[p.name], kind=kinds[Math.floor(hash2(p.x,p.y,81)*kinds.length)], n=kind==='root-tangle'?2:3;
     var o=vegArt('earth-'+kind+'-'+(1+Math.floor(hash2(p.x,p.y,82)*n)));
@@ -172,12 +176,13 @@ drawPropSurface = function(p, px, py, alpha){
       return true;
     }
   }
-  return _drawPropSurfaceVeg.apply(this, arguments);
-};
+  return false;
+
+}
 
 /* ---------------------------------------------------------------- cuttable bushes (vegetation.js places them) */
-var _drawPropSurfaceBush = drawPropSurface;
-drawPropSurface = function(p, px, py, alpha){
+
+function drawBushProp(p, px, py, alpha){
   if(p && p.name==='bush'){
     var o=vegArt('earth-bush-'+(1+Math.floor(hash2(p.x,p.y,91)*3)));
     if(o){
@@ -187,12 +192,12 @@ drawPropSurface = function(p, px, py, alpha){
       return true;
     }
   }
-  return _drawPropSurfaceBush.apply(this, arguments);
-};
+  return false;
+
+}
 /* cutting one: a burst of leaves, and what it drops is mostly a heart (Zelda rules) */
-var _damagePropBush = damageProp;
-damageProp = function(p, src, type){
-  if(!p || !p.bush) return _damagePropBush.apply(this, arguments);
+
+function cutBushProp(p,src,type){
   removeProp(p); sfx('step-grass',{vol:0.5});   /* 2026-09-23 (Justin): cutting a bush at half volume; the walking rustle stays */
   if(typeof burst==='function') burst(p.x, p.y, 'heal', 14, 0.05);
   (floorMeta.regrow=floorMeta.regrow||[]).push({x:p.x, y:p.y, at:turn+VEG_REGROW.bush});
@@ -202,7 +207,8 @@ damageProp = function(p, src, type){
     it.x=p.x; it.y=p.y; items.push(it);
     log(it.kind==='heart' ? 'A heart was tucked under the bush.' : 'Something glints among the cut leaves.','c-good');
   }
-};
+
+}
 
 /* ---------------------------------------------------------------- regrowth (2026-09-19, Justin: the food clock stops
    anyone farming it forever). Cut bushes grow back, trampled tall grass stands up again and burned ground greens
@@ -213,8 +219,8 @@ function vegRemember(){
   var o={}; for(var i=0;i<ground.length;i++){ if(ground[i]===G_GRASS) o[i]='G'; else if(ground[i]===G_SHORT) o[i]='s'; }
   floorMeta.vegOrig=o; floorMeta.vegSeen={};
 }
-var _generateRegrow = generate;
-generate = function(seed){ var r=_generateRegrow.apply(this, arguments); try{ vegRemember(); }catch(e){} return r; };
+
+
 function vegRegrowTick(){
   if(!floorMeta || !ground || !vegSet() || !player) return;
   var hidden=function(x,y){ var i=idxOf(x,y); return !vis[i] && !ents.some(function(e){ return e.hp>0 && e.x===x && e.y===y; }) && !items.some(function(it){ return it.x===x && it.y===y; }) && !(player.x===x && player.y===y); };
@@ -240,5 +246,6 @@ function vegRegrowTick(){
     S[k]=turn;
   }
 }
-var _endTurnRegrow = endTurn;
-endTurn = function(){ var r=_endTurnRegrow.apply(this, arguments); try{ vegRegrowTick(); }catch(e){} return r; };
+
+/* Named floor-generation stages; ordered by generation-adapter.js. */
+function rememberGeneratedVegetation(seed){  try{ vegRemember(); }catch(e){} return; }

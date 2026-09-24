@@ -32,22 +32,12 @@ function autoAimPick(){
 }
 function autoAimLive(){ var e=aiming && aiming.auto; return e && e.hp>0 && e.foe && ents.indexOf(e)>=0 ? e : null; }
 
-var _useAbilityAuto = useAbility;
-useAbility = function(i){
-  if(aiming && !aiming.amulet && aiming.i===i && aiming.auto){
-    var e=autoAimLive(); if(e) castAt(e.x, e.y); else cancelAim();
-    return;
-  }
-  _useAbilityAuto(i);
-  if(aiming && !aiming.amulet && aiming.i===i && !aiming.auto && AUTO_AIM_KINDS[aiming.A.kind]) autoAimPick();
-};
 
 /* the mark: four thin corner brackets on the chosen enemy and a faint dotted path to it (2026-09-18: the first
    version - a pulsing box plus brackets plus bold dots - was too loud) */
-var _drawAuto = draw;
-draw = function(){
-  var r=_drawAuto.apply(this, arguments);
-  var e=autoAimLive(); if(!e || !ctx) return r;
+
+function drawAutoAimOverlay(){
+  var e=autoAimLive(); if(!e || !ctx) return;
   var ox=typeof camOX!=='undefined' ? camOX : 0, oy=typeof camOY!=='undefined' ? camOY : 0;
   function px(x){ return (x-camX)*TS-ox; } function py(y){ return (y-camY)*TS-oy; }
   ctx.save();
@@ -62,5 +52,6 @@ draw = function(){
   ctx.moveTo(x0, y0+S-c); ctx.lineTo(x0, y0+S); ctx.lineTo(x0+c, y0+S);
   ctx.moveTo(x0+S-c, y0+S); ctx.lineTo(x0+S, y0+S); ctx.lineTo(x0+S, y0+S-c);
   ctx.stroke(); ctx.restore();
-  return r;
-};
+  return;
+
+}

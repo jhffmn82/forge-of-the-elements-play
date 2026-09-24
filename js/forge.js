@@ -20,77 +20,12 @@ var T1_LIVE = {
   shadow: function(n){ return '+'+(5*n)+'% crit chance against enemies that can\'t see you (5% per point)'; }
 };
 function t1Text(e, n){ return (T1_LIVE[e] && n>0) ? T1_LIVE[e](n) : (T1_TEXT[e]||''); }
-var ENCHANT_TEXT = {
-  weapon:{fire:'10% of each hit as fire (+3% per Fire point); 5% Burning chance per Fire point', water:'15% chance to Chill (+5% per Water point)',
-          air:'5% chance per Air point (min 5%) of an instant extra attack', earth:'15% chance to Root (grows with Earth)',
-          light:'+10 accuracy (grows with Light); +25% vs undead and shadow', shadow:'5% chance per Shadow point (min 5%): +25% dark damage and Corrupt; +1 damage to Hollowed targets'},
-  armor: {fire:"Resistance to fire: 10% +5% per Fire mastery; maximum HP +5% +3% per Fire mastery.",
-water:"Resistance to water: 10% +5% per Water mastery; evasion +8 +2.4 per Water mastery.",
-air:"Resistance to air: 10% +5% per Air mastery; ranged projectile deflection 5% +3% per Air mastery (excludes area effects).",
-earth:"Resistance to earth: 10% +5% per Earth mastery; armor +1 +0.3 per Earth mastery.",
-light:"Resistance to light: 10% +5% per Light mastery; HP regeneration +50% +15% per Light mastery.",
-shadow:"Resistance to shadow: 10% +5% per Shadow mastery; stealth +5% per Shadow mastery (minimum 5%)."}
-};
+var ENCHANT_TEXT = FoteEnchantments.formulaTable();
 var forgeTab='fuse';
 
-function fuseCheck(el){
-  if(forbiddenElement(el))return GODS[player.god].name+' forbids '+cap(el)+'.';
-  var aff=player.aff, total=totalAffinity(), capv=affinityCap(), have=(player.motes[el]||0)>0;
-  if(!have) return 'You have no '+el+' mote.';
-  if(total>=capv) return 'Affinity cap reached ('+capv+'). Defeat the biome boss to raise it.';
-  var els=Object.keys(aff).filter(function(k){ return aff[k]>0; });
-  if(!aff[el] && els.length>=2) return 'You already hold two elements.';
-  for(var i=0;i<els.length;i++) if(OPPOSITE[els[i]]===el) return cap(el)+' is the opposite of your '+els[i]+'.';
-  var primary=player.primary || els[0];
-  if(primary && el!==primary && (aff[el]||0)+1 > (aff[primary]||0)) return 'Your secondary element can never outgrow your primary ('+primary+').';
-  if(RACES[player.race].locked && primary && !aff[el] && els.length===1 && false) return '';
-  return null;
-}
-function fuseMote(el){
-  var why=fuseCheck(el); if(why){ log(why,'c-info'); sfx('ui-error'); return; }
-
-  player.motes[el]--; if(player.motes[el]<=0) delete player.motes[el];
-  if(!Object.keys(player.aff).length) player.primary=el;
-  player.aff[el]=(player.aff[el]||0)+1;
-  var before=player.abilities.slice();
-  derive(player); player.iceArmor=player.iceArmorMax;
-  log('The Forge burns the mote into you. <b>'+cap(el)+' '+player.aff[el]+'</b>: '+t1Text(el, player.aff[el])+'.','c-kill');
-  sfx('forge-fuse'); sparkleFx(player.x,player.y,TRAIL_EL(el),50); ringFx(player.x,player.y,AFF_COL[el],3);
-  player.abilities.forEach(function(k){ if(before.indexOf(k)<0){ log('<b>New spell: '+ABILITIES[k].name+'</b> &mdash; '+(typeof liveDesc==='function' ? liveDesc(ABILITIES[k]) : ABILITIES[k].desc),'c-kill'); sfx('new-ability'); } });
-  player.hotbar=null; updateUI(); renderForge();
-}
-function enchantItem(slot, el){
-  if(!(player.motes[el]>0)){ log('You have no '+el+' mote.','c-info'); return; }
-  var item = slot==='weapon' ? player.weapon : player.armorItem;
-  if(!item || item.unarmed){ log('Nothing to enchant there.','c-info'); return; }
-  if(item.enchant===el){ log('Your '+gearName(item)+' already carries '+el+'. A second mote would change nothing.','c-info'); sfx('ui-error'); return; }
-  player.motes[el]--; if(player.motes[el]<=0) delete player.motes[el];
-  item.enchant=el;
-  if(player.god==='anvil') gainPiety(20);
-  godConductEquip(slot==='weapon'?'weapon':'armor', item);
-  derive(player);
-  log('The Forge sets <b>'+el+'</b> into your '+gearName(item)+': '+ENCHANT_TEXT[slot][el]+' (&times;'+enchantScale(el).toFixed(1)+' from your affinity).','c-kill');
-  sfx('forge-enchant'); sparkleFx(player.x,player.y,TRAIL_EL(el),40);
-  updateUI(); renderForge();
-}
-function craftSigil(key){
-  var s=SIGILS[key], need={};
-  s.motes.forEach(function(m){ need[m]=(need[m]||0)+1; });
-  for(var m in need) if((player.motes[m]||0)<need[m]){ log('You need '+s.motes.join(' + ')+' motes.','c-info'); return; }
-  var ess = (typeof sigilEssence==='function') ? sigilEssence(key) : 0;
-  if(ess > (player.essence||0)){ log('Carving a <b>'+s.name+'</b> takes <b>'+ess+' essence</b>; you have '+(player.essence||0)+'.','c-info'); sfx('ui-error'); return; }
-  if(player.bag.length>=BAG_MAX && !player.bag.some(function(b){ return b.uid==='sigil:'+key; })){ log('Your bag is full.','c-info'); return; }
-  for(var m2 in need){ player.motes[m2]-=need[m2]; if(player.motes[m2]<=0) delete player.motes[m2]; }
-  if(ess){ if(typeof spendEssence==='function') spendEssence(ess); else player.essence-=ess; }
-  sigilKnown[key]=true;
-  player.bag.forEach(function(b){ if(b.kind==='sigil' && b.data.use===key) b.name=s.name; });
-  addBag('\u2726', s.name, {kind:'sigil', data:{use:key}, uid:'sigil:'+key});
-  log('You carve a <b>'+s.name+'</b>: '+s.desc,'c-kill'); sfx('forge-craft'); sparkleFx(player.x,player.y,'fire',24);
-  updateUI(); renderForge();
-}
 
 function openForge(){
-  sfx('forge-open'); forgeTab = Object.keys(player.motes).length ? 'fuse' : 'fuse';
+  sfx('forge-open'); forgeTab='fuse';
   openModal('The Elemental Forge', '<div id="forgeBody"></div>', [{label:'Leave the Forge', fn:closeModal}], 'wide');
   renderForge();
 }
@@ -115,19 +50,7 @@ function renderForge(){
     });
   } else if(forgeTab==='upgrade' && typeof upgradePanelHTML==='function'){
     h+=upgradePanelHTML();
-  } else if(forgeTab==='enchant'){
-    h+='<p class="c-info">Set a mote into your gear. Each enchantment shows its base effect and how it grows with matching mastery. Re-enchanting replaces it.</p>';
-    [['weapon', player.weapon], ['armor', player.armorItem]].forEach(function(pair){
-      var slot=pair[0], it=pair[1];
-      h+='<div class="fslot"><b>'+(slot==='weapon'?'Main hand':'Armor')+':</b> '+(it&&!it.unarmed ? gearName(it) : '<span class="c-info">nothing to enchant</span>')+'</div><div class="egrid">';
-      ELEMENTS.forEach(function(el){
-        var ok=(player.motes[el]||0)>0 && it && !it.unarmed;
-        h+='<button data-ench="'+slot+':'+el+'" '+(ok?'':'disabled')+' title="'+ENCHANT_TEXT[slot][el]+'"><span class="dot" style="background:'+AFF_COL[el]+'"></span>'+cap(el)+
-           '<span class="d">'+ENCHANT_TEXT[slot][el]+'</span></button>';
-      });
-      h+='</div>';
-    });
-  } else {
+  } else if(forgeTab==='enchant'){h+=enchantPanelHTML();} else if(forgeTab==='recycle'){h+=recyclePanelHTML();} else {
     h+='<p class="c-info">Carve motes into sigils. Crafted sigils are always identified. Each recipe lists its essence and mote cost.</p>';
     Object.keys(SIGILS).forEach(function(k){
       var s=SIGILS[k], need={}, ok=true; s.motes.forEach(function(m){ need[m]=(need[m]||0)+1; });
@@ -148,6 +71,7 @@ function renderForge(){
   body.querySelectorAll('[data-ench]').forEach(function(b){ b.onclick=function(){ var p=b.getAttribute('data-ench').split(':'); enchantItem(p[0],p[1]); }; });
   body.querySelectorAll('[data-craft]').forEach(function(b){ b.onclick=function(){ craftSigil(b.getAttribute('data-craft')); }; });
   body.querySelectorAll('[data-art]').forEach(function(el){ paintArt(el, 'items', el.getAttribute('data-art'), 30); });
+  wireForgePanels(body);
 }
 
 /* ---------------------------------------------------------------- the Forge says what it did (2026-09-20)
@@ -167,32 +91,4 @@ function forgeSay(html, kind){
   el.style.borderColor = kind==='bad' ? '#D0605A' : 'var(--gold)';
   el.innerHTML=html;
   clearTimeout(el._t); el._t=setTimeout(function(){ if(el && el.parentNode) el.remove(); }, 6000);
-}
-var _craftSigilSay = craftSigil;
-craftSigil = function(key){
-  var before=(player.bag||[]).length, r=_craftSigilSay.apply(this, arguments);
-  var S=(typeof SIGILS!=='undefined' && SIGILS[key]); if(S && (player.bag||[]).length!==before) forgeSay('Carved: <b>'+S.name+'</b> &mdash; '+S.desc);
-  return r;
-};
-var _fuseMoteSay = fuseMote;
-fuseMote = function(el){
-  var b=(player.aff&&player.aff[el])||0, r=_fuseMoteSay.apply(this, arguments), a=(player.aff&&player.aff[el])||0;
-  if(a>b) forgeSay('The <b>'+cap(el)+'</b> mote takes root in you: affinity <b>'+a+'</b>.');
-  return r;
-};
-var _enchantItemSay = enchantItem;
-enchantItem = function(slot, el){
-  var r=_enchantItemSay.apply(this, arguments);
-  var it = slot==='ranged' ? player.ranged : slot==='off' ? player.off : slot==='armor' ? player.armorItem : player.weapon;
-  if(it && it.enchant===el) forgeSay('Your <b>'+gearName(it)+'</b> takes the '+cap(el)+' enchantment.');
-  return r;
-};
-if(typeof upgradeItem==='function'){
-  var _upgradeItemSay = upgradeItem;
-  upgradeItem = function(it){
-    var was=it && (it.plus||0), wasCursed=it && it.cursed, r=_upgradeItemSay.apply(this, arguments);
-    if(it && wasCursed && !it.cursed) forgeSay('The Forge burns the curse out of your <b>'+gearName(it)+'</b>.');
-    else if(it && (it.plus||0)>was) forgeSay('Your <b>'+gearName(it)+'</b> comes off the anvil stronger.');
-    return r;
-  };
 }

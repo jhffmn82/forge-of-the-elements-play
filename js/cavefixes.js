@@ -9,44 +9,12 @@
       clips stop before the drift. */
 
 /* ---------------------------------------------------------------- 1. occlusion */
-function drawOccluders(now){
-  if(typeof props==='undefined' || !props.length || typeof caveArt!=='function') return;
-  var bodies=ents.filter(function(e){ return e!==player && e.hp>0 && (revealAll || vis[idxOf(e.x,e.y)]); });
-  if(player && player.hp>0) bodies.push(player);
-  if(!bodies.length) return;
-  props.forEach(function(p){
-    if(p.flat || !(revealAll||seen[idxOf(p.x,p.y)])) return;
-    var o=caveArt(p.name); if(!o) return;
-    var w=p.w||1, h=p.h||1, rise=o.nm==='kobold-crate'?0:Math.ceil(o.fullH*caveArtScale(o)/TS) - h;   /* rows the art stands above its footprint */
-    if(rise<1) return;
-    var base=p.y+h-1;
-    var hit=bodies.some(function(e){ var rp=renderPos(e); return rp.x>p.x-0.8 && rp.x<p.x+w-0.2 && rp.y<p.y-0.05 && rp.y>=p.y-rise-0.5; });
-    if(!hit) return;
-    var pa=(revealAll||vis[idxOf(p.x,base)])?1:0.45;
-    drawPropSurface(p, (p.x-camX)*TS, (p.y-camY)*TS, pa);
-  });
-}
+
 
 /* ---------------------------------------------------------------- 2. the Maw's burrow is the way out */
-if(typeof caveBossDown==='function'){
-  caveBossDown = function(){
-    if(!RUN || RUN.victory || RUN.over || !floorMeta || floorMeta.caveWon) return;
-    floorMeta.caveWon=true; RUN.bossDead=true;
-    var A=floorMeta.bossArena, spot=null;
-    if(A){ var c={x:A.x+Math.floor(A.w/2), y:A.y+Math.floor(A.h/2)}; spot=(walkable(c.x,c.y) && !occupied(c.x,c.y)) ? c : nearFree(c.x,c.y,6); }
-    if(!spot) spot=nearFree(player.x,player.y,4);
-    if(spot){ setT(spot.x, spot.y, EXIT); floorMeta.exitOpen=true; floorMeta.caveExit=spot; if(typeof sparkleFx==='function') sparkleFx(spot.x,spot.y,'earth',30); }
-    log('<b>The Deep Maw is dead.</b> Its burrow gapes open: the way up and out of the Caverns. Gather what it left, then step in.','c-kill');
-    if(!spot) setTimeout(function(){ if(RUN && !RUN.over && !RUN.victory) victory(); }, 1500);   /* nowhere to put it: win as before */
-    if(typeof draw==='function') draw();
-  };
-}
+
 /* the exit on floor 15 is the Maw's open burrow, not the Dungeon's gate */
-var _tileSpriteCaveExit = tileSprite;
-tileSprite = function(x,y,t){
-  if(t===EXIT && floorMeta && floorMeta.caveExit && typeof caveArt==='function'){ var o=caveArt('worm-burrow-open'); if(o) return o; }
-  return _tileSpriteCaveExit(x,y,t);
-};
+
 
 /* ---------------------------------------------------------------- 3. weak clips */
 var CAVE_TOPPLE = {'m-storm-beetle':1, 'm-crystal-crawler':1, 'm-shock-eel':1, 'm-myconid':1};
@@ -55,12 +23,7 @@ var CAVE_ATTACK_TRIM = {'m-storm-beetle':6, 'm-spark-jelly':6, 'm-crystal-crawle
   if(!(typeof AS!=='undefined' && AS && AS.mobs)){ setTimeout(trimClips, 200); return; }
   for(var k in CAVE_ATTACK_TRIM){ var m=AS.mobs[k]; if(m && m.clips.attack) m.clips.attack.frames=Math.min(m.clips.attack.frames, CAVE_ATTACK_TRIM[k]); }
 })();
-var _drawCorpseCave = drawCorpse;
-drawCorpse = function(f, p){
-  var m = f && f.e && f.e.sprite && CAVE_TOPPLE[f.e.sprite] && AS.mobs ? AS.mobs[f.e.sprite] : null;
-  if(m && m.clips.death){ var d=m.clips.death; delete m.clips.death; try { return _drawCorpseCave(f, p); } finally { m.clips.death=d; } }
-  return _drawCorpseCave(f, p);
-};
+
 
 /* ---------------------------------------------------------------- 4. standing pieces sit on the ground
    The delivered canvases leave 7-20 empty pixels under some pieces (giant mushrooms, pylons, the pool, burrows,
@@ -80,20 +43,14 @@ function caveBottomPad(o){
   }catch(e){ pad=0; }
   return (CAVE_PAD[o.nm]=Math.max(0, pad-1));
 }
-var _drawCaveArtStand = drawCaveArt;
-drawCaveArt = function(o, cx, bottom, alpha, flipX){
-  if(o && o.nm && o.nm!=='kobold-crate' && CAVE_STANDING.test(o.nm)) bottom += caveBottomPad(o)*caveArtScale(o);
-  if(o && o.nm && /^cl-cave-pearls/.test(o.nm)) alpha *= 0.3;   /* 2026-09-19: faint, like the lichen - full strength they read as stamps */
-  return _drawCaveArtStand(o, cx, bottom, alpha, flipX);
-};
+
 
 /* ---------------------------------------------------------------- 5. the Caverns were too bright
    Every glowing mushroom, crystal, pool and glowworm adds a light of its own on top of the hero's, and they
    overlapped into a wash. In the Caverns the scenery lights burn at 55% strength and 85% reach; the hero's own
    light (always the first in the list) is left alone. */
-var _gatherLightsCave = gatherLights;
-gatherLights = function(now, prp){
-  var L=_gatherLightsCave.apply(this, arguments);
+
+function shadeCavernLights(L, now, prp){
   if(typeof inCaverns==='function' && inCaverns() && L && L.length) for(var i=1;i<L.length;i++){
     /* 2026-09-22 (Justin): "the light sources in the caverns are too bright". A later pass had turned the scenery
        lights UP (x1.35 strength, x1.25 reach) and the crystals washed whole chambers to grey. Back to the intent
@@ -102,31 +59,20 @@ gatherLights = function(now, prp){
     if(emitted){ L[i].s*=0.55; L[i].r*=0.85; }
   }
   return L;
-};
+
+}
 
 /* ---------------------------------------------------------------- 6. no lone moss, nothing wall-bound out in the open
    Glow moss only reads as moss in a streak; a single tuft (a streak that could not grow, or a Dungeon vine
    converted on the way in) is taken out after the floor is built. */
-var _generateMossFix = generate;
-generate = function(seed){
-  var r=_generateMossFix.apply(this, arguments);
-  if(typeof inCaverns==='function' && inCaverns() && typeof props!=='undefined'){
-    var moss=props.filter(function(p){ return /^cl-glow-moss/.test(p.name); });
-    var lone=moss.filter(function(p){ return !moss.some(function(q){ return q!==p && Math.abs(q.x-p.x)+Math.abs(q.y-p.y)===1; }); });
-    /* crystals, rubble and small mushrooms only where the floor meets the rock (converted Dungeon props included) */
-    var loose=props.filter(function(p){ return /^cl-(crystal-shards|rubble|small-mushrooms)/.test(p.name) && ![[1,0],[-1,0],[0,1],[0,-1]].some(function(d){ return isWallLike(at(p.x+d[0],p.y+d[1])); }); });
-    lone=lone.concat(loose);
-    if(lone.length){ props=props.filter(function(p){ return lone.indexOf(p)<0; }); if(typeof rebuildPropGrid==='function') rebuildPropGrid(); }
-  }
-  return r;
-};
+
 
 /* ---------------------------------------------------------------- 7. pools lie in the ground; big pieces stand alone
    The glowing pool is a hole in the floor, but it was drawn like a standing piece over a contact shadow, so it
    hovered. It is drawn centred flat in its footprint now, with no shadow. And the big set pieces are interesting
    enough on their own: no small clusters or floor decals within a tile of them. */
-var _drawPropSurfacePool = drawPropSurface;
-drawPropSurface = function(p, px, py, alpha){
+
+function drawGlowingPoolProp(p, px, py, alpha){
   if(p && /^glowing-pool/.test(p.name) && typeof caveArt==='function'){
     var o=caveArt(p.name); if(o){
       var w=p.w||2, h=p.h||2, X=(p.x-camX)*TS, Y=(p.y-camY)*TS, s=TS/64, artH=o.sh*s;
@@ -136,35 +82,11 @@ drawPropSurface = function(p, px, py, alpha){
       return true;
     }
   }
-  return _drawPropSurfacePool.apply(this, arguments);
-};
+  return false;
+
+}
 var CAVE_BIG = /^(glowing-pool|geode|mushroom-pair|stalagmite-group|worm-burrow|mine-support|giant-mushroom|pylon|stalagmite-tall)/;
-var _generateBigClear = generate;
-generate = function(seed){
-  var r=_generateBigClear.apply(this, arguments);
-  if(typeof inCaverns==='function' && inCaverns() && typeof props!=='undefined'){
-    /* this floor's theme wins over pieces that arrived another way (converted Dungeon props) */
-    var TH=floorMeta.caveTheme;
-    if(TH){
-      var themeTall=TH.tall.map(function(t){ return t[0]; });
-      props=props.filter(function(p){
-        var m=p.name.match(/^cl-(small-mushrooms|crystal-shards|rubble|cave-pearls|lost-miner)/);
-        if(m) return TH.clusters.indexOf(m[1])>=0 || (m[1]==='lost-miner' && TH.miner);
-        var tl=p.name.match(/^(stalagmite-tall|giant-mushroom|pylon|stalagmite-group|geode|mushroom-pair|mine-cart|mine-support)/);
-        if(tl) return themeTall.indexOf(tl[1])>=0;
-        return true;
-      });
-      if(typeof rebuildPropGrid==='function') rebuildPropGrid();
-    }
-    var bigs=props.filter(function(p){ return CAVE_BIG.test(p.name); });
-    function nearBig(x,y){ return bigs.some(function(b){ var w=b.w||1, h=b.h||1; return x>=b.x-1 && x<=b.x+w && y>=b.y-1 && y<=b.y+h; }); }
-    var before=props.length;
-    props=props.filter(function(p){ return !(/^cl-/.test(p.name) && nearBig(p.x,p.y)); });
-    if(props.length!==before && typeof rebuildPropGrid==='function') rebuildPropGrid();
-    if(floorMeta.caveDeco) floorMeta.caveDeco.decals=floorMeta.caveDeco.decals.filter(function(d){ return !nearBig(d.x,d.y); });
-  }
-  return r;
-};
+
 
 /* ---------------------------------------------------------------- 8. the Maw's burrow mounds are heaved out of the floor (2026-09-19)
    Justin: the mounds on floor 15 sat on the stone like a pile set down on it. Under each one now: churned dark earth
@@ -209,8 +131,7 @@ function drawMawSkirts(){
     ctx.restore();
   });
 }
-var _drawSurfaceDecoMaw = drawSurfaceDeco;
-drawSurfaceDeco = function(){ var r=_drawSurfaceDecoMaw.apply(this, arguments); drawMawSkirts(); return r; };
+
 
 /* ---------------------------------------------------------------- 9. pieces with their own base cast no shadow (2026-09-19)
    Justin: "the firepit and the crystal here in the cavern have a shadow underneath and look like they are floating".
@@ -236,16 +157,54 @@ function caveBaseWide(o){
   }catch(e){ wide=false; }
   return (CAVE_BASE[o.nm]=wide);
 }
-(function(){
-  var _drawPropSurfaceBase = drawPropSurface;
-  drawPropSurface = function(p, px, py, alpha){
-    if(!inCaverns() || p.flat || !(p.cave || (typeof CAVE_PIECES!=='undefined' && CAVE_PIECES[p.name]))) return _drawPropSurfaceBase(p, px, py, alpha);
+function drawWideCaveProp(p, px, py, alpha){
+    if(!inCaverns() || p.flat || !(p.cave || (typeof CAVE_PIECES!=='undefined' && CAVE_PIECES[p.name]))) return false;
     var o=typeof caveArt==='function' ? caveArt(p.name) : null;
-    if(!o || !caveBaseWide(o)) return _drawPropSurfaceBase(p, px, py, alpha);
+    if(!o || !caveBaseWide(o)) return false;
     var w=p.w||1, h=p.h||1, X=(p.x-camX)*TS, Y=(p.y-camY)*TS;
     var flip=hash2(p.x,p.y,5)<0.5 && !/burrow|pool|mine-support/.test(p.name);
     drawCaveArt(o, X+w*TS/2, Y+h*TS-TS*0.02, alpha, flip);   /* no ellipse: the art brings its own footing */
     if(typeof flashOf==='function' && p.br){ var fl=flashOf(p); if(fl>0){ ctx.save(); ctx.globalAlpha=fl*0.6; ctx.fillStyle='#FFF'; ctx.fillRect(X+TS*0.25, Y+TS*0.25, TS*0.5, TS*0.5); ctx.restore(); } }
     return true;
-  };
-})();
+
+}
+
+/* Named floor-generation stages; ordered by generation-adapter.js. */
+function trimGeneratedCavernClusters(seed){
+
+  if(typeof inCaverns==='function' && inCaverns() && typeof props!=='undefined'){
+    var moss=props.filter(function(p){ return /^cl-glow-moss/.test(p.name); });
+    var lone=moss.filter(function(p){ return !moss.some(function(q){ return q!==p && Math.abs(q.x-p.x)+Math.abs(q.y-p.y)===1; }); });
+    /* crystals, rubble and small mushrooms only where the floor meets the rock (converted Dungeon props included) */
+    var loose=props.filter(function(p){ return /^cl-(crystal-shards|rubble|small-mushrooms)/.test(p.name) && ![[1,0],[-1,0],[0,1],[0,-1]].some(function(d){ return isWallLike(at(p.x+d[0],p.y+d[1])); }); });
+    lone=lone.concat(loose);
+    if(lone.length){ props=props.filter(function(p){ return lone.indexOf(p)<0; }); if(typeof rebuildPropGrid==='function') rebuildPropGrid(); }
+  }
+  return;
+}
+
+function clearGeneratedCavernProps(seed){
+
+  if(typeof inCaverns==='function' && inCaverns() && typeof props!=='undefined'){
+    /* this floor's theme wins over pieces that arrived another way (converted Dungeon props) */
+    var TH=floorMeta.caveTheme;
+    if(TH){
+      var themeTall=TH.tall.map(function(t){ return t[0]; });
+      props=props.filter(function(p){
+        var m=p.name.match(/^cl-(small-mushrooms|crystal-shards|rubble|cave-pearls|lost-miner)/);
+        if(m) return TH.clusters.indexOf(m[1])>=0 || (m[1]==='lost-miner' && TH.miner);
+        var tl=p.name.match(/^(stalagmite-tall|giant-mushroom|pylon|stalagmite-group|geode|mushroom-pair|mine-cart|mine-support)/);
+        if(tl) return themeTall.indexOf(tl[1])>=0;
+        return true;
+      });
+      if(typeof rebuildPropGrid==='function') rebuildPropGrid();
+    }
+    var bigs=props.filter(function(p){ return CAVE_BIG.test(p.name); });
+    function nearBig(x,y){ return bigs.some(function(b){ var w=b.w||1, h=b.h||1; return x>=b.x-1 && x<=b.x+w && y>=b.y-1 && y<=b.y+h; }); }
+    var before=props.length;
+    props=props.filter(function(p){ return !(/^cl-/.test(p.name) && nearBig(p.x,p.y)); });
+    if(props.length!==before && typeof rebuildPropGrid==='function') rebuildPropGrid();
+    if(floorMeta.caveDeco) floorMeta.caveDeco.decals=floorMeta.caveDeco.decals.filter(function(d){ return !nearBig(d.x,d.y); });
+  }
+  return;
+}

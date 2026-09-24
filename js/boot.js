@@ -2,16 +2,10 @@
    boot.js - wire the sandbox, add screen shake, and start at the title screen.
    ========================================================================== */
 
-(function(){
-  /* screen shake wraps the renderer */
-  var baseDraw = draw;
-  window.draw = function(){
-    if(SHAKE>0.5 && !ANIM.reduce){
-      ctx.save(); ctx.translate((Math.random()-0.5)*SHAKE, (Math.random()-0.5)*SHAKE); baseDraw(); ctx.restore();
-      SHAKE*=0.86;
-    } else { SHAKE=0; baseDraw(); }
-  };
-
+var GAME_STARTED=false;
+function startGame(){
+  if(GAME_STARTED)return;
+  GAME_STARTED=true;
   /* sandbox: replace the old preset picker with a new-character button and testing tools */
   var pre=$('preset'); if(pre && pre.parentNode) pre.parentNode.style.display='none';
   var sb=document.querySelector('#mSand .sandbox');
@@ -80,8 +74,9 @@
   requestAnimationFrame(fxTick);
   setTimeout(resize, 150);
   /* load every sprite sheet before the game shows, so nothing flashes up as a placeholder square */
+  FoteLifecycle.ready();
   preloadArt(openTitle);
-})();
+}
 
 /* A failed or undecoded required atlas must never reveal an incomplete scene. */
 function preloadArt(done){

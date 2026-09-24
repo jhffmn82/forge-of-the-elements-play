@@ -49,14 +49,10 @@
 
 /* the hotbar's icons are painted large and scaled down by the CSS above, so they stay crisp at any slot size
    (touchui.js does the same at 72 for finger-sized slots) */
-var _paintArtHud = paintArt;
-paintArt = function(el, group, name, size){
-  if(el && el.closest && el.closest('#hotbar') && (size||32) < 64) size = 64;
-  return _paintArtHud(el, group, name, size);
-};
+
 
 /* hover details for hotbar slots */
-function hotbarCard(i){
+function buildHotbarCard(i){
   var s=player.hotbar && player.hotbar[i];
   if(!s) return '<div class="nm">Empty slot '+(i+1)+'</div><div class="hint">Drag an ability, prayer or bag item here.</div>';
   if(s.type==='ability'){
@@ -80,34 +76,10 @@ function hotbarCard(i){
   if(s.ref) return bagCard(s.ref)+'<div class="hint">Key '+(i+1)+'</div>';
   return '';
 }
-var _abilityBarHud = abilityBar;
-abilityBar = function(){
-  _abilityBarHud();
-  if(!$('hotbar') || !player || !player.hotbar) return;
-  $('hotbar').querySelectorAll('.slot[data-i]').forEach(function(b){
-    var i=+b.getAttribute('data-i');
-    b.removeAttribute('title');
-    hoverCard(b, function(){ return hotbarCard(i); });
-    /* cooldowns and charges still show as a small number, since the text line is hidden */
-    var s=player.hotbar[i], c=b.querySelector('.c'), txt=c ? c.textContent : '';
-    if(s && (/turns/.test(txt) || s.type==='amulet')){
-      var m=txt.match(/(\d+)\s*turns/), a=s.type==='amulet' && player.amulet;
-      var count=a ? (a.charges||0)+'/'+(typeof amuletCap==='function' ? amuletCap(a) : AMULET_MAX_CHARGES) : m && m[1];
-      if(count!==null && count!==false){ var d=document.createElement('span'); d.className='cdn'; d.textContent=count; b.appendChild(d); }
-    }
-  });
-};
+
 
 /* compact chips: "Fed" needs no label (the meter says it; Hungry and Starving still show), motes get a tighter chip */
-var _updateUIHud = updateUI;
-updateUI = function(){
-  var r=_updateUIHud.apply(this, arguments);
-  var hud=$('hud2'); if(!hud) return r;
-  var hc=hud.querySelector('.chip[title="Hunger"]');
-  if(hc && hc.firstChild && hc.firstChild.nodeType===3 && /^Fed\s*$/.test(hc.firstChild.nodeValue)){ hc.removeChild(hc.firstChild); hc.title='Fed'; }
-  var mc=hud.querySelector('.chip[title="Motes"]'); if(mc) mc.classList.add('motechip');
-  return r;
-};
+
 
 /* ---------------------------------------------------------------- icon backgrounds (2026-09-20)
    Justin: "all of the icons need a background color (thematic) that provides contrast to the icon... I'd assign each
@@ -166,11 +138,3 @@ function iconChipFor(el, name){
   slot.style.borderColor=bg[1];
   slot.style.boxShadow='inset 0 0 0 1px rgba(0,0,0,0.35)';
 }
-var _paintArtChip = paintArt;
-paintArt = function(el, group, name, size){
-  var r=_paintArtChip(el, group, name, size);
-  try{
-    if(el && el.classList && el.classList.contains('ico') && group!=='cast') iconChipFor(el, name);
-  }catch(e){}
-  return r;
-};

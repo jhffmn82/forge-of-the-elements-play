@@ -153,9 +153,9 @@ function charHTML(){
   var gear=[];
   (player.rings||[]).forEach(function(r){ if(r) gear.push([gearName(r), r.unid ? 'Strength unknown until it is identified.' : (RINGS[r.ring].desc+' '+ringLine(r))]); });
   var w=player.weapon;
-  if(w && !w.unarmed && (w.note || w.enchant)) gear.push([gearName(w), (w.note||'')+(w.enchant && !w.unid ? ' &middot; '+ENCHANT_TEXT.weapon[w.enchant] : '')]);
+  if(w && !w.unarmed && (w.note || w.enchant)) gear.push([gearName(w), (w.note||'')+(w.enchant && !w.unid ? ' &middot; '+enchantLive('weapon',w.enchant) : '')]);
   var ar=player.armorItem;
-  if(ar && ar.enchant && !ar.unid) gear.push([gearName(ar), ENCHANT_TEXT.armor[ar.enchant]]);
+  if(ar && ar.enchant && !ar.unid) gear.push([gearName(ar), enchantLive('armor',ar.enchant)]);
   var of=player.off;
   if(of && of!==EMPTY_OFF && of.enchant && typeof offKind==='function' && offKind() && ENCHANT_TEXT[offKind()]) gear.push([gearName(of), (typeof enchantLive==='function' ? enchantLive(offKind(), of.enchant) : ENCHANT_TEXT[offKind()][of.enchant])]);
   if(gear.length){
@@ -274,12 +274,6 @@ function wireEquip(root){
 }
 
 /* ---------------------------------------------------------------- take over the two panes */
-var _panesSheets = panes;
-panes = function(){
-  if(openSheet==='Char' && $('mChar')){ $('mChar').innerHTML=charHTML(); wireChar($('mChar')); return; }
-  if(openSheet==='Equip' && $('mEquip')){ $('mEquip').innerHTML=equipHTML(); wireEquip($('mEquip')); return; }
-  return _panesSheets();
-};
 
 
 /* the controls sheet is called Options */

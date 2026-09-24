@@ -67,11 +67,3 @@ window.addEventListener('click', function(ev){
 })();
 
 /* monsters don't step onto a body that is still falling */
-var _occupiedPacing = occupied;
-occupied = function(x,y){
-  if(_occupiedPacing(x,y)) return true;
-  if(!fx || !fx.length) return false;
-  var now=performance.now();
-  for(var i=0;i<fx.length;i++){ var f=fx[i]; if(f.k==='d' && f.e && f.e.x===x && f.e.y===y && now < f.t0+f.dur) return true; }
-  return false;
-};

@@ -91,8 +91,7 @@ function objGlintsFlush(){
   });
   ctx.restore(); OBJ_GLINTS.length=0;
 }
-var _drawBeaconsGlint = drawBeacons;
-drawBeacons = function(){ objGlintsFlush(); return _drawBeaconsGlint.apply(this, arguments); };
+
 
 /* ---------------------------------------------------------------- drawing the effects */
 function objFxDraw(o, dx, dy, w, h, alpha, flip){
@@ -171,32 +170,26 @@ function objFxDraw(o, dx, dy, w, h, alpha, flip){
 }
 
 /* ---------------------------------------------------------------- hooks */
-var _objArtFx = objArt;
-objArt = function(group, name){ var o=_objArtFx(group, name); if(o) o.nm=name; return o; };
-var _drawObjFx = drawObj;
-drawObj = function(o, px, py, opt){
-  var r=_drawObjFx(o, px, py, opt);
-  if(r && o && o.nm && objFxFor(o.nm)){
+
+
+function drawObjectAnimation(o, px, py, opt){
+  if(o && o.nm && objFxFor(o.nm)){
     opt=opt||{};
     var fit=(opt.fit||0.92)*TS, s=Math.min(fit/o.sw, fit/o.sh); if(opt.fill) s=Math.max(TS/o.sw, TS/o.sh);
     var w=o.sw*s, h=o.sh*s*(1+(opt.sy||0)), dx=px+(TS-w)/2, dy= opt.feet ? py+TS*(opt.base||0.96)-h : py+(TS-h)/2;
     objFxDraw(o, dx, dy, w, h, opt.alpha===undefined?1:opt.alpha, !!opt.flip);
   }
-  return r;
-};
-if(typeof caveArt==='function'){
-  var _caveArtFx = caveArt;
-  caveArt = function(name){ var o=_caveArtFx(name); if(o) o.nm=name; return o; };
-  var _drawCaveArtFx = drawCaveArt;
-  drawCaveArt = function(o, cx, bottom, alpha, flipX){
-    var r=_drawCaveArtFx(o, cx, bottom, alpha, flipX);
+
+
+}
+function drawCaveAnimation(o, cx, bottom, alpha, flipX){
     if(o && o.nm && objFxFor(o.nm)){
       var s=caveArtScale(o), left=cx-o.fullW*s/2, top=bottom-o.fullH*s, dx=left+o.ox*s, w=o.sw*s;
       if(flipX) dx = 2*cx - (dx+w);
       objFxDraw(o, dx, top+o.oy*s, w, o.sh*s, alpha, !!flipX);
     }
-    return r;
-  };
+
+
 }
 /* the new candle-table art paints its own candle: the live flame finds the painted one instead of a fixed spot */
 if(typeof FLAME_AT!=='undefined') delete FLAME_AT['table-candle'];

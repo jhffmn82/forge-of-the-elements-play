@@ -75,11 +75,8 @@ function packArt(name){
   return {img:img, sx:b[0]+b[2], sy:b[1]+b[3], sw:Math.max(1,b[4]), sh:Math.max(1,b[5]), fullW:b[6], fullH:b[7], ox:b[2], oy:b[3], nm:name};
 }
 /* the pack's pieces come straight from the sheet (no regrade), and the plane sheet answers setArt too */
-var _setArtPack = setArt;
-setArt = function(name){
-  if(PACK_CRYPT[name] || PACK_PLANE[name]){ var o=packArt(name); if(o) return o; }
-  return _setArtPack(name);
-};
+
+
 /* the plane stones are painted in each plane's palette now: no retint */
 if(typeof PT_STONE_PROPS!=='undefined') for(var _k in PT_STONE_PROPS) delete PT_STONE_PROPS[_k];
 
@@ -185,8 +182,8 @@ function packDrawOutcrop(p, alpha){
   return true;
 }
 
-var _drawPropSurfacePack = drawPropSurface;
-drawPropSurface = function(p, px, py, alpha){
+
+function drawPackedProp(p, px, py, alpha){
   if(p.name==='crypt-recess' && packCryptOn() && packDrawRecess(p, alpha)) return true;
   if(p.name==='pt-outcrop' && packPlaneOn() && packDrawOutcrop(p, alpha)) return true;
   var nm=packNameFor(p);
@@ -196,15 +193,16 @@ drawPropSurface = function(p, px, py, alpha){
     if(p.soulSmoke && typeof drawSoulSmoke==='function') drawSoulSmoke(p, now);
     return true;
   }
-  return _drawPropSurfacePack(p, px, py, alpha);
-};
+  return false;
+
+}
 
 /* the older set art (soul urns, single urns, doors) keeps its drawing, and now reports its rect for effects too */
-var _drawSetPiecePack = drawSetPiece;
-drawSetPiece = function(p, alpha){
+
+function drawSetPiece(p,alpha){
   var nm=packNameFor(p);
   if(nm) return packDraw(p, nm, alpha);
-  var r=_drawSetPiecePack(p, alpha);
+  var r=drawSetSprite(p, alpha);
   if(r && typeof objFxDraw==='function' && objFxFor(p.name)){
     var o=setArt(p.name);
     if(o && !p.half){
@@ -214,50 +212,22 @@ drawSetPiece = function(p, alpha){
     }
   }
   return r;
-};
+
+}
 
 /* ---------------------------------------------------------------- the procedural stand-ins give way to the art
    cryptprops.js turns grave posts into pedestals, and sarcophagi / coffins / pillars into 2-cell sarcophagi or
    pedestals. Coffins and pillars now keep their own art; a pedestal that stood in for a grave post, a pillar or a
    sarcophagus with no room for two cells takes that piece's name back. Half the coffins still become 2-cell tombs. */
-var _addPropPack = addProp;
-addProp = function(x, y, name, extra){
-  if(!packCryptOn()) return _addPropPack(x, y, name, extra);
-  var mapped=(typeof CRYPT_PROP!=='undefined' && CRYPT_PROP[name]) || name;
-  if((mapped==='grave-pillar' || (mapped==='coffin' && rng()<0.5)) && packArt(mapped) && !(extra && extra.cp))   /* half the coffins stay coffins: a row of them mixes with tombs */
-    return _addPropPack(x, y, name, Object.assign({}, extra||{}, {cp:true}));   /* cp: skip the stand-in */
-  var p=_addPropPack(x, y, name, extra);
-  if(p && p.name==='pedestal'){
-    if(name==='grave-post' && packArt('grave-post')){ p.name='grave-post'; p.set=true; p.w=1; p.h=1; p.b=1; }
-    else if((mapped==='sarcophagus' || mapped==='sarcophagus-open' || mapped==='coffin') && packArt(mapped)){ p.name=mapped; p.b=1; }
-  }
-  return p;
-};
+
 
 /* ---------------------------------------------------------------- tall pieces hide whoever stands behind them
    (props are drawn before the creatures; this redraws a piece rising above its footprint when someone is behind it,
    the way cavefixes.js does for the Caverns) */
-function packOccluders(){
-  if(typeof props==='undefined' || !props.length) return;
-  var bodies=ents.filter(function(e){ return e.hp>0 && (e===player || revealAll || vis[idxOf(e.x,e.y)]); });
-  if(!bodies.length) return;
-  props.forEach(function(p){
-    if(p.flat || p.wall || !(revealAll||seen[idxOf(p.x,p.y)])) return;
-    var nm=packNameFor(p); if(!nm) return;
-    var o=packArt(nm); if(!o) return;
-    var w=p.w||1, h=p.h||1, rise=Math.ceil((o.fullH-o.oy)/64 - 0.25) - h;
-    if(rise<1) return;
-    var hit=bodies.some(function(e){ var rp=renderPos(e); return rp.x>p.x-0.8 && rp.x<p.x+w-0.2 && rp.y<p.y-0.05 && rp.y>=p.y-rise-0.5; });
-    if(!hit) return;
-    drawPropSurface(p, (p.x-camX)*TS, (p.y-camY)*TS, (revealAll||vis[idxOf(p.x,p.y+h-1)])?1:0.45);
-  });
-}
-var _drawOccludersPack = typeof drawOccluders==='function' ? drawOccluders : null;
-drawOccluders = function(now){ if(_drawOccludersPack) _drawOccludersPack(now); if(packCryptOn() || packPlaneOn()) packOccluders(); };
+
 
 /* the planes' crystal groups used to twinkle with their own sparkle; the pack's crystals twinkle through objanim */
-var _ptSparklePack = typeof ptSparkle==='function' ? ptSparkle : null;
-if(_ptSparklePack) ptSparkle = function(p, X, Y, W, H, alpha){ if(p.name==='pt-cluster' && packPlaneCluster(p)) return; return _ptSparklePack(p, X, Y, W, H, alpha); };
+
 
 /* ---------------------------------------------------------------- new Crypt scenery on ordinary floors
    The designer's placement rules (2026-09-19, first set for the Caverns scatter):
@@ -371,15 +341,7 @@ decoratePlain = function(r){
   if(packCryptOn() && !r.hall && packArt('candles-1')) packDecorateRoom(r);
 };
 /* the urn chamber: candles either side of the grave slab under the niche */
-if(typeof buildUrnChamber==='function'){
-  var _buildUrnChamberPack = buildUrnChamber;
-  buildUrnChamber = function(r){
-    _buildUrnChamberPack(r);
-    if(!packCryptOn() || !packArt('candles-1')) return;
-    var rec=props.filter(function(p){ return p.name==='crypt-recess' && p.x>=r.x && p.x<r.x+r.w && p.y===r.y-1; })[0];
-    if(rec) [-1,1].forEach(function(d){ if(packFloorFree(rec.x+d, r.y) && rng()<0.75) addProp(rec.x+d, r.y, 'candles-'+(1+Math.floor(rng()*4)), {keep:false}); });
-  };
-}
+
 /* Morty's hall: candles in the top chapel, cobwebs and plaques in the side chapels (the dais and the monument stand alone) */
 if(typeof stampCryptHall==='function'){
   var _stampCryptHallPack = stampCryptHall;
@@ -465,12 +427,8 @@ function packPlacementPass(){
   props.forEach(function(p){ if(packKindOf(p)==='candle') packLight(p.x, p.y+0.2, '#FFC878', 2.2, 0.32); });
   if(movedBlocker && typeof propsKeepOpen==='function' && player) propsKeepOpen();
 }
-var _generatePackRules = generate;
-generate = function(seed){
-  var r=_generatePackRules.apply(this, arguments);
-  if(packCryptOn() && typeof props!=='undefined' && typeof rebuildPropGrid==='function') packPlacementPass();
-  return r;
-};
+
+
 /* the planes: the rune stones and the sun dais stand alone too - plants, small crystals and moss or grass within a tile
    of them are cleared (a light that went with a removed glow-mushroom goes with it) */
 function packPlaneClear(){
@@ -486,11 +444,24 @@ function packPlaneClear(){
     for(var y=q.y-1; y<=q.y+(q.h||1); y++) for(var x=q.x-1; x<=q.x+(q.w||1); x++) if(inb(x,y) && ground[idxOf(x,y)]) ground[idxOf(x,y)]=0;
   });
 }
-if(typeof buildPlaneFloor==='function'){
-  var _buildPlaneFloorPack = buildPlaneFloor;
-  buildPlaneFloor = function(el, seed){
-    var r=_buildPlaneFloorPack.apply(this, arguments);
+
+
+/* Named floor-generation stages; ordered by generation-adapter.js. */
+function placeGeneratedCryptProps(seed){
+
+  if(packCryptOn() && typeof props!=='undefined' && typeof rebuildPropGrid==='function') packPlacementPass();
+  return;
+}
+
+/* Named travel and entry stages; ordered by transition-adapter.js. */
+function clearBuiltPlaneProps(el,seed){
     if(packPlaneOn()){ packPlaneClear(); if(typeof draw==='function') draw(); }
-    return r;
-  };
+    return;
+  }
+
+/* Named floor-content helpers; selected by content-adapter.js. */
+function decorateUrnChamber(r){
+    if(!packCryptOn() || !packArt('candles-1')) return;
+    var rec=props.filter(function(p){ return p.name==='crypt-recess' && p.x>=r.x && p.x<r.x+r.w && p.y===r.y-1; })[0];
+    if(rec) [-1,1].forEach(function(d){ if(packFloorFree(rec.x+d, r.y) && rng()<0.75) addProp(rec.x+d, r.y, 'candles-'+(1+Math.floor(rng()*4)), {keep:false}); });
 }

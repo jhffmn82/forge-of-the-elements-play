@@ -3,6 +3,11 @@ var FOTE_VERSION = 'Beta 1.1';
 /* Keep newest first; describe only changes already present in this build. */
 var FOTE_PATCHES = [
   {version:'Beta 1.1', notes:[
+    "Rebuilt the core engine to make combat, equipment, summons and turn timing more consistent while preserving the existing interface and artwork.",
+    "Improved Caverns terrain rendering to reduce stutter when exploring new areas.",
+    "Unified status-effect rules so frost counts as a slow for Unstoppable and webs count as roots for abilities that benefit from rooted enemies.",
+    "Strengthened save validation and recovery while retaining support for existing characters and explored floors.",
+    "Fixed repeated hits against multipart enemies from a single area attack, surfaced Maw rendering, and canceled Echo casts creating extra sigils.",
     "Softened hotbar background colors so ability artwork stands out more clearly.",
     "Strengthened Shadow Swarm and made its health, damage and lifetime scale with Spell Power. Its shades now share the darker, translucent summon artwork and benefit from Murk’s Grave Strength.",
     "Barricade inspect cards now describe flammable wood instead of a nearby mechanism.",

@@ -37,34 +37,20 @@ function eatFoodBuff(fd){
   if(typeof sparkleFx==='function') sparkleFx(player.x, player.y, fd.buff==='might'||fd.buff==='fireward' ? 'fire' : fd.buff==='manaflow'||fd.buff==='shadeward' ? 'magic' : 'heal', 18);
 }
 /* the buffs themselves */
-var _deriveFood = derive;
-derive = function(p){ _deriveFood(p); if(p===player && p.buffs && p.buffs.might>0 && p.dmg){ p.dmg=[Math.round(p.dmg[0]*1.2), Math.round(p.dmg[1]*1.2)]; } };
-var _resistMultFood = resistMult;
-resistMult = function(target, type){
-  var m=_resistMultFood(target, type);
-  if(target!==player || !player.buffs || type==='phys') return m;
-  var B=player.buffs;
-  if(B.poisonward>0 && type==='poison') m=0;
-  if(B.shadeward>0 && type==='dark') m*=0.5;
-  if(B.stormward>0 && type==='lightning') m*=0.5;
-  if(B.fireward>0 && type==='fire') m*=0.5;
-  if(B.starward>0 && type!=='magic') m*=0.8;
-  return m;
-};
-var _endTurnFood = endTurn;
-endTurn = function(){
-  var r=_endTurnFood.apply(this, arguments);
+
+
+function turnFoodRecovery(context){
   if(player && player.buffs && player.buffs.regeneration>0 && player.hp>0 && player.hp<player.maxhp){
-    var h=Math.max(1, Math.round(player.maxhp*0.01)); healPlayer(h);
+    var h=Math.max(1, Math.round(player.maxhp*0.01)); healPlayer(h*context.cost/100);
   }
-  return r;
-};
-var _gatherLightsFood = gatherLights;
-gatherLights = function(now, prp){
-  var L=_gatherLightsFood(now, prp);
+
+}
+
+function addStormwardLight(L, now, prp){
   if(player && player.buffs && player.buffs.stormward>0 && prp) L.push({x:prp.x, y:prp.y, c:hexRGB('#9FE8FF'), r:8, s:0.3, tx:player.x, ty:player.y});
   return L;
-};
+
+}
 /* the food buffs in the status bar (stand-in icons until the food art arrives) */
 if(typeof STATUS_INFO!=='undefined') Object.assign(STATUS_INFO, {
   regeneration:{name:'Regeneration', icon:'ic-heal', d:'You heal 1% of your HP each turn.'},

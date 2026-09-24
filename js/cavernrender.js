@@ -24,23 +24,21 @@ PT_MAT.cavern = {
   moss:[[38,92,82],[54,120,104],[28,66,62],[88,186,158]],
   rockHi:'#8A8078', rockMid:'#6A625C', rockLo:'#4A4440', rockEdge:'#221E1E', motif:'none', jag:1   /* broken, rocky edges (planeterrain.js ptJag) */
 };
-var _ptMatCave = ptMat;
-ptMat = function(){ var m=_ptMatCave(); if(m) return m; return (typeof map!=='undefined' && map && inCaverns()) ? PT_MAT.cavern : null; };
+
 
 /* ---------------------------------------------------------------- the sheet */
-function caveArt(name){
+function packedCaveArt(name){
   var g=AS.map && AS.map.cave; if(!g || !g.items[name]) return null;
   var img=atl('map-cave.png'); if(!img) return null;
   var b=g.items[name];
   return {img:img, sx:b[0]+b[2], sy:b[1]+b[3], sw:Math.max(1,b[4]), sh:Math.max(1,b[5]), ox:b[2], oy:b[3], fullW:b[6], fullH:b[7]};
 }
 /* setArt (js/cryptset.js) finds cave pieces too, so drawSetPiece / setArt('worm-burrow-open') work for anyone */
-var _setArtCave = setArt;
-setArt = function(name){ var o=_setArtCave(name); if(o) return o; return caveArt(name); };
+
 
 /* draw a piece at its natural size: the canvas's bottom centre on the footprint's bottom centre */
 function caveArtScale(o){ return TS/64*(o.nm && /^(giant-mushroom|mushroom-pair)/.test(o.nm)?.65:1); }
-function drawCaveArt(o, cx, bottom, alpha, flipX){
+function drawCaveSprite(o, cx, bottom, alpha, flipX){
   if(o.nm==='kobold-crate'){
     ctx.save();ctx.globalAlpha=alpha;ctx.imageSmoothingEnabled=false;
     var cs=Math.min(TS*.46/o.sw,TS*.53/o.sh), cw=o.sw*cs,ch=o.sh*cs;
@@ -55,10 +53,10 @@ function drawCaveArt(o, cx, bottom, alpha, flipX){
   ctx.drawImage(o.img, o.sx, o.sy, o.sw, o.sh, left+o.ox*s, top+o.oy*s, o.sw*s, o.sh*s);
   ctx.restore();
 }
-var _drawPropSurfaceCave = typeof drawPropSurface==='function' ? drawPropSurface : null;
-drawPropSurface = function(p, px, py, alpha){
+
+function drawCaveProp(p, px, py, alpha){
   var o=(p.cave || CAVE_PIECES[p.name]) ? caveArt(p.name) : null;
-  if(!o) return _drawPropSurfaceCave ? _drawPropSurfaceCave(p, px, py, alpha) : false;
+  if(!o) return false;
   var w=p.w||1, h=p.h||1, X=(p.x-camX)*TS, Y=(p.y-camY)*TS, flip=hash2(p.x,p.y,5)<0.5 && !/burrow|pool|mine-support/.test(p.name);
   if(p.flat){
     /* clusters and bedrolls: centred on their tile */
@@ -68,66 +66,11 @@ drawPropSurface = function(p, px, py, alpha){
   drawCaveArt(o, X+w*TS/2, Y+h*TS-TS*0.02, alpha, flip);
   if(typeof flashOf==='function' && p.br){ var fl=flashOf(p); if(fl>0){ ctx.save(); ctx.globalAlpha=fl*0.6; ctx.fillStyle='#FFF'; ctx.fillRect(X+TS*0.25, Y+TS*0.25, TS*0.5, TS*0.5); ctx.restore(); } }
   return true;
-};
+
+}
 
 /* ---------------------------------------------------------------- chasms */
 function caveLand(x, y){ if(!inb(x,y)) return false; var t=at(x,y); return t!==CHASM && t!==BRIDGE && !isWallLike(t); }
-function caveVoid(x, y){ if(!inb(x,y)) return false; var t=at(x,y); return t===CHASM || t===BRIDGE; }
-/* the lip art's ground is painted a warmer brown than the cave floor: regrade it onto the floor's own colour by
-   brightness (the black void stays black), once per piece */
-var CAVE_TINT = {};
-function caveArtTinted(name){
-  if(CAVE_TINT[name]) return CAVE_TINT[name];
-  var o=caveArt(name); if(!o) return null;
-  var c=document.createElement('canvas'); c.width=o.fullW; c.height=o.fullH; var g=c.getContext('2d');
-  g.drawImage(o.img, o.sx, o.sy, o.sw, o.sh, o.ox, o.oy, o.sw, o.sh);
-  var im=g.getImageData(0,0,c.width,c.height), D=im.data, F=PT_MAT.cavern.floor, ref=112;
-  for(var i=0;i<D.length;i+=4){
-    if(!D[i+3]) continue;
-    var l=0.3*D[i]+0.59*D[i+1]+0.11*D[i+2]; if(l<6) continue;
-    var k=l/ref; D[i]=Math.min(255, F[0]*k); D[i+1]=Math.min(255, F[1]*k); D[i+2]=Math.min(255, F[2]*k);
-  }
-  g.putImageData(im,0,0);
-  return (CAVE_TINT[name]={img:c, sx:0, sy:0, sw:c.width, sh:c.height, ox:0, oy:0, fullW:c.width, fullH:c.height});
-}
-/* one quarter of a chasm cell. q: 0 top-left, 1 top-right, 2 bottom-left, 3 bottom-right */
-function caveLipQuarter(x, y, q, px, py, v){
-  var right=q&1, bottom=q>>1, sx=right?1:-1, sy=bottom?1:-1;
-  var vert=caveLand(x, y+sy), side=caveLand(x+sx, y), diag=caveLand(x+sx, y+sy);
-  var o=null, rx=0, ry=0, fx=false, fy=false;
-  if(vert && side){ o=caveArtTinted('ch-corner-2'); fx=!!right; fy=!!bottom; }
-  else if(vert){ o=caveArtTinted('ch-lip-top-'+v); rx=right?32:0; fy=!!bottom; }
-  else if(side){ o=caveArtTinted('ch-lip-side-'+v); ry=bottom?32:0; fx=!!right; }
-  else if(diag){ o=caveArtTinted('ch-corner-1'); fx=!!right; fy=!!bottom; }
-  if(!o) return;
-  /* the art's full canvas starts at (sx-ox, sy-oy) on the sheet: cut the 32x32 source quarter out of it */
-  var srcX=o.sx-o.ox+rx, srcY=o.sy-o.oy+ry, h=TS/2, dx=px+(right?h:0), dy=py+(bottom?h:0);
-  ctx.save();
-  ctx.translate(dx+h/2, dy+h/2); ctx.scale(fx?-1:1, fy?-1:1);
-  ctx.drawImage(o.img, srcX, srcY, 32, 32, -h/2-0.3, -h/2-0.3, h+0.6, h+0.6);
-  ctx.restore();
-}
-function drawCaveChasms(now){
-  var t=(ANIM.reduce ? 0 : now/1000);
-  for(var y=camY; y<=camY+viewH; y++) for(var x=camX; x<=camX+viewW; x++){
-    if(!caveVoid(x,y)) continue;
-    var i=idxOf(x,y); if(!(revealAll||seen[i])) continue;
-    var px=(x-camX)*TS, py=(y-camY)*TS, a=(revealAll||vis[i]) ? 1 : memA(0.42);
-    ctx.globalAlpha=a; ctx.fillStyle='#030305'; ctx.fillRect(px, py, TS+0.6, TS+0.6);
-    /* the depth: a faint cold glow far down, so the void is not a flat hole */
-    if(hash2(x,y,707)<0.5){ var g=ctx.createRadialGradient(px+TS*0.5, py+TS*0.6, 0, px+TS*0.5, py+TS*0.6, TS*0.6); g.addColorStop(0,'rgba(40,60,80,0.10)'); g.addColorStop(1,'rgba(40,60,80,0)'); ctx.fillStyle=g; ctx.fillRect(px,py,TS,TS); }
-    /* floating debris, slowly bobbing */
-    var hd=hash2(x,y,701);
-    if(hd<0.16){
-      var o=caveArt('ch-floating-debris-'+(1+Math.floor(hash2(x,y,703)*3)));
-      if(o){ var bob=Math.sin(t*0.9+hd*40)*TS*0.04; drawCaveArt(o, px+TS*(0.25+0.5*hash2(x,y,704)), py+TS*(0.55+0.3*hash2(x,y,705))+bob, a*0.85, hash2(x,y,706)<0.5); }
-    }
-    var v=1+Math.floor(hash2(x,y,709)*3);
-    ctx.globalAlpha=a; ctx.imageSmoothingEnabled=false;
-    for(var q=0;q<4;q++) caveLipQuarter(x, y, q, px, py, v);
-  }
-  ctx.globalAlpha=1;
-}
 
 /* ---------------------------------------------------------------- rope bridges */
 function drawCaveBridge(x, y, px, py, alpha){
@@ -163,11 +106,7 @@ function drawCaveBridge(x, y, px, py, alpha){
   });
   ctx.restore();
 }
-var _drawSideDoorCave = typeof drawSideDoor==='function' ? drawSideDoor : null;
-drawSideDoor = function(x, y, t, px, py, alpha){
-  if(t===BRIDGE && inCaverns()){ drawCaveBridge(x, y, px, py, alpha); return true; }
-  return _drawSideDoorCave ? _drawSideDoorCave.apply(this, arguments) : false;
-};
+
 
 /* ---------------------------------------------------------------- decals and wall features */
 function drawCaveDecals(){
@@ -220,12 +159,12 @@ function drawCaveWalls(now){
 /* after the terrain (render.js draws the wang layers, then paints an inset black square on every chasm cell when
    there is no chasm tileset, then calls drawSurfaceDeco): decals, then the void with its lips, then the cliff-face
    pieces. It hooks drawSurfaceDeco so it lands after that black square instead of under it. */
-var _drawWangLayerCave = drawWangLayer;
-drawWangLayer = function(key, tileType){ if(key==='chasm' && inCaverns()) return; return _drawWangLayerCave(key, tileType); };
-var _drawSurfaceDecoCave = typeof drawSurfaceDeco==='function' ? drawSurfaceDeco : null;
-drawSurfaceDeco = function(){
-  if(!inCaverns()) return _drawSurfaceDecoCave ? _drawSurfaceDecoCave.apply(this, arguments) : undefined;
+
+
+function drawCavernSurface(){
+  if(!inCaverns())return;
   var now=performance.now();
   drawCaveDecals(); drawCaveChasms(now); drawCaveWalls(now);
   ctx.globalAlpha=1;
-};
+
+}

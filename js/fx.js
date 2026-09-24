@@ -55,7 +55,7 @@ function boltFx(ax,ay,bx,by,type,opts){
 function drawCorpse(f, p){
   var px=(f.e.x-camX)*TS, py=(f.e.y-camY)*TS;
   var ms = spriteOn && f.e.sprite ? mobSheet(f.e.sprite) : null;
-  if(ms && ms.m.clips.death){
+  if(ms && ms.m.clips.death && !CAVE_TOPPLE[f.e.sprite] && !DEEP_TOPPLE[f.e.sprite]){
     var c=ms.m.clips.death, cell=ms.m.cell, fr=Math.min(c.frames-1, Math.floor(p*c.frames*1.05)), box=ms.m.box||[0,0,cell,cell];
     var target=TS*(f.e.art||0.9), s=target/Math.max(box[3], box[2]*0.8);
     var dx=px+TS/2-(box[0]+box[2]/2)*s, dy=py+TS*0.97-(box[1]+box[3])*s;

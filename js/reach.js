@@ -34,36 +34,22 @@ function reachAttack(foe, d){
   player.hidden=0; endTurn();
 }
 
-var _tryMoveReach = tryMove;
-tryMove = function(dx, dy){
+
+/* a click or tap on an enemy in reach attacks it, rather than walking up to it or firing the bow */
+
+
+/* Named travel and entry stages; ordered by transition-adapter.js. */
+function moveReachAttack(dx,dy){
   if(player && player.hp>0 && !player.st.frozen && !player.st.stun && reachLen()>=2){
     /* a click on a reachable enemy arrives as a 2-tile move (travel.js) */
     if(Math.abs(dx)===2 || Math.abs(dy)===2){
       var tf=ents.filter(function(e){ return e.foe && e.x===player.x+dx && e.y===player.y+dy; })[0], td=tf && reachDir(tf);
-      if(td){ lastDir=td; reachAttack(tf, td); return; }
-      return;
+      if(td){ lastDir=td; reachAttack(tf, td); return true; }
+      return true;
     }
     var adj=ents.some(function(e){ return e.foe && e.x===player.x+dx && e.y===player.y+dy; });
     var rf=!adj && reachFoe(dx, dy);
-    if(rf){ reachAttack(rf, [dx,dy]); return; }
+    if(rf){ reachAttack(rf, [dx,dy]); return true; }
   }
-  return _tryMoveReach(dx, dy);
-};
-
-/* a click or tap on an enemy in reach attacks it, rather than walking up to it or firing the bow */
-if(typeof clickIntent==='function'){
-  var _clickIntentReach = clickIntent;
-  clickIntent = function(x, y){
-    var it=_clickIntentReach(x, y);
-    if(it && it.foe && (it.kind==='move' || it.kind==='shoot') && reachLen()>=2 && reachDir(it.foe)) return {kind:'attack', foe:it.foe};
-    return it;
-  };
-}
-if(typeof shootAt==='function'){
-  var _shootAtReach = shootAt;
-  shootAt = function(e){
-    var d=e && reachLen()>=2 && reachDir(e);
-    if(d){ lastDir=d; reachAttack(e, d); return true; }
-    return _shootAtReach(e);
-  };
+  return false;
 }

@@ -12,19 +12,15 @@ var PLANE_EL_COL = {light:'#FFE08A', shadow:'#B98CFF', earth:'#9FD86A', fire:'#F
 var PLANE_TITLE = {light:'the Plane of Light', shadow:'the Plane of Shadow', earth:'the Plane of Earth', fire:'the Plane of Fire', water:'the Plane of Water', air:'the Plane of Air'};
 
 /* ---------------------------------------------------------------- the tile */
-var _walkablePortal = walkable;
-walkable = function(x,y){ return at(x,y)===PORTAL || _walkablePortal(x,y); };
-var _objectTilePortal = objectTile;
-objectTile = function(t){ return t===PORTAL || _objectTilePortal(t); };
-var _tileSpritePortal = tileSprite;
-tileSprite = function(x,y,t){ return t===PORTAL ? objArt('structures','portal-arch') : _tileSpritePortal(x,y,t); };
+
+
 function portalElement(){ return floorMeta.plane || floorMeta.portal; }
 function portalOpen(){ return floorMeta.plane ? true : (floorMeta.portal && !floorMeta.portalUsed); }
 
 /* the swirl inside the arch, animated */
-var _drawTelegraphsPortal = drawTelegraphs;
-drawTelegraphs = function(now){
-  _drawTelegraphsPortal(now);
+
+function drawPortalTelegraphs(now){
+
   var p=floorMeta && floorMeta.portalAt; if(!p || at(p.x,p.y)!==PORTAL || !(revealAll||seen[idxOf(p.x,p.y)])) return;
   if(!portalOpen()) return;
   var col=PLANE_EL_COL[portalElement()]||'#FFFFFF', t=ANIM.reduce ? 0 : (now||0)/1000;
@@ -39,44 +35,22 @@ drawTelegraphs = function(now){
     ctx.fillStyle = i%3===0 ? '#FFFFFF' : col; ctx.fillRect(px-s/2, py-s/2, s, s);
   }
   ctx.restore();
-};
-var _gatherLightsPortal = gatherLights;
-gatherLights = function(now, prp){
-  var L=_gatherLightsPortal(now, prp), p=floorMeta && floorMeta.portalAt;
+
+}
+
+function addPortalLights(L, now, prp){
+  var p=floorMeta && floorMeta.portalAt;
   if(p && at(p.x,p.y)===PORTAL && portalOpen()) L.push({x:p.x, y:p.y, c:hexRGB(PLANE_EL_COL[portalElement()]||'#FFFFFF'), r:4.2, s:1.0*(ANIM.reduce?1:1+0.1*Math.sin(now/300)), tx:p.x, ty:p.y});
   (floorMeta && floorMeta.planeLights || []).forEach(function(l){ if(revealAll||seen[idxOf(l.x,l.y)]) L.push({x:l.x, y:l.y, c:hexRGB(l.col), r:l.r, s:l.s, tx:l.x, ty:l.y}); });
   return L;
-};
+
+}
 
 /* ---------------------------------------------------------------- placing the portal on its Crypt floor */
-var _generatePortal = generate;
-generate = function(seed){
-  _generatePortal(seed);
-  if(!floorMeta.portal || floorMeta.boss) return;
-  var cand=rooms.filter(function(r){ return !r.role && !r.pocket && !r.special && r.w>=4 && r.h>=4; });
-  cand.sort(function(a,b){ return (Math.abs(b.cx-player.x)+Math.abs(b.cy-player.y))-(Math.abs(a.cx-player.x)+Math.abs(a.cy-player.y)); });
-  for(var i=0;i<cand.length;i++){
-    var r=cand[i], c={x:r.cx, y:r.y+1};
-    if(at(c.x,c.y)===FLOOR && !propAt(c.x,c.y) && !itemAt(c.x,c.y) && !occupied(c.x,c.y)){
-      setT(c.x,c.y,PORTAL); floorMeta.portalAt=c; r.role='portal';
-      floorMeta.notes.push('Something hums on this floor: <b>a portal to '+PLANE_TITLE[floorMeta.portal]+'</b> stands open.');
-      break;
-    }
-  }
-};
+
 
 /* ---------------------------------------------------------------- stepping on a portal */
-var _stepOnPortal = stepOn;
-stepOn = function(){
-  var r=_stepOnPortal();
-  if(at(player.x,player.y)!==PORTAL) return r;
-  if(floorMeta.plane){
-    confirmBox('Leave '+PLANE_TITLE[floorMeta.plane], (floorMeta.eliteDead ? 'The way home shimmers.' : 'The guardian of this plane still lives.')+' Return to the Crypt? The portal closes behind you.', 'Return', function(){ leavePlane(); });
-  } else if(floorMeta.portal && !floorMeta.portalUsed){
-    confirmBox('Step through the portal', 'A cave of pure '+floorMeta.portal+' lies beyond: harder than the Crypt, guarded by an elite, with treasure at its end. You can come back through the portal you arrive at.', 'Step through', function(){ enterPlane(floorMeta.portal); });
-  } else if(floorMeta.portalUsed) log('The portal has gone dark.','c-info');
-  return r;
-};
+
 
 /* ---------------------------------------------------------------- building a plane floor */
 var PLANE_PROPS = {
@@ -88,28 +62,13 @@ var PLANE_PROPS = {
 PROPS['rune-stone-light']={b:1}; PROPS['rune-stone-shadow']={b:1}; PROPS['rune-stone-earth']={b:1}; PROPS['mossy-boulder']={b:1};
 PROPS['stepping-stone']={flat:1};
 
-function enterPlane(el){
-  /* 2026-09-18: a plane is only enterable once it has a roster. Guards against a portal being pointed at an
-     element whose creatures have not been built yet - that used to throw on PLANE_ROSTER[el].rune. */
-  if(!el || !PLANE_ROSTER[el]){ log('The portal flickers and will not hold. Nothing lies beyond it yet.','c-info'); sfx('ui-error'); return false; }
-  closeModal && modalOpen && closeModal();
-  var from={x:player.x, y:player.y}, fromFloor=floorNo;
-  floorMeta.portalUsed=true;
-  stashFloor();
-  RUN.planeStash=RUN.floorStash[floorNo]; delete RUN.floorStash[floorNo];
-  RUN.planeFrom=from; RUN.planesVisited=(RUN.planesVisited||[]).concat([el]);
-  buildPlaneFloor(el, (worldSeed ^ 0x7A11E5 ^ floorNo*131)>>>0);
-  sfx('stairs'); SHAKE=6;
-  log('You step through the portal into <b>'+PLANE_TITLE[el]+'</b>.','c-kill');
-  log(PLANE_HAZARD_TEXT[el],'c-info');
-  if(typeof writeSlot==='function') writeSlot('auto','plane');
-}
+
 var PLANE_HAZARD_TEXT = {
   light: 'Gold light pulses through the cave: when stones start to glow, get into the shade of a crystal or pillar before the flare.',
   shadow:'Darkness presses in: you see only a short way here, and further in the violet glow of the crystals.',
   earth: 'The cave groans: when dust starts to trickle, step off the marked stones before the rocks fall.'
 };
-function buildPlaneFloor(el, seed){
+function generatePlaneBase(el, seed){
   var m=makePlaneMap(el, seed), W=MW, H=MH, K=PLANE_PROPS[el];
   map=new Uint8Array(W*H); seen=new Uint8Array(W*H); vis=new Uint8Array(W*H);
   ground=new Uint8Array(W*H); fireT=new Uint8Array(W*H); if(typeof fireSrc!=='undefined') fireSrc=new Uint8Array(W*H);
@@ -189,20 +148,10 @@ function buildPlaneFloor(el, seed){
   computeFOV(); resize(); updateUI(); draw();
   playMusic('boss');
 }
-function leavePlane(){
-  var st=RUN.planeStash; if(!st){ log('The portal flickers but nothing happens.','c-info'); return; }
-  RUN.floorStash=RUN.floorStash||{};
-  RUN.floorStash[floorNo]=st; RUN.planeStash=null;
-  restoreFloor(floorNo, RUN.planeFrom);
-  floorMeta.portalUsed=true;
-  log('You step back into the '+biomeName()+'. Behind you the portal gutters and goes dark.','c-kill');
-  playSceneMusic();
-  if(typeof writeSlot==='function') writeSlot('auto','floor '+floorNo);
-}
+
 /* the plane's treasure */
-var _openChestPlane = openChest;
-openChest = function(x,y){
-  if(chestKind[idxOf(x,y)]!=='chest-plane') return _openChestPlane(x,y);
+
+function openPlaneChest(x,y){
   var el=floorMeta.plane;
   setT(x,y,FLOOR); sfx('chest-open'); sparkleFx(x,y,'light',40);
   addProp(x,y,'chest-wood-open',{flat:false, b:false, openChest:true});
@@ -213,12 +162,10 @@ openChest = function(x,y){
   loot.forEach(function(it){ var c=nearFree(x,y,2)||{x:x,y:y}; it.x=c.x; it.y=c.y; items.push(it); });
   log('The rune chest opens: treasure of '+PLANE_TITLE[el]+'.','c-kill');
   stepOn();
-};
+
+}
 /* no stragglers wander into a plane */
-var _wanderPlane = wanderingSpawn;
-wanderingSpawn = function(){ if(floorMeta && floorMeta.plane) return; return _wanderPlane(); };
-var _descendPlane = descend;
-descend = function(fell){ if(floorMeta && floorMeta.plane){ log('There are no stairs in '+PLANE_TITLE[floorMeta.plane]+'. The portal is the way home.','c-info'); return; } return _descendPlane(fell); };
+
 
 /* ---------------------------------------------------------------- plane creatures */
 var PLANE_ROSTER = {
@@ -289,82 +236,15 @@ function planeTick(){
     log(el==='light' ? 'Gold light gathers in the stones around you...' : 'Dust trickles from the cave roof...','c-you');
   }
 }
-var _endTurnPlane = endTurn;
-endTurn = function(){ _endTurnPlane(); planeTick(); planeCreaturesTick(); };
+
+
 /* Shadow: darkness closes in, except near the violet crystals */
-var _computeFOVPlane = computeFOV;
-computeFOV = function(radius){
-  if(floorMeta && floorMeta.plane==='shadow'){
-    var lit=(floorMeta.planeLights||[]).some(function(l){ return Math.abs(l.x-player.x)<=2 && Math.abs(l.y-player.y)<=2; });
-    radius = player.snuffed>0 ? 2 : (lit ? 8 : 5);   /* dark, but far enough to read the room; a snuffed light still blinds you */
-  } else if(player && player.snuffed>0) radius=Math.min(radius||9, 2);
-  return _computeFOVPlane(radius);
-};
+
+
 function inMoonlight(e){ return (floorMeta.planeLights||[]).some(function(l){ return Math.abs(l.x-e.x)<=2 && Math.abs(l.y-e.y)<=2; }); }
 
 /* damage rules for plane creatures */
-var _applyDamagePlane = applyDamage;
-applyDamage = function(target, amount, type, source){
-  var b=target && target.base;
-  if(b && target!==player){
-    if(target.parent){
-      if(source===player) target.parent._provoked=true;
-      var pd = applyDamage(target.parent, amount, type, source);
-      /* the caller checks the tile it hit, and a limb never drops below 9999, so the body has to be
-         finished off here or it walks around at 0 HP (2026-09-17) */
-      if(target.parent.hp<=0 && ents.indexOf(target.parent)>=0) kill(target.parent, source);
-      return pd;
-    }
-    if(b.big && (floorMeta.heartNodes||[]).some(function(id){ return ents.some(function(o){ return o.id===id && o.hp>0; }); })){
-      if(source===player){
-        target._provoked=true;
-        var left=(floorMeta.heartNodes||[]).filter(function(id){ return ents.some(function(o){ return o.id===id && o.hp>0; }); }).length;
-        floatText(target.x, target.y, 'immune', 'miss');
-        if(target._immuneMsg!==turn){
-          target._immuneMsg=turn;
-          log('The <b>Heart of the Mountain</b> drinks strength from '+left+' crystal node'+(left===1?'':'s')+'. Break '+(left===1?'it':'them')+' first.','c-info');
-        }
-      }
-      return 0;
-    }
-    if(b.moonbound && !inMoonlight(target)){
-      /* 2026-09-20: Justin took 0 damage and could not tell why. Say it on the blow, not only in the log. */
-      if(typeof floatText==='function') floatText(target.x, target.y, 'immune', 'miss');
-      if(source===player) log('Your blow passes through shadow: the <b>'+target.name+'</b> can only be hurt in the crystal light.','c-info');
-      return 0;
-    }
-    if(b.burrows && target.burrowed) return 0;
-    if(b.blocksFirst && target._blockTurn!==turn && amount>0){ target._blockTurn=turn; floatText(target.x,target.y,'block','miss'); if(vis[idxOf(target.x,target.y)]) log('The <b>Zealot Knight</b> takes the blow on its shield.','c-info'); return 0; }
-    if(b.big && source===player) target._provoked=true;
-    if(b.regenerates && (type==='fire' || (target.st && target.st.burn))) target._burnedAt=turn;
-    if(b.reflects && source===player && (type!=='phys' || dist(target,player)>1) && amount>1){
-      var back=Math.round(amount*0.5); amount-=back;
-      var rd=_applyDamagePlane(player, back, type, target); floatText(player.x,player.y,String(rd),'light'); log('The <b>'+target.name+'</b> reflects '+rd+' back at you.','c-you');
-    }
-    if(b.brands && target.brand && source===player) target.brand.stored += amount;
-  }
-  var d=_applyDamagePlane(target, amount, type, source);
-  if(target===player && source && source.base){
-    if(source.base.snuffs){ player.snuffed=5; log('The <b>Gloom Moth</b> smothers your light.','c-you'); computeFOV(); }
-    if(source.base.lurks && !source._struck){ source._struck=true; }
-  }
-  return d;
-};
-var _attackPlane = attack;
-attack = function(att, def, mult, label){
-  if(att && att.base && att.base.prism && def===player && dist(att,player)>1 && !att._splitting){
-    var other=ents.filter(function(o){ return o!==player && !o.foe && o.hp>0 && dist(o,player)<=3 && canSeeFrom(att,o); })[0];
-    att._splitting=true;
-    try{
-      if(typeof boltFx==='function') boltFx(att.x, att.y, player.x, player.y, 'light', {});
-      var r=_attackPlane(att, player, (mult||1)*(other?0.7:1), label);
-      if(other){ if(typeof boltFx==='function') boltFx(att.x, att.y, other.x, other.y, 'light', {}); _attackPlane(att, other, (mult||1)*0.7, label); if(vis[idxOf(att.x,att.y)]) log('The <b>Prism Scarab</b> splits its beam between you and '+other.name+'.','c-info'); }
-      return r;
-    } finally { att._splitting=false; }
-  }
-  if(att && att.base && att.base.lurks && !att._struck && def===player){ mult=(mult||1)*2; att._struck=true; log('The <b>Stalker</b> strikes from the dark!','c-you'); }
-  return _attackPlane(att, def, mult, label);
-};
+
 
 function canSeeFrom(a,b){ var path=boltPath(a.x,a.y,b.x,b.y), end=path[path.length-1]; return end && end.x===b.x && end.y===b.y; }
 function planeCreaturesTick(){
@@ -376,30 +256,30 @@ function planeCreaturesTick(){
   });
 }
 
-var _aiActPlane = aiAct;
-aiAct = function(e){
+
+function planeCreatureBehavior(e){
   var b=e.base||{};
-  if(!floorMeta || !floorMeta.plane) return _aiActPlane(e);
-  if(e.parent || b.object){ e.t+=actCost(e); return; }
+  if(!floorMeta || !floorMeta.plane) return false;
+  if(e.parent || b.object){  return true; }
   var see=canSeePlayer(e), d=dist(e,player);
-  if(e.state==='hunt' && !e.st.stun && !e.st.frozen){
+  if(e.state==='hunt'){
     if(b.healer){
       e.healCd=(e.healCd||0)-1;
       var hurt=ents.filter(function(o){ return o.foe && o!==e && o.hp<o.maxhp && dist(o,e)<=4; }).sort(function(a,z){ return a.hp/a.maxhp-z.hp/z.maxhp; })[0];
-      if(hurt && e.healCd<=0){ var h=Math.min(hurt.maxhp-hurt.hp, 8); hurt.hp+=h; floatText(hurt.x,hurt.y,'+'+h,'heal'); sparkleFx(hurt.x,hurt.y,'light',16); e.healCd=2; e.t+=actCost(e); return; }
-      if(d<=3 && fleeStep(e)){ e.t+=actCost(e); return; }
+      if(hurt && e.healCd<=0){ var h=Math.min(hurt.maxhp-hurt.hp, 8); hurt.hp+=h; floatText(hurt.x,hurt.y,'+'+h,'heal'); sparkleFx(hurt.x,hurt.y,'light',16); e.healCd=2;  return true; }
+      if(d<=3 && fleeStep(e)){  return true; }
     }
-    if(b.howls && !e.howled && see){ e.howled=true; log('The <b>Umbral Hound</b> howls! Everything in the dark turns toward you.','c-you'); ents.forEach(function(o){ if(o.foe && o.state!=='hunt' && dist(o,e)<=14){ o.state='hunt'; o.lastSeen={x:player.x,y:player.y}; } }); e.t+=actCost(e); return; }
-    if(b.burrows){
+    if(b.howls && !e.howled && see){ e.howled=true; log('The <b>Umbral Hound</b> howls! Everything in the dark turns toward you.','c-you'); ents.forEach(function(o){ if(o.foe && o.state!=='hunt' && dist(o,e)<=14){ o.state='hunt'; o.lastSeen={x:player.x,y:player.y}; } });  return true; }
+    if(b.burrows&&canActorMove(e)){
       e.bCd=(e.bCd||0)-1;
-      if(!e.burrowed && d>2 && e.bCd<=0){ e.burrowed=true; e.bCd=6; if(vis[idxOf(e.x,e.y)]) log('The <b>Burrower</b> dives into the ground.','c-info'); e.t+=actCost(e); return; }
+      if(!e.burrowed && d>2 && e.bCd<=0){ e.burrowed=true; e.bCd=6; if(vis[idxOf(e.x,e.y)]) log('The <b>Burrower</b> dives into the ground.','c-info');  return true; }
       if(e.burrowed){
-        if(d<=1 || e.bCd<=3){ var sp=nearFree(player.x,player.y,1); if(sp){ e.x=sp.x; e.y=sp.y; } e.burrowed=false; SHAKE=4; log('The <b>Burrower</b> bursts up beside you!','c-you'); e.t+=actCost(e); return; }
+        if(d<=1 || e.bCd<=3){ var sp=nearFree(player.x,player.y,1); if(sp){ e.x=sp.x; e.y=sp.y; } e.burrowed=false; SHAKE=4; log('The <b>Burrower</b> bursts up beside you!','c-you');  return true; }
         var nx=e.x+Math.sign(player.x-e.x), ny=e.y+Math.sign(player.y-e.y); if(inb(nx,ny) && at(nx,ny)!==WALL && !occupied(nx,ny)){ e.x=nx; e.y=ny; }
-        e.t+=actCost(e); return;
+         return true;
       }
     }
-    if(b.moonbound){
+    if(b.moonbound&&canActorMove(e)){
       e.tpCd=(e.tpCd||0)-1;
       if(e.tpCd<=0 || (d<=1 && inMoonlight(e))){
         var shadows=[]; for(var y=player.y-7;y<=player.y+7;y++) for(var x=player.x-7;x<=player.x+7;x++){ if(inb(x,y) && walkable(x,y) && !occupied(x,y) && dist({x:x,y:y},player)>=2 && dist({x:x,y:y},player)<=4) shadows.push({x:x,y:y}); }
@@ -409,7 +289,7 @@ aiAct = function(e){
           e.x=s2.x; e.y=s2.y; e._lx=undefined; e.tpCd=3;
           sparkleFx(s2.x, s2.y, 'dark', 30); if(typeof ringFx==='function') ringFx(s2.x, s2.y, '#B98CFF', 2);
           if(typeof sfx==='function') sfx('vanish');
-          log('The <b>'+e.name+'</b> steps through the shadows.','c-info'); e.t+=actCost(e); return;
+          log('The <b>'+e.name+'</b> steps through the shadows.','c-info');  return true;
         }
       }
     }
@@ -419,24 +299,24 @@ aiAct = function(e){
         var dmg=Math.min(Math.round(e.brand.stored), Math.round(player.maxhp*0.4)); var los=canSeePlayer(e); e.brand=null;
         if(los && dmg>0){ var bd=applyDamage(player, dmg, 'light', e); floatText(player.x,player.y,String(bd),'light'); log('<b>Judgment!</b> The brand burns you for the harm you dealt: '+bd+'.','c-you'); if(player.hp<=0) kill(player,e); }
         else log('You broke the '+e.name+'\'s line of sight: the brand fades harmlessly.','c-good');
-        e.t+=actCost(e); return;
+         return true;
       }
-      if(!e.brand && e.brandCd<=0 && see){ e.brand={at:turn+3, stored:0}; e.brandCd=7; setClip(e,'attack'); log('The <b>'+e.name+'</b> brands you with judgment. The next 3 turns of harm you deal it will return to you, unless you break its line of sight.','c-you'); e.t+=actCost(e); return; }
+      if(!e.brand && e.brandCd<=0 && see){ e.brand={at:turn+3, stored:0}; e.brandCd=7; setClip(e,'attack'); log('The <b>'+e.name+'</b> brands you with judgment. The next 3 turns of harm you deal it will return to you, unless you break its line of sight.','c-you');  return true; }
     }
   }
   if(b.still){
-    if(e.st.stun || e.st.frozen || e.st.fear){e.t+=actCost(e);return;}
+    if(e.st.stun || e.st.frozen || e.st.fear){return true;}
     if(e.state!=='hunt'){
       /* dormant until struck or stood next to: a boss that cannot chase you should not start the fight
          either, so you get to clear its crystal nodes and its escort first (2026-09-17) */
       if(e._provoked || heartTouching(e)){ e.state='hunt'; log('<b>'+e.name+'</b> wakes with a rumble.','c-you'); sfx('heart-intro'); SHAKE=6; }
-      e.t+=actCost(e); return;
+       return true;
     }
-    if(heartTouching(e)){ attack(e,player); e.t+=actCost(e); return; }
+    if(heartTouching(e)){ attack(e,player);  return true; }
     /* anything of yours standing against it gets hit too - it used to ignore a summoned servant entirely */
     var near=ents.filter(function(o){ return o.ally && o.hp>0 && [[0,0],[1,0],[0,1],[1,1]].some(function(q){
       return Math.max(Math.abs(e.x+q[0]-o.x), Math.abs(e.y+q[1]-o.y))<=1; }); })[0];
-    if(near){ attack(e, near); e.t+=actCost(e); return; }
+    if(near){ attack(e, near);  return true; }
     /* it cannot follow you, so it reaches: stone spikes every third turn at anything it can see within 6 */
     e.spikeCd=(e.spikeCd||0)-1;
     if(see && d<=6 && e.spikeCd<=0){
@@ -447,39 +327,17 @@ aiAct = function(e){
       log('<b>'+e.name+'</b> drives stone spikes up through the floor &mdash; <b>'+sd+'</b>.','c-you');
       if(rng()<0.35) applyStatus(player,'root',2);
       if(player.hp<=0) kill(player, e);
-      e.t+=actCost(e); return;
+       return true;
     }
-    e.t+=actCost(e); return;
+     return true;
   }
-  return _aiActPlane(e);
-};
+  return false;
+
+}
 /* the Stalker is unseen until it is next to you; a burrowed Burrower is unseen too */
 /* creatures that are out of sight (a lurking Stalker, a burrowed Burrower, the limbs of a big elite) are simply not
    drawn. They used to be hidden by clearing their tile's visibility, which also unlit the tile and left a black square. */
-var _drawCharacterPlane = drawCharacter;
-drawCharacter = function(e, px, py, opts){
-  if(e && e!==player && !revealAll && floorMeta && floorMeta.plane){
-    var b=e.base||{};
-    if((b.lurks && dist(e,player)>1) || (b.burrows && e.burrowed) || e.parent) return true;   /* nothing drawn, tile still lit */
-  }
-  if(e && e.kind==='mountainheart' && e._clip && e._clip.name==='attack' && !ANIM.reduce){
-    var age=performance.now()-e._clip.t0, p=age/540;
-    if(p>=0 && p<1){
-      var lift=p<.32?Math.sin(p/.32*Math.PI/2):0;
-      var slam=p>=.32?Math.sin(Math.min(1,(p-.32)/.68)*Math.PI):0;
-      var cx=px+TS*.5, feet=py+TS*.97;
-      ctx.save();ctx.translate(cx,feet-TS*.12*lift);ctx.scale(1+.07*slam,1+.05*lift-.13*slam);ctx.translate(-cx,-feet);
-      var result=_drawCharacterPlane(e,px,py,opts);ctx.restore();
-      if(p>=.32){
-        ctx.save();ctx.globalAlpha=(opts&&opts.alpha!==undefined?opts.alpha:1)*(1-p)*.6;
-        ctx.strokeStyle='#C6A26B';ctx.lineWidth=Math.max(1,TS*.025);
-        ctx.beginPath();ctx.ellipse(cx,feet,TS*(.45+p*.65),TS*(.13+p*.18),0,0,Math.PI*2);ctx.stroke();ctx.restore();
-      }
-      return result;
-    }
-  }
-  return _drawCharacterPlane(e, px, py, opts);
-};
+
 
 /* Saved actors retain their old base records; apply only the requested tuning. */
 function refreshEncounterTuning(){
@@ -527,21 +385,8 @@ function setupHeart(h){
   }
 }
 function heartTouching(h){ return [[0,0],[1,0],[0,1],[1,1]].some(function(o){ return Math.max(Math.abs(h.x+o[0]-player.x), Math.abs(h.y+o[1]-player.y))<=1; }); }
-var _killPlane = kill;
-kill = function(e, by){
-  if(e && e.parent){ return; }
-  if(e && e.base && e.base.big){ ents=ents.filter(function(o){ return o.parent!==e; }); }
-  if(e && e.base && e.base.shatters && ents.indexOf(e)>=0){
-    ents.forEach(function(o){ if(o!==e && dist(o,e)<=1 && (o===player || !o.foe)){ var sd=applyDamage(o, 6, 'phys', null); floatText(o.x,o.y,String(sd),'phys'); if(o===player) log('Crystal shards fly: '+sd+'.','c-you'); } });
-    burst(e.x,e.y,'earth',30,0.08);
-  }
-  if(e && e.kind==='crystalnode' && (floorMeta.heartNodes||[]).indexOf(e.id)>=0){
-    var left=(floorMeta.heartNodes||[]).filter(function(id){ return id!==e.id && ents.some(function(o){ return o.id===id && o.hp>0; }); }).length;
-    log(left ? 'A crystal node shatters. '+left+' left.' : '<b>The last crystal node shatters!</b> The Heart of the Mountain is exposed.','c-kill');
-  }
-  if(e && e.elite && floorMeta && floorMeta.plane && e.id===floorMeta.eliteId){ floorMeta.eliteDead=true; setTimeout(function(){ log('The guardian of '+PLANE_TITLE[floorMeta.plane]+' falls. The treasure grotto lies open.','c-kill'); }, 0); }
-  return _killPlane(e, by);
-};
+
+
 /* The Heart's sprite already draws at TS * art(1.9) * big(1.25), so it spills well past its tile. What it
    does not have is a 2x2 FOOTPRINT: `big:2` is read by the renderer for scale and by the lightmap, but
    nothing uses it for collision or targeting, so it occupies one tile. Left as is deliberately. */
@@ -550,11 +395,11 @@ kill = function(e, by){
 /* ---------------------------------------------------------------- 2026-09-20: a moonbound creature shows its state
    Justin: "the shadow plane is confusing... the warden took 0 damage from range and I'm not sure what he was doing."
    Out of the crystals' light it wears a dark shroud and cannot be hurt; inside it, it glows and is open to a blow. */
-var _drawCharacterMoon = drawCharacter;
-drawCharacter = function(e, px, py, opts){
-  if(!e || !e.base || !e.base.moonbound || !(typeof floorMeta!=='undefined' && floorMeta && floorMeta.plane)) return _drawCharacterMoon.apply(this, arguments);
+
+function drawMoonboundOverlay(e, px, py, opts){
+  if(!e || !e.base || !e.base.moonbound || !(typeof floorMeta!=='undefined' && floorMeta && floorMeta.plane)) return;
   var lit = typeof inMoonlight==='function' && inMoonlight(e), now=performance.now();
-  var r=_drawCharacterMoon.apply(this, arguments);
+
   ctx.save();
   if(lit){
     var a=0.25+0.15*Math.sin(now/260);
@@ -566,5 +411,56 @@ drawCharacter = function(e, px, py, opts){
     ctx.beginPath(); ctx.ellipse(px+TS/2, py+TS*0.5, TS*0.46, TS*0.52, 0, 0, 7); ctx.fill();
   }
   ctx.restore();
-  return r;
-};
+
+
+}
+
+/* Named floor-generation stages; ordered by generation-adapter.js. */
+function placeGeneratedPortal(seed){
+
+  if(!floorMeta.portal || floorMeta.boss) return;
+  var cand=rooms.filter(function(r){ return !r.role && !r.pocket && !r.special && r.w>=4 && r.h>=4; });
+  cand.sort(function(a,b){ return (Math.abs(b.cx-player.x)+Math.abs(b.cy-player.y))-(Math.abs(a.cx-player.x)+Math.abs(a.cy-player.y)); });
+  for(var i=0;i<cand.length;i++){
+    var r=cand[i], c={x:r.cx, y:r.y+1};
+    if(at(c.x,c.y)===FLOOR && !propAt(c.x,c.y) && !itemAt(c.x,c.y) && !occupied(c.x,c.y)){
+      setT(c.x,c.y,PORTAL); floorMeta.portalAt=c; r.role='portal';
+      floorMeta.notes.push('Something hums on this floor: <b>a portal to '+PLANE_TITLE[floorMeta.portal]+'</b> stands open.');
+      break;
+    }
+  }
+}
+
+/* Named travel and entry stages; ordered by transition-adapter.js. */
+function entryPortalPrompt(){
+  if(at(player.x,player.y)!==PORTAL) return;
+  if(floorMeta.plane){
+    confirmBox('Leave '+PLANE_TITLE[floorMeta.plane], (floorMeta.eliteDead ? 'The way home shimmers.' : 'The guardian of this plane still lives.')+' Return to the Crypt? The portal closes behind you.', 'Return', function(){ leavePlane(); });
+  } else if(floorMeta.portal && !floorMeta.portalUsed){
+    confirmBox('Step through the portal', 'A cave of pure '+floorMeta.portal+' lies beyond: harder than the Crypt, guarded by an elite, with treasure at its end. You can come back through the portal you arrive at.', 'Step through', function(){ enterPlane(floorMeta.portal); });
+  } else if(floorMeta.portalUsed) log('The portal has gone dark.','c-info');
+  return;
+}
+
+/* Named character presentation passes; composed by render-adapter.js. */
+
+function prepareMoonboundActor(job){
+  var e=job.entity;if(!e||!e.base||!e.base.moonbound||!floorMeta||!floorMeta.plane)return;
+  return function(complete){if(complete)drawMoonboundOverlay(e,job.x,job.y,job.options);};
+}
+function hidePlaneActor(job){
+  var e=job.entity;if(!e||e===player||revealAll||!floorMeta||!floorMeta.plane)return;
+  var b=e.base||{};if((b.lurks&&dist(e,player)>1)||(b.burrows&&e.burrowed)||e.parent)return true;
+}
+function prepareMountainHeartActor(job){
+  var e=job.entity,px=job.x,py=job.y,opts=job.options;
+  if(!e||e.kind!=='mountainheart'||!e._clip||e._clip.name!=='attack'||ANIM.reduce)return;
+  var age=performance.now()-e._clip.t0,p=age/540;if(p<0||p>=1)return;
+  var lift=p<.32?Math.sin(p/.32*Math.PI/2):0,slam=p>=.32?Math.sin(Math.min(1,(p-.32)/.68)*Math.PI):0;
+  var cx=px+TS*.5,feet=py+TS*.97;
+  ctx.save();ctx.translate(cx,feet-TS*.12*lift);ctx.scale(1+.07*slam,1+.05*lift-.13*slam);ctx.translate(-cx,-feet);
+  return function(complete){ctx.restore();if(complete&&p>=.32){
+    ctx.save();ctx.globalAlpha=(opts&&opts.alpha!==undefined?opts.alpha:1)*(1-p)*.6;
+    ctx.strokeStyle='#C6A26B';ctx.lineWidth=Math.max(1,TS*.025);ctx.beginPath();ctx.ellipse(cx,feet,TS*(.45+p*.65),TS*(.13+p*.18),0,0,Math.PI*2);ctx.stroke();ctx.restore();
+  }};
+}

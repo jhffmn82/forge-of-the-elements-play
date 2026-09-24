@@ -36,51 +36,16 @@ function absorbCoreAtGate(nx, ny){
   computeFOV(); updateUI(); draw(); return true;
 }
 
-var _bossDefeatedCore = bossDefeated;
-bossDefeated = function(e){
-  if(RUN.cores===undefined) RUN.cores=0;
-  var capBefore = affinityCap();
-  var logSaved = log; var skip = /affinity cap rises|The way onward opens/;
-  log = function(html, cls){ if(skip.test(html)) return; return logSaved.apply(this, arguments); };
-  try{ _bossDefeatedCore(e); } finally { log = logSaved; }
-  floorMeta.exitOpen = false;   /* the gate waits for the core */
-  var c = nearFree(e.x, e.y, 2) || {x:e.x, y:e.y};
-  items.push({x:c.x, y:c.y, kind:'core', name:coreName()});
-  log('<b>'+e.base.name+' falls.</b> His <b>'+coreName()+'</b> clatters to the floor, still burning with light. The exit gate will answer to it.','c-kill');
-  if(affinityCap()!==capBefore) log('Your affinity cap is now <b>'+affinityCap()+'</b>.','c-kill');
-};
 
 /* picking it up */
-var _stepOnCore = stepOn;
-stepOn = function(){
-  var here = items.filter(function(it){ return it.kind==='core' && it.x===player.x && it.y===player.y; });
-  here.forEach(function(it){
-    removeItem(it); player.core = it.name;
-    log('You take up the <b>'+it.name+'</b>. It hums against your ribs. Bring it to the exit gate.','c-kill');
-    sfx('pickup-mote'); sparkleFx(player.x, player.y, 'magic', 30);
-  });
-  return _stepOnCore();
-};
-var _itemLabelCore = itemLabel;
-itemLabel = function(it){ return it && it.kind==='core' ? 'the '+it.name : _itemLabelCore(it); };
+
+
 var _itemArtNameCore = itemArtName;
 itemArtName = function(it){ return it && it.kind==='core' ? (it.name==='Crypt Core' ? 'item-core-crypt' : 'item-core-dungeon') : _itemArtNameCore(it); };
 ITEM_FIT.core = 0.52;
 
 /* the sealed gate takes the core */
-var _tryMoveCore = tryMove;
-tryMove = function(dx, dy){
-  var nx=player.x+dx, ny=player.y+dy;
-  if(at(nx,ny)===EXIT && player.core){
-    var wasOpen=!!floorMeta.exitOpen;
-    absorbCoreAtGate(nx,ny);
-    if(!wasOpen){ endTurn(); return; }
-    /* An already-open burrow absorbs the core and continues downstairs. */
-  } else if(at(nx,ny)===EXIT && !floorMeta.exitOpen){
-    log('The gate is sealed. It waits for the heart its guardian carried.','c-info'); sfx('door-locked'); return;
-  }
-  return _tryMoveCore(dx, dy);
-};
+
 
 /* a line in the Equipment keys list while you carry one */
 var _equipHTMLCore = equipHTML;
@@ -90,3 +55,26 @@ equipHTML = function(){
   var chip='<span class="mote keychip"><span class="kart" data-kicon="item-core-dungeon"></span>'+player.core+'</span>';
   return h.replace(/(<div class="sec">Keys<\/div><div class="pouch">)(<span class="mote">no keys[^<]*<\/span>)?/, '$1'+chip);
 };
+
+/* Named travel and entry stages; ordered by transition-adapter.js. */
+function entryCollectCores(){
+  var here = items.filter(function(it){ return it.kind==='core' && it.x===player.x && it.y===player.y; });
+  here.forEach(function(it){
+    removeItem(it); player.core = it.name;
+    log('You take up the <b>'+it.name+'</b>. It hums against your ribs. Bring it to the exit gate.','c-kill');
+    sfx('pickup-mote'); sparkleFx(player.x, player.y, 'magic', 30);
+  });
+}
+
+function moveCoreGate(dx,dy){
+  var nx=player.x+dx, ny=player.y+dy;
+  if(at(nx,ny)===EXIT && player.core){
+    var wasOpen=!!floorMeta.exitOpen;
+    absorbCoreAtGate(nx,ny);
+    if(!wasOpen){ endTurn(); return true; }
+    /* An already-open burrow absorbs the core and continues downstairs. */
+  } else if(at(nx,ny)===EXIT && !floorMeta.exitOpen){
+    log('The gate is sealed. It waits for the heart its guardian carried.','c-info'); sfx('door-locked'); return true;
+  }
+  return false;
+}

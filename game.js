@@ -1,11 +1,6 @@
-/* game.js - the original single-file prototype.
-   71 of its functions are declared again by the js/ modules that load after it, so those copies never
-   ran; they were removed on 2026-09-18. What remains is still load-bearing: the canvas and sprite
-   loader, tile and geometry helpers (at, dist, faceOf, mulberry32, hitChance), the passive table, the
-   drag-and-drop plumbing, and log() - which the modules wrap rather than replace. */
-/* Forge of the Elements - interface demo with placeholder art.
-   First pass of the rules in DESIGN.md: seeded generation, fog of war,
-   time-based turns, accuracy vs evasion, flat armor, affinity riders, statuses. */
+/* Shared runtime foundation: random/geometry helpers, initial state, field of view,
+   motion, canvas sizing, tooltips, drag-and-drop, and browser input. Gameplay
+   commands, content tables, generation, and rendering are owned by their modules. */
 
 /* ============ helpers ============ */
 var $ = function(id){ return document.getElementById(id); };
@@ -26,177 +21,19 @@ var BIOMES=[
   {name:'Crypt',   wall:'#6B6673', wall2:'#787381', floor:'#1E1D23', floor2:'#242229'},
   {name:'Caverns', wall:'#6F6350', wall2:'#7C6F5C', floor:'#1F1B16', floor2:'#26211B'}
 ];
-/* ---- the bestiary --------------------------------------------------------
-   biome: which biomes it lives in (0 dungeon, 1 crypt, 2 caverns)
-   band:  the floors it appears on WITHIN its biome, 1-5, so one table
-          re-reads at every depth instead of listing 25 floors
-   w:     relative frequency inside the band
-   rare:  never enters the ordinary pool - placed at most once a floor
-   el:    its attacks carry that element, and it drops a mote of it        */
-var MONSTERS={
-  /* --- biome 1: the dungeon --- */
-  rat:    {name:'Dungeon Rat',   ch:'r', col:'#8C7A63', hp:6,  dmg:[1,3], acc:56, eva:22, armor:0, speed:130, range:1, xp:6,  biome:[0,2], band:[1,3], w:26, sprite:'rat', art:0.78},
-  bat:    {name:'Cave Bat',      ch:'b', col:'#9E8CA8', hp:5,  dmg:[1,3], acc:58, eva:32, armor:0, speed:170, range:1, xp:8,  biome:[0,2], band:[1,2], w:16, erratic:true},
-  goblin: {name:'Goblin',        ch:'g', col:'#6F9350', hp:14, dmg:[3,5], acc:60, eva:16, armor:1, speed:100, range:1, xp:12, biome:[0],   band:[1,5], w:26, sprite:'goblin', art:0.96},
-  archer: {name:'Goblin Archer', ch:'a', col:'#B8894A', hp:10, dmg:[2,5], acc:62, eva:18, armor:0, speed:100, range:6, xp:14, biome:[0],   band:[2,5], w:20},
-  brute:  {name:'Goblin Brute',  ch:'G', col:'#4E7A3C', hp:26, dmg:[5,9], acc:58, eva:10, armor:2, speed:90,  range:1, xp:24, biome:[0],   band:[3,5], w:16},
-  slime:  {name:'Rock Slime',    ch:'s', col:'#7C8C9E', hp:22, dmg:[4,7], acc:54, eva:8,  armor:4, speed:70,  range:1, xp:20, biome:[0,2], band:[3,5], w:14},
-  shaman: {name:'Goblin Shaman', ch:'h', col:'#C25A3A', hp:16, dmg:[4,8], acc:64, eva:14, armor:0, speed:100, range:5, xp:26, biome:[0],   band:[4,5], w:12, el:'fire'},
-
-  /* --- biome 2: the undead crypt --- */
-  shambler:{name:'Shambler',     ch:'z', col:'#8A9070', hp:20, dmg:[3,6], acc:54, eva:6,  armor:1, speed:70,  range:1, xp:14, biome:[1],   band:[1,3], w:24},
-  skeleton:{name:'Skeleton',     ch:'k', col:'#D8CEBC', hp:16, dmg:[3,6], acc:62, eva:18, armor:2, speed:100, range:1, xp:18, biome:[1],   band:[1,5], w:26},
-  bonebow: {name:'Bone Archer',  ch:'A', col:'#C0B49E', hp:12, dmg:[3,6], acc:64, eva:20, armor:1, speed:100, range:6, xp:22, biome:[1],   band:[2,5], w:18},
-  shade:   {name:'Shade',        ch:'S', col:'#8A6FB0', hp:12, dmg:[3,6], acc:64, eva:24, armor:0, speed:110, range:1, xp:18, biome:[1],   band:[2,5], w:16, el:'shadow'},
-  wight:   {name:'Crypt Wight',  ch:'W', col:'#6F5AA0', hp:30, dmg:[6,10],acc:66, eva:16, armor:2, speed:100, range:1, xp:34, biome:[1],   band:[4,5], w:12, el:'shadow'},
-
-  /* --- biome 3: the caverns below --- */
-  kobold: {name:'Kobold Digger', ch:'d', col:'#A8703C', hp:12, dmg:[2,5], acc:60, eva:20, armor:1, speed:110, range:1, xp:12, biome:[2],   band:[1,3], w:24},
-  trog:   {name:'Troglodyte',    ch:'T', col:'#7A8C6A', hp:28, dmg:[5,9], acc:60, eva:12, armor:2, speed:90,  range:1, xp:28, biome:[2],   band:[3,5], w:18},
-  hound:  {name:'Magma Hound',   ch:'H', col:'#E2622B', hp:24, dmg:[5,8], acc:66, eva:18, armor:1, speed:130, range:1, xp:32, biome:[2],   band:[4,5], w:14, el:'fire'},
-
-  /* --- elementalings: rare, in every biome, the only mob that hands you a mote --- */
-  emberling:{name:'Emberling',    ch:'*', col:'#E2622B', hp:18, dmg:[4,7], acc:66, eva:26, armor:0, speed:120, range:1, xp:30, biome:[0,1,2], band:[1,5], rare:true, el:'fire',   drop:'mote', sprite:'emberling'},
-  tideling: {name:'Tideling',     ch:'*', col:'#62A8D8', hp:22, dmg:[3,6], acc:64, eva:24, armor:1, speed:110, range:1, xp:30, biome:[0,1,2], band:[1,5], rare:true, el:'water',  drop:'mote', sprite:'tideling'},
-  galeling: {name:'Galeling',     ch:'*', col:'#E8B44A', hp:14, dmg:[4,8], acc:70, eva:34, armor:0, speed:160, range:1, xp:30, biome:[0,1,2], band:[1,5], rare:true, el:'air',    drop:'mote', erratic:true, sprite:'galeling'},
-  stoneling:{name:'Stoneling',    ch:'*', col:'#7FA05A', hp:30, dmg:[4,7], acc:60, eva:8,  armor:4, speed:80,  range:1, xp:30, biome:[0,1,2], band:[1,5], rare:true, el:'earth',  drop:'mote', sprite:'stoneling'},
-  wisp:     {name:'Gloom Wisp',   ch:'*', col:'#8A6FB0', hp:16, dmg:[4,8], acc:68, eva:30, armor:0, speed:120, range:1, xp:30, biome:[0,1,2], band:[3,5], rare:true, el:'shadow', drop:'mote', sprite:'wisp'},
-  lumenling:{name:'Lumenling',    ch:'*', col:'#F2E8DC', hp:20, dmg:[4,7], acc:70, eva:28, armor:0, speed:120, range:1, xp:34, biome:[0,1,2], band:[3,5], rare:true, el:'light',  drop:'mote', sprite:'lumenling'}
-};
-function depthIn(){ return ((floorNo-1)%5)+1; }          /* floor within the biome, 1-5 */
+/* floor within the biome, 1-5 */
 function biomeIdx(){ return Math.min(BIOMES.length-1, Math.floor((floorNo-1)/5)); }
-function rosterFor(d, bi){
-  var out=[];
-  for(var k in MONSTERS){
-    var b=MONSTERS[k];
-    if(b.rare || !b.band || b.biome.indexOf(bi)<0) continue;
-    if(d < b.band[0] || d > b.band[1]) continue;
-    out.push([k, b.w||10]);
-  }
-  return out;
-}
-var BUILDS={
-  dwarf:{ name:'Thrain Stonebeard', who:'Dwarf Fighter', stats:{mig:13,agi:8,vit:14,foc:9}, aff:{earth:1}, speed:100, col:'#E8B44A', sprite:'dwarf',
-    weapon:{name:'Rusty Mace', dmg:[3,6], acc:-5, hands:1, note:'ignores 2 armor'},
-    alt:{name:'Rusty Battle Axe', dmg:[5,9], acc:-10, hands:2, note:'+25% vs wounded'},
-    armor:{name:'Heavy Plate (Earth)', armor:3, eva:-10, note:'+2 armor enchant'},
-    off:{name:'Kite Shield (Earth)', block:0.35, note:'+15% block'},   /* shields block */
-    classAbility:'double' },
-  elf:{ name:'Saelis Duskwarden', who:'Elf Mage', stats:{mig:9,agi:11,vit:8,foc:16}, aff:{fire:1}, speed:110, col:'#62A8D8',
-    weapon:{name:'Rusty Wand', dmg:[1,2], acc:0, hands:1, spell:0.10, note:'+10% spell damage'},
-    alt:{name:'Oak Staff', dmg:[2,4], acc:0, hands:2, spell:0.20, note:'+20% spell damage'},
-    armor:{name:'Robe (Fire)', armor:1, eva:5, note:'attackers singed'},
-    off:{name:'Orb (Fire)', block:0, note:'+15% fire spells'},
-    classAbility:'missile' },
-  human:{ name:'Wren Quickfingers', who:'Human Scoundrel', stats:{mig:10,agi:14,vit:10,foc:10}, aff:{shadow:1}, speed:100, col:'#8A6FB0',
-    weapon:{name:'Rusty Dagger', dmg:[2,5], acc:10, hands:1, note:'surprise x1.5'},
-    alt:{name:'Short Bow', dmg:[3,6], acc:5, hands:2, range:6, note:'range 6; weak up close'},
-    armor:{name:'Leathers (Shadow)', armor:1, eva:5, note:'heal on kill'},
-    off:{name:'Off-hand Dagger', block:0, weapon:true, note:'bonus strike 15%'},
-    classAbility:'sap' },
-  gloom:{ name:'Vess of the Quiet Hollow', who:'Gloomling Cleric of Mother Murk', stats:{mig:9,agi:8,vit:12,foc:13}, aff:{shadow:1}, locked:'shadow', god:'murk',
-    speed:100, col:'#8A6FB0', sprite:'gloomling',
-    weapon:{name:'Bone Censer', dmg:[3,6], acc:0, hands:1, note:'+10% shadow damage'},
-    alt:{name:'Grave Staff', dmg:[2,4], acc:0, hands:2, spell:0.20, note:'+20% spell damage'},
-    armor:{name:'Shroud (Shadow)', armor:1, eva:5, note:'shadow-touched cloth'},
-    off:{name:'Warding Candle', block:0, note:'+15% shadow spells'},
-    classAbility:'invoke' },
-  faewater:{ name:'Nerissa of the Tide Court', who:'Fae Scoundrel', stats:{mig:8,agi:16,vit:9,foc:11}, aff:{water:1}, locked:'water',
-    speed:100, col:'#62A8D8', sprite:'fae-water',
-    weapon:{name:'Rusty Dagger', dmg:[2,5], acc:10, hands:1, note:'surprise x1.5'},
-    alt:{name:'Short Bow', dmg:[3,6], acc:5, hands:2, range:6, note:'range 6; weak up close'},
-    armor:{name:'Leathers', armor:1, eva:5, note:'light'},
-    off:{name:'Off-hand Dagger', block:0, weapon:true, note:'bonus strike 15%'},
-    classAbility:'sap' },
-  fae:{ name:'Ilka of the Ember Court', who:'Fae Scoundrel', stats:{mig:8,agi:16,vit:9,foc:11}, aff:{fire:1}, locked:'fire',
-    speed:100, col:'#E2622B',
-    weapon:{name:'Rusty Dagger', dmg:[2,5], acc:10, hands:1, note:'surprise x1.5'},
-    alt:{name:'Short Bow', dmg:[3,6], acc:5, hands:2, range:6, note:'range 6; weak up close'},
-    armor:{name:'Leathers', armor:1, eva:5, note:'light'},
-    off:{name:'Off-hand Dagger', block:0, weapon:true, note:'bonus strike 15%'},
-    classAbility:'sap' }
-};
-/* gods: only the one the demo can start with is wired up so far */
-var GODS={
-  murk:{ name:'Mother Murk', invoke:'raisedead' }
-};
+
 var EMPTY_OFF={name:'Empty', block:0, note:'nothing in your off hand'};
-var ABILITIES={
-  double:{name:'Double Strike', cost:12, tech:true, kind:'melee2', desc:'Two weapon attacks on an adjacent enemy.'},
-  root:{name:'Earth Root', cost:12, kind:'bolt', range:4, type:'phys', base:[9,15], status:{root:2}, desc:'Rock spell: physical damage, roots for 2 turns.'},
-  missile:{name:'Magic Missile', cost:7, kind:'bolt', range:6, type:'magic', base:[3,6], always:true, perAffinity:1, desc:'Always hits. Magic damage: nothing resists it. +1 for every point of elemental affinity you hold. No riders.'},
-  firebolt:{name:'Firebolt', cost:12, kind:'bolt', range:6, type:'fire', base:[9,15], status:{burn:3}, desc:'Fire damage; sets the target burning.'},
-  step:{name:'Flame Step', cost:4, kind:'dash', desc:'Dash up to 3 tiles; enemies beside you are burned.'},
-  sap:{name:'Sap', cost:7, tech:true, kind:'bolt', range:5, type:'phys', base:[2,4], status:{stun:3}, desc:'Melee or ranged: knocks the target out for 3 turns.'},
-  shadowbolt:{name:'Shadow Bolt', cost:12, kind:'bolt', range:6, type:'dark', base:[9,15], status:{fear:2}, desc:'Dark damage; the target flees in fear.'},
-  raisedead:{name:'Raise Dead', cost:8, kind:'summon', range:4, life:20, desc:'Invoke (Mother Murk): a skeleton claws out of the floor and fights for you for 20 turns. One at a time.'},
-  vanish:{name:'Vanish', cost:6, kind:'hide', desc:'Slip out of sight for 4 turns; your next hit is a surprise attack.'}
-};
-var LOOT={
-  weapons:[
-    {name:'Rusty Sword', dmg:[3,7], acc:0, hands:1, note:'+5% crit'},
-    {name:'Rusty Dagger', dmg:[2,5], acc:10, hands:1, note:'surprise x1.5'},
-    {name:'Rusty Mace', dmg:[3,6], acc:-5, hands:1, note:'ignores 2 armor'},
-    {name:'Rusty Long Sword', dmg:[5,9], acc:0, hands:2, note:'+10% crit'},
-    {name:'Short Bow', dmg:[3,6], acc:5, hands:2, range:6, note:'range 6; weak up close'},
-    {name:'Oak Staff', dmg:[2,4], acc:0, hands:2, spell:0.20, note:'+20% spell damage'}
-  ],
-  armors:[
-    {name:'Robe', armor:0, eva:5, note:'no penalty'},
-    {name:'Leathers', armor:1, eva:5, note:'light'},
-    {name:'Chain Shirt', armor:2, eva:0, note:'medium'},
-    {name:'Rusty Plate', armor:3, eva:-10, note:'heavy'}
-  ],
-  sigils:[
-    {name:'Light sigil', use:'heal'},
-    {name:'Fire sigil', use:'firestorm'},
-    {name:'Air sigil', use:'blink'},
-    {name:'Earth sigil', use:'stoneskin'},
-    {name:'Shadow sigil', use:'vanish'}
-  ],
-  looks:['Ashen sigil','Coiled sigil','Cracked sigil','Weeping sigil','Humming sigil','Bone sigil','Tarnished sigil','Woven sigil']
-};
-var PASSIVES={
-  mig:[{at:12,id:'heavyHands',name:'Heavy Hands',d:'+10% melee damage'},
-       {at:15,id:'crushing',  name:'Crushing Blows',d:'+25% damage to targets below half HP'},
-       {at:18,id:'spellWard', name:'Spell Ward',d:'block spells and abilities in addition to melee and ranged attacks'},
-       {at:21,id:'cleaving',  name:'Cleaving Swings',d:'your attacks also hit one other adjacent enemy for half'},
-       {at:25,id:'unstoppable',name:'Unstoppable',d:'immune to stun, slow and knockback, +20% melee damage'}],
-  agi:[{at:12,id:'lightFeet',name:'Light Feet',d:'+8 evasion'},
-       {at:15,id:'deadeye',  name:'Deadeye',d:'+8% crit chance'},
-       {at:18,id:'fleet',    name:'Fleet',d:'moving costs 15% less time'},
-       {at:21,id:'riposte',  name:'Riposte',d:'a parry has a 50% chance to counterattack'},
-       {at:25,id:'blur',     name:'Blur',d:'an attack against you misses outright (every 20 turns)'}],
-  vit:[{at:12,id:'tough',    name:'Tough',d:'+15% max HP'},
-       {at:15,id:'secondWind',name:'Second Wind',d:'heal 10% of max HP on every new floor'},
-       {at:18,id:'ironConst',name:'Iron Constitution',d:'statuses on you last half as long'},
-       {at:21,id:'fortitude',name:'Fortitude',d:'a hit against you is halved (every 15 turns)'},
-       {at:25,id:'resilient',name:'Resilient',d:'regeneration doubles below half HP'}],
-  foc:[{at:12,id:'arcaneStudy',name:'Arcane Study',d:'+10% spell damage'},
-       {at:15,id:'meditation',name:'Meditation',d:'+25% mana regeneration'},
-       {at:18,id:'deepFocus', name:'Deep Focus',d:'+20% spell damage'},
-       {at:21,id:'overflow',  name:'Overflow',d:'a spell that kills refunds half its mana'},
-       {at:25,id:'archmage',  name:'Archmage',d:'+50% mana regeneration, spells can crit'}]
-};
+
 function hasP(id){ return !!(player.passives && player.passives[id]); }
 function recomputePassives(){
-  var got={}, list=[];
-  for(var k in PASSIVES) PASSIVES[k].forEach(function(p){
-    if(player.stats[k] >= p.at){ got[p.id]=true; list.push(p.id); }
-  });
-  var fresh=[];
-  for(var i=0;i<list.length;i++) if(!player.passives || !player.passives[list[i]]) fresh.push(list[i]);
+  var got=FoteStats.passivesFor(player.stats,PASSIVES);
+  var fresh=Object.keys(got).filter(function(id){return !player.passives||!player.passives[id];});
   player.passives=got;
   return fresh;
 }
-var ELEMENT_ABILS={
-  fire:   {2:'firebolt', 4:'step'},
-  earth:  {2:'root'},
-  shadow: {2:'shadowbolt', 4:'vanish'},
-  water:  {2:'root'},
-  air:    {2:'firebolt'},
-  light:  {2:'firebolt'}
-};
+
 var AFF_COL={fire:'#E2622B',earth:'#7FA05A',shadow:'#8A6FB0',water:'#62A8D8',air:'#E8B44A',light:'#F2E8DC'};
 
 /* ============ state ============ */
@@ -214,7 +51,6 @@ var player={ id:0, ch:'@', x:2, y:2, t:0, st:{}, foe:false, build:'dwarf',
 function at(x,y){ return (x<0||y<0||x>=MW||y>=MH) ? WALL : map[y*MW+x]; }
 function setT(x,y,v){ if(x>=0&&y>=0&&x<MW&&y<MH) map[y*MW+x]=v; }
 function biome(){ return BIOMES[Math.min(BIOMES.length-1, Math.floor((floorNo-1)/5))]; }
-
 
 /* ============ generation ============ */
 function carveCorridor(ax,ay,bx,by,force){
@@ -239,28 +75,7 @@ function doorSpot(x,y,horizontalWall){
 }
 
 /* ============ field of view ============ */
-var OCT=[[1,0,0,1],[0,1,1,0],[0,-1,1,0],[-1,0,0,1],[-1,0,0,-1],[0,-1,-1,0],[0,1,-1,0],[1,0,0,-1]];
-function castLight(cx,cy,row,start,end,xx,xy,yx,yy,radius){
-  if(start<end) return;
-  var newStart=start;
-  for(var i=row;i<=radius;i++){
-    var blocked=false;
-    for(var dx=-i, dy=-i; dx<=0; dx++){
-      var lSlope=(dx-0.5)/(dy+0.5), rSlope=(dx+0.5)/(dy-0.5);
-      if(start<rSlope) continue; else if(end>lSlope) break;
-      var X=cx+dx*xx+dy*xy, Y=cy+dx*yx+dy*yy;
-      if(X<0||Y<0||X>=MW||Y>=MH) continue;
-      if(dx*dx+dy*dy <= radius*radius){ vis[Y*MW+X]=1; seen[Y*MW+X]=1; }
-      if(blocked){
-        if(opaque(X,Y)){ newStart=rSlope; continue; }
-        blocked=false; start=newStart;
-      } else if(opaque(X,Y) && i<radius){
-        blocked=true; castLight(cx,cy,i+1,start,lSlope,xx,xy,yx,yy,radius); newStart=rSlope;
-      }
-    }
-    if(blocked) break;
-  }
-}
+
 
 /* ============ effects: floating numbers and flying bolts ============ */
 var fx=[];
@@ -298,45 +113,8 @@ var fxIdleFrames=0, lastFrame=0;
 /* ============ combat ============ */
 function hitChance(acc,eva){ return clamp(acc/(acc+eva), 0.15, 0.95); }
 
-
 /* ============ player actions ============ */
-/* drop an item on a doll slot to wear it; slot is 'main', 'off' or 'armor' */
-function useForge(){
-  var have=Object.keys(player.motes).filter(function(m){ return player.motes[m]>0; });
-  if(!have.length){ log('The Forge is cold. Bring it a mote.','c-info'); return; }
-  var total=0; for(var e in player.aff) total+=player.aff[e];
-  if(total>=affinityCap()){
-    var el2=have[0];
-    if(player.weapon.enchant===el2){ log('Your '+player.weapon.name+' already burns with '+el2+'.','c-info'); return; }
-    player.motes[el2]--; if(player.motes[el2]<=0) delete player.motes[el2];
-    player.weapon.enchant=el2; derive(player);
-    log('The Forge sets <b>'+el2+'</b> into your '+player.weapon.name+'. <span class="roll">(affinity capped at '+affinityCap()+')</span>','c-kill');
-    updateUI(); return;
-  }
-  /* prefer an element you already carry an affinity for, else start a second one (max two elements) */
-  var mine=have.filter(function(m){ return player.aff[m]; });
-  var el = mine.length ? mine[0] : (Object.keys(player.aff).length<2 ? have[0] : null);
-  if(!el){ log('You already hold two elements; that mote will not take.','c-info'); return; }
-  if(!player.aff[el]) log('Your first element. <b>'+el+'</b> becomes your primary.','c-kill');
-  player.motes[el]--; if(player.motes[el]<=0) delete player.motes[el];
-  player.aff[el]=(player.aff[el]||0)+1;
-  var before=player.abilities.slice();
-  derive(player);
-  log('The Forge burns the mote into you. <b>'+el+' '+player.aff[el]+'</b>.','c-kill');
-  player.hotbar=null;
-  player.abilities.forEach(function(k){
-    if(before.indexOf(k)<0) log('<b>New ability: '+ABILITIES[k].name+'</b> &mdash; '+ABILITIES[k].desc,'c-kill');
-  });
-  updateUI();
-}
 function cancelAim(){ if(!aiming) return; aiming=null; abilityBar(); draw(); }
-
-
-/* ============ allies ============ */
-
-/* ============ monsters ============ */
-
-/* ============ turn loop ============ */
 
 /* ============ sprites ============ =======================================
    Every creature and character draws from the packed sheets (art/packed, via assets.js). The sandbox's
@@ -435,24 +213,6 @@ function glyph(ch,px,py,col){ ctx.fillStyle=col; ctx.font='600 '+Math.round(TS*0
 function mark(ch,px,py,col){ ctx.fillStyle=col; ctx.font='600 '+Math.max(8,Math.round(TS*0.36))+'px "IBM Plex Mono",monospace';
   ctx.textAlign='left'; ctx.textBaseline='middle'; ctx.fillText(ch,px,py); }
 
-/* ---------- placeholder item art: small canvas icons, same chunky style as the map ---------- */
-function iconKind(name){
-  var n=(name||'').toLowerCase();
-  if(n.indexOf('bow')>=0) return 'bow';
-  if(n.indexOf('axe')>=0) return 'axe';
-  if(n.indexOf('staff')>=0) return 'staff';
-  if(n.indexOf('wand')>=0) return 'wand';
-  if(n.indexOf('mace')>=0) return 'mace';
-  if(n.indexOf('dagger')>=0) return 'dagger';
-  if(n.indexOf('sword')>=0) return 'sword';
-  if(n.indexOf('shield')>=0) return 'shield';
-  if(n.indexOf('orb')>=0) return 'orb';
-  if(n.indexOf('sigil')>=0) return 'sigil';
-  if(n.indexOf('ration')>=0) return 'ration';
-  if(n.indexOf('plate')>=0||n.indexOf('robe')>=0||n.indexOf('leather')>=0||n.indexOf('chain')>=0) return 'armor';
-  return 'item';
-}
-
 /* ---------- hover cards for gear ---------- */
 var dtip=null;
 function ensureDtip(){
@@ -461,7 +221,7 @@ function ensureDtip(){
   dtip.id='dtip'; document.body.appendChild(dtip);
   return dtip;
 }
-function elLabel(e){ return e ? (' <span style="color:'+(AFF_COL[e]||'#fff')+'">'+e+'</span>') : ''; }
+
 function showCard(html, ev){
   var t=ensureDtip();
   t.innerHTML=html; t.style.display='block';
@@ -545,7 +305,7 @@ function passiveList(){
   }
   return out;
 }
-function updateUI(){
+function renderPlayerUI(){
   abilityBar(); bars(); panes();
   var pl=document.querySelectorAll('.plus');
   for(var i=0;i<pl.length;i++)
@@ -611,7 +371,7 @@ $('tabs').addEventListener('click', function(ev){
 });
 $('close').onclick=function(){ showSheet(openSheet); };
 $('shade').addEventListener('click', function(ev){ if(ev.target===$('shade')) showSheet(openSheet); });
-$('bNew').onclick=function(){ var s=parseInt($('seed').value,10); newRun(isNaN(s)?Date.now()%100000:s); };
+
 $('bReveal').onclick=function(){
   revealAll=!revealAll;
   $('bReveal').textContent = revealAll ? 'Reveal: on' : 'Reveal: off';
@@ -619,37 +379,17 @@ $('bReveal').onclick=function(){
   draw();
 };
 $('zoom').onchange=function(){ zoomKey=this.value; resize(); };
-$('bGive').onclick=function(){
-  /* a spare piece of kit, so the paper doll has something to accept */
-  var weapon = rng()<0.6;
-  var it = weapon ? pick(LOOT.weapons) : pick(LOOT.armors);
-  var copy={}; for(var k in it) copy[k]=it[k];
-  if(weapon){ copy.plus = ri(0,3); if(rng()<0.5) copy.enchant=pick(['fire','earth','shadow','water']); }
-  addBag(weapon?'\u2694':'\u26E8', copy.name, {kind:weapon?'weapon':'armor', data:copy, uid:copy.name+(copy.plus||0)+(copy.enchant||'')});
-  log('A <b>'+copy.name+'</b> appears in your bag &mdash; open Equipment and drag it onto the doll.','c-good');
-  updateUI();
-};
+
 $('bMotion').onclick=function(){
   setMotion(ANIM.mode==='auto' ? (ANIM.reduce?'on':'off') : ANIM.mode==='on' ? 'off' : 'auto');
   log('Motion: '+(ANIM.reduce?'off':'on')+'.','c-info');
 };
 $('bArt').onclick=function(){ spriteOn=!spriteOn; log(spriteOn?'Sprites on.':'Block art on.','c-info'); draw(); };
-$('bLevel').onclick=function(){ gainXP(player.xpNext-player.xp); updateUI(); };
-$('bSpawn').onclick=function(){
-  var spots=[], x, y;
-  for(y=0;y<MH;y++) for(x=0;x<MW;x++){
-    var d=dist(player,{x:x,y:y});
-    var free=!ents.some(function(e){ return e.x===x && e.y===y; });
-    if(at(x,y)===FLOOR && d>3 && d<9 && free) spots.push({x:x,y:y});
-  }
-  if(!spots.length) return;
-  var p=pick(spots), m=spawn(pick(['goblin','archer','slime','shade']),p.x,p.y);
-  m.state='hunt'; log('A '+m.name+' arrives.','c-info'); draw(); updateUI();
-};
+
 $('preset').onchange=function(){ player.build=$('preset').value; newRun(worldSeed); };
 $('numScale').onchange=function(){ NUM=parseFloat(this.value); newRun(worldSeed); };
 $('lethal').onchange=function(){ LETH=parseFloat(this.value); newRun(worldSeed); };
-$('bAgain').onclick=function(){ newRun(Date.now()%100000); };
+
 window.addEventListener('resize', resize);
 if(window.ResizeObserver) new ResizeObserver(resize).observe($('map'));
 

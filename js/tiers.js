@@ -31,11 +31,11 @@ var TIER_OFF = {
   holy:     {field:'divine',      base:[0.10,0.15,0.20,0.25], per:0.04},
 };
 /* caster items: tier value + per upgrade level (tierOf reads these by tier number) */
-FOCUS_BONUS = { staff:{base:[0.20,0.25,0.35,0.45], per:0.08}, wand:{base:[0.03,0.05,0.08,0.12], per:0.03},
+var FOCUS_BONUS = { staff:{base:[0.20,0.25,0.35,0.45], per:0.08}, wand:{base:[0.03,0.05,0.08,0.12], per:0.03},
                 orb:{base:[0,0,0,0], per:0, curse:[0.08,0.10,0.15,0.20], cursePer:0.04} };
-WAND_THRIFT = {base:[0.08,0.10,0.15,0.20], per:0.03};
-ORB_CRIT    = {base:[0.06,0.08,0.12,0.16], per:0.03};
-tierOf = function(table, it){ var v=table[tierNum(it)]; return v!==undefined ? v : table[1]; };
+var WAND_THRIFT = {base:[0.08,0.10,0.15,0.20], per:0.03};
+var ORB_CRIT = {base:[0.06,0.08,0.12,0.16], per:0.03};
+function tierOf(table,it){var value=table[tierNum(it)];return value!==undefined?value:table[1];}
 
 /* requirements: T1..T3 (T0 none). 'any' = either stat is enough */
 var TIER_REQ = {
@@ -159,131 +159,34 @@ function reqBlock(it){
   log((why ? 'You are not '+why+' enough to use the <b>' : 'You can&rsquo;t use the <b>')+gearName(it)+'</b> yet. It needs '+reqText(it)+'.','c-info'); sfx('ui-error');
   return true;
 }
-var _useBagItemTier = useBagItem;
-useBagItem = function(idx){
-  var b=player.bag[idx];
-  if(b && (b.kind==='weapon'||b.kind==='armor'||b.kind==='off') && reqBlock(tierNormalize(b.data))) return;
-  return _useBagItemTier(idx);
-};
-var _equipFromBagTier = equipFromBag;
-equipFromBag = function(idx, slot){
-  var b=player.bag[idx];
-  if(b && (b.kind==='weapon'||b.kind==='armor'||b.kind==='off') && reqBlock(tierNormalize(b.data))) return;
-  return _equipFromBagTier(idx, slot);
-};
+
 
 /* ---------------------------------------------------------------- names and colors */
-var _gearNameTier = gearName;
-gearName = function(it){
-  if(!it || !itemKey(it)) return _gearNameTier(it);
-  var t=tierNum(it), saved=it.tier;
-  it.tier=undefined;
-  var n=_gearNameTier(it);
-  it.tier=saved;
-  return (TIER_NAME[t] ? TIER_NAME[t]+' ' : '')+n;
-};
+
+
 function tierTint(html, it){
   var c=tierCol(it); if(!c || !html) return html;
   return html.replace('<div class="nm">', '<div class="nm" style="color:'+c+'"><span class="tierpip" style="background:'+c+'"></span>');
 }
-var _weaponCardTier = weaponCard;
-weaponCard = function(w, worn){ if(w) tierNormalize(w); return tierTint(_weaponCardTier(w, worn), w) + (w && !worn ? reqRow(w) : ''); };
-var _armorCardTier = armorCard;
-armorCard = function(a, worn){
-  if(a) tierNormalize(a);
-  var h=_armorCardTier(a, worn);
-  if(a && a.armor===0 && itemPlus(a)) h=h.replace('<span>Armor</span><b>0</b>', '<span>Armor</span><b>'+itemPlus(a)+'</b>');
-  if(a && itemKey(a)==='robe' && !a.unid) h+='<div class="row"><span>Spell damage</span><b>+'+Math.round(robeSpell(a)*gearPassiveBonus()*100)+'%</b></div><div class="row"><span>Max mana</span><b>+'+Math.round(TIER_ROBE.mana[tierNum(a)]*gearPassiveBonus()*100)+'%</b></div>';
-  return tierTint(h, a) + (a && !worn ? reqRow(a) : '');
-};
-var _bagCardTier = bagCard;
-bagCard = function(it){
-  if(it && it.data && (it.kind==='weapon'||it.kind==='armor'||it.kind==='off')) tierNormalize(it.data);
-  var h=_bagCardTier(it);
-  if(it && it.kind==='off' && it.data){
-    var d=it.data, k=itemKey(d), extra='';
-    if(!d.unid){
-      if(TIER_BLOCK[k]) extra+='<div class="row"><span>Block</span><b>'+Math.round((d.block+TIER_BLOCK.per*(d.plus||0))*100)+'%</b></div>';
-      if(k==='tome') extra+='<div class="row"><span>Max mana</span><b>+'+Math.round(d.manaPct*gearPassiveBonus()*100)+'%</b></div>';
-      if(k==='holy') extra+='<div class="row"><span>Invoke &amp; prayer strength</span><b>+'+Math.round(d.divine*gearPassiveBonus()*100)+'%</b></div>';
-      if(d.kind==='off' && d.weapon) extra+='<div class="row"><span>Off-hand strike</span><b>60% damage, own procs</b></div>';
-    }
-    h=tierTint(h, d)+extra+reqRow(d);
-  }
-  return h;
-};
+
+
 /* bag cells and worn slots pick up the tier color */
-var _panesTier = panes;
-panes = function(){
-  _panesTier();
-  if(openSheet!=='Equip' || !$('mEquip')) return;
-  $('mEquip').querySelectorAll('.cell[data-b]').forEach(function(cel){
-    var b=player.bag[+cel.getAttribute('data-b')];
-    var c=b && b.data && (b.kind==='weapon'||b.kind==='armor'||b.kind==='off') ? tierCol(b.data) : null;
-    if(c){ cel.style.borderColor=c; cel.style.boxShadow='inset 0 0 0 1px '+c+'55'; }
-    if(b && b.data && (b.kind==='weapon'||b.kind==='armor'||b.kind==='off') && !meetsReq(b.data)) cel.style.opacity='0.55';
-  });
-  var map={main:player.weapon, off:player.off, armor:player.armorItem};
-  $('mEquip').querySelectorAll('.eslot[data-eq]').forEach(function(es){
-    var it=map[es.getAttribute('data-eq')], v=es.querySelector('.v'), c=tierCol(it);
-    if(v && c) v.style.color=c;
-  });
-};
+
+
 (function(){ var st=document.createElement('style'); st.textContent='.tierpip{display:inline-block;width:7px;height:7px;border-radius:2px;margin-right:6px;vertical-align:1px}'; document.head.appendChild(st); })();
 
 /* ---------------------------------------------------------------- derived numbers */
 function robeSpell(a){ return TIER_ROBE.spell[tierNum(a)] + TIER_ROBE.spellPer*Math.max(0,(a.plus||0)); }
-var _deriveTier = derive;
-derive = function(p){
-  if(p===player) allGear().forEach(tierNormalize);
-  _deriveTier(p);
-  if(p!==player) return;
-  var w=p.weapon;
-  /* dwarves count as +1 at the weapon's full per-level rate */
-  if(w && !w.unarmed && itemKey(w) && p.race==='dwarf'){ var per=tierPer(w); p.dmg=[p.dmg[0]+per[0]-1, p.dmg[1]+per[1]-1]; }
-  var arm=p.armorItem;
-  if(arm && itemKey(arm) && arm.armor===0) p.armor += Math.max(0, itemPlus(arm));
-  /* shields: tier block + 2% per level + 2% per point of Might above 10 (Might braces the shield, 2026-09-17;
-     stats cap at 25, so a maxed Might is +30% and a real shield build blocks nearly everything),
-     60% cap. This is the live formula - combat.js sets p.block first and this wrapper runs after it. */
-  var o=p.off, sh = o && o!==EMPTY_OFF && o.block>0 && !p.twoHanded;
-  p.block = sh ? Math.min(0.75, o.block + TIER_BLOCK.per*(o.plus||0)
-                              + (p.cls==='fighter' && typeof FIGHTER_NO_BLOCK==='undefined' ? 0.15 : 0)
-                              + 0.02*Math.max(0, (p.stats&&p.stats.mig||10)-10)) : 0;
-  /* tomes carry their own per-level mana; undo upgrade.js's older +5%/level */
-  if(o && o!==EMPTY_OFF && !p.twoHanded && o.manaPct && (o.plus||0)) p.maxmp=Math.round(p.maxmp/(1+0.05*o.plus));
-  if(arm && itemKey(arm)==='robe') p.maxmp=Math.round(p.maxmp*(1+TIER_ROBE.mana[tierNum(arm)]*gearPassiveBonus()));
-  if(p.hp>p.maxhp) p.hp=p.maxhp;
-  if(p.mp>p.maxmp) p.mp=p.maxmp;
-};
+
+
 /* robe spell damage joins the gear pool */
-var _spellPowerTier = spellPower;
-spellPower = function(A){
-  var m=_spellPowerTier(A), arm=player.armorItem;
-  if(arm && itemKey(arm)==='robe' && !arm.cursed){
-    var pool=focusBonus(player.weapon) + (player.twoHanded ? 0 : focusBonus(player.off));
-    m *= Math.max(0.1, 1+pool+robeSpell(arm)*gearPassiveBonus()) / Math.max(0.1, 1+pool);
-  }
-  return m;
-};
+
 
 /* ---------------------------------------------------------------- drops by depth */
 function rollTier(){
   var odds=qualityOdds(floorNo), r=rng();
   return r<odds[0] ? 1 : r<odds[0]+odds[1] ? 2 : 3;
 }
-var _randomGearTier = randomGear;
-randomGear = function(){
-  var g=_randomGearTier();
-  if(g && g.it && (g.kind==='weapon'||g.kind==='armor'||g.kind==='off')){ g.it.tier=rollTier(); tierNormalize(g.it); }
-  return g;
-};
+
 
 /* ---------------------------------------------------------------- starting kits are T0 */
-var _newRunTier = newRun;
-newRun = function(seed, choice){
-  _newRunTier(seed, choice);
-  allGear().forEach(function(it){ it.tier=0; it.plus=0; tierNormalize(it); });
-  derive(player); player.hp=player.maxhp; player.mp=player.maxmp;
-  updateUI();
-};

@@ -96,7 +96,7 @@ var PT_MAT = {
     rockHi:'#F2F6FC', rockMid:'#D2DCEA', rockLo:'#A6B4CA', rockEdge:'#6E7E98', motif:'sun'
   }
 };
-function ptMat(){ return floorMeta && floorMeta.plane && PT_MAT[floorMeta.plane] || null; }
+function ptMat(){return floorMeta&&floorMeta.plane&&PT_MAT[floorMeta.plane]||((map&&inCaverns())||DEEP_RC?PT_MAT.cavern:null);}
 function ptSalt(){ return (typeof surfSalt==='function' ? surfSalt() : floorNo*31) + 911; }
 
 /* ---------------------------------------------------------------- noise in world space */
@@ -131,21 +131,22 @@ function ptDist(){
   c.dist=d; return d;
 }
 function ptCellDist(x,y){ return inb(x,y) ? ptDist()[idxOf(x,y)] : 255; }
-function ptSolid(wx, wy, salt){
-  var cx=Math.floor(wx), cy=Math.floor(wy), own=ptWallCell(cx,cy);
+function ptSolid(wx, wy, salt, raster){
+  var wall=raster?raster.wall:ptWallCell;
+  var cx=Math.floor(wx), cy=Math.floor(wy), own=wall(cx,cy);
   var fx=wx-cx, fy=wy-cy;
   var same=true;
-  for(var oy=-1;oy<=1 && same;oy++) for(var ox=-1;ox<=1;ox++) if(ptWallCell(cx+ox,cy+oy)!==own){ same=false; break; }
+  for(var oy=-1;oy<=1 && same;oy++) for(var ox=-1;ox<=1;ox++) if(wall(cx+ox,cy+oy)!==own){ same=false; break; }
   if(same) return own;
   /* near a boundary: a smooth weighted field over the surrounding cells, gently wobbled, so rock forms large
      connected masses with clean inside and outside corners and never leaves slivers or detached bits */
   var sum=0, wsum=0;
   for(var oy2=-2;oy2<=2;oy2++) for(var ox2=-2;ox2<=2;ox2++){
     var nx=cx+ox2, ny=cy+oy2, dx=wx-(nx+0.5), dy=wy-(ny+0.5), d=Math.sqrt(dx*dx+dy*dy), w=Math.max(0, 1-d/1.35);
-    if(!w) continue; w*=w; wsum+=w; if(ptWallCell(nx,ny)) sum+=w;
+    if(!w) continue; w*=w; wsum+=w; if(wall(nx,ny)) sum+=w;
   }
   var f=wsum ? sum/wsum : (own?1:0);
-  var sld = f > 0.5 + (ptVal(wx*0.85, wy*0.85, salt+3)-0.5)*0.34 + (ptVal(wx*2.3, wy*2.3, salt+4)-0.5)*0.1 + ptJag(wx, wy, salt);
+  var sld = f > 0.5 + (ptVal(wx*0.85, wy*0.85, salt+3)-0.5)*0.34 + (ptVal(wx*2.3, wy*2.3, salt+4)-0.5)*0.1 + ptJag(wx, wy, salt,raster&&raster.material);
   var rc=Math.sqrt((fx-0.5)*(fx-0.5)+(fy-0.5)*(fy-0.5));
   if(!own && sld && rc<0.3) return false;   /* open cells keep a round walkable core */
   if(own && !sld && rc<0.26) return true;
@@ -153,17 +154,18 @@ function ptSolid(wx, wy, salt){
 }
 /* 2026-09-19: a material can ask for broken, rocky edges (the Caverns): ridged noise at two finer scales
    chips and notches the boundary instead of the planes' smooth wobble. 0 for everything else. */
-function ptJag(wx, wy, salt){
-  var M=ptMat(), J=M && M.jag; if(!J) return 0;
+function ptJag(wx, wy, salt, material){
+  var M=material||ptMat(), J=M && M.jag; if(!J) return 0;
   var r1=1-Math.abs(ptVal(wx*3.6, wy*3.6, salt+41)*2-1), r2=1-Math.abs(ptVal(wx*8.2, wy*8.2, salt+43)*2-1);
   return (r1-0.5)*J*0.55 + (r2-0.5)*J*0.3;
 }
 /* 0 = open floor, 1 = rock formation, 2 = the dark beyond (rock far from any open ground) */
-function ptKind(wx, wy, salt){
-  if(!ptSolid(wx, wy, salt)) return 0;
+function ptKind(wx, wy, salt, raster){
+  if(!ptSolid(wx, wy, salt,raster)) return 0;
+  var cellDistance=raster?raster.distance:ptCellDist;
   var cx=Math.floor(wx), cy=Math.floor(wy), best=9;
   for(var oy=-2;oy<=2;oy++) for(var ox=-2;ox<=2;ox++){
-    var nx=cx+ox, ny=cy+oy; if(ptCellDist(nx,ny)!==0) continue;
+    var nx=cx+ox, ny=cy+oy; if(cellDistance(nx,ny)!==0) continue;
     var dx=Math.max(nx-wx, 0, wx-(nx+1)), dy=Math.max(ny-wy, 0, wy-(ny+1)); var dd=Math.sqrt(dx*dx+dy*dy); if(dd<best) best=dd;
   }
   /* the formation band keeps a steady depth, its back edge gently uneven */
@@ -175,12 +177,20 @@ function ptKind(wx, wy, salt){
 function ptMix(a, b, t){ return [a[0]+(b[0]-a[0])*t, a[1]+(b[1]-a[1])*t, a[2]+(b[2]-a[2])*t]; }
 function ptCellRaster(x, y){
   var M=ptMat(); if(!M) return null;
+  /* A raster is synchronous: its map/material/distance field cannot change halfway
+     through a pixel. Resolve them once, instead of rebuilding the floor cache key
+     for every neighbour of every pixel. Keep distance and wall semantics separate:
+     the wall map reflects an opened door even if its distance field was cached. */
+  var rasterMap=map,rasterWidth=MW,rasterHeight=MH,rasterDistance=ptDist();
+  var raster={material:M,
+    wall:function(x,y){return x<0||y<0||x>=rasterWidth||y>=rasterHeight||isWallLike(rasterMap[y*rasterWidth+x]);},
+    distance:function(x,y){return x<0||y<0||x>=rasterWidth||y>=rasterHeight?255:rasterDistance[y*rasterWidth+x];}};
   var R=PT_R, salt=ptSalt(), c=document.createElement('canvas'); c.width=R; c.height=R;
   var g=c.getContext('2d'), im=g.createImageData(R,R), D=im.data;
   var FACEP=Math.round(M.faceH*R), step=1/R;
   var MH2=R+FACEP+2, kind=new Uint8Array(R*MH2), kcache={};
-  for(var v=-1; v<MH2; v++) for(var u=-1; u<=R; u++){ var k2=ptKind(x+(u+0.5)*step, y+(v+0.5)*step, salt); if(u>=0 && u<R && v>=0) kind[v*R+u]=k2; else kcache[u+','+v]=k2; }
-  function K0(u,v){ if(u>=0 && u<R && v>=0 && v<MH2) return kind[v*R+u]; var key=u+','+v; if(!(key in kcache)) kcache[key]=ptKind(x+(u+0.5)*step, y+(v+0.5)*step, salt); return kcache[key]; }
+  for(var v=-1; v<MH2; v++) for(var u=-1; u<=R; u++){ var k2=ptKind(x+(u+0.5)*step, y+(v+0.5)*step, salt,raster); if(u>=0 && u<R && v>=0) kind[v*R+u]=k2; else kcache[u+','+v]=k2; }
+  function K0(u,v){ if(u>=0 && u<R && v>=0 && v<MH2) return kind[v*R+u]; var key=u+','+v; if(!(key in kcache)) kcache[key]=ptKind(x+(u+0.5)*step, y+(v+0.5)*step, salt,raster); return kcache[key]; }
   function K(u,v){ var k0=K0(u,v); if(k0===1){ if((K0(u-1,v)===0 && K0(u+1,v)===0) || (K0(u,v-1)===0 && K0(u,v+1)===0) || (K0(u-2,v)===0 && K0(u+2,v)===0 && K0(u,v-1)===0)) return 0; } return k0; }
   for(var v2=0; v2<R; v2++) for(var u2=0; u2<R; u2++){
     var wx=x+(u2+0.5)*step, wy=y+(v2+0.5)*step, p=(v2*R+u2)*4, col, kk=K(u2,v2);
@@ -419,27 +429,15 @@ var PT_BUDGET = 14;
 function ptFlat(x, y){ var M=ptMat(); var c=!ptWallCell(x,y) ? M.floor : ptCellDist(x,y)>=2 ? M.void : M.top; return 'rgb('+c[0]+','+c[1]+','+c[2]+')'; }
 
 /* ---------------------------------------------------------------- hooking the renderer */
-var _drawPT = draw;
-draw = function(){ PT_CACHE.built=0; var r=_drawPT.apply(this, arguments); if(ptMat() && PT_CACHE.built>=PT_BUDGET) requestAnimationFrame(function(){ draw(); }); return r; };
-var _blitTilePT = blitTile;
-blitTile = function(o, px, py, alpha){
-  if(o && o.flat){ ctx.globalAlpha=alpha; ctx.fillStyle=o.flat; var X2=Math.round(px), Y2=Math.round(py); ctx.fillRect(X2,Y2,Math.round(px+TS)-X2,Math.round(py+TS)-Y2); return true; }
-  if(o && o.crisp){ ctx.globalAlpha=alpha; ctx.imageSmoothingEnabled=false; var X=Math.round(px), Y=Math.round(py); ctx.drawImage(o.img,o.sx,o.sy,o.sw,o.sh,X,Y,Math.round(px+TS)-X,Math.round(py+TS)-Y); return true; }   /* exact edges: faded remembered cells must not overlap */
-  return _blitTilePT(o, px, py, alpha);
-};
-var _floorTilePT = floorTile;
-floorTile = function(x, y){ if(!ptMat()) return _floorTilePT(x,y); return ptTile(x,y) || {flat:ptFlat(x,y)}; };
-var _wallTilePT = wallTile;
-wallTile = function(x, y){ if(!ptMat()) return _wallTilePT(x,y); return ptTile(x,y) || {flat:ptFlat(x,y)}; };
+
+
 /* the dungeon's rims, moss, grit and drains don't belong here */
-var _drawWallEdgesPT = drawWallEdges;
-drawWallEdges = function(x, y, t, px, py, a){ if(ptMat()) return; return _drawWallEdgesPT(x, y, t, px, py, a); };
-var _drawSurfaceDecoPT = drawSurfaceDeco;
-drawSurfaceDeco = function(){ if(ptMat()) return; return _drawSurfaceDecoPT(); };
+
+
 /* crystal glow is handled by the lighting system */
-var _gatherLightsPT = gatherLights;
-gatherLights = function(now, prp){
-  var L=_gatherLightsPT(now, prp), M=ptMat(); if(!M) return L;
+
+function addNaturalTerrainLights(L, now, prp){
+  var M=ptMat(); if(!M) return L;
   /* a wide, soft fill so the rock around you reads: without it, rock whose neighbours are all rock gets no light at all */
   L.push({x:prp.x, y:prp.y, c:hexRGB(M.fill||'#FFFFFF'), r:13, s:0.34, tx:player.x, ty:player.y});
   ptCrystalCells().forEach(function(c){
@@ -447,7 +445,8 @@ gatherLights = function(now, prp){
     L.push({x:c.x, y:c.y+0.8, c:hexRGB(M.crystalLight), em:true, wall:true, wr:1.6, ws:1.2, r:2.6, s:0.55, tx:c.x, ty:c.y+1});
   });
   return L;
-};
+
+}
 
 /* ---------------------------------------------------------------- a test room for judging terrain on its own */
 function buildPlaneTestRoom(el){
@@ -526,16 +525,17 @@ function ptDaisRaster(){
   for(var t=0;t<60;t++){ var an=Math.PI*1.05+t/60*Math.PI*0.6; put(Math.round(cx+Math.cos(an)*(INN.rx-1.2)), Math.round(INN.cy+Math.sin(an)*(INN.ry-1.2)), [250,246,232]); }
   g.putImageData(im,0,0); PT_DAIS=c; return c;
 }
-var _drawPropSurfacePT = drawPropSurface;
-drawPropSurface = function(p, px, py, alpha){
+
+function drawSunDaisProp(p, px, py, alpha){
   if(p.name==='sun-dais' && ptMat()){
     var img=ptDaisRaster(), X=Math.round((p.x-camX)*TS), Y=Math.round((p.y-camY)*TS), W=Math.round(TS*2);
     ctx.save(); ctx.globalAlpha=alpha; ctx.imageSmoothingEnabled=false;
     ctx.drawImage(img, 0, 0, 64, 64, X, Y, W, W); ctx.restore();
     return true;
   }
-  return _drawPropSurfacePT(p, px, py, alpha);
-};
+  return false;
+
+}
 
 
 /* ---------------------------------------------------------------- Light plane features (planned once at build; saved with the floor)
@@ -805,20 +805,21 @@ function ptRockBase(g, W, H, base, rnd, big){
   }
 }
 /* rune stones: drawn as wide as their footprint and bottom-anchored, shadow included in the sprite */
-var _drawPropSurfaceRune = drawPropSurface;
-drawPropSurface = function(p, px, py, alpha){
+
+function drawRuneStoneProp(p, px, py, alpha){
   if(ptMat() && /^rune-stone/.test(p.name)){
-    var o=objArt('props', p.name); if(!o) return _drawPropSurfaceRune(p, px, py, alpha);
+    var o=objArt('props', p.name); if(!o) return false;
     var cells=p.w||1, W=Math.round(cells*TS*0.98), H=Math.round(W*(o.sh/o.sw));
     var X=Math.round((p.x-camX)*TS + (cells*TS-W)/2), Y=Math.round((p.y-camY+(p.h||1))*TS)-H;
     ctx.save(); ctx.globalAlpha=alpha; ctx.imageSmoothingEnabled=false;
     ctx.drawImage(o.img, o.sx, o.sy, o.sw, o.sh, X, Y, W, H); ctx.restore();
     return true;
   }
-  return _drawPropSurfaceRune(p, px, py, alpha);
-};
-var _drawPropSurfacePT2 = drawPropSurface;
-drawPropSurface = function(p, px, py, alpha){
+  return false;
+
+}
+
+function drawNaturalOutcropProp(p, px, py, alpha){
   if(p.name==='pt-outcrop' || p.name==='pt-cluster'){
     var img=ptPieceCanvas(p), sc=TS/PT_R, W=Math.round(img.width*sc), H=Math.round(img.height*sc);
     var X=Math.round((p.x-camX)*TS), Y=Math.round((p.y-camY+p.h)*TS)-H;
@@ -828,35 +829,13 @@ drawPropSurface = function(p, px, py, alpha){
     if(!ANIM.reduce) ptSparkle(p, X, Y, W, H, alpha);
     return true;
   }
-  return _drawPropSurfacePT2(p, px, py, alpha);
-};
+  return false;
+
+}
 PROPS['pt-outcrop']={b:1}; PROPS['pt-cluster']={b:1};
 
 /* the rock band is scenery: anything within two cells of open ground you can see is drawn too */
-var _computeFOVPT = computeFOV;
-computeFOV = function(radius){
-  var r=_computeFOVPT(radius);
-  if(!ptMat() || !vis) return r;
-  var add=[];
-  for(var y=Math.max(0,player.y-12); y<=Math.min(MH-1,player.y+12); y++) for(var x=Math.max(0,player.x-16); x<=Math.min(MW-1,player.x+16); x++){
-    var i=idxOf(x,y); if(!vis[i] || ptWallCell(x,y)) continue;
-    for(var oy=-2;oy<=2;oy++) for(var ox=-2;ox<=2;ox++){ var nx=x+ox, ny=y+oy; if(inb(nx,ny) && ptWallCell(nx,ny)) add.push(idxOf(nx,ny)); }
-  }
-  add.forEach(function(i){ vis[i]=1; seen[i]=1; });
-  return r;
-};
 
-var _drawCharacterPT = drawCharacter;
-drawCharacter = function(e, px, py, opts){
-  if(e!==player && ptMat()){
-    ctx.save(); ctx.shadowColor='rgba(70,60,96,0.35)'; ctx.shadowBlur=Math.max(2, TS*0.06);
-    try{ return _drawCharacterPT(e, px, py, opts); } finally { ctx.restore(); }
-  }
-  return _drawCharacterPT(e, px, py, opts);
-};
-
-var _drawWangLayerPT = drawWangLayer;
-drawWangLayer = function(key, tileType){ if(ptMat() && key==='water') return; return _drawWangLayerPT(key, tileType); };
 
 /* ---------------------------------------------------------------- plane props take the plane's stone colours
    The shared prop art (stepping stones, boulders, stalagmites) was painted for one plane and clashed in the others,
@@ -915,12 +894,12 @@ function ptPropTint(name, o){
   sg.drawImage(c, 0, 0);
   return (PT_PROPS[key]={img:sh, sx:0, sy:0, sw:W, sh:H+4});
 }
-var _objArtPT = objArt;
-objArt = function(group, name){
-  var o=_objArtPT(group, name);
+
+function tintPlaneObject(o, group, name){
   if(o && group==='props' && ptMat() && PT_STONE_PROPS[name]) return ptPropTint(name, o) || o;
   return o;
-};
+
+}
 
 /* ---------------------------------------------------------------- faint glints travelling along the rock's veins */
 function ptGlints(){
@@ -934,9 +913,9 @@ function ptGlints(){
   }
   c.glints=out; return out;
 }
-var _drawTelegraphsGlint = drawTelegraphs;
-drawTelegraphs = function(now){
-  _drawTelegraphsGlint(now);
+
+function drawVeinGlints(now){
+
   var M=ptMat(); if(!M || ANIM.reduce) return;
   var t=(now||performance.now())/1000;
   ctx.save(); ctx.globalCompositeOperation='lighter';
@@ -953,7 +932,8 @@ drawTelegraphs = function(now){
     ctx.globalAlpha=0.45*k; ctx.fillStyle='rgba(255,252,240,0.9)'; ctx.fillRect(px-0.5, py-0.5, Math.max(1,TS*0.04), Math.max(1,TS*0.04)); ctx.globalAlpha=1;
   });
   ctx.restore();
-};
+
+}
 
 /* ---------------------------------------------------------------- crystals twinkle: small four-point stars at their facets */
 function ptStar(cx, cy, r, a, col){
@@ -966,6 +946,7 @@ function ptStar(cx, cy, r, a, col){
   ctx.globalAlpha=a*0.8; ctx.fillRect(cx-1, cy-1, 2, 2);
 }
 function ptSparkle(p, X, Y, W, H, alpha){
+  if(p.name==='pt-cluster'&&packPlaneCluster(p))return;
   var M=ptMat(); if(!M) return;
   var seed=(p.seed||0)+p.x*31+p.y*17, n=p.name==='pt-outcrop' ? 4 : (p.size>=1 ? 2 : 1);
   var t=performance.now()/1000;
@@ -983,9 +964,9 @@ function ptSparkle(p, X, Y, W, H, alpha){
 }
 
 /* face crystals catch the light too: the same four-point star, over the rock they grow from */
-var _drawTelegraphsFaceGlint = drawTelegraphs;
-drawTelegraphs = function(now){
-  _drawTelegraphsFaceGlint(now);
+
+function drawCrystalFaceGlints(now){
+
   var M=ptMat(); if(!M || ANIM.reduce) return;
   var t=(now||performance.now())/1000, salt=ptSalt();
   ctx.save(); ctx.globalCompositeOperation='lighter';
@@ -999,13 +980,14 @@ drawTelegraphs = function(now){
     ptStar(px, py, Math.max(3, Math.round(TS*0.13)), 0.6*f, '#FFFFFF');
   });
   ctx.restore(); ctx.globalAlpha=1;
-};
+
+}
 
 /* ---------------------------------------------------------------- big elites are drawn across all their cells
    A 2x2 creature (the Heart of the Mountain) used to draw on its top-left tile only, so it looked one cell wide
    while blocking four. Its sprite is now scaled across the whole footprint and its proxy cells draw nothing. */
-var _drawCharacterBig = drawCharacter;
-drawCharacter = function(e, px, py, opts){
+
+function drawLargeCreature(e, px, py, opts){
   if(e && e.base && e.base.big && !e.parent && typeof mobSheet==='function'){
     var n=e.base.big, ms=spriteOn ? mobSheet(e.base.sprite) : null;
     if(ms){
@@ -1020,8 +1002,9 @@ drawCharacter = function(e, px, py, opts){
       return true;
     }
   }
-  return _drawCharacterBig(e, px, py, opts);
-};
+  return false;
+
+}
 
 /* ---------------------------------------------------------------- swaying grass on the plane floors
    The dungeon's grass art does not belong in a cave, so plane grass is drawn as thin blades in the plane's greens,
@@ -1044,12 +1027,13 @@ function ptGrassBlades(x, y, now){
   }
   ctx.restore();
 }
-var _drawGrassTilePT = drawGrassTile;
-drawGrassTile = function(x, y, px, py, alpha, layer, now){
-  if(!ptMat()) return _drawGrassTilePT(x, y, px, py, alpha, layer, now);
+
+function drawNaturalGrass(x,y,px,py,alpha,layer,now){
+  if(!ptMat()) return false;
   if(layer==='front') return;                                  /* blades never cover a creature */
   ctx.globalAlpha=alpha; ptGrassBlades(x, y, now||performance.now()); ctx.globalAlpha=1;
-};
+
+}
 
 /* ---------------------------------------------------------------- the Shadow pool bubbles (2026-09-19)
    Justin: the still violet pool read as splotches; it should move, like the Crypt's ooze. Its caustic specks are gone
@@ -1095,5 +1079,12 @@ function ptPoolBubbles(){
   }
   ctx.globalAlpha=1;
 }
-var _drawSurfaceDecoPool = drawSurfaceDeco;
-drawSurfaceDeco = function(){ var r=_drawSurfaceDecoPool.apply(this, arguments); ptPoolBubbles(); return r; };
+
+
+/* Named character presentation passes; composed by render-adapter.js. */
+
+function prepareNaturalActor(job){
+  if(job.entity===player||!ptMat())return;
+  ctx.save();ctx.shadowColor='rgba(70,60,96,0.35)';ctx.shadowBlur=Math.max(2,TS*.06);
+  return function(){ctx.restore();};
+}

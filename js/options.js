@@ -23,10 +23,7 @@ function speedFxList(){
   fx.push = function(){ for(var i=0;i<arguments.length;i++){ var o=arguments[i]; if(o && o.dur && !o._sc){ o.dur=o.dur/ANIM_SPEED; o._sc=1; } } return Array.prototype.push.apply(this, arguments); };
   fx._sp = true;
 }
-var _drawOpt = draw;
-draw = function(){ speedFxList(); return _drawOpt.apply(this, arguments); };
-var _newRunOpt = newRun;
-newRun = function(seed, choice){ var r=_newRunOpt(seed, choice); speedFxList(); return r; };
+
 
 /* ---------------------------------------------------------------- map zoom (2026-09-18)
    A multiplier on however many tiles the current view wants (desktop, phone portrait or landscape), so it
@@ -98,8 +95,3 @@ function wireOptions(root){
   var vs=$('volSfx'); if(vs) vs.oninput=function(){ AUDIO.vol.sfx=vs.value/100; if(AUDIO.sfxBus) AUDIO.sfxBus.gain.value=AUDIO.vol.sfx; audioSave(); };
   var vm=$('volMusic'); if(vm) vm.oninput=function(){ AUDIO.vol.music=vm.value/100; if(AUDIO.musicBus && AUDIO.musicOn) AUDIO.musicBus.gain.value=AUDIO.vol.music; audioSave(); };
 }
-var _panesOpt = panes;
-panes = function(){
-  if(openSheet==='Help' && $('mHelp')){ $('mHelp').innerHTML=optionsHTML(); wireOptions($('mHelp')); return; }
-  return _panesOpt();
-};

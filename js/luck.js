@@ -14,23 +14,3 @@ function luckBonus(){
   return 0.03 * (typeof godRank==='function' ? godRank() : 1);
 }
 /* every chance roll the blessing touches goes through here */
-function pRoll(chance){ return rng() < (chance||0) + luckBonus(); }
-
-/* crit, parry and block are numbers on the player, so they take the bonus in derive */
-(function(){
-  if(typeof derive!=='function') return;
-  var _deriveLuck = derive;
-  derive = function(p){
-    var r = _deriveLuck(p);
-    if(p===player){
-      var luck = luckBonus();
-      p.luck = luck;
-      if(luck>0){
-        p.crit = (p.crit||0) + luck;
-        if(p.parry) p.parry = p.parry + luck;                  /* only where something can parry at all */
-        if(p.block) p.block = Math.min(0.75, p.block + luck);  /* the ceiling shields already use */
-      }
-    }
-    return r;
-  };
-})();

@@ -37,7 +37,7 @@ function toggleAutomap(force){
   drawAutomap();
 }
 
-function drawAutomap(){
+function drawBaseAutomap(){
   if(!AUTOMAP_ON || !map || !seen) return;
   var c=$('automap'), host=$('map'); if(!c || !host) return;
   var W=host.clientWidth, H=host.clientHeight, dpr=window.devicePixelRatio||1;
@@ -75,8 +75,7 @@ function drawAutomap(){
   g.fillStyle='rgba(255,255,255,'+pulse.toFixed(2)+')';
   var ps=Math.max(3, Math.round(cell*1.1)); g.fillRect(ox+player.x*cell+(cell-ps)/2, oy+player.y*cell+(cell-ps)/2, ps, ps);
 }
-var _drawAutomap = draw;
-draw = function(){ var r=_drawAutomap.apply(this, arguments); if(AUTOMAP_ON) drawAutomap(); return r; };
+
 
 window.addEventListener('keydown', function(ev){
   var tgt=ev.target && ev.target.tagName; if(tgt==='INPUT'||tgt==='SELECT'||tgt==='TEXTAREA') return;

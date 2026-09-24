@@ -17,7 +17,7 @@ function bossNameForFloor(){
 }
 
 /* ---------------------------------------------------------------- movement */
-function tryMove(dx,dy){
+function performPlayerMove(dx,dy){
   if(player.hp<=0 || RUN.victory) return;
   var f=faceOf(dx,dy); if(f) player.face=f;
   if(player.st.frozen){ log('You are frozen solid.','c-info'); endTurn(); return; }
@@ -84,7 +84,7 @@ function closeAdjacentDoors(){
   log(open.length>1 ? 'You close the doors.' : 'You close the door.','c-info'); sfx('door-close'); computeFOV(); endTurn();
 }
 
-function stepOn(){
+function entryItemsAndTerrain(){
   var here=items.filter(function(it){ return it.x===player.x && it.y===player.y; });
   here.forEach(function(it){
     if(it.kind==='essence'){ removeItem(it); player.essence+=it.n; floatText(player.x,player.y,'+'+it.n,'magic'); log('Picked up '+it.n+' essence.','c-good'); sfx('pickup-essence',{vol:0.5}); }
@@ -105,7 +105,7 @@ function stepOn(){
 function removeItem(it){ var i=items.indexOf(it); if(i>=0) items.splice(i,1); }
 function fallIntoChasm(){
   log('You fall!','c-you'); sfx('trap-pit');
-  var d=Math.round(player.maxhp*0.15); player.hp-=d;
+  var d=Math.round(player.maxhp*0.15); dealDirectDamage(player,d,'phys',null,{tags:['environment','fall']});
   if(player.hp<=0){  if(player.hp<=0){ death(); return; } }
   if(bfloor()<5 && floorNo<LAST_FLOOR) descend(true); else { var s=nearestWalkable(player.x,player.y); player.x=s.x; player.y=s.y; }
 }
@@ -118,7 +118,7 @@ function bumpLocked(x,y){
 function bumpToll(x,y){
   var cost=Math.max(1, Math.floor(player.hp*0.5));
   confirmBox('Spiked door', 'The spikes take their due: <b>'+cost+' HP</b> (half your current health) to squeeze through. The room behind holds a real reward.', 'Pay '+cost+' HP', function(){
-    player.hp-=cost; player._hit=performance.now(); floatText(player.x,player.y,String(cost),'phys'); sfx('player-hurt');
+    dealDirectDamage(player,cost,'phys',null,{tags:['cost','spikes']}); player._hit=performance.now(); floatText(player.x,player.y,String(cost),'phys'); sfx('player-hurt');
     setT(x,y,OPEN); log('You force your way past the spikes.','c-you'); computeFOV(); endTurn();
   });
 }
@@ -133,12 +133,25 @@ function bumpIce(x,y){
 function bumpThorns(x,y){
   var cost=Math.max(1, Math.round(player.maxhp*0.2));
   confirmBox('Thorns', 'Push through the thorns for <b>'+cost+' damage</b>, or burn them away with fire.', 'Push through', function(){
-    player.hp-=cost; player._hit=performance.now(); floatText(player.x,player.y,String(cost),'phys');
+    dealDirectDamage(player,cost,'phys',null,{tags:['environment','thorns']}); player._hit=performance.now(); floatText(player.x,player.y,String(cost),'phys');
     if(player.hp<=0){  if(player.hp<=0){ death(); return; } }
     setT(x,y,OPEN); log('You tear through the thorns, bleeding.','c-you'); computeFOV(); endTurn();
   });
 }
 function bumpSealed(x,y){
+  var room=puzzleAtDoor(x,y);
+  if(room&&room.puzzle.kind==='barricade'&&!room.puzzle.solved){
+    if(aff('fire')>=3){solvePuzzle(room,'the timber burns away.');endTurn();}
+    else{sfx('door-locked');log('The barricade blocks the doorway.','c-info');}
+    return;
+  }
+
+  var cd=floorMeta.crystalDoor;
+  if(cd && cd.x===x && cd.y===y){
+    if(player.keys.crystal>0){ player.keys.crystal--; setT(x,y,OPEN); floorMeta.crystalDoor=null; log('The crystal key rings true. <b>Take one treasure</b>; the rest will shatter.','c-kill'); sfx('door-unlock'); sparkleFx(x,y,'ice',30); computeFOV(); endTurn(); return; }
+    log('A door of solid crystal. A <b>crystal key</b> on this floor opens it.','c-info'); sfx('door-locked'); return;
+  }
+
   var lock=props.filter(function(p){ return p.name==='elemental-lock' && p.door && p.door.x===x && p.door.y===y; })[0];
   if(lock){ log('Sealed by elemental magic. The pedestal nearby wants a <b>'+lock.element+' mote</b>.','c-info'); return; }
   if(plates && plates.door.x===x && plates.door.y===y){ log('Sealed. Three plates in this room hum faintly; a broken tablet names their order.','c-info'); return; }
@@ -179,6 +192,7 @@ function leverDetails(p){
     result:p.puzzleSwitch?'The guardians are shut off.':'The bridge is already lowered.'};
 }
 function bumpProp(p){
+  if(p.puzzleSwitch)return activatePuzzleSwitch(p);
   if(p.name==='elemental-lock' && !p.opened){
     if(player.motes[p.element]>0){
       confirmBox('Elemental lock', 'Offer a <b>'+p.element+' mote</b> to the lock?', 'Offer the mote', function(){
@@ -213,6 +227,8 @@ function bumpProp(p){
   return false;
 }
 function damageProp(p, src, type){
+  if(p&&p.curtain)return cutWebCurtain(p,src,type);
+  if(p&&p.bush)return cutBushProp(p,src,type);
   if(p.ex){ explode(p.x,p.y,src); return; }
   if(p.melt && (type==='fire')){ removeProp(p); log('The ice melts away.','c-info'); sfx('ice-melt'); return; }
   if(!p.br) return;
@@ -243,7 +259,7 @@ function sacrifice(p){
   if(!nextReward){ log('The altar is sated.','c-info'); return true; }
   confirmBox('Sacrifice altar', 'Press your hand onto the spikes for <b>'+cost+' HP</b>. What it gives, and when, is its own business.'+(lethal?'<br><span class="c-you"><b>This would kill you.</b></span>':''),
     lethal ? 'Offer anyway' : 'Offer blood', function(){
-      player.hp-=cost; player._hit=performance.now(); floatText(player.x,player.y,String(cost),'phys'); sfx('player-hurt'); a.passes++;
+      dealDirectDamage(player,cost,'phys',null,{tags:['cost','sacrifice']}); player._hit=performance.now(); floatText(player.x,player.y,String(cost),'phys'); sfx('player-hurt'); a.passes++;
       if(player.hp<=0){  if(player.hp<=0){ death(); return; } }
       if(a.passes===3||a.passes===5||a.passes===7){
         var c=nearFree(p.x,p.y,1)||{x:player.x,y:player.y};
@@ -271,6 +287,8 @@ function ignite(x,y,src){
 }
 var fireSrc = new Uint8Array(64*40);
 function burnWorld(x,y){
+  var puzzle=puzzleAtDoor(x,y);
+  if(puzzle&&puzzle.puzzle.kind==='barricade'&&!puzzle.puzzle.solved)solvePuzzle(puzzle,'the timber burns away.');
   var t=at(x,y);
   if(t===ICEDOOR){ setT(x,y,OPEN); log('The ice sealing the door melts away in a cloud of steam.','c-kill'); sfx('ice-melt'); burst(x,y,'ice',24,0.06); computeFOV(); }
   if(t===THORNS){ setT(x,y,OPEN); fireT[idxOf(x,y)]=3; log('The thorns catch and burn away.','c-kill'); sfx('thorns-burn'); computeFOV(); }
@@ -309,6 +327,15 @@ function trapDmg(e, raw){ return (e===player) ? Math.max(2, Math.min(raw, Math.r
 /* ---------------------------------------------------------------- traps */
 function trapName(k){ return (TRAPS[k]||{name:k}).name; }
 function triggerTrap(tr,e){
+  if(tr.kind==='spikes'){
+    if(e===player && (player.levitate>0 || player.st.stone || aff('earth')>=3)){ return; }
+    /* 2026-09-17: spikes go straight through armor and hit harder (armor had cut them to ~3) */
+    var d=applyDamage(e, roll(4,7)+floorNo, 'phys', SPIKES_SRC); floatText(e.x,e.y,String(d),'phys'); sfx('trap-dart');
+    if(e===player){ log('Spikes drive up through your boots: '+d+' damage.','c-you'); if(player.hp<=0){  if(player.hp<=0) death(); } }
+    else if(e.hp<=0) kill(e,null);
+    return;
+  }
+
   var info=TRAPS[tr.kind]||{};
   var isP = e===player, who = isP ? 'You' : 'The '+e.name;
   tr.found = true;
@@ -334,6 +361,8 @@ function triggerTrap(tr,e){
   }
   if(info.once) feats=feats.filter(function(f){ return f!==tr; });
   if(e.hp<=0){ if(isP){  if(player.hp<=0) death(); } else kill(e,null); }
+
+  if(tr.heavy && e.hp>0){ var hd=applyDamage(e, roll(3,6)+floorNo, 'phys', null); floatText(e.x,e.y,String(hd),'phys'); if(e===player){ log('The trap bites deep: '+hd+' more.','c-you'); if(player.hp<=0){  if(player.hp<=0) death(); } } else if(e.hp<=0) kill(e,null); }
 }
 function spotTraps(){
   /* 2026-09-17: at most one trap a turn, and traps set on purpose (a trap room, a puzzle) hide far better,
@@ -351,6 +380,7 @@ function spotTraps(){
 /* ---------------------------------------------------------------- chests and loot */
 function openChest(x,y){
   var kind=chestKind[idxOf(x,y)]||'chest-wood';
+  if(kind==='chest-plane')return openPlaneChest(x,y);
   if(kind==='mimic'){
     setT(x,y,FLOOR); var m=spawn('mimic',x,y); m.state='hunt'; log('<b>The chest has teeth!</b> A mimic lunges.','c-you'); sfx('mimic-reveal'); SHAKE=6; return;
   }
@@ -371,14 +401,7 @@ function openChest(x,y){
   log('The chest holds '+n+' thing'+(n>1?'s':'')+'.','c-kill');
   stepOn();
 }
-function itemLabel(it){
-  if(it.kind==='essence') return it.n+' essence';
-  if(it.kind==='mote') return 'a '+it.el+' mote';
-  if(it.kind==='key') return 'an '+it.key+' key';
-  if(it.kind==='food') return FOODS[it.food].name;
-  if(it.kind==='sigil') return sigilName(it.use);
-  return gearName(it.it);
-}
+
 
 /* ---------------------------------------------------------------- sigils */
 function shuffleSigils(){
@@ -395,47 +418,11 @@ function identifySigil(use){
   player.bag.forEach(function(b){ if(b.kind==='sigil' && b.data.use===use) b.name=SIGILS[use].name; });
   log('It was a <b>'+SIGILS[use].name+'</b>: '+SIGILS[use].desc,'c-kill'); sfx('identify');
 }
-function useSigil(use){
-  var s=SIGILS[use];
-  if(typeof sigilConduct==='function' && sigilConduct(use)===false) return false;
-  sfx('sigil-use'); setClip(player,'cast');
-  if(use==='firestorm'){ burst(player.x,player.y,'fire',60,0.12); ents.slice().forEach(function(e){ if(e.foe && dist(player,e)<=3){ var fd=applyDamage(e,8+floorNo,'fire',player); floatText(e.x,e.y,String(fd),'fire'); applyStatus(e,'burn',3,sDMG(2)); if(e.hp<=0) kill(e,player); } });
-    for(var dy=-2;dy<=2;dy++) for(var dx=-2;dx<=2;dx++) if(dx||dy) ignite(player.x+dx,player.y+dy,'player'); log('Flames burst out around you.','c-fire'); }
-  else if(use==='mana'){ var m=Math.round(player.maxmp*0.5); player.mp=Math.min(player.maxmp,player.mp+m); floatText(player.x,player.y,'+'+m,'ice'); log('Cool water fills your mind. +'+m+' mana.','c-good'); }
-  else if(use==='levitate'){ player.levitate=25; log('You float a hand\'s width off the floor. (25 turns)','c-good'); sparkleFx(player.x,player.y,'lightning',20); }
-  else if(use==='stoneskin'){ applyStatus(player,'stone',15); log('Your skin turns to stone.','c-good'); }
-  else if(use==='heal'){ var q=Math.round(player.maxhp*0.35*(hasGod('glimmer')?1+0.10*godRank():1));
-    if(player.race==='gloomling'){ var hd=applyDamage(player,Math.round(q/2),'light',null); floatText(player.x,player.y,String(hd),'light'); log('The Light sigil burns you! Gloomlings are hurt by holy light.','c-you'); if(player.hp<=0) death(); }
-    else { healPlayer(q); floatText(player.x,player.y,'+'+q,'heal'); sparkleFx(player.x,player.y,'heal',24); player.buffs.afterglow=15; log('Light mends you. +'+q+' HP, and keeps glowing: 5% a turn for 15 turns.','c-good'); } }
-  else if(use==='vanish'){ player.hidden=5; ents.forEach(function(e){ if(e.foe && e.state==='hunt'){ e.state='wander'; e.lastSeen=null; } }); log('Shadows swallow you.','c-good'); sfx('vanish'); }
-  else if(use==='identify'){ Object.keys(SIGILS).forEach(function(k){ if(player.bag.some(function(b){ return b.kind==='sigil' && b.data.use===k; })) identifySigil(k); }); }
-  else if(use==='mapping'){ for(var i=0;i<seen.length;i++) if(map[i]!==WALL || true) seen[i]=1; log('The shape of the whole floor settles into your mind.','c-good'); }
-  else if(use==='blink'){ var spots=[]; for(var y=0;y<MH;y++) for(var x=0;x<MW;x++) if(walkable(x,y) && vis[idxOf(x,y)] && dist(player,{x:x,y:y})<=6 && dist(player,{x:x,y:y})>=3 && !occupied(x,y)) spots.push({x:x,y:y});
-    if(spots.length){ var s2=pick(spots); sparkleFx(player.x,player.y,'magic',20); player.x=s2.x; player.y=s2.y; player._lx=undefined; sparkleFx(s2.x,s2.y,'magic',20); log('You blink away.','c-good'); } }
-  identifySigil(use);
-  return true;
-}
+
 
 /* ---------------------------------------------------------------- inventory */
-function addBag(icon,name,extra){
-  extra=extra||{};
-  /* a weapon carried in the off hand goes back into the bag as a weapon, so it can be wielded again */
-  if(extra.kind==='off' && extra.data && extra.data.kind==='weapon') extra={kind:'weapon', data:extra.data, uid:extra.uid};
-  var uid=extra.uid || (extra.kind==='weapon'||extra.kind==='armor'||extra.kind==='off' ? 'g'+(nextId++) : name);
-  var hit=player.bag.filter(function(b){ return b.uid===uid; })[0];
-  if(hit){ hit.n++; return hit; }
-  if(player.bag.length>=BAG_MAX){ log('Your bag is full.','c-info'); sfx('inventory-full'); return null; }
-  var entry={icon:icon,name:name,n:1,uid:uid,kind:extra.kind,data:extra.data};
-  player.bag.push(entry); return entry;
-}
-function bagEntryFor(it){
-  if(it.kind==='weapon') return ['\u2694', gearName(it.it), {kind:'weapon', data:it.it}];
-  if(it.kind==='armor') return ['\u26E8', gearName(it.it), {kind:'armor', data:it.it}];
-  if(it.kind==='off') return ['\u26E8', gearName(it.it), {kind:'off', data:it.it}];
-  if(it.kind==='sigil') return ['\u2726', sigilName(it.use), {kind:'sigil', data:{use:it.use}, uid:'sigil:'+it.use}];
-  if(it.kind==='food') return ['\u{1F356}', FOODS[it.food].name, {kind:'food', data:{food:it.food}, uid:'food:'+it.food}];
-  return null;
-}
+
+
 function grab(){
   var got=false;
   items.filter(function(it){ return it.x===player.x && it.y===player.y; }).forEach(function(it){
@@ -446,168 +433,30 @@ function grab(){
   return got;
 }
 function consume(idx){ var it=player.bag[idx]; if(it.n>1) it.n--; else player.bag.splice(idx,1); }
-function dropBagItem(idx){
-  var b=player.bag[idx]; if(!b) return;
-  var it = b.kind==='weapon'||b.kind==='armor'||b.kind==='off' ? {kind:b.kind, it:b.data} : b.kind==='sigil' ? {kind:'sigil', use:b.data.use} : b.kind==='food' ? {kind:'food', food:b.data.food} : null;
-  if(!it) return;
-  it.x=player.x; it.y=player.y; items.push(it); consume(idx); log('You drop '+itemLabel(it)+'.','c-info');
-}
-function equipConduct(kind, data){
-  if(!player.god || typeof godConductEquip!=='function') return true;
-  return godConductEquip(kind, data);
-}
-function useBagItem(idx){
-  var it=player.bag[idx]; if(!it) return;
-  if(it.kind==='off'){
-    if(player.twoHanded){ log('Both hands are on the '+player.weapon.name+'.','c-info'); return; }
-    equipConduct('off', it.data);
-    var prevOff=player.off; player.off=it.data; player.bag.splice(idx,1);
-    if(prevOff && prevOff!==EMPTY_OFF) addBag('\u26E8', gearName(prevOff), {kind:'off', data:prevOff});
-    derive(player); log('You take up the <b>'+gearName(it.data)+'</b>.','c-good'); sfx('equip-weapon'); endTurn(); return;
-  }
-  if(it.kind==='weapon'){
-    equipConduct('weapon', it.data);
-    var old=player.sets[player.activeSet];
-    player.sets[player.activeSet]=it.data; player.bag.splice(idx,1);
-    if(old) addBag('\u2694', gearName(old), {kind:'weapon', data:old});
-    derive(player); log('You equip the <b>'+gearName(it.data)+'</b>.','c-good'); sfx('equip-weapon');
-    enforceHands(); endTurn(); return;
-  }
-  if(it.kind==='armor'){
-    equipConduct('armor', it.data);
-    var oldA=player.armorItem; player.armorItem=it.data; player.bag.splice(idx,1);
-    if(oldA) addBag('\u26E8', gearName(oldA), {kind:'armor', data:oldA});
-    derive(player); log('You put on the <b>'+gearName(it.data)+'</b>.','c-good'); sfx('equip-armor'); endTurn(); return;
-  }
-  if(it.kind==='food'){
-    var fd=FOODS[it.data.food]; player.hunger=Math.min(HUNGER_MAX, player.hunger+fd.nutrition);
-    if(fd.heal){ var h=Math.round(player.maxhp*fd.heal*(hasGod('glimmer')?1+0.10*godRank():1)); healPlayer(h); floatText(player.x,player.y,'+'+h,'heal'); }
-    consume(idx); log('You eat the '+fd.name.toLowerCase()+'.','c-good'); sfx('eat');
-    if(fd.buff && typeof eatFoodBuff==='function') eatFoodBuff(fd);
-    endTurn(); return;
-  }
-  if(it.kind==='sigil'){ if(useSigil(it.data.use)===false) return; consume(idx); endTurn(); return; }
-}
-function equipFromBag(idx, slot){
-  var it=player.bag[idx]; if(!it) return;
-  if(slot==='main'){ if(it.kind!=='weapon'){ log('That is not a weapon.','c-info'); return; } useBagItem(idx); return; }
-  if(slot==='armor'){ if(it.kind!=='armor'){ log('That is not armor.','c-info'); return; } useBagItem(idx); return; }
-  if(slot==='off'){
-    if(it.kind==='off') { useBagItem(idx); return; }
-    if(it.kind!=='weapon' || it.data.hands===2 || !it.data.light){ log('Only a light weapon, shield or focus fits your off hand.','c-info'); return; }
-    if(player.twoHanded){ log('Both hands are on the '+player.weapon.name+'.','c-info'); return; }
-    /* 2026-09-17: the weapon itself goes into the off hand, keeping its tier, upgrades, enchantment, curse and identity */
-    var old=player.off, d=it.data;
-    offHandWeapon(d);
-    player.off=d;
-    player.bag.splice(idx,1); if(old && old!==EMPTY_OFF) addBag('\u26E8', gearName(old), {kind:'off', data:old});
-    derive(player); log('You take the <b>'+it.data.name+'</b> in your off hand.','c-good'); endTurn();
-  }
-}
-function enforceHands(){
-  if(!player.twoHanded || !player.off || player.off===EMPTY_OFF) return;
-  if(!(player.off.block || player.off.weapon)) return;
-  var prev=player.off; player.off=EMPTY_OFF; derive(player);
-  addBag('\u26E8', gearName(prev), {kind:'off', data:prev});
-  log('Both hands are on the '+player.weapon.name+' &mdash; the '+prev.name+' goes into your bag.','c-info');
-}
-function swapWeapon(){
-  if(!player.sets[1-player.activeSet]){ log('You have nothing stowed to swap to.','c-info'); return; }
-  player.activeSet = 1 - player.activeSet;
-  derive(player); log('You ready your <b>'+gearName(player.weapon)+'</b>.','c-info'); sfx('equip-weapon');
-  enforceHands(); endTurn();
-}
+
+
 function shootAt(e){
-  if(player.range<=1) return false;
-  if(dist(player,e) > player.range || !vis[idxOf(e.x,e.y)]) return false;
+  if(!e)return false;
+  var direction=reachLen()>=2&&reachDir(e);
+  if(direction){lastDir=direction;reachAttack(e,direction);return true;}
+  if(dist(player,e)<=1){var dx=Math.sign(e.x-player.x),dy=Math.sign(e.y-player.y);lastDir=[dx,dy];tryMove(dx,dy);return true;}
+  if(player.range<=1 || dist(player,e)>player.range || !vis[idxOf(e.x,e.y)])return false;
   var path=boltPath(player.x,player.y,e.x,e.y), end=path[path.length-1];
-  if(!end || end.x!==e.x || end.y!==e.y){ log('Something is in the way.','c-info'); return true; }
-  var f=faceOf(e.x-player.x,e.y-player.y); if(f) player.face=f;
-  attack(player, e, 1, gearName(player.weapon));
+  if(!end || end.x!==e.x || end.y!==e.y){
+    var front=end&&ents.filter(function(other){return other.x===end.x&&other.y===end.y&&other.hp>0;})[0];
+    if(!front||!front.foe){log(front?'Your '+front.name+' is in the way.':'Something is in the way.','c-info');return true;}
+    log('The <b>'+front.name+'</b> is in the way and takes the arrow.','c-info');e=front;
+  }
+  var weapon=isRangedWeapon(player.ranged)?player.ranged:player.weapon;
+  attack(player,e,1,weapon.name);
   player.hidden=0; endTurn(); return true;
 }
 
 /* ---------------------------------------------------------------- turn loop */
-function endTurn(){
-  if(player.hp<=0) return;
-  if(typeof WORLD_TICK==='undefined' && player.hidden>0 && !(player.hidden>(player._hidPrev||0))) player.hidden--;
-  player._hidPrev=player.hidden;
-  tickStatus(player);
-  if(player.hp<=0){  if(player.hp<=0){ death(); return; } }
-  var cost = player.movedThisTurn ? moveCost() : actCost(player);
-  if(player.tombed)cost=100;
-  player.lastAttack=false;
-  if(cost<=0){player.movedThisTurn=false;return;}
-  player.t += cost;
-  player.movedThisTurn=false;
-  turn++; RUN.turns++;
-  if(player.blurCd>0) player.blurCd--;
-  if(player.fortCd>0) player.fortCd--;
-  /* 2026-09-18: a buff cast this turn used to be counted down at the end of the same turn, so "10 turns" covered
-     9. One that is new or was just raised skips its first count; everything else counts as before. */
-  var changed=false, bprev=player._buffPrev||{};
-  for(var b in player.buffs){
-    if(typeof WORLD_TICK!=='undefined')continue;
-    if(!(player.buffs[b]>0)) continue;
-    if(player.buffs[b] > (bprev[b]||0)) continue;                 /* fresh this turn */
-    player.buffs[b]--;
-    /* Light sigils leave an afterglow: 5% of max HP for each turn it runs */
-    if(b==='afterglow' && player.hp>0 && player.hp<player.maxhp){ var ag=Math.max(1, Math.round(player.maxhp*0.05)); healPlayer(ag); floatText(player.x,player.y,'+'+ag,'heal'); }
-    if(player.buffs[b]===0){ changed=true; log(cap(b)+' fades.','c-info'); }
-  }
-  player._buffPrev=Object.assign({}, player.buffs);
-  if(changed) derive(player);
-  var levFresh = player.levitate>(player._levPrev||0);
-  if(typeof WORLD_TICK==='undefined' && player.levitate>0 && !levFresh){ player.levitate--; if(player.levitate===0){ log('Your feet touch the ground again.','c-info'); if(at(player.x,player.y)===CHASM) fallIntoChasm(); } }
-  player._levPrev=player.levitate;
-  /* hunger */
-  var hungerRate = hungerCost(cost);
-  var before=player.hunger; player.hunger=Math.max(0, player.hunger-hungerRate);
-  if(before>=300 && player.hunger<300){ log('<b>You are getting hungry.</b> Eat something soon.','c-you'); sfx('hungry'); }
-  if(player.hunger<=0 && turn%5===0){ player.hp-=1; floatText(player.x,player.y,'1','phys'); if(turn%25===0){ log('You are starving!','c-you'); sfx('hungry'); } }
-  /* the world moves */
-  refreshPlayerDistance();
-  if(typeof worldRunActors==='function')worldRunActors(player.t-cost,player.t);
-  else ents.slice().forEach(function(e){
-    if(!e.foe && !e.ally) return;
-    var guard=0;
-    while(e.t < player.t && guard++ < 4 && ents.indexOf(e)>=0 && player.hp>0) (e.ally ? allyAct : aiAct)(e);
-  });
-  if(player.hp<=0){ death(); return; }
-  fireTick();
-  /* regeneration */
-  var seesFoe = ents.some(function(e){ return e.foe && vis[idxOf(e.x,e.y)] && e.state==='hunt'; });
-  /* regen per 100-speed turn, as a share of the max: HP refills in roughly 300 turns and mana in about 170 at 10 in the stat */
-  var mpRate = (0.60 + 0.05*Math.max(0,player.stats.foc-10)) / 100 * (1 + (hasP('meditation')?0.25:0));
-  if(hasP('tidalMind') && player.mp < player.maxmp/2) mpRate *= 2;
-  var hpRate = (0.20 + 0.02*Math.max(0,player.stats.vit-10)) / 100;   /* slower: a full refill is ~500 turns at VIT 10 */
-  if(hasP('resilient') && player.hp < player.maxhp/2) hpRate *= 2;
-  if(bodyArmor(player).enchant==='light') hpRate *= 1 + 0.5*enchantScale('light');
-  if(hasGod('grumbok')) hpRate *= 1 + 0.20*godRank();
-  if(hasGod('glimmer')) hpRate *= 1 + 0.10*godRank();
-  if(player.hunger<=0 || player.st.poison || player.st.rot) hpRate=0;   /* Rot (Grave Bloat) stops regeneration */
-  if(seesFoe) hpRate=0;                                                 /* wounds do not close while something hunts you */
-  var scale=cost/100;
-  player.mp = Math.min(player.maxmp, player.mp + player.maxmp*mpRate*scale);
-  healPlayer(player.maxhp*hpRate*scale, true);   /* true: natural regeneration, not a heal - it must not stanch bleeding */
-  if(player.t-(player.lastDamageTime||0)>=500 && player.iceArmor<player.iceArmorMax) player.iceArmor=Math.min(player.iceArmorMax, player.iceArmor+cost/100);
-  spotTraps();
-  if(!floorMeta.boss) wanderingSpawn();
-  if(typeof godTick==='function') godTick(seesFoe);
-  computeFOV(); draw(); updateUI();
-  if(player.hp<=0) death();
-}
-function computeFOV(radius){
-  radius = radius || 9;
-  var r=roomAt(player.x,player.y);
-  if(r && r.dark && !(player.aff.light>0) && !(player.aff.fire>0)) radius=2;
-  vis.fill(0);
-  vis[idxOf(player.x,player.y)]=1; seen[idxOf(player.x,player.y)]=1;
-  for(var i=0;i<OCT.length;i++) castLight(player.x,player.y,1,1,0,OCT[i][0],OCT[i][1],OCT[i][2],OCT[i][3],radius);
-}
+
 
 /* ---------------------------------------------------------------- floors */
-function descend(fell){
+function generateNextFloor(fell){
   if(floorNo>=LAST_FLOOR) return;
   floorNo++; worldSeed=(worldSeed*1664525+1013904223)>>>0;
   /* carrying your god deeper is itself devotion, and it is worth more the further down you are. This is the
@@ -623,16 +472,9 @@ function descend(fell){
   floorIntro();
   updateUI();
 }
-function floorIntro(){
-  log('<b>Floor '+floorNo+'</b> of the '+biomeName()+'.'+(bfloor()===1 && floorNo>1 ? ' The air turns cold and still.' : ''),'c-kill');
-  if(floorMeta.forge) log('You feel heat in the stones. <b>The Elemental Forge</b> is on this floor.','c-kill');
-  if(floorMeta.shrine) log('A distant hum of prayer: a <b>shrine to '+GODS[RUN.shrineGod].name+'</b> is on this floor.','c-kill');
-  if(floorMeta.vault) log('Somewhere an iron vault is locked. Its key walks with one of the monsters.','c-info');
-  if(floorMeta.boss) log('<b>The Warchief\'s hall.</b> Grukk waits on his throne. Kill him to open the way on.','c-you');
-  (floorMeta.notes||[]).forEach(function(n){ log(n,'c-info'); });
-  playSceneMusic();
-}
+
 function wanderingSpawn(){
+  if(floorMeta && floorMeta.plane)return;
   if(turn < nextSpawn) return;
   nextSpawn = turn + ri(45,75);   /* twice the former wandering encounter rate */
   var alive=ents.filter(function(e){ return e.foe; }).length;
@@ -650,26 +492,26 @@ function wanderingSpawn(){
 }
 
 /* ---------------------------------------------------------------- endings */
-function death(){
-  if(RUN.over) return;
-  RUN.over=true;
-  setClip(player,'death'); sfx('player-death'); stopMusic();
-  setTimeout(function(){
-    showEnd(false);
-  }, 1300);
-}
+
 function victory(){
   if(RUN.victory) return;
   RUN.victory=true; stopMusic(); sfx('victory');   /* the fanfare is the victory sound; no victory music (Justin, 2026-09-22) */
   showEnd(true);
 }
-function showEnd(won){
-  var el=$('over'); if(!el) return;
-  $('overT').textContent = won ? 'The '+biomeName()+' is behind you' : 'You died';
-  $('overP').innerHTML = (won ? (floorNo>=10 ? player.name+' laid Morty the Mostly-Dead to rest for good. The Caverns wait below.<br><br>' : player.name+' cut through the Dungeon and threw down Grukk the Warchief. The Crypt waits below.<br><br>') :
-    'Floor '+floorNo+' of the '+biomeName()+' claimed '+player.name+'.<br><br>') +
-    '<b>'+player.who+'</b> &middot; level '+player.level+' &middot; '+RUN.turns+' turns &middot; '+RUN.kills+' kills'+
-    (player.god ? '<br>Piety with '+GODS[player.god].name+': rank '+godRank() : '') +
-    '<br>Affinity: '+(Object.keys(player.aff).map(function(k){ return cap(k)+' '+player.aff[k]; }).join(', ')||'none');
-  el.style.display='flex';
+
+
+function useBagFood(idx){
+  var it=player.bag[idx];if(!it||it.kind!=='food')return false;
+
+    var fd=FOODS[it.data.food]; player.hunger=Math.min(HUNGER_MAX, player.hunger+fd.nutrition);
+    if(fd.heal){ var h=Math.round(player.maxhp*fd.heal*(hasGod('glimmer')?1+0.10*godRank():1)); healPlayer(h); floatText(player.x,player.y,'+'+h,'heal'); }
+    consume(idx); log('You eat the '+fd.name.toLowerCase()+'.','c-good'); sfx('eat');
+    if(fd.buff && typeof eatFoodBuff==='function') eatFoodBuff(fd);
+    endTurn(); return true;
+
+}
+
+function useBagSigil(idx){
+  var it=player.bag[idx];if(!it||it.kind!=='sigil')return false;
+ if(useSigil(it.data.use)===false) return false; consume(idx); endTurn(); return true;
 }

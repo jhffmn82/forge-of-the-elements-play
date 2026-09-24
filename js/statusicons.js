@@ -104,8 +104,7 @@ function renderStatusBar(){
     if(typeof hoverCard==='function') hoverCard(el, function(){ return '<div class="nm">'+s.name+'</div><div class="row"><span>Turns left</span><b>'+s.t+'</b></div><div class="hint">'+s.d+'</div>'; });
   });
 }
-var _updateUIStatus = updateUI;
-updateUI = function(){ var r=_updateUIStatus.apply(this, arguments); renderStatusBar(); return r; };
+
 
 /* hovering an enemy lists its statuses */
 var _inspectHTMLStatus = inspectHTML;

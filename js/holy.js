@@ -9,20 +9,8 @@
    ===================================================================== */
 
 var HOLY_DURATION = [0.10, 0.15, 0.20, 0.25], HOLY_DURATION_PER = 0.03;
-ENCHANT_TEXT.holy = {
-  fire:  'Zeal: +8% damage +2.4% per Fire mastery while buffed',
-  water: 'Flow: +15% mana regeneration +4.5% per Water mastery while buffed',
-  air:   'Swiftness: action time reduced by 5% +1.5% per Air mastery while buffed',
-  earth: 'Steadfast: take 5% less damage +1.5% per Earth mastery while buffed (50% cap)',
-  light: 'Radiance: gaining a buff heals 3% of max HP +0.9% per Light mastery',
-  shadow:'Dread: +3% crit chance +0.9% per Shadow mastery while buffed'
-};
 /* the Forge can now infuse a holy symbol like an orb or tome */
-offKind = function(){
-  var o=player.twoHanded ? null : player.off; if(!o || o===EMPTY_OFF || o.joke) return null;
-  var ic=(o.icon||'').replace(/^item-/,'');
-  return (ic==='orb'||ic==='tome'||ic==='holy') ? ic : null;
-};
+
 function holySymbol(){ return offKind()==='holy' ? player.off : null; }
 function holyDurationPct(it){
   it=it||holySymbol(); if(!it || it.cursed) return 0;
@@ -48,8 +36,8 @@ function setBuffTimer(key, v){
 function isBuffed(){ var b=buffTimers(); for(var k in b) return true; return false; }
 
 /* a buff that is new or refreshed since the last turn is lengthened, and Radiance heals */
-var _endTurnHoly = endTurn;
-endTurn = function(){
+
+function turnPrepareHolyBuffs(context){
   if(player && player.hp>0){
     var now=buffTimers(), prev=player._buffSeen||{}, pct=holyDurationPct(), gained=0;
     for(var k in now){
@@ -58,47 +46,20 @@ endTurn = function(){
       if(pct>0) setBuffTimer(k, now[k] + Math.max(1, Math.round(now[k]*pct)));
     }
     if(gained && infusion('holy')==='light'){
-      var h=Math.max(1, Math.round(player.maxhp*0.03*infScale('light')*gained));
+      var h=Math.max(1, Math.round(player.maxhp*enchantValues('holy','light').buffHeal*gained));
       if(player.race!=='gloomling'){ healPlayer(h); floatText(player.x,player.y,'+'+h,'heal'); }
     }
   }
-  _endTurnHoly();
-  if(player){
-    player._buffSeen=buffTimers();
-    if(infusion('holy')==='water' && player.hp>0 && isBuffed()) player.mp=Math.min(player.maxmp, player.mp + player.maxmp*0.006*0.15*infScale('water'));
-  }
-};
+
+}
 
 /* Zeal and Steadfast */
-var _applyDamageHoly = applyDamage;
-applyDamage = function(target, amount, type, source){
-  var el=infusion('holy');
-  if(el && isBuffed()){
-    if(el==='fire' && source===player && target!==player) amount*=1 + 0.08*infScale('fire');
-    if(el==='earth' && target===player) amount*=Math.max(0.5, 1 - 0.05*infScale('earth'));
-  }
-  return _applyDamageHoly(target, amount, type, source);
-};
+
+
 /* Swiftness */
-var _actCostHoly = actCost;
-actCost = function(e){ var c=_actCostHoly(e); if(e===player && infusion('holy')==='air' && isBuffed()) c=Math.max(40, Math.round(c*(1 - 0.05*infScale('air')))); return c; };
+
+
 /* Dread: crit is read from player.crit when an attack or spell resolves */
-function withDread(fn){
-  return function(){
-    var add = infusion('holy')==='shadow' && isBuffed() ? 0.03*infScale('shadow') : 0;
-    if(!add) return fn.apply(this, arguments);
-    player.crit += add;
-    try{ return fn.apply(this, arguments); } finally { player.crit -= add; }
-  };
-}
-attack = withDread(attack);
-castAt = withDread(castAt);
+
 
 /* item card: show the duration bonus under the strength bonus */
-var _bagCardHoly = bagCard;
-bagCard = function(it){
-  var h=_bagCardHoly(it);
-  if(it && it.kind==='off' && it.data && itemKey(it.data)==='holy' && !it.data.unid)
-    h=h.replace(/(<div class="row"><span>Invoke &amp; prayer strength<\/span><b>[^<]*<\/b><\/div>)/, '$1<div class="row"><span>Buff duration</span><b>+'+Math.round(holyDurationPct(it.data)*100)+'%</b></div>');
-  return h;
-};

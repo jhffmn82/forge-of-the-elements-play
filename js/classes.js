@@ -48,13 +48,7 @@ function kitNames(c){
  delete ABILITIES.sap.useWeaponRange;
 
 
-
-
-
-
 /* ---------------------------------------------------------------- creation */
-var _statsForCls = statsFor;
-statsFor = function(c){ var s=_statsForCls(c); if(c.race==='human') for(var k in s) s[k]++; return s; };
 var _renderCreateCls = renderCreate;
 renderCreate = function(){
   _renderCreateCls();
@@ -65,50 +59,16 @@ renderCreate = function(){
 };
 
 /* ---------------------------------------------------------------- a new run */
-var _newRunCls = newRun;
-newRun = function(seed, choice){
-  _newRunCls(seed, choice);
-  var c=window.LAST_CHOICE || choice || CHOICE, k=kitFor(c);
-  function item(table, key){ if(!key) return null; var g=clone(table[key]); g.key=key; g.tier=0; g.plus=0; return g; }
-  /* the alt weapon goes in the ranged slot if it has reach, else into the bag (js/rangedslot.js) */
-  player.sets=[item(WEAPONS,k.main), null]; player.activeSet=0;
-  var alt=item(WEAPONS,k.alt);
-  player.ranged = (alt && (alt.range||0)>1) ? alt : null;
-  if(alt && !player.ranged && typeof addBag==='function') addBag('⚔', gearName(alt), {kind:'weapon', data:alt});
-  player.armorItem=item(ARMORS,k.armor);
-  /* an off-hand kit slot may name a light weapon now that there is no separate off-hand dagger */
-  player.off = k.off ? (OFFHANDS[k.off] ? item(OFFHANDS, k.off)
-                        : (WEAPONS[k.off] ? offHandWeapon(item(WEAPONS, k.off)) : EMPTY_OFF))
-                     : EMPTY_OFF;
-  player.kit=c.kit;
-  if(c.cls==='tourist') player.points=(player.points||0)+1;
-  RUN.xpCurveVersion=XP_CURVE_VERSION;
-  player.cds={}; player.xpNext=xpToNext(1);
-  derive(player);
-  player.hp=player.maxhp; player.mp=player.maxmp; player.guard=player.guardMax||0;
-  player.hotbar=null; updateUI();
-};
+
 
 /* ---------------------------------------------------------------- derived */
-var _deriveCls = derive;
-derive = function(p){
-  _deriveCls(p);
-  if(p!==player) return;
-  p.guardMax = p.cls==='fighter' ? Math.max(3, Math.round(p.maxhp*0.12)) : 0;   /* a share of the pool, not a flat slab */
-  if(p.guard===undefined) p.guard=p.guardMax;
-  p.guard=Math.min(p.guard, p.guardMax);
-  if(p.cls==='scoundrel' && p.abilities.indexOf('shadowstep')<0) p.abilities.splice(1, 0, 'shadowstep');
-  if(p.cls==='fighter' && p.abilities.indexOf('charge')<0) p.abilities.splice(1, 0, 'charge');
-};
-var _playerShieldCls = playerShield;
-playerShield = function(){ return _playerShieldCls() + Math.max(0, Math.floor(player.guard||0)); };
+
 
 /* Cleric: piety 25% faster.
    2026-09-20 (Justin): the per-rank discount on a divine invoke is gone. An invoke never gets cheaper as your
    piety grows - it gets stronger. Saint Glimmer's Heal already scales (+5% a rank, combat.js castSelf) and
    Sylla's Into the Dark does the same; that is what rank buys. */
-var _gainPietyCls = gainPiety;
-gainPiety = function(n, why){ return _gainPietyCls.apply(this, arguments); };
+
 
 /* Experience curve (level cap 20). The former 1.55 growth stranded a full-clear
    floor-18 character at level 12. Growth 1.267 mapped that same lifetime XP to
@@ -140,40 +100,11 @@ function migrateXpCurve(){
 }
 
 /* Tourist: +25% experience */
-var _gainXPCls = gainXP;
-gainXP = function(n){
-  player.xpNext = xpToNext(player.level);
-  var lv=player.level, r=_gainXPCls(player.cls==='tourist' ? Math.round(n*1.25) : n);
-  if(player.level!==lv) player.xpNext=xpToNext(player.level);
-  return r;
-};
+
 
 /* ---------------------------------------------------------------- Shadowstep and cooldowns */
 function cdLeft(key){ return Math.max(0, ((player.cds||{})[key]||0) - turn); }
-var _useAbilityCls = useAbility;
-useAbility = function(i){
-  var key=player.abilities[i];
-  if(key==='shadowstep'){
-    if(cdLeft(key)>0){ log('Shadowstep is not ready ('+cdLeft(key)+' turns).','c-info'); sfx('ui-error'); return; }
-    if(ents.some(function(e){ return e.foe && dist(e,player)<=1; })){ log('Not with an enemy right next to you.','c-info'); sfx('ui-error'); return; }
-    player.cds=player.cds||{}; player.cds.shadowstep=turn+ABILITIES.shadowstep.cd;
-    player.hidden=4;
-    ents.forEach(function(e){ if(e.foe && e.state==='hunt'){ e.state='wander'; e.lastSeen=null; e.goal=null; } });
-    setClip(player,'cast'); sfx('vanish'); sparkleFx(player.x,player.y,'dark',18);
-    log('You <b>Shadowstep</b> into hiding.','c-good');
-    endTurn(); return;
-  }
-  return _useAbilityCls(i);
-};
-var _abilityBarCls = abilityBar;
-abilityBar = function(){
-  _abilityBarCls();
-  if(!player || !player.hotbar || !$('hotbar')) return;
-  $('hotbar').querySelectorAll('.slot[data-i]').forEach(function(b){
-    var s=player.hotbar[+b.getAttribute('data-i')];
-    if(s && s.type==='ability' && ABILITIES[s.key] && ABILITIES[s.key].cd){ var c=b.querySelector('.c'), left=cdLeft(s.key); if(c) c.textContent = left ? left+' turns' : 'ready'; if(left) b.style.opacity='0.6'; }
-  });
-};
+
 
 /* ---------------------------------------------------------------- Charge (2026-09-22)
    Justin: warriors need a charge - in an open space anything ranged just kites them forever, and there has to be a
@@ -190,25 +121,44 @@ function chargeLane(f, ground){
   for(var i=0;i<run.length;i++){ var t=run[i]; if(!walkable(t.x,t.y) || occupied(t.x,t.y)) return null; }
   return run;
 }
-var _useAbilityCharge = useAbility;
-useAbility = function(i){
-  var key=player.abilities[i];
-  if(key!=='charge') return _useAbilityCharge(i);
-  if(cdLeft(key)>0){ log('Charge is not ready ('+cdLeft(key)+' turns).','c-info'); sfx('ui-error'); return; }
-  if(player.st.root || player.st.frozen){ log('You cannot charge while held fast.','c-info'); sfx('ui-error'); return; }
-  if(aiming && aiming.i===i){ cancelAim(); return; }
-  aiming={i:i, A:ABILITIES.charge};
-  log('<b>Charge</b> &mdash; click an enemy, or open ground, within 5 tiles in a straight line; Esc cancels.','c-info');
-  abilityBar(); draw();
-};
-var _inRangeCharge = inRange;
-inRange = function(x,y){
-  if(aiming && aiming.A.kind==='charge') return dist(player,{x:x,y:y})<=ABILITIES.charge.range && inb(x,y) && (revealAll || vis[idxOf(x,y)]);
-  return _inRangeCharge(x,y);
-};
-var _castAtCharge = castAt;
-castAt = function(x,y){
-  if(!aiming || aiming.A.kind!=='charge') return _castAtCharge(x,y);
+
+
+/* ---------------------------------------------------------------- Double Strike is one attack action */
+/* (attack() flags player.lastAttack, so the turn already costs attack time) */
+
+/* ---------------------------------------------------------------- Fighter guard refills out of combat */
+
+function turnClassRecovery(context){
+  if(!player || player.hp<=0) return;
+  player.noisy=false;
+  if(player.guardMax>0 && (player.guard||0)<player.guardMax){
+    var fighting=player.t-(player.lastDamageTime||0)<500;
+    if(!fighting) player.guard=Math.min(player.guardMax, (player.guard||0)+context.cost/100);
+  }
+
+}
+
+/* ---------------------------------------------------------------- Sap: the waking hit is a surprise crit */
+
+
+/* Magic Missile used to roll its own rider for every affinity point (25% + 5% per point to Burn, Chill,
+   Root, Blind, Fear or chain a bolt). Weapon enchantments proc on spells now (js/spellench.js), so that
+   second, invisible chance is gone: what your missiles do to a target is what your focus is enchanted with.
+   Magic Missile keeps what makes it Magic Missile - it always hits, nothing resists it, and its damage still
+   grows with every affinity point. (2026-09-17) */
+
+/* ---------------------------------------------------------------- stealth: everyone has a stealth score */
+
+/* chance per turn that an unaware enemy notices you; hunting enemies are unaffected */
+function noticeChance(e, see, d, asleep){
+  var cut = isScoundrel() ? 2 : 0, ch=0;
+  if(asleep) ch = see && d<=Math.max(1,7-cut) ? 0.55 : d<=Math.max(1,3-cut) ? 0.2 : 0;
+  else ch = see && d<=Math.max(1,9-cut) ? 0.7 : 0;
+  if(isScoundrel()) ch*=0.5;
+  return ch*(1-stealthScore());
+}
+
+function castChargeTarget(x,y){
   var f=ents.filter(function(e){ return e.foe && e.hp>0 && e.x===x && e.y===y; })[0];
   if(!inRange(x,y)){ log('Too far to charge.','c-info'); sfx('ui-error'); return false; }
   if(!f && (x===player.x && y===player.y || !walkable(x,y) || occupied(x,y))){ log('Charge at an enemy or onto open ground.','c-info'); sfx('ui-error'); return false; }
@@ -220,85 +170,8 @@ castAt = function(x,y){
   if(run.length){ var stop=run[run.length-1]; player.x=stop.x; player.y=stop.y; if(typeof computeFOV==='function') computeFOV(); }
   if(typeof faceOf==='function'){ var cf=faceOf(x-from.x, y-from.y); if(cf) player.face=cf; }
   sfx('charge'); if(typeof SHAKE!=='undefined') SHAKE=5; if(typeof ringFx==='function') ringFx(player.x,player.y,'#E8B44A',1.6);
-  if(f){ player._sureHit=true; try{ attack(player, f, 1, 'Charge'); } finally{ player._sureHit=false; } }
+  if(f)attack(player,f,1,'Charge',{sureHit:true});
   var stunned=0; ents.forEach(function(e){ if(e.foe && e.hp>0 && dist(e,player)<=1){ applyStatus(e,'stun',2); stunned++; } });
   log('<b>Charge!</b>'+(stunned ? ' Everything around you reels.' : f ? '' : ' You break away.'),'c-good');
   player.hidden=0; endTurn(); return true;
-};
-
-/* ---------------------------------------------------------------- Double Strike is one attack action */
-/* (attack() flags player.lastAttack, so the turn already costs attack time) */
-
-/* ---------------------------------------------------------------- Fighter guard refills out of combat */
-var _endTurnCls = endTurn;
-endTurn = function(){
-  _endTurnCls();
-  if(!player || player.hp<=0) return;
-  player.noisy=false;
-  if(player.guardMax>0 && (player.guard||0)<player.guardMax){
-    var fighting=player.t-(player.lastDamageTime||0)<500;
-    if(!fighting) player.guard=Math.min(player.guardMax, (player.guard||0)+1);
-  }
-};
-
-/* ---------------------------------------------------------------- Sap: the waking hit is a surprise crit */
-var _castAtCls = castAt;
-castAt = function(x,y){
-  var key=aiming && player.abilities[aiming.i];
-  var f=ents.filter(function(e){ return e.foe && e.x===x && e.y===y; })[0];
-  var saved=player.crit, sapped=f && f.sapped;
-  if(sapped) player.crit=1;
-  if(aiming) player.noisy=true;
-  var r=_castAtCls(x,y);
-  player.crit=saved;
-  if(r && key==='sap' && f && f.hp>0 && f.st.stun && !f.stunImmune){ f.sapped=true; f.stunImmune=true; }
-  return r;
-};
-var _attackCls = attack;
-attack = function(att, def, mult, label){
-  if(att===player) player.noisy=true;
-  if(att===player && def && def.sapped){
-    var saved=player.crit; player.crit=1;
-    _attackCls(att, def, mult, label);
-    player.crit=saved; return;
-  }
-  return _attackCls(att, def, mult, label);
-};
-var _applyDamageCls = applyDamage;
-applyDamage = function(target, amount, type, source){
-  var d=_applyDamageCls(target, amount, type, source);
-  if(target && target!==player && target.sapped && d>0){ target.sapped=false; if(target.st) delete target.st.stun; }
-  return d;
-};
-
-/* Magic Missile used to roll its own rider for every affinity point (25% + 5% per point to Burn, Chill,
-   Root, Blind, Fear or chain a bolt). Weapon enchantments proc on spells now (js/spellench.js), so that
-   second, invisible chance is gone: what your missiles do to a target is what your focus is enchanted with.
-   Magic Missile keeps what makes it Magic Missile - it always hits, nothing resists it, and its damage still
-   grows with every affinity point. (2026-09-17) */
-
-/* ---------------------------------------------------------------- stealth: everyone has a stealth score */
-function stealthScore(){
-  if(!player || player.noisy) return 0;
-  if(typeof hasGod==='function' && hasGod('reginald')) return 0;   /* 2026-09-22 (Justin): the Unsneaky cannot sneak; not written on any card */
-  var s=0.02*Math.max(0, player.stats.agi-10);
-  if(isScoundrel()) s+=0.25;
-  if(!player.movedLast) s+=0.20;
-  if(gAt(player.x,player.y)===G_GRASS) s+=0.25;
-  var rm=roomAt(player.x,player.y); if(rm && rm.dark) s+=0.25;
-  var w=(player.armorItem||{}).weight; if(w==='medium') s-=0.10; else if(w==='heavy') s-=0.25;
-  if(typeof stealthExtra==='function') s+=stealthExtra();
-  return Math.max(0, Math.min(0.9, s));
 }
-/* chance per turn that an unaware enemy notices you; hunting enemies are unaffected */
-function noticeChance(e, see, d, asleep){
-  var cut = isScoundrel() ? 2 : 0, ch=0;
-  if(asleep) ch = see && d<=Math.max(1,7-cut) ? 0.55 : d<=Math.max(1,3-cut) ? 0.2 : 0;
-  else ch = see && d<=Math.max(1,9-cut) ? 0.7 : 0;
-  if(isScoundrel()) ch*=0.5;
-  return ch*(1-stealthScore());
-}
-
-/* a sapped enemy shrugs off every later stun (Sap, Spark, Bellow, Pummel...) */
-var _applyStatusSap = applyStatus;
-applyStatus = function(e, key, turns, extra){ return _applyStatusSap(e, key, turns, extra); };

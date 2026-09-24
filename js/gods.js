@@ -11,59 +11,8 @@
 function godBoonRanks(g){ return (g && g.boonRanks) || BOON_RANKS; }
 
 function clericGodLocked(id){ return player.cls==='cleric' && !!player.god && player.god!==id; }
-function joinGod(id, startPiety){
-  if(clericGodLocked(id)) return false;
-  var prev=player.god;
-  if(prev && prev!==id){
-    log('<b>'+GODS[prev].name+'</b> feels betrayed. Their wrath follows you for a while.','c-you');
-    player.wrath={god:prev, t:60}; sfx('wrath');
-  }
-  player.god=id; player.piety=startPiety||0; player.favor=Math.min(100, Math.round((startPiety||0)/2)); player.amusement=50;
-  player.lastRank=godRank();
-  derive(player); player.hotbar=null; updateUI();
-}
-function gainPiety(n, why, opts){
-  if(!player.god || n<=0) return;
-  var g=GODS[player.god];
-  // Amusement has its own event table; ordinary piety does not award it.
-  n*=1+(player.race==='human'?.25:0)+(g.loves===player.race?.25:0)+(player.cls==='cleric'?.25:0);
-  var before=godRank();
-  /* 2026-09-23 (Justin): piety grows 30% per biome so a follower who switched gods can catch up; favor never does */
-  var deep = typeof bidx==='function' ? Math.pow(1.3, Math.max(0, bidx())) : 1;
-  player.piety=(player.piety||0)+n*deep;
-  if(!(opts && opts.pietyOnly)) player.favor=Math.min(100,(player.favor||0)+n*divineStrength());   /* Grom's punches pay piety only (DESIGN 12, step 8a) */
-  var after=godRank();
-  if(after>before){
-    log('<b>'+g.name+' is pleased.</b> Piety rank '+after+'.','c-kill'); sfx('piety-rank'); ringFx(player.x,player.y,g.color,3);
-    var bi=godBoonRanks(g).indexOf(after), boon=bi>=0 ? g.boons[bi] : null; if(boon) log('Boon: '+boon,'c-good');
-    (g.prayers||[]).forEach(function(pid){ var P=PRAYERS[pid]; if(P.rank===after) log('New prayer: <b>'+P.name+'</b> &mdash; '+P.desc+' (Faith tab or P)','c-kill'); });
-    derive(player); updateUI();
-  }
-}
-function pietyViolation(what, amount){
-  if(!player.god) return;
-  var g=GODS[player.god];
-  if(g.chaos) return;
-  player.piety=Math.max(0,(player.piety||0)-amount); player.favor=0;
-  player.violations=(player.violations||0)+1;
-  log('<b>'+g.name+'</b> disapproves of '+what+'. (&minus;'+amount+' piety)','c-you'); sfx('wrath');
-  if(player.violations>=6 && player.piety<=0){
-    log('<b>'+g.name+' turns away from you.</b>','c-you');
-    player.wrath={god:player.god, t:80}; player.god=null; player.piety=0; player.favor=0; player.violations=0;
-    derive(player); updateUI();
-  }
-}
-function godConductEquip(){return true;}
-function spellConduct(A){
-  var g=player.god; if(!g) return;
 
-  if(g==='vellum'){
-    player.castTurn=turn;
-    player.manaSpent=(player.manaSpent||0)+(player._actualSpellCost||0);
-    while(player.manaSpent>=20){ player.manaSpent-=20; gainPiety(1); }   /* the card says 20 (2026-09-22 audit) */
 
-  }
-}
 /* 2026-09-23 (Justin): a spell of the element your god forbids will not come at all: no mana, no piety, no turn.
    The outermost useAbility (balance-rulings.js) asks this before anything is spent; Sylla adds Fire in sylla.js. */
 function spellForbidden(A){if(!A)return null;if(player.god==='grumbok'&&!A.tech&&!A.divine)return 'spells';return forbiddenElement(A.el)?cap(A.el):null;}
@@ -72,29 +21,15 @@ function sigilConduct(use){var S=SIGILS[use];if(player.god==='grumbok'||S&&(S.mo
    an enchantment, a toll, an offering - is a point of piety. Measured against the 3,900 essence lying on
    floors 1-20 (plus what recycling pays), a smith who spends what he finds reaches rank 5 in biome 4,
    the same as every other devoted follower. (2026-09-17) */
-function spendEssence(n){
+function spendEssence(n,options){
   n=Math.max(0, Math.round(n||0));
   player.essence -= n;
   if(player.god==='anvil' && n>0){
     player.essenceSpent=(player.essenceSpent||0)+n;
-    while(player.essenceSpent>=5){ player.essenceSpent-=5; gainPiety(1); }
+    while(player.essenceSpent>=5){ player.essenceSpent-=5; gainPiety(1,undefined,options); }
   }
 }
-function godOnKill(e, by){
-  var g=player.god; if(!g) return;
-  var byPlayer = by===player, byAlly = by && by.ally, big = e.elite || e.base.elite || e.base.boss, r=godRank();
-  /* 2026-09-22 (Justin): Reginald's rule is no surprise attacks and no stealth kills. A stunned or frozen enemy was
-     awake and fighting; only a sleeping one is a stealth kill (a surprise attack already costs piety in attack()). */
-  var aware = e.state!=='asleep';
-  if(g==='grom'){ if(byPlayer && player.weapon && player.weapon.unarmed) gainPiety(2+(big?15:0)); }   /* 2026-09-23 audit: kills made unarmed pay, on top of the punch piety (DESIGN 12, step 8a) */
-  else if(g==='grumbok'){ if(byPlayer||byAlly) gainPiety((e.base.spellcaster||e.base.el?5:2)+(big?15:0)); }
-  else if(g==='glimmer'){ if(byPlayer||byAlly) gainPiety((e.base.undead||e.base.shadowy?4:2)+(big?15:0)); }
-  else if(g==='murk'){ if(byAlly && by.undeadServant) gainPiety(4+(big?15:0)); else if((byPlayer||byAlly) && !e.base.undead) gainPiety(2+(big?15:0));
-    if((byPlayer || (byAlly && by.undeadServant)) && e.foe && !e.base.undead && r>0){ healPlayer(Math.round(r*divineStrength())); } }
-  else if(g==='reginald'){ if(byPlayer && aware) gainPiety(2+(big?15:0)); }
-  else if(g==='vellum'){ if(byPlayer && player.castTurn===turn) gainPiety(2+(big?15:0)); }   /* 2026-09-23 audit: the elite bonus needs a spell kill too (DESIGN 6.5) */
-  else if(g==='wobbles'){ gainPiety(big?15:2); }
-}
+
 function godTick(seesFoe){
   if(player.wrath){
     player.wrath.t--;
@@ -234,7 +169,6 @@ function enforceDivineEquipment(p){
 
 function freeInvocation(A){return capstone('vellum')&&A&&!A.tech&&rng()<.30;}
 
-function spendSpellMana(A){var n=costOf(A);if(freeInvocation(A))n=0;player.mp-=n;player._actualSpellCost=n;if(!A.tech)player.castingSpell=true;return n;}
 
 function spendDivineSpell(n){if(capstone('vellum')&&rng()<.30)n=0;player.favor-=n;player.castingSpell=true;return n;}
 
@@ -267,7 +201,8 @@ function spendPrayer(id){
 }
 function usePrayer(id){
   var before=player.t;
-  try{return performPrayer(prayerId(id));}
+  var key=prayerId(id);
+  try{return gameActions.run('prayer',player,null,{prayer:key},function(event){event.result=performPrayer(key);}).result;}
   finally{
     if(player.t===before){
       player._worldBuffPrev=Object.assign({},player.buffs);
@@ -324,7 +259,7 @@ function prayFieldSmelt(){
   }};}));return true;
 }
 
-function godDamageResolved(target,d,type,source){
+function godDamageResolved(target,d,type,source,event){
 
 
  if(d>0&&source===player&&target.foe){
@@ -334,20 +269,18 @@ function godDamageResolved(target,d,type,source){
  if(d>0&&target===player&&source&&source.foe&&player.god==='wobbles')combatAmusement('in');
  if(d>0&&target.foe&&source&&source.ally){target.state='hunt';target.lastSeen={x:source.x,y:source.y};target.petAggressor=source.id;}
 
- if(d>0&&target&&target.foe&&source&&source.ally&&hasGod('murk')&&godRank()>=3&&!source._murkProc){
-  source._murkProc=true;
-  try{
-   var el=player.weapon&&player.weapon.enchant,pts=affPts(el),bonus=godRank();
-   if(target.hp>0)applyDamage(target,bonus,'dark',source);
+ if(d>0&&target&&target.foe&&source&&source.ally&&hasGod('murk')&&godRank()>=3&&!(event&&event.tags.has('murk-inherited'))){
+   var inherited={tags:['proc','murk-inherited']};
+   var el=player.weapon&&player.weapon.enchant,values=enchantValues('weapon',el),bonus=godRank();
+   if(target.hp>0)applyDamage(target,bonus,'dark',source,inherited);
    if(target.hp>0){
-    if(el==='fire'){applyDamage(target,Math.round(d*(.10+.03*pts)),'fire',source);if(target.hp>0&&pRoll(.05*pts))applyStatus(target,'burn',3,burnDmg());}
-    if(el==='water'&&pRoll(.15+.05*pts))addChill(target);
-    if(el==='earth'&&pRoll(.15*enchantScale('earth')))applyStatus(target,'root',2);
-    if(el==='air'&&pRoll(Math.max(.05,.05*pts)))applyDamage(target,Math.round(d),type,source);
-    if(el==='light'&&(target.base.undead||target.base.shadowy))applyDamage(target,Math.round(d*.25),'light',source);
-    if(el==='shadow'&&pRoll(Math.max(.05,.05*pts))){applyDamage(target,Math.round(d*.25),'dark',source);if(target.hp>0)applyStatus(target,'corrupt',3);}
+    if(el==='fire'){applyDamage(target,Math.round(d*values.extraDamage),'fire',source,inherited);if(target.hp>0&&pRoll(values.burnChance))applyStatus(target,'burn',values.burnDuration,burnDmg());}
+    if(el==='water'&&pRoll(values.chillChance))addChill(target);
+    if(el==='earth'&&pRoll(values.rootChance))applyStatus(target,'root',values.rootDuration);
+    if(el==='air'&&pRoll(values.repeatChance))applyDamage(target,Math.round(d),type,source,inherited);
+    if(el==='light'&&(target.base.undead||target.base.shadowy))applyDamage(target,Math.round(d*values.extraDamage),'light',source,inherited);
+    if(el==='shadow'&&pRoll(values.procChance)){applyDamage(target,Math.round(d*values.extraDamage),'dark',source,inherited);if(target.hp>0)applyStatus(target,'corrupt',values.corruptDuration);}
    }
-  }finally{source._murkProc=false;}
  }
 
 }

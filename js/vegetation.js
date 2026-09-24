@@ -120,5 +120,6 @@ function vegGrow(){
   spots.forEach(function(sp){ var i2=idxOf(sp.x,sp.y); if(ground[i2]===G_GRASS || ground[i2]===G_SHORT) ground[i2]=0; });
   floorMeta.vegSpots=spots;
 }
-var _generateVeg = generate;
-generate = function(seed){ var r=_generateVeg.apply(this, arguments); try{ vegGrow(); }catch(e){ if(window.console) console.warn('vegetation', e); } return r; };
+
+/* Named floor-generation stages; ordered by generation-adapter.js. */
+function growGeneratedVegetation(seed){  try{ vegGrow(); }catch(e){ if(window.console) console.warn('vegetation', e); } return; }

@@ -331,6 +331,5 @@
       window.syncAudioButtons=function(){ var r=_sync.apply(this, arguments); shortenTop(); return r; };
     }
   }
-  if(document.readyState==='complete') setTimeout(boot, 0);
-  else window.addEventListener('load', function(){ setTimeout(boot, 0); });
+  FoteLifecycle.whenReady(boot);
 })();

@@ -93,7 +93,7 @@ function rollName(c){
 function lookFor(c){ var s=RACES[c.race].sexes[c.sex]; return c.race==='fae' ? s.replace('%s', c.court) : s; }
 function statsFor(c){
   var s={mig:10,agi:10,vit:10,foc:10}, rm=RACES[c.race].mods, cm=CLASSES[c.cls].mods;
-  for(var k in s){ s[k]+= (rm[k]||0) + (cm[k]||0); }
+  for(var k in s){ s[k]+= (rm[k]||0) + (cm[k]||0) + (c.race==='human'?1:0); }
   return s;
 }
 function openCreate(){
@@ -164,52 +164,45 @@ function renderCreate(){
 }
 
 /* ---------------------------------------------------------------- a new run */
-function newRun(seed, choice){
-  choice = choice || window.LAST_CHOICE || CHOICE;
-  window.LAST_CHOICE = JSON.parse(JSON.stringify(choice));
-  seed = seed>>>0;
-  worldSeed = seed;
-  rng = mulberry32(seed);
-  newRunState(seed);
-  floorNo=1; turn=0; revealAll=false; aiming=null; PARTS.length=0; fx=[];
-  if($('bReveal')) $('bReveal').textContent='Reveal: off';
-  var c=choice, C=CLASSES[c.cls], kit=startingKit(c);
-  function gear(table, key){ if(!key) return null; var g=clone(table[key]); g.tier='Rusty'; g.plus=0; return g; }
-  /* an off-hand kit slot names either an off-hand item (shield, orb) or a light weapon (two daggers) */
-  function offKitGear(key){
-    if(!key) return EMPTY_OFF;
-    if(OFFHANDS[key]) return gear(OFFHANDS, key) || EMPTY_OFF;
-    var w=gear(WEAPONS, key); if(!w) return EMPTY_OFF;
-    return offHandWeapon(w);
-  }
-  var p = {id:0, ch:'@', x:2, y:2, t:0, st:{}, foe:false, buffs:{},
-    race:c.race, cls:c.cls, sex:c.sex, court:c.court, look:lookFor(c), name:(c.name||'Adventurer').trim()||'Adventurer',
-    stats:statsFor(c), level:1, xp:0, xpNext:90, points:0, blurCd:0, fortCd:0, hidden:0,
-    essence: c.cls==='tourist' ? 30 : 0, motes:{}, aff:{}, primary:null, keys:{iron:0, crystal:0}, hunger:1200,
-    sets:[gear(WEAPONS,kit.main), null], activeSet:0, ranged:(function(){ var a=gear(WEAPONS,kit.alt); return (a && (a.range||0)>1) ? a : null; })(),
-    armorItem:gear(ARMORS,kit.armor), off:offKitGear(kit.off),
-    bag:[], hotbar:null, god:null, piety:0, favor:0, amusement:50, levitate:0, face:'south' };
-  if(c.cls==='cleric' && c.god==='grom'){ p.sets=[null,null]; p.armorItem=null; }
-  var R=RACES[c.race];
-  if(c.race==='fae'){ p.aff[c.court]=1; p.primary=c.court; }
-  if(c.race==='gloomling'){ p.aff.shadow=1; p.primary='shadow'; }
-  player = p;
-  shuffleSigils();
-  addBag('\u{1F356}','Ration',{kind:'food', data:{food:'ration'}, uid:'food:ration'});
-  player.bag[0].n = 1 + (C.extraFood||0);
-  if(c.cls==='cleric'){ player.god=c.god; player.piety=20; player.favor=20; }
-  derive(player); player.hp=player.maxhp; player.mp=player.maxmp; player.iceArmor=player.iceArmorMax;
-  $('over').style.display='none';
-  $('log').innerHTML='';
-  RUN.over=false;
-  generate(worldSeed);
-  player._lx=undefined;
+function createRunCharacter(choice){
+  var kit=kitFor(choice);
+  function item(table,key){if(!key)return null;return Object.assign(clone(table[key]),{key:key,tier:0,plus:0});}
+  var off=kit.off?(OFFHANDS[kit.off]?item(OFFHANDS,kit.off):offHandWeapon(item(WEAPONS,kit.off))):EMPTY_OFF;
+  var p={id:0,ch:'@',x:2,y:2,t:0,st:{},foe:false,buffs:{},
+    race:choice.race,cls:choice.cls,sex:choice.sex,court:choice.court,look:lookFor(choice),name:(choice.name||'Adventurer').trim()||'Adventurer',
+    stats:statsFor(choice),level:1,xp:0,xpNext:xpToNext(1),points:choice.cls==='tourist'?1:0,
+    blurCd:0,fortCd:0,hidden:0,essence:choice.cls==='tourist'?30:0,motes:{},aff:{},primary:null,
+    keys:{iron:0,crystal:0},hunger:1200,sets:[item(WEAPONS,kit.main),null],activeSet:0,
+    ranged:null,armorItem:item(ARMORS,kit.armor),off:off,rings:[null,null],amulet:null,
+    bag:[],hotbar:null,god:choice.cls==='cleric'?choice.god:null,piety:choice.cls==='cleric'?20:0,
+    favor:choice.cls==='cleric'?20:0,amusement:50,levitate:0,face:'south',kit:choice.kit,cds:{}};
+  if(choice.race==='fae'){p.aff[choice.court]=1;p.primary=choice.court;}
+  if(choice.race==='gloomling'){p.aff.shadow=1;p.primary='shadow';}
+  var alt=item(WEAPONS,kit.alt);if(isRangedWeapon(alt))p.ranged=alt;
+  return {actor:p,bagWeapon:alt&&!p.ranged?alt:null};
+}
+function newRun(seed,choice){
+  choice=choice||LAST_CHOICE||CHOICE;LAST_CHOICE=JSON.parse(JSON.stringify(choice));
+  if(typeof SANDBOX!=='undefined')SANDBOX.normalTitle=false;
+  if(typeof MAPVIEW!=='undefined')MAPVIEW.on=false;
+  worldSeed=seed>>>0;rng=mulberry32(worldSeed);newRunState(worldSeed);
+  RUN.xpCurveVersion=XP_CURVE_VERSION;
+  floorNo=1;turn=0;revealAll=false;aiming=null;PARTS.length=0;fx=[];speedFxList();
+  var created=createRunCharacter(choice);player=created.actor;
+  shuffleSigils();ensureTrinketLooks();
+  addBag('🍖','Ration',{kind:'food',data:{food:'ration'},uid:'food:ration'});
+  player.bag[0].n=1+(CLASSES[choice.cls].extraFood||0);
+  if(created.bagWeapon)addBag('⚔',gearName(created.bagWeapon),{kind:'weapon',data:created.bagWeapon});
+  syncGlimmerLight();derive(player);
+  player.hp=player.maxhp;player.mp=player.maxmp;player.guard=player.guardMax||0;player.iceArmor=player.iceArmorMax;
+  generate(worldSeed);player._lx=undefined;RUN.over=false;
+  if($('bReveal'))$('bReveal').textContent='Reveal: off';
+  $('over').style.display='none';$('log').innerHTML='';
   log('<b>'+player.name+'</b>, '+player.who+', enters the Dungeon.','c-kill');
   if(!window.TIPS_SHOWN){
     window.TIPS_SHOWN=true;
     log('Move with the arrow keys or WASD (Q E Z C for diagonals), or click a tile. Bump enemies to attack. <b>1-8</b> use your hotbar, <b>g</b> picks up, <b>r</b> rests, <b>p</b> opens Faith, <b>i</b> your bag, <b>Tab</b> your character.','c-info');
     log('Hover anything on the map to inspect it. Traps show once you spot them; Agility helps.','c-info');
   }
-  floorIntro();
-  resize(); updateUI();
+  floorIntro();resize();updateUI();
 }

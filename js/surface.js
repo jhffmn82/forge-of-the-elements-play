@@ -35,6 +35,10 @@ function weatheredMasonry(img){
   g.putImageData(im,0,0); WALL_GRAIN_CACHE.set(img,c); return c;
 }
 function surfImg(name){
+  if(DEEP_AT>=0&&inDeep()){
+    var region=DEEP_REGIONS[DEEP_AT];
+    if(AS.surface&&AS.surface[region+'-'+name]){var regionImage=atl('surface-'+region+'-'+name+'.png');return ['face','top','rim-n','rim-v'].indexOf(name)>=0?weatheredMasonry(regionImage):regionImage;}
+  }
   /* a biome or plane with its own stone uses it: surface-crypt-floor, surface-light-floor ... */
   var pre = (typeof floorMeta!=='undefined' && floorMeta && floorMeta.plane) ? floorMeta.plane : (typeof bidx==='function' && bidx()===1 ? 'crypt' : null);
   var key=pre && AS.surface && AS.surface[pre+'-'+name] ? pre+'-'+name : name;
@@ -48,31 +52,33 @@ function isDoorTile(t){ return t===DOOR || t===LOCKED || t===TOLL || t===ICEDOOR
 function openGround(x,y){ if(!inb(x,y)) return false; var t=at(x,y); return !isWallLike(t); }
 
 /* ---------------------------------------------------------------- base tiles */
-var _floorTileSurf = floorTile;
-floorTile = function(x, y){
+
+function masonryFloorTile(x, y){
   var t=at(x,y);
   /* a closed door sits in masonry: the wall around the arch, not open floor */
   if(isDoorTile(t)){
     if(isWallLike(at(x-1,y)) || isWallLike(at(x+1,y))){ var fimg=surfImg('face'); if(fimg) return {img:fimg, sx:smod(x+surfOff(2))*64, sy:0, sw:64, sh:64}; }
   }
-  var img=surfImg('floor'); if(!img) return _floorTileSurf(x, y);
+  var img=surfImg('floor'); if(!img) return atlasFloorTile(x,y);
   var per=img.naturalWidth ? Math.max(1, Math.round(img.naturalWidth/64)) : SURF_P;   /* the Crypt floor repeats every 24 cells */
   return {img:img, sx:((x+surfOff(0))%per+per)%per*64, sy:((y+surfOff(1))%per+per)%per*64, sw:64, sh:64};
-};
+
+}
 function sideDoorAt(x,y){ var t=at(x,y); return (isDoorTile(t)||t===OPEN) && sideDoor(x,y); }
 function wallFaces(x,y){ var south=at(x,y+1); return !(south===WALL || south===SECRET) && !sideDoorAt(x,y+1); }
-var _wallTileSurf = wallTile;
-wallTile = function(x, y){
+
+function masonryWallTile(x, y){
   var faceBelow=wallFaces(x,y);
   if(faceBelow){ var f=surfImg('face'); if(f) return {img:f, sx:smod(x+surfOff(2))*64, sy:0, sw:64, sh:64}; }
   else { var t=surfImg('top'); if(t) return {img:t, sx:smod(x+surfOff(3))*64, sy:smod(y+surfOff(4))*64, sw:64, sh:64}; }
-  return _wallTileSurf(x, y);
-};
+  return atlasWallTile(x,y);
+
+}
 
 /* ---------------------------------------------------------------- wall edges, ends and fixtures */
 var DECO = {pebble:[0,1,2], crack:[3,4,5], drain:6, damage:[7,8], sconce:9, banner:[10,11], cap:12};
 var RIM = 20;   /* capstone depth in the 64px source */
-function drawDeco(i, px, py, alpha, opt){
+function drawSurfaceDecal(i, px, py, alpha, opt){
   var img=surfImg('deco'); if(!img) return;
   opt=opt||{};
   ctx.save(); ctx.globalAlpha=alpha*(opt.a===undefined?1:opt.a); ctx.imageSmoothingEnabled=false;
@@ -80,7 +86,7 @@ function drawDeco(i, px, py, alpha, opt){
   ctx.drawImage(img, i*64, 0, 64, 64, Math.round(px+(opt.dx||0)*TS+(TS-w)/2), Math.round(py+(opt.dy||0)*TS+(TS-w)/2), Math.round(w), Math.round(w));
   ctx.restore();
 }
-function drawWallEdges(x, y, t, px, py, a){
+function drawMasonryWallEdges(x, y, t, px, py, a){
   var faceBelow = wallFaces(x,y);
   ctx.save(); ctx.globalAlpha=a; ctx.imageSmoothingEnabled=false;
   if(faceBelow){
@@ -130,8 +136,7 @@ function surfCache(){
   if(SURF_CACHE.key!==k){ SURF_CACHE={key:k, cells:{}}; }
   return SURF_CACHE.cells;
 }
-var _generateSurf = generate;
-generate = function(seed){ _generateSurf(seed); SURF_CACHE.key=null; };
+
 
 /* moss seeds: every G_MOSS cell, plus damp inner corners of rooms */
 function mossSeeds(x, y){
@@ -149,6 +154,7 @@ function mossSeeds(x, y){
   return out;
 }
 function mossRaster(x, y){
+  if(inDeep())return null;
   var seeds=mossSeeds(x,y); if(!seeds.length) return null;
   var R=32, c=document.createElement('canvas'); c.width=R; c.height=R;
   var g=c.getContext('2d'), im=g.createImageData(R,R), D=im.data, any=false, salt=surfSalt();
@@ -212,15 +218,16 @@ function blitRaster(c, px, py, alpha){
 }
 
 /* moss and bones are drawn by the surface pass now */
-var _drawGroundDecalSurf = drawGroundDecal;
-drawGroundDecal = function(gv, x, y, px, py, alpha, now){
+
+function drawStoneGroundDecal(gv, x, y, px, py, alpha, now){
   if(gv===G_MOSS) return true;
   if(gv===G_BONES){ blitRaster(cachedRaster('b', x, y, bonesRaster), px, py, alpha); return true; }
-  return _drawGroundDecalSurf(gv, x, y, px, py, alpha, now);
-};
+  return false;
+
+}
 
 /* ---------------------------------------------------------------- the decoration pass (after terrain, before ground decals) */
-function drawSurfaceDeco(){
+function drawStoneSurface(){
   if(!surfImg('floor')) return;
   var salt=surfSalt();
   for(var y=camY; y<=camY+viewH; y++) for(var x=camX; x<=camX+viewW; x++){
@@ -243,7 +250,7 @@ function drawSurfaceDeco(){
 }
 
 /* ---------------------------------------------------------------- flat props: bones and rubble lie in the floor */
-function drawPropSurface(p, px, py, alpha){
+function drawStoneProp(p, px, py, alpha){
   if(!surfImg('deco')) return false;
   if(p.name==='bones'){ blitRaster(cachedRaster('pb', p.x, p.y, bonesRaster), px, py, alpha); return true; }
   if(p.name==='bookshelf'){
@@ -263,7 +270,7 @@ function drawPropSurface(p, px, py, alpha){
    A door whose walls run north-south is seen from above, not face on: capstone jambs at its ends and the
    leaf as a heavy plank across the passage. Open, the leaf stands swung back against the room side. */
 function sideDoor(x, y){ return isWallLike(at(x,y-1)) && isWallLike(at(x,y+1)) && !isWallLike(at(x-1,y)) && !isWallLike(at(x+1,y)); }
-function drawSideDoor(x, y, t, px, py, a){
+function drawMasonryDoor(x, y, t, px, py, a){
   if(!(isDoorTile(t) || t===OPEN) || !sideDoor(x,y) || !surfImg('deco')) return false;
   if(t===ICEDOOR || t===THORNS) return false;   /* ice and thorns fill the gap anyway */
   var deco=surfImg('deco'), rw=Math.max(4, Math.round(TS*RIM/64));
@@ -342,9 +349,9 @@ function waterRaster(x, y){
   g.putImageData(im,0,0); return c;
 }
 if(!AS.wang_water) AS.wang_water={cell:64, tiles:{}, procedural:true};   /* keeps render.js's square fallback off */
-var _drawWangLayerSurf = drawWangLayer;
-drawWangLayer = function(key, tileType){
-  if(key!=='water' || !surfImg('floor')) return _drawWangLayerSurf(key, tileType);
+
+function drawSurfaceWater(key, tileType){
+
   for(var y=camY-1; y<=camY+viewH+1; y++) for(var x=camX-1; x<=camX+viewW+1; x++){
     if(!inb(x,y)) continue; var i=idxOf(x,y); if(!(revealAll||seen[i])) continue;
     var t=map[i]; if(isWallLike(t) && t!==WATER) continue;
@@ -355,7 +362,8 @@ drawWangLayer = function(key, tileType){
     if(isWaterAt(x,y) && (revealAll||vis[i])) waterGlints(x, y, (x-camX)*TS, (y-camY)*TS);
   }
   ctx.globalAlpha=1;
-};
+
+}
 
 /* ---------------------------------------------------------------- tall grass: a ragged bed of shade under the blades
    (the blades themselves, and grass's sight and fire rules, are unchanged) */
@@ -424,8 +432,7 @@ function drawGrassBed(){
     blitRaster(cachedRaster('g'+grassSig(x,y)+'@', x, y, grassRaster), (x-camX)*TS, (y-camY)*TS, (revealAll||vis[i])?1:memA(0.4));
   }
 }
-var _drawSurfaceDecoGrass = drawSurfaceDeco;
-drawSurfaceDeco = function(){ _drawSurfaceDecoGrass(); drawGrassBed(); };
+
 
 /* ---------------------------------------------------------------- props sit on the stone: a soft contact shadow */
 var PROP_SHADOW = {chest:0.34, crate:0.36, barrel:0.3, 'barrel-explosive':0.3, pot:0.28, 'brazier-lit':0.32, 'brazier-unlit':0.32, 'torch-stand':0.16,
@@ -493,3 +500,6 @@ function waterGlints(x, y, px, py){
   }
   ctx.restore();
 }
+
+/* Named floor-generation stages; ordered by generation-adapter.js. */
+function resetGeneratedSurface(seed){  SURF_CACHE.key=null; }

@@ -40,5 +40,6 @@ function lightRulesPass(){
   });
   if(typeof rebuildPropGrid==='function') rebuildPropGrid();
 }
-var _generateLightRules = generate;
-generate = function(seed){ var r=_generateLightRules.apply(this, arguments); try{ lightRulesPass(); }catch(e){ if(window.console) console.warn('lightrules', e); } return r; };
+
+/* Named floor-generation stages; ordered by generation-adapter.js. */
+function lightGeneratedFloor(seed){  try{ lightRulesPass(); }catch(e){ if(window.console) console.warn('lightrules', e); } return; }

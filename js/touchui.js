@@ -150,11 +150,7 @@
   document.head.appendChild(st);
 
   /* hotbar icons are painted at 28px by ui.js; on touch they are drawn at 72 and scaled down by CSS instead */
-  var _paintArtTouch = paintArt;
-  paintArt = function(el, group, name, size){
-    if(touch() && el && el.closest && el.closest('#hotbar') && (size||32) < 72) size = 72;
-    return _paintArtTouch(el, group, name, size);
-  };
+
 
   /* the d-pad centre: wait and search in one press. Capture phase, so game.js's plain wait never runs. */
   function hookDpad(){
@@ -431,12 +427,8 @@
 
   /* no native drag on the touch hotbar */
   document.addEventListener('dragstart', function(ev){ if(touch() && ev.target.closest && ev.target.closest('#hotbar, #shade')) ev.preventDefault(); }, true);
-  var _abilityBarTouch = abilityBar;
-  abilityBar = function(){
-    var r=_abilityBarTouch.apply(this, arguments);
-    if(touch()) document.querySelectorAll('#hotbar .slot').forEach(function(b){ b.setAttribute('draggable','false'); });
-    return r;
-  };
+
+
   /* the tap that ends a long press (or closes the menu) must not also fire the slot or step on the map */
   document.addEventListener('click', function(ev){
     var slot=ev.target.closest && ev.target.closest('#hotbar .slot'); if(slot) slot._longPress=false;   /* travel.js's flag */

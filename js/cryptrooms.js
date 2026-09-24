@@ -23,7 +23,7 @@ function cryptUrn(kindRoll){
   var have = fam.filter(function(n){ return n==='urn' || (typeof setArt==='function' && setArt(n)); });
   return have.length ? have[Math.floor(kindRoll*have.length)] : 'urn';
 }
-function buildUrnChamber(r){
+function placeUrnChamber(r){
   /* clear what the generic storage room put down (keep chests and anything placed on purpose) */
   props.filter(function(p){ return !p.keep && p.x>=r.x && p.x<r.x+r.w && p.y>=r.y && p.y<r.y+r.h; }).forEach(function(p){ removeProp(p); });
   var cx=r.x+(r.w>>1);
@@ -49,7 +49,7 @@ function buildUrnChamber(r){
     /* rows come in short runs of two or three separated by a gap */
     if(placed>=Math.max(3, Math.round((r.w+r.h)/3)) || run>=1+(hash2(s.x,s.y,5)<0.35?1:0) || rng()<0.45){ run=0; return; }
     var name=cryptUrn(rng());
-    if(name!=='urn-shattered'){ var gp=_addPropUrns(s.x, s.y, 'urn-group', urnGroupExtra()); if(gp){ run++; placed++; } return; }
+    if(name!=='urn-shattered'){ var gp=placePreparedUrn(s.x, s.y, urnGroupExtra()); if(gp){ run++; placed++; } return; }
     var p=addSetPiece(s.x, s.y, name, 1, 1, name==='urn-shattered' ? {keep:false} : {keep:false, br:1, loot:0.3, sfx:'pot-break'});
     if(p && name==='urn-shattered'){ p.b=0; p.flat=1; if(rng()<0.6) addProp(s.x, s.y+ (s.row==='top'?1:0), 'bones'); }
     if(p) { run++; placed++; }
@@ -75,12 +75,7 @@ function buildUrnChamber(r){
   }
   r.urnChamber=true;
 }
-var _buildSpecialCrypt = buildSpecial;
-buildSpecial = function(kind, r){
-  var out=_buildSpecialCrypt(kind, r);
-  if(kind==='storage' && typeof inCrypt==='function' && inCrypt() && !(floorMeta && floorMeta.plane)) buildUrnChamber(r);
-  return out;
-};
+
 
 /* ---------------------------------------------------------------- disturbed burials: bones beside, sometimes a leak of ooze */
 if(typeof scatterCrumbledTomb==='function'){
@@ -226,38 +221,25 @@ function drawThresholds(){
   ctx.restore();
 }
 function cryptRoomsOn(){ return typeof inCrypt==='function' && inCrypt() && !(floorMeta && floorMeta.plane); }
-var _drawTelegraphsRooms = drawTelegraphs;
-drawTelegraphs = function(now){
-  /* 2026-09-18: off. The edging stones around tombs and the sills beside doors read as a grey dotted outline
-     around every set piece and doorway at game scale. */
-  /* if(cryptRoomsOn()){ drawThresholds(); drawCryptBorders(); } */
-  _drawTelegraphsRooms(now);
-};
-var _drawPropSurfaceRooms = drawPropSurface;
-drawPropSurface = function(p, px, py, alpha){
+
+
+function drawCryptRoomProp(p, px, py, alpha){
   if(p.name==='crypt-recess'){ drawRecess(p, alpha); return true; }
   if(p.name==='grave-slab'){ drawGraveSlab(p, alpha); return true; }
-  return _drawPropSurfaceRooms(p, px, py, alpha);
-};
-var _gatherLightsRooms = gatherLights;
-gatherLights = function(now, prp){
-  var L=_gatherLightsRooms(now, prp);
+  return false;
+
+}
+
+function addCryptRoomLights(L, now, prp){
   if(cryptRoomsOn()) (floorMeta.cryptGlow||[]).forEach(function(g){ if(revealAll||seen[idxOf(g.x,g.y)]) L.push({x:g.x, y:g.y+0.9, c:hexRGB('#7CFFA0'), r:2.6, s:0.5, tx:g.x, ty:g.y+1}); });
   return L;
-};
+
+}
 /* no dungeon drains in the Crypt */
-var _drawDecoRooms = drawDeco;
-drawDeco = function(i, px, py, alpha, opt){ if(cryptRoomsOn() && i===DECO.drain) return; return _drawDecoRooms(i, px, py, alpha, opt); };
+
 
 /* ---------------------------------------------------------------- monsters: a pale rim so dark figures read on dark stone */
-var _drawCharacterRooms = drawCharacter;
-drawCharacter = function(e, px, py, opts){
-  if(e!==player && cryptRoomsOn()){
-    ctx.save(); ctx.shadowColor='rgba(226,218,246,0.48)'; ctx.shadowBlur=Math.max(2, TS*0.07); ctx.shadowOffsetX=0; ctx.shadowOffsetY=0;
-    try{ return _drawCharacterRooms(e, px, py, opts); } finally { ctx.restore(); }
-  }
-  return _drawCharacterRooms(e, px, py, opts);
-};
+
 
 /* ---------------------------------------------------------------- tombs: regraded into the Crypt's stone
    The generated tomb art is flat periwinkle. Every tomb piece is remapped by brightness onto the Crypt's
@@ -287,12 +269,12 @@ function crGraded(name, o){
   g.putImageData(im,0,0);
   return (CR_GRADED[name]={img:c, sx:0, sy:0, sw:W, sh:H, fullW:o.fullW, fullH:o.fullH, ox:o.ox, oy:o.oy});
 }
-var _setArtRooms = setArt;
-setArt = function(name){
-  var o=_setArtRooms(name);
+
+function gradeCryptSet(o, name){
   if(o && /^tomb-/.test(name) && o.img && o.img.complete && o.img.naturalWidth>0) return crGraded(name, o);
   return o;
-};
+
+}
 
 /* ---------------------------------------------------------------- urn groups: two or three small vessels sharing one cell
    Patterns vary per cell (triangle, back row, diagonal, pair with a little one); vessels come from the urn family. */
@@ -348,15 +330,11 @@ function drawUrnGroup(p, alpha){
   });
   ctx.restore();
 }
-var _drawPropSurfaceUrns = drawPropSurface;
-drawPropSurface = function(p, px, py, alpha){ if(p.name==='urn-group' || p.name==='stack-group'){ drawUrnGroup(p, alpha); return true; } return _drawPropSurfaceUrns(p, px, py, alpha); };
+
+function drawUrnGroupProp(p, px, py, alpha){ if(p.name==='urn-group' || p.name==='stack-group'){ drawUrnGroup(p, alpha); return true; } return false;
+}
 /* in the Crypt, about a third of lone urns become groups; urn chambers mix them into their rows */
-var _addPropUrns = addProp;
-addProp = function(x, y, name, extra){
-  var mapped=(typeof CRYPT_PROP!=='undefined' && CRYPT_PROP[name]) || name;   /* barrels, crates and pots turn into urns further down the chain */
-  if(cryptRoomsOn() && mapped==='urn' && !(extra && extra.pattern!==undefined)) return _addPropUrns(x, y, 'urn-group', Object.assign(urnGroupExtra(), extra||{}));
-  return _addPropUrns(x, y, name, extra);
-};
+
 
 /* ---------------------------------------------------------------- the same for crates, barrels and pots everywhere else
    (explosive barrels and supply crates stay single: they are gameplay pieces) */
@@ -367,13 +345,12 @@ function stackGroupExtra(seedName){
   for(var i=0;i<URN_PATTERNS[pat].length;i++) kinds.push(rng()<0.55 ? lead : fam[Math.floor(rng()*fam.length)]);
   return {pattern:pat, kinds:kinds, flip:rng()<0.5};
 }
-var _addPropStacks = addProp;
-addProp = function(x, y, name, extra){
-  var outside = !(typeof inCrypt==='function' && inCrypt()) && !(floorMeta && floorMeta.plane);
-  if(outside && (name==='crate' || name==='barrel' || name==='pot') && !(extra && extra.pattern!==undefined)){
-    var g=_addPropStacks(x, y, 'stack-group', Object.assign(stackGroupExtra(name), extra||{}));
-    if(g && name==='pot'){ g.burn=0; g.sfx='pot-break'; }
-    return g;
-  }
-  return _addPropStacks(x, y, name, extra);
-};
+
+
+/* Named character presentation passes; composed by render-adapter.js. */
+
+function prepareCryptActor(job){
+  if(job.entity===player||!cryptRoomsOn())return;
+  ctx.save();ctx.shadowColor='rgba(226,218,246,0.48)';ctx.shadowBlur=Math.max(2,TS*.07);ctx.shadowOffsetX=0;ctx.shadowOffsetY=0;
+  return function(){ctx.restore();};
+}

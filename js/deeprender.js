@@ -24,28 +24,17 @@ function deepArt(name){
   var b=g.items[name];
   return {img:img, sx:b[0]+b[2], sy:b[1]+b[3], sw:Math.max(1,b[4]), sh:Math.max(1,b[5]), ox:b[2], oy:b[3], fullW:b[6], fullH:b[7], nm:name};
 }
-var _setArtDeep = setArt;
-setArt = function(name){ var o=_setArtDeep(name); if(o) return o; return deepArt(name); };
+
 
 /* ---------------------------------------------------------------- the region of the cell being drawn */
 var DEEP_AT = -1;          /* region index while one cell's terrain is drawn, -1 otherwise */
 var DEEP_RC = false;       /* the cell being drawn is a baked rock raster: no rims, no square wall shadow */
-var _surfImgDeep = surfImg;
-surfImg = function(name){
-  if(DEEP_AT>=0 && inDeep()){
-    var pre=DEEP_REGIONS[DEEP_AT];
-    if(AS.surface && AS.surface[pre+'-'+name]) {
-      var img=atl('surface-'+pre+'-'+name+'.png');
-      return ['face','top','rim-n','rim-v'].indexOf(name)>=0 ? weatheredMasonry(img) : img;
-    }
-  }
-  return _surfImgDeep(name);
-};
+
+
 function deepCellReg(x, y){ return deepRegionAt(Math.max(0,Math.min(MW-1,x)), Math.max(0,Math.min(MH-1,y))); }
 /* ptMat() answers for the one cell being drawn when it is a raster: render.js then leaves out the tile-wide shadow
    band under a wall face and surface.js the capstone rims, both of which read as square blocks against cave rock */
-var _ptMatDeep = ptMat;
-ptMat = function(){ var m=_ptMatDeep(); if(m) return m; return DEEP_RC ? PT_MAT.cavern : null; };
+
 
 /* ---------------------------------------------------------------- per-floor cache */
 var DC = {key:null, map:null, cells:{}, built:0, rmix:null, lock:null, tex:{}};
@@ -251,62 +240,20 @@ function deepRasterTile(x, y){
 function deepIsRaster(x, y){ if(!inDeep() || !floorMeta.deepRegion) return false; return deepNeedsRaster(x, y, deepSig(x,y)); }
 
 /* ---------------------------------------------------------------- hooking the terrain pass */
-var _floorTileDeep = floorTile;
-floorTile = function(x, y){
-  if(!inDeep() || !floorMeta.deepRegion){ DEEP_RC=false; DEEP_AT=-1; return _floorTileDeep(x,y); }
-  var rt=deepRasterTile(x,y); DEEP_RC=!!rt; DEEP_AT=deepCellReg(x,y);
-  if(rt) return rt;
-  var o=_floorTileDeep(x,y); return o;
-};
-var _wallTileDeep = wallTile;
-wallTile = function(x, y){
-  if(!inDeep() || !floorMeta.deepRegion){ DEEP_RC=false; DEEP_AT=-1; return _wallTileDeep(x,y); }
-  var rt=deepRasterTile(x,y); DEEP_AT=deepCellReg(x,y); DEEP_RC=!!rt && !deepBuiltWall(x,y);
-  if(rt) return rt;
-  if(DEEP_STYLE[DEEP_AT]!=='rect'){
-    /* cave rock not baked yet (a few are baked a frame): its rock top, never a brick face */
-    var t=surfImg('top'); if(t) return {img:t, sx:smod(x+surfOff(3))*64, sy:smod(y+surfOff(4))*64, sw:64, sh:64, deepDim:wallFaces(x,y) ? 0.5 : 1-DEEP_TOP_DIM};
-  }
-  return _wallTileDeep(x,y);
-};
+
+
 /* a built (temple) room's own wall keeps its capstone rims even where it is baked for a nearby region change */
 function deepBuiltWall(x, y){ var C=deepCache(), i=idxOf(x,y); return !!C.lock[i] && DEEP_STYLE[floorMeta.deepRegion[i]]==='rect'; }
-var _drawWallEdgesDeep = drawWallEdges;
-drawWallEdges = function(x, y, t, px, py, a){
-  if(!inDeep() || !floorMeta.deepRegion) return _drawWallEdgesDeep.apply(this, arguments);
-  var keep=DEEP_AT; DEEP_AT=deepCellReg(x,y);
-  try{ return _drawWallEdgesDeep.apply(this, arguments); } finally { DEEP_AT=keep; }
-};
+
+
 /* a deco piece (grit, crack, drain, banner) takes the region of the cell it is drawn in; no drains in the caves */
-var _drawDecoDeep = drawDeco;
-drawDeco = function(i, px, py, alpha, opt){
-  if(!inDeep() || !floorMeta.deepRegion) return _drawDecoDeep.apply(this, arguments);
-  var cx=Math.floor(px/TS+0.5)+camX, cy=Math.floor(py/TS+0.5)+camY, keep=DEEP_AT;
-  DEEP_AT=deepCellReg(cx,cy);
-  if(i===DECO.drain && DEEP_AT!==0){ DEEP_AT=keep; return; }
-  try{ return _drawDecoDeep.apply(this, arguments); } finally { DEEP_AT=keep; }
-};
+
+
 /* wall torches only on built temple and volcanic walls drawn as tiles (a raster cell has no sconce to hold one) */
-var _wallTorchAtDeep = wallTorchAt;
-wallTorchAt = function(x, y){
-  var r=_wallTorchAtDeep(x,y); if(!r || !inDeep() || !floorMeta.deepRegion) return r;
-  return deepCellReg(x,y)!==1 && !deepIsRaster(x,y);
-};
-var _blitTileDeep = blitTile;
-blitTile = function(o, px, py, alpha){
-  var r=_blitTileDeep.apply(this, arguments);
-  if(o && o.deepDim){ ctx.globalAlpha=alpha*o.deepDim; ctx.fillStyle='#000'; ctx.fillRect(px, py, TS+0.6, TS+0.6); ctx.globalAlpha=alpha; }
-  return r;
-};
-var _drawDeepBudget = draw;
+
+
 var DEEP_RAF=null;
-draw = function(){
-  if(DC && DEEP_RAF===null) DC.built = document.body.classList.contains('touch') ? DEEP_BUDGET-8 : 0;
-  var r;
-  try{r=_drawDeepBudget.apply(this, arguments);}finally{DEEP_RC=false;DEEP_AT=-1;}
-  if(inDeep() && DC.built>=DEEP_BUDGET && DEEP_RAF===null) DEEP_RAF=requestAnimationFrame(function(){DEEP_RAF=null;draw();});
-  return r;
-};
+
 
 /* ---------------------------------------------------------------- lava */
 var DEEP_LAVA_T = 0.34;
@@ -383,16 +330,9 @@ function drawDeepLava(now){
   list.forEach(function(c){ var rr=deepLavaRaster(c[0],c[1]); if(rr) ctx.drawImage(rr.crust, 0,0,S,S, (c[0]-camX)*TS, (c[1]-camY)*TS, TS, TS); });
   ctx.restore();
 }
-var _drawWangLayerDeep = drawWangLayer;
-drawWangLayer = function(key, tileType){
-  DEEP_RC=false; DEEP_AT=-1;
-  var r=_drawWangLayerDeep.apply(this, arguments);
-  if(key==='chasm' && inDeep()) drawDeepLava(performance.now());
-  return r;
-};
-var _gatherLightsDeep = gatherLights;
-gatherLights = function(now, prp){
-  var L=_gatherLightsDeep.apply(this, arguments);
+
+
+function addUnderdarkLights(L, now, prp){
   if(!inDeep() || !L) return L;
   /* the scenery's fires burn a little lower down here: the Underdark is meant to be dark */
   for(var i=1;i<L.length;i++){ L[i].s*=0.75; }
@@ -402,7 +342,8 @@ gatherLights = function(now, prp){
     L.push({x:l.x, y:l.y, c:hexRGB('#FF6A20'), r:5.2, s:1.15*fl, tx:l.x, ty:l.y});
   });
   return L;
-};
+
+}
 
 /* ---------------------------------------------------------------- after the terrain: seams, wall webbing and cracks */
 function drawDeepSurface(){
@@ -423,12 +364,12 @@ function drawDeepSurface(){
     }
   }
 }
-var _drawSurfaceDecoDeep = drawSurfaceDeco;
-drawSurfaceDeco = function(){
-  var r=_drawSurfaceDecoDeep.apply(this, arguments);
+
+function drawUnderdarkSurface(){
   if(inDeep() && floorMeta.deepRegion) drawDeepSurface();
-  return r;
-};
+  return;
+
+}
 
 /* ---------------------------------------------------------------- the pieces */
 function deepBottomPad(o){ return typeof packBottomPad==='function' ? packBottomPad(o) : 0; }
@@ -462,14 +403,15 @@ function deepDrawPiece(p, alpha){
   if(typeof objFxDraw==='function') objFxDraw(o, Math.round(dx), Math.round(dy), Math.round(dw), Math.round(dh), alpha, flip);
   return true;
 }
-var _drawPropSurfaceDeep = drawPropSurface;
-drawPropSurface = function(p, px, py, alpha){
+
+function drawUnderdarkProp(p, px, py, alpha){
   if(p && (p.deep || DEEP_PIECES[p.name]) && deepDrawPiece(p, alpha)) return true;
-  return _drawPropSurfaceDeep.apply(this, arguments);
-};
+  return false;
+
+}
 /* the drow stairway stands over the stairs at the end of its passage; lava draws itself (nothing in the object pass) */
-var _drawSideDoorDeep = typeof drawSideDoor==='function' ? drawSideDoor : null;
-drawSideDoor = function(x, y, t, px, py, alpha){
+
+function drawUnderdarkDoor(x,y,t,px,py,alpha){
   if(t===LAVA) return true;
   if(t===STAIRS && inDeep()){
     var o=deepArt('stairs-down-drow');
@@ -482,23 +424,12 @@ drawSideDoor = function(x, y, t, px, py, alpha){
       return true;
     }
   }
-  return _drawSideDoorDeep ? _drawSideDoorDeep.apply(this, arguments) : false;
-};
+  return false;
+
+}
 /* tall pieces are drawn before the creatures: one standing behind a pillar or an idol is covered by it again */
-var _drawOccludersDeep = typeof drawOccluders==='function' ? drawOccluders : null;
-drawOccluders = function(now){
-  if(_drawOccludersDeep) _drawOccludersDeep(now);
-  if(!inDeep() || !props.length) return;
-  var bodies=ents.filter(function(e){ return e.hp>0 && (e===player || revealAll || vis[idxOf(e.x,e.y)]); });
-  props.forEach(function(p){
-    if(!DEEP_PIECES[p.name] || p.flat || p.wall || p.curtain || !(revealAll||seen[idxOf(p.x,p.y)])) return;
-    var o=deepArt(p.name); if(!o) return;
-    var w=p.w||1, h=p.h||1, rise=Math.ceil((o.fullH-o.oy)/64 - 0.25) - h;
-    if(rise<1) return;
-    var hit=bodies.some(function(e){ var rp=renderPos(e); return rp.x>p.x-0.8 && rp.x<p.x+w-0.2 && rp.y<p.y-0.05 && rp.y>=p.y-rise-0.5; });
-    if(hit) deepDrawPiece(p, (revealAll||vis[idxOf(p.x,p.y+h-1)])?1:0.45);
-  });
-};
+
+
 /* the pieces' flames flicker and their runes glow (objanim.js) */
 if(typeof OBJ_FX_RULES!=='undefined') OBJ_FX_RULES.push(
   [/^(candelabra-tall|candles-scarlet-\d|stairs-down-drow|drow-altar)/, ['flicker']],
@@ -509,12 +440,12 @@ if(typeof OBJ_FX_RULES!=='undefined') OBJ_FX_RULES.push(
 if(typeof LIGHT_FAMILY!=='undefined') LIGHT_FAMILY.push([/^(candelabra-tall|candles-scarlet-\d)$/, 'candle'], [/^lava-forge$/, 'forge']);
 
 /* ---------------------------------------------------------------- vegetation */
-var _vegSetDeep = vegSet;
-vegSet = function(){ if(inDeep()) return 'underdark'; return _vegSetDeep(); };
+
+
 VEG_DIM.underdark = [0.22, '#1A1426'];
-var _drawVegSpotsDeep = drawVegSpots;
-drawVegSpots = function(now){
-  if(!inDeep()) return _drawVegSpotsDeep.apply(this, arguments);
+
+function drawUnderdarkPlants(now){
+  if(!inDeep()) return false;
   var S=floorMeta && floorMeta.vegSpots; if(!S || !S.length) return;
   S.forEach(function(sp){
     if(sp.x<camX-1 || sp.x>camX+viewW+1 || sp.y<camY-1 || sp.y>camY+viewH+1) return;
@@ -531,26 +462,26 @@ drawVegSpots = function(now){
       }
     }
   });
-};
+
+}
 
 /* ---------------------------------------------------------------- the automap: lava */
-var _drawAutomapDeep = typeof drawAutomap==='function' ? drawAutomap : null;
-if(_drawAutomapDeep) drawAutomap = function(){
-  var r=_drawAutomapDeep.apply(this, arguments);
-  if(!inDeep() || !floorMeta.lava || typeof AUTOMAP_ON==='undefined' || !AUTOMAP_ON) return r;
-  var c=$('automap'), host=$('map'); if(!c || !host) return r;
+
+function drawAutomapLava(){
+  if(!inDeep() || !floorMeta.lava || typeof AUTOMAP_ON==='undefined' || !AUTOMAP_ON) return;
+  var c=$('automap'), host=$('map'); if(!c || !host) return;
   var W=host.clientWidth, H=host.clientHeight, g=c.getContext('2d');
   var cell=Math.max(3, Math.floor(Math.min((W-40)/MW, (H-40)/MH))), ox=Math.round((W-cell*MW)/2), oy=Math.round((H-cell*MH)/2);
   g.fillStyle='rgba(255,110,40,0.55)';
   for(var i=0;i<map.length;i++) if(map[i]===LAVA && (revealAll||seen[i])) g.fillRect(ox+(i%MW)*cell, oy+((i/MW)|0)*cell, cell, cell);
-  return r;
-};
+  return;
+
+}
 
 /* ---------------------------------------------------------------- no dungeon moss down here
    surface.js grows green moss in every damp inner corner; against cave rock those clumps were cut square by their
    cell, and green moss is not the Underdark's (the spider caves have their own violet growth) */
-var _mossRasterDeep = mossRaster;
-mossRaster = function(x, y){ if(inDeep()) return null; return _mossRasterDeep.apply(this, arguments); };
+
 
 /* ---------------------------------------------------------------- how dark each region is (2026-09-19)
    Justin: "it's just so dark, i can't make out the walls in the lava biome, needs lava to give off some dull red
