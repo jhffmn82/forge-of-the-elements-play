@@ -1,5 +1,7 @@
 # Beta 1.1
 
+- Softened hotbar background colors so ability artwork stands out more clearly.
+
 - Strengthened Shadow Swarm and made its health, damage and lifetime scale with Spell Power. Its shades now share the darker, translucent summon artwork and benefit from Murk’s Grave Strength.
 
 - Barricade inspect cards now describe flammable wood instead of a nearby mechanism.

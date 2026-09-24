@@ -27,7 +27,7 @@
     '#hud2 .motechip .dot{margin-right:1px}',
     '#hud2 .faithchip .meter.sm{display:none}',
     '#hotbar{grid-template-columns:repeat(8,52px)!important;grid-template-rows:52px!important;min-height:0!important;gap:5px;flex:0 0 auto}',
-    '#hotbar .slot{padding:0;align-items:center;justify-content:center;width:52px;height:52px;border-width:2px;background:rgba(25,21,18,.4)}',
+    '#hotbar .slot{padding:0;align-items:center;justify-content:center;width:52px;height:52px;border-width:2px;background:rgba(25,21,18,.25)}',
     '#hotbar .slot .n,#hotbar .slot .c{display:none}',
     /* 2026-09-20: Justin - the icons sat small and off to one side. The art was painted at 28px into a 38px box
        that was never centred on its contents, so every slot looked lop-sided. The box is centred, fills most of
@@ -161,8 +161,8 @@ function iconChipFor(el, name){
   var slot=el && el.closest ? el.closest('.slot, .gslot, .hbslot') : null;
   if(!slot) return;
   if(!bg){ setTimeout(function(){ if(el.isConnected) iconChipFor(el, name); }, 400); return; }
-  /* 2026-09-20: Justin - "i'd make the hotbar backdrops like 50% transparent, but still i can identify them now" */
-  slot.style.background=hexA(bg[0], 0.5);
+  /* Subtle hotbar color; keep equipment chips at their existing contrast. */
+  slot.style.background=hexA(bg[0], slot.closest('#hotbar') ? 0.25 : 0.5);
   slot.style.borderColor=bg[1];
   slot.style.boxShadow='inset 0 0 0 1px rgba(0,0,0,0.35)';
 }
