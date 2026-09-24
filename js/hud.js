@@ -62,7 +62,7 @@ function hotbarCard(i){
   if(s.type==='ability'){
     var A=ABILITIES[s.key]; if(!A) return '';
     var cost = A.cd ? (typeof cdLeft==='function' && cdLeft(s.key) ? 'ready in '+cdLeft(s.key)+' turns' : A.cd+'-turn cooldown') : A.favor ? A.favor+' Favor' : costOf(A)+' mana';
-    return '<div class="nm">'+A.name+'</div><div class="row"><span>Cost</span><b>'+cost+'</b></div>'+(A.range?'<div class="row"><span>Range</span><b>'+spellRange(A)+'</b></div>':'')+'<div class="hint">'+A.desc+'</div><div class="hint">Key '+(i+1)+'</div>';
+    return '<div class="nm">'+A.name+'</div><div class="row"><span>Cost</span><b>'+cost+'</b></div>'+(A.range?'<div class="row"><span>Range</span><b>'+spellRange(A)+'</b></div>':'')+'<div class="hint">'+(A.kind==='swarm' && typeof liveDesc==='function' ? liveDesc(A) : A.desc)+'</div><div class="hint">Key '+(i+1)+'</div>';
   }
   if(s.type==='prayer'){
     var P=PRAYERS[s.key]; if(!P) return '';

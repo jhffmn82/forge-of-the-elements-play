@@ -101,6 +101,7 @@ function rankLive(r, e){
   return (typeof RANK_TEXT!=='undefined' && RANK_TEXT[r] && RANK_TEXT[r][e]) || '';
 }
 var ABILITY_LIVE = {
+  shadowswarm: function(A){var stats=shadowSwarmStats(A);return 'Summon up to nine Shades in a 3×3 area: '+stats.hp+' HP, '+stats.damage+' base Dark damage and '+stats.duration+' world turns each (base 10 HP, 10 damage and 5 turns, multiplied by Spell Power at casting). Benefits from Murk’s Grave Strength. Replaces your previous swarm.';},
   missile:     function(A){ var t=typeof totalAffinity==='function' ? totalAffinity() : 0; return 'Always hits; magic damage nothing resists. +'+t+' base damage (1 per affinity point).'; },
   spark:       function(A){ return 'Lightning damage with a '+(5*ePts('air'))+'% chance (5% per Air point) to stun. +50% against targets standing in water.'; },
   smite:       function(A){ return 'Light damage with a '+(10*ePts('light'))+'% chance (10% per Light point) to Blind. +50% against undead and shadow creatures.'; },

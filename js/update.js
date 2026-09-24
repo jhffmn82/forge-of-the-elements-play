@@ -3,6 +3,7 @@ var FOTE_VERSION = 'Beta 1.1';
 /* Keep newest first; describe only changes already present in this build. */
 var FOTE_PATCHES = [
   {version:'Beta 1.1', notes:[
+    "Strengthened Shadow Swarm and made its health, damage and lifetime scale with Spell Power. Its shades now share the darker, translucent summon artwork and benefit from Murk’s Grave Strength.",
     "Barricade inspect cards now describe flammable wood instead of a nearby mechanism.",
     "Fixed touch inventory cards closing before Drop or Use could activate.",
     "Corrected Ring of Mending’s exaggerated healing tooltip to show its actual regeneration rate.",

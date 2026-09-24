@@ -406,6 +406,8 @@ function setClip(e, name){
 }
 function castSheet(look){ var m=AS.cast && AS.cast[look]; if(!m) return null; var img=atl('cast-'+look+'.png'); return img ? {img:img, m:m} : null; }
 function mobSheet(name){ var m=AS.mobs && AS.mobs[name]; if(!m) return null; var img=atl('mob-'+name+'.png'); return img ? {img:img, m:m} : null; }
+/* Share artwork without granting temporary swarms the raised-shade gameplay tag. */
+function isShadeSummon(e){return !!(e && e.ally && (e.shade || e.swarm));}
 var SHADE_SUMMON_ART=null;
 function shadeSummonSheet(){
   var source=mobSheet('m-shade');if(!source)return null;
@@ -421,7 +423,7 @@ function clipFrame(sheet, e, sliding){
   /* 2026-09-23 (Justin: the Magma Crawler changed art between asleep and awake): a creature whose animation rows
      drifted off its still (packet 04's fire and water five, stillPose in planesfwa.js) holds the still in every
      state, mid-clip included, until it is re-animated on model. */
-  if(e.base && e.base.stillPose && !(e.ally&&e.shade) && m.static_row!==undefined) return {sx:0, sy:m.static_row*cell};
+  if(e.base && e.base.stillPose && !isShadeSummon(e) && m.static_row!==undefined) return {sx:0, sy:m.static_row*cell};
   if(e._clip){
     var c=m.clips[e._clip.name];
     if(c){
@@ -457,7 +459,7 @@ function drawCharacter(e, px, py, opts){
     }
     return false;
   }
-  var isShade=!!(e.ally&&e.shade),visualBase=isShade?{art:.9}:e.base;
+  var isShade=isShadeSummon(e),visualBase=isShade?{art:.9}:e.base;
   var ms = spriteOn ? (isShade?shadeSummonSheet():mobSheet(e.base.sprite)) : null;
   if(ms){
     var f2=clipFrame(ms, e, false), mm=ms.m, c2=mm.cell, box=mm.box||[0,0,c2,c2];

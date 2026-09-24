@@ -39,6 +39,12 @@ var STATUS_EL = {burn:'fire', chill:'water', frozen:'water', stun:'air', root:'e
 var IMMUNE_TYPE = {fire:'fire', water:'ice', air:'lightning', earth:'poison', light:'light', shadow:'dark'};
 function aff(el){ return (player && player.aff && player.aff[el]) || 0; }
 
+/* Snapshot the same summon values for casting and live descriptions. */
+function shadowSwarmStats(A){
+  var base=A.summon, power=spellPower(A);
+  return {hp:Math.max(1,Math.round(base.hp*power)),damage:Math.max(1,Math.round(base.damage*power)),duration:Math.max(1,Math.round(base.duration*power))};
+}
+
 /* ---------------------------------------------------------------- ground effects (rank 6) */
 var iceG=null, rootG=null, holyG=null;
 function groundReset(){ var n=MW*MH; iceG=new Uint8Array(n); rootG=new Uint8Array(n); holyG=new Uint8Array(n); }
@@ -353,8 +359,8 @@ castAt = function(x,y){
     if(!spots.length){ log('No room for shadows there.','c-info'); return false; }
     beginCast(A);
     ents=ents.filter(function(e){return !e.swarm;});
-    var shadePower=Math.max(1,Math.round(5*spellPower(A)));
-    spots.forEach(function(s){ var m=spawn('wisp',s[0],s[1]); m.foe=false; m.ally=true; m.state='ally'; m.name='Shade'; m.base=Object.assign({},m.base,{name:'Shade',sprite:'m-shade',art:.8,dmg:[shadePower,shadePower],el:'shadow'});m.maxhp=m.hp=shadePower; m.dmg=[shadePower,shadePower]; m.life=6; m.noXp=true; m.swarm=true; m.t=player.t+100; sparkleFx(s[0],s[1],'dark',8); });
+    var swarmStats=shadowSwarmStats(A);
+    spots.forEach(function(s){ var m=spawn('wisp',s[0],s[1]); m.foe=false; m.ally=true; m.state='ally'; m.name='Shade'; m.base=Object.assign({},m.base,{name:'Shade',sprite:'m-shade',art:.8,dmg:[swarmStats.damage,swarmStats.damage],el:'shadow'});m.maxhp=m.hp=swarmStats.hp; m.dmg=[swarmStats.damage,swarmStats.damage]; m.life=swarmStats.duration; m.noXp=true; m.swarm=true; m.t=player.t+100; sparkleFx(s[0],s[1],'dark',8); });
     log('<b>Shadow Swarm.</b> '+spots.length+' shadows rise.','c-good');
   }
   else if(A.kind==='lflame'){

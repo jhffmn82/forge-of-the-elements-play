@@ -167,7 +167,7 @@ var GODS = {
     ],
     "boons": [
       "Life Drain: living hostile kills by you or your undead servant heal god rank × Divine Power. Servant health and damage scale with rank and Divine Power.",
-      "Grave Strength: pets and summons gain +1 Shadow damage per rank and inherit your active weapon enchantment.",
+      "Grave Strength: pets and summons, including Shadow Swarm, gain +1 Shadow damage per rank and inherit your active weapon enchantment.",
       "Lich: your servant becomes a Lich at rank 5 and returns once, one turn after destruction, at half health."
     ],
     "gain": "Kills of the living, extra for kills by your undead."
@@ -574,7 +574,8 @@ var ABILITIES = {
     "type": "dark",
     "el": "shadow",
     "icon": "ic-shadow-swarm",
-    "desc": "Summon up to nine Shades in a 3×3 area for 6 turns. Each has 5 HP and 5 Dark damage, scaled by your spell power at casting. Replaces your previous swarm."
+    "summon": {"hp": 10, "damage": 10, "duration": 5},
+    "desc": "Summon up to nine Shades in a 3×3 area. Base 10 HP, 10 Dark damage and 5 world turns, all multiplied by Spell Power at casting. Benefits from Murk’s Grave Strength. Replaces your previous swarm."
   },
   "livingflame": {
     "name": "Living Flame",
