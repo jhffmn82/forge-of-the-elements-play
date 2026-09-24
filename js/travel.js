@@ -15,7 +15,7 @@ var TRAVEL = null;
 var CURSOR_URLS = {};
 function cursorFor(kind){
   if(CURSOR_URLS[kind] !== undefined) return CURSOR_URLS[kind];
-  var glyph = {close:'\u{1F6AA}', door:'\u{1F6AA}', break:'\u{1F528}', move:'\u{1F463}', grab:'\u{1F392}', stairs:'\u{1FA9C}', upstairs:'\u{1FA9C}', shoot:'\u{1F3F9}', cast:'✨', attack:'⚔️', use:'\u{1F449}', exit:'\u{1F6AA}'}[kind];
+  var glyph = {close:'\u{1F6AA}', door:'\u{1F6AA}', break:'\u{1F528}', move:'\u{1F463}', grab:'\u{1F392}', stairs:'\u{1FA9C}', upstairs:'\u{1FA9C}', shoot:'\u{1F3F9}', cast:'✨', attack:'⚔️', use:'\u{1F449}', inspect:'\u{1F50D}', exit:'\u{1F6AA}'}[kind];
   if(!glyph){ CURSOR_URLS[kind]=null; return null; }
   try{
     var c=document.createElement('canvas'); c.width=32; c.height=32; var g=c.getContext('2d');
@@ -62,10 +62,12 @@ function clickIntent(x, y){
   if(t===STAIRS) return {kind:'stairs'};
   if(typeof UPSTAIRS!=='undefined' && t===UPSTAIRS) return {kind:'upstairs'};
   if(t===OPEN && Math.max(Math.abs(x-player.x),Math.abs(y-player.y))===1 && doorClosable(x,y)) return {kind:'close'};
-  var pr=propAt(x,y); if(pr && pr.br && !pr.hoard) return {kind:'break'};
+  var pr=propAt(x,y), lever=leverDetails(pr);
+  if(lever) return {kind:lever.used?'inspect':'use',lever:pr};
+  if(pr && pr.br && !pr.hoard) return {kind:'break'};
   if(t===EXIT) return {kind: floorMeta.exitOpen ? 'exit' : 'use'};
   if(t===DOOR || t===OPEN || t===LOCKED || t===SEALED || t===ICEDOOR || t===THORNS || t===TOLL) return {kind:'door'};
-  if(useTile(t) || (propAt(x,y) && propAt(x,y).lever)) return {kind:'use'};
+  if(useTile(t)) return {kind:'use'};
   if(items.some(function(it){ return it.x===x && it.y===y && it.kind!=='heart' && it.kind!=='managlobe'; })) return {kind:'grab'};
   if(travelWalkable(x,y) || passable(x,y) || t===OPEN) return {kind:'move'};
   return null;
@@ -154,6 +156,15 @@ function handleMapClick(ev){
   var p=tileAt(ev), it=clickIntent(p.x, p.y);
   if(!it) return false;
   stopTravel();
+  if(it.kind==='inspect') return true;
+  if(it.lever){
+    var nearLever=function(){return Math.max(Math.abs(p.x-player.x),Math.abs(p.y-player.y))===1;};
+    var pullLever=function(){
+      if(nearLever() && propAt(p.x,p.y)===it.lever){lastDir=[p.x-player.x,p.y-player.y];tryMove(lastDir[0],lastDir[1]);}
+    };
+    if(nearLever()) pullLever(); else startTravel(travelPath(p.x,p.y,true),pullLever);
+    return true;
+  }
   if(it.kind==='cast'){ castClickSpell(it.foe); return true; }
   if(it.kind==='shoot') return false;            /* the game's own click shoots */
   if(it.kind==='close'){ closeDoorAt(p.x, p.y); return true; }

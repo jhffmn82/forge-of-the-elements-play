@@ -9,13 +9,13 @@ buildSigilRoom=function(kind){
 function addPuzzleSwitch(room){
  if(room.puzzle.switch)return;
  var cells=farFrom(pzCells(room).filter(function(c){return walkable(c.x,c.y)&&!propAt(c.x,c.y)&&!items.some(function(i){return i.x===c.x&&i.y===c.y;});}),room.puzzle.door);
- if(!cells.length)return;var p=cells[0];addProp(p.x,p.y,'lever-up',{keep:true,puzzleSwitch:true,roomDoor:room.puzzle.door});room.puzzle.switch={x:p.x,y:p.y};
+ if(!cells.length)return;var p=cells[0];addProp(p.x,p.y,'lever-up',{keep:true,lever:true,puzzleSwitch:true,roomDoor:room.puzzle.door});room.puzzle.switch={x:p.x,y:p.y};
 }
 var _betaBumpProp=bumpProp;
 bumpProp=function(p){
  if(!p.puzzleSwitch)return _betaBumpProp(p);
  var room=puzzleAtDoor(p.roomDoor.x,p.roomDoor.y);if(!room||room.puzzle.disabled)return true;
- room.puzzle.disabled=true;room.puzzle.solved=true;p.name='lever-down';
+ room.puzzle.disabled=true;room.puzzle.solved=true;p.used=true;p.name='lever-down';
  props.forEach(function(o){if(roomAt(o.x,o.y)===room&&(o.sentinel||o.sentry)){o.sentinel=false;o.sentry=false;o.light=null;o.dim=true;}});
  ents=ents.filter(function(e){if(!e.sentinelRoom||e.sentinelRoom.x!==p.roomDoor.x||e.sentinelRoom.y!==p.roomDoor.y)return true;addProp(e.x,e.y,'statue',{keep:true,dim:true});return false;});
  log('The guardians go still.','c-good');sfx('lever');computeFOV();endTurn();return true;

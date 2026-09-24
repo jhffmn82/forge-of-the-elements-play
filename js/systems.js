@@ -164,6 +164,20 @@ function pressPlateAt(x,y,e){
 }
 
 /* ---------------------------------------------------------------- props */
+/* Both bridge levers and guardian shutoff switches use the same interaction state.
+   Read the connected mechanism too, so older saves with an up-facing used lever
+   do not advertise an action that can no longer change anything. */
+function leverDetails(p){
+  if(!p || !(p.lever || p.puzzleSwitch)) return null;
+  var room=p.puzzleSwitch && p.roomDoor && (floorMeta.puzzles||[]).find(function(r){
+    return r.puzzle.door.x===p.roomDoor.x && r.puzzle.door.y===p.roomDoor.y;
+  });
+  var used=!!(p.used || p.name==='lever-down' || (room && room.puzzle.disabled) ||
+    (!p.puzzleSwitch && p.bridge && p.bridge.length && p.bridge.every(function(b){return at(b.x,b.y)===BRIDGE;})));
+  return {name:p.puzzleSwitch?'Guardian shutoff lever':'Bridge lever', used:used,
+    effect:p.puzzleSwitch?'shut off the room\'s guardians':'lower the bridge',
+    result:p.puzzleSwitch?'The guardians are shut off.':'The bridge is already lowered.'};
+}
 function bumpProp(p){
   if(p.name==='elemental-lock' && !p.opened){
     if(player.motes[p.element]>0){
@@ -178,7 +192,8 @@ function bumpProp(p){
     }); return true;
   }
   if(p.lever){
-    p.name = p.name==='lever-up' ? 'lever-down' : 'lever-up'; sfx('lever');
+    if(leverDetails(p).used) return true;
+    p.used=true; p.name='lever-down'; sfx('lever');
     (p.bridge||[]).forEach(function(b){ setT(b.x,b.y,BRIDGE); });
     log('You pull the lever. Somewhere, planks thud into place over a chasm.','c-kill'); sfx('bridge'); endTurn(); return true;
   }

@@ -578,8 +578,15 @@ function inspectHTML(mx,my){
   }
   var p=propAt(mx,my);
   if(p){
+    var lever=leverDetails(p);
+    if(lever){
+      var action=document.body.classList.contains('touch')?'Tap':'Click';
+      return '<div class="nm">'+lever.name+'</div><div class="row"><span>State</span><b>'+
+        (lever.used?'Already pulled':'Ready to pull')+'</b></div><div class="hint">'+
+        (lever.used?lever.result:action+' or bump this lever to '+lever.effect+'.')+'</div>';
+    }
     var pn=({'urn-group':'urns','stack-group':p.kinds && p.kinds.indexOf('pot')>=0 && p.kinds.indexOf('crate')<0 ? 'pots' : 'crates and barrels','urn-shattered':'broken urn','urn-tall':'urn','urn-squat':'urn','urn-ornate':'urn'})[p.name] || p.name.replace(/-/g,' ');
-    var hint = p.ex ? 'Explodes when broken or burned.' : p.br ? 'Breakable. Might hold something.' : p.lever ? 'A lever. Pull it.' : p.tablet ? 'A broken tablet. Read it.' :
+    var hint = p.ex ? 'Explodes when broken or burned.' : p.br ? 'Breakable. Might hold something.' : p.tablet ? 'A broken tablet. Read it.' :
       p.altar ? 'A sacrifice altar. Offer blood for rewards.' : p.prisoner ? 'Something is locked inside.' : p.name==='elemental-lock' ? 'Wants a '+p.element+' mote.' : p.drink ? 'Drink from it.' :
       p.bush ? 'Cut it down. Sometimes a heart is tucked underneath.' : '';
     /* 2026-09-19: Justin - scenery you cannot do anything with gets no card at all */

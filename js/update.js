@@ -3,6 +3,7 @@ var FOTE_VERSION = 'Beta 1.1';
 /* Keep newest first; describe only changes already present in this build. */
 var FOTE_PATCHES = [
   {version:'Beta 1.1', notes:[
+    "Levers now show an interaction cursor and an inspect card explaining their purpose and whether they have already been pulled.",
     "Added readable patch history and update checks under the version-number button. Removed Exit Game and Install App from the title menu; browser installation remains available through browser controls. Updates preserve saves.",
     "Reworked divine abilities around Divine Power. Invocations spend mana; prayers spend divine favor. God restrictions prevent forbidden actions, and Clerics keep their chosen god.",
     "Grom now permits only holy symbols, rings and amulets. Reworked divine buffs, summons and favor rewards so their strength follows the chosen god and equipment.",

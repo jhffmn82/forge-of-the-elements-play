@@ -1,5 +1,7 @@
 # Beta 1.1
 
+- Levers now show an interaction cursor and an inspect card explaining their purpose and whether they have already been pulled.
+
 - Added readable patch history and update checks under the version-number button. Removed Exit Game and Install App from the title menu; browser installation remains available through browser controls. Updates preserve saves.
 
 - Reworked divine abilities around Divine Power. Invocations spend mana; prayers spend divine favor. God restrictions prevent forbidden actions, and Clerics keep their chosen god.
