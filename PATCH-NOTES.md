@@ -1,12 +1,16 @@
 # Beta 1.1
 
+- Fixed extra movement and actions after releasing controls during enemy animations. Busy-time key presses, taps and clicks are discarded instead of replayed later.
+
+- Click-to-walk now stops immediately after taking damage during an enemy turn.
+
 - Replaced Morty’s boss theme with a more driving orchestral loop and subtle crypt ambience to give the fight a stronger sense of menace.
 
 - Pet movement no longer pauses your next action or the enemy sequence. Companions follow smoothly while their attacks remain animated.
 
 - Enemies now finish each visible move or attack before the next creature acts, making crowded fights easier to follow. Turn order and creature speeds are unchanged.
 
-- Removed duplicate terrain redraws that caused Caverns stutter. Held inputs, travel, resting and saves now wait for a complete enemy turn.
+- Removed duplicate terrain redraws that caused Caverns stutter. Travel, resting and saves now wait for a complete enemy turn.
 
 - Rebuilt the core engine to make combat, equipment, summons and turn timing more consistent while preserving the existing interface and artwork.
 

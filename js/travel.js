@@ -135,6 +135,7 @@ function travelStep(){
   lastDir=[dx,dy]; tryMove(dx,dy);
   return afterTurn(function(){
   if(TRAVEL!==T)return;
+  if(player.hp<T.hp){stopTravel('You stop: you are hurt.');return;}
   /* an interaction at the end (door, chest...) happens on the bump itself */
   if(!T.path.length && (player.x!==step.x || player.y!==step.y)){ var th=T.then; TRAVEL=null; if(th && turn===bt) th(); return; }
   if(player.x===bx && player.y===by){

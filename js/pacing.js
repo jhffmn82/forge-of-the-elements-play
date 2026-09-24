@@ -1,31 +1,22 @@
 /* =====================================================================
    pacing.js - let animations resolve before the next move.
-   - Game input (movement, waiting, hotbar, grab, stairs, map and d-pad
-     clicks) is held while attacks, projectiles, slides or deaths are still
-     playing. The latest held command runs the moment the screen catches up,
-     so holding a key or clicking ahead still feels responsive.
+   - Game input during attacks, projectiles, slides or deaths is discarded.
+     Never replay an old key press or click after the enemy turn: the player
+     must be able to stop without an extra action taking them into danger.
    - A creature's tile stays blocked to other monsters until its death
      animation finishes.
    Loaded after fx.js and before ui.js, so its capture listeners run first.
    ===================================================================== */
 
-var PACING = {pending:null, since:0};
+/* Retained for run/save cleanup callers; commands are never stored here. */
+var PACING = {pending:null, blockedClick:false};
 var PACED_KEYS = {'.':1,' ':1,g:1,x:1,'>':1,'<':1,r:1,f:1,F:1,C:1,'1':1,'2':1,'3':1,'4':1,'5':1,'6':1,'7':1,'8':1};
 /* Simulation work must settle even when motion is reduced or a visual timeout
-   releases an animation. Queued input belongs to one run, never its replacement. */
+   releases an animation. */
 function turnSequenceBusy(){return typeof gameTurns!=='undefined' && typeof gameTurns.busy==='function' && gameTurns.busy();}
 function pacedActionKey(ev){return !!((typeof KEYS!=='undefined' && KEYS[ev.key]) || PACED_KEYS[ev.key]);}
-function rememberPacedInput(command){
-  if(!PACING.pending)PACING.since=performance.now();
-  command.run=typeof RUN==='undefined'?null:RUN;command.player=player;PACING.pending=command;
-}
-function rememberPacedClick(ev){
-  var t=ev.target,onMap=t===cv,onPad=t.closest && (t.closest('#dpad') || t.closest('#hotbar'));
-  if(!onMap && !onPad)return;
-  var button=onMap?cv:(t.closest('button')||t),hot=button.closest && button.closest('#hotbar');
-  rememberPacedInput({type:'click',el:button,hotIndex:hot?button.getAttribute('data-i'):null,x:ev.clientX,y:ev.clientY});
-}
-function blockPendingInput(ev){ev.preventDefault();ev.stopImmediatePropagation();}
+function pacedClickTarget(t){return t===cv || !!(t.closest && (t.closest('#dpad') || t.closest('#hotbar')));}
+function blockPendingInput(ev){PACING.pending=null;ev.preventDefault();ev.stopImmediatePropagation();}
 
 /* 2026-09-22 (Justin: walking stuttered). Holding a direction used to wait for each slide to end, then a frame,
    then start the next from a standstill: a stop at every tile. A movement key (move=true) is released once every
@@ -44,10 +35,6 @@ function animBusy(move){
   }
   return false;
 }
-function pacedKey(ev){
-  if(ev.__replay) return false;
-  return pacedActionKey(ev);
-}
 function uiOpen(){ return (typeof modalOpen!=='undefined' && modalOpen) || (typeof openSheet!=='undefined' && openSheet) || ($('title') && $('title').classList.contains('on')) || ($('create') && $('create').classList.contains('on')); }
 
 window.addEventListener('keydown', function(ev){
@@ -56,49 +43,42 @@ window.addEventListener('keydown', function(ev){
   if(typeof stopRest==='function')stopRest();
   if(turnSequenceBusy()){
     if(typeof stopTravel==='function')stopTravel();
-    if(!uiOpen() && pacedActionKey(ev))rememberPacedInput({type:'key',key:ev.key,shift:ev.shiftKey});
     blockPendingInput(ev);return;
   }
-  if(uiOpen() || !pacedKey(ev)) return;
+  if(uiOpen() || !pacedActionKey(ev)) return;
   if(!animBusy(!!(typeof KEYS!=='undefined' && KEYS[ev.key]))) return;
-  rememberPacedInput({type:'key', key:ev.key, shift:ev.shiftKey});
-  ev.preventDefault(); ev.stopImmediatePropagation();
+  if(typeof stopTravel==='function')stopTravel();
+  blockPendingInput(ev);
 }, true);
 
 window.addEventListener('click', function(ev){
   if(typeof stopRest==='function')stopRest();
+  /* A mouse press rejected during a turn can release after it finishes. The
+     browser still emits a click even when pointerdown was prevented. */
+  if(PACING.blockedClick && ev.detail>0){PACING.blockedClick=false;blockPendingInput(ev);return;}
   if(turnSequenceBusy()){
     if(typeof stopTravel==='function')stopTravel();
-    if(!uiOpen())rememberPacedClick(ev);
     blockPendingInput(ev);return;
   }
-  if(ev.__replay || uiOpen() || !animBusy()) return;
-  var t=ev.target;
-  var onMap = t===cv, onPad = t.closest && (t.closest('#dpad') || t.closest('#hotbar'));
-  if(!onMap && !onPad) return;
-  rememberPacedClick(ev);
-  ev.preventDefault(); ev.stopImmediatePropagation();
+  if(uiOpen() || !animBusy()) return;
+  if(!pacedClickTarget(ev.target)) return;
+  if(typeof stopTravel==='function')stopTravel();
+  blockPendingInput(ev);
 }, true);
 
 /* Inventory context menus, native drops, and touch gesture starts can mutate
    gear without producing a click. Pointer-up cleanup is handled by touchui. */
-['contextmenu','drop','pointerdown','touchstart','change'].forEach(function(name){
+window.addEventListener('pointerdown',function(ev){
+  PACING.blockedClick=turnSequenceBusy() || (!uiOpen() && pacedClickTarget(ev.target) && animBusy());
+  if(PACING.blockedClick){
+    if(typeof stopRest==='function')stopRest();
+    if(typeof stopTravel==='function')stopTravel();
+    blockPendingInput(ev);
+  }
+},{capture:true,passive:false});
+window.addEventListener('pointercancel',function(){PACING.blockedClick=false;},true);
+['contextmenu','drop','touchstart','change'].forEach(function(name){
   window.addEventListener(name,function(ev){if(turnSequenceBusy())blockPendingInput(ev);},{capture:true,passive:false});
 });
-
-(function pump(){
-  var p=PACING.pending;
-  if(p && (p.run!==RUN || p.player!==player)){PACING.pending=null;p=null;}
-  if(p && !turnSequenceBusy() && (!animBusy(p.type==='key' && typeof KEYS!=='undefined' && !!KEYS[p.key]) || performance.now()-PACING.since>1500)){
-    PACING.pending=null;
-    var e;
-    if(p.type==='key'){ e=new KeyboardEvent('keydown',{key:p.key, shiftKey:p.shift, bubbles:true, cancelable:true}); e.__replay=true;e.__fote=true; window.dispatchEvent(e); }
-    else {
-      var el=p.hotIndex===null?p.el:$('hotbar').querySelector('[data-i="'+p.hotIndex+'"]');
-      if(el && el.isConnected){e=new MouseEvent('click',{clientX:p.x, clientY:p.y, bubbles:true, cancelable:true});e.__replay=true;el.dispatchEvent(e);}
-    }
-  }
-  requestAnimationFrame(pump);
-})();
 
 /* monsters don't step onto a body that is still falling */
