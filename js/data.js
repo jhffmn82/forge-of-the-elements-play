@@ -166,7 +166,7 @@ var GODS = {
       "bonespear"
     ],
     "boons": [
-      "Life Drain: living hostile kills by you or your undead servant heal god rank � Divine Power. Servant health and damage scale with rank and Divine Power.",
+      "Life Drain: living hostile kills by you or your undead servant heal god rank × Divine Power. Servant health and damage scale with rank and Divine Power.",
       "Grave Strength: pets and summons gain +1 Shadow damage per rank and inherit your active weapon enchantment.",
       "Lich: your servant becomes a Lich at rank 5 and returns once, one turn after destruction, at half health."
     ],
