@@ -103,6 +103,7 @@ attack = function(att, def, mult, label){
 /* ---------------------------------------------------------------- equipping goes to the right slot */
 var _useBagItemRanged = useBagItem;
 useBagItem = function(idx){
+  var entry=player.bag[idx];if(entry&&['weapon','armor','off'].includes(entry.kind)&&equipmentForbidden(entry.kind,entry.data))return refuseDivine();
   var b = player.bag[idx];
   if(b && b.kind==='weapon' && isRangedWeapon(b.data)){
     if(typeof reqBlock==='function' && reqBlock(tierNormalize(b.data))) return;
@@ -123,6 +124,7 @@ useBagItem = function(idx){
 
 var _equipFromBagRanged = equipFromBag;
 equipFromBag = function(idx, slot){
+  var entry=player.bag[idx];if(entry&&equipmentForbidden(slot,entry.data||entry.it))return refuseDivine();
   var b = player.bag[idx];
   if(slot==='ranged'){
     if(!b || b.kind!=='weapon' || !isRangedWeapon(b.data)){ log('Only a bow or another weapon with reach goes there.','c-info'); return; }

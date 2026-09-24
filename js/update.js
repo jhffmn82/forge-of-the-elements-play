@@ -1,60 +1,67 @@
-/* update.js - never run a stale build (2026-09-19).
-   The iPad kept opening an old copy even after reloads: a service worker and Safari's own cache can both hand
-   back the page from before a publish. tools/publish.py stamps each build into the page
-   (<meta name="fote-build">) and into build.json. On load this asks the server, past every cache, which build
-   is live; if the page is older, it drops the service worker and the cached copy (never the saves - those live
-   in localStorage, which is left alone) and reloads once. The build shows in the corner of the title screen,
-   so you can see at a glance which one a device is running. */
-/* The released version, shown on the title screen ahead of the build stamp. The build stamp answers "which
-   copy is this device running"; this answers "which release is it" - the one a player quotes in a bug report
-   (Justin, 2026-09-23). Bump it by hand on a release. */
-var FOTE_VERSION = 'Beta 1.0';
-
-(function(){
-  var meta=document.querySelector('meta[name="fote-build"]'), mine=meta ? meta.getAttribute('content') : 'dev';
-
-  /* the title screen rebuilds its own markup, so the stamp lives outside it and just follows it on and off */
-  var d=document.createElement('div'); d.id='buildTag';
-  d.style.cssText='position:fixed;right:12px;bottom:calc(10px + env(safe-area-inset-bottom,0px));z-index:46;display:none;'+
-    'font:12px "IBM Plex Mono",monospace;color:rgba(242,217,160,.55);pointer-events:none';
-  d.textContent=FOTE_VERSION+' · build '+(mine==='dev' ? 'dev' : mine.slice(0,16));
-  function show(){ var t=document.getElementById('title'); if(!d.parentNode && document.body) document.body.appendChild(d); d.style.display = t && t.classList.contains('on') ? 'block' : 'none'; }
-  setInterval(show, 500);
-
-  if(mine==='dev' || !window.fetch) return;              /* the dev server always serves fresh files */
-  window.addEventListener('load', function(){
-    fetch('build.json?t='+Date.now(), {cache:'no-store'}).then(function(r){ return r.ok ? r.json() : null; }).then(async function(b){
-      if(!b || !b.built || b.built===mine) return;
-      var tried=null; try{ tried=sessionStorage.getItem('astra-temple-upd'); }catch(e){}
-      if(tried===b.built) return;                          /* one attempt per build, never a reload loop */
-      try{ sessionStorage.setItem('astra-temple-upd', b.built); }catch(e){}
-      try{
-        if(navigator.serviceWorker){ var regs=await navigator.serviceWorker.getRegistrations(); await Promise.all(regs.filter(function(r){return r.scope===new URL('./',location.href).href;}).map(function(r){ return r.unregister(); })); }
-        if(window.caches){ var ks=await caches.keys(); await Promise.all(ks.filter(function(k){ return k.indexOf('astra-temple-')===0; }).map(function(k){ return caches.delete(k); })); }
-      }catch(e){}
-      location.replace(location.pathname+'?b='+(b.epoch||Date.now()));
-    }).catch(function(){});                                /* offline: play the copy we have */
-  });
-})();
-
-/* 2026-09-22 (Justin): an Update button on the title screen. It asks the server for build.json past every cache,
-   and if that build is not the one running it drops the service worker and the app caches and reloads on the new
-   build, exactly as the automatic check does, but on demand: an installed app that has sat closed for a while
-   gets the latest build without waiting for the worker to notice. */
-function forceUpdate(btn){
-  var mine=(document.querySelector('meta[name="fote-build"]')||{}).content||'';
-  function say(t){ if(btn) btn.textContent=t; }
-  say('Checking\u2026');
-  if(!window.fetch){ say('Update'); return; }
-  fetch('build.json?t='+Date.now(), {cache:'no-store'}).then(function(r){ return r.ok ? r.json() : null; }).then(async function(b){
-    if(!b || !b.built){ say('Could not reach the server'); setTimeout(function(){ say('Update'); }, 2500); return; }
-    if(b.built===mine){ say('Up to date ('+b.built+')'); setTimeout(function(){ say('Update'); }, 4000); return; }
-    say('Updating to '+b.built+'\u2026');
-    try{
-      if(navigator.serviceWorker){ var regs=await navigator.serviceWorker.getRegistrations(); await Promise.all(regs.map(function(r){ return r.unregister(); })); }
-      if(window.caches){ var ks=await caches.keys(); await Promise.all(ks.filter(function(k){ return k.indexOf('astra-temple-')===0; }).map(function(k){ return caches.delete(k); })); }
-    }catch(e){}
-    location.replace(location.pathname+'?b='+(b.epoch||Date.now()));
-  }).catch(function(){ say('Offline: playing the copy you have'); setTimeout(function(){ say('Update'); }, 4000); });
+/* Release history and title-screen freshness checks. Saves are never cleared. */
+var FOTE_VERSION = 'Beta 1.1';
+/* Keep newest first; describe only changes already present in this build. */
+var FOTE_PATCHES = [
+  {version:'Beta 1.1', notes:[
+    "Added readable patch history and update checks under the version-number button. Removed Exit Game and Install App from the title menu; browser installation remains available through browser controls. Updates preserve saves.",
+    "Reworked divine abilities around Divine Power. Invocations spend mana; prayers spend divine favor. God restrictions prevent forbidden actions, and Clerics keep their chosen god.",
+    "Grom now permits only holy symbols, rings and amulets. Reworked divine buffs, summons and favor rewards so their strength follows the chosen god and equipment.",
+    "Vellum now offers Communion, repeatable divine attacks, stronger equipment passives and chances for knockback and free casting. Two-handed weapons and bows are forbidden.",
+    "Wobbles now gains amusement during combat, slowly loses it during quiet exploration, and spends it on powers. High amusement brings rewards; an empty bar invites mischief.",
+    "Rebalanced armor, shield, orb and tome enchantments to offer more defensive and offensive choices. All attacks and spells share critical-hit chance and critical damage.",
+    "Forge enchant descriptions show scaling formulas; equipped items show their current bonuses. Divine Power now appears below Spell Power on character sheets.",
+    "Raised advanced spell costs, strengthened enemies in selected biomes, and made food less plentiful in effect to improve resource planning and late-game difficulty.",
+    "Added area previews and lingering impact highlights for targeted area spells. Shortened Vanishing and made offensive spellcasting break concealment.",
+    "Reworked puzzle interactions, added guardian shutoff switches, made barricades block entry, and gave levitation and elemental solutions clearer practical roles. Crystal rewards are inspected by hovering.",
+    "Strengthened Living Flame, extended its duration, added splash attacks and replaced its art with a smaller animated fire elemental. Burning effects now use translucent animated flames.",
+    "Enemies now react to summon attacks. Sylla webs apply Bleed and count as Root for Earth mastery, while her poison abilities retain their own effects.",
+    "Added ambient dungeon loops and more dramatic boss music, including a replacement Crypt theme. Title and character-selection music remain unchanged.",
+    "Improved hotbar readability, fixed amulet charge displays and floating firepit shadows, corrected descriptions, and consolidated superseded god and enchantment implementations."
+]},
+  {version:'Beta 1.0', notes:['Initial beta release.']}
+];
+var foteVersionState = {message:'Checking for updates…', latest:null, pending:null};
+function foteBuild(){ return (document.querySelector('meta[name="fote-build"]')||{}).content||'dev'; }
+function paintVersionStatus(){
+  ['versionStatus','versionPanelStatus'].forEach(function(id){ var el=document.getElementById(id); if(el)el.textContent=(id==='versionPanelStatus'?FOTE_VERSION+' · ':'')+foteVersionState.message; });
+  var b=document.getElementById('versionInstall'); if(b)b.hidden=!foteVersionState.latest;
 }
-
+function checkGameVersion(){
+  if(foteVersionState.pending)return foteVersionState.pending;
+  if(foteBuild()==='dev'){ foteVersionState.message='Development build'; paintVersionStatus(); return Promise.resolve(); }
+  foteVersionState.message='Checking for updates…'; paintVersionStatus();
+  foteVersionState.pending=(async function(){
+    var controller=typeof AbortController==='function'?new AbortController():null;
+    var timer=controller?setTimeout(function(){controller.abort();},8000):null;
+    try{
+      var r=await fetch('build.json?t='+Date.now(),{cache:'no-store',signal:controller?controller.signal:undefined});
+      if(!r.ok)throw new Error('Unavailable');
+      var b=await r.json(); if(!b||typeof b.built!=='string'||!b.built)throw new Error('Invalid build');
+      foteVersionState.latest=b.built!==foteBuild()?b:null;
+      foteVersionState.message=foteVersionState.latest?'Update available — open Version to install':'Up to date';
+    }catch(e){ foteVersionState.latest=null; foteVersionState.message='Unable to check for updates. Your installed copy is available.'; }
+    finally{ if(timer)clearTimeout(timer); foteVersionState.pending=null; paintVersionStatus(); }
+  })();
+  return foteVersionState.pending;
+}
+function showVersion(){
+  var html='<p id="versionPanelStatus" role="status"></p><button id="versionInstall" hidden>Install update</button><button id="versionCheck">Check again</button>';
+  FOTE_PATCHES.forEach(function(p){ html+='<section><h3>'+p.version+'</h3><ul>'+p.notes.map(function(n){return '<li>'+n+'</li>';}).join('')+'</ul></section>'; });
+  openModal('Version',html,[{label:'Close',fn:closeModal}]);
+  document.getElementById('modal').style.zIndex='70';
+  document.getElementById('versionInstall').onclick=function(){forceUpdate(this);};
+  document.getElementById('versionCheck').onclick=checkGameVersion;
+  paintVersionStatus();
+}
+async function forceUpdate(btn){
+  await checkGameVersion(); var b=foteVersionState.latest; if(!b)return;
+  if(btn){btn.disabled=true;btn.textContent='Installing…';}
+  try{
+    if(navigator.serviceWorker){var regs=await navigator.serviceWorker.getRegistrations();await Promise.all(regs.filter(function(r){return r.scope===new URL('./',location.href).href;}).map(function(r){return r.unregister();}));}
+    if(window.caches){var ks=await caches.keys();await Promise.all(ks.filter(function(k){return k.indexOf('astra-temple-')===0;}).map(function(k){return caches.delete(k);}));}
+    var url=new URL(location.href);url.searchParams.set('b',b.built);location.replace(url.href);
+  }catch(e){ if(btn){btn.disabled=false;btn.textContent='Retry update';} foteVersionState.message='Update could not be installed. Please try again.';paintVersionStatus(); }
+}
+/* Installed apps may return from suspension without rebuilding the title menu. */
+document.addEventListener('visibilitychange',function(){var t=document.getElementById('title');if(!document.hidden&&t&&t.classList.contains('on'))checkGameVersion();});
+window.addEventListener('load',function(){var t=document.getElementById('title');if(t&&t.classList.contains('on'))checkGameVersion();});

@@ -7,20 +7,18 @@
    ===================================================================== */
 
 ENCHANT_TEXT.orb = {
-  fire:  'Cinders: spell crits scorch the target’s tile, Burning it for 2 turns (2 damage, +1 per Fire point)',
-  water: 'Up to +15% spell damage, the fuller your mana',
-  air:   '+1 spell range (+2 at Air 3, +3 at Air 5)',
-  earth: '+10% spell damage if you did not move last turn (+3% per Earth point)',
-  light: 'Spell crits restore 3 mana (grows with Light)',
-  shadow:'+10% spell damage against targets below half HP (+3% per Shadow point)'
+ fire:'Critical hits ignite the target tile and inflict Burning for 2 turns; Burning damage scales with Fire mastery.',
+ water:'Critical hits restore 1 Ice Armor +1 per Water mastery, up to your existing capacity.',
+ air:'Critical hits stun the target for 1 turn.',
+ earth:'Crit chance against Rooted targets +5% +3% per Earth mastery.',
+ light:'Critical hits restore 3 mana +0.9 per Light mastery.',
+ shadow:'Crit damage multiplier +10% +5% per Shadow mastery.'
 };
 ENCHANT_TEXT.tome = {
-  fire:  'Spells cost 5% less for each Burning enemy in view (up to 25%, +5% per Fire point)',
-  water: '+30% mana regeneration (grows with Water)',
-  air:   '5% chance per Air point (min 5%) that a spell costs no mana',
-  earth: '+10% max mana (grows with Earth)',
-  light: 'Mana Ward: 10% of the mana you spend (+5% per Light point) becomes a shield, up to 30% of your max HP',
-  shadow:'Spell kills heal 1% of max HP per Shadow point (min 1%)'
+ fire:'Spell power +5% +3% per Fire mastery.',water:'Evasion +2 +1 per Water mastery.',
+ air:'Casting time reduced by 2% +1% per Air mastery.',earth:'All elemental resistances +2% +1% per Earth mastery.',
+ light:'10% of mana spent +5% per Light mastery becomes a shield, capped at 30% of maximum HP.',
+ shadow:'Spell kills heal 1% of maximum HP per Shadow mastery (minimum 1%).'
 };
 function offKind(){ var o=player.twoHanded ? null : player.off; if(!o || o===EMPTY_OFF) return null; var ic=(o.icon||'').replace(/^item-/,''); return (ic==='orb'||ic==='tome') ? ic : null; }
 function infusion(kind){ var o=player.off; return offKind()===kind && o.enchant ? o.enchant : null; }
@@ -69,65 +67,42 @@ enchantItem = function(slot, el){
 var _spellPowerInf = spellPower;
 spellPower = function(A){
   var m=_spellPowerInf(A), el=infusion('orb');
-  if(el==='water') m *= 1 + 0.15*infScale(el)*clamp(player.mp/Math.max(1,player.maxmp),0,1);
-  if(el==='earth' && !player.movedLast) m *= 1 + 0.10 + 0.03*affPts('earth');
-  if(el==='shadow' && player._spellTarget && player._spellTarget.hp < player._spellTarget.maxhp/2) m *= 1 + 0.10 + 0.03*affPts('shadow');
+  if(infusion('tome')==='fire')m*=1+(.05+.03*affPts('fire'))*enchantGodBonus();
   return m;
 };
-var _spellRangeInf = spellRange;
-spellRange = function(A){ var r=_spellRangeInf(A); if(r && !A.tech && !A.divine && infusion('orb')==='air') r += 1 + (affPts('air')>=3?1:0) + (affPts('air')>=5?1:0); return r; };
-/* the aimed target, so Shadow's "below half HP" can see it before damage is rolled */
-var _castAtInf = castAt;
-castAt = function(x,y){
-  player._spellTarget = ents.filter(function(e){ return e.foe && e.x===x && e.y===y; })[0] || null;
-  var r=_castAtInf(x,y); player._spellTarget=null; return r;
-};
+
+
+
 /* called from castAt after a spell's damage lands (combat.js) */
 function spellOnHit(f, d, crit, A){
-  var el=infusion('orb');
-  if(el==='light' && crit){ var mp=Math.round(3*infScale(el)); player.mp=Math.min(player.maxmp, player.mp+mp); floatText(player.x,player.y,'+'+mp+' mp','ice'); }
-  if(el==='fire' && crit && inb(f.x,f.y) && at(f.x,f.y)!==WATER){
-    fireT[idxOf(f.x,f.y)]=Math.max(fireT[idxOf(f.x,f.y)],2); fireSrc[idxOf(f.x,f.y)]=1;
-    if(f.hp>0) applyStatus(f,'burn',2,burnDmg());
-    burst(f.x,f.y,'fire',16,0.05);
-  }
+  if(crit)orbOnCritical(f);
   if(f.hp<=0 && infusion('tome')==='shadow'){
-    var h=Math.max(1, Math.round(player.maxhp*0.01*Math.max(1,affPts('shadow'))));
+    var h=Math.max(1, Math.round(player.maxhp*0.01*Math.max(1,affPts('shadow'))*enchantGodBonus()));
     healPlayer(h); floatText(player.x,player.y,'+'+h,'heal');
   }
 }
 
 /* ---------------------------------------------------------------- tome: what casting costs */
-function burningInView(){ return ents.filter(function(e){ return e.foe && e.st && e.st.burn && vis[idxOf(e.x,e.y)]; }).length; }
-var _costOfInf = costOf;
-costOf = function(A){
-  var c=_costOfInf(A);
-  if(c>0 && !A.tech && !A.divine && infusion('tome')==='fire'){
-    var cut=Math.min(0.05*burningInView(), 0.25+0.05*affPts('fire'));
-    if(cut>0) c=Math.max(1, Math.round(c*(1-cut)));
-  }
-  return c;
-};
+
 var _spellConductInf = spellConduct;
 spellConduct = function(A){
   var r=_spellConductInf(A);
-  var cost=costOf(A), el=infusion('tome');
+  var cost=player._actualSpellCost||0, el=infusion('tome');
   player._lastSpellCost=cost;
-  if(el==='air' && rng() < Math.max(0.05, 0.05*affPts('air'))){ player.mp=Math.min(player.maxmp, player.mp+cost); log('The quill writes the spell for you: no mana spent.','c-good'); }
-  else if(el==='light' && cost>0){
-    var add=cost*(0.10+0.05*affPts('light')), capW=Math.round(player.maxhp*0.30);
+  if(el==='light' && cost>0){
+    var add=cost*(0.10+0.05*affPts('light'))*enchantGodBonus(), capW=Math.round(player.maxhp*0.30);
     player.mward=Math.min(capW, (player.mward||0)+add);
   }
   return r;
 };
 var _deriveInf = derive;
-derive = function(p){ _deriveInf(p); if(p===player && infusion('tome')==='earth') p.maxmp=Math.round(p.maxmp*(1+0.10*infScale('earth'))); };
+derive = function(p){ _deriveInf(p); if(p===player && infusion('tome')==='water')p.eva+=Math.round((2+affPts('water'))*enchantGodBonus()); };
 var _endTurnInf = endTurn;
 endTurn = function(){
   if(player) player.movedLast = !!player.movedThisTurn;
   var before=turn;_endTurnInf();if(turn===before)return;
   if(!player || player.hp<=0) return;
-  if(infusion('tome')==='water') player.mp=Math.min(player.maxmp, player.mp + player.maxmp*0.006*0.30*infScale('water'));
+
   if(player.mward>0 && infusion('tome')!=='light') player.mward=0;
 };
 var _playerShieldInf = playerShield;
@@ -135,7 +110,7 @@ playerShield = function(){ return _playerShieldInf() + Math.max(0, Math.floor(pl
 /* Shadow armor: stealth */
 /* the one armor enchant that did not read enchantScale, so Old Anvil skipped it too (2026-09-18) */
 function stealthExtra(){ var a=bodyArmor(player); if(!a || a.enchant!=='shadow') return 0;
-  var am = (player.god==='anvil' ? 1 + 0.10*godRank() : 1);
+  var am = enchantGodBonus();
   return 0.05*Math.max(1,affPts('shadow'))*am; }
 
 /* item cards show the infusion */
@@ -143,6 +118,18 @@ var _bagCardInf = bagCard;
 bagCard = function(it){
   var h=_bagCardInf(it);
   if(it && it.kind==='off' && it.data.enchant && !it.data.unid){ var ic=(it.data.icon||'').replace(/^item-/,''); if(it.data.block>0 && ENCHANT_TEXT.shield) ic='shield';   /* 2026-09-22 audit: a shield's infusion was never on its card */
-    if(ENCHANT_TEXT[ic]) h+='<div class="row"><span>Infusion</span><b style="color:'+AFF_COL[it.data.enchant]+'">'+cap(it.data.enchant)+'</b></div><div class="hint">'+ENCHANT_TEXT[ic][it.data.enchant]+'</div>'; }
+    if(ENCHANT_TEXT[ic]) h+='<div class="row"><span>Infusion</span><b style="color:'+AFF_COL[it.data.enchant]+'">'+cap(it.data.enchant)+'</b></div><div class="hint">'+enchantLive(ic,it.data.enchant)+'</div>'; }
   return h;
 };
+
+function orbOnCritical(f){
+  var el=infusion('orb');
+  if(el==='water')player.iceArmor=Math.min(player.iceArmorMax,player.iceArmor+Math.round((1+affPts('water'))*enchantGodBonus()));
+  if(el==='air' && f.hp>0)applyStatus(f,'stun',1);
+  if(el==='light'){ var mp=Math.round(3*infScale(el)); player.mp=Math.min(player.maxmp, player.mp+mp); floatText(player.x,player.y,'+'+mp+' mp','ice'); }
+  if(el==='fire' && inb(f.x,f.y) && at(f.x,f.y)!==WATER){
+    fireT[idxOf(f.x,f.y)]=Math.max(fireT[idxOf(f.x,f.y)],2); fireSrc[idxOf(f.x,f.y)]=1;
+    if(f.hp>0) applyStatus(f,'burn',2,burnDmg());
+    burst(f.x,f.y,'fire',16,0.05);
+  }
+}

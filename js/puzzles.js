@@ -19,7 +19,7 @@ var PUZZLE_KINDS = {
   barricade: {el:'fire',   sigil:'firestorm',name:'Barricade',        note:'A doorway choked with dry thorns and timber. Fire would clear it; pushing through hurts.'},
   hoard:     {el:'fire',   sigil:'firestorm',name:'Frozen hoard',     note:'Treasure sealed in blocks of ice. Weapons only glance off it; fire will melt it.'},
   everburn:  {el:'water',  sigil:'identify', name:'Everburning door', note:'A doorway wreathed in flame that never dies. Water would put it out.'},
-  baths:     {el:'water',  sigil:'identify', name:'Scalding baths',   note:'Steam rolls from a room of scalding stone. Something cold would let you cross.'},
+  baths:     {el:'water',  sigil:null, name:'Scalding baths',   note:'Steam rolls from a room of scalding stone. Something cold would let you cross.'},
   spikes:    {el:'earth',  sigil:'stoneskin',name:'Spike gauntlet',   note:'A room bristling with spikes. Skin of stone would shrug them off.'},
   sentinels: {el:'earth',  sigil:'stoneskin',name:'Stone sentinels',  note:'Two stone sentinels guard a hoard. They let their own kind pass.'},
   darktraps: {el:'light',  sigil:'heal',     name:'Lightless room',   note:'A room of perfect darkness, and the smell of old blood. Light would show what waits in it.'},
@@ -118,7 +118,7 @@ function buildSigilRoom(kind){
     /* 2026-09-18: the gauntlet used to lay every spike out in the open, so the room read as a tiled pattern
        rather than a threat. They are hidden like any other trap now - searching (F) finds them, the floor
        note still warns you the room is out there, and stone skin, Earth 3 or levitation still walk it. */
-    pzCells(room).forEach(function(p){ if(!loot.some(function(l){ return l.x===p.x&&l.y===p.y; }) && at(p.x,p.y)===FLOOR) feats.push({x:p.x,y:p.y,kind:'spikes',found:false,puzzle:true}); });
+    pzCells(room).forEach(function(p){ if(!loot.some(function(l){ return l.x===p.x&&l.y===p.y; }) && at(p.x,p.y)===FLOOR) feats.push({x:p.x,y:p.y,kind:'spikes',found:true,puzzle:true}); });
     pzLoot(loot, 3);
   } else if(kind==='sentinels'){
     pzLoot(cells.slice(0,3), 3);
@@ -173,7 +173,7 @@ function solvePuzzle(room, how){
   log('<b>'+P.name+':</b> '+how,'c-kill'); sfx('puzzle-solved'); computeFOV();
 }
 function nearRoom(room, r){ return player.x>=room.x-r && player.x<room.x+room.w+r && player.y>=room.y-r && player.y<room.y+room.h+r; }
-function mastered(kind){ return aff(PUZZLE_KINDS[kind].el)>=3; }
+function mastered(kind){ return kind!=='drowned'&&kind!=='baths'&&aff(PUZZLE_KINDS[kind].el)>=3; }
 
 /* ---------------------------------------------------------------- sigils solve rooms */
 var _useSigilPz = useSigil;
@@ -224,10 +224,10 @@ tryMove = function(dx, dy){
 function enterTile(){
   var room=puzzleRoomAt(player.x,player.y), inWater=at(player.x,player.y)===WATER;
   /* the drowned cellar: swimming costs HP */
-  if(room && room.deep && inWater && !(player.levitate>0) && aff('air')<3 && player.hp>0){
+  if(room && room.deep && inWater && !(player.levitate>0) && player.hp>0){
     var d=Math.max(1,Math.round(player.maxhp*0.08)); player.hp-=d; floatText(player.x,player.y,String(d),'ice');
     log('The cold water saps you: '+d+' damage.','c-you');
-    if(player.hp<=0){ heroicResolve(); if(player.hp<=0) death(); }
+    if(player.hp<=0){  if(player.hp<=0) death(); }
   }
 }
 
@@ -239,12 +239,12 @@ triggerTrap = function(tr, e){
     if(e===player && (player.levitate>0 || player.st.stone || aff('earth')>=3)){ return; }
     /* 2026-09-17: spikes go straight through armor and hit harder (armor had cut them to ~3) */
     var d=applyDamage(e, roll(4,7)+floorNo, 'phys', SPIKES_SRC); floatText(e.x,e.y,String(d),'phys'); sfx('trap-dart');
-    if(e===player){ log('Spikes drive up through your boots: '+d+' damage.','c-you'); if(player.hp<=0){ heroicResolve(); if(player.hp<=0) death(); } }
+    if(e===player){ log('Spikes drive up through your boots: '+d+' damage.','c-you'); if(player.hp<=0){  if(player.hp<=0) death(); } }
     else if(e.hp<=0) kill(e,null);
     return;
   }
   _triggerTrapPz(tr, e);
-  if(tr.heavy && e.hp>0){ var hd=applyDamage(e, roll(3,6)+floorNo, 'phys', null); floatText(e.x,e.y,String(hd),'phys'); if(e===player){ log('The trap bites deep: '+hd+' more.','c-you'); if(player.hp<=0){ heroicResolve(); if(player.hp<=0) death(); } } else if(e.hp<=0) kill(e,null); }
+  if(tr.heavy && e.hp>0){ var hd=applyDamage(e, roll(3,6)+floorNo, 'phys', null); floatText(e.x,e.y,String(hd),'phys'); if(e===player){ log('The trap bites deep: '+hd+' more.','c-you'); if(player.hp<=0){  if(player.hp<=0) death(); } } else if(e.hp<=0) kill(e,null); }
 };
 var _drawTrapPz = drawTrap;
 drawTrap = function(f, px, py, alpha, now){
@@ -272,7 +272,7 @@ endTurn = function(){
   else if(k==='baths' && mastered(k)) solvePuzzle(room, 'the scalding stone cannot warm your cool blood.');   /* 2026-09-23 audit: mastery solves this room like the other ten (DESIGN 12, step 10) */
   else if(k==='baths' && !(room.cooledUntil>turn) && !(player.levitate>0)){
     var d=applyDamage(player, roll(1,3)+floorNo, 'fire', null); floatText(player.x,player.y,String(d),'fire'); log('The scalding stone burns you: '+d+'.','c-you');
-    if(player.hp<=0){ heroicResolve(); if(player.hp<=0) death(); }
+    if(player.hp<=0){  if(player.hp<=0) death(); }
   }
   else if(k==='sentries' && !(player.hidden>0) && aff('shadow')<3){
     props.filter(function(p){ return p.sentry && roomAt(p.x,p.y)===room; }).forEach(function(p){
@@ -281,20 +281,21 @@ endTurn = function(){
       var d=applyDamage(player, roll(2,4)+floorNo, 'light', null); floatText(player.x,player.y,String(d),'light');
       log('A sentry’s eyes flare: '+d+' damage.','c-you');
     });
-    if(player.hp<=0){ heroicResolve(); if(player.hp<=0) death(); }
+    if(player.hp<=0){  if(player.hp<=0) death(); }
   }
   else if(k==='sentinels'){
+    if(player.hidden>0)return;
     if(player.st.stone || mastered(k)) solvePuzzle(room, 'the sentinels take you for one of their own and sleep on.');
     else {
       room.puzzle.solved=true;
       props.filter(function(p){ return p.sentinel && roomAt(p.x,p.y)===room; }).forEach(function(p){
-        removeProp(p); var m=spawn('brute',p.x,p.y); m.name='Stone Sentinel'; m.maxhp=m.hp=40+floorNo*6; m.state='hunt'; m.base=Object.assign({},m.base,{armor:6, sprite:'m-stoneling', col:'#8C8C84'}); m.t=player.t;
+        removeProp(p); var m=spawn('brute',p.x,p.y); m.name='Stone Sentinel';m.sentinelRoom=room.puzzle.door; m.maxhp=m.hp=40+floorNo*6; m.state='hunt'; m.base=Object.assign({},m.base,{armor:6, sprite:'m-stoneling', col:'#8C8C84'}); m.t=player.t;
         burst(p.x,p.y,'earth',20,0.06);
       });
       SHAKE=8; log('<b>The stone sentinels wake!</b>','c-you'); sfx('golem-alert');
     }
   }
-  else if(k==='library' && !(player.hidden>0) && aff('shadow')<3 && player.movedLast){
+  else if(k==='library' && (player.god==='reginald'||(!(player.hidden>0) && aff('shadow')<3)) && player.movedLast){
     room.puzzle.solved=true;
     ents.forEach(function(o){ if(o.foe && dist(o,player)<=20){ o.state='hunt'; o.lastSeen={x:player.x,y:player.y}; } });
     for(var i=0;i<2;i++){ var c=nearFree(player.x,player.y,3); if(c){ var w=spawn('wisp',c.x,c.y); w.name='Library Shade'; w.state='hunt'; w.t=player.t; } }

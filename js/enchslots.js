@@ -66,6 +66,7 @@ if(typeof enchantTargets === 'function'){
   }
 
   enchantItem = function(slot, el){
+    if(forbiddenElement(el))return refuseDivine();
     /* the same guard the upgrade bench uses: an unidentified piece may hold an enchantment you cannot see,
        and a mote would overwrite it without telling you (2026-09-18) */
     var target = slot==='ranged' ? player.ranged : slot==='off' ? player.off : slot==='armor' ? player.armorItem : player.weapon;

@@ -207,7 +207,7 @@ tickStatus = function(e){
     if(e===player) log('Bleeding: '+bd+' damage.','c-you');
     if(rng()<0.35 && typeof setG==='function' && gAt(e.x,e.y)===G_NONE) setG(e.x, e.y, G_BLOOD);
     if(e.hp<=0){
-      if(e===player){ heroicResolve(); if(player.hp<=0){ kill(e, null); return false; } }
+      if(e===player){  if(player.hp<=0){ kill(e, null); return false; } }
       else { kill(e, e.lastHitBy||null); return false; }
     }
   }
@@ -309,7 +309,7 @@ drawTelegraphs = function(now){
 /* ---------------------------------------------------------------- webs: pinned for a turn (you can still attack) */
 function webShot(e, who){
   setClip(e,'attack'); boltFx(e.x,e.y,player.x,player.y,'web'); sfx('trap-web');
-  if(rng() < hostileHitChance(hitChance(e.base.acc+8, player.eva))){
+  if(rng() < hostileHitChance(hitChance(e.base.acc+8, player.eva),true)){
     applyStatus(player, 'root', WEBSHOT.pin);
     player.syllaWeb=WEBSHOT.slow;   /* tickStatus applies the slow as soon as the one-turn pin ends */
     if(gAt(player.x,player.y)!==G_WEB) setG(player.x, player.y, G_WEB);
@@ -373,7 +373,7 @@ var DEEP_AI = {
     if(d>=2 && d<=PRIEST.range && deepShot(e)){
       if(!tickStatus(e)) return true;
       setClip(e,'attack'); boltFx(e.x,e.y,player.x,player.y,'blood'); sfx('shaman-cast');
-      if(rng()<hostileHitChance(hitChance(e.base.acc+6, player.eva))){
+      if(rng()<hostileHitChance(hitChance(e.base.acc+6, player.eva),true)){
         var bd=deepHurt(player, roll(e.dmg[0], e.dmg[1]), 'dark', e, 'The <b>Drow Priestess</b>\'s blood bolt hits you');
         if(bd>0 && e.hp>0 && e.hp<e.maxhp){ var hh=Math.min(bd, e.maxhp-e.hp); e.hp+=hh; floatText(e.x,e.y,'+'+hh,'heal'); }
       } else { log('The Drow Priestess\'s blood bolt misses.','c-miss'); floatText(player.x,player.y,'miss','miss'); }
@@ -388,7 +388,7 @@ var DEEP_AI = {
     if(d>=2 && d<=SAP.range && deepShot(e)){
       if(!tickStatus(e)) return true;
       setClip(e,'attack'); boltFx(e.x,e.y,player.x,player.y,'magic'); sfx('shaman-cast');
-      if(rng() >= hostileHitChance(hitChance(e.base.acc+10, player.eva))){ log('The Thought Eater\'s '+(e.sapCd<=0 ? 'mana sap' : 'lash')+' slides off your mind.','c-miss'); floatText(player.x,player.y,'miss','miss'); if(e.sapCd<=0) e.sapCd=1; e.t+=actCost(e); return true; }
+      if(rng() >= hostileHitChance(hitChance(e.base.acc+10, player.eva),true)){ log('The Thought Eater\'s '+(e.sapCd<=0 ? 'mana sap' : 'lash')+' slides off your mind.','c-miss'); floatText(player.x,player.y,'miss','miss'); if(e.sapCd<=0) e.sapCd=1; e.t+=actCost(e); return true; }
       if(e.sapCd<=0){
         e.sapCd=SAP.cd;
         if(player.mp>=1){
@@ -431,7 +431,7 @@ var DEEP_AI = {
     if(e.boltCd<=0 && d>=2 && d<=IMP.range && deepShot(e)){
       if(!tickStatus(e)) return true;
       e.boltCd=IMP.cd; setClip(e,'attack'); boltFx(e.x,e.y,player.x,player.y,'fire'); sfx('shaman-cast');
-      if(rng()<hostileHitChance(hitChance(e.base.acc+6, player.eva))){
+      if(rng()<hostileHitChance(hitChance(e.base.acc+6, player.eva),true)){
         var fd=deepHurt(player, roll(e.dmg[0], e.dmg[1]), 'fire', e, 'The <b>Fire Imp</b>\'s fire bolt hits you');
         if(player.hp>0 && rng()<IMP.burn){ applyStatus(player,'burn',3,sDMG(2)); log('You are <span class="c-fire">burning</span>.','c-you'); }
         ignite(player.x, player.y, null);

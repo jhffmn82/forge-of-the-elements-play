@@ -80,6 +80,7 @@ function worldAdvance(from,to){
     }
     if(typeof groundTick==='function')groundTick();
   }
+  godsWorldAdvance(from,to);
 }
 /* Interleave actors with world pulses. A one-turn stun survives every action
    before the next 100-unit boundary, regardless of the actor's speed. */
@@ -96,14 +97,16 @@ function worldRunActors(from,to){
       }
       if(!actor)break;
       WORLD_NOW=Math.max(from,actor.t);var before=actor.t;
-      (actor.ally?allyAct:aiAct)(actor);
+      if(actor.ally)allyAct(actor);else if(!retaliateAgainstSummon(actor))aiAct(actor);
       if(actor.t<=before)actor.t=before+Math.max(1,actCost(actor));
     }
   }finally{WORLD_NOW=null;}
 }
 var _worldEnd=endTurn;
 endTurn=function(){
-  if(typeof ECHOING!=='undefined'&&ECHOING)return;
+  if(player.castingSpell){player.hidden=0;player.syllaDark=0;}
+  try{
+
   var from=player.t,prev=player._worldBuffPrev||{};
   player._worldBuffBorn=player._worldBuffBorn||{};
   player._worldFreshBuffs=[];
@@ -115,15 +118,6 @@ endTurn=function(){
   player._worldLevitatePrev=player.levitate;
   if(player.hp<=0)death();else {derive(player);updateUI();draw();}
   return r;
+  }finally{player.castingSpell=false;}
 };
 STATUS_INFO.resolve={name:'Resolve',icon:'st-stone',d:'Temporary protection against repeated hard control and forced movement.'};
-var _worldPrayer=usePrayer;
-usePrayer=function(){
-  var before=player.t,r=_worldPrayer.apply(this,arguments);
-  if(player.t===before){
-    player._worldBuffPrev=Object.assign({},player.buffs);
-    player._worldBuffBorn=player._worldBuffBorn||{};
-    Object.keys(player.buffs||{}).forEach(function(k){if(player.buffs[k]>0)player._worldBuffBorn[k]=before;});
-  }
-  return r;
-};

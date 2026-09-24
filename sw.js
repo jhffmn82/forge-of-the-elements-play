@@ -47,6 +47,11 @@ self.addEventListener('activate', function(ev){
 self.addEventListener('fetch', function(ev){
   var req = ev.request;
   if(req.method!=='GET' || new URL(req.url).origin!==location.origin) return;
+  /* A cached manifest cannot establish whether the installed game is current. */
+  if(new URL(req.url).pathname===new URL('build.json',location.href).pathname){
+    ev.respondWith(fetch(req,{cache:'no-store'}).catch(function(){return new Response('offline',{status:503});}));
+    return;
+  }
   ev.respondWith(
     /* 2026-09-19: always ask the server first. GitHub Pages marks every file cacheable for 10 minutes and the
        fetch went through that HTTP cache, so a device could open a copy up to 10 minutes old - longer on an

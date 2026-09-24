@@ -77,6 +77,7 @@ function saveApply(data){
   else if(data.format==='fote-rescue-1') g=saveDecode(data.globals);   /* one id space across every global, so decode them together */
   else throw new Error('Not a Forge of the Elements save.');
   SAVE_KEYS.forEach(function(k){ if(g[k]!==undefined) window[k]=g[k]; });
+  if(player && player.buffs)delete player.buffs.unbound;
   if(typeof migrateXpCurve==='function')migrateXpCurve();
   if(typeof repairCoreProgress==='function')repairCoreProgress();
   if(typeof repairWallMemorials==='function')repairWallMemorials();
@@ -277,14 +278,13 @@ function renderTitleMenu(){
     '<button id="tNew">New Game</button>'+
     '<button id="tLoad">Load Game</button>'+
     '<button id="tAbout">About</button>'+
-    '<button id="tUpdate">Update</button>'+   /* 2026-09-22 (Justin): installed clients pull the latest build by hand */
-    '<button id="tExit">Exit Game</button></div>';
+    '<button id="tUpdate">Version &middot; '+(typeof FOTE_VERSION==='string'?FOTE_VERSION:'Beta 1.1')+'<span id="versionStatus" class="sub" role="status"></span></button></div>';
   if($('tContinue')) $('tContinue').onclick=function(){ audioInit(); loadFrom(last); };
   $('tNew').onclick=function(){ audioInit(); sfx('ui-click'); closeTitle(); openCreate(); };
   $('tLoad').onclick=function(){ audioInit(); sfx('ui-click'); renderLoadPanel(); };
   $('tAbout').onclick=function(){ audioInit(); sfx('ui-click'); renderAbout(); };
-  $('tUpdate').onclick=function(){ audioInit(); sfx('ui-click'); if(typeof forceUpdate==='function') forceUpdate($('tUpdate')); };
-  $('tExit').onclick=exitGame;
+  $('tUpdate').onclick=function(){ audioInit(); sfx('ui-click'); if(typeof showVersion==='function') showVersion(); };
+  if(typeof checkGameVersion==='function') checkGameVersion();
   var first=el.querySelector('.menu button'); if(first) first.focus();
 }
 function slotRows(mode){

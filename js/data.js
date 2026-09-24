@@ -58,7 +58,7 @@ var ARMORS = {
 var OFFHANDS = {
   buckler: {name:'Buckler', block:0.10, note:'light shield', icon:'item-buckler', kind:'off'},
   kite:    {name:'Kite Shield', block:0.20, eva:-5, note:'heavy shield, -5 evasion', icon:'item-kite', kind:'off'},
-  orb:     {name:'Orb', block:0, spell:0.10, note:'spell critical hits', icon:'item-orb', kind:'off'},
+  orb:     {name:'Orb', block:0, spell:0.10, note:'critical hit chance', icon:'item-orb', kind:'off'},
   tome:    {name:'Tome', block:0, manaPct:0.15, note:'+10% max mana', icon:'item-tome', kind:'off'},
   holy:    {name:'Holy Symbol', block:0, divine:0.15, note:'+15% Invoke and prayer strength', icon:'item-holy', kind:'off'},
   /* 2026-09-17: there is no separate off-hand dagger any more. Any light one-handed weapon goes in the off
@@ -93,42 +93,183 @@ var CLASSES = {
 
 /* ---------------------------------------------------------------- gods */
 var GODS = {
-  grom:     {name:'Grom the Unclad', title:'god of the bare fist', sprite:'shrine-grom', color:'#C98A5A',
-             rule:'No weapons or shields. Cloth armor only.', invoke:'ironbody', prayers:['ironhide','pummel'],
-             boons:['Iron Flesh: +1 unarmed damage and +1 armor per rank.','Staggering Blows: unarmed hits stun 15% of the time.','Mountain’s Fists: every third unarmed attack in a row strikes as a critical hit and knocks the target back a tile.'],
-             gain:'Every damaging unarmed hit.'},
-  grumbok:  {name:'Grumbok, Who Hates Wizards', title:'god of honest violence', sprite:'shrine-grumbok', color:'#B8453A',
-             rule:'No spells, wands or magic sigils. Techniques are fine.', invoke:'bellow', prayers:['rampage','trollblood'],
-             boons:['Thick Hide: take 8% less elemental and magic damage, and regenerate HP 25% faster, per rank.','Wizard Hunter: killing a spellcaster restores 10% of your max HP.','Spellbreaker: enemy spells deal half damage to you, and each one that hurts you doubles your next melee hit.'],
-             gain:'Kills, extra for killing spellcasters.'},
-  glimmer:  {name:'Saint Glimmer', title:'saint of mending light', sprite:'shrine-glimmer', color:'#F6E7B0', refuses:'gloomling',
-             rule:'No Shadow: no shadow affinity, enchantments or sigils.', invoke:'heal', prayers:['consecrate','sanctuary'],
-             /* 2026-09-20: the third boon read "Undying Light: once per floor, a killing blow instead heals
-                you to half your HP" long after Justin cut the free revive - undyingLight() has returned false
-                since. The Faith sheet was promising a rank-5 reward that did nothing. It now says what rank 5
-                actually gives: the free point of Light (grantGlimmerLight, js/religion.js). */
-             boons:['Mending Light: all healing and HP regeneration +10%, and +10% damage against undead and shadow creatures, per rank.','Purifying Touch: Heal also cleanses Burning, Poison, Chill, Fear, Blind, Stun and Root.','Light Mastery: a free point of Light affinity, for as long as you keep her favour.'],
-             gain:'Kills, extra for undead and shadow creatures.'},
-  murk:     {name:'Mother Murk', title:'mother of the quiet dead', sprite:'shrine-murk', color:'#8A6FB0', loves:'gloomling',
-             rule:'No Light: no light affinity, enchantments or sigils.', invoke:'raisedead', prayers:['unholyaura','corpsefeast'],
-             boons:['Life Drain: kills heal 1 HP per rank, and your undead have +10% HP and damage per rank.','Undying Servants: Raise Dead brings up a Zombie Bruiser instead of a skeleton.','Lich-Mother: Raise Dead calls a Lich, and your servant rises again once when it is destroyed.'],
-             gain:'Kills of the living, extra for kills by your undead.'},
-  reginald: {name:'Sir Reginald the Unsneaky', title:'patron of the fair fight', sprite:'shrine-reginald', color:'#9FB0C0',
-             rule:'No surprise attacks and no stealth kills.', invoke:'challenge', prayers:['laststand','lance'],
-             boons:['Fair Fight: +4 accuracy and +10% damage against elites and bosses, per rank.','Called Out: a Challenged enemy takes +20% damage from everyone.','Champion: while only one enemy is in view you deal 30% more damage and take 20% less.'],
-             gain:'Kills of enemies that see you coming, extra for elites and bosses.'},
-  anvil:    {name:'Old Anvil', title:'the smith below', sprite:'shrine-anvil', color:'#E8B44A', tithe:true,
-             rule:'No rule. Old Anvil wants essence.', invoke:'temper', prayers:['offering','reforge'],
-             boons:['Smith\'s Blessing: +1 weapon damage and enchantments 10% stronger, per rank.','Second Heat: the Forge lets you enchant twice per visit.','Masterwork: Forge upgrades cost 30% less, and gear can be raised to +4.'],
-             gain:'Spending essence anywhere (1 piety per 5) and enchanting at the Forge.'},
-  vellum:   {name:'Vellum, the Open Book', title:'keeper of every spell ever spoken', sprite:'shrine-vellum', color:'#7FA8FF', loves:'elf',
-             rule:'No shields, and nothing heavier than light armor. A caster keeps their hands and shoulders free.', invoke:'arcaneward', prayers:['manatide','unbound'],
-             boons:['Deep Well: +8% max mana and +8% spell damage per rank.','Spell Echo: a spell you cast has a 20% chance to refund its mana.','Archmage: spells cost 25% less mana, and Spell Echo triggers 35% of the time.'],
-             gain:'Kills made with spells, and 1 piety for every 20 mana you spend.'},
-  wobbles:  {name:'Wobbles, the Giggling Chaos', title:'god of whatever happens next', sprite:'shrine-wobbles', color:'#D98BD0', chaos:true,
-             rule:'No rule and no tithe. The cost is that you never know.', invoke:'rolldice', prayers:['rolldice2'],
-             boons:['Amused: occasional gifts (and pranks) when things get dramatic; gifts get better as amusement rises. Never kills you directly.','Favourite Toy: interventions lean helpful more often.','Beloved Toy: once per floor, Wobbles snatches you from a killing blow with a random rescue.'],
-             gain:'Every kill (elites count for more) and every new floor. Separately, Amusement rises when things go badly for you - springing a trap, putting on something cursed or unidentified, learning a sigil by using it, taking a status, landing a critical - and drains when nothing is happening; high Amusement brings his gifts and pranks.'}
+  "grom": {
+    "name": "Grom the Unclad",
+    "title": "god of the bare fist",
+    "sprite": "shrine-grom",
+    "color": "#C98A5A",
+    "rule": "Only Holy Symbols, rings and amulets may be equipped. No other weapons, ranged equipment, armor or off-hand items.",
+    "invoke": "ironbody",
+    "prayers": [
+      "ironhide",
+      "pummel"
+    ],
+    "boons": [
+      "Iron Flesh: +2 armor per rank, and your fists hit harder as your rank rises (2-5, 3-6, 5-9, 7-12). Every unarmed hit earns 1 piety.",
+      "Staggering Blows: unarmed hits stun 15% of the time.",
+      "Living Mountain: enchant fists and body. Taking damage grants Hardened for 3 base turns: armor and elemental resistance scale with Divine Power; refreshes without stacking."
+    ],
+    "gain": "Damaging unarmed hits, plus kills while your hands are empty; elites and bosses grant extra."
+  },
+  "grumbok": {
+    "name": "Grumbok, Who Hates Wizards",
+    "title": "god of honest violence",
+    "sprite": "shrine-grumbok",
+    "color": "#B8453A",
+    "rule": "No spells, wands or magic sigils. Techniques are fine.",
+    "invoke": "bellow",
+    "prayers": [
+      "rampage",
+      "trollblood"
+    ],
+    "boons": [
+      "Thick Hide: +8% nonphysical resistance and +20% natural regeneration per rank.",
+      "Wizard Hunter: nonphysical damage grants movement and attack speed for three world turns, scaling with god rank and Divine Power.",
+      "Spellbreaker: halve enemy nonphysical damage. Your next connected melee hit within ten world turns gains damage scaled by Divine Power."
+    ],
+    "gain": "Kills, extra for killing spellcasters."
+  },
+  "glimmer": {
+    "name": "Saint Glimmer",
+    "title": "saint of mending light",
+    "sprite": "shrine-glimmer",
+    "color": "#F6E7B0",
+    "refuses": "gloomling",
+    "rule": "No Shadow: no shadow affinity, enchantments or sigils. Light must be one of your elements.",
+    "invoke": "heal",
+    "prayers": [
+      "consecrate",
+      "sanctuary"
+    ],
+    "boons": [
+      "Mending Light: all healing and HP regeneration +10%, and +10% damage against undead and shadow creatures, per rank.",
+      "Guiding Light: +15 / 20 / 25 percentage points of Smite chance at ranks 3 / 4 / 5.",
+      "Kindled: Saint Glimmer sets 1 Light affinity burning in you that does not count toward your cap."
+    ],
+    "gain": "Kills, extra for undead and shadow creatures.",
+    "boonRanks": [
+      1,
+      3,
+      5
+    ]
+  },
+  "murk": {
+    "name": "Mother Murk",
+    "title": "mother of the quiet dead",
+    "sprite": "shrine-murk",
+    "color": "#8A6FB0",
+    "loves": "gloomling",
+    "rule": "No Light: no light affinity, enchantments or sigils.",
+    "invoke": "unholyaura",
+    "prayers": [
+      "raisedead",
+      "bonespear"
+    ],
+    "boons": [
+      "Life Drain: living hostile kills by you or your undead servant heal god rank � Divine Power. Servant health and damage scale with rank and Divine Power.",
+      "Grave Strength: pets and summons gain +1 Shadow damage per rank and inherit your active weapon enchantment.",
+      "Lich: your servant becomes a Lich at rank 5 and returns once, one turn after destruction, at half health."
+    ],
+    "gain": "Kills of the living, extra for kills by your undead."
+  },
+  "reginald": {
+    "name": "Sir Reginald the Unsneaky",
+    "title": "patron of the fair fight",
+    "sprite": "shrine-reginald",
+    "color": "#9FB0C0",
+    "rule": "Your presence wakes enemies within eight tiles. Refuses Scoundrels and Shadow affinity, enchantments and magic.",
+    "invoke": "challenge",
+    "prayers": [
+      "laststand",
+      "lance"
+    ],
+    "boons": [
+      "Fair Fight: +4 accuracy, +2% crit and +10% damage against elites and bosses, per rank.",
+      "Coward's Mark: distant attackers are challenged for five world turns. Their damage reduction and your bonus damage scale with Divine Power.",
+      "Wall of One: for each enemy adjacent to you beyond the first, you take 10% less damage and deal 10% more, up to three."
+    ],
+    "gain": "Kills of enemies that see you coming, extra for elites and bosses."
+  },
+  "anvil": {
+    "name": "Old Anvil",
+    "title": "the smith below",
+    "sprite": "shrine-anvil",
+    "color": "#E8B44A",
+    "tithe": true,
+    "rule": "No rule. Old Anvil wants essence.",
+    "invoke": "temper",
+    "prayers": [
+      "fieldsmelt",
+      "anviltoll"
+    ],
+    "boons": [
+      "Smith’s Blessing: +1 weapon damage and enchantments 10% stronger, per rank.",
+      "Second Heat: enchanting or carving a sigil at the Forge has a 30% / 40% / 50% chance at ranks 3 / 4 / 5 to give back its motes.",
+      "Masterwork: Forge upgrades cost 30% less, and gear can be raised to +4."
+    ],
+    "gain": "Spending essence anywhere (1 piety per 5) and enchanting at the Forge."
+  },
+  "vellum": {
+    "name": "Vellum, the Open Book",
+    "title": "keeper of every spell ever spoken",
+    "sprite": "shrine-vellum",
+    "color": "#7FA8FF",
+    "loves": "elf",
+    "rule": "No shields, bows, two-handed weapons (including staves), or armor heavier than light.",
+    "invoke": "arcaneward",
+    "prayers": [
+      "arcanelance",
+      "arcanenova"
+    ],
+    "boons": [
+      "Arcane Attunement: passive equipment bonuses are 5% stronger per rank.",
+      "Repelling Force: successful attacks and single-target spells have a 10% chance per rank to knock enemies back two tiles.",
+      "Perfect Invocation: invokes and spells have a 30% chance to cost no mana or Favor."
+    ],
+    "gain": "Spell kills, mana spent, and collecting mana globes. Communion earns Favor on damaging attacks."
+  },
+  "wobbles": {
+    "name": "Wobbles, the Giggling Chaos",
+    "title": "god of whatever happens next",
+    "sprite": "shrine-wobbles",
+    "color": "#D98BD0",
+    "chaos": true,
+    "rule": "No rule and no tithe. The cost is that you never know.",
+    "invoke": "rolldice",
+    "prayers": [
+      "luckystreak",
+      "rolldice2"
+    ],
+    "boons": [
+      "Lady Luck: +3% to eligible combat effects per rank. Combat damage raises Amusement; it drains slowly outside combat. High Amusement earns rewards; at zero, Wobbles plays a prank.",
+      "Favourite Toy: random prayers gain +10 / +15 / +20 percentage points of beneficial chance at ranks 3 / 4 / 5.",
+      "Last Laugh: survive one lethal event per unique floor at 1 HP, then receive Second Wind, Vanishing Act or Lucky Ward. Persists through travel and saves."
+    ],
+    "gain": "Kills and new floors earn piety. Dealing or taking damage earns Amusement, limited per world turn. It drains slowly outside combat, pays for prayers, brings rewards when full, and invites a prank when empty."
+  },
+  "sylla": {
+    "name": "Sylla the Patient",
+    "title": "mother of the brood",
+    "sprite": "shrine-sylla",
+    "color": "#B81A3A",
+    "rule": "No fire: no fire affinity, fire enchantments or fire sigils, and nothing of hers set alight. No shields, and nothing heavier than leather.",
+    "invoke": "intothedark",
+    "prayers": [
+      "the-brood",
+      "venom-burst"
+    ],
+    "boonRanks": [
+      1,
+      3,
+      5
+    ],
+    "boons": [
+      "Web on Hit: every hit has a 10% chance per rank to web what you strike - rooted for a turn, then moving at half speed for three.",
+      "Venomtouch: your attacks poison - weapon, bow or spell. +1 poison damage per rank against anything that already carries a status, Webs cause Bleed; their initial pin counts as Root for mastery effects.",
+      "The Long Patience: every status you inflict lasts one round longer."
+    ],
+    "gain": "Kills of the webbed, the rooted and the poisoned, and every surprise attack - worth more while nothing can see you."
+  }
 };
 var PIETY_RANKS = [0, 100, 390, 1099, 2636];   /* 2026-09-23 (Justin): ranks 3-5 cost 30% more per rank (x1.3^(rank-2)); piety gain grows 30% per biome, favor does not */   /* rank 1 on joining; ranks 2-5 at these totals. 2026-09-17: doubled monster density made ranks come
    too fast (rank 3 by floor 3); now about rank 2 by floor 3, rank 3 early in biome 2, and rank 5 is a late-run goal */
@@ -138,60 +279,517 @@ function pietyRank(p){ var r=1; for(var i=1;i<PIETY_RANKS.length;i++) if(p>=PIET
 
 /* ---------------------------------------------------------------- abilities */
 var ABILITIES = {
-  /* class */
-  double:  {name:'Double Strike', cost:12, tech:true, kind:'melee2', icon:'ic-double-strike', sfx:'double-strike',
-            desc:'Two weapon attacks on an adjacent enemy in one turn.'},
-  missile: {name:'Magic Missile', cost:6, kind:'bolt', range:6, type:'magic', base:[3,6],   /* 2026-09-23 (Justin): 2 less base damage, was 5-8 */ always:true, perAffinity:1, icon:'ic-magic-missile', el:'magic',
-            desc:'Always hits. Magic damage that nothing resists. +1 damage for every affinity point you hold.'},
-  sap:     {name:'Sap', cost:7, tech:true, kind:'bolt', range:1, useWeaponRange:true, type:'phys', base:[2,4], status:{stun:3}, icon:'ic-sap',
-            desc:'Melee or ranged: knocks the target out for 3 turns (6 if it was unaware). A knocked-out target takes surprise attacks.'},
-  /* elements, tier 2 (12 mana, range 6 except Earth Root and Lightfall at 4) */
-  firebolt:  {name:'Firebolt', cost:12, kind:'bolt', range:6, type:'fire', base:[9,15], status:{burn:3}, icon:'ic-firebolt', el:'fire',
-              desc:'Fire damage and sets the target Burning. Ignites grass and burns thorns.'},
-  frostshard:{name:'Frost Shard', cost:12, kind:'bolt', range:6, type:'ice', base:[9,15], status:{chill:3}, icon:'ic-frost-shard', el:'water',
-              desc:'Ice damage and Chill. Three Chills freeze the target solid.'},
-  /* 2026-09-20: stunChance said 0.35 and the card said 35%, but js/elements.js overwrites both with
-     0.05 x Air on every derive - it scales with the element, as Justin intends, and a caster with no Air
-     never stuns. The dead literal read as the real number and misled a reader into calling it a bug, so it
-     is gone; elements.js sets the only value there is, and the card below says what it is. */
-  spark:     {name:'Spark', cost:12, kind:'bolt', range:6, type:'lightning', base:[9,15], icon:'ic-spark', el:'air',
-              desc:'Lightning damage with a 5% chance per Air point to stun. +50% against targets standing in water.'},
-  root:      {name:'Earth Root', cost:12, kind:'bolt', range:4, type:'phys', base:[9,15], status:{root:2}, icon:'ic-earth-root', el:'earth',
-              desc:'Rock spell: Physical damage and roots the target for 2 turns.'},
-  smite:     {name:'Lightfall', cost:12, kind:'bolt', range:4, type:'light', base:[9,15], icon:'ic-smite', el:'light',
-              desc:'Light damage with a 10% chance per Light point to Blind. +50% against undead and shadow creatures.'},
-  shadowbolt:{name:'Shadow Bolt', cost:12, kind:'bolt', range:6, type:'dark', base:[9,15], status:{fear:2}, icon:'ic-shadow-bolt', el:'shadow',
-              desc:'Dark damage and the target flees in Fear.'},
-  /* invokes (Cleric, by god) */
-  ironbody:  {name:'Iron Body', cost:8, kind:'self', icon:'ic-iron-body', divine:true, god:'grom', desc:'Invoke (Grom): +4 armor for 6 turns and your unarmed hits stun 30%.'},
-  bellow:    {name:'Bellow', cost:8, kind:'self', icon:'ic-bellow', divine:true, god:'grumbok', tech:true, desc:'Invoke (Grumbok): enemies within 3 are stunned for 1 turn and you heal 10% of max HP.'},
-  heal:      {name:'Heal', cost:8, kind:'self', icon:'ic-heal', divine:true, god:'glimmer', desc:'Invoke (Saint Glimmer): restore 12% of max HP (+3% per piety rank).'},
-  raisedead: {name:'Raise Dead', cost:8, kind:'summon', range:4, life:22, icon:'ic-raise-dead', divine:true, god:'murk', desc:'Invoke (Mother Murk): the dead rise to fight for you. One at a time.'},
-  arcaneward:{name:'Arcane Ward', cost:8, kind:'self', icon:'ic-arcane-ward', divine:true, god:'vellum', desc:'Invoke (Vellum): a ward absorbs damage equal to 25% of your max mana (+5% per piety rank) for 10 turns.'},
-  challenge: {name:'Challenge', cost:6, kind:'bolt', range:6, type:'none', icon:'ic-challenge', divine:true, god:'reginald', desc:'Invoke (Sir Reginald): mark an enemy. You deal +25% damage to it and it must come for you.'},
-  temper:    {name:'Temper', cost:8, kind:'self', icon:'ic-temper', divine:true, god:'anvil', desc:'Invoke (Old Anvil): your weapon counts as +2 for 12 turns.'},
-  rolldice:  {name:'Roll the Dice', cost:8, kind:'self', icon:'ic-roll-dice', divine:true, god:'wobbles', desc:'Invoke (Wobbles): something happens. Probably good.'}
+  "double": {
+    "name": "Double Strike",
+    "cost": 7,
+    "tech": true,
+    "kind": "melee2",
+    "icon": "ic-double-strike",
+    "sfx": "double-strike",
+    "desc": "An attack: two weapon hits on an adjacent enemy for the time of one attack."
+  },
+  "missile": {
+    "name": "Magic Missile",
+    "cost": 6,
+    "kind": "bolt",
+    "range": 6,
+    "type": "magic",
+    "base": [
+      3,
+      6
+    ],
+    "always": true,
+    "perAffinity": 1,
+    "icon": "ic-magic-missile",
+    "el": "magic",
+    "desc": "Always hits; magic damage nothing resists. +1 base damage per affinity point."
+  },
+  "sap": {
+    "name": "Sap",
+    "cost": 7,
+    "tech": true,
+    "kind": "bolt",
+    "range": 2,
+    "type": "phys",
+    "base": [
+      2,
+      4
+    ],
+    "status": {
+      "stun": 3
+    },
+    "icon": "ic-sap",
+    "desc": "Range 2: knocks the target out for 3 turns (6 if it was unaware). The hit that wakes it is a surprise critical. A target can only be Sapped once; other Stuns still work."
+  },
+  "firebolt": {
+    "name": "Firebolt",
+    "cost": 20,
+    "kind": "bolt",
+    "range": 6,
+    "type": "fire",
+    "base": [
+      14,
+      22
+    ],
+    "status": {
+      "burn": 3
+    },
+    "icon": "ic-firebolt",
+    "el": "fire",
+    "desc": "Fire damage and sets the target Burning. Ignites grass and burns thorns."
+  },
+  "frostshard": {
+    "name": "Frost Shard",
+    "cost": 20,
+    "kind": "bolt",
+    "range": 6,
+    "type": "ice",
+    "base": [
+      14,
+      22
+    ],
+    "status": {
+      "chill": 3
+    },
+    "icon": "ic-frost-shard",
+    "el": "water",
+    "desc": "Ice damage and Chill. Three Chills freeze the target solid."
+  },
+  "spark": {
+    "name": "Spark",
+    "cost": 20,
+    "kind": "bolt",
+    "range": 6,
+    "type": "lightning",
+    "base": [
+      14,
+      22
+    ],
+    "icon": "ic-spark",
+    "el": "air",
+    "desc": "Lightning damage with a 5% chance per Air point to stun. +50% against targets standing in water.",
+    "stunChance": 0
+  },
+  "root": {
+    "name": "Earth Root",
+    "cost": 20,
+    "kind": "bolt",
+    "range": 4,
+    "type": "phys",
+    "base": [
+      14,
+      22
+    ],
+    "status": {
+      "root": 2
+    },
+    "icon": "ic-earth-root",
+    "el": "earth",
+    "desc": "Rock spell: Physical damage and roots the target for 2 turns."
+  },
+  "smite": {
+    "name": "Lightfall",
+    "cost": 20,
+    "kind": "bolt",
+    "range": 4,
+    "type": "light",
+    "base": [
+      14,
+      22
+    ],
+    "icon": "ic-smite",
+    "el": "light",
+    "desc": "Light damage with a 10% chance per Light point to Blind. +50% against undead and shadow creatures.",
+    "blindChance": 0
+  },
+  "shadowbolt": {
+    "name": "Shadow Bolt",
+    "cost": 20,
+    "kind": "bolt",
+    "range": 6,
+    "type": "dark",
+    "base": [
+      14,
+      22
+    ],
+    "status": {
+      "fear": 2
+    },
+    "icon": "ic-shadow-bolt",
+    "el": "shadow",
+    "desc": "Dark damage and the target flees in Fear."
+  },
+  "ironbody": {
+    "name": "Iron Body",
+    "cost": 8,
+    "kind": "self",
+    "icon": "ic-iron-body",
+    "divine": true,
+    "god": "grom",
+    "desc": "Invoke: armor and unarmed stun chance increase with Divine Power for 6 base turns. Costs mana."
+  },
+  "bellow": {
+    "name": "Bellow",
+    "cost": 8,
+    "kind": "self",
+    "icon": "ic-bellow",
+    "divine": true,
+    "god": "grumbok",
+    "tech": true,
+    "desc": "Invoke: stun enemies within 3 tiles for one turn and heal 10% of maximum HP +2% per god rank, scaled by Divine Power."
+  },
+  "heal": {
+    "name": "Heal",
+    "cost": 8,
+    "kind": "self",
+    "icon": "ic-heal",
+    "divine": true,
+    "god": "glimmer",
+    "desc": "Invoke: heal 10% of maximum HP +2% per god rank, scaled by Divine Power and Mending Light. Final healing cannot exceed 40% of maximum HP."
+  },
+  "raisedead": {
+    "name": "Raise Dead",
+    "cost": 8,
+    "kind": "summon",
+    "range": 4,
+    "life": 22,
+    "icon": "ic-raise-dead",
+    "divine": true,
+    "god": "murk",
+    "desc": "Invoke (Mother Murk): the dead rise to fight for you. One at a time."
+  },
+  "arcaneward": {
+    "name": "Communion",
+    "cost": 8,
+    "kind": "self",
+    "icon": "ic-arcane-ward",
+    "divine": true,
+    "god": "vellum",
+    "desc": "Invoke: a shield and Communion for 8 base turns. Damaging attacks earn god rank × Divine Power Favor once per action. Shield strength grows with rank and Divine Power. Costs 8 mana."
+  },
+  "challenge": {
+    "name": "Challenge",
+    "cost": 6,
+    "kind": "bolt",
+    "range": 6,
+    "type": "none",
+    "icon": "ic-challenge",
+    "divine": true,
+    "god": "reginald",
+    "desc": "Invoke (Sir Reginald): mark an enemy. You deal +25% damage to it and it must come for you."
+  },
+  "temper": {
+    "name": "Temper",
+    "cost": 8,
+    "kind": "self",
+    "icon": "ic-temper",
+    "divine": true,
+    "god": "anvil",
+    "desc": "Invoke: instantly gain +2 base weapon damage and +4 armor, scaled by Divine Power, for 12 base turns. Costs 8 mana."
+  },
+  "rolldice": {
+    "name": "Roll the Dice",
+    "cost": 8,
+    "kind": "self",
+    "icon": "ic-roll-dice",
+    "divine": true,
+    "god": "wobbles",
+    "desc": "Invoke (Wobbles): something happens. Probably good."
+  },
+  "shadowstep": {
+    "name": "Shadowstep",
+    "cost": 0,
+    "cd": 15,
+    "kind": "self",
+    "tech": true,
+    "icon": "ic-shadowstep",
+    "desc": "With no enemy next to you, slip into hiding for 3 turns; hunting enemies lose you. 15-turn cooldown."
+  },
+  "charge": {
+    "name": "Charge",
+    "cost": 0,
+    "cd": 20,
+    "kind": "charge",
+    "range": 6,
+    "tech": true,
+    "icon": "ic-charge",
+    "desc": "Rush up to 5 tiles in a straight line, at an enemy or to open ground. A blow on the target cannot miss, and every enemy next to you where you land is stunned for 2 turns. 20-turn cooldown."
+  },
+  "fireball": {
+    "name": "Fireball",
+    "cost": 70,
+    "kind": "blast",
+    "range": 6,
+    "radius": 2,
+    "type": "fire",
+    "el": "fire",
+    "icon": "ic-fireball",
+    "desc": "Pick a tile in sight: a 5x5 blast of fire damage that sets everything in it Burning."
+  },
+  "frostcone": {
+    "name": "Frost Cone",
+    "cost": 70,
+    "kind": "cone",
+    "range": 6,
+    "type": "ice",
+    "el": "water",
+    "icon": "ic-tidal-surge",
+    "desc": "A 45-degree cone of ice 6 tiles long: damage, Chill, and a 1-tile knockback."
+  },
+  "chainbolt": {
+    "name": "Chain Lightning",
+    "cost": 70,
+    "kind": "chain",
+    "range": 6,
+    "type": "lightning",
+    "el": "air",
+    "icon": "ic-chain-lightning",
+    "desc": "Lightning jumps from the target to 4 more enemies within 3 tiles, each jump 75% of the last."
+  },
+  "earthquake": {
+    "name": "Earthquake",
+    "cost": 70,
+    "kind": "quake",
+    "radius": 5,
+    "type": "phys",
+    "el": "earth",
+    "icon": "ic-earthquake",
+    "desc": "The ground heaves 5 tiles around you: physical damage to everything but you, your own summons included."
+  },
+  "radiantbeam": {
+    "name": "Radiant Beam",
+    "cost": 70,
+    "kind": "beam",
+    "range": 6,
+    "type": "light",
+    "el": "light",
+    "icon": "ic-radiant-lance",
+    "desc": "A beam 3 tiles wide along a row, column or diagonal: light damage (+50% to undead and shadow), 5% Blind per Light point."
+  },
+  "shadowswarm": {
+    "name": "Shadow Swarm",
+    "cost": 70,
+    "kind": "swarm",
+    "range": 6,
+    "type": "dark",
+    "el": "shadow",
+    "icon": "ic-shadow-swarm",
+    "desc": "Summon up to nine Shades in a 3×3 area for 6 turns. Each has 5 HP and 5 Dark damage, scaled by your spell power at casting. Replaces your previous swarm."
+  },
+  "livingflame": {
+    "name": "Living Flame",
+    "cost": 100,
+    "kind": "lflame",
+    "range": 6,
+    "type": "fire",
+    "el": "fire",
+    "icon": "ic-living-flame",
+    "desc": "Call a fire elemental onto a tile: it scorches enemies beside it as it lands and hurls fire (range 6) for 30 world turns. Every third ranged attack splashes nearby enemies for half damage. Grows with spell power; counts toward the 2-summon limit."
+  },
+  "glacialtomb": {
+    "name": "Glacial Tomb",
+    "cost": 100,
+    "kind": "tomb",
+    "range": 6,
+    "type": "ice",
+    "el": "water",
+    "icon": "ic-glacial-tomb",
+    "desc": "Encase an enemy in ice: it cannot act or be hurt for 10 turns (6 for elites, 2 for bosses). Target yourself for 3 untouchable turns of regeneration."
+  },
+  "stormform": {
+    "name": "Storm Form",
+    "cost": 100,
+    "kind": "storm",
+    "type": "lightning",
+    "el": "air",
+    "icon": "ic-storm-form",
+    "desc": "Instant: movement and actions take half time for 6 world-time turns. Costs 100 mana."
+  },
+  "upheaval": {
+    "name": "Upheaval",
+    "cost": 100,
+    "kind": "upheaval",
+    "range": 7,
+    "type": "phys",
+    "el": "earth",
+    "icon": "ic-upheaval",
+    "desc": "Raise a line of stone walls up to 7 tiles toward a tile for 20 turns. Enemies next to a rising wall are rooted."
+  },
+  "dawn": {
+    "name": "Dawn",
+    "cost": 100,
+    "kind": "dawn",
+    "type": "light",
+    "el": "light",
+    "icon": "ic-dawn",
+    "desc": "Every enemy in sight is Blinded for 3 turns, and every enemy on the floor is revealed to you for 20 turns."
+  },
+  "umbral": {
+    "name": "Umbral Passage",
+    "cost": 100,
+    "kind": "umbral",
+    "type": "dark",
+    "el": "shadow",
+    "icon": "ic-umbral-passage",
+    "desc": "Step to any tile you have seen on this floor that no enemy stands beside, and arrive hidden for 2 turns."
+  },
+  "unholyaura": {
+    "name": "Unholy Aura",
+    "cost": 8,
+    "kind": "self",
+    "icon": "pr-unholyaura",
+    "divine": true,
+    "god": "murk",
+    "desc": "Invoke: enemies within 2 tiles take 4 × god rank × Divine Power Dark damage per world turn for 8 base turns. Heal 1 HP per enemy hit. Costs 8 mana."
+  },
+  "intothedark": {
+    "name": "Into the Dark",
+    "cost": 8,
+    "kind": "self",
+    "icon": "ic-into-the-dark",
+    "divine": true,
+    "god": "sylla",
+    "desc": "Invoke: concealment for 3 base turns. Your next successful weapon hit while concealed gains +10% damage per god rank, scaled by Divine Power. Misses preserve the bonus."
+  }
 };
 var ELEMENT_ABILS = {fire:{2:'firebolt'}, water:{2:'frostshard'}, air:{2:'spark'}, earth:{2:'root'}, light:{2:'smite'}, shadow:{2:'shadowbolt'}};
-var INVOKE_OF = {grom:'ironbody', grumbok:'bellow', glimmer:'heal', murk:'raisedead', reginald:'challenge', anvil:'temper', vellum:'arcaneward', wobbles:'rolldice'};
+var INVOKE_OF = {
+  "grom": "ironbody",
+  "grumbok": "bellow",
+  "glimmer": "heal",
+  "murk": "unholyaura",
+  "reginald": "challenge",
+  "anvil": "temper",
+  "vellum": "arcaneward",
+  "wobbles": "rolldice",
+  "sylla": "intothedark"
+};
 
 /* prayers cost favor, not mana */
 var PRAYERS = {
-  ironhide:   {name:'Iron Hide', favor:10, rank:2, desc:'+5 armor for 12 turns.'},
-  pummel:     {name:'Pummel', favor:25, rank:4, desc:'Your next 3 unarmed hits deal double damage and stun.'},
-  rampage:    {name:'Rampage', favor:10, rank:2, desc:'+40% melee damage and +20% speed for 10 turns.'},
-  trollblood: {name:'Trollblood', favor:25, rank:4, desc:'Heal 40% of max HP and remove all statuses.'},
-  consecrate: {name:'Consecrate', favor:10, rank:2, desc:'Cleanse your statuses; undead and shadow creatures within 3 take 8 light damage and flee.'},
-  sanctuary:  {name:'Sanctuary', favor:25, rank:4, desc:'Every enemy within 5 is Feared for 4 turns.'},
-  corpsefeast:{name:'Corpse Feast', favor:25, rank:4, desc:'Heal 30% of max HP; your undead are fully restored.'},
-  laststand:  {name:'Last Stand', favor:10, rank:2, desc:'Take 50% less damage for 10 turns.'},   /* balance-rulings.js rewrites the card: half health only, 50% */
-  rally:      {name:'Rally', favor:25, rank:4, desc:'Heal 25% of max HP, remove statuses, +10 accuracy for 10 turns.'},
-  offering:   {name:'Offering', favor:0, rank:2, essence:15, desc:'Offer 15 essence: +10 piety and favor (x2 at a shrine).'},
-  reforge:    {name:'Reforge', favor:25, rank:4, desc:'Permanently add +1 to your main-hand weapon.'},
-  manatide:   {name:'Mana Tide', favor:10, rank:2, desc:'Restore 50% of your max mana.'},
-  unbound:    {name:'Unbound', favor:25, rank:4, desc:'For 6 turns your spells and techniques cost no mana.'},
-  rolldice2:  {name:'Big Roll', favor:0, rank:2, amusement:30, desc:'Spend 30 amusement for a big random intervention.'}
+  "ironhide": {
+    "name": "Iron Hide",
+    "favor": 10,
+    "rank": 2,
+    "desc": "Gain armor and a shield for 12 base turns, scaled by Divine Power. Refreshes protection without stacking it."
+  },
+  "pummel": {
+    "name": "Pummel",
+    "favor": 25,
+    "rank": 4,
+    "desc": "Your next three successful unarmed hits gain +100% damage scaled by Divine Power and stun for one turn."
+  },
+  "rampage": {
+    "name": "Rampage",
+    "favor": 10,
+    "rank": 2,
+    "desc": "Instant: +40% melee damage and +20% melee attack speed, scaled by Divine Power, for 10 base turns."
+  },
+  "trollblood": {
+    "name": "Trollblood",
+    "favor": 25,
+    "rank": 4,
+    "desc": "Heal 40% of maximum HP, scaled by Divine Power, and remove negative conditions."
+  },
+  "consecrate": {
+    "name": "Consecrate",
+    "favor": 10,
+    "rank": 2,
+    "desc": "Instant, 10 Favor: cleanse yourself and deal 8 Light damage, scaled by Divine Power, to undead and Shadow enemies within 3 tiles."
+  },
+  "sanctuary": {
+    "name": "Sanctuary",
+    "favor": 25,
+    "rank": 4,
+    "desc": "Create radius-3 holy ground for 10 base turns and Fear nearby enemies for four turns. Healing and nonphysical resistance bonuses scale with Divine Power."
+  },
+  "laststand": {
+    "name": "Last Stand",
+    "favor": 10,
+    "rank": 2,
+    "desc": "Instant, 10 Favor: at or below half health, take 50% less damage for 10 turns. Cannot refresh while active."
+  },
+  "rally": {
+    "name": "Rally",
+    "favor": 25,
+    "rank": 4,
+    "desc": "25 Favor, one action: you and visible allies heal 25% of maximum HP, scaled by Divine Power, cleanse negative conditions and deal +10% damage for 10 base turns."
+  },
+  "rolldice2": {
+    "name": "Tempt Fate",
+    "favor": 0,
+    "rank": 4,
+    "amusement": 40,
+    "desc": "40 Amusement: 80% beneficial at rank 4, 85% at rank 5. Restoration, motes, gear or jewelry; otherwise an ambush, blood loss, displacement, or rare essence loss."
+  },
+  "raisedead": {
+    "name": "Raise Dead",
+    "favor": 20,
+    "rank": 2,
+    "desc": "The dead rise beside you and fight until destroyed or you leave the floor. One at a time."
+  },
+  "the-brood": {
+    "name": "The Brood",
+    "favor": 20,
+    "rank": 2,
+    "desc": "Summon up to three spiderlings for 30 base turns; recasting replaces your previous brood. Health and damage scale with god rank and Divine Power."
+  },
+  "venom-burst": {
+    "name": "Venom Burst",
+    "favor": 25,
+    "rank": 4,
+    "desc": "Enemies within 3 tiles take Poison damage scaled by god rank and Divine Power, then Poison and Blind. Costs 25 Favor."
+  },
+  "fieldsmelt": {
+    "name": "Field Smelt",
+    "rank": 2,
+    "favor": 5,
+    "desc": "Outside combat, spend 5 Favor to recycle one carried item for its normal value. Instant."
+  },
+  "anviltoll": {
+    "name": "Anvil's Toll",
+    "rank": 4,
+    "favor": 20,
+    "desc": "Enemies within 2 tiles take a Might-scaled weapon attack enhanced by Divine Power. Successful hits knock back two tiles and stun for one turn."
+  },
+  "lance": {
+    "name": "Lance",
+    "rank": 4,
+    "favor": 20,
+    "desc": "A Might-scaled weapon attack enhanced by Divine Power against enemies along a line up to five tiles long."
+  },
+  "bonespear": {
+    "name": "Bone Spear",
+    "rank": 4,
+    "favor": 5,
+    "desc": "Pierces a line up to six tiles. Dark damage scales with god rank and Divine Power. Costs 5 Favor."
+  },
+  "arcanelance": {
+    "name": "Arcane Lance",
+    "rank": 2,
+    "favor": 5,
+    "desc": "A repeatable ranged divine attack. Magic damage scales with god rank and Divine Power. Range 6; costs 5 Favor."
+  },
+  "luckystreak": {
+    "name": "Lucky Streak",
+    "rank": 2,
+    "favor": 10,
+    "desc": "Instant: for 8 turns, reroll the first failed accuracy, critical, evasion, block, parry or equipment-proc roll once per turn."
+  },
+  "arcanenova": {
+    "name": "Arcane Nova",
+    "rank": 4,
+    "favor": 20,
+    "desc": "A burst of divine magic across a 3 by 3 area, range 6. Damage grows with god rank and Divine Power."
+  }
 };
+
+/* Legacy save names share current metadata; they never retain old mechanics. */
+PRAYERS.manatide=PRAYERS.arcanelance;
+PRAYERS.unbound=PRAYERS.arcanenova;
+PRAYERS.corpsefeast=PRAYERS.bonespear;
+PRAYERS.offering=PRAYERS.fieldsmelt;
+PRAYERS.reforge=PRAYERS.anviltoll;
 
 /* ---------------------------------------------------------------- sigils (crafted at the Forge, found unidentified) */
 var SIGILS = {
@@ -200,7 +798,7 @@ var SIGILS = {
   levitate: {name:'Air sigil', motes:['air'], desc:'Float for 25 turns: cross chasms and water, ignore floor traps.'},
   stoneskin:{name:'Earth sigil', motes:['earth'], desc:'Stone skin: -3 physical damage per hit for 15 turns.'},
   heal:     {name:'Light sigil', motes:['light'], desc:'Heal 35% of max HP, then 5% a turn for 15 turns.'},
-  vanish:   {name:'Shadow sigil', motes:['shadow'], desc:'Vanish for 10 turns; enemies lose track of you.'},
+  vanish:   {name:'Shadow sigil', motes:['shadow'], desc:'Vanish for 5 turns; enemies lose track of you.'},
   identify: {name:'Sigil of Knowing', motes:['light','shadow'], desc:'Identify every sigil you carry.'},
   mapping:  {name:'Sigil of the Deep Map', motes:['shadow','earth'], desc:'Reveal this floor\'s layout.'},
   blink:    {name:'Sigil of Blinking', motes:['air','shadow'], desc:'Teleport to a random spot you can see, 3 to 6 tiles away.'}

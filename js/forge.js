@@ -24,12 +24,17 @@ var ENCHANT_TEXT = {
   weapon:{fire:'10% of each hit as fire (+3% per Fire point); 5% Burning chance per Fire point', water:'15% chance to Chill (+5% per Water point)',
           air:'5% chance per Air point (min 5%) of an instant extra attack', earth:'15% chance to Root (grows with Earth)',
           light:'+10 accuracy (grows with Light); +25% vs undead and shadow', shadow:'5% chance per Shadow point (min 5%): +25% dark damage and Corrupt; +1 damage to Hollowed targets'},
-  armor: {fire:'+10% fire resistance (grows with Fire)', water:'+8 evasion (grows with Water)', air:'+10% lightning resistance (grows with Air)',
-          earth:'+2 armor (grows with Earth)', light:'+50% HP regeneration (grows with Light)', shadow:'+5% stealth per Shadow point (min 5%)'}
+  armor: {fire:"Resistance to fire: 10% +5% per Fire mastery; maximum HP +5% +3% per Fire mastery.",
+water:"Resistance to water: 10% +5% per Water mastery; evasion +8 +2.4 per Water mastery.",
+air:"Resistance to air: 10% +5% per Air mastery; ranged projectile deflection 5% +3% per Air mastery (excludes area effects).",
+earth:"Resistance to earth: 10% +5% per Earth mastery; armor +1 +0.3 per Earth mastery.",
+light:"Resistance to light: 10% +5% per Light mastery; HP regeneration +50% +15% per Light mastery.",
+shadow:"Resistance to shadow: 10% +5% per Shadow mastery; stealth +5% per Shadow mastery (minimum 5%)."}
 };
 var forgeTab='fuse';
 
 function fuseCheck(el){
+  if(forbiddenElement(el))return GODS[player.god].name+' forbids '+cap(el)+'.';
   var aff=player.aff, total=totalAffinity(), capv=affinityCap(), have=(player.motes[el]||0)>0;
   if(!have) return 'You have no '+el+' mote.';
   if(total>=capv) return 'Affinity cap reached ('+capv+'). Defeat the biome boss to raise it.';
@@ -43,8 +48,7 @@ function fuseCheck(el){
 }
 function fuseMote(el){
   var why=fuseCheck(el); if(why){ log(why,'c-info'); sfx('ui-error'); return; }
-  if((player.god==='glimmer'||player.god==='reginald') && el==='shadow') pietyViolation('you taking Shadow into yourself', 30);
-  if(player.god==='murk' && el==='light') pietyViolation('you taking Light into yourself', 30);
+
   player.motes[el]--; if(player.motes[el]<=0) delete player.motes[el];
   if(!Object.keys(player.aff).length) player.primary=el;
   player.aff[el]=(player.aff[el]||0)+1;
@@ -112,7 +116,7 @@ function renderForge(){
   } else if(forgeTab==='upgrade' && typeof upgradePanelHTML==='function'){
     h+=upgradePanelHTML();
   } else if(forgeTab==='enchant'){
-    h+='<p class="c-info">Set a mote into your gear. Every enchantment works a little on its own and grows with your affinity in that element (&times;1 + 0.3 per point). Re-enchanting replaces it.</p>';
+    h+='<p class="c-info">Set a mote into your gear. Each enchantment shows its base effect and how it grows with matching mastery. Re-enchanting replaces it.</p>';
     [['weapon', player.weapon], ['armor', player.armorItem]].forEach(function(pair){
       var slot=pair[0], it=pair[1];
       h+='<div class="fslot"><b>'+(slot==='weapon'?'Main hand':'Armor')+':</b> '+(it&&!it.unarmed ? gearName(it) : '<span class="c-info">nothing to enchant</span>')+'</div><div class="egrid">';

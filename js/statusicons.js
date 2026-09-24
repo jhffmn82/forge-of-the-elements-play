@@ -19,19 +19,18 @@ var STATUS_INFO = {
   corrupt:{name:'Corrupted', icon:'ic-shadow-swarm', bad:1, d:'Takes extra dark damage.'},
   hollow: {name:'Hollowed', icon:'ic-shadow-bolt', bad:1, d:'Shadow damage finds its weak spots.'},
   stone:  {name:'Stone skin', icon:'st-stone', d:'Physical hits deal 3 less damage.'},
-  aura:   {name:'Unholy Aura', icon:'pr-unholyaura', d:'Enemies next to you take dark damage each turn.'},
+  aura:   {name:'Unholy Aura', icon:'pr-unholyaura', d:'Enemies within 2 tiles take dark damage each turn, healing you for each enemy hit.'},
   /* 2026-09-23 (Justin): the Challenge and Coward's Mark show on the foe as debuffs */
   challenged:{name:'Challenged', icon:'st-challenged', bad:1, d:'Called out: it must come to you and fight. A follower of Sir Reginald deals it +25% and, from rank 3, takes 15 / 20 / 25% less from it.'},
   coward:    {name:"Coward's Mark", icon:'st-coward', bad:1, d:'It struck from afar and Sir Reginald marked it: it must come to you, deals 15 / 20 / 25% less to you and takes +25% from you.'},
   /* buffs (player.buffs) */
-  rampage:   {name:'Rampage', icon:'pr-rampage', d:'+40% melee damage and faster attacks.'},
-  ironhide:  {name:'Iron Hide', icon:'pr-ironhide', d:'+5 armor and a shield.'},
-  ironbody:  {name:'Iron Body', icon:'ic-iron-body', d:'+4 armor; unarmed hits may stun.'},
+  rampage:   {name:'Rampage', icon:'pr-rampage', d:'More melee damage and faster melee attacks, scaled by Divine Power.'},
+  ironhide:  {name:'Iron Hide', icon:'pr-ironhide', d:'Armor and a shield, scaled by Divine Power.'},
+  ironbody:  {name:'Iron Body', icon:'ic-iron-body', d:'Armor and a chance for unarmed hits to stun, scaled by Divine Power.'},
   laststand: {name:'Last Stand', icon:'pr-laststand', d:'Take half damage.'},
   rally:     {name:'Rally', icon:'pr-rally', d:'+10% damage and spell power.'},
-  temper:    {name:'Temper', icon:'ic-temper', d:'Your weapon counts as +2.'},
+  temper:    {name:'Temper', icon:'ic-temper', d:'Increases weapon damage, scaled by Divine Power.'},
   arcaneward:{name:'Ward', icon:'ic-arcane-ward', d:'A ward absorbs damage.'},
-  unbound:   {name:'Unbound', icon:'pr-unbound', d:'Your next spell takes no time.'},
   haste:     {name:'Haste', icon:'ic-flame-step', d:'You move and act faster.'},
   cinder:    {name:'Cinder Stride', icon:'ic-flame-step', d:'Faster, leaving fire where you step.'},
   manaflow:  {name:'Mana Flow', icon:'pr-manatide', d:'Mana returns twice as fast.'},
@@ -122,3 +121,5 @@ inspectHTML = function(mx, my){
   var at=h.indexOf('<div class="odds">');
   return at>=0 ? h.slice(0,at)+rows+h.slice(at) : h+rows;
 };
+
+STATUS_INFO.communion={name:'Communion',icon:'ic-arcane-ward',d:'Damaging attacks earn Favor once per action, even after the shield breaks.'};

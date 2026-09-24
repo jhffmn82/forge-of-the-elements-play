@@ -701,7 +701,7 @@ function deepLavaIgnite(){
 var _endTurnDeep = endTurn;
 endTurn = function(){
   if(!inDeep() || !floorMeta.lava || !player || player.hp<=0) return _endTurnDeep.apply(this, arguments);
-  if(deepLavaBurn(player) && player.hp<=0){ heroicResolve(); if(player.hp<=0){ death(); return; } }
+  if(deepLavaBurn(player) && player.hp<=0){  if(player.hp<=0){ death(); return; } }
   var r=_endTurnDeep.apply(this, arguments);
   if(player.hp<=0) return r;
   ents.slice().forEach(function(e){ if(e!==player && e.hp>0 && ents.indexOf(e)>=0 && deepLavaBurn(e) && e.hp<=0) kill(e, null); });

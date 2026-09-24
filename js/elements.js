@@ -2,7 +2,7 @@
    elements.js - elemental ranks 3-6 (mechanics review 2026-09-16,
    DESIGN.md 12 steps 1 and 6, and 6.7c "Element ability ladder").
    Rank 3 passive (+ immunity to the element's status), rank 4 area spell
-   (35 mana), rank 5 ultimate (50 mana), rank 6 passive (+ immunity to the
+   (70 mana), rank 5 ultimate (100 mana), rank 6 passive (+ immunity to the
    element's damage; Fire, Water, Earth and Light spells mark the ground).
    ===================================================================== */
 
@@ -16,20 +16,9 @@ ELEMENT_ABILS = {
   shadow:{2:'shadowbolt', 4:'shadowswarm',  5:'umbral'}
 };
 var AOE_BASE = [14,22];
-ABILITIES.fireball    = {name:'Fireball', cost:35, kind:'blast', range:6, radius:2, type:'fire', el:'fire', icon:'ic-fireball', desc:'Pick a tile in sight: a 5x5 blast of fire damage that sets everything in it Burning.'};
-ABILITIES.frostcone   = {name:'Frost Cone', cost:35, kind:'cone', range:6, type:'ice', el:'water', icon:'ic-tidal-surge', desc:'A 45-degree cone of ice 6 tiles long: damage, Chill, and a 1-tile knockback.'};
-ABILITIES.chainbolt   = {name:'Chain Lightning', cost:35, kind:'chain', range:6, type:'lightning', el:'air', icon:'ic-chain-lightning', desc:'Lightning jumps from the target to 4 more enemies within 3 tiles, each jump 75% of the last.'};
-ABILITIES.earthquake  = {name:'Earthquake', cost:35, kind:'quake', radius:5, type:'phys', el:'earth', icon:'ic-earthquake', desc:'The ground heaves 5 tiles around you: physical damage to everything but you, your own summons included.'};   /* DESIGN: radius 5 (Justin, 2026-09-22: it was 3) */
-ABILITIES.radiantbeam = {name:'Radiant Beam', cost:35, kind:'beam', range:6, type:'light', el:'light', icon:'ic-radiant-lance', desc:'A beam 3 tiles wide along a row, column or diagonal: light damage (+50% to undead and shadow), 5% Blind per Light point.'};
-ABILITIES.shadowswarm = {name:'Shadow Swarm', cost:35, kind:'swarm', range:6, type:'dark', el:'shadow', icon:'ic-shadow-swarm', desc:'Fill a 3x3 area with shadows (3 HP, 2 damage per Shadow point) that stall enemies for 6 turns.'};
-ABILITIES.livingflame = {name:'Living Flame', cost:50, kind:'lflame', range:6, type:'fire', el:'fire', icon:'ic-living-flame', desc:'Call a fire elemental onto a tile: it scorches enemies beside it as it lands and hurls fire (range 6) for 20 turns. Grows with Focus; counts toward the 2-summon limit.'};
-ABILITIES.glacialtomb = {name:'Glacial Tomb', cost:50, kind:'tomb', range:6, type:'ice', el:'water', icon:'ic-glacial-tomb', desc:'Encase an enemy in ice: it cannot act or be hurt for 10 turns (6 for elites, 2 for bosses). Target yourself for 3 untouchable turns of regeneration.'};
-ABILITIES.stormform   = {name:'Storm Form', cost:50, kind:'storm', type:'lightning', el:'air', icon:'ic-storm-form', desc:'Instant. For 6 turns of world time your actions take half the time and your steps a quarter.'};
-ABILITIES.upheaval    = {name:'Upheaval', cost:50, kind:'upheaval', range:7, type:'phys', el:'earth', icon:'ic-upheaval', desc:'Raise a line of stone walls up to 7 tiles toward a tile for 20 turns. Enemies next to a rising wall are rooted.'};
-ABILITIES.dawn        = {name:'Dawn', cost:50, kind:'dawn', type:'light', el:'light', icon:'ic-dawn', desc:'Every enemy in sight is Blinded for 3 turns, and every enemy on the floor is revealed to you for 20 turns.'};
-ABILITIES.umbral      = {name:'Umbral Passage', cost:50, kind:'umbral', type:'dark', el:'shadow', icon:'ic-umbral-passage', desc:'Step to any tile you have seen on this floor that no enemy stands beside, and arrive hidden for 2 turns.'};
-ABILITIES.spark.desc = 'Lightning damage with a 5% chance per Air point to stun. +50% against targets standing in water.';
-ABILITIES.smite.desc = 'Light damage with a 10% chance per Light point to Blind. +50% against undead and shadow creatures.';
+
+   /* DESIGN: radius 5 (Justin, 2026-09-22: it was 3) */
+
 var AIM_KINDS = {blast:1, cone:1, chain:1, beam:1, swarm:1, lflame:1, tomb:1, upheaval:1, umbral:1};
 
 var RANK_TEXT = {
@@ -232,14 +221,12 @@ endTurn = function(){
 function spellRoll(A){ var b=sDMG(roll(AOE_BASE[0],AOE_BASE[1])) + (aff('fire') && !A.divine ? aff('fire') : 0); return Math.round(b*spellPower(A)); }
 function spellHit(f, A, amount, type){
   if(!f || f.hp<=0) return 0;
-  /* 2026-09-23 (design-log audit): the bolt path had these three and the area spells did not. Night's Edge crit
-     against the unaware (DESIGN 12, step 6f), Numbing Dark's x1.5 on a Chilled target (step 7), and the Shadow
-     orb's bonus below half HP (step 5f), which spellPower only sees for an aimed bolt. */
+  /* Area spells share crit chance, critical damage, and Numbing Dark with bolts. */
   var unaware = (typeof offGuard==='function' ? offGuard(f) : f.state==='asleep') || (f.st && (f.st.stun || f.st.frozen)) || player.hidden>0;
-  var crit = combatRoll(player.crit + (!A.tech && hasP('archmage')?0.05:0) + (unaware && player.aff.shadow ? 0.05*player.aff.shadow : 0),true), base=amount;
-  if(crit){base=Math.round(base*1.6);if(typeof gainAmusement==='function')gainAmusement(1);}
+  var crit = combatRoll(player.crit + orbRootCrit(f) + (unaware && player.aff.shadow ? 0.05*player.aff.shadow : 0),true), base=amount;
+  if(crit){base=Math.round(base*criticalMultiplier());}
   if(typeof numbingDark==='function' && numbingDark(f)) base=Math.round(base*1.5);
-  if(typeof infusion==='function' && infusion('orb')==='shadow' && !player._spellTarget && f.hp < f.maxhp/2) base=Math.round(base*(1+0.10+0.03*aff('shadow')));
+
   LAST_HIT={att:player, def:f, crit:crit, surprise:(typeof offGuard==='function' ? offGuard(f) : f.state==='asleep')||player.hidden>0, spell:true};
   if(A.el==='light' && (f.base.undead||f.base.shadowy)) base=Math.round(base*1.5);
   if(f.state!=='hunt' && f.state!=='throne') f.state='hunt';
@@ -248,12 +235,13 @@ function spellHit(f, A, amount, type){
   floatText(f.x,f.y,String(d), type==='phys'?'phys':type, crit);
   f.lastHitBy=player;
   if(typeof spellOnHit==='function') spellOnHit(f, d, crit, A);
+  if(d>0)playerHitRewards(f,A.kind==='bolt' && A!==BONE_SPEAR);
   return d;
 }
 function finishHit(f){ if(f && f.hp<=0 && ents.indexOf(f)>=0) kill(f, player); }
 function beginCast(A){
   aiming=null;
-  player.mp-=costOf(A);
+  spendSpellMana(A);
   if(typeof spellConduct==='function') spellConduct(A);
   player.noisy=true;
   setClip(player,'cast');
@@ -322,13 +310,7 @@ castAt = function(x,y){
     log('<b>Fireball!</b>','c-fire');
   }
   else if(A.kind==='cone'){
-    var ang=Math.atan2(y-player.y, x-player.x), dmg2=spellRoll(A), hitT=[];
-    for(var cy=player.y-6;cy<=player.y+6;cy++) for(var cx=player.x-6;cx<=player.x+6;cx++){
-      if(!inb(cx,cy) || (cx===player.x&&cy===player.y) || !vis[idxOf(cx,cy)]) continue;
-      var d=dist(player,{x:cx,y:cy}); if(d>6) continue;
-      var a=Math.atan2(cy-player.y, cx-player.x), diff=Math.abs(Math.atan2(Math.sin(a-ang), Math.cos(a-ang)));
-      if(diff<=Math.PI/8 + 0.12/d) hitT.push([cx,cy]);
-    }
+    var dmg2=spellRoll(A), hitT=effectFootprint(A,x,y);
     beginCast(A);
     hitT.forEach(function(t){ burst(t[0],t[1],'ice',5,0.05); });
     ents.slice().forEach(function(e){ if(!e.foe || !hitT.some(function(t){ return t[0]===e.x&&t[1]===e.y; })) return;
@@ -357,8 +339,7 @@ castAt = function(x,y){
   else if(A.kind==='beam'){
     var ddx=Math.sign(x-player.x), ddy=Math.sign(y-player.y);
     if(!ddx && !ddy){ log('Aim the beam away from yourself.','c-info'); return false; }
-    var perp = ddx && ddy ? [[0,0],[ddx,0],[0,ddy]] : [[0,0],[-ddy,ddx],[ddy,-ddx]], bt=[];
-    perp.forEach(function(o){ var bx=player.x+o[0], by=player.y+o[1]; for(var k=0;k<6;k++){ bx+=ddx; by+=ddy; if(!inb(bx,by) || opaque(bx,by)) break; if(!bt.some(function(t){ return t[0]===bx&&t[1]===by; })) bt.push([bx,by]); } });
+    var bt=effectFootprint(A,x,y);
     beginCast(A);
     var dmg3=spellRoll(A);
     bt.forEach(function(t){ sparkleFx(t[0],t[1],'light',4); });
@@ -382,7 +363,7 @@ castAt = function(x,y){
     beginCast(A);
     var sp=spellPower(A), m2=spawn('emberling',x,y);
     m2.kind='emberling'; m2.base=MONSTERS.emberling; m2.foe=false; m2.ally=true; m2.state='ally'; m2.name='Living Flame'; m2.livingFlame=true; m2.rangedAlly=6; m2.noXp=true; m2.t=player.t;
-    m2.maxhp=m2.hp=Math.round(20*sp); m2.dmg=[Math.round(4*sp), Math.round(8*sp)]; m2.life=20;
+    m2.maxhp=m2.hp=Math.round(28*sp); m2.dmg=[Math.round(5*sp), Math.round(9*sp)]; m2.life=30;
     explosionFx(x,y);
     var land=spellRoll(A);
     ents.slice().forEach(function(e){ if(e.foe && dist(e,m2)<=1){ spellHit(e,A,land,'fire'); finishHit(e); } });
@@ -444,7 +425,9 @@ allyAct = function(e){
     .sort(function(a,b){ return dist(a,e)-dist(b,e); })[0];
   if(tgt){
     setClip(e,'attack'); boltFx(e.x,e.y,tgt.x,tgt.y,'fire');
-    var d=applyDamage(tgt, roll(e.dmg[0],e.dmg[1]), 'fire', e); floatText(tgt.x,tgt.y,String(d),'fire');
+    var rolled=roll(e.dmg[0],e.dmg[1]);e.flameShots=(e.flameShots||0)+1;
+    if(e.flameShots%3===0){ringFx(tgt.x,tgt.y,'#FF943F',1.5);ents.slice().forEach(function(o){if(o!==tgt&&o.foe&&o.hp>0&&dist(o,tgt)<=1){var splash=applyDamage(o,Math.round(rolled*.5),'fire',e);floatText(o.x,o.y,String(splash),'fire');if(o.hp<=0)kill(o,e);}});}
+    var d=applyDamage(tgt, rolled, 'fire', e); floatText(tgt.x,tgt.y,String(d),'fire');
     if(tgt.hp>0 && rng()<0.22) applyStatus(tgt,'burn',3,burnDmg());
     if(tgt.hp<=0) kill(tgt,e);
   } else if(dist(e,player)>2 && !e.st.root) stepToward(e, player.x, player.y);

@@ -8,57 +8,24 @@
    ===================================================================== */
 
 /* ---------------------------------------------------------------- boon and prayer text */
-GODS.grom.boons = ['Iron Flesh: +2 armor per rank, and your fists hit harder as your rank rises (2-5, 3-6, 5-9, 7-12). Every unarmed hit earns 1 piety.',
-                   'Staggering Blows: unarmed hits stun 15% of the time.',
-                   'Mountain’s Fists: every third unarmed attack in a row strikes as a critical hit and knocks the target back a tile.'];
-GODS.glimmer.rule = 'No Shadow: no shadow affinity, enchantments or sigils. Light must be one of your elements.';
+
+
 /* 2026-09-20 (Justin): the free Light point is no longer a joining gift - it is what rank 5 is FOR. Undying
    Light comes down to rank 3 to take its old place, so she still reads as three boons and a rank-5 reward.
    Her boons unlock at 1 / 2 / 3 / 5 (godBoonRanks in gods.js); rank 2 for Guiding Light is the one number
    here that is not Justin's - PLACEHOLDER, it only moves the +5% Smite chance one rank earlier. */
-GODS.glimmer.boonRanks = [1, 2, 5];
-GODS.glimmer.boons = ['Mending Light: all healing and HP regeneration +10%, and +10% damage against undead and shadow creatures, per rank.',
-                      'Guiding Light: +5% Smite chance per rank.',
-                      'Kindled: Saint Glimmer sets 1 Light affinity burning in you that does not count toward your cap.'];
-GODS.murk.invoke = 'unholyaura';
-GODS.murk.prayers = ['raisedead','corpsefeast'];
-GODS.murk.boons = ['Life Drain: living hostile kills by you or your servant heal you 2 HP per rank, and your undead have +10% HP and damage per rank.',
-                   'Undying Servants: Raise Dead brings up a Zombie Bruiser instead of a skeleton.',
-                   'Lich-Mother: Raise Dead calls a Lich, and your servant rises again once when it is destroyed.'];
-GODS.reginald.rule = 'No stealth: no striking from hiding, no striking the sleeping. Refuses Scoundrels and anyone touched by Shadow.';
-GODS.reginald.boons = ['Fair Fight: +4 accuracy, +2% crit and +10% damage against elites and bosses, per rank.',
-                       "Coward's Mark: any enemy that strikes you from more than a tile away is Challenged for 5 turns: it must come to you, deals 15 / 20 / 25% less to you at ranks 3 / 4 / 5, and takes +25% from you.",
-                       'Wall of One: for each enemy adjacent to you beyond the first, you take 10% less damage and deal 10% more, up to three.'];
-GODS.anvil.boons = ['Smith’s Blessing: +1 weapon damage and enchantments 10% stronger, per rank.',
-                    'Second Heat: enchanting or carving a sigil at the Forge has a 30% / 40% / 50% chance at ranks 3 / 4 / 5 to give back its motes.',
-                    'Masterwork: Forge upgrades cost 30% less, and gear can be raised to +4.'];
-GODS.vellum.rule = 'No shields, and nothing heavier than light armor. Refuses Fighters and Scoundrels.';
-GODS.vellum.boons = ['Deep Well: +8% max mana and +8% spell damage per rank.',
-                     'Spell Echo: a spell you cast has a 20% chance to refund its mana.',
-                     'Grand Magus: spells cost 25% less mana, and Spell Echo triggers 35% of the time.'];
-GODS.wobbles.prayers = ['rolldice2'];
-GODS.wobbles.boons[0] = "Lady Luck's Blessing: +3% to your combat effects per rank - and occasional gifts (and pranks) when things get dramatic. Roll the Dice leans good: 60%, +1% per Focus above 10. Never kills you directly.";
 
-PRAYERS.ironhide.desc = '+5 armor for 12 turns, and a shield of 5 + 2 per rank.';
-PRAYERS.rampage.desc = '+40% melee damage and 20% faster attacks for 10 turns.';
-PRAYERS.raisedead = {name:'Raise Dead', favor:20, rank:2, desc:'The dead rise beside you and fight until destroyed or you leave the floor. One at a time.'};
-PRAYERS.offering.desc = 'Offer 10% of your essence (at least 50): +10 piety and favor (x2 at a shrine).';
-PRAYERS.reforge.desc = 'Permanently add +1 to your main-hand weapon (not above +3).';
-PRAYERS.unbound.desc = 'Your next spell takes no time to cast.';
-PRAYERS.rolldice2 = {name:'Greater Prayer', favor:0, rank:4, amusement:40, desc:'Spend 40 amusement: a big roll that can grant gear, rings and amulets. Its bad outcomes are worse too.'};
-ABILITIES.unholyaura = {name:'Unholy Aura', cost:8, kind:'self', icon:'pr-unholyaura', divine:true, god:'murk', desc:'Invoke (Mother Murk): for 8 turns enemies within 2 take 5 dark damage (+1 per rank) each turn, and you heal 1 per enemy hit.'};
-ABILITIES.temper.desc = 'Invoke (Old Anvil): +2 weapon damage for 12 turns.';
-INVOKE_OF.murk = 'unholyaura';
 UNDEAD_FORMS = UNDEAD_FORMS.filter(function(u){ return u.name!=='Vampire'; });
 if(typeof AMULETS!=='undefined' && AMULETS.fury) AMULETS.fury.desc = 'Rampage for 8 turns: +40% melee damage and 20% faster attacks.';
 
 /* ---------------------------------------------------------------- who a god refuses */
 function refusalText(id){
+  if(clericGodLocked(id)) return 'Clerics are bound to their chosen god and cannot convert.';
   var g=GODS[id];
   if(g.refuses && player.race===g.refuses) return g.name+' will not accept a '+RACES[player.race].name+'.';
   if(id==='reginald' && isScoundrel()) return 'Sir Reginald will not take a sneak-thief into his service.';
   if(id==='reginald' && (player.aff.shadow||0)>0) return 'Sir Reginald wants nothing to do with shadow.';
-  if(id==='vellum' && (player.cls==='fighter'||player.cls==='scoundrel')) return 'Vellum keeps its pages for casters.';
+
   if(id==='glimmer' && (player.aff.shadow||0)>0) return 'Saint Glimmer will not touch shadow.';
   if(id==='glimmer' && !canHoldLight()) return 'Saint Glimmer’s light needs room: Light must be able to be one of your two elements.';
   return g.name+' refuses you.';
@@ -70,10 +37,11 @@ function canHoldLight(){
   return els.length<2;
 }
 function godRefuses(id){
+  if(clericGodLocked(id)) return true;
   var g=GODS[id];
   if(g.refuses && player.race===g.refuses) return true;
   if(id==='reginald' && (isScoundrel() || (player.aff.shadow||0)>0)) return true;
-  if(id==='vellum' && (player.cls==='fighter'||player.cls==='scoundrel')) return true;
+
   if(id==='glimmer' && ((player.aff.shadow||0)>0 || !canHoldLight())) return true;
   return false;
 }
@@ -111,6 +79,7 @@ var _totalAffinityRel = totalAffinity;
 totalAffinity = function(){ return _totalAffinityRel() - (player && player.glimmerLight ? 1 : 0); };
 var _joinGodRel = joinGod;
 joinGod = function(id, startPiety){
+  if(clericGodLocked(id)) return false;
   if(player.god==='glimmer' && id!=='glimmer') takeGlimmerLight();
   _joinGodRel(id, startPiety);
   syncGlimmerLight();
@@ -130,7 +99,7 @@ newRun = function(seed, choice){
   _newRunRel(seed, choice);
   syncGlimmerLight();
 };
-function smiteBonus(){ return hasGod('glimmer') && godRank()>=2 ? 0.05*godRank() : 0; }   /* Guiding Light is boon 2, and boon 2 unlocks at rank 2 now */
+function smiteBonus(){return hasGod('glimmer')&&godRank()>=3?.05*godRank():0;}   /* Guiding Light is boon 2, and boon 2 unlocks at rank 2 now */
 
 /* ---------------------------------------------------------------- Grom: fists by rank, armor, punch piety, Iron Hide */
 var GROM_FISTS = [[1,3],[2,5],[3,6],[5,9],[5,9],[7,12]];
@@ -154,25 +123,8 @@ attack = function(att, def, mult, label){
   _attackRel(att, def, mult, label);
   if(att===player && hasGod('grom') && player.weapon.unarmed && def && def.foe && hp0>0 && def.hp<hp0) gainPiety(1, 'punch', {pietyOnly:true});   /* piety only; favor comes from kills (DESIGN 12, step 8a) */
 };
-var _usePrayerRel = usePrayer;
-usePrayer = function(pid){
-  if(pid==='reforge' && player.weapon && (player.weapon.plus||0)>=3){ log('Old Anvil will not reforge past +3.','c-info'); sfx('ui-error'); return; }
-  if(pid==='raisedead') return prayRaiseDead();
-  if(pid==='unbound'){
-    if(!canPray(pid)){ log('You cannot offer that prayer right now.','c-info'); sfx('ui-error'); return; }
-    player.favor-=PRAYERS.unbound.favor; player.unboundNext=true;
-    sfx('pray'); setClip(player,'cast'); ringFx(player.x,player.y,GODS.vellum.color,2.5); sparkleFx(player.x,player.y,'magic',30);
-    log('<b>Unbound.</b> Your next spell will take no time.','c-good'); updateUI(); return;
-  }
-  if(pid==='rolldice2'){
-    if(!canPray(pid)){ log('You cannot offer that prayer right now.','c-info'); sfx('ui-error'); return; }
-    player.amusement-=PRAYERS.rolldice2.amusement; sfx('pray'); setClip(player,'cast');
-    greaterPrayer(); endTurn(); return;
-  }
-  var hid=player.hideShield;
-  _usePrayerRel(pid);
-  if(pid==='ironhide'){ player.hideShield=(hid||0)+Math.round((5+2*godRank())*divineStrength()); log('A shield of '+Math.round(player.hideShield)+' hardens over your skin.','c-good'); updateUI(); }
-};
+
+
 var _playerShieldRel = playerShield;
 playerShield = function(){ return _playerShieldRel() + Math.max(0, Math.floor(player.hideShield||0)); };
 
@@ -180,14 +132,14 @@ playerShield = function(){ return _playerShieldRel() + Math.max(0, Math.floor(pl
 var _castSelfRel = castSelf;
 castSelf = function(key, A){
   if(key==='unholyaura'){
-    var div=divineStrength() + 0.03*Math.max(0, player.stats.foc-10);
-    player.mp-=costOf(A); setClip(player,'cast');
-    player.st.aura={t:divineDuration(8), d:Math.round((5+godRank())*div)};
+    var div=divineStrength();
+    spendSpellMana(A); setClip(player,'cast');
+    player.st.aura={t:divineDuration(8), d:Math.round(4*godRank()*div)};
     sparkleFx(player.x,player.y,'dark',40); sfx('shadow-cast');
     log('An unholy aura seeps from you ('+player.st.aura.d+' a turn).','c-good');
     return true;
   }
-  if(key==='rolldice'){ WOBBLE_BONUS=0.01*Math.max(0, player.stats.foc-10); var r=_castSelfRel(key, A); WOBBLE_BONUS=0; return r; }
+  if(key==='rolldice'){ WOBBLE_BONUS=0; var r=_castSelfRel(key, A); WOBBLE_BONUS=0; return r; }
   return _castSelfRel(key, A);
 };
 var WOBBLE_BONUS=0;
@@ -212,11 +164,7 @@ castRaiseDead = function(x, y, A){
 };
 
 /* ---------------------------------------------------------------- Reginald rank 3: Called Out */
-var _applyDamageRel = applyDamage;
-applyDamage = function(target, amount, type, source){
-  // Called Out is defensive against the challenged elite/boss; see applyDamage.
-  return _applyDamageRel(target, amount, type, source);
-};
+
 
 /* ---------------------------------------------------------------- Anvil rank 3: Second Heat refunds motes */
 function secondHeat(before){
@@ -231,42 +179,28 @@ enchantItem = function(slot, el){ var b=Object.assign({}, player.motes); _enchan
 var _craftSigilRel = craftSigil;
 craftSigil = function(key){ var b=Object.assign({}, player.motes); _craftSigilRel(key); secondHeat(b); if(typeof renderForge==='function') renderForge(); updateUI(); };
 
-/* ---------------------------------------------------------------- Vellum: Unbound makes the next spell instant */
+/* Track spell actions for concealment and casting-time effects. */
 var _spellConductRel = spellConduct;
 spellConduct = function(A){ player.castingSpell=true; return _spellConductRel(A); };
-var _endTurnRel = endTurn;
-endTurn = function(){
-  if(player && player.unboundNext && player.castingSpell){
-    player.unboundNext=false; FREE_ACTION=true;
-    log('Unbound: the spell costs you no time.','c-good');
-  }
-  if(player) player.castingSpell=false;
-  return _endTurnRel();
-};
+
 
 /* ---------------------------------------------------------------- Wobbles: Greater Prayer */
 function greaterPrayer(){
-  var good = rng() < 0.6 + (godRank()>=3 ? 0.1 : 0);
-  sfx('wobbles-giggle');
-  function drop(it){ var c=nearFree(player.x,player.y,1)||{x:player.x,y:player.y}; it.x=c.x; it.y=c.y; items.push(it); }
+  var good=rng()<.65+wobbleBias(godRank()),roll=rng();sfx('wobbles-giggle');
+  function drop(it){var s=nearFree(player.x,player.y,2)||player;it.x=s.x;it.y=s.y;items.push(it);}
   if(good){
-    var o=pick(['gear','ring','amulet','restore','motes']);
-    if(o==='gear'){ var g=randomGear(); if(g.it){ g.it.tier=Math.min(3, (typeof rollTier==='function' ? rollTier() : 1)+1); g.it.cursed=false; if((g.it.plus||0)<1) g.it.plus=1; } drop(g); log('<b>Wobbles roars with laughter.</b> Something fine clatters to the floor.','c-kill'); }
-    else if(o==='ring' && typeof makeRing==='function'){ drop({kind:'ring', it:makeRing(null,false)}); log('<b>Wobbles roars with laughter.</b> A ring rolls to your feet.','c-kill'); }
-    else if(o==='amulet' && typeof makeAmulet==='function'){ drop({kind:'amulet', it:makeAmulet(null,false)}); log('<b>Wobbles roars with laughter.</b> An amulet drops from nowhere.','c-kill'); }
-    else if(o==='restore'){ player.hp=player.maxhp; player.mp=player.maxmp; clearBad(); sparkleFx(player.x,player.y,'heal',50); log('<b>Wobbles roars with laughter.</b> You are made whole.','c-kill'); }
-    else { var a=pick(ELEMENTS), b=pick(ELEMENTS); player.motes[a]=(player.motes[a]||0)+1; player.motes[b]=(player.motes[b]||0)+1; log('<b>Wobbles roars with laughter.</b> Two motes, '+a+' and '+b+', tumble into your pouch.','c-kill'); }
-  } else {
-    var bad=pick(['ambush','bleed','poor','scatter']);
-    if(bad==='ambush'){ for(var i=0;i<3;i++){ var c=nearFree(player.x,player.y,3); if(c){ var m=spawn(pick(['goblin','brute','archer']),c.x,c.y); m.state='hunt'; m.noXp=true; } } log('<b>Wobbles cackles.</b> An ambush!','c-you'); }
-    else if(bad==='bleed'){ player.hp=Math.max(1, Math.round(player.hp/2)); applyStatus(player,'blind',4); log('<b>Wobbles cackles.</b> Half your blood, and your sight, are gone.','c-you'); }
-    else if(bad==='poor'){ var lost=Math.round(player.essence*0.5); player.essence-=lost; log('<b>Wobbles cackles.</b> '+lost+' essence vanishes.','c-you'); }
-    else { var spots=[]; for(var y=0;y<MH;y++) for(var x=0;x<MW;x++) if(walkable(x,y)&&!occupied(x,y)&&inRoom(x,y)) spots.push({x:x,y:y});
-      var s=pick(spots); if(s){ player.x=s.x; player.y=s.y; player._lx=undefined; } ents.forEach(function(e){ if(e.foe && dist(e,player)<=16){ e.state='hunt'; e.lastSeen={x:player.x,y:player.y}; } });
-      log('<b>Wobbles cackles.</b> You land somewhere new, and everything nearby heard you.','c-you'); }
-    player.hp=Math.max(1,player.hp);
-  }
-  computeFOV();
+    if(roll<.35 && (player.hp<player.maxhp||player.mp<player.maxmp)){player.hp=player.maxhp;player.mp=player.maxmp;clearBad();log('<b>Tempt Fate:</b> restoration.','c-good');}
+    else if(roll<.65){for(var i=0;i<2;i++){var e=pick(ELEMENTS);player.motes[e]=(player.motes[e]||0)+1;}log('<b>Tempt Fate:</b> two elemental motes.','c-good');}
+    else if(roll<.9){drop(randomGear());log('<b>Tempt Fate:</b> equipment.','c-good');}
+    else {drop(rng()<.5?{kind:'ring',it:makeRing(null,false)}:{kind:'amulet',it:makeAmulet(null,false)});log('<b>Tempt Fate:</b> jewelry.','c-good');}
+  }else if(roll<.35){
+    var pool=ents.filter(function(e){return e.foe&&e.hp>0&&!(e.base&&e.base.boss)&&!e.elite;});
+    for(var i=0;i<3;i++){var s=nearFree(player.x,player.y,3);if(s){var model=pool.length?pick(pool):null;var m=spawn(model?model.kind:'rat',s.x,s.y);m.state='hunt';m.noXp=true;m.noReward=true;}}
+    log('<b>Tempt Fate:</b> an unrewarding ambush!','c-you');
+  }else if(roll<.70){player.hp=Math.max(1,Math.ceil(player.hp/2));applyStatus(player,'blind',4);log('<b>Tempt Fate:</b> blood and sight.','c-you');}
+  else if(roll<.95){var spots=safeWobbleSpots();if(spots.length){var s=pick(spots);player.x=s.x;player.y=s.y;player._lx=undefined;}log('<b>Tempt Fate:</b> displacement.','c-you');}
+  else {var loss=Math.floor(player.essence/2);player.essence-=loss;log('<b>Tempt Fate:</b> '+loss+' essence lost.','c-you');}
+  computeFOV();updateUI();
 }
 
 
@@ -282,5 +216,5 @@ var GOD_BLURB = {
   anvil:    'The smith below, who never sleeps and never asks what you did. Bring essence, and he will make your gear worthy of a better owner.',
   vellum:   'A book that reads itself, endlessly. Vellum remembers every spell ever spoken and wants nothing more than to hear them all again.',
   wobbles:  'Nobody knows what Wobbles is. He finds that funny. Amuse him and he is generous; bore him and he gets creative.',
-  sylla:    'A drider carved in white stone, waiting with her legs folded beneath her. Sylla teaches that the fight is decided before it starts: web it, poison it, and be somewhere else when it dies.'
+  sylla:    'A drider carved in white stone, waiting with her legs folded beneath her. Sylla teaches that the fight is decided before it starts: web it, let it bleed, and be somewhere else when it dies.'
 };

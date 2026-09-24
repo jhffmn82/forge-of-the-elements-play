@@ -34,7 +34,8 @@ var SYLLA = {
                           denies exactly n actions - so 2 was pinning for two. Justin, 2026-09-20: "ok 1". */
   webSlow:     3,      /* then slowed for 3 turns, starting when the root lets go */
   slowMult:    0.5,    /* "slowed 50%" */
-  poisonTurns: 3,      /* anything you web, and a surprise attack or a crit at rank 3 */
+  poisonTurns: 3,      /* Venomtouch and Venom Burst */
+  webBleedTurns: 3,   /* Bleeding caused by Sylla's web */
   poisonBase:  2,      /* PLACEHOLDER: poison damage a turn = 2 + your piety rank */
   darkTurns:   3,      /* Into the Dark */
   darkPerRank: 0.10,   /* +10% on the strike out of the dark, per rank - rank makes it stronger, never cheaper */
@@ -51,23 +52,6 @@ var SYLLA = {
 function broodStats(r){ return {hp:5+5*r, dmg:[2+2*r, 10+2*r], armor:2+2*r, resist:0.05+0.05*r}; }
 
 /* ---------------------------------------------------------------- the god */
-GODS.sylla = {
-  name:'Sylla the Patient', title:'mother of the brood', sprite:'shrine-sylla', color:'#B81A3A',
-  rule:'No fire: no fire affinity, fire enchantments or fire sigils, and nothing of hers set alight. No shields, and nothing heavier than leather.',
-  invoke:'intothedark', prayers:['the-brood','venom-burst'],
-  /* 2026-09-20: Justin - three boons, at ranks 1, 3 and 5, with poison on attack as the one at 3. The separate
-     "surprise attacks and crits poison" boon is folded away; Venomtouch covers the poison. */
-  boonRanks:[1,3,5],
-  boons:['Web on Hit: every hit has a 10% chance per rank to web what you strike - rooted for a turn, then moving at half speed for three.',
-         'Venomtouch: your attacks poison - weapon, bow or spell. +1 poison damage per rank against anything that already carries a status, and anything you web is poisoned for 3 turns.',
-         'The Long Patience: every status you inflict lasts one round longer.'],
-  gain:'Kills of the webbed, the rooted and the poisoned, and every surprise attack - worth more while nothing can see you.'
-};
-ABILITIES.intothedark = {name:'Into the Dark', cost:8, kind:'self', icon:'ic-into-the-dark', divine:true, god:'sylla',
-  desc:'Invoke (Sylla): you vanish for 3 turns and everything hunting you loses the trail. Your first strike out of the dark is a surprise attack, +10% damage per piety rank.'};
-INVOKE_OF.sylla = 'intothedark';
-PRAYERS['the-brood']   = {name:'The Brood', favor:20, rank:2, desc:'Three spiderlings tear up out of the floor and fight for you. Their bites web and poison, and they grow with your rank.'};
-PRAYERS['venom-burst'] = {name:'Venom Burst', favor:25, rank:4, desc:'Every enemy within 3 tiles is poisoned and blinded.'};
 
 /* the web icon covers both halves of it; Bleed finally has the icon it was waiting for (deepmobs.js) */
 if(typeof STATUS_INFO!=='undefined'){
@@ -97,7 +81,9 @@ function syllaWeb(t, r){
   t.syllaWeb = SYLLA.webSlow;
   floatText(t.x, t.y, 'webbed', 'web');
   if(typeof sparkleFx==='function') sparkleFx(t.x, t.y, (typeof TRAIL!=='undefined' && TRAIL.web) ? 'web' : 'magic', 12);
-  if(r>=3) syllaPoison(t, SYLLA.poisonTurns, r);   /* Venomtouch: what you web, you poison */
+  applyStatus(t,'bleed',SYLLA.webBleedTurns,Math.max(1,Math.round((SYLLA.poisonBase+r)*divineStrength())));
+  if(t.st.root)t.st.root.effect='web';
+  floatText(t.x,t.y,'bleeding','blood');
 }
 
 /* ---------------------------------------------------------------- the slow status
@@ -150,6 +136,7 @@ tickStatus = function(e){
 var _applyDamageSyl = applyDamage;
 applyDamage = function(target, amount, type, source){
   if(target && target.syllaResist>0 && amount>0) amount *= (1 - target.syllaResist);
+  var wasStatused=syllaStatused(target);
   var d=_applyDamageSyl(target, amount, type, source);
   if(!syllaOn() || !target || target===player || target.ally || target.hp===undefined) return d;
   var L=LAST_HIT;
@@ -160,7 +147,7 @@ applyDamage = function(target, amount, type, source){
   var r=godRank();
   if(r>=3 && target.hp>0){
     syllaPoison(target, SYLLA.poisonTurns, r);
-    if(syllaStatused(target) && target.hp>0){
+    if(wasStatused && target.hp>0){
       var vd=_applyDamageSyl(target, r, 'poison', player);        /* +1 poison damage per rank */
       if(vd>0) floatText(target.x, target.y, String(vd), 'poison');
     }
@@ -172,17 +159,17 @@ applyDamage = function(target, amount, type, source){
 var _attackSyl = attack;
 attack = function(att, def, mult, label){
   mult = mult || 1;
-  var dark = (att===player && syllaOn() && player.syllaDark>0 && def && def.hp>0) ? player.syllaDark : 0;
-  if(dark) mult *= 1 + SYLLA.darkPerRank*dark;
-  var hp0 = def ? def.hp : 0;
+  var dark = (att===player && syllaOn() && player.syllaDark>0 && player.hidden>0 && def && def.hp>0) ? player.syllaDark : 0;
+  if(dark) mult *= 1 + SYLLA.darkPerRank*dark*divineStrength();
+  var hp0 = def ? def.hp : 0, wasHidden=player.hidden>0;
   var r = _attackSyl(att, def, mult, label);
-  if(dark){ player.syllaDark=0; log('<b>Into the Dark.</b> You come out of the black: +'+Math.round(SYLLA.darkPerRank*dark*100)+'% on the strike.','c-good'); }
+  if(dark && def && def.hp<hp0){ player.syllaDark=0; log('<b>Into the Dark.</b> You come out of the black: +'+Math.round(SYLLA.darkPerRank*dark*100)+'% on the strike.','c-good'); }
   if(!def || !(def.hp < hp0)) return r;                            /* it missed, or nothing landed */
   if(att===player && syllaOn()){
     var gr=godRank();
     if(gr>0 && def.hp>0 && rng() < SYLLA.webChance*gr) syllaWeb(def, gr);
     if(LAST_HIT && LAST_HIT.att===player && LAST_HIT.def===def && LAST_HIT.surprise)
-      gainPiety(player.hidden>0 ? SYLLA.pietyUnseen : SYLLA.pietySurprise);
+      gainPiety(wasHidden ? SYLLA.pietyUnseen : SYLLA.pietySurprise);
   }
   if(att && att.broodling && def!==player && def.hp>0) broodBite(def);
   return r;
@@ -199,10 +186,10 @@ var _castSelfSyl = castSelf;
 castSelf = function(key, A){
   if(key==='intothedark'){
     var r=godRank();
-    player.mp -= costOf(A); setClip(player,'cast');
+    spendSpellMana(A); setClip(player,'cast');
     player.hidden = Math.max(player.hidden||0, divineDuration(SYLLA.darkTurns));
     ents.forEach(function(e){ if(e.foe && e.state==='hunt'){ e.state='wander'; e.lastSeen=null; } });
-    player.syllaDark = r;
+    player.syllaDark = r;player.castingSpell=false;
     sfx('vanish'); sparkleFx(player.x, player.y, 'dark', 30); ringFx(player.x, player.y, GODS.sylla.color, 2.5);
     log('<b>Into the Dark.</b> The dark closes over you for '+SYLLA.darkTurns+' turns; nothing can keep your trail. Your next strike comes out of it'+
         (r ? ' (+'+Math.round(SYLLA.darkPerRank*r*100)+'%)' : '')+'.','c-good');
@@ -214,6 +201,10 @@ castSelf = function(key, A){
 /* ---------------------------------------------------------------- the prayers */
 function prayTheBrood(){
   if(!canPray('the-brood')){ log('You cannot offer that prayer right now.','c-info'); sfx('ui-error'); return; }
+  var old=ents.filter(function(e){return e.broodling;});
+  var previous=ents;
+  ents=ents.filter(function(e){return !e.broodling;});
+  if(!nearFree(player.x,player.y,3)){ents=previous;log('There is no room for the brood.','c-info');return;}
   var r=godRank(), S=broodStats(r), got=0;
   for(var i=0;i<SYLLA.broodN;i++){
     var c=nearFree(player.x,player.y,1) || nearFree(player.x,player.y,2) || nearFree(player.x,player.y,3);
@@ -223,35 +214,20 @@ function prayTheBrood(){
     s.foe=false; s.ally=true; s.state='ally'; s.broodling=true; s.noXp=true; s.name='Spiderling';
     s.maxhp=s.hp=Math.round(S.hp*divineStrength()); s.dmg=[Math.round(S.dmg[0]*divineStrength()), Math.round(S.dmg[1]*divineStrength())]; s.syllaResist=S.resist;
     s.base=Object.assign({}, s.base, {armor:S.armor});          /* armorOf() reads the base, so give it its own */
-    s.t=player.t; s.life=divineDuration(SYLLA.broodLife);   /* they are called, not kept */
+    s.t=player.t; s.life=fullDivineDuration(SYLLA.broodLife);   /* they are called, not kept */
     sparkleFx(c.x, c.y, (typeof TRAIL!=='undefined' && TRAIL.web) ? 'web' : 'dark', 18);
     got++;
   }
-  if(!got){ log('There is no room for the brood.','c-info'); return; }
+  if(!got){ents=previous;log('There is no room for the brood.','c-info');return;}
   player.favor -= PRAYERS['the-brood'].favor;
   sfx('pray'); setClip(player,'cast'); ringFx(player.x, player.y, GODS.sylla.color, 2.5); sfx('summon');
   log('<b>The Brood.</b> '+got+' spiderling'+(got>1?'s':'')+' scuttle out of the dark for '+SYLLA.broodLife+' turns: '+S.hp+' HP, '+S.dmg[0]+'-'+S.dmg[1]+', armour '+S.armor+', '+Math.round(S.resist*100)+'% resistance.','c-good');
   endTurn();
 }
 function prayVenomBurst(){
-  if(!canPray('venom-burst')){ log('You cannot offer that prayer right now.','c-info'); sfx('ui-error'); return; }
-  player.favor -= PRAYERS['venom-burst'].favor;
-  var r=godRank(), n=0;
-  sfx('pray'); setClip(player,'cast'); ringFx(player.x, player.y, GODS.sylla.color, 3.5);
-  sparkleFx(player.x, player.y, 'poison', 40);
-  ents.forEach(function(e){
-    if(!e.foe || dist(e,player) > SYLLA.burstRange) return;
-    syllaPoison(e, SYLLA.poisonTurns, r); applyStatus(e, 'blind', SYLLA.burstBlind); n++;
-  });
-  log('<b>Venom Burst.</b> A hiss of venom goes out around you'+(n ? ': '+n+' poisoned and blinded.' : ', and finds nothing.'),'c-good');
-  endTurn();
+  if(!canPray('venom-burst'))return;player.favor-=25;sfx('pray');setClip(player,'cast');ringFx(player.x,player.y,'#91B856',3);sparkleFx(player.x,player.y,'poison',40);
+  ents.slice().forEach(function(e){if(e.foe&&e.hp>0&&dist(e,player)<=3){spellHit(e,VENOM_BURST,Math.round(roll(5*godRank(),5*godRank()+6)*divineStrength()),'poison');if(e.hp>0){syllaPoison(e,3,godRank());applyStatus(e,'blind',3);}finishHit(e);}});endTurn();
 }
-var _usePrayerSyl = usePrayer;
-usePrayer = function(pid){
-  if(pid==='the-brood') return prayTheBrood();
-  if(pid==='venom-burst') return prayVenomBurst();
-  return _usePrayerSyl(pid);
-};
 
 /* ---------------------------------------------------------------- piety */
 var _godOnKillSyl = godOnKill;
@@ -275,37 +251,8 @@ function syllaFireSigil(use){
   if(S.motes.length >= ELEMENTS.length) return false;      /* the grand sigils take one of everything */
   return S.motes.indexOf('fire') >= 0;
 }
-var _godConductEquipSyl = godConductEquip;
-godConductEquip = function(kind, data){
-  var r=_godConductEquipSyl(kind, data);
-  if(syllaOn() && data){
-    if(data.enchant==='fire') pietyViolation('fire-touched gear', SYLLA.violation);
-    if(kind==='off' && data.block>0) pietyViolation('you carrying a shield', SYLLA.violation);
-    if(kind==='armor' && data.weight && data.weight!=='cloth' && data.weight!=='light')
-      pietyViolation('you wearing armor heavier than leather', SYLLA.violation);
-  }
-  return r;
-};
-var _spellConductSyl = spellConduct;
-spellConduct = function(A){
-  if(syllaOn() && A && (A.el==='fire' || A.type==='fire')) pietyViolation('fire magic', SYLLA.violation);
-  return _spellConductSyl(A);
-};
-var _spellForbiddenSyl = spellForbidden;
-spellForbidden = function(A){
-  if(syllaOn() && A && (A.el==='fire' || A.type==='fire')) return 'Fire';   /* 2026-09-23 (Justin): a fire spell will not come to her follower */
-  return _spellForbiddenSyl(A);
-};
-var _sigilConductSyl = sigilConduct;
-sigilConduct = function(use){
-  if(syllaOn() && syllaFireSigil(use)) pietyViolation('a fire sigil', SYLLA.sigilViolation);
-  return _sigilConductSyl(use);
-};
-var _fuseMoteSyl = fuseMote;
-fuseMote = function(el){
-  if(syllaOn() && el==='fire' && !fuseCheck(el)) pietyViolation('you taking Fire into yourself', SYLLA.fuseViolation);
-  return _fuseMoteSyl(el);
-};
+
+
 /* "she will not have you setting things alight": once a turn, so a single fire spell is not billed twice */
 var _igniteSyl = ignite;
 ignite = function(x, y, src){
@@ -330,6 +277,7 @@ refusalText = function(id){
    Into the Dark's opener and a half-thrown web do not survive leaving the floor or abandoning her. */
 var _joinGodSyl = joinGod;
 joinGod = function(id, startPiety){
+  if(clericGodLocked(id)) return false;
   var r=_joinGodSyl(id, startPiety);
   if(id!=='sylla'){ player.syllaDark=0; }
   return r;

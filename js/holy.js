@@ -10,12 +10,12 @@
 
 var HOLY_DURATION = [0.10, 0.15, 0.20, 0.25], HOLY_DURATION_PER = 0.03;
 ENCHANT_TEXT.holy = {
-  fire:  'Zeal: +8% damage while any buff is on you',
-  water: 'Flow: +15% mana regeneration while buffed',
-  air:   'Swiftness: actions 5% faster while buffed',
-  earth: 'Steadfast: take 5% less damage while buffed',
-  light: 'Radiance: gaining a buff heals 3% of your max HP',
-  shadow:'Dread: +3% crit chance while buffed'
+  fire:  'Zeal: +8% damage +2.4% per Fire mastery while buffed',
+  water: 'Flow: +15% mana regeneration +4.5% per Water mastery while buffed',
+  air:   'Swiftness: action time reduced by 5% +1.5% per Air mastery while buffed',
+  earth: 'Steadfast: take 5% less damage +1.5% per Earth mastery while buffed (50% cap)',
+  light: 'Radiance: gaining a buff heals 3% of max HP +0.9% per Light mastery',
+  shadow:'Dread: +3% crit chance +0.9% per Shadow mastery while buffed'
 };
 /* the Forge can now infuse a holy symbol like an orb or tome */
 offKind = function(){
@@ -27,7 +27,7 @@ function holySymbol(){ return offKind()==='holy' ? player.off : null; }
 function holyDurationPct(it){
   it=it||holySymbol(); if(!it || it.cursed) return 0;
   var t=typeof it.tier==='number' ? Math.max(0,Math.min(3,it.tier)) : 1;
-  return HOLY_DURATION[t] + HOLY_DURATION_PER*Math.max(0, it.plus||0);
+  return (HOLY_DURATION[t] + HOLY_DURATION_PER*Math.max(0, it.plus||0))*gearPassiveBonus();
 }
 
 /* ---------------------------------------------------------------- what counts as a buff on you */

@@ -108,9 +108,9 @@ function pctRow(label, v){ return '<div class="row"><span>'+label+'</span><b'+(v
 function focusRows(it){
   var k=focusKey(it); if(!k) return '';
   if(k==='staff') return pctRow('Spell damage', focusBonus(it))+'<div class="row"><span>Spell range</span><b>+1</b></div>';
-  if(k==='wand'){ var t=tierOf(WAND_THRIFT.base,it)+WAND_THRIFT.per*(it.plus||0); return pctRow('Spell damage', focusBonus(it))+pctRow('Spell mana cost', -(it.cursed?-Math.abs(t):t)); }
+  if(k==='wand'){ var t=tierOf(WAND_THRIFT.base,it)+WAND_THRIFT.per*(it.plus||0); return pctRow('Spell damage', focusBonus(it))+pctRow('Spell mana cost', -(it.cursed?-Math.abs(t):t)*gearPassiveBonus()); }
   if(it.cursed) return pctRow('Spell damage', focusBonus(it));
-  return pctRow('Spell crit chance', tierOf(ORB_CRIT.base,it)+ORB_CRIT.per*(it.plus||0))+'<div class="hint">Spell crits deal x1.5.</div>';
+  return pctRow('Crit chance', (tierOf(ORB_CRIT.base,it)+ORB_CRIT.per*(it.plus||0))*gearPassiveBonus());
 }
 function unidHint(it){
   if(!it || !it.unid) return '';
@@ -118,8 +118,8 @@ function unidHint(it){
   return '<div class="hint" style="color:#C9A8FF">Unidentified: its bonus'+(it.kind==='ring'||it.kind==='amulet'?'':' and enchantment')+' are unknown, and it could be cursed. To learn it: '+how+', or read a Sigil of Knowing.</div>';
 }
 function ringLine(r){
-  var R=RINGS[r.ring], pw=ringPower(r), v=R.step*pw;
-  return (v>=0?'+':'')+(R.pct?Math.round(v*100):v)+(R.pct?'':' ')+R.unit;
+  var R=RINGS[r.ring], pw=ringPower(r), v=R.step*pw*gearPassiveBonus();
+  return (v>=0?'+':'')+(R.pct?Math.round(v*100):Math.round(v*100)/100)+(R.pct?'':' ')+R.unit;
 }
 function trinketCard(it){
   if(it.kind==='ring'){
@@ -207,7 +207,7 @@ derive = function(p){
   _deriveBase(p);
   if(!p.rings) p.rings=[null,null];
   var add={};
-  p.rings.forEach(function(r){ if(!r) return; var v=RINGS[r.ring].step*ringPower(r); add[r.ring]=(add[r.ring]||0)+v; });
+  p.rings.forEach(function(r){ if(!r) return; var v=RINGS[r.ring].step*ringPower(r)*gearPassiveBonus(); add[r.ring]=(add[r.ring]||0)+v; });
   p.ringFx=add;
   if(add.protection) p.armor=Math.max(0, p.armor+Math.round(add.protection));
   if(add.evasion) p.eva+=Math.round(add.evasion);

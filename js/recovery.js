@@ -1,37 +1,28 @@
 /* Owner-settled recovery rules. These extend the original game; no candidate engine is mounted. */
 function recoveryInCombat(){return ents.some(function(e){return e.foe && e.hp>0 && vis[idxOf(e.x,e.y)] && e.state==='hunt';});}
-GODS.grom.boons[2]='Living Mountain: enchant your fists and body at the Forge. Taking damage grants Hardened for 3 turns: +4 Armour and 15% elemental resistance; refreshes without stacking.';
-GODS.grom.rule='No weapons, shields, or body armour, including cloth. Holy Symbol, rings and amulet remain legal.';
-GODS.murk.boons[1]='Grave Strength: your servant becomes a Zombie Bruiser at rank 3.';
-GODS.murk.boons[2]='Lich: your servant becomes a Lich at rank 5 and returns once, one turn after destruction, at half health.';
-GODS.murk.prayers=['raisedead','bonespear'];
-GODS.anvil.prayers=['fieldsmelt','anviltoll'];   /* 2026-09-23 (Justin): Anvil's Toll replaces Reforge at rank 4 */
-PRAYERS.fieldsmelt={name:'Field Smelt',rank:2,favor:0,desc:'Outside combat, recycle one carried item for its full normal value. Free and instant.'};
-PRAYERS.reforge.favor=100;
-PRAYERS.anviltoll={name:"Anvil's Toll",rank:4,favor:20,desc:'20 Favor, one action: you bring the hammer down. Every enemy within 2 tiles takes a full weapon attack, is thrown back 2 tiles and stunned for 1 turn.'};
-PRAYERS.lance={name:'Lance',rank:4,favor:20,desc:'20 Favor, one action: aim at any tile up to 5 away. Every enemy on the straight line to it takes a full weapon attack.'};
+
+   /* 2026-09-23 (Justin): Anvil's Toll replaces Reforge at rank 4 */
+
 var LANCE={name:'Lance',kind:'bolt',type:'phys',range:5,divine:true,cost:0};
-PRAYERS.reforge.desc='Outside combat, spend 100 Favor to permanently add +1 to your main-hand weapon, up to +3.';
-PRAYERS.bonespear={name:'Bone Spear',rank:4,favor:5,desc:'A piercing straight-line spell: 10–16 Dark damage, range 6. Costs 5 Favor and one action.'};
+
+
 // Old hotbar entries retain usable links after the approved prayer replacements.
-PRAYERS.corpsefeast=PRAYERS.bonespear;
-PRAYERS.offering=PRAYERS.fieldsmelt;
-ABILITIES.temper.favor=8;ABILITIES.unholyaura.favor=8;if(ABILITIES.arcaneward){ABILITIES.arcaneward.favor=8;ABILITIES.arcaneward.cost=0;}   /* 2026-09-22 audit: the card said 8 Favor, the code took 8 mana */
-ABILITIES.temper.desc='Invoke (Old Anvil): 8 Favor, instant. +2 base damage and +4 Armour for 12 turns.';
-ABILITIES.unholyaura.desc='Invoke (Mother Murk): 8 Favor, one action. For 8 turns, enemies within 2 take (5 + rank) × divine scaling Dark damage; heal 1 HP per enemy.';
+
+
+if(ABILITIES.arcaneward){}   /* 2026-09-22 audit: the card said 8 Favor, the code took 8 mana */
 
 var _deriveRecovery=derive;
 derive=function(p){
   _deriveRecovery(p);
   if(p!==player)return;
   if(livingMountain(p) && p.weapon.unarmed)p.weapon=Object.assign({},p.weapon,{enchant:p.gromFistEnchant||null});
-  if(livingMountain(p) && buff('hardened'))p.armor+=4;
-  if(buff('temper'))p.armor+=4;
+  if(livingMountain(p) && buff('hardened'))p.armor+=Math.round(4*divineStrength());
+  if(buff('temper'))p.armor+=Math.round(4*divineStrength());
 };
 var _resistRecovery=resistMult;
 resistMult=function(target,type){
   var m=_resistRecovery(target,type);
-  if(target===player && livingMountain(player) && buff('hardened') && ['fire','ice','lightning','poison','light','dark'].indexOf(type)>=0)m=Math.max(0,m-0.15);
+  if(target===player && livingMountain(player) && buff('hardened') && ['fire','ice','lightning','poison','light','dark'].indexOf(type)>=0)m=Math.max(0,m-0.15*divineStrength());
   return m;
 };
 var _damageRecovery=applyDamage;
@@ -52,72 +43,14 @@ tickStatus=function(e){
   if(e===player && e.hp<hp)refreshHardened();
   return r;
 };
-if(typeof STATUS_INFO!=='undefined')STATUS_INFO.hardened={name:'Hardened',icon:'st-stone',d:'+4 Armour and 15% elemental resistance. Damage refreshes its three-turn duration.'};
+if(typeof STATUS_INFO!=='undefined')STATUS_INFO.hardened={name:'Hardened',icon:'st-stone',d:'Divine-Power-scaled armor and elemental resistance. Taking damage refreshes the duration without stacking.'};
 
-var _useAbilityRecovery=useAbility;
-useAbility=function(i){
-  var key=player.abilities[i];
-  if(key==='arcaneward'){ if((player.favor||0)<8){log('Not enough Favor (8 required).','c-info');return;} player.favor-=8; return _useAbilityRecovery(i); }
-  if(key!=='temper' && key!=='unholyaura')return _useAbilityRecovery(i);
-  if((player.favor||0)<8){log('Not enough Favor (8 required).','c-info');return;}
-  player.favor-=8;setClip(player,'cast');
-  if(key==='temper'){player.buffs.temper=divineDuration(12);derive(player);log('Temper: +2 base damage and +4 Armour for 12 turns.','c-good');sfx('forge-enchant');}
-  else {
-    var div=divineStrength()+0.03*Math.max(0,player.stats.foc-10);
-    player.st.aura={t:divineDuration(8),d:Math.round((5+godRank())*div)};
-    log('Unholy Aura surrounds you.','c-good');sfx('shadow-cast');endTurn();
-  }
-  updateUI();
-};
 /* Anvil's Toll: a weapon attack on everything within two tiles, each thrown back and stunned (2026-09-23) */
-var _usePrayerToll=usePrayer;
-usePrayer=function(pid){
-  if(pid!=='anviltoll') return _usePrayerToll.apply(this, arguments);
-  if(!canPray(pid)){ log('You cannot offer that prayer right now.','c-info'); sfx('ui-error'); return; }
-  player.favor-=PRAYERS.anviltoll.favor;
-  sfx('forge-craft'); setClip(player,'melee'); ringFx(player.x,player.y,GODS.anvil.color,2.5); if(typeof SHAKE!=='undefined') SHAKE=8;
-  var foes=ents.filter(function(e){ return e.foe && e.hp>0 && dist(e,player)<=2; }), struck=0;
-  foes.forEach(function(e){
-    attack(player, e, 1, "Anvil's Toll"); struck++;
-    if(e.hp>0){ knockback(e, e.x-player.x, e.y-player.y, 2); applyStatus(e,'stun',1); }
-  });
-  log("<b>Anvil's Toll.</b> The hammer comes down"+(struck ? ' on '+struck+(struck===1?' foe.':' foes.') : ', and nothing is near enough to feel it.'),'c-good');
-  player.hidden=0; endTurn(); updateUI();
-};
-var _canPrayRecovery=canPray;
-canPray=function(pid){
-  if(pid==='corpsefeast')pid='bonespear';
-  if(pid==='offering')pid='fieldsmelt';
-  if((pid==='fieldsmelt'||pid==='reforge') && recoveryInCombat())return false;
-  if(pid==='reforge' && (!player.weapon || player.weapon.unarmed || (player.weapon.plus||0)>=3))return false;
-  return _canPrayRecovery(pid);
-};
+
+var ARCANE_NOVA={name:'Arcane Nova',kind:'aoe',range:6,radius:1,divine:true,cost:0};
 var BONE_SPEAR={name:'Bone Spear',kind:'bolt',type:'dark',el:'shadow',range:6,base:[10,16],divine:true,cost:0};
-var _usePrayerRecovery=usePrayer;
-usePrayer=function(pid){
-  if(pid==='corpsefeast')pid='bonespear';
-  if(pid==='offering')pid='fieldsmelt';
-  if(pid==='fieldsmelt'){
-    if(!canPray(pid)){log('Field Smelt requires rank 2 and safety from combat.','c-info');return;}
-    var choices=player.bag.map(function(b,i){return {b:b,i:i,v:recycleValue(b)};}).filter(function(o){return o.v>0;});
-    if(!choices.length){log('No recyclable items in your bag.','c-info');return;}
-    openModal('Field Smelt','Choose one carried item to destroy for its full recycling value.',choices.map(function(o){return {label:o.b.name+' → '+o.v+' essence',fn:function(){
-      if(!canPray('fieldsmelt') || player.bag[o.i]!==o.b)return;
-      player.bag.splice(o.i,1);player.essence+=recycleValue(o.b);closeModal();updateUI();
-    }};}));return;
-  }
-  if(pid==='bonespear'){
-    if(!canPray(pid)){log('Bone Spear requires rank 4 and 5 Favor.','c-info');return;}
-    aiming={A:BONE_SPEAR,prayer:'bonespear'};if(openSheet)showSheet(openSheet);
-    log('Bone Spear: choose a target within 6 tiles.','c-info');draw();return;
-  }
-  if(pid==='lance'){
-    if(!canPray(pid)){log('Lance requires rank 4 and 20 Favor.','c-info');return;}
-    aiming={A:LANCE,prayer:'lance'};if(openSheet)showSheet(openSheet);
-    log('Lance: aim at any tile within 5. Everything on the line takes your weapon.','c-info');draw();return;
-  }
-  return _usePrayerRecovery(pid);
-};
+
+
 function spearPath(ax,ay,bx,by){
   var pts=[],x=ax,y=ay,dx=Math.abs(bx-ax),dy=Math.abs(by-ay),sx=ax<bx?1:-1,sy=ay<by?1:-1,err=dx-dy;
   if(ax===bx&&ay===by)return pts;
@@ -132,16 +65,16 @@ castAt=function(x,y){
     var lpath=spearPath(player.x,player.y,x,y).slice(0,5);if(!lpath.length)return false;
     player.favor-=PRAYERS.lance.favor;aiming=null;setClip(player,'melee');sfx('swing');
     var lend=lpath[lpath.length-1];boltFx(player.x,player.y,lend.x,lend.y,'phys');
-    var struck=0;lpath.forEach(function(p){ents.slice().forEach(function(e){if(e.foe&&e.hp>0&&e.x===p.x&&e.y===p.y){attack(player,e,1,'Lance');struck++;}});});
+    var struck=0;lpath.forEach(function(p){ents.slice().forEach(function(e){if(e.foe&&e.hp>0&&e.x===p.x&&e.y===p.y){attack(player,e,divineStrength(),'Lance');struck++;}});});
     log('<b>Lance.</b> '+(struck?'Your weapon runs through '+struck+(struck===1?' foe.':' foes.'):'Nothing stood in the line.'),'c-good');
     player.hidden=0;endTurn();return true;
   }
   if(!aiming || aiming.prayer!=='bonespear')return _castAtRecovery(x,y);
   if(!canPray('bonespear') || !inb(x,y) || dist(player,{x:x,y:y})>6 || !(revealAll||vis[idxOf(x,y)]))return false;
   var path=spearPath(player.x,player.y,x,y);if(!path.length)return false;
-  player.favor-=5;aiming=null;setClip(player,'cast');sfx('shadow-cast');
+  spendDivineSpell(5);aiming=null;setClip(player,'cast');sfx('shadow-cast');
   var end=path[path.length-1];boltFx(player.x,player.y,end.x,end.y,'dark');
-  path.forEach(function(p){ents.slice().forEach(function(e){if(e.foe&&e.x===p.x&&e.y===p.y && combatRoll(hitChance(player.acc+10,evaOf(e)),true)){spellHit(e,BONE_SPEAR,Math.round(sDMG(roll(10,16))*spellPower(BONE_SPEAR)*divineStrength()),'dark');finishHit(e);}});});
+  path.forEach(function(p){ents.slice().forEach(function(e){if(e.foe&&e.x===p.x&&e.y===p.y && combatRoll(hitChance(player.acc+10,evaOf(e)),true)){spellHit(e,BONE_SPEAR,Math.round(roll(5*godRank(),5*godRank()+6)*divineStrength()),'dark');finishHit(e);}});});
   endTurn();return true;
 };
 
@@ -151,7 +84,7 @@ kill=function(e,by){
   // The sole player receives hostile-death credit, including environmental and status deaths.
   if(e && e.foe && !(by && by.ally))by=player;
   var rises=e&&e.ally&&e.undeadServant&&!e.revived&&capstone('murk')&&ents.indexOf(e)>=0;
-  if(rises)e.revived=true; // Prevent the superseded immediate, full-health capstone from firing.
+  if(rises)e.revived=true;
   _killRecovery(e,by);
   if(rises)floorMeta.pendingLich={entity:e,at:turn+1};
 };

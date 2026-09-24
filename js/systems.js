@@ -4,7 +4,7 @@
    ========================================================================== */
 
 var BAG_MAX = 20;   /* 2026-09-17: 16 was too tight once sigils, keys and a ranged weapon compete for it */
-function hungerCost(cost){ return cost/100 * 1.5 * (player.race==='gloomling' ? 0.8 : 1); }
+function hungerCost(cost){ return cost/100 * 2 * (player.race==='gloomling' ? 0.8 : 1); }
 
 function bossNameForFloor(){
   var live=typeof ents!=='undefined' && ents.filter(function(e){return e.foe&&e.base&&e.base.boss&&e.hp>0;})[0];
@@ -106,7 +106,7 @@ function removeItem(it){ var i=items.indexOf(it); if(i>=0) items.splice(i,1); }
 function fallIntoChasm(){
   log('You fall!','c-you'); sfx('trap-pit');
   var d=Math.round(player.maxhp*0.15); player.hp-=d;
-  if(player.hp<=0){ heroicResolve(); if(player.hp<=0){ death(); return; } }
+  if(player.hp<=0){  if(player.hp<=0){ death(); return; } }
   if(bfloor()<5 && floorNo<LAST_FLOOR) descend(true); else { var s=nearestWalkable(player.x,player.y); player.x=s.x; player.y=s.y; }
 }
 
@@ -134,7 +134,7 @@ function bumpThorns(x,y){
   var cost=Math.max(1, Math.round(player.maxhp*0.2));
   confirmBox('Thorns', 'Push through the thorns for <b>'+cost+' damage</b>, or burn them away with fire.', 'Push through', function(){
     player.hp-=cost; player._hit=performance.now(); floatText(player.x,player.y,String(cost),'phys');
-    if(player.hp<=0){ heroicResolve(); if(player.hp<=0){ death(); return; } }
+    if(player.hp<=0){  if(player.hp<=0){ death(); return; } }
     setT(x,y,OPEN); log('You tear through the thorns, bleeding.','c-you'); computeFOV(); endTurn();
   });
 }
@@ -213,7 +213,7 @@ function explode(x,y,src){
   for(var dy=-1;dy<=1;dy++) for(var dx=-1;dx<=1;dx++){
     var tx=x+dx, ty=y+dy; if(!inb(tx,ty)) continue;
     ents.slice().forEach(function(e){ if(e.x===tx && e.y===ty){ var d=applyDamage(e, roll(8,14)+floorNo, 'fire', null); floatText(tx,ty,String(d),'fire'); applyStatus(e,'burn',3,sDMG(2));
-      if(e.hp<=0){ if(e===player){ heroicResolve(); if(player.hp<=0) death(); } else kill(e, src==='player'||src===player ? 'player' : null); } } });
+      if(e.hp<=0){ if(e===player){  if(player.hp<=0) death(); } else kill(e, src==='player'||src===player ? 'player' : null); } } });
     var q=propAt(tx,ty);
     if(q && (dx||dy)){ if(q.ex) setTimeout(function(qx,qy){ return function(){ if(propAt(qx,qy)) { explode(qx,qy,src); draw(); } }; }(tx,ty), 180); else if(q.br||q.burn) { removeProp(q); setG(tx,ty,G_ASH); } }
     if(at(tx,ty)===FLOOR && !gAt(tx,ty)) setG(tx,ty,G_SCORCH);
@@ -229,7 +229,7 @@ function sacrifice(p){
   confirmBox('Sacrifice altar', 'Press your hand onto the spikes for <b>'+cost+' HP</b>. What it gives, and when, is its own business.'+(lethal?'<br><span class="c-you"><b>This would kill you.</b></span>':''),
     lethal ? 'Offer anyway' : 'Offer blood', function(){
       player.hp-=cost; player._hit=performance.now(); floatText(player.x,player.y,String(cost),'phys'); sfx('player-hurt'); a.passes++;
-      if(player.hp<=0){ heroicResolve(); if(player.hp<=0){ death(); return; } }
+      if(player.hp<=0){  if(player.hp<=0){ death(); return; } }
       if(a.passes===3||a.passes===5||a.passes===7){
         var c=nearFree(p.x,p.y,1)||{x:player.x,y:player.y};
         var reward = a.passes===3 ? {kind:'essence',n:25+floorNo*5} : a.passes===5 ? {kind:'sigil',use:randomSigilUse()} : (function(){ var g=randomGear(); if(g.it.plus!==undefined) g.it.plus=3; g.it.tier='Trusty'; return g; })();
@@ -318,7 +318,7 @@ function triggerTrap(tr,e){
     else { log('The '+e.name+' falls into a pit!','c-info'); kill(e,null); }
   }
   if(info.once) feats=feats.filter(function(f){ return f!==tr; });
-  if(e.hp<=0){ if(isP){ heroicResolve(); if(player.hp<=0) death(); } else kill(e,null); }
+  if(e.hp<=0){ if(isP){  if(player.hp<=0) death(); } else kill(e,null); }
 }
 function spotTraps(){
   /* 2026-09-17: at most one trap a turn, and traps set on purpose (a trap room, a puzzle) hide far better,
@@ -392,7 +392,7 @@ function useSigil(use){
   else if(use==='heal'){ var q=Math.round(player.maxhp*0.35*(hasGod('glimmer')?1+0.10*godRank():1));
     if(player.race==='gloomling'){ var hd=applyDamage(player,Math.round(q/2),'light',null); floatText(player.x,player.y,String(hd),'light'); log('The Light sigil burns you! Gloomlings are hurt by holy light.','c-you'); if(player.hp<=0) death(); }
     else { healPlayer(q); floatText(player.x,player.y,'+'+q,'heal'); sparkleFx(player.x,player.y,'heal',24); player.buffs.afterglow=15; log('Light mends you. +'+q+' HP, and keeps glowing: 5% a turn for 15 turns.','c-good'); } }
-  else if(use==='vanish'){ player.hidden=10;   /* 2026-09-20: Justin - six turns was not enough to do anything with */ ents.forEach(function(e){ if(e.foe && e.state==='hunt'){ e.state='wander'; e.lastSeen=null; } }); log('Shadows swallow you.','c-good'); sfx('vanish'); }
+  else if(use==='vanish'){ player.hidden=5; ents.forEach(function(e){ if(e.foe && e.state==='hunt'){ e.state='wander'; e.lastSeen=null; } }); log('Shadows swallow you.','c-good'); sfx('vanish'); }
   else if(use==='identify'){ Object.keys(SIGILS).forEach(function(k){ if(player.bag.some(function(b){ return b.kind==='sigil' && b.data.use===k; })) identifySigil(k); }); }
   else if(use==='mapping'){ for(var i=0;i<seen.length;i++) if(map[i]!==WALL || true) seen[i]=1; log('The shape of the whole floor settles into your mind.','c-good'); }
   else if(use==='blink'){ var spots=[]; for(var y=0;y<MH;y++) for(var x=0;x<MW;x++) if(walkable(x,y) && vis[idxOf(x,y)] && dist(player,{x:x,y:y})<=6 && dist(player,{x:x,y:y})>=3 && !occupied(x,y)) spots.push({x:x,y:y});
@@ -518,7 +518,7 @@ function endTurn(){
   if(typeof WORLD_TICK==='undefined' && player.hidden>0 && !(player.hidden>(player._hidPrev||0))) player.hidden--;
   player._hidPrev=player.hidden;
   tickStatus(player);
-  if(player.hp<=0){ heroicResolve(); if(player.hp<=0){ death(); return; } }
+  if(player.hp<=0){  if(player.hp<=0){ death(); return; } }
   var cost = player.movedThisTurn ? moveCost() : actCost(player);
   if(player.tombed)cost=100;
   player.lastAttack=false;

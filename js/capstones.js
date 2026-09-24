@@ -1,61 +1,13 @@
-/* =====================================================================
-   capstones.js - rank 5 god boons (passive only; no third prayer).
-   Grom: Mountain's Fists | Grumbok: Spellbreaker | Glimmer: Undying Light
-   Murk: Lich-Mother | Reginald: Champion | Anvil: Masterwork
-   Vellum: Archmage (Spell Echo 35% lives in gods.js) | Wobbles: Beloved Toy
-   ===================================================================== */
+
 
 function capstone(god){ return player && player.god===god && godRank()>=5; }
-/* 2026-09-20 (Justin): Undying Light is Saint Glimmer's THIRD boon now, not her rank-5 reward - her rank 5
-   is the free point of Light (religion.js). It is the one entry here that is not a rank-5 capstone. */
+
 /* 2026-09-20: Justin - Saint Glimmer's free revive is gone. Her rank 5 is the Light affinity now, and a
    killing blow kills. */
-function undyingLight(){ return false; }
+
 function foesInView(){ return ents.filter(function(e){ return e.foe && vis[idxOf(e.x,e.y)]; }).length; }
 
-/* ---------------------------------------------------------------- attacks you make */
-var _attackCap = attack;
-attack = function(att, def, mult, label){
-  mult = mult || 1;
-  var knock=false;
-  if(att===player && def && def.hp>0){
-    /* 2026-09-23 audit: Reginald's rank 5 is Wall of One (combat.js); the old Champion x1.3 with one foe in view is retired */
-  }
-  var hp0 = def ? def.hp : 0;
-  var r=_attackCap(att, def, mult, label);
-  if(knock && def && def.hp>0 && def.hp<hp0 && !(def.base && def.base.boss)){
-    var nx=def.x+Math.sign(def.x-player.x), ny=def.y+Math.sign(def.y-player.y);
-    if(walkable(nx,ny) && !occupied(nx,ny)){ def.x=nx; def.y=ny; def._lx=undefined; }
-    log('<b>Mountainâ€™s Fists</b> hurl the '+def.name+' back.','c-good');
-  }
-  return r;
-};
-
-/* ---------------------------------------------------------------- damage you take */
-var _applyDamageCap = applyDamage;
-applyDamage = function(target, amount, type, source){
-  var d=_applyDamageCap(target, amount, type, source);
-  if(target===player && player.hp<=0){
-    if(undyingLight() && !floorMeta.undyingUsed){
-      floorMeta.undyingUsed=true; player.hp=Math.round(player.maxhp*0.5);
-      log('<b>Undying Light.</b> Saint Glimmer will not let you fall here.','c-kill'); sparkleFx(player.x,player.y,'light',50); sfx('heal');
-
-    }
-  }
-  return d;
-};
-
 /* ---------------------------------------------------------------- Murk: the servant rises again once */
-var _killCap = kill;
-kill = function(e, by){
-  var rise = e && e.ally && e.undeadServant && !e.revived && capstone('murk') && ents.indexOf(e)>=0;
-  _killCap(e, by);
-  if(rise){
-    e.revived=true; e.hp=e.maxhp; e.st={};
-    var spot = !occupied(e.x,e.y) ? {x:e.x,y:e.y} : nearFree(e.x,e.y,2);
-    if(spot){ e.x=spot.x; e.y=spot.y; e._lx=undefined; ents.push(e); log('<b>Mother Murk</b> will not let your '+e.name+' rest. It rises again.','c-kill'); sparkleFx(e.x,e.y,'dark',30); }
-  }
-};
 
 /* ---------------------------------------------------------------- Anvil: cheaper upgrades, and +4 */
 var _upgradeCostCap = upgradeCost;
@@ -67,14 +19,6 @@ upgradeCost = function(it){
   }
   var c=_upgradeCostCap(it);
   return c===null ? null : Math.round(c * (mw ? 0.7 : 1));
-};
-
-/* ---------------------------------------------------------------- Vellum: spells cost a quarter less */
-var _costOfCap = costOf;
-costOf = function(A){
-  var c=_costOfCap(A);
-  if(c>0 && capstone('vellum') && !A.tech && !A.divine) c=Math.max(1, Math.round(c*0.75));
-  return c;
 };
 
 /* =====================================================================
@@ -99,7 +43,7 @@ stepOn = function(){
   items.filter(function(it){ return it.x===player.x && it.y===player.y && ((it.kind==='heart' && player.hp<player.maxhp) || (it.kind==='managlobe' && player.mp<player.maxmp)); }).forEach(function(it){
     items=items.filter(function(o){ return o!==it; });
     if(it.kind==='heart'){ var h=Math.min(Math.max(4, Math.round(player.maxhp*0.25)), player.maxhp-player.hp); player.hp+=h; floatText(player.x,player.y,'+'+Math.round(h),'heal'); sparkleFx(player.x,player.y,'heal',12); sfx('heal',{vol:0.5}); }
-    else { var m=Math.min(Math.max(5, Math.round(player.maxmp*0.25)), player.maxmp-player.mp); player.mp+=m; floatText(player.x,player.y,'+'+Math.round(m)+' mp','ice'); sparkleFx(player.x,player.y,'ice',12); sfx('pickup-essence',{vol:0.6}); }
+    else { if(player.god==='vellum')gainPiety(5,'mana globe',{pietyOnly:true}); var m=Math.min(Math.max(5, Math.round(player.maxmp*0.25)), player.maxmp-player.mp); player.mp+=m; floatText(player.x,player.y,'+'+Math.round(m)+' mp','ice'); sparkleFx(player.x,player.y,'ice',12); sfx('pickup-essence',{vol:0.6}); }
   });
   _stepOnGlobes();
 };

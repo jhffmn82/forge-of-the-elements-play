@@ -1,3 +1,8 @@
+function gearPassiveBonus(){return player.god==='vellum'?1+.05*godRank():1;}
+function enchantGodBonus(){return gearPassiveBonus()*(player.god==='anvil'?1+.10*godRank():1);}
+function orbRootCrit(target){return infusion('orb')==='earth'&&target&&target.st&&target.st.root?(.05+.03*affPts('earth'))*enchantGodBonus():0;}
+function criticalMultiplier(){return 1.6+(infusion('orb')==='shadow'?(.10+.05*affPts('shadow'))*enchantGodBonus():0);}
+
 /* ============================================================================
    combat.js - character math, damage, statuses, spells, abilities, monster AI.
    Replaces derive(), applyDamage(), attack(), kill(), tickStatus(), castAt(),
@@ -34,7 +39,7 @@ PASSIVES={
        {at:15,id:'meditation',name:'Meditation',d:'+25% mana regeneration'},
        {at:18,id:'tidalMind', name:'Tidal Mind',d:'mana regeneration doubles below half mana'},
        {at:21,id:'magicBarrier',name:'Magic Barrier',d:'-5 damage from single-target ranged attacks'},
-       {at:25,id:'archmage',  name:'Archmage',d:'+10% spell damage, +5 percentage points spell crit, +20% max mana'}]
+       {at:25,id:'archmage',  name:'Archmage',d:'+10% spell damage, +5% crit chance, +20% max mana'}]
 };
 var AOE_HIT=false;   /* set while resolving area attacks, so Magic Barrier ignores them */
 var ATTACK_ROLLED=false;   /* set while attack() applies a hit it has already rolled block for, so Spell Ward does not roll twice */
@@ -46,13 +51,13 @@ function affinityCap(){
   var base = RUN && RUN.bossDead ? 2 : 1;
   return base + ((RACES[player.race]||{}).capBonus||0);
 }
-function enchantScale(el){ return (1 + 0.3*((player.aff && player.aff[el])||0)) * (player.god==='anvil' ? 1 + 0.10*pietyRank(player.piety||0) : 1); }
+function enchantScale(el){ return (1 + 0.3*((player.aff && player.aff[el])||0)) * (player.god==='anvil' ? 1 + 0.10*pietyRank(player.piety||0) : 1)*gearPassiveBonus(); }
 function buff(name){ return player.buffs && player.buffs[name] > 0; }
 function itemPlus(it){ return (it && it.plus||0) + (it && it.tier==='Trusty' ? 1 : 0) + (player.race==='dwarf' && it && it.dmg && !it.unarmed ? 1 : 0); }
 function gearName(it){
   if(!it) return 'nothing';
   var n=(it.tier && it.tier!=='Rusty' ? it.tier+' ' : '') + it.name;
-  if(it.plus) n+=(it.plus<0 ? ' −'+Math.abs(it.plus) : ' +'+it.plus);   /* a cursed item is -3, never "+-3" */
+  if(it.plus) n+=(it.plus<0 ? ' âˆ’'+Math.abs(it.plus) : ' +'+it.plus);   /* a cursed item is -3, never "+-3" */
   if(it.enchant) n+=' of '+cap(it.enchant);
   return n;
 }
@@ -68,11 +73,13 @@ function offHandSwing(foe){
   try{derive(player);attack(player, foe, 0.6);}finally{player.sets[player.activeSet]=main;player.off=off;derive(player);}
 }
 function derive(p){
+  if(p===player)enforceDivineEquipment(p);
   var race=RACES[p.race]||RACES.human, cls=CLASSES[p.cls]||CLASSES.fighter, s=p.stats;
   if(!p.buffs) p.buffs={};
   p.weapon = p.sets[p.activeSet] || FISTS;
+  p.twoHanded = p.weapon.hands===2;
   if(typeof livingMountain==='function' && livingMountain(p) && p.weapon.unarmed)p.weapon=Object.assign({},p.weapon,{enchant:p.gromFistEnchant||null});
-  if(hasGod('grom') && !p.weapon.unarmed) {}   /* the rule is enforced as piety loss, not blocked */
+
   p.speed = race.speed;
   p.name = p.name || 'Adventurer';
   p.who = race.name+' '+cls.name + (p.god ? ' of '+GODS[p.god].name : '');
@@ -89,20 +96,21 @@ function derive(p){
   p.maxhp = sHP((10 + s.vit * (1 + p.level/5)) * (hasP('tough')?1.15:1));
   /* 2026-09-17: mana mirrors the HP curve without the flat base, so Focus is the caster's stat the way
      Vitality is the fighter's: Focus x (1 + level/5). Focus 12 -> 14 at level 1, 36 at 10, 60 at 20. */
+  if(bodyArmor(p).enchant==='fire')p.maxhp=Math.round(p.maxhp*(1+(.05+.03*(p.aff.fire||0))*enchantGodBonus()));
   var pool = Math.ceil(s.foc * (1 + p.level/5));
   if(p.cls==='mage') pool = Math.ceil(pool*1.3);
   if(hasP('archmage')) pool = Math.ceil(pool*1.2);
-  if(p.off && p.off.manaPct && !p.twoHanded) pool = Math.ceil(pool*(1+p.off.manaPct));   /* 2026-09-22 audit: a tome needs a free hand like every other off-hand */
-  if(p.god==='vellum') pool = Math.ceil(pool*(1+0.05*pietyRank(p.piety||0)));
+  if(p.off && p.off.manaPct && !p.twoHanded) pool = Math.ceil(pool*(1+p.off.manaPct*gearPassiveBonus()));   /* 2026-09-22 audit: a tome needs a free hand like every other off-hand */
+
   p.maxmp = sHP(pool);
   var rank=godRank();
   p.acc = 60 + 2*s.agi + (p.weapon.acc||0) + (hasGod('reginald')?4*rank:0) + (p.weapon.enchant==='light'?Math.round(10*enchantScale('light')):0);
   var arm=typeof bodyArmor==='function'?bodyArmor(p):(p.armorItem||{});
   var evaPen = arm.eva||0;
   if(evaPen<0 && p.race==='dwarf') evaPen = 0;   /* Armor Master (Might 18) became Spell Ward on 2026-09-22 */
-  p.eva = 10 + 2*s.agi + evaPen + ((p.off&&p.off.eva)||0) + (hasP('lightFeet')?8:0) + (arm.enchant==='water'?Math.round(8*enchantScale('water')):0);
-  p.armor = (arm.armor||0) + (arm.armor>0 ? itemPlus(arm) : 0) + (arm.enchant==='earth'?Math.round(2*enchantScale('earth')):0)
-          + (hasGod('grom')?rank:0) + (buff('ironbody')?4:0) + (buff('ironhide')?5:0);
+  p.eva = 10 + 2*s.agi + evaPen + ((!p.twoHanded&&p.off&&p.off.eva)||0)*gearPassiveBonus() + (hasP('lightFeet')?8:0) + (arm.enchant==='water'?Math.round(8*enchantScale('water')):0);
+  p.armor = (arm.armor||0) + (arm.armor>0 ? itemPlus(arm) : 0) + (arm.enchant==='earth'?Math.round(enchantScale('earth')):0)
+          + (hasGod('grom')?rank:0) + (buff('ironbody')?Math.round(4*divineStrength()):0) + (buff('ironhide')?Math.round(5*divineStrength()):0);
   p.twoHanded = p.weapon.hands===2;
   var shield = p.off && p.off.block>0 && !p.twoHanded;
   /* Might braces a shield: +1% block per point above 10 (2026-09-17). Needs a shield - it is about holding
@@ -111,8 +119,8 @@ function derive(p){
   p.parry = (p.twoHanded || !p.off || !p.off.weapon) ? 0 : (0.08 + s.agi/300);
   p.rangeBonus = p.race==='elf' ? 1 : 0;
   p.range = p.weapon.range ? p.weapon.range + p.rangeBonus : 1;
-  p.crit = 0.06 + 0.02*(s.agi-10) + (hasP('deadeye')?0.08:0) + (p.weapon.critBonus||0);
-  var plus = itemPlus(p.weapon) + (hasGod('anvil')?rank:0) + (buff('temper')?2:0) + (p.weapon.unarmed && hasGod('grom') ? rank : 0);
+  p.crit = 0.06 + 0.02*(s.agi-10) + (hasP('deadeye')?0.08:0) + (p.weapon.critBonus||0)*gearPassiveBonus() + orbCrit() + (hasP('archmage')?0.05:0);
+  var plus = itemPlus(p.weapon) + (hasGod('anvil')?rank:0) + (buff('temper')?Math.round(2*divineStrength()):0) + (p.weapon.unarmed && hasGod('grom') ? rank : 0);
   p.dmg = [sDMG(p.weapon.dmg[0])+plus, sDMG(p.weapon.dmg[1])+plus];
   p.element = p.primary || Object.keys(p.aff)[0] || null;
   p.affLevel = p.element ? p.aff[p.element] : 0;
@@ -121,7 +129,6 @@ function derive(p){
   p.iceArmor=Math.min(p.iceArmor, p.iceArmorMax);
 }
 function costOf(A){
-  if(player.buffs && player.buffs.unbound>0) return 0;
   var c=A.cost;
   if(player.race==='elf' && !A.tech && !A.divine) c*=0.85;
   if(!A.tech && !A.divine && typeof wandThrift==='function') c*=(1-wandThrift());
@@ -143,10 +150,10 @@ function focusBonus(it){
   var k=focusKey(it); if(!k) return (it && it.spell) || 0;
   var F=FOCUS_BONUS[k];
   if(k==='orb') return it.cursed ? -(tierOf(F.curse,it) + F.cursePer*Math.abs(it.plus||0)) : 0;
-  return (it.cursed ? -tierOf(F.base,it) : tierOf(F.base,it)) + F.per*(it.plus||0);
+  return ((it.cursed ? -tierOf(F.base,it) : tierOf(F.base,it)) + F.per*(it.plus||0))*gearPassiveBonus();
 }
-function wandThrift(){ var w=player.weapon; if(focusKey(w)!=='wand') return 0; var v=tierOf(WAND_THRIFT.base,w)+WAND_THRIFT.per*(w.plus||0); return w.cursed ? -Math.abs(v) : v; }
-function orbCrit(){ var o=player.twoHanded ? null : player.off; if(focusKey(o)!=='orb' || o.cursed) return 0; return tierOf(ORB_CRIT.base,o)+ORB_CRIT.per*(o.plus||0); }
+function wandThrift(){ var w=player.weapon; if(focusKey(w)!=='wand') return 0; var v=tierOf(WAND_THRIFT.base,w)+WAND_THRIFT.per*(w.plus||0); return (w.cursed ? -Math.abs(v) : v)*gearPassiveBonus(); }
+function orbCrit(){ var o=player.twoHanded ? null : player.off; if(focusKey(o)!=='orb' || o.cursed) return 0; return (tierOf(ORB_CRIT.base,o)+ORB_CRIT.per*(o.plus||0))*gearPassiveBonus(); }
 function staffRange(){ return focusKey(player.weapon)==='staff' ? 1 : 0; }
 function spellRange(A){
   if(A.useWeaponRange) return Math.max(1, player.range);
@@ -162,7 +169,8 @@ function resistMult(target, type){
   if(type==='phys') return 1;
   if(target===player){
     var arm=bodyArmor(player);
-    if((arm.enchant==='fire'||arm.enchant==='air') && elemToType(arm.enchant)===type) m-=0.10*enchantScale(arm.enchant);   /* only fire and air armor resist */
+    if(arm.enchant && elemToType(arm.enchant)===type) m-=(0.10+0.05*affPts(arm.enchant))*enchantGodBonus();
+    if(infusion('tome')==='earth')m-=(0.02+0.01*affPts('earth'))*enchantGodBonus();   /* only fire and air armor resist */
     if(hasGod('grumbok')) m-=Math.min(0.4, 0.08*godRank());
     if(player.aff.water && type==='ice') m-=0.05*player.aff.water;
     m -= 0.01*Math.max(0, player.stats.vit-10) + (hasP('bulwark')?0.05:0);   /* Vitality: 1% per point above 10 */
@@ -222,10 +230,10 @@ function applyDamage(target, amount, type, source){
     /* 2026-09-23 (Justin): Coward's Mark (rank 3). A marked foe deals 15/20/25% less to you; the Challenge invoke marks one
        by hand, and any foe that strikes you from more than a tile away marks itself below. Wall of One (rank 5): each foe
        adjacent to you beyond the first is 10% less damage taken, up to three. */
-    if(hasGod('reginald') && godRank()>=3 && source && source.foe && source.challenged) d*=1-.05*godRank();
+    if(hasGod('reginald') && godRank()>=3 && source && source.foe && source.challenged) d*=Math.max(0,1-.05*godRank()*divineStrength());
     if(hasGod('reginald') && godRank()>=5 && source && source.foe) d*=1-0.10*Math.min(3, Math.max(0, adjacentFoes()-1));
     if(hasGod('reginald') && godRank()>=3 && source && source.foe && source.hp>0 && !source.challenged && typeof dist==='function' && dist(source,player)>1){
-      source.challenged=true; source.challengeT=5; source.state='hunt'; source.cowardMark=true;
+      source.challenged=true; source.challengeUntil=worldNow()+500; source.state='hunt'; source.cowardMark=true;
       log('<b>'+(source.name||'It')+'</b> strikes from afar. Sir Reginald marks the coward: it must face you.','c-good');
     }
     if(capstone('grumbok') && type!=='phys' && source && source.foe)d*=.5;
@@ -241,23 +249,15 @@ function applyDamage(target, amount, type, source){
   if(target.dazed>0) d*=1.5;
   d=Math.max(0, Math.round(d));
   target.hp -= d;
+  if(d>0)godDamageResolved(target,d,type,source);
   target._hit = Math.max(performance.now(), fxClock);
   if(target===player && d>0){ setClip(player,'hurt'); sfx('player-hurt',{at:target._hit}); if(typeof onPlayerHurt==='function') onPlayerHurt(d); }
   else if(target!==player && d>0 && target.base && typeof setClip==='function' && !target._clip) setClip(target,'hurt');
-  if(target===player && target.hp<=0) heroicResolve();
+
   if(target!==player && target.base.splits && !target.split && target.hp>0 && target.hp<target.maxhp/2) slimeSplit(target);
   return d;
 }
-function heroicResolve(){
-  return; // Heroic Resolve was explicitly removed in the recovered race ruling.
-  if(player.race!=='human') return;
-  var key='b'+Math.floor((floorNo-1)/5);
-  RUN.resolve = RUN.resolve || {};
-  if(RUN.resolve[key]) return;
-  RUN.resolve[key]=true; player.hp=1;
-  log('<b>Heroic Resolve.</b> You refuse to fall. (Once per biome.)','c-kill');
-  sparkleFx(player.x,player.y,'light',30);
-}
+
 function slimeSplit(e){
   e.split=true;
   var c=nearFree(e.x,e.y,1); if(!c) return;
@@ -281,11 +281,12 @@ var LAST_HIT=null;
    light-air double smite uses this too. */
 function smiteDamage(){ return roll(3,6) + ((player.aff && player.aff.light) || 0); }
 
-function hostileHitChance(ch){ return hasP('blur') ? Math.max(0.15,ch*0.8) : ch; }
+function hostileHitChance(ch,projectile){if(projectile&&deflectProjectile())return 0;return hasP('blur') ? Math.max(0.15,ch*0.8) : ch;}
 function attack(att, def, mult, label){
   mult = mult || 1;
   LAST_HIT=null;
   if(!def || def.hp<=0) return;
+  if(def===player && dist(att,def)>1 && deflectProjectile())return;
   if(att.ally && def.x!==att.x) att.facingLeft=def.x<att.x;
   /* 2026-09-17: ask the weapon in hand, not the player's best range. With a dedicated bow slot the bow only
      occupies player.weapon while a shot is being taken (js/rangedslot.js), so a sword swing is never
@@ -333,12 +334,12 @@ function attack(att, def, mult, label){
     if(player.weapon.executioner && def.hp <= def.maxhp/2) gearPool += player.weapon.executioner;
     if(melee && hasP('heavyHands')) statPool += 0.10;
     if(melee && hasP('unstoppable')) statPool += 0.20;
-    if(melee && buff('rampage')) statPool += 0.40;
+    if(melee && buff('rampage')) statPool += 0.40*divineStrength();
     if(hasP('crushing') && def.hp < def.maxhp/2) statPool += 0.25;
-    if(def.challenged && hasGod('reginald')) statPool += 0.25;
+    if(def.challenged && hasGod('reginald')) statPool += 0.25*divineStrength();
     if(hasGod('reginald') && godRank()>=5) statPool += 0.10*Math.min(3, Math.max(0, adjacentFoes()-1));   /* Wall of One */
     if(buff('rally')) statPool += 0.10;
-    if(melee && capstone('grumbok') && player.spellbreakUntil>player.t){base*=1.5;player.spellbreakUntil=0;log('<b>Spellbreaker!</b>','c-good');}
+    if(melee && capstone('grumbok') && player.spellbreakUntil>player.t){base*=1+.5*divineStrength();player.spellbreakUntil=0;log('<b>Spellbreaker!</b>','c-good');}
     if(hasGod('glimmer') && (def.base.undead||def.base.shadowy)) statPool += 0.10*godRank();
     if(hasGod('reginald') && (def.elite||def.base.elite||def.base.boss)) statPool += 0.10*godRank();
     base *= Math.max(0.1, 1+gearPool) * Math.max(0.1, 1+statPool);
@@ -346,9 +347,10 @@ function attack(att, def, mult, label){
        slung - so merely carrying a bow cut every adjacent sword swing to 60% damage. Ask the weapon in
        hand, the same way the hit-chance line above was fixed on 2026-09-17. */
     if(((player.weapon && player.weapon.range)||1)>1 && dist(att,def)<=1) base *= 0.6;
-    if(player.weapon.unarmed && player.pummel>0){ base*=2; player.pummel--; applyStatus(def,'stun',1); }
+    var pummelHit=player.weapon.unarmed && player.pummel>0;
+    if(pummelHit){base*=1+divineStrength();player.pummel--;}
     var unaware = offGuard(def) || def.st.stun || def.st.frozen || player.hidden>0 || (typeof smokeAmbush==='function' && smokeAmbush(def)) || def.surprised;
-    var critCh = player.crit + (unaware && player.aff.shadow ? 0.05*player.aff.shadow : 0);
+    var critCh = player.crit + orbRootCrit(def) + (unaware && player.aff.shadow ? 0.05*player.aff.shadow : 0);
     crit = combatRoll(critCh,true);
     if(unaware){ surprise=true; base *= isScoundrel() ? 2.0 : 1.5; if(player.weapon.name.indexOf('Dagger')>=0) base*=1.2;
       /* 2026-09-22 (Justin): no piety for surprise attacks at all - his followers simply cannot sneak (stealthScore), and
@@ -356,7 +358,8 @@ function attack(att, def, mult, label){
   } else {
     crit = !(def===player && hasP('bulwark')) && rng() < 0.05;
   }
-  if(crit){base *= 1.6;if(att===player && typeof gainAmusement==='function')gainAmusement(1);}
+  if(crit){base *= att===player?criticalMultiplier():1.6;}
+  if(att===player&&pummelHit&&def.hp>0)applyStatus(def,'stun',1);
   if(blocked){ if(typeof onShieldBlock==='function') onShieldBlock(att, def, base); base *= 0.25; }
   /* Fortitude resolves after mitigation in applyDamage. */
   LAST_HIT={att:att, def:def, crit:crit, surprise:surprise, melee:!ranged};
@@ -376,7 +379,7 @@ function attack(att, def, mult, label){
          a fire, water, shadow or air weapon got nothing. `am` is his multiplier on its own, applied to every
          line; the affinity curves themselves are untouched, so nothing changes for anyone else. */
       var sc=enchantScale(ench), pts=(player.aff[ench]||0);
-      var am = (player.god==='anvil' ? 1 + 0.10*godRank() : 1);
+      var am = enchantGodBonus();
       var roll1 = function(c){ return (typeof pRoll==='function' ? pRoll(c) : rng()<c); };
       el=ench;
       if(ench==='fire'){ extra+=Math.round(base*(0.10+0.03*pts)*am); if(roll1(0.05*pts*am)){ applyStatus(def,'burn',3,burnDmg()); note=' <span class="c-fire">burning</span>'; } }
@@ -408,7 +411,7 @@ function attack(att, def, mult, label){
       if(rng()<0.10*player.aff.light) applyStatus(def,'blind',2); sparkleFx(def.x,def.y,'light',10);
     }
     if(player.aff.shadow && def.hp>0) addHollow(def, 0);
-    if(player.weapon.unarmed && hasGod('grom') && def.hp>0 && rng() < (buff('ironbody')?0.3:0) + (godRank()>=3?0.15:0)){ applyStatus(def,'stun',1); note+=' staggered'; }
+    if(player.weapon.unarmed && hasGod('grom') && def.hp>0 && rng() < (buff('ironbody')?0.3*divineStrength():0) + (godRank()>=3?0.15:0)){ applyStatus(def,'stun',1); note+=' staggered'; }
     if(extra>0) { def.hp -= Math.round(extra * (el && typeof resistMult==='function' ? resistMult(def, el) : 1)); }   /* 2026-09-22 audit: the enchant's fire/light/dark share honours resistance */
   }
   if(att!==player && att.base && att.base.el){
@@ -435,6 +438,7 @@ function attack(att, def, mult, label){
   if(def!==player && def.state!=='hunt' && def.state!=='throne') def.state='hunt';
   if(def!==player) def.caughtOff=-1;   /* the surprise is spent: it knows now */
   if(def!==player && def.living && rng()<0.3) setG(def.x,def.y,G_BLOOD);
+  if(att===player && total>0){ if(crit)orbOnCritical(def); playerHitRewards(def,true); }
   if(def.hp<=0){ kill(def, att); }
   if(att===player && hasP('cleaving') && !label){   /* 2026-09-22 audit: the swing carries on through a killing blow too */
     var other=ents.filter(function(o){ return o.foe && o!==def && dist(player,o)<=1; })[0];
@@ -503,9 +507,9 @@ function tickStatus(e){
     if(e===player) log('Burning: '+bd+' fire damage.','c-you');
     s.burn.t--; if(s.burn.t<=0) delete s.burn;
     if(gAt(e.x,e.y)===G_GRASS || gAt(e.x,e.y)===G_SHORT) ignite(e.x,e.y, e===player?'player':null);
-    if(e.hp<=0){ if(e===player){ heroicResolve(); if(player.hp<=0){ kill(e,null); return false; } } else { kill(e, e.lastHitBy||null); return false; } }
+    if(e.hp<=0){ if(e===player){  if(player.hp<=0){ kill(e,null); return false; } } else { kill(e, e.lastHitBy||null); return false; } }
   }
-  if(s.poison){ var pd=Math.max(1,Math.round(e.maxhp*(e.base&&e.base.boss?.05:.10))); if(e===player && ((player.buffs && player.buffs.poisonward>0)||(player.aff.earth||0)>=6)) pd=0; e.hp-=pd; floatText(e.x,e.y,String(pd),'poison'); s.poison.t--; if(s.poison.t<=0) delete s.poison; if(e.hp<=0){ if(e===player){ heroicResolve(); if(player.hp<=0){ kill(e,null); return false; } } else { kill(e,null); return false; } } }
+  if(s.poison){ var pd=Math.max(1,Math.round(e.maxhp*(e.base&&e.base.boss?.05:.10))); if(e===player && ((player.buffs && player.buffs.poisonward>0)||(player.aff.earth||0)>=6)) pd=0; e.hp-=pd; floatText(e.x,e.y,String(pd),'poison'); s.poison.t--; if(s.poison.t<=0) delete s.poison; if(e.hp<=0){ if(e===player){  if(player.hp<=0){ kill(e,null); return false; } } else { kill(e,null); return false; } } }
   if(s.aura && e===player){
     ents.forEach(function(o){ if(o.foe && dist(o,player)<=2){ var ad=applyDamage(o,s.aura.d||3,'dark',player); floatText(o.x,o.y,String(ad),'dark'); healPlayer(1); if(o.hp<=0) kill(o,player); } });
   }
@@ -587,41 +591,37 @@ function useAbility(i){
   }
   if(A.kind==='melee2'){
     var m=nearestFoe(1); if(!m){ log('Nothing adjacent to strike.','c-info'); return; }
-    player.mp-=costOf(A); attack(player,m,1,A.name); if(m.hp>0) attack(player,m,1,A.name);
+    spendSpellMana(A); attack(player,m,1,A.name); if(m.hp>0) attack(player,m,1,A.name);
     endTurn(); return;
   }
-  if(A.kind==='self'){ if(castSelf(key, A)===false) return; endTurn(); return; }
+  if(A.kind==='self'){ if(castSelf(key, A)===false) return; if(key==='temper'){updateUI();return;} endTurn(); return; }
 }
 function divineStrength(){
   var w=player.weapon||{},o=player.twoHanded?{}:(player.off||{});
-  return 1+(w.cursed?0:w.divine||0)+(o.cursed?0:o.divine||0);
+  return 1+((w.cursed?0:w.divine||0)+(o.cursed?0:o.divine||0))*gearPassiveBonus();
 }
-function divineDuration(n){
-  var gear=[player.weapon,player.twoHanded?null:player.off],extra=0;
-  gear.forEach(function(it){if(it&&!it.cursed&&it.divine>0)extra=Math.max(extra,(it.plus||0)>=3?2:1);});
-  return n+extra;
-}
+function divineDuration(n){ return n; }
 function castSelf(key, A){
-  var r=godRank(), div=divineStrength() + 0.03*Math.max(0, player.stats.foc-10);   /* invokes: +3% per Focus above 10 */
-  if(A.divine && key!=='bellow') { player.mp-=costOf(A); setClip(player,'cast'); }
+  var r=godRank(), div=divineStrength();   /* invokes: +3% per Focus above 10 */
+  if(A.divine && key!=='bellow') { spendSpellMana(A); setClip(player,'cast'); }
   if(key==='ironbody'){ player.buffs.ironbody=divineDuration(6); derive(player); log('Iron Body: your skin turns hard as iron.','c-good'); sfx('earth-cast'); sparkleFx(player.x,player.y,'earth',20); }
-  else if(key==='bellow'){ player.mp-=costOf(A); setClip(player,'melee'); sfx('warchief-roar');
+  else if(key==='bellow'){ spendSpellMana(A); setClip(player,'melee'); sfx('warchief-roar');
     ents.forEach(function(e){ if(e.foe && dist(e,player)<=3) applyStatus(e,'stun',1); });
-    var h=Math.round(player.maxhp*0.10*div); healPlayer(h); floatText(player.x,player.y,'+'+h,'heal'); ringFx(player.x,player.y,'#B8453A',3.5);
+    var h=Math.round(player.maxhp*(.10+.02*r)*div); healPlayer(h); floatText(player.x,player.y,'+'+h,'heal'); ringFx(player.x,player.y,'#B8453A',3.5);
     log('You bellow. Everything nearby reels.','c-good'); }
   /* 2026-09-20: Justin - "glimmer's heal was doing too much, it was healing like 40+ hp, needs to be like half
      that". It was 25% +5% a rank, then multiplied again by Mending Light: about three quarters of your health at
      rank 5. Now 12% +3% a rank (Mending Light still applies on top), which is roughly half what it was. */
   else if(key==='heal'){
-    var prior=player.hp,bonus=typeof inSanctuary==='function'&&inSanctuary(player)?1.25:1;
-    var raw=Math.round(player.maxhp*(.12+.03*r)*div*(1+.10*r));
+    var prior=player.hp,bonus=typeof inSanctuary==='function'&&inSanctuary(player)?1+.25*divineStrength():1;
+    var raw=Math.round(player.maxhp*(.10+.02*r)*div*(1+.10*r));
     healPlayer(Math.min(raw,player.maxhp*.4/bonus));
     var hh=Math.round(player.hp-prior);
     floatText(player.x,player.y,'+'+hh,'heal');sparkleFx(player.x,player.y,'heal',30);sfx('heal');
     log('Saint Glimmer mends you. +'+hh+' HP.','c-good');
   }
-  else if(key==='arcaneward'){ player.buffs.arcaneward=divineDuration(10); player.ward=Math.round(player.maxmp*(0.10+0.02*r)*div); log('Arcane Ward: '+player.ward+' damage will break on the ward first.','c-good'); sfx("cast-generic"); ringFx(player.x,player.y,'#7FA8FF',2); }
-  else if(key==='temper'){ player.buffs.temper=divineDuration(12); derive(player); log('Old Anvil tempers your '+player.weapon.name+': +2 for 12 turns.','c-good'); sfx('forge-enchant'); sparkleFx(player.x,player.y,'fire',20); }
+  else if(key==='arcaneward'){ player.buffs.communion=8; player.buffs.arcaneward=8; player.ward=Math.round((8+2*r)*div); sfx('cast-generic'); ringFx(player.x,player.y,'#7FA8FF',2); }
+  else if(key==='temper'){ player.buffs.temper=fullDivineDuration(12);player._buffSeen=player._buffSeen||{};player._buffSeen['b:temper']=player.buffs.temper; derive(player); log('Old Anvil tempers your '+player.weapon.name+': +2 for 12 turns.','c-good'); sfx('forge-enchant'); sparkleFx(player.x,player.y,'fire',20); }
   else if(key==='rolldice'){ sfx('wobbles-giggle'); wobblesIntervention(false); }
   return true;
 }
@@ -655,7 +655,7 @@ function inRange(x,y){
 function spellPower(A){
   var charPool = 0.04*(player.stats.foc-10) + (hasP('arcaneStudy')?0.10:0) + (hasP('archmage')?0.10:0);
   var arm=player.armorItem||{}, itemPool = focusBonus(player.weapon) + (player.twoHanded ? 0 : focusBonus(player.off));
-  var godPool = player.god==='vellum' ? 0.05*godRank() : 0;
+  var godPool = 0;
   return Math.max(0.3,(1+charPool+godPool)) * (1+itemPool);
 }
 function castAt(x,y){
@@ -670,11 +670,11 @@ function castAt(x,y){
   var terrain = !f && (at(end.x,end.y)===ICEDOOR || at(end.x,end.y)===THORNS || propAt(end.x,end.y) || gAt(end.x,end.y)===G_GRASS);
   if(key==='challenge'){ if(!f){ log('Challenge whom?','c-info'); return false; } }
   if(!f && !(terrain && (A.type==='fire'||A.type==='phys'||A.type==='ice'||A.type==='lightning'))){ log(path.length && end.x!==x ? 'Something is in the way.' : 'Nothing to hit there.','c-info'); return false; }
-  aiming=null; player.mp-=costOf(A);
+  aiming=null; spendSpellMana(A);
   if(!A.tech && !A.divine && typeof spellConduct==='function') spellConduct(A);
   setClip(player, A.tech && A.useWeaponRange && player.range<=1 ? 'melee' : 'cast');
   if(key==='challenge'){
-    ents.forEach(function(e){ e.challenged=false; e.cowardMark=false; });
+    ents.forEach(function(e){if(!e.cowardMark)e.challenged=false;});
     f.challenged=true; f.challengeBoost = false; f.state='hunt'; f.challengeT=0;
     log('You challenge '+f.name+'. It must face you.','c-good'); sfx('shrine-open'); ringFx(f.x,f.y,'#E8B44A',1.2);
     endTurn(); return true;
@@ -699,9 +699,8 @@ function castAt(x,y){
   if(player.aff.fire && !A.divine) base += player.aff.fire;   /* Kindled: +1 per Fire point on spells too */
   var unaware = offGuard(f) || f.st.stun || f.st.frozen || player.hidden>0;
   if(typeof numbingDark==='function' && numbingDark(f)) base=Math.round(base*1.5);   /* 2026-09-23 audit: Numbing Dark makes a spell on a Chilled target a surprise attack, x1.5 (DESIGN 12, step 7) */
-  var crit = combatRoll(player.crit + (!A.tech && hasP('archmage')?0.05:0) + (unaware&&player.aff.shadow?0.05*player.aff.shadow:0),true);   /* spells use the normal crit chance */
-  if(crit){base=Math.round(base*1.6);if(typeof gainAmusement==='function')gainAmusement(1);}
-  else if(!A.tech && !A.divine && rng()<orbCrit()){ crit=true; base=Math.round(base*1.5); }
+  var crit = combatRoll(player.crit + orbRootCrit(f) + (unaware&&player.aff.shadow?0.05*player.aff.shadow:0),true);   /* spells use the normal crit chance */
+  if(crit){base=Math.round(base*criticalMultiplier());}
   var wasAsleep = f.state==='asleep' || (typeof offGuard==='function' && offGuard(f));   /* 2026-09-22 audit: "6 if it was unaware", not only asleep */
   LAST_HIT={att:player, def:f, crit:crit, surprise:unaware, spell:true};
   var d=applyDamage(f, base, dmgType==='phys'?'phys':dmgType, player);
@@ -717,6 +716,7 @@ function castAt(x,y){
   if(A.blindChance && rng()<A.blindChance){ applyStatus(f,'blind',2); note+=' blinded'; }
   if(A.type==='fire'){ ignite(f.x,f.y,'player'); }
   if(f.state==='asleep' && key!=='sap') f.state='hunt';
+  if(d>0)playerHitRewards(f,true);
   log(A.name+' hits '+f.name+' &mdash; <b>'+d+'</b> '+(dmgType==='phys'?'physical':dmgType)+(crit?' (crit)':'')+note,'c-hit');
   if(f.hp<=0){
     kill(f,player);
@@ -725,7 +725,7 @@ function castAt(x,y){
 }
 function castRaiseDead(x,y,A){
   if(!walkable(x,y) || occupied(x,y)){ log('The dead need an empty patch of floor.','c-info'); return false; }
-  aiming=null; player.mp-=costOf(A); setClip(player,'cast');
+  aiming=null; spendSpellMana(A); setClip(player,'cast');
   var r=godRank(), form=UNDEAD_FORMS.filter(function(u){ return u.rank<=r; }).pop() || UNDEAD_FORMS[0];
   var boost=(1+0.10*r)*divineStrength(), sk=spawn('skeleton', x, y);
   sk.foe=false; sk.ally=true; sk.undeadServant=true; sk.state='ally'; sk.name=form.name; sk.col='#BFD8B0';
@@ -785,7 +785,7 @@ function aiAct(e){
       if(e.castCd<=0 && clearShot(e,player)){   /* a shaman behind its own goblins holds the bolt */
         e.castCd=e.base.castEvery; setClip(e,'attack'); sfx('shaman-cast');
         boltFx(e.x,e.y,player.x,player.y,'fire');
-        if(rng() < hostileHitChance(hitChance(e.base.acc+10, player.eva))){
+        if(rng() < hostileHitChance(hitChance(e.base.acc+10, player.eva),true)){
           var fd=applyDamage(player, roll(5,8)+floorNo, 'fire', e); floatText(player.x,player.y,String(fd),'fire'); var brn=rng()<0.5; if(brn) applyStatus(player,'burn',3,sDMG(2));
           log(e.name+' hurls a firebolt &mdash; <b>'+fd+'</b> fire'+(brn?', burning':'')+'.','c-you');
           if(player.hp<=0) kill(player,e);
@@ -1029,9 +1029,10 @@ function actCost(e){
       var wn=(player.weapon.name||'');
       if(player.weapon.unarmed) c *= 0.80;                          /* unarmed attacks -20% time */
       else if(/Dagger/.test(wn)) c *= 0.90;                         /* daggers -10% */
-      if(buff('rampage') && player.lastAttackMelee) c /= 1.20;
-      if(player.wizardHunterUntil>player.t) c /= 1+.05*godRank();
+      if(buff('rampage') && player.lastAttackMelee) c /= 1+.20*divineStrength();
+      if(player.wizardHunterUntil>player.t) c /= 1+.05*godRank()*divineStrength();
     }
+    if(player.castingSpell && infusion('tome')==='air')c*=1-(.02+.01*affPts('air'))*enchantGodBonus();
     c = Math.max(40, c);
   }
   return Math.round(c);
@@ -1041,11 +1042,29 @@ function moveCost(){
   var sp=player.speed; if(player.st && player.st.chill) sp*=1-chillSlow(player);
   var c=(10000/sp) * (hasP('fleet')?0.85:1) / (1+0.10*(player.aff.air||0));
   if(at(player.x,player.y)===WATER && !player.levitate) c*=1.25;
-  if(player.wizardHunterUntil>player.t)c/=1+.05*godRank();
+  if(player.wizardHunterUntil>player.t)c/=1+.05*godRank()*divineStrength();
   return Math.round(c);
 }
 function nearestFoe(range){
   var best=null, bd=99;
   ents.forEach(function(e){ if(!e.foe || !vis[idxOf(e.x,e.y)]) return; var d=dist(player,e); if(d<=range && d<bd){ best=e; bd=d; } });
   return best;
+}
+
+function armorDeflectChance(){return bodyArmor(player).enchant==='air'?(.05+.03*affPts('air'))*enchantGodBonus():0;}
+function deflectProjectile(){
+  if(!combatRoll(armorDeflectChance(),true))return false;
+  floatText(player.x,player.y,'deflected','miss');sfx('miss');return true;
+}
+
+/* Pet damage can draw aggro even while the player is hidden or out of sight. */
+function retaliateAgainstSummon(e){
+  if(!e.petAggressor || e.hp<=0 || e.st.stun || e.st.frozen || e.st.fear || e.base.boss || canSeePlayer(e))return false;
+  var pet=ents.find(function(o){return o.id===e.petAggressor && o.ally && o.hp>0;});
+  if(!pet){delete e.petAggressor;return false;}
+  e.state='hunt';e.lastSeen={x:pet.x,y:pet.y};
+  var d=dist(e,pet);
+  if(d<=1 || e.base.range>1 && d<=e.base.range && clearShot(e,pet))attack(e,pet);
+  else if(!e.st.root)stepToward(e,pet.x,pet.y);
+  e.t+=actCost(e);return true;
 }

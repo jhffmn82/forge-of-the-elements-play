@@ -122,7 +122,7 @@ endTurn = function(){
     var c=cloudAt(idxOf(e.x,e.y)); if(!c) return;
     if(e!==player && (e.base.undead || e.base.fumes || e.base.object)) return;   /* the dead don't breathe; beetles live in it */
     var d=applyDamage(e, c.dmg, 'poison', null); floatText(e.x,e.y,String(d),'poison');
-    if(e===player){ log('Noxious fumes burn your lungs: '+d+' damage.','c-you'); if(player.hp<=0){ heroicResolve(); if(player.hp<=0) death(); } }
+    if(e===player){ log('Noxious fumes burn your lungs: '+d+' damage.','c-you'); if(player.hp<=0){  if(player.hp<=0) death(); } }
     else if(e.hp<=0) kill(e, null);
   });
 };
@@ -239,7 +239,7 @@ aiAct = function(e){
       e.boltCd=(e.boltCd||0)-1;
       if(d<=5 && e.boltCd<=0 && clearShot(e,player)){   /* 2026-09-22: no grave bolt through its own skeletons */
         e.boltCd=3; setClip(e,'attack'); boltFx(e.x,e.y,player.x,player.y,'dark');
-        if(rng()<hostileHitChance(hitChance(b.acc+8, player.eva))){ var gd=applyDamage(player, roll(3,6)+Math.floor(floorNo/2), 'dark', e); floatText(player.x,player.y,String(gd),'dark'); log('The <b>Necro-Acolyte</b>\'s grave bolt hits you: '+gd+'.','c-you'); if(player.hp<=0) kill(player,e); }
+        if(rng()<hostileHitChance(hitChance(b.acc+8, player.eva),true)){ var gd=applyDamage(player, roll(3,6)+Math.floor(floorNo/2), 'dark', e); floatText(player.x,player.y,String(gd),'dark'); log('The <b>Necro-Acolyte</b>\'s grave bolt hits you: '+gd+'.','c-you'); if(player.hp<=0) kill(player,e); }
         else log('A grave bolt misses.','c-miss');
         e.t+=actCost(e); return;
       }
@@ -417,7 +417,7 @@ function mortyAct(e){
      clear-lane rule for shooters stops at the Necro-Acolyte */
   if(d>=2 && d<=7){
     setClip(e,'attack'); boltFx(e.x,e.y,player.x,player.y,'dark'); sfx('shaman-cast');
-    if(rng()<hostileHitChance(hitChance(e.base.acc, player.eva))){ var sd=applyDamage(player, roll(6,10)+Math.floor(floorNo/2), 'dark', e); floatText(player.x,player.y,String(sd),'dark'); log('Morty\'s soul bolt hits you: '+sd+'.','c-you'); if(player.hp<=0) kill(player,e); }
+    if(rng()<hostileHitChance(hitChance(e.base.acc, player.eva),true)){ var sd=applyDamage(player, roll(6,10)+Math.floor(floorNo/2), 'dark', e); floatText(player.x,player.y,String(sd),'dark'); log('Morty\'s soul bolt hits you: '+sd+'.','c-you'); if(player.hp<=0) kill(player,e); }
     else log('Morty\'s soul bolt misses.','c-miss');
     e.t+=actCost(e); return;
   }

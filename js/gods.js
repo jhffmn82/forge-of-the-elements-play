@@ -10,13 +10,15 @@
    (g.boonRanks). Everyone else still reads BOON_RANKS. */
 function godBoonRanks(g){ return (g && g.boonRanks) || BOON_RANKS; }
 
+function clericGodLocked(id){ return player.cls==='cleric' && !!player.god && player.god!==id; }
 function joinGod(id, startPiety){
+  if(clericGodLocked(id)) return false;
   var prev=player.god;
   if(prev && prev!==id){
     log('<b>'+GODS[prev].name+'</b> feels betrayed. Their wrath follows you for a while.','c-you');
     player.wrath={god:prev, t:60}; sfx('wrath');
   }
-  player.god=id; player.piety=startPiety||0; player.favor=Math.min(100, Math.round((startPiety||0)/2)); player.amusement=40;
+  player.god=id; player.piety=startPiety||0; player.favor=Math.min(100, Math.round((startPiety||0)/2)); player.amusement=50;
   player.lastRank=godRank();
   derive(player); player.hotbar=null; updateUI();
 }
@@ -29,7 +31,7 @@ function gainPiety(n, why, opts){
   /* 2026-09-23 (Justin): piety grows 30% per biome so a follower who switched gods can catch up; favor never does */
   var deep = typeof bidx==='function' ? Math.pow(1.3, Math.max(0, bidx())) : 1;
   player.piety=(player.piety||0)+n*deep;
-  if(!(opts && opts.pietyOnly)) player.favor=Math.min(100,(player.favor||0)+n);   /* Grom's punches pay piety only (DESIGN 12, step 8a) */
+  if(!(opts && opts.pietyOnly)) player.favor=Math.min(100,(player.favor||0)+n*divineStrength());   /* Grom's punches pay piety only (DESIGN 12, step 8a) */
   var after=godRank();
   if(after>before){
     log('<b>'+g.name+' is pleased.</b> Piety rank '+after+'.','c-kill'); sfx('piety-rank'); ringFx(player.x,player.y,g.color,3);
@@ -51,49 +53,21 @@ function pietyViolation(what, amount){
     derive(player); updateUI();
   }
 }
-function godConductEquip(kind, data){
-  var g=player.god; if(!g) return true;
-  if(g==='grom'){
-    if(kind==='weapon' && data && !data.unarmed) pietyViolation('you taking up a weapon', 15);
-    if(kind==='off' && data && ((data.block>0 && itemKey(data)!=='holy') || data.weapon)) pietyViolation('you carrying a shield or blade', 15);
-    if(kind==='armor' && data && data!==EMPTY_OFF) pietyViolation('you wearing real armor', 15);
-  }
-  if((g==='glimmer'||g==='reginald') && data && data.enchant==='shadow') pietyViolation('shadow-touched gear', 15);
-  if(g==='murk' && data && data.enchant==='light') pietyViolation('light-touched gear', 15);
-  if(g==='grumbok' && kind==='weapon' && data && typeof itemKey==='function' && itemKey(data)==='wand') pietyViolation('you taking up a wand', 15);   /* "no spells, wands or magic sigils" (2026-09-22 audit) */
-  if(g==='vellum'){
-    if(kind==='off' && data && data.block>0 && itemKey(data)!=='holy') pietyViolation('you carrying a shield', 15);
-    if(kind==='armor' && data && (data.weight==='medium' || data.weight==='heavy')) pietyViolation('you wearing heavy armor', 15);
-  }
-  return true;
-}
+function godConductEquip(){return true;}
 function spellConduct(A){
   var g=player.god; if(!g) return;
-  if(g==='grumbok') pietyViolation('you casting a spell', 15);
-  if((g==='glimmer'||g==='reginald') && A.el==='shadow') pietyViolation('shadow magic', 15);
-  if(g==='murk' && A.el==='light') pietyViolation('light magic', 15);
+
   if(g==='vellum'){
     player.castTurn=turn;
-    player.manaSpent=(player.manaSpent||0)+costOf(A);
+    player.manaSpent=(player.manaSpent||0)+(player._actualSpellCost||0);
     while(player.manaSpent>=20){ player.manaSpent-=20; gainPiety(1); }   /* the card says 20 (2026-09-22 audit) */
-    // Spell Echo repeats resolution in balance-rulings.js; it no longer refunds mana.
+
   }
 }
 /* 2026-09-23 (Justin): a spell of the element your god forbids will not come at all: no mana, no piety, no turn.
    The outermost useAbility (balance-rulings.js) asks this before anything is spent; Sylla adds Fire in sylla.js. */
-function spellForbidden(A){
-  var g=player.god; if(!g || !A) return null;
-  if((g==='glimmer'||g==='reginald') && A.el==='shadow') return 'Shadow';
-  if(g==='murk' && A.el==='light') return 'Light';
-  return null;
-}
-function sigilConduct(use){
-  var g=player.god; if(!g) return true;
-  if(g==='grumbok') pietyViolation('you using a magic sigil', 10);
-  if(g==='glimmer' && (use==='vanish'||use==='blink')) pietyViolation('a shadow sigil', 10);
-  if(g==='murk' && (use==='heal'||use==='mapping')) pietyViolation('a light sigil', 10);
-  return true;
-}
+function spellForbidden(A){if(!A)return null;if(player.god==='grumbok'&&!A.tech&&!A.divine)return 'spells';return forbiddenElement(A.el)?cap(A.el):null;}
+function sigilConduct(use){var S=SIGILS[use];if(player.god==='grumbok'||S&&(S.motes||[]).some(forbiddenElement))return refuseDivine();return true;}
 /* Old Anvil has no kills to count: what he wants is essence, so every 5 spent anywhere - a Forge upgrade,
    an enchantment, a toll, an offering - is a point of piety. Measured against the 3,900 essence lying on
    floors 1-20 (plus what recycling pays), a smith who spends what he finds reaches rank 5 in biome 4,
@@ -113,10 +87,10 @@ function godOnKill(e, by){
      awake and fighting; only a sleeping one is a stealth kill (a surprise attack already costs piety in attack()). */
   var aware = e.state!=='asleep';
   if(g==='grom'){ if(byPlayer && player.weapon && player.weapon.unarmed) gainPiety(2+(big?15:0)); }   /* 2026-09-23 audit: kills made unarmed pay, on top of the punch piety (DESIGN 12, step 8a) */
-  else if(g==='grumbok'){ if(byPlayer||byAlly) gainPiety((e.base.spellcaster||e.base.el?5:2)+(big?15:0)); if(r>=3 && e.base.spellcaster && byPlayer){ var h=Math.round(player.maxhp*0.1); healPlayer(h); } }
+  else if(g==='grumbok'){ if(byPlayer||byAlly) gainPiety((e.base.spellcaster||e.base.el?5:2)+(big?15:0)); }
   else if(g==='glimmer'){ if(byPlayer||byAlly) gainPiety((e.base.undead||e.base.shadowy?4:2)+(big?15:0)); }
   else if(g==='murk'){ if(byAlly && by.undeadServant) gainPiety(4+(big?15:0)); else if((byPlayer||byAlly) && !e.base.undead) gainPiety(2+(big?15:0));
-    if((byPlayer || (byAlly && by.undeadServant)) && e.foe && !e.base.undead && r>0){ healPlayer(2*r); } }
+    if((byPlayer || (byAlly && by.undeadServant)) && e.foe && !e.base.undead && r>0){ healPlayer(Math.round(r*divineStrength())); } }
   else if(g==='reginald'){ if(byPlayer && aware) gainPiety(2+(big?15:0)); }
   else if(g==='vellum'){ if(byPlayer && player.castTurn===turn) gainPiety(2+(big?15:0)); }   /* 2026-09-23 audit: the elite bonus needs a spell kill too (DESIGN 6.5) */
   else if(g==='wobbles'){ gainPiety(big?15:2); }
@@ -131,7 +105,7 @@ function godTick(seesFoe){
   if(player.blessed>0){ player.blessed--; if(player.blessed===0) log('The shrine\'s blessing fades.','c-info'); }
 }
 function wobblesIntervention(big){
-  var good = rng() < (big ? 0.7 : 0.6) + wobbleBias(godRank()) + (typeof WOBBLE_BONUS==='number' ? WOBBLE_BONUS : 0);   /* Favourite Toy */
+  var good = rng() < 1-(1-((big ? 0.7 : 0.6)+wobbleBias(godRank())))/divineStrength();   /* Favourite Toy */
   sfx('wobbles-giggle');
   var foes=ents.filter(function(e){ return e.foe && vis[idxOf(e.x,e.y)]; });
   if(good){
@@ -159,39 +133,8 @@ function wobblesIntervention(big){
 
 /* ---------------------------------------------------------------- prayers */
 function prayerList(){ return player.god ? (GODS[player.god].prayers||[]) : []; }
-function canPray(pid){
-  var P=PRAYERS[pid]; if(!P || !player.god) return false;
-  if(godRank()<P.rank) return false;
-  if(P.favor && (player.favor||0)<P.favor) return false;
-  if(P.essence && player.essence<P.essence) return false;
-  if(P.amusement && (player.amusement||0)<P.amusement) return false;
-  return true;
-}
-function usePrayer(pid){
-  if(!canPray(pid)){ log('You cannot offer that prayer right now.','c-info'); sfx('ui-error'); return; }
-  var P=PRAYERS[pid], div=divineStrength();
-  if(P.favor) player.favor-=P.favor;
-  if(P.essence) spendEssence(P.essence);
-  if(P.amusement) player.amusement-=P.amusement;
-  sfx('pray'); setClip(player,'cast'); ringFx(player.x,player.y,GODS[player.god].color,2.5);
-  if(pid==='ironhide'){ player.buffs.ironhide=divineDuration(12); derive(player); log('Iron Hide: +5 armor.','c-good'); }
-  else if(pid==='pummel'){ player.pummel=3; log('Pummel: your next three unarmed hits deal double and stun.','c-good'); }
-  else if(pid==='rampage'){ player.buffs.rampage=10; derive(player); log('Rampage! +40% melee damage and speed.','c-good'); }
-  else if(pid==='trollblood'){ var h=Math.round(player.maxhp*0.4*div); healPlayer(h); clearBad(); floatText(player.x,player.y,'+'+h,'heal'); log('Trollblood: +'+h+' HP.','c-good'); }
-  else if(pid==='consecrate'){ clearBad(); ents.forEach(function(e){ if(e.foe && dist(e,player)<=3 && (e.base.undead||e.base.shadowy)){ var d=applyDamage(e,Math.round(8*div),'light',player); floatText(e.x,e.y,String(d),'light'); applyStatus(e,'fear',3); if(e.hp<=0) kill(e,player); } }); sparkleFx(player.x,player.y,'light',40); log('Holy ground flares around you.','c-good'); }
-  else if(pid==='sanctuary'){ ents.forEach(function(e){ if(e.foe && dist(e,player)<=5) applyStatus(e,'fear',4); }); sparkleFx(player.x,player.y,'light',50); log('Sanctuary: nothing dares approach.','c-good'); }
-  else if(pid==='unholyaura'){ player.st.aura={t:8}; sparkleFx(player.x,player.y,'dark',40); log('An unholy aura seeps from you.','c-good'); }
-  else if(pid==='corpsefeast'){ var h2=Math.round(player.maxhp*0.3*div); healPlayer(h2); ents.forEach(function(e){ if(e.ally) e.hp=e.maxhp; }); floatText(player.x,player.y,'+'+h2,'heal'); log('Corpse Feast: you and your dead are restored.','c-good'); }
-  else if(pid==='laststand'){ player.buffs.laststand=10; log('Last Stand: you take 50% less damage.','c-good'); }   /* 2026-09-23: the log said 35%; applyDamage halves */
-  else if(pid==='rally'){ var h3=Math.round(player.maxhp*0.25*div); healPlayer(h3); clearBad(); player.buffs.rally=10; derive(player); floatText(player.x,player.y,'+'+h3,'heal'); log('Rally!','c-good'); }
-  else if(pid==='offering'){ var atShrine = at(player.x,player.y-1)===SHRINE||at(player.x,player.y+1)===SHRINE||at(player.x-1,player.y)===SHRINE||at(player.x+1,player.y)===SHRINE;
-    gainPiety(Math.max(atShrine?20:10, Math.round((P.essence||0)/(atShrine?5:10)))); log('Old Anvil accepts your offering'+(atShrine?' gladly at his shrine':'')+'.','c-good'); sfx('forge-open'); }
-  else if(pid==='reforge'){ player.weapon.plus=(player.weapon.plus||0)+1; derive(player); log('Reforge: your '+gearName(player.weapon)+' is permanently improved.','c-kill'); sfx('forge-enchant'); }
-  else if(pid==='rolldice2'){ wobblesIntervention(true); }
-  else if(pid==='manatide'){ var mt=Math.round(player.maxmp*0.5*div); player.mp=Math.min(player.maxmp, player.mp+mt); floatText(player.x,player.y,'+'+mt+' mp','magic'); sparkleFx(player.x,player.y,'water',30); log('Mana Tide: +'+mt+' mana.','c-good'); }
-  if(pid==='consecrate'){ updateUI(); draw(); return; }   /* instant: cleansing yourself does not cost the turn */
-  endTurn();
-}
+
+
 function clearBad(){ ['burn','poison','chill','frozen','fear','blind','stun','root','corrupt'].forEach(function(k){ delete player.st[k]; }); }
 
 /* ---------------------------------------------------------------- the shrine window */
@@ -265,4 +208,158 @@ function faithHTML(){
        '<button class="prayer" data-p="'+pid+'" '+(ok?'':'disabled')+'>'+(P.favor?P.favor+' favor':P.essence?P.essence+' essence':P.amusement?P.amusement+' amusement':'pray')+'</button></div>'; });
   if(!shown) h+='<p class="c-info" style="font-size:11px">No prayers yet. Your god will teach you as your piety grows.</p>';
   return h+'</div>';
+}
+
+function forbiddenElement(el){return ((player.god==='glimmer'||player.god==='reginald')&&el==='shadow')||(player.god==='murk'&&el==='light')||(player.god==='sylla'&&el==='fire');}
+
+function equipmentForbidden(slot,it){
+ if(!it||it===EMPTY_OFF||it.unarmed)return false;
+ var k=itemKey(it),g=player.god;
+ if(g==='grom')return !(['ring0','ring1','amulet'].includes(slot)||k==='holy');
+ if(forbiddenElement(it.enchant))return true;
+ if(g==='grumbok'&&k==='wand')return true;
+ if(g==='vellum'&&(it.hands===2||k==='staff'||k==='bow'||(it.block>0&&k!=='holy')||['medium','heavy'].includes(it.weight)))return true;
+ if(g==='sylla'&&((it.block>0&&k!=='holy')||['medium','heavy'].includes(it.weight)))return true;
+ return false;
+}
+
+function refuseDivine(){log(GODS[player.god].name+' prohibits that action.','c-info');sfx('ui-error');return false;}
+
+function enforceDivineEquipment(p){
+ if(!p.god||!p.bag||!p.sets)return;
+ function stow(it,kind){if(!it||it===EMPTY_OFF||it.unarmed)return;p.bag.push({kind:kind,data:it,name:gearName(it),icon:it.icon,n:1});}
+ p.sets.forEach(function(it,i){if(equipmentForbidden('weapon',it)){stow(it,'weapon');p.sets[i]=FISTS;}});
+ [['armorItem','armor'],['off','off'],['ranged','weapon']].forEach(function(pair){var it=p[pair[0]];if(equipmentForbidden(pair[0]==='ranged'?'ranged':pair[1],it)){stow(it,pair[1]);p[pair[0]]=pair[0]==='off'?EMPTY_OFF:null;}});
+}
+
+function freeInvocation(A){return capstone('vellum')&&A&&!A.tech&&rng()<.30;}
+
+function spendSpellMana(A){var n=costOf(A);if(freeInvocation(A))n=0;player.mp-=n;player._actualSpellCost=n;if(!A.tech)player.castingSpell=true;return n;}
+
+function spendDivineSpell(n){if(capstone('vellum')&&rng()<.30)n=0;player.favor-=n;player.castingSpell=true;return n;}
+
+function fullDivineDuration(n){var p=holyDurationPct();return n+(p>0?Math.max(1,Math.round(n*p)):0);}
+
+function playerHitRewards(target,singleTarget){
+  if(hasGod('vellum') && buff('communion') && player._communionAction!==turn){
+    player._communionAction=turn;
+    player.favor=Math.min(100,(player.favor||0)+godRank()*divineStrength());
+  }
+  if(singleTarget && target.hp>0 && hasGod('vellum') && godRank()>=3 && combatRoll(.10*godRank(),true))
+    knockback(target,target.x-player.x,target.y-player.y,2);
+}
+
+/* Old save/hotbar names resolve here; only current prayers have implementations. */
+function prayerId(id){return {manatide:'arcanelance',unbound:'arcanenova',corpsefeast:'bonespear',offering:'fieldsmelt',reforge:'anviltoll'}[id]||id;}
+function canPray(id){
+  id=prayerId(id);
+  var P=PRAYERS[id];
+  if(!P || !player.god || prayerList().indexOf(id)<0 || godRank()<P.rank)return false;
+  if(id==='fieldsmelt' && recoveryInCombat())return false;
+  if(id==='laststand' && (player.hp>player.maxhp*.5 || buff('laststand')))return false;
+  return !(P.favor && (player.favor||0)<P.favor || P.essence && player.essence<P.essence || P.amusement && (player.amusement||0)<P.amusement);
+}
+function spendPrayer(id){
+  var P=PRAYERS[prayerId(id)];
+  if(P.favor)player.favor-=P.favor;
+  if(P.essence)spendEssence(P.essence);
+  if(P.amusement)player.amusement-=P.amusement;
+}
+function usePrayer(id){
+  var before=player.t;
+  try{return performPrayer(prayerId(id));}
+  finally{
+    if(player.t===before){
+      player._worldBuffPrev=Object.assign({},player.buffs);
+      player._worldBuffBorn=player._worldBuffBorn||{};
+      Object.keys(player.buffs||{}).forEach(function(k){if(player.buffs[k]>0)player._worldBuffBorn[k]=before;});
+    }
+  }
+}
+function performPrayer(id){
+  if(!canPray(id)){log('You cannot offer that prayer right now.','c-info');sfx('ui-error');return false;}
+  var aim={bonespear:BONE_SPEAR,lance:LANCE,arcanelance:ARCANE_LANCE,arcanenova:ARCANE_NOVA}[id];
+  if(aim){aiming={A:aim,prayer:id};if(openSheet)showSheet(openSheet);log(aim.name+': choose a target within '+aim.range+' tiles.','c-info');draw();return true;}
+  if(id==='fieldsmelt')return prayFieldSmelt();
+  if(id==='raisedead')return prayRaiseDead();
+  if(id==='the-brood')return prayTheBrood();
+  if(id==='venom-burst')return prayVenomBurst();
+  spendPrayer(id);sfx('pray');setClip(player,'cast');
+  var div=divineStrength();
+  if(id==='ironhide'){player.buffs.ironhide=12;player.hideShield=Math.round((5+2*godRank())*div);derive(player);log('Iron Hide: armor and shield refreshed.','c-good');}
+  else if(id==='pummel'){player.pummel=3;log('Pummel empowers your next three successful unarmed hits.','c-good');}
+  else if(id==='laststand'||id==='rampage'){player.buffs[id]=10;derive(player);updateUI();return true;}
+  else if(id==='luckystreak'){player.buffs.luckystreak=8;derive(player);sfx('wobbles-giggle');updateUI();return true;}
+  else if(id==='consecrate'){
+    clearBad();ents.slice().forEach(function(e){if(e.foe&&dist(e,player)<=3&&(e.base.undead||e.base.shadowy)){var d=applyDamage(e,Math.round(8*div),'light',player);floatText(e.x,e.y,String(d),'light');if(e.hp<=0)kill(e,player);}});
+    sparkleFx(player.x,player.y,'light',40);updateUI();return true;
+  }
+  else if(id==='sanctuary'){floorMeta.sanctuary={x:player.x,y:player.y,until:player.t+100*fullDivineDuration(10)};ents.forEach(function(e){if(e.foe&&dist(e,player)<=3)applyStatus(e,'fear',4);});ringFx(player.x,player.y,'#FFE4A0',3);}
+  else if(id==='trollblood'){healPlayer(player.maxhp*.4*div);clearBad();}
+  else if(id==='rally'){
+    healPlayer(player.maxhp*.25*div);clearBad();player.buffs.rally=10;
+    ents.forEach(function(e){if(e.ally&&e.hp>0&&vis[idxOf(e.x,e.y)]){
+      e.hp=Math.min(e.maxhp,e.hp+e.maxhp*.25*div*(inSanctuary(e)?1+.25*div:1));
+      Object.keys(e.st||{}).forEach(function(k){if(STATUS_INFO[k]&&STATUS_INFO[k].bad)delete e.st[k];});e.rallyUntil=player.t+100*fullDivineDuration(10);
+    }});
+  }
+  else if(id==='anviltoll'){
+    sfx('forge-craft');setClip(player,'melee');ringFx(player.x,player.y,GODS.anvil.color,2.5);if(typeof SHAKE!=='undefined')SHAKE=8;
+    var struck=0;
+    ents.filter(function(e){return e.foe&&e.hp>0&&dist(e,player)<=2;}).forEach(function(e){
+      var hp=e.hp;attack(player,e,div,"Anvil's Toll");if(e.hp<hp)struck++;
+      if(e.hp>0&&e.hp<hp){knockback(e,e.x-player.x,e.y-player.y,2);applyStatus(e,'stun',1);}
+    });
+    log("<b>Anvil's Toll.</b> The hammer strikes "+struck+(struck===1?' foe.':' foes.'),'c-good');player.hidden=0;
+  }
+  else if(id==='rolldice2')greaterPrayer();
+  endTurn();return true;
+}
+function prayFieldSmelt(){
+  var choices=player.bag.map(function(b,i){return {b:b,i:i,v:recycleValue(b)};}).filter(function(o){return o.v>0;});
+  if(!choices.length){log('No recyclable items in your bag.','c-info');return false;}
+  openModal('Field Smelt','Choose one carried item to destroy for its full recycling value.',choices.map(function(o){return {label:o.b.name+' → '+o.v+' essence',fn:function(){
+    if(!canPray('fieldsmelt')||player.bag[o.i]!==o.b)return;
+    spendPrayer('fieldsmelt');player.bag.splice(o.i,1);player.essence+=recycleValue(o.b);closeModal();updateUI();
+  }};}));return true;
+}
+
+function godDamageResolved(target,d,type,source){
+
+
+ if(d>0&&source===player&&target.foe){
+
+  if(player.god==='wobbles')combatAmusement('out');
+ }
+ if(d>0&&target===player&&source&&source.foe&&player.god==='wobbles')combatAmusement('in');
+ if(d>0&&target.foe&&source&&source.ally){target.state='hunt';target.lastSeen={x:source.x,y:source.y};target.petAggressor=source.id;}
+
+ if(d>0&&target&&target.foe&&source&&source.ally&&hasGod('murk')&&godRank()>=3&&!source._murkProc){
+  source._murkProc=true;
+  try{
+   var el=player.weapon&&player.weapon.enchant,pts=affPts(el),bonus=godRank();
+   if(target.hp>0)applyDamage(target,bonus,'dark',source);
+   if(target.hp>0){
+    if(el==='fire'){applyDamage(target,Math.round(d*(.10+.03*pts)),'fire',source);if(target.hp>0&&pRoll(.05*pts))applyStatus(target,'burn',3,burnDmg());}
+    if(el==='water'&&pRoll(.15+.05*pts))addChill(target);
+    if(el==='earth'&&pRoll(.15*enchantScale('earth')))applyStatus(target,'root',2);
+    if(el==='air'&&pRoll(Math.max(.05,.05*pts)))applyDamage(target,Math.round(d),type,source);
+    if(el==='light'&&(target.base.undead||target.base.shadowy))applyDamage(target,Math.round(d*.25),'light',source);
+    if(el==='shadow'&&pRoll(Math.max(.05,.05*pts))){applyDamage(target,Math.round(d*.25),'dark',source);if(target.hp>0)applyStatus(target,'corrupt',3);}
+   }
+  }finally{source._murkProc=false;}
+ }
+
+}
+function combatAmusement(side){var k='_amuse_'+side,t=Math.floor(worldNow()/100);if(player[k]===t)return;player[k]=t;player.amusement=Math.min(100,(player.amusement||0)+1);}
+function resolveAmusement(){
+ if(player.god!=='wobbles')return;
+ if(player.amusement>=100){player.amusement-=50;if(player.hp<player.maxhp*.75){healPlayer(player.maxhp*.4);log('Wobbles rewards you with healing.','c-good');}else if(rng()<.5){var it=randomGear();it.x=player.x;it.y=player.y;items.push(it);log('Wobbles leaves you a gift.','c-good');}else{player.essence+=ri(20,40);log('Wobbles showers you with essence.','c-good');}}
+ else if(player.amusement<=0){player.amusement=50;applyStatus(player,pick(['blind','chill']),2);log('Bored, Wobbles plays a prank.','c-you');}
+}
+
+function godsWorldAdvance(from,to){if(!buff('ironhide'))player.hideShield=0;if(!(player.hidden>0))player.syllaDark=0;
+ ents.forEach(function(e){if(e.cowardMark&&e.challengeUntil<=to){e.cowardMark=false;e.challenged=false;}if(player.god==='reginald'&&e.foe&&e.hp>0&&dist(e,player)<=8){e.state='hunt';e.lastSeen={x:player.x,y:player.y};}});
+ if(player.god==='wobbles'&&!recoveryInCombat()){player._amuseDrain=(player._amuseDrain||0)+(to-from);while(player._amuseDrain>=1000){player._amuseDrain-=1000;player.amusement=Math.max(0,player.amusement-1);}}
+ resolveAmusement();
 }

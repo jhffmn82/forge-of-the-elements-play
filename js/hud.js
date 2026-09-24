@@ -27,7 +27,7 @@
     '#hud2 .motechip .dot{margin-right:1px}',
     '#hud2 .faithchip .meter.sm{display:none}',
     '#hotbar{grid-template-columns:repeat(8,52px)!important;grid-template-rows:52px!important;min-height:0!important;gap:5px;flex:0 0 auto}',
-    '#hotbar .slot{padding:0;align-items:center;justify-content:center;width:52px;height:52px}',
+    '#hotbar .slot{padding:0;align-items:center;justify-content:center;width:52px;height:52px;border-width:2px;background:rgba(25,21,18,.4)}',
     '#hotbar .slot .n,#hotbar .slot .c{display:none}',
     /* 2026-09-20: Justin - the icons sat small and off to one side. The art was painted at 28px into a 38px box
        that was never centred on its contents, so every slot looked lop-sided. The box is centred, fills most of
@@ -91,7 +91,9 @@ abilityBar = function(){
     /* cooldowns and charges still show as a small number, since the text line is hidden */
     var s=player.hotbar[i], c=b.querySelector('.c'), txt=c ? c.textContent : '';
     if(s && (/turns/.test(txt) || s.type==='amulet')){
-      var m=txt.match(/(\d+)\s*turns/); if(m){ var d=document.createElement('span'); d.className='cdn'; d.textContent=m[1]; b.appendChild(d); }
+      var m=txt.match(/(\d+)\s*turns/), a=s.type==='amulet' && player.amulet;
+      var count=a ? (a.charges||0)+'/'+(typeof amuletCap==='function' ? amuletCap(a) : AMULET_MAX_CHARGES) : m && m[1];
+      if(count!==null && count!==false){ var d=document.createElement('span'); d.className='cdn'; d.textContent=count; b.appendChild(d); }
     }
   });
 };

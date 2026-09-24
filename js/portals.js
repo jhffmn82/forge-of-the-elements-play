@@ -267,7 +267,7 @@ function planeTick(){
         if(t!==player && t.base && (PLANE_ROSTER[el].mobs.indexOf(t.kind)>=0 || t.kind===PLANE_ROSTER[el].elite)) return;
         var hd=applyDamage(t, roll(5,8)+Math.floor(floorNo/2), el==='light'?'light':'phys', null); floatText(t.x,t.y,String(hd), el==='light'?'light':'phys');
         if(el==='light') applyStatus(t,'blind',2);
-        if(t===player){ log(el==='light' ? 'The floor flares with blinding light: '+hd+'!' : 'Rocks crash down on you: '+hd+'!','c-you'); if(player.hp<=0){ heroicResolve(); if(player.hp<=0) death(); } }
+        if(t===player){ log(el==='light' ? 'The floor flares with blinding light: '+hd+'!' : 'Rocks crash down on you: '+hd+'!','c-you'); if(player.hp<=0){  if(player.hp<=0) death(); } }
         else if(t.hp<=0) kill(t, null);
       });
     });

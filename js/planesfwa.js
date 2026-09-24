@@ -362,7 +362,7 @@ function fwaPush(t, dx, dy, n){
 function fwaHurt(t, n, type, src, why){
   if(!t || t.hp<=0) return 0;
   var d=applyDamage(t, n, type, src); floatText(t.x, t.y, String(d), type);
-  if(t===player){ if(why) log(why+': <b>'+d+'</b>.','c-you'); if(player.hp<=0){ heroicResolve(); if(player.hp<=0) death(); } }
+  if(t===player){ if(why) log(why+': <b>'+d+'</b>.','c-you'); if(player.hp<=0){  if(player.hp<=0) death(); } }
   else if(t.hp<=0) kill(t, src);
   return d;
 }

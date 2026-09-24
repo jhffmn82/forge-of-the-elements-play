@@ -193,7 +193,7 @@ armorCard = function(a, worn){
   if(a) tierNormalize(a);
   var h=_armorCardTier(a, worn);
   if(a && a.armor===0 && itemPlus(a)) h=h.replace('<span>Armor</span><b>0</b>', '<span>Armor</span><b>'+itemPlus(a)+'</b>');
-  if(a && itemKey(a)==='robe' && !a.unid) h+='<div class="row"><span>Spell damage</span><b>+'+Math.round(robeSpell(a)*100)+'%</b></div><div class="row"><span>Max mana</span><b>+'+Math.round(TIER_ROBE.mana[tierNum(a)]*100)+'%</b></div>';
+  if(a && itemKey(a)==='robe' && !a.unid) h+='<div class="row"><span>Spell damage</span><b>+'+Math.round(robeSpell(a)*gearPassiveBonus()*100)+'%</b></div><div class="row"><span>Max mana</span><b>+'+Math.round(TIER_ROBE.mana[tierNum(a)]*gearPassiveBonus()*100)+'%</b></div>';
   return tierTint(h, a) + (a && !worn ? reqRow(a) : '');
 };
 var _bagCardTier = bagCard;
@@ -204,9 +204,8 @@ bagCard = function(it){
     var d=it.data, k=itemKey(d), extra='';
     if(!d.unid){
       if(TIER_BLOCK[k]) extra+='<div class="row"><span>Block</span><b>'+Math.round((d.block+TIER_BLOCK.per*(d.plus||0))*100)+'%</b></div>';
-      if(k==='tome') extra+='<div class="row"><span>Max mana</span><b>+'+Math.round(d.manaPct*100)+'%</b></div>';
-      if(k==='holy') extra+='<div class="row"><span>Invoke &amp; prayer strength</span><b>+'+Math.round(d.divine*100)+'%</b></div>';
-      if(k==='holy') extra+='<div class="row"><span>Beneficial prayer duration</span><b>+'+((d.plus||0)>=3?2:1)+' turns</b></div>';
+      if(k==='tome') extra+='<div class="row"><span>Max mana</span><b>+'+Math.round(d.manaPct*gearPassiveBonus()*100)+'%</b></div>';
+      if(k==='holy') extra+='<div class="row"><span>Invoke &amp; prayer strength</span><b>+'+Math.round(d.divine*gearPassiveBonus()*100)+'%</b></div>';
       if(d.kind==='off' && d.weapon) extra+='<div class="row"><span>Off-hand strike</span><b>60% damage, own procs</b></div>';
     }
     h=tierTint(h, d)+extra+reqRow(d);
@@ -253,7 +252,7 @@ derive = function(p){
                               + 0.02*Math.max(0, (p.stats&&p.stats.mig||10)-10)) : 0;
   /* tomes carry their own per-level mana; undo upgrade.js's older +5%/level */
   if(o && o!==EMPTY_OFF && !p.twoHanded && o.manaPct && (o.plus||0)) p.maxmp=Math.round(p.maxmp/(1+0.05*o.plus));
-  if(arm && itemKey(arm)==='robe') p.maxmp=Math.round(p.maxmp*(1+TIER_ROBE.mana[tierNum(arm)]));
+  if(arm && itemKey(arm)==='robe') p.maxmp=Math.round(p.maxmp*(1+TIER_ROBE.mana[tierNum(arm)]*gearPassiveBonus()));
   if(p.hp>p.maxhp) p.hp=p.maxhp;
   if(p.mp>p.maxmp) p.mp=p.maxmp;
 };
@@ -263,7 +262,7 @@ spellPower = function(A){
   var m=_spellPowerTier(A), arm=player.armorItem;
   if(arm && itemKey(arm)==='robe' && !arm.cursed){
     var pool=focusBonus(player.weapon) + (player.twoHanded ? 0 : focusBonus(player.off));
-    m *= Math.max(0.1, 1+pool+robeSpell(arm)) / Math.max(0.1, 1+pool);
+    m *= Math.max(0.1, 1+pool+robeSpell(arm)*gearPassiveBonus()) / Math.max(0.1, 1+pool);
   }
   return m;
 };

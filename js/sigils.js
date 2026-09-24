@@ -22,7 +22,7 @@ var SIGIL_ORDER = {
     levitate2: {name:'Air sigil+', motes:['air','air'], desc:'Float for 60 turns, and move 30% faster for 10.'},
     stoneskin2:{name:'Earth sigil+', motes:['earth','earth'], desc:'Stone skin for 30 turns and a shield of 20% of your max HP.'},
     heal2:     {name:'Light sigil+', motes:['light','light'], desc:'Heal to full and cleanse harmful conditions.'},
-    vanish2:   {name:'Shadow sigil+', motes:['shadow','shadow'], desc:'Vanish for 20 turns; enemies lose track of you.'},
+    vanish2:   {name:'Shadow sigil+', motes:['shadow','shadow'], desc:'Vanish for 5 turns; enemies lose track of you.'},
     cinder:    {name:'Sigil of Cinder Stride', motes:['fire','air'], desc:'Move 50% faster for 10 turns, leaving fire where you step.'},
     magma:     {name:'Sigil of the Molten Ring', motes:['fire','earth'], desc:'The ground 2 tiles around you (not under you) burns for 5 turns.'},
     sunburst:  {name:'Sigil of Sunburst', motes:['fire','light'], desc:'Every enemy you can see takes light damage and is Blinded for 3 turns.'},
@@ -76,14 +76,7 @@ randomSigilUse = function(){
 };
 
 /* gods judge sigils by their motes */
-sigilConduct = function(use){
-  var g=player.god; if(!g) return true;
-  var motes=(SIGILS[use]||{}).motes||[];
-  if(g==='grumbok') pietyViolation('you using a magic sigil', 10);
-  if(g==='glimmer' && motes.indexOf('shadow')>=0) pietyViolation('a shadow sigil', 10);
-  if(g==='murk' && motes.indexOf('light')>=0) pietyViolation('a light sigil', 10);
-  return true;
-};
+
 
 /* ---------------------------------------------------------------- effects */
 function visibleFoes(maxD){ return ents.filter(function(e){ return e.foe && vis[idxOf(e.x,e.y)] && (maxD===undefined || dist(player,e)<=maxD); }); }
@@ -116,7 +109,7 @@ useSigil = function(use){
   else if(use==='heal2'){
     if(player.race==='gloomling'){ var hd=applyDamage(player,Math.round(player.maxhp*0.3),'light',null); floatText(player.x,player.y,String(hd),'light'); log('The blazing light scorches you!','c-you'); if(player.hp<=0) death(); }
     else { player.hp=player.maxhp; cleanseAll(); floatText(player.x,player.y,'full heal','heal'); sparkleFx(player.x,player.y,'heal',40); player.buffs.afterglow=15; log('Light pours through you. You are whole, and the light lingers: 5% a turn for 15 turns.','c-good'); } }
-  else if(use==='vanish2'){ player.hidden=20; ents.forEach(function(e){ if(e.foe && e.state==='hunt'){ e.state='wander'; e.lastSeen=null; } }); log('You fold into the shadows.','c-good'); }
+  else if(use==='vanish2'){ player.hidden=5; ents.forEach(function(e){ if(e.foe && e.state==='hunt'){ e.state='wander'; e.lastSeen=null; } }); log('You fold into the shadows.','c-good'); }
   else if(use==='cinder'){ player.buffs.cinder=10; derive(player); player._cinderAt={x:player.x,y:player.y}; log('Your feet catch fire. Run.','c-fire'); }
   else if(use==='magma'){ for(var my=-2;my<=2;my++) for(var mx=-2;mx<=2;mx++){ var tx=player.x+mx, ty=player.y+my; if((mx||my) && inb(tx,ty) && walkable(tx,ty)) fireT[idxOf(tx,ty)]=Math.max(fireT[idxOf(tx,ty)],5); }
     ents.forEach(function(e){ if(e.foe && dist(e,player)<=2) applyStatus(e,'burn',3,sDMG(2)); }); log('The floor around you melts into a ring of fire.','c-fire'); }

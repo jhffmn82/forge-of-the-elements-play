@@ -41,16 +41,16 @@ function kitNames(c){
 }
 
 /* abilities */
-ABILITIES.double.cost = 7;   /* 2026-09-17: techniques cost 7 so martials keep their rhythm on the leaner mana pool */
-ABILITIES.sap.cost = 7;
+   /* 2026-09-17: techniques cost 7 so martials keep their rhythm on the leaner mana pool */
+
 /* 2026-09-17: Sap reaches 2 tiles whatever you hold (a bow no longer makes it a 6-tile knockout), and an enemy
    that has been sapped is immune to stuns from then on */
-ABILITIES.sap.range = 2; delete ABILITIES.sap.useWeaponRange;
-ABILITIES.sap.desc = 'Range 2: knocks the target out for 3 turns (6 if it was unaware). The hit that wakes it is a surprise critical. A target can only be Sapped once; other Stuns still work.';
-ABILITIES.double.desc = 'An attack: two weapon hits on an adjacent enemy for the time of one attack.';
-ABILITIES.missile.desc = 'Always hits; magic damage nothing resists. +1 base damage per affinity point.';
-ABILITIES.shadowstep = {name:'Shadowstep', cost:0, cd:15, kind:'self', tech:true, icon:'ic-shadowstep', desc:'With no enemy next to you, slip into hiding for 3 turns; hunting enemies lose you. 15-turn cooldown.'};
-['firebolt','frostshard','spark','root','smite','shadowbolt'].forEach(function(k){ ABILITIES[k].cost=20; ABILITIES[k].base=[14,22]; });
+ delete ABILITIES.sap.useWeaponRange;
+
+
+
+
+
 
 /* ---------------------------------------------------------------- creation */
 var _statsForCls = statsFor;
@@ -180,8 +180,7 @@ abilityBar = function(){
    reason to play a Fighter over a Cleric. The Fighter rushes up to five tiles in a straight line at an enemy, the
    blow cannot miss, and every enemy next to where they land is stunned for two turns. No mana; a 20-turn cooldown.
    The run has to be a clear straight line (boltPath's, the same line an arrow flies) over walkable, empty tiles. */
-ABILITIES.charge = {name:'Charge', cost:0, cd:20, kind:'charge', range:6, tech:true, icon:'ic-charge',
-  desc:'Rush up to 5 tiles in a straight line, at an enemy or to open ground. A blow on the target cannot miss, and every enemy next to you where you land is stunned for 2 turns. 20-turn cooldown.'};
+
 function chargeLane(f, ground){
   /* Justin, 2026-09-22: Charge also targets open ground, so a warrior can break away from a crowd. */
   var path=boltPath(player.x,player.y,f.x,f.y), end=path[path.length-1];

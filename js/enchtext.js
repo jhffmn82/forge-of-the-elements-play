@@ -12,38 +12,44 @@ function eSc(el){ return typeof enchantScale==='function' ? enchantScale(el) : 1
 function ePct(v){ return Math.round(v*100) + '%'; }
 
 var ENCH_LIVE = {
+  holy: {
+    fire:function(){return '+'+ePct(.08*eSc('fire'))+' damage while buffed';},
+    water:function(){return '+'+ePct(.15*eSc('water'))+' mana regeneration while buffed';},
+    air:function(){return ePct(.05*eSc('air'))+' less action time while buffed';},
+    earth:function(){return ePct(Math.min(.5,.05*eSc('earth')))+' less damage taken while buffed';},
+    light:function(){return 'Gaining a buff heals '+ePct(.03*eSc('light'))+' of maximum HP';},
+    shadow:function(){return '+'+ePct(.03*eSc('shadow'))+' crit chance while buffed';}
+  },
   weapon: {
-    fire:  function(){ var p=ePts('fire'); return '+'+ePct(0.10+0.03*p)+' of each hit as fire' + (p ? ', '+ePct(0.05*p)+' chance to set Burning' : ''); },
-    water: function(){ return ePct(0.15+0.05*ePts('water'))+' chance to Chill'; },
-    air:   function(){ return ePct(Math.max(0.05, 0.05*ePts('air')))+' chance of an instant extra attack, or a spell landing twice'; },
+    fire:  function(){ var p=ePts('fire'); return '+'+ePct((0.10+0.03*p)*enchantGodBonus())+' of each hit as fire' + (p ? ', '+ePct(0.05*p*enchantGodBonus())+' chance to set Burning' : ''); },
+    water: function(){ return ePct((0.15+0.05*ePts('water'))*enchantGodBonus())+' chance to Chill'; },
+    air:   function(){ return ePct(Math.max(0.05, 0.05*ePts('air'))*enchantGodBonus())+' chance of an instant extra attack, or a spell landing twice'; },
     earth: function(){ return ePct(0.15*eSc('earth'))+' chance to Root for 2 turns'; },
-    light: function(){ return '+'+Math.round(10*eSc('light'))+' accuracy, +25% damage to undead and shadow'; },
-    shadow:function(){ return ePct(Math.max(0.05, 0.05*ePts('shadow')))+' chance of +25% dark damage and Corrupt; +1 damage to Hollowed'; }
+    light: function(){ return '+'+Math.round(10*eSc('light'))+' accuracy, +'+ePct(.25*enchantGodBonus())+' damage to undead and shadow'; },
+    shadow:function(){ return ePct(Math.max(0.05, 0.05*ePts('shadow'))*enchantGodBonus())+' chance of +'+ePct(.25*enchantGodBonus())+' dark damage and Corrupt; +1 damage to Hollowed'; }
   },
-  armor: {
-    fire:  function(){ return '+'+ePct(0.10*eSc('fire'))+' fire resistance'; },
-    water: function(){ return '+'+Math.round(8*eSc('water'))+' evasion'; },
-    air:   function(){ return '+'+ePct(0.10*eSc('air'))+' lightning resistance'; },
-    earth: function(){ return '+'+Math.round(2*eSc('earth'))+' armor'; },
-    light: function(){ return '+'+ePct(0.5*eSc('light'))+' HP regeneration'; },
-    shadow:function(){ return '+'+ePct(Math.max(0.05, 0.05*ePts('shadow')))+' stealth'; }
-  },
+  armor: {fire:function(){return '+'+ePct((.10+.05*ePts('fire'))*enchantGodBonus())+' fire resistance; '+('+'+ePct((.05+.03*ePts('fire'))*enchantGodBonus())+' maximum HP');},
+water:function(){return '+'+ePct((.10+.05*ePts('water'))*enchantGodBonus())+' ice resistance; '+('+'+Math.round(8*eSc('water'))+' evasion');},
+air:function(){return '+'+ePct((.10+.05*ePts('air'))*enchantGodBonus())+' Lightning resistance; '+(ePct((.05+.03*ePts('air'))*enchantGodBonus())+' ranged projectile deflection');},
+earth:function(){return '+'+ePct((.10+.05*ePts('earth'))*enchantGodBonus())+' poison resistance; '+('+'+Math.round(eSc('earth'))+' armor');},
+light:function(){return '+'+ePct((.10+.05*ePts('light'))*enchantGodBonus())+' light resistance; '+('+'+ePct(.5*eSc('light'))+' HP regeneration');},
+shadow:function(){return '+'+ePct((.10+.05*ePts('shadow'))*enchantGodBonus())+' shadow resistance; '+('+'+ePct(.05*Math.max(1,ePts('shadow'))*enchantGodBonus())+' stealth');}},
   orb: {
-    fire:  function(){ return 'spell crits set the target’s tile alight, Burning for 2 turns'; },
-    water: function(){ return 'up to +'+ePct(0.15*eSc('water'))+' spell damage, the fuller your mana'; },
-    air:   function(){ var p=ePts('air'); return '+'+(1 + (p>=3?1:0) + (p>=5?1:0))+' spell range'; },
-    earth: function(){ return '+'+ePct(0.10+0.03*ePts('earth'))+' spell damage when you did not move last turn'; },
-    light: function(){ return 'spell crits restore '+Math.round(3*eSc('light'))+' mana'; },
-    shadow:function(){ return '+'+ePct(0.10+0.03*ePts('shadow'))+' spell damage to targets below half HP'; }
-  },
+ fire:function(){return 'Critical hits ignite the target tile and inflict Burning for 2 turns ('+burnDmg()+' damage per turn).';},
+ water:function(){return 'Critical hits restore '+Math.round((1+ePts('water'))*enchantGodBonus())+' Ice Armor, up to capacity.';},
+ air:function(){return 'Critical hits stun for 1 turn.';},
+ earth:function(){return '+'+ePct((.05+.03*ePts('earth'))*enchantGodBonus())+' crit chance against Rooted targets.';},
+ light:function(){return 'Critical hits restore '+Math.round(3*eSc('light'))+' mana.';},
+ shadow:function(){return '+'+ePct((.10+.05*ePts('shadow'))*enchantGodBonus())+' crit damage multiplier.';}
+},
   tome: {
-    fire:  function(){ return 'spells cost 5% less per Burning enemy in view, up to '+ePct(0.25+0.05*ePts('fire')); },
-    water: function(){ return '+'+ePct(0.30*eSc('water'))+' mana regeneration'; },
-    air:   function(){ return ePct(Math.max(0.05, 0.05*ePts('air')))+' chance a spell costs no mana'; },
-    earth: function(){ return '+'+ePct(0.10*eSc('earth'))+' max mana'; },
-    light: function(){ return ePct(0.10+0.05*ePts('light'))+' of the mana you spend becomes a shield'; },
-    shadow:function(){ return 'spell kills heal '+ePct(0.01*Math.max(1, ePts('shadow')))+' of max HP'; }
-  }
+ fire:function(){return '+'+ePct((.05+.03*ePts('fire'))*enchantGodBonus())+' spell power';},
+ water:function(){return '+'+Math.round((2+ePts('water'))*enchantGodBonus())+' evasion';},
+ air:function(){return ePct((.02+.01*ePts('air'))*enchantGodBonus())+' less casting time';},
+ earth:function(){return '+'+ePct((.02+.01*ePts('earth'))*enchantGodBonus())+' all elemental resistances';},
+ light:function(){return ePct((.10+.05*ePts('light'))*enchantGodBonus())+' of mana spent becomes a shield (up to '+Math.round(player.maxhp*.3)+' HP)';},
+ shadow:function(){return 'Spell kills heal '+ePct(.01*Math.max(1,ePts('shadow'))*enchantGodBonus())+' of maximum HP';}
+}
 };
 
 /* slot is 'weapon', 'armor', 'orb' or 'tome'; falls back to the Forge wording for anything unknown */
@@ -78,7 +84,7 @@ function enchantLive(slot, el){
    the rate in brackets, wherever it is displayed (sheet, hotbar titles, the Forge's messages). The tables keep the
    per-point wording as the fallback. */
 function lvRank(){ return typeof godRank==='function' ? godRank() : 0; }
-function lvDiv(){ return (typeof divineStrength==='function' ? divineStrength() : 1) + 0.03*Math.max(0, ((player && player.stats && player.stats.foc)||10)-10); }
+function lvDiv(){ return (typeof divineStrength==='function' ? divineStrength() : 1); }
 var RANK_LIVE = {
   3: {
     fire:   function(n){ return 'Searing: +'+(5*n)+'% damage (5% per Fire rank) against Burning enemies. Immune to Burning.'; },
@@ -99,13 +105,15 @@ var ABILITY_LIVE = {
   spark:       function(A){ return 'Lightning damage with a '+(5*ePts('air'))+'% chance (5% per Air point) to stun. +50% against targets standing in water.'; },
   smite:       function(A){ return 'Light damage with a '+(10*ePts('light'))+'% chance (10% per Light point) to Blind. +50% against undead and shadow creatures.'; },
   radiantbeam: function(A){ return 'A beam 3 tiles wide along a row, column or diagonal: light damage (+50% to undead and shadow), '+(5*ePts('light'))+'% Blind (5% per Light point).'; },
-  heal:        function(A){ var r=lvRank(), raw=Math.round(player.maxhp*(0.12+0.03*r)*lvDiv()*(1+0.10*r)), cap=Math.round(player.maxhp*0.4); return 'Invoke (Saint Glimmer): restore about '+Math.min(raw, cap)+' HP (12% of max HP, +3% per piety rank, up to 40%).'; },
-  arcaneward:  function(A){ var r=lvRank(); return 'Invoke (Vellum): 8 Favor, one action. A 10-turn ward with '+Math.round(player.maxmp*(0.10+0.02*r)*lvDiv())+' HP (10% + 2% per divine rank of maximum mana).'; },
-  livingflame: function(A){ var sp=typeof spellPower==='function' ? spellPower(A) : 1; return A.desc+' Now: '+Math.round(20*sp)+' HP, hits for '+Math.round(4*sp)+'-'+Math.round(8*sp)+'.'; }
+  heal:        function(){var r=godRank(),bonus=inSanctuary(player)?1+.25*divineStrength():1;return 'Restore up to '+Math.min(Math.round(player.maxhp*.4),Math.round(player.maxhp*(.10+.02*r)*divineStrength()*(1+.10*r)*bonus))+' HP.';},
+  arcaneward:  function(){return '8 mana: shield '+Math.round((8+2*godRank())*divineStrength())+' HP and Communion for '+fullDivineDuration(8)+' turns. Damaging attacks earn '+(godRank()*divineStrength()).toFixed(2)+' Favor once per action; the buff survives the shield breaking.';},
+  livingflame: function(A){var sp=spellPower(A);return '100 mana: summon a Living Flame for 30 world turns. '+Math.round(28*sp)+' HP, '+Math.round(5*sp)+'–'+Math.round(9*sp)+' Fire damage. Every third ranged attack splashes nearby enemies for half damage. Shared two-summon limit.';}
 };
 var PRAYER_LIVE = {
-  ironhide: function(P){ return '+5 armor for 12 turns, and a shield of '+Math.round((5+2*lvRank())*(typeof divineStrength==='function' ? divineStrength() : 1))+' (5 + 2 per rank).'; }
-};
+  ironhide: function(){return '+'+Math.round(5*divineStrength())+' armor and '+Math.round((5+2*godRank())*divineStrength())+' shield HP for '+fullDivineDuration(12)+' turns. Refreshes without stacking.';}
+,
+bonespear:function(){return 'Piercing Dark damage '+Math.round(5*godRank()*divineStrength())+'–'+Math.round((5*godRank()+6)*divineStrength())+', range 6. Costs 5 Favor.';},
+arcanelance:function(){return 'Magic damage '+Math.round(5*godRank()*divineStrength())+'–'+Math.round((5*godRank()+6)*divineStrength())+', range 6. Costs 5 Favor; no cooldown.';}};
 function abilityKeyOf(A){ if(typeof ABILITIES==='undefined') return null; for(var k in ABILITIES) if(ABILITIES[k]===A) return k; return null; }
 function liveDesc(A){
   if(!A) return '';
@@ -116,7 +124,7 @@ function liveDesc(A){
 function prayerLive(P){
   if(!P) return '';
   var k=null; if(typeof PRAYERS!=='undefined') for(var q in PRAYERS) if(PRAYERS[q]===P) k=q;
-  var f=k && PRAYER_LIVE[k];
+  var f=k && PRAYER_LIVE[prayerId(k)];
   if(f && typeof player!=='undefined' && player){ try { return f(P); } catch(x){} }
   return P.desc || '';
 }

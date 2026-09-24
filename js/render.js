@@ -429,6 +429,7 @@ function clipFrame(sheet, e, sliding){
   return {sx:0, sy:(m.static_row||0)*cell};
 }
 function drawCharacter(e, px, py, opts){
+  if(e.livingFlame)return drawLivingFlame(e,px,py,opts);
   opts=opts||{};
   if(e===player){
     var cs = spriteOn ? castSheet(player.look) : null;
@@ -909,7 +910,7 @@ function draw(){
     if(p.name==='vines'){ drawVines(p.x, p.y, ppx, ppy, pa, now); return; }
     if(p.pillar){ drawPillar(p, ppx, ppy, pa, now); return; }
     if(typeof drawPropSurface==='function' && drawPropSurface(p, ppx, ppy, pa)) return;   /* flat bones and rubble (surface.js) */
-    if(typeof propShadow==='function' && !p.flat) propShadow(p.x, p.y, ppx, ppy, pa, p.name);   /* contact shadow (surface.js) */
+    if(typeof propShadow==='function' && !p.flat && !/^(soul-urn|soul-brazier|kobold-campfire)$/.test(p.name)) propShadow(p.x, p.y, ppx, ppy, pa, p.name);   /* contact shadow (surface.js) */
     if(!drawObj(o, ppx, ppy, {feet:!p.flat, fit: p.flat?0.82 : (p.name==='bookshelf'||p.name==='statue'||p.name==='boss-throne')?1.12 : /^(urn|coffin|sarcophagus|tomb)/.test(p.name)?1.08 : 0.9, alpha:pa, flash:flashOf(p)})){
       ctx.globalAlpha=pa; ctx.fillStyle=p.b?'#6A5A48':'#4A4038'; ctx.fillRect(ppx+TS*0.2,ppy+TS*0.2,TS*0.6,TS*0.6); ctx.globalAlpha=1;
     }
@@ -926,6 +927,7 @@ function draw(){
      under them (2026-09-22, Justin: a mana globe under a rock); standing props and creatures are deferred and
      still cover it */
   items.forEach(function(it){
+    if(it.crystal)return;
     if(!(revealAll||vis[idxOf(it.x,it.y)])) return;
     var ipx=(it.x-camX)*TS, ipy=(it.y-camY)*TS, ia=(revealAll||vis[idxOf(it.x,it.y)])?1:memA(0.45);
     var bob = ANIM.reduce ? 0 : Math.sin(now/400 + it.x*2 + it.y)*TS*0.03;
@@ -952,7 +954,7 @@ function draw(){
     if(!inb(x,y) || !fireT[idxOf(x,y)] || !(revealAll||vis[idxOf(x,y)])) continue;
     var fpx2=(x-camX)*TS, fpy2=(y-camY)*TS;
     /* 2026-09-20: Justin - the burning-ground flames read as too big; 70% of what they were */
-    drawObj(objArt('terrain','fire-ground'), fpx2, fpy2 + (ANIM.reduce?0:Math.sin(now/90+x*5)*1.2), {fit:0.67, feet:true, sy: ANIM.reduce?0:0.08*Math.sin(now/70+y*3)});
+    drawBurningFlame(fpx2+TS*.5,fpy2+TS*.92,TS*.61,now,x*5+y*7,.62);
     if(typeof emitFire==='function') emitFire(x,y);
   }
 
@@ -968,6 +970,7 @@ function draw(){
       if(!drawCharacter(player, px, py, {alpha:fade, flip:flip, flash:flashOf(player), sliding:motionActive(player,now)})){
         ctx.globalAlpha=fade; ctx.fillStyle=player.col||'#E8B44A'; roundRect(px+TS*0.14,py+TS*0.1,TS*0.72,TS*0.72,TS*0.16); ctx.fill(); glyph('@',px,py,'#120F0D'); ctx.globalAlpha=1;
       }
+      if(player.st&&player.st.burn)drawBurningFlame(px+TS*.5,py+TS*.88,TS*.56,now,0,.44);
       var shp = typeof playerShield==='function' ? playerShield() : 0;
       if(shp>0){ var pulseS=ANIM.reduce?0.5:0.5+0.5*Math.sin(now/400); ctx.save(); ctx.globalAlpha=0.18+0.12*pulseS+Math.min(0.2, shp/player.maxhp*0.4);
         var gS=ctx.createRadialGradient(px0+TS/2,py0+TS*0.55,TS*0.2,px0+TS/2,py0+TS*0.55,TS*0.62); gS.addColorStop(0,'rgba(150,215,255,0)'); gS.addColorStop(0.8,'rgba(150,215,255,0.35)'); gS.addColorStop(1,'rgba(200,235,255,0.9)');
@@ -988,6 +991,7 @@ function draw(){
         var bb=breathOf(e)*TS*0.6;
         ctx.fillStyle=e.col; roundRect(px+TS*0.14,py+TS*0.1-bb,TS*0.72,TS*0.72+bb,TS*0.16); ctx.fill(); glyph(e.ch,px,py,'#120F0D');
       }
+      if(e.st&&e.st.burn)drawBurningFlame(px+TS*.5,py+TS*.88,TS*.56,now,e.id||0,.44);
       if(e.ally){ ctx.strokeStyle='#7FD08A'; ctx.lineWidth=2; ctx.beginPath(); ctx.ellipse(px0+TS/2,py0+TS*0.9,TS*0.34,TS*0.12,0,0,7); ctx.stroke(); ctx.lineWidth=1; }
       /* health bar only once hurt, or always for bosses */
       /* 2026-09-19: a boss has the bar across the top of the screen (ui.js bossBar) - no second one over its head */
@@ -1070,4 +1074,38 @@ function draw(){
   vg.addColorStop(0,'rgba(0,0,0,0)'); vg.addColorStop(1,'rgba(0,0,0,0.45)');
   ctx.fillStyle=vg; ctx.fillRect(0,0,viewW*TS,viewH*TS);
   drawStairsPointer(now);
+}
+
+/* Compact summoned elemental; all movement respects reduced-motion settings. */
+function drawLivingFlame(e,px,py,opts){
+  opts=opts||{};
+  var img=atl('living-flame.png');if(!img||!img.complete||!img.naturalWidth)return false;
+  var t=ANIM.reduce?0:performance.now()/1000,phase=(e.id||0)*1.37;
+  var pulse=ANIM.reduce?1:1+.025*Math.sin(t*4+phase);
+  var height=TS*.82*pulse,width=height*img.naturalWidth/img.naturalHeight;
+  var bob=ANIM.reduce?0:TS*.025*Math.sin(t*3+phase),charged=(e.flameShots||0)%3===2;
+  ctx.save();ctx.globalAlpha=opts.alpha===undefined?1:opts.alpha;
+  ctx.translate(px+TS/2,py+TS*.88-bob);
+  if(opts.flip)ctx.scale(-1,1);
+  var glow=ctx.createRadialGradient(0,-height*.45,0,0,-height*.45,height*.65);
+  glow.addColorStop(0,charged?'rgba(255,205,85,.30)':'rgba(255,110,25,.13)');glow.addColorStop(1,'rgba(255,70,15,0)');
+  ctx.fillStyle=glow;ctx.fillRect(-height*.7,-height*1.1,height*1.4,height*1.4);
+  ctx.imageSmoothingEnabled=true;ctx.drawImage(img,-width/2,-height,width,height);
+  if(opts.flash>0){ctx.globalAlpha*=opts.flash;ctx.drawImage(whiteCut(img,0,0,img.naturalWidth,img.naturalHeight),-width/2,-height,width,height);}
+  if(!ANIM.reduce){
+    ctx.fillStyle=charged?'#FFF2AE':'#FFBA62';
+    for(var i=0;i<4;i++){var life=(t*.7+i*.27+phase)%1;ctx.globalAlpha=(opts.alpha===undefined?1:opts.alpha)*(1-life)*.55;ctx.fillRect(Math.sin(i*2.3+phase+t)*width*.30,-height*(.15+life*.85),TS*.022,TS*.035);}
+  }
+  ctx.restore();return true;
+}
+/* Layered eye-free flames for burning ground and burning creatures. */
+function drawBurningFlame(bx,by,height,now,seed,alpha){
+  var t=ANIM.reduce?0:now/240+seed;
+  var sway=ANIM.reduce?0:Math.sin(t)*1.3,stretch=ANIM.reduce?1:1+.07*Math.sin(t*1.7);
+  ctx.save();ctx.translate(bx,by);ctx.scale(height/23,height/23*stretch);
+  ctx.globalAlpha=(alpha===undefined?.6:alpha)*(ANIM.reduce?1:.92+.08*Math.sin(t*.8));
+  function layer(color,scale){
+    ctx.save();ctx.scale(scale,scale);ctx.fillStyle=color;ctx.beginPath();ctx.moveTo(-7,0);ctx.lineTo(-9,-6);ctx.lineTo(-6+sway*.3,-12);ctx.lineTo(-5,-8);ctx.lineTo(-2+sway,-21);ctx.lineTo(2,-14);ctx.lineTo(5-sway*.6,-18);ctx.lineTo(5,-9);ctx.lineTo(8,-12);ctx.lineTo(9,-5);ctx.lineTo(6,0);ctx.closePath();ctx.fill();ctx.restore();
+  }
+  layer('#CC421C',1);layer('#FF9B32',.78);layer('#FFE49B',.48);ctx.restore();
 }

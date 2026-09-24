@@ -219,7 +219,7 @@ function sparkJellyAct(e){
   if(!tickStatus(e)) return true;
   e.sparkReady=turn+3; setClip(e,'attack'); sfx('lightning-cast');
   boltFx(e.x,e.y,player.x,player.y,'lightning');
-  if(rng()<hostileHitChance(hitChance(e.base.acc+5,player.eva))){
+  if(rng()<hostileHitChance(hitChance(e.base.acc+5,player.eva),true)){
     caveZap(player,sDMG(roll(5,8)),e,'The <b>Spark Jelly</b> hurls an electric bolt');
   }else{ floatText(player.x,player.y,'miss','miss'); log('The Spark Jelly\'s electric bolt misses.','c-miss'); }
   e.t+=actCost(e); return true;

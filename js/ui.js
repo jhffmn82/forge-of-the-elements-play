@@ -429,7 +429,7 @@ function panes(){
         '<p class="sub" style="margin-top:10px">Race &amp; class</p><div style="font-size:11px;color:var(--ash);line-height:1.45">'+RACES[player.race].blurb+'<br>'+CLASSES[player.cls].passive+'</div></div>'+
       '<div><p class="sub">Derived</p>'+kv([['HP',Math.round(player.hp)+' / '+player.maxhp],['Mana',Math.floor(player.mp)+' / '+player.maxmp],['Accuracy',player.acc],['Evasion',player.eva],['Armor',player.armor],
         ['Block',Math.round(player.block*100)+'%'],['Parry',Math.round(player.parry*100)+'%'],['Weapon damage',player.dmg[0]+'&ndash;'+player.dmg[1]],['Crit',Math.round(player.crit*100)+'%'],
-        ['Spell power','&times;'+spellPower({}).toFixed(2)],['Range',player.range],['Speed',Math.round(player.speed)],['XP',player.xp+' / '+player.xpNext]])+'</div>'+
+        ['Spell power','&times;'+spellPower({}).toFixed(2)],['Divine power','&times;'+divineStrength().toFixed(2)],['Range',player.range],['Speed',Math.round(player.speed)],['XP',player.xp+' / '+player.xpNext]])+'</div>'+
       '<div><p class="sub">Passives</p>'+passiveList()+'</div>'+
       '<div><p class="sub">Abilities</p>'+(player.abilities.map(function(k,i){
           var A=ABILITIES[k];
@@ -518,8 +518,7 @@ function weaponCard(w, worn){
     '<div class="row"><span>Hands</span><b>'+(w.hands||1)+'</b></div>'+
     (w.range?'<div class="row"><span>Range</span><b>'+(w.range+(player.rangeBonus||0))+'</b></div>':'')+
     (w.enchant?'<div class="row"><span>Enchant</span><b style="color:'+AFF_COL[w.enchant]+'">'+cap(w.enchant)+'</b></div><div class="hint">'+(typeof enchantLive==='function' ? enchantLive('weapon', w.enchant) : ENCHANT_TEXT.weapon[w.enchant])+'</div>':'')+
-    (w.divine?'<div class="row"><span>Invoke &amp; prayer strength</span><b>+'+Math.round(w.divine*100)+'%</b></div>':'')+
-    (w.divine?'<div class="row"><span>Beneficial prayer duration</span><b>+'+((w.plus||0)>=3?2:1)+' turns</b></div>':'')+
+    (w.divine?'<div class="row"><span>Invoke &amp; prayer strength</span><b>+'+Math.round(w.divine*gearPassiveBonus()*100)+'%</b></div>':'')+
     (w.note?'<div class="hint">'+w.note+'</div>':'');
 }
 function armorCard(a, worn){

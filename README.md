@@ -1,25 +1,9 @@
-# Forge of the Elements
+# Forge of the Elements — Beta 1.1
 
-A browser roguelike: descend five floors of the Dungeon, fuse elemental motes at the Forge, and bring down
-Grukk the Warchief.
+[Play in your browser](https://jhffmn82.github.io/forge-of-the-elements-play/).
 
-## Play on a PC
+Explore elemental dungeons, shape your build at the Forge, and face each biome's boss. Keyboard, mouse and touch controls are supported. Use your browser's installation controls for an installed app.
 
-**[Play in your browser](https://jhffmn82.github.io/forge-of-the-elements-play/)** - nothing to install.
-Keyboard: WASD or the arrow keys to move, QEZC for diagonals, 1-8 for the hotbar, Tab for the character
-sheet, `i` for equipment, `>` to take the stairs. The mouse works for all of it too: click a tile to walk
-there, click a monster to attack or shoot it.
+[Beta 1.1 patch notes](PATCH-NOTES.md). The in-game Version button also lists changes and checks for updates.
 
-## Play on an Android phone or tablet
-
-**[Download the app (forge.apk)](https://github.com/jhffmn82/forge-of-the-elements-play/releases/latest/download/forge.apk)**
-Open the downloaded file, allow installs from your browser when Android asks, and "Forge" appears in the app
-drawer. Portrait, fullscreen, tap to move, hold anything to read it. It plays offline once it has loaded, and
-picks up new builds by itself, so the app only needs installing once.
-
-Or just open the play link above in Chrome on the device - the game lays itself out for touch either way.
-
-## This repository
-
-Generated output only: the playable build, published by `tools/publish.py` from the source project. Last
-build: **2026-09-23 17:45:04**.
+Generated from source commit `4fc12eb20d73ba9317b71251da946e3349953fae`. Built 2026-09-24 14:52:47 UTC.
