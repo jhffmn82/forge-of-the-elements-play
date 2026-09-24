@@ -405,12 +405,22 @@ function setClip(e, name){
 }
 function castSheet(look){ var m=AS.cast && AS.cast[look]; if(!m) return null; var img=atl('cast-'+look+'.png'); return img ? {img:img, m:m} : null; }
 function mobSheet(name){ var m=AS.mobs && AS.mobs[name]; if(!m) return null; var img=atl('mob-'+name+'.png'); return img ? {img:img, m:m} : null; }
+var SHADE_SUMMON_ART=null;
+function shadeSummonSheet(){
+  var source=mobSheet('m-shade');if(!source)return null;
+  if(SHADE_SUMMON_ART&&SHADE_SUMMON_ART.source===source.img)return SHADE_SUMMON_ART.sheet;
+  /* Reuse every enemy animation frame; tint once rather than filtering each draw. */
+  var canvas=document.createElement('canvas');canvas.width=source.img.width;canvas.height=source.img.height;canvas.src='shade-summon:'+source.img.src;
+  var ink=canvas.getContext('2d');ink.filter='grayscale(1) brightness(.72)';ink.drawImage(source.img,0,0);ink.filter='none';
+  ink.globalCompositeOperation='source-atop';ink.fillStyle='rgba(27,16,43,.4)';ink.fillRect(0,0,canvas.width,canvas.height);
+  var sheet={img:canvas,m:source.m};SHADE_SUMMON_ART={source:source.img,sheet:sheet};return sheet;
+}
 function clipFrame(sheet, e, sliding){
   var m=sheet.m, now=performance.now(), cell=m.cell;
   /* 2026-09-23 (Justin: the Magma Crawler changed art between asleep and awake): a creature whose animation rows
      drifted off its still (packet 04's fire and water five, stillPose in planesfwa.js) holds the still in every
      state, mid-clip included, until it is re-animated on model. */
-  if(e.base && e.base.stillPose && m.static_row!==undefined) return {sx:0, sy:m.static_row*cell};
+  if(e.base && e.base.stillPose && !(e.ally&&e.shade) && m.static_row!==undefined) return {sx:0, sy:m.static_row*cell};
   if(e._clip){
     var c=m.clips[e._clip.name];
     if(c){
@@ -446,15 +456,16 @@ function drawCharacter(e, px, py, opts){
     }
     return false;
   }
-  var ms = spriteOn ? mobSheet(e.base.sprite) : null;
+  var isShade=!!(e.ally&&e.shade),visualBase=isShade?{art:.9}:e.base;
+  var ms = spriteOn ? (isShade?shadeSummonSheet():mobSheet(e.base.sprite)) : null;
   if(ms){
     var f2=clipFrame(ms, e, false), mm=ms.m, c2=mm.cell, box=mm.box||[0,0,c2,c2];
-    var target=TS*(e.base.art||0.9)*(e.big?1.25:1), s2=target/Math.max(box[3], box[2]*0.8);
+    var target=TS*(visualBase.art||0.9)*(e.big&&!isShade?1.25:1), s2=target/Math.max(box[3], box[2]*0.8);
     var w2=c2*s2, h2=c2*s2, feet=(box[1]+box[3]);
     var dx2=px+TS/2-(box[0]+box[2]/2)*s2, dy2=py+TS*0.97-feet*s2;
     /* Tier-two reference art has a single pose: give it a restrained breath,
        attack compression and recoil without altering simulation state. */
-    if((e.base.elementTier || e.base.stillPose) && !ANIM.reduce && e.state!=='asleep'){
+    if((visualBase.elementTier || visualBase.stillPose) && !ANIM.reduce && e.state!=='asleep'){
       var msNow=performance.now(), age2=e._clip?msNow-e._clip.t0:9999;
       var action2=e._clip&&e._clip.name==='attack'&&age2>=0&&age2<540?Math.sin(age2/540*Math.PI):0;
       var pulse2=Math.sin(msNow/330+(e.id||0))*.012;
@@ -463,13 +474,14 @@ function drawCharacter(e, px, py, opts){
       dy2=py+TS*.97+(dy2-py-TS*.97)*sy2;h2*=sy2;
     }
     var rect2=placementRect(dx2,dy2,w2,h2);dx2=rect2.x;dy2=rect2.y;w2=rect2.w;h2=rect2.h;
-    ctx.save(); ctx.globalAlpha=opts.alpha===undefined?1:opts.alpha; ctx.imageSmoothingEnabled=true;
+    var actorAlpha=(opts.alpha===undefined?1:opts.alpha)*(isShade ? .62 : 1);
+    ctx.save(); ctx.globalAlpha=actorAlpha; ctx.imageSmoothingEnabled=true;
     if(opts.flip){ ctx.translate(px+TS/2,0); ctx.scale(-1,1); ctx.translate(-(px+TS/2),0); }
     if(opts.outline){
       var cut2=whiteCut(ms.img,f2.sx,f2.sy,c2,c2),edge2=Math.max(1,Math.round(TS/40));
-      ctx.globalAlpha=0.22;
+      ctx.globalAlpha=actorAlpha*.22;
       [[-edge2,0],[edge2,0],[0,-edge2],[0,edge2],[-edge2,-edge2],[edge2,-edge2],[-edge2,edge2],[edge2,edge2]].forEach(function(d){ctx.drawImage(cut2,dx2+d[0],dy2+d[1],w2,h2);});
-      ctx.globalAlpha=1;
+      ctx.globalAlpha=actorAlpha;
     }
     ctx.drawImage(ms.img, f2.sx, f2.sy, c2, c2, dx2, dy2, w2, h2);
     if(opts.flash>0){ ctx.globalAlpha*=opts.flash; ctx.drawImage(whiteCut(ms.img,f2.sx,f2.sy,c2,c2), dx2,dy2,w2,h2); }
