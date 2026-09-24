@@ -20,8 +20,6 @@ Object.assign(FOODS, {
   emberpepper:{name:'Ember Pepper', nutrition:250, icon:'item-emberpepper', biome:3, buff:'fireward', turns:60, desc:'Fire hurts you half as much for 60 turns.'},
   starfruit:  {name:'Starfruit', nutrition:400, icon:'item-starfruit', biome:4, buff:'starward', turns:60, desc:'Every element hurts you 20% less for 60 turns.'}
 });
-/* Apply the same nutrition reduction to normal, special and legacy foods; tooltips read this table too. */
-Object.keys(FOODS).forEach(function(k){ FOODS[k].nutrition=Math.round(FOODS[k].nutrition*0.7); });
 /* what a food drop turns out to be */
 function randomFood(){
   if(rng()>=FOOD_SPECIAL_CHANCE) return 'ration';

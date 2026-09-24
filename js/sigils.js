@@ -34,6 +34,7 @@ var SIGIL_ORDER = {
     recall:    {name:'Sigil of Homeward Wind', motes:['air','light'], desc:'The wind carries you to this floor\'s stairs (or the open gate).'},
     aegis:     {name:'Sigil of the Aegis', motes:['earth','earth','light'], desc:'A shield of 50% of your max HP for 15 turns, and stone skin.'},
     ascension: {name:'Sigil of Ascension', motes:['fire','water','air','earth','light','shadow'], desc:'Upgrade one piece of gear by +1 for free (up to +3). Breaks a curse.'},
+    naturesbounty: {name:"Nature's Bounty", cost:300, motes:['light','earth','water'], desc:'Creates a Honeycake, Mushroom Skewer, and Moonberry Tart on nearby open ground.'},
     wisdom:    {name:'Sigil of Wisdom', motes:['fire','water','air','earth','light','shadow'], desc:'Gain a level.'}
   };
   for(var k in add) S[k]=add[k];
@@ -56,6 +57,7 @@ var SIGIL_ORDER = {
    500 the Ascension (a free upgrade) and 5000 the Wisdom (a free level, raised from 1000 on 2026-09-23). */
 var SIGIL_ESSENCE = {common:100, uncommon:200, upgrade:500, levelup:5000};   /* 2026-09-23 (Justin): a free level is worth 5,000, not 1,000 */
 function sigilEssence(key){
+  if(SIGILS[key] && Number.isFinite(SIGILS[key].cost)) return SIGILS[key].cost;
   if(key==='ascension') return SIGIL_ESSENCE.upgrade;
   if(key==='wisdom') return SIGIL_ESSENCE.levelup;
   var s=SIGILS[key];
@@ -84,12 +86,30 @@ function hurt(e, n, type){ var d=applyDamage(e, n, type, player); floatText(e.x,
 function cleanseAll(){ ['burn','poison','chill','fear','blind','stun','root','frozen','wet'].forEach(function(k){ delete player.st[k]; }); }
 function giveWard(n, turns){ player.ward=Math.round(n); player.buffs.arcaneward=turns; }
 
+/* Find three reachable, empty floor tiles before consuming Nature's Bounty. */
+function natureBountySpots(){
+  var queue=[{x:player.x,y:player.y,d:0}], visited={}, spots=[];
+  visited[idxOf(player.x,player.y)]=true;
+  for(var head=0;head<queue.length && spots.length<3;head++){
+    var cell=queue[head];
+    if(cell.d>0 && freeCell(cell.x,cell.y) && !fireT[idxOf(cell.x,cell.y)]) spots.push({x:cell.x,y:cell.y});
+    if(cell.d>=3) continue;
+    [[0,-1],[1,0],[0,1],[-1,0]].forEach(function(dir){
+      var x=cell.x+dir[0],y=cell.y+dir[1],i=idxOf(x,y);
+      if(!inb(x,y) || visited[i] || !walkable(x,y)) return;
+      visited[i]=true; queue.push({x:x,y:y,d:cell.d+1});
+    });
+  }
+  return spots;
+}
+
 var _useSigilFull = useSigil;
 useSigil = function(use){
-  var NEW = ['firestorm2','identify2','levitate2','stoneskin2','heal2','vanish2','cinder','magma','sunburst','smoke','storm','mire','purify','rot','recall','aegis','ascension','wisdom'];
+  var NEW = ['firestorm2','identify2','levitate2','stoneskin2','heal2','vanish2','cinder','magma','sunburst','smoke','storm','mire','purify','rot','recall','aegis','ascension','wisdom','naturesbounty'];
   if(use==='mana'){ var okm=_useSigilFull(use); if(okm!==false){ player.buffs.manaflow=Math.max(player.buffs.manaflow||0, 20); } return okm; }
   if(NEW.indexOf(use)<0) return _useSigilFull(use);
-  var F=floorNo;
+  var F=floorNo, bountySpots;
+  if(use==='naturesbounty'){ bountySpots=natureBountySpots(); if(bountySpots.length<3){ log('Nature’s Bounty needs three empty spaces on nearby ground.','c-info'); return false; } }
   /* checks that decide whether the sigil can be read at all, before anything is spent */
   if(use==='ascension' && !allUpgradeTargets().some(function(o){ return upgradeCost(o.it)!==null; })){ log('Nothing you carry can be raised any higher.','c-info'); return false; }
   if(use==='wisdom' && player.level>=20){ log('Your wisdom can no longer grow. This sigil would do nothing.','c-info'); return false; }
@@ -97,7 +117,11 @@ useSigil = function(use){
   if(use==='recall'){ var goal=null; for(var i=0;i<map.length;i++){ if(map[i]===STAIRS || (map[i]===EXIT && floorMeta.exitOpen)){ goal={x:i%MW, y:(i/MW)|0}; break; } } if(!goal){ log('There is nowhere to be carried to.','c-info'); return false; } }
   var ok=_useSigilFull(use);       /* conduct, sound, cast animation, identification */
   if(ok===false) return false;
-  if(use==='firestorm2'){ burst(player.x,player.y,'fire',90,0.14); visibleFoes(4).forEach(function(e){ hurt(e, 14+F, 'fire'); if(e.hp>0) applyStatus(e,'burn',4,sDMG(3)); });
+  if(use==='naturesbounty'){
+    ['honeycake','skewer','moontart'].forEach(function(food,i){var spot=bountySpots[i];items.push({kind:'food',food:food,x:spot.x,y:spot.y});sparkleFx(spot.x,spot.y,'heal',12);});
+    log('Nature’s Bounty provides a Honeycake, Mushroom Skewer, and Moonberry Tart.','c-good');
+  }
+  else if(use==='firestorm2'){ burst(player.x,player.y,'fire',90,0.14); visibleFoes(4).forEach(function(e){ hurt(e, 14+F, 'fire'); if(e.hp>0) applyStatus(e,'burn',4,sDMG(3)); });
     for(var dy=-3;dy<=3;dy++) for(var dx=-3;dx<=3;dx++) if(dx||dy) ignite(player.x+dx,player.y+dy,'player'); log('A firestorm roars out around you.','c-fire'); }
   else if(use==='identify2'){
     Object.keys(SIGILS).forEach(function(k){ identifySigilQuiet(k); });

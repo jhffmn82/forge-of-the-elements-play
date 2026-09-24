@@ -13,6 +13,7 @@ function hash2(x,y,s){ var h=(x*374761393 + y*668265263 + (s||0)*2147483647)|0; 
 
 /* ---- sprite lookups ---- */
 function objArt(group, name){
+  if(group==='icons'&&AS.map&&AS.map[name]&&AS.map[name].items[name])group=name;
   if(name==='item-censer'||name==='held-censer'){group='knife';name='ceremonial-knife';}
   if(group==='structures'&&name==='stairs-up'&&AS.map&&AS.map.stairs)group='stairs';
   if(group==='props'&&name==='weapon-rack'&&AS.map&&AS.map.rack)group='rack';

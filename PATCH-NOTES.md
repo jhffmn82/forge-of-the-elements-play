@@ -1,5 +1,11 @@
 # Beta 1.1
 
+- Added Nature’s Bounty, a craftable sigil that creates a Honeycake, Mushroom Skewer, and Moonberry Tart nearby.
+
+- Restored food satiety so meals fill the hunger bar as much as they originally did.
+
+- Prayers now have explicit ability icons, including new artwork for Bone Spear and Vellum’s divine attacks.
+
 - Shades raised by shadow weapon enchantments now use the animated shade sprite with darker, translucent coloring.
 
 - Levers now show an interaction cursor and an inspect card explaining their purpose and whether they have already been pulled.
@@ -18,7 +24,7 @@
 
 - Forge enchant descriptions show scaling formulas; equipped items show their current bonuses. Divine Power now appears below Spell Power on character sheets.
 
-- Raised advanced spell costs, strengthened enemies in selected biomes, and made food less plentiful in effect to improve resource planning and late-game difficulty.
+- Raised advanced spell costs, strengthened enemies in selected biomes, and increased hunger drain to improve resource planning and late-game difficulty.
 
 - Added area previews and lingering impact highlights for targeted area spells. Shortened Vanishing and made offensive spellcasting break concealment.
 

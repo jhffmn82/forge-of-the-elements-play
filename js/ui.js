@@ -273,7 +273,28 @@ function faithChipHTML(){
     '<span class="rk" title="Favor, spent on prayers">\u2726 '+fav+'</span>'+
     '<span class="meter sm" title="Favor '+fav+' / 100"><i style="width:'+fav+'%;background:linear-gradient(90deg,#6B5A22,#E8D27A)"></i></span></span>';
 }
-function prayerIcon(pid){ return objArt('icons','pr-'+pid) ? 'pr-'+pid : 'ic-pray'; }
+var PRAYER_ICONS={
+  "ironhide": "pr-ironhide",
+  "pummel": "pr-pummel",
+  "rampage": "pr-rampage",
+  "trollblood": "pr-trollblood",
+  "consecrate": "pr-consecrate",
+  "sanctuary": "pr-sanctuary",
+  "laststand": "pr-laststand",
+  "rally": "pr-rally",
+  "rolldice2": "pr-rolldice2",
+  "raisedead": "pr-raisedead",
+  "the-brood": "pr-the-brood",
+  "venom-burst": "pr-venom-burst",
+  "fieldsmelt": "pr-offering",
+  "anviltoll": "pr-reforge",
+  "lance": "ic-radiant-lance",
+  "bonespear": "pr-bonespear",
+  "arcanelance": "pr-arcanelance",
+  "luckystreak": "ic-roll-dice",
+  "arcanenova": "pr-arcanenova"
+};
+function prayerIcon(pid){pid=prayerId(pid);return PRAYER_ICONS[pid]||'pr-'+pid;}
 function prayerCost(pid){ var P=PRAYERS[pid]; return P.favor ? P.favor+' favor' : P.essence ? P.essence+' essence' : P.amusement ? P.amusement+' amusement' : 'prayer'; }
 
 /* every ability or prayer you gain drops into the first empty hotbar slot once; clearing a slot keeps it cleared */
