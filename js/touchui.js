@@ -63,12 +63,23 @@
     'body.touch .tgear .gslot .ph{font-size:clamp(20px,5vw,30px)!important;line-height:1!important}',
     'body.touch .tgear .gslot .lab{font-size:clamp(8.5px,1.7vw,11px)!important;margin-top:2px}',
     'body.touch .tgear .cell{min-height:0!important}',
+    /* Occupied bag cells drag directly; empty cells and gaps still scroll. */
+    'body.touch .tgear .cell[data-b]{touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}',
     'body.touch .tgear .cell .gear{width:74%;height:74%;display:flex;align-items:center;justify-content:center}',
     'body.touch .tgear .gslot .ic canvas,body.touch .tgear .cell canvas{width:100%!important;height:100%!important;display:block}',
     'body.touch .tgear .cell b{font-size:13px!important}',
     'body.touch .tgear .tg-hint{font-size:13px!important}',
     'body.touch .tgear .tg-sec{font-size:11px!important}',
     'body.touch #bAmHot{margin-top:10px;min-height:44px;padding:0 14px;font-size:14px}',
+    /* Tablet inventory: keep worn gear and the complete bag together instead
+       of stretching five phone-sized columns into enormous square tiles. */
+    '@media(min-width:600px){',
+    ' body.touch .tgear .tg-top{grid-template-columns:176px minmax(0,1fr)!important;gap:18px!important}',
+    ' body.touch .tgear .tg-slots{grid-template-columns:repeat(2,84px)!important}',
+    ' body.touch .tgear .tg-cells{grid-template-columns:repeat(5,minmax(56px,84px))!important;justify-content:start}',
+    ' body.touch .tgear .gslot{width:84px!important;height:84px!important;aspect-ratio:1}',
+    ' body.touch .tgear .cell{max-width:84px}',
+    '}',
 
     /* Wide phone landscape: controls | map + hotbar | menus, vitals and log.
        Flatten layout containers only; retain the same elements and their event handlers. */
@@ -333,8 +344,8 @@
     if(hmSwallow) setTimeout(function(){ hmSwallow=false; }, 350);    /* some browsers send no click after a long hold */
   }, true); });
   /* ---------------- Gear, Char and Faith + hotbar together. While one is open on touch, the strip shows only the hotbar and the
-     sheet stops just above it. Hold a bag item (its card shows, as before) and then drag it: it lifts, and let
-     go over a hotbar slot to put it there. The worn amulet, abilities (Char) and prayers (Faith) drag the same way. */
+     sheet stops just above it. Bag items drag immediately; a tap still reads their card. The worn amulet,
+     abilities (Char) and prayers (Faith) retain their hold-and-drag gesture. */
   function gearMode(){
     var on = touch() && typeof openSheet!=='undefined' && (openSheet==='Equip' || openSheet==='Char' || openSheet==='Faith');
     document.body.classList.toggle('gearopen', on);
@@ -346,7 +357,7 @@
   showSheet = function(){ var r=_showSheetTouch.apply(this, arguments); gearMode(); return r; };
   window.addEventListener('resize', function(){ setTimeout(gearMode, 60); });
 
-  var bl=null, blTimer=null;        /* {src, entry, x, y, moved, ghost, over} */
+  var bl=null, blTimer=null, blSwallow=false;        /* {src, entry, x, y, moved, ghost, over, pointerId} */
   function bagEntry(el){
     if(el.matches('.cell[data-b]')){ var it=player.bag[+el.getAttribute('data-b')]; return it ? {type:'item', ref:it} : null; }
     if(el.matches('.gslot[data-slot="amulet"]')) return player.amulet ? {type:'amulet'} : null;
@@ -362,6 +373,7 @@
     bl.src.classList.remove('lifted');
     if(bl.over) bl.over.classList.remove('over');
     if(bl.worn) bl.worn.classList.remove('over');
+    try{ if(bl.src.hasPointerCapture && bl.src.hasPointerCapture(bl.pointerId)) bl.src.releasePointerCapture(bl.pointerId); }catch(e){}
     bl=null;
   }
   function hideCards(){
@@ -371,22 +383,28 @@
     try{ document.body.dispatchEvent(new PointerEvent('pointerdown', {bubbles:true, clientX:-50, clientY:-50})); }catch(e){}
   }
   document.addEventListener('pointerdown', function(ev){
+    if(ev.clientX>=0)blSwallow=false;
     if(!touch() || !document.body.classList.contains('gearopen') || ev.clientX<0) return;
     var src=ev.target.closest && ev.target.closest('.tgear .cell[data-b], .tgear .gslot[data-slot="amulet"], .tgear .gslot[data-slot="stow"], #shade [data-ab], #shade [data-pr]'); if(!src) return;
     var e0=bagEntry(src); if(!e0) return;
     var x=ev.clientX, y=ev.clientY;
     clearTimeout(blTimer); endBL();
-    blTimer=setTimeout(function(){ blTimer=null; bl={src:src, entry:e0, x:x, y:y, moved:false, ghost:null, over:null}; }, 420);
+    function begin(){
+      blTimer=null;bl={src:src,entry:e0,x:x,y:y,moved:false,ghost:null,over:null,pointerId:ev.pointerId};
+      try{ if(src.setPointerCapture && ev.pointerId!==undefined) src.setPointerCapture(ev.pointerId); }catch(e){}
+    }
+    if(src.matches('.tgear .cell[data-b]'))begin();else blTimer=setTimeout(begin,420);
     bl0={x:x, y:y};
   }, true);
   var bl0=null;
   document.addEventListener('pointermove', function(ev){
     if(blTimer && bl0 && (Math.abs(ev.clientX-bl0.x)>12 || Math.abs(ev.clientY-bl0.y)>12)){ clearTimeout(blTimer); blTimer=null; }
     if(!bl) return;
+    if(bl.pointerId!==undefined && ev.pointerId!==bl.pointerId) return;
     if(!bl.moved && Math.abs(ev.clientX-bl.x)<10 && Math.abs(ev.clientY-bl.y)<10) return;
     ev.preventDefault();
     if(!bl.moved){
-      bl.moved=true; hideCards();
+      bl.moved=true;blSwallow=true; hideCards();
       var hs=document.querySelector('#hotbar .slot'), r=(hs||bl.src).getBoundingClientRect(), g=document.createElement('div');   /* slot-sized, even from a wide row */
       g.id='hotGhost'; g.className='slot'; g.style.width=r.width+'px'; g.style.height=r.height+'px';
       var src=bl.src.querySelector('canvas');
@@ -402,9 +420,11 @@
     var worn=bl.entry && bl.entry.type==='item' ? wornSlotAt(ev.clientX, ev.clientY) : null;
     if(worn!==bl.worn){ if(bl.worn) bl.worn.classList.remove('over'); bl.worn=worn; if(worn) worn.classList.add('over'); }
   }, {capture:true, passive:false});
-  ['pointerup','pointercancel'].forEach(function(n){ document.addEventListener(n, function(){
+  ['pointerup','pointercancel'].forEach(function(n){ document.addEventListener(n, function(ev){
+    if(bl && bl.pointerId!==undefined && ev.pointerId!==bl.pointerId) return;
     if(blTimer){ clearTimeout(blTimer); blTimer=null; }
     if(!bl) return;
+    if(n==='pointercancel')blSwallow=false;
     if(turnSequenceBusy()){endBL();return;}
     var B=bl;
     if(n==='pointerup' && B.moved && B.over){
@@ -424,6 +444,8 @@
       if(typeof updateUI==='function') updateUI(); if(typeof refreshSheet==='function') refreshSheet();
     } else endBL();
   }, true); });
+  window.addEventListener('blur',function(){clearTimeout(blTimer);blTimer=null;endBL();blSwallow=false;});
+  document.addEventListener('lostpointercapture',function(ev){if(bl && bl.pointerId===ev.pointerId)endBL();},true);
   /* once a slot or bag item is lifted, the finger drags it rather than scrolling the page */
   document.addEventListener('touchmove', function(ev){ if((bl && bl.moved) || (lift && lift.moved) || bl || lift) ev.preventDefault(); }, {passive:false});
 
@@ -433,6 +455,7 @@
 
   /* the tap that ends a long press (or closes the menu) must not also fire the slot or step on the map */
   document.addEventListener('click', function(ev){
+    if(blSwallow && ev.detail>0){blSwallow=false;ev.stopImmediatePropagation();ev.preventDefault();return;}
     var slot=ev.target.closest && ev.target.closest('#hotbar .slot'); if(slot) slot._longPress=false;   /* travel.js's flag */
     if(hmSwallow && !(hm && hm.contains(ev.target))){ hmSwallow=false; ev.stopImmediatePropagation(); ev.preventDefault(); }
   }, true);

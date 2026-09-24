@@ -3,6 +3,8 @@ var FOTE_VERSION = 'Beta 1.1';
 /* Keep newest first; describe only changes already present in this build. */
 var FOTE_PATCHES = [
   {version:'Beta 1.1', notes:[
+    "Restored direct touch dragging from inventory to the hotbar or equipment slots. Tapping still inspects an item, and releasing a drag does not use it.",
+    "Made tablet inventory slots compact and arranged worn gear beside the bag so equipment stays accessible on iPad-sized screens.",
     "Fixed extra movement and actions after releasing controls during enemy animations. Busy-time key presses, taps and clicks are discarded instead of replayed later.",
     "Click-to-walk now stops immediately after taking damage during an enemy turn.",
     "Replaced Morty’s boss theme with a more driving orchestral loop and subtle crypt ambience to give the fight a stronger sense of menace.",

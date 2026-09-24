@@ -1,5 +1,9 @@
 # Beta 1.1
 
+- Restored direct touch dragging from inventory to the hotbar or equipment slots. Tapping still inspects an item, and releasing a drag does not use it.
+
+- Made tablet inventory slots compact and arranged worn gear beside the bag so equipment stays accessible on iPad-sized screens.
+
 - Fixed extra movement and actions after releasing controls during enemy animations. Busy-time key presses, taps and clicks are discarded instead of replayed later.
 
 - Click-to-walk now stops immediately after taking damage during an enemy turn.
