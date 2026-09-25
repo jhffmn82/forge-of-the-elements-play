@@ -3,6 +3,7 @@ var FOTE_VERSION = 'Beta 1.2';
 /* Keep newest first; describe only changes already present in this build. */
 var FOTE_PATCHES = [
   {version:'Beta 1.2', notes:[
+    "Fixed the Matron's exit rejecting the Ruin Core. Existing saves can now unlock the gate normally and continue into the treasure room before Chaos.",
     "Opened the Realm of Chaos beyond the Matron, extending the adventure through the final encounter and the Forge of the Elements.",
     "Added a quiet treasure room before entering Chaos, with essence, Masterwork equipment, elemental motes and rations to prepare for the last biome.",
     "Chaos floors mix five floating islands drawn from four distinct realms. Portals connect islands, magical currents carry you between floors, and a dedicated elemental gateway marks the crossing to the material plane.",

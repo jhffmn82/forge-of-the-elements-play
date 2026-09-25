@@ -31,7 +31,7 @@
                                        2x2 WALKABLE set piece named 'ritual-circle' with its top-left tile at {x,y} - swap
                                        p.name to 'ritual-circle-active' and back (find it with propAt(x,y))
      spawnMatron(floorMeta.bossArena)  creates the Matron after the room population stage
-     The hall's EXIT gate opens when she dies (world bossDefeated / exitOpen); stepping in wins the run.
+     The hall's EXIT accepts her Ruin Core through moveCoreGate; stepping through leads toward Chaos.
    ===================================================================== */
 
 var LAVA = 21;
@@ -739,7 +739,7 @@ function moveDeepTerrain(dx,dy){
   if(inDeep() && player){
     var nx=player.x+dx, ny=player.y+dy;
     if(at(nx,ny)===LAVA && !ents.some(function(e){ return e.foe && e.x===nx && e.y===ny; })){ log('Molten rock. You cannot cross it.','c-info'); return true; }
-    if(at(nx,ny)===EXIT && !floorMeta.exitOpen && floorMeta.boss){ log('The gate is sealed. It opens when the Matron of the Web is dead.','c-info'); sfx('door-locked'); return true; }
+    /* Exit gates belong to moveCoreGate, which can consume the carried Ruin Core. */
   }
   return false;
 }
