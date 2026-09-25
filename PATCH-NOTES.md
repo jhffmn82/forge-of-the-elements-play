@@ -1,5 +1,7 @@
 # Beta 1.1
 
+- Improved terrain loading by removing an obsolete image request and waiting for artwork to finish loading before drawing it.
+
 - Added a craftable Sigil of Transmutation for turning equipment into a different random item of the same category while preserving its quality, upgrades and existing enchantment. Canceling the selection keeps the sigil or Echo charge.
 - Chad’s followers now use underwear versions of their existing character sprites, including movement and combat animations. Ordinary character appearances are preserved.
 

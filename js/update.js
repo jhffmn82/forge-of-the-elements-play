@@ -3,6 +3,7 @@ var FOTE_VERSION = 'Beta 1.1';
 /* Keep newest first; describe only changes already present in this build. */
 var FOTE_PATCHES = [
   {version:'Beta 1.1', notes:[
+    "Improved terrain loading by removing an obsolete image request and waiting for artwork to finish loading before drawing it.",
     "Added a craftable Sigil of Transmutation for turning equipment into a different random item of the same category while preserving its quality, upgrades and existing enchantment. Canceling the selection keeps the sigil or Echo charge.",
     "Chad’s followers now use underwear versions of their existing character sprites, including movement and combat animations. Ordinary character appearances are preserved.",
     "The god of the bare fist is now Chad the Unclad. Existing characters retain their devotion and progression.",

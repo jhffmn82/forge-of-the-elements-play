@@ -168,7 +168,12 @@ function drawOpenDoor(x, y, px, py, alpha){
 
 /* ---- dual-grid overlays for water and chasm (corner-based wang tiles) ---- */
 function drawAtlasWangLayer(key, tileType){
-  var set=AS['wang_'+key]; var img=set && atl('wang-'+key+'.png');
+  var set=AS['wang_'+key];
+  // Procedural terrain registers a marker, not a loadable atlas. A cold
+  // fallback must neither request that nonexistent file nor draw an undecoded image.
+  if(!set || set.procedural)return;
+  var img=atl('wang-'+key+'.png');
+  if(!img || !img.complete || !img.naturalWidth)return;
   for(var vy=camY; vy<=camY+viewH+1; vy++) for(var vx=camX; vx<=camX+viewW+1; vx++){
     var c=[[vx-1,vy-1],[vx,vy-1],[vx-1,vy],[vx,vy]], any=false, known=false, lit=false, bits='';
     for(var i=0;i<4;i++){
