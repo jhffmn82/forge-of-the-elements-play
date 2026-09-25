@@ -108,7 +108,7 @@ function renderCreate(){
   var el=$('create'), c=CHOICE;
   if(c.cls==='cleric' && creationRefuses(c,c.god))c.god='murk';
   if(!c.name) c.name=rollName(c);
-  var h='<div class="wrap"><h1>Forge of the Elements</h1><div class="tag2">Descend twenty floors, from the Dungeon to the Underdark, fuse elemental motes at the Forge, and bring down each biome&rsquo;s lord.</div>';
+  var h='<div class="wrap"><h1>Forge of the Elements</h1><div class="tag2">Descend twenty-five floors from the Dungeon into the Realm of Chaos. Fuse elemental motes, defeat the biome lords, and seek the Forge of the Elements.</div>';
   h+='<div class="step">1 &middot; Race</div><div class="cards">';
   Object.keys(RACES).forEach(function(r){
     var R=RACES[r], look=creationCastLook({race:r,sex:c.sex,court:c.court,cls:c.cls,god:c.god});

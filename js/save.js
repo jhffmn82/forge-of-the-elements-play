@@ -255,7 +255,7 @@ function renderLoadPanel(){
 function renderAbout(){
   var el=$('title');
   el.innerHTML='<div class="panel"><h2>About</h2>'+
-    '<p><b>Forge of the Elements</b> is a turn-based roguelike. Pick a race and a class and descend twenty floors: the Dungeon, the Crypt, the Caverns and the Underdark, each held by its own lord, with portals to the six elemental planes along the way. Carry elemental motes to the Forge to shape your gear and your magic, swear yourself to a god, and take at most two elements into yourself.</p>'+
+    '<p><b>Forge of the Elements</b> is a turn-based roguelike. Pick a race and a class and descend twenty-five floors through the Dungeon, the Crypt, the Caverns, the Underdark and the Realm of Chaos. Defeat the biome lords and explore the six elemental planes along the way. Fuse elemental motes at forges to shape your gear and your magic, follow a god, and cross the floating islands of Chaos on your quest to reach the Forge of the Elements.</p>'+
     '<p>Everything happens in turns: you act, then the dungeon answers. Hover anything for details. Tab opens your character, I your gear, P your faith, Esc closes windows. Key bindings, sound, lighting and animation speed live in the Options tab, along with saving.</p>'+
     '<h3>Credits</h3>'+
     '<p>Created by <b>Justin Hoffman</b>: design, story, world, balance, and the direction of every creature, map and sound in it. The title theme, <i>Strike the Steel</i>, and the end-credits song, <i>To Bind the Flame</i>, are written by Justin.</p>'+
