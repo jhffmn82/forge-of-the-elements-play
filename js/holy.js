@@ -21,7 +21,7 @@ function holyDurationPct(it){
 /* ---------------------------------------------------------------- what counts as a buff on you */
 function buffTimers(){
   var out={};
-  if(player.buffs) for(var k in player.buffs) if(player.buffs[k]>0) out['b:'+k]=player.buffs[k];
+  if(player.buffs) for(var k in player.buffs) if(k!=='hardened'&&player.buffs[k]>0) out['b:'+k]=player.buffs[k];
   ['stone','aura'].forEach(function(k){ var s=player.st && player.st[k]; if(s && s.t>0) out['s:'+k]=s.t; });
   if(player.levitate>0) out.lev=player.levitate;
   if(player.hidden>0) out.hid=player.hidden;
@@ -33,7 +33,7 @@ function setBuffTimer(key, v){
   else if(key==='lev') player.levitate=v;
   else if(key==='hid') player.hidden=v;
 }
-function isBuffed(){ var b=buffTimers(); for(var k in b) return true; return false; }
+function isBuffed(){ if(livingMountainStacks(player)>0)return true;var b=buffTimers(); for(var k in b) return true; return false; }
 
 /* a buff that is new or refreshed since the last turn is lengthened, and Radiance heals */
 

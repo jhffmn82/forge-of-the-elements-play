@@ -190,6 +190,13 @@ function drawCastLayers(e, cs, fr, dx, dy, w, h, g){
   var who = e || player;
   var pose=poseFor(m,row,col), rest=restPose(m);
   var wpn=who.weapon, off=who.twoHanded ? null : who.off, arm=who.armorItem;
+  if(who===player && who.god==='grom' && typeof equipmentForbidden==='function'){
+    /* The conduct helper may normalize legacy item keys; rendering checks a
+     * copy so merely drawing an old save cannot mutate its equipment. */
+    if(equipmentForbidden('weapon',wpn && Object.assign({},wpn)))wpn=null;
+    if(equipmentForbidden('off',off && Object.assign({},off)))off=null;
+    if(equipmentForbidden('armor',arm && Object.assign({},arm)))arm=null;
+  }
   var mainKey=heldKeyOf(wpn), offKey=heldKeyOf(off);
   if(mainKey && HELD[mainKey].hand==='l'){ offKey=null; }            /* a bow takes the left hand */
   var items=[];
@@ -217,12 +224,12 @@ function drawCastLayers(e, cs, fr, dx, dy, w, h, g){
 
 /* ---------------------------------------------------------------- the paper doll */
 function paintDoll(el, size){
-  var cs=castSheet(player.look);
-  if(!cs || !AS.map || !AS.map.held){ paintArt(el,'cast',player.look,size); return; }
+  var look=playerCastLook(), cs=castSheet(look);
+  if(!cs || !AS.map || !AS.map.held){ paintArt(el,'cast',look,size); return; }
   /* 2026-09-22 (Justin): the doll drew the map sheet's 107px figure at 231 CSS px, a x2.2 blow-up. tools/pack.py
      packs each native cut-out alone at 256 (cast-<look>-doll.png, ASSETS.cast[look].doll); it is used here when it
      has loaded, and the map sheet stays the fallback. */
-  var dm=cs.m.doll, di=dm && atl('cast-'+player.look+'-doll.png'), hi=!!(di && di.complete && di.naturalWidth);
+  var dm=cs.m.doll, di=dm && atl('cast-'+(cs.look||look)+'-doll.png'), hi=!!(di && di.complete && di.naturalWidth);
   if(hi) cs={img:di, m:dm};
   var S=size||150, d=window.devicePixelRatio||1, c=document.createElement('canvas');
   c.width=S*d; c.height=S*d*1.25; c.style.width=S+'px'; c.style.height=(S*1.25)+'px';

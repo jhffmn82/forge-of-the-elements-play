@@ -51,7 +51,7 @@ var gameEffects=FoteEffects.create({
       if(rng()<.35&&typeof setG==='function'&&gAt(e.x,e.y)===G_NONE)setG(e.x,e.y,G_BLOOD);
     }else if(key==='burn'){
       var black=e!==player&&e.foe&&combo('fire','shadow');
-      damage=dealDirectDamage(e,Math.max(1,Math.round(s.d*(black?1:resistMult(e,'fire')))),'fire',e.lastHitBy||null);e._hit=performance.now();floatText(e.x,e.y,String(damage),'fire');
+      damage=dealDirectDamage(e,Math.max(1,Math.round(s.d*(black?1:resistMult(e,'fire')))),'fire',e.lastHitBy||null,{resistanceApplied:!black});e._hit=performance.now();floatText(e.x,e.y,String(damage),'fire');
       if(e===player)log('Burning: '+damage+' fire damage.','c-you');
       if(gAt(e.x,e.y)===G_GRASS||gAt(e.x,e.y)===G_SHORT)ignite(e.x,e.y,e===player?'player':null);
       if(black&&e.hp>0)addHollow(e,1);
@@ -65,7 +65,7 @@ var gameEffects=FoteEffects.create({
     if(e.hp<=0){kill(e,e===player||key==='poison'?null:e.lastHitBy||null);return false;}
     return true;
   },
-  onAfterPulse:function(event){if(event.entity===player&&player.hp<event.hpBefore)refreshHardened();}
+  onExpired:function(event){if(event.entity===player&&event.key==='livingmountain')derive(player);}
 });
 
 function applyStatus(e,key,turns,extra){return gameEffects.apply(e,key,turns,extra);}

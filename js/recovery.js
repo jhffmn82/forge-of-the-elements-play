@@ -12,14 +12,16 @@ var LANCE={name:'Lance',kind:'bolt',type:'phys',range:5,divine:true,cost:0};
 if(ABILITIES.arcaneward){}   /* 2026-09-22 audit: the card said 8 Favor, the code took 8 mana */
 
 
-function refreshHardened(){
+function stackLivingMountain(){
   if(player.hp<=0 || !livingMountain(player))return;
-  player.buffs.hardened=3;
-  player._buffPrev=player._buffPrev||{};player._buffPrev.hardened=0;
+  // One shared status holds all stacks. Every future global pulse spends one
+  // turn; the triggering attack does not add a separate fresh-status grace turn.
+  gameEffects.apply(player,'livingmountain',Math.max(1,Math.round(6*divineStrength())),undefined,
+    {data:{n:Math.min(10,livingMountainStacks(player)+1)},durationModifiers:false,refresh:'replace',bornAt:worldNow()-100});
   derive(player);
 }
 
-if(typeof STATUS_INFO!=='undefined')STATUS_INFO.hardened={name:'Hardened',icon:'st-stone',d:'Divine-Power-scaled armor and elemental resistance. Taking damage refreshes the duration without stacking.'};
+if(typeof STATUS_INFO!=='undefined')STATUS_INFO.livingmountain={name:'Living Mountain',icon:'ic-iron-body',d:'Each stack grants +2 percentage points of all-damage resistance and critical-hit chance, +2% Accuracy and Evasion, and +2 flat attack damage before Might scaling. Up to 10 stacks; each unarmed attack refreshes all stacks for 6 × Divine Power global turns.'};
 
 /* Anvil's Toll: a weapon attack on everything within two tiles, each thrown back and stunned (2026-09-23) */
 
@@ -39,8 +41,6 @@ function spearPath(ax,ay,bx,by){
 
 
 function turnLichReturn(context){
-  // Damage during enemy actions already used this turn's refresh exemption.
-  if(player._buffPrev)player._buffPrev.hardened=player.buffs.hardened||0;
   var pending=floorMeta.pendingLich;
   if(pending&&turn>=pending.at){
     var e=pending.entity,c=!occupied(e.x,e.y)?{x:e.x,y:e.y}:nearFree(e.x,e.y,2);

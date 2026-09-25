@@ -81,6 +81,7 @@ function damageDefenses(event){
   if(type==='phys'){
     var pierce=(source===player?player.weapon.pierce||0:0)+(source&&source.base?source.base.pierce||0:0);
     d=FoteDamage.physical(d,{armor:armorOf(target),pierce:pierce,heavy:!!(source&&source.base&&source.base.heavy),earth:isPlayer?player.aff.earth||0:0,stone:isPlayer&&target.st.stone,frozen:target.st&&target.st.frozen});
+    if(isPlayer)d*=resistMult(target,'phys');
     if(target.st&&target.st.frozen){gameEffects.remove(target,'frozen','shattered');if(!isPlayer)gameEffects.apply(target,'imm_frozen',3,undefined,{durationModifiers:false,ignoreImmunity:true});floatText(target.x,target.y,'shatter','ice');}
   }else{
     d=FoteDamage.elemental(d,{resistance:resistMult(target,type),player:isPlayer,corrupt:type==='dark'&&target.st&&target.st.corrupt});
@@ -143,7 +144,7 @@ function damageReceivedReactions(event){
     if(b.lurks&&!source._struck)source._struck=true;
     if(b.kindles&&d>0&&player.hp>0){applyStatus(player,'burn',3,sDMG(3));if(!player._fwaLitMsg||player._fwaLitMsg<turn-8){player._fwaLitMsg=turn;log('The <b>Flame Dancer</b> sets you alight.','c-you');}}
   }
-  if(d>0){refreshHardened();player.lastDamageTime=player.t;if(hasGod('grumbok')&&godRank()>=3&&type!=='phys')player.wizardHunterUntil=player.t+300;if(capstone('grumbok')&&type!=='phys'&&source&&source.foe)player.spellbreakUntil=player.t+1000;}
+  if(d>0){player.lastDamageTime=player.t;if(hasGod('grumbok')&&godRank()>=3&&type!=='phys')player.wizardHunterUntil=player.t+300;if(capstone('grumbok')&&type!=='phys'&&source&&source.foe)player.spellbreakUntil=player.t+1000;}
   if(player.hp<=0)lastLaugh();
 }
 function damageAttackReactions(event){
@@ -167,6 +168,9 @@ function applyDamage(target,amount,type,source,options){
 /* Pre-mitigated damage keeps explicit periodic/sacrifice rules. It emits a damage
  * event without accidentally triggering attack procs, shields or attack rewards. */
 function dealDirectDamage(target,amount,type,source,options){
+  // Periodic/environment damage bypasses ordinary defenses, but Living Mountain
+  // still protects it. Already-resisted hits and explicit HP costs must not pay twice.
+  if(target===player&&!(options&&options.resistanceApplied)&&!(options&&options.tags&&options.tags.indexOf('cost')>=0))amount*=1-.02*livingMountainStacks(player);
   return gameDamage.resolve(target,amount,type,source,Object.assign({preMitigated:true,bypassShields:true,reactions:false,visuals:false,tags:['periodic']},options||{})).damage;
 }
 function healPlayer(amount,natural){

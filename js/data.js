@@ -94,20 +94,21 @@ var CLASSES = {
 /* ---------------------------------------------------------------- gods */
 var GODS = {
   "grom": {
-    "name": "Grom the Unclad",
+    "name": "Chad the Unclad",
+    "refuses": "dwarf",
     "title": "god of the bare fist",
     "sprite": "shrine-grom",
     "color": "#C98A5A",
-    "rule": "Only Holy Symbols, rings and amulets may be equipped. No other weapons, ranged equipment, armor or off-hand items.",
+    "rule": "Dwarves cannot worship Chad. Only Holy Symbols, rings and amulets may be equipped. No other weapons, ranged equipment, armor or off-hand items.",
     "invoke": "ironbody",
     "prayers": [
       "ironhide",
       "pummel"
     ],
     "boons": [
-      "Iron Flesh: +2 armor per rank, and your fists hit harder as your rank rises (2-5, 3-6, 5-9, 7-12). Every unarmed hit earns 1 piety.",
-      "Staggering Blows: unarmed hits stun 15% of the time.",
-      "Living Mountain: enchant fists and body. Taking damage grants Hardened for 3 base turns: armor and elemental resistance scale with Divine Power; refreshes without stacking."
+      "Iron Flesh: +2 armor, +10% movement speed and +10% Evasion per rank. Fists can parry using the normal Agility-based parry chance. Base fist damage is 2-5 at rank 1, 3-6 at rank 2, 5-9 at ranks 3-4, and 7-12 at rank 5. Every damaging unarmed hit earns 1 piety.",
+      "Staggering Blows: unarmed hits stun 15% of the time. From rank 3, gain +10% unarmed attack speed per god rank.",
+      "Living Mountain: every unarmed attack, including misses, adds a stack, up to 10, and refreshes all stacks for 6 × Divine Power global turns. Each stack grants +2 percentage points of all-damage resistance and shared critical-hit chance, +2% Accuracy and Evasion, and +2 flat attack damage before Might scaling."
     ],
     "gain": "Damaging unarmed hits, plus kills while your hands are empty; elites and bosses grant extra."
   },
@@ -421,12 +422,13 @@ var ABILITIES = {
   },
   "ironbody": {
     "name": "Iron Body",
+    "instant": true,
     "cost": 8,
     "kind": "self",
     "icon": "ic-iron-body",
     "divine": true,
     "god": "grom",
-    "desc": "Invoke: armor and unarmed stun chance increase with Divine Power for 6 base turns. Costs mana."
+    "desc": "Instant Invoke (no turn): +4 armor and +30% unarmed stun chance, scaled by Divine Power, for 12 base turns. Costs mana."
   },
   "bellow": {
     "name": "Bellow",
@@ -670,15 +672,17 @@ var INVOKE_OF = {
 var PRAYERS = {
   "ironhide": {
     "name": "Iron Hide",
+    "instant": true,
     "favor": 10,
     "rank": 2,
-    "desc": "Gain armor and a shield for 12 base turns, scaled by Divine Power. Refreshes protection without stacking it."
+    "desc": "Instant (no turn): gain armor and a shield for 12 base turns, scaled by Divine Power. Refreshes protection without stacking it."
   },
   "pummel": {
     "name": "Pummel",
+    "instant": true,
     "favor": 25,
     "rank": 4,
-    "desc": "Your next three successful unarmed hits gain +100% damage scaled by Divine Power and stun for one turn."
+    "desc": "Instant (no turn): your next three successful unarmed hits gain +100% damage scaled by Divine Power and stun for one turn."
   },
   "rampage": {
     "name": "Rampage",

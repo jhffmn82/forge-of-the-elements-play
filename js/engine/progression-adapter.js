@@ -12,6 +12,7 @@ function syncGlimmerLight(options){
   return changed;
 }
 function joinGod(id,startPiety){
+  if(id==='grom' && player.race==='dwarf' && player.god!==id)return false;
   if(clericGodLocked(id))return false;
   var previous=player.god;
   if(previous==='glimmer'&&id!=='glimmer')takeGlimmerLight();

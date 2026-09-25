@@ -9,6 +9,17 @@
     charges=Math.min(charges,amuletCapacity({level:level}));
     return {level:level,charges:charges,progress:progress,charge:charges>0?0:Math.max(1,kills-(progress||0))};
   }
-  var api=Object.freeze({ringPower:ringPower,amuletCapacity:amuletCapacity,amuletKills:amuletKills,amuletState:amuletState});
+  function transmute(item,kind,key,base){
+    if(!item||item.unarmed||!base||['ring','amulet','weapon','off','armor'].indexOf(kind)<0)return null;
+    var identity=kind==='ring'?'ring':kind==='amulet'?'amulet':'key';
+    if(item[identity]===key)return null;
+    // Build from the new authored base; old damage, armor, range and passive
+    // fields must never leak across identities. Only persistent state survives.
+    var next=JSON.parse(JSON.stringify(base));next.kind=kind;next[identity]=key;
+    ['tier','plus','enchant','cursed','cursedOff','unid','useN'].forEach(function(field){if(Object.prototype.hasOwnProperty.call(item,field))next[field]=item[field];});
+    if(kind==='amulet')['level','charges','progress','charge','uses'].forEach(function(field){if(Object.prototype.hasOwnProperty.call(item,field))next[field]=item[field];});
+    return next;
+  }
+  var api=Object.freeze({ringPower:ringPower,amuletCapacity:amuletCapacity,amuletKills:amuletKills,amuletState:amuletState,transmute:transmute});
   root.FoteGear=api;if(typeof module==='object'&&module.exports)module.exports=api;
 })(typeof globalThis==='object'?globalThis:this);

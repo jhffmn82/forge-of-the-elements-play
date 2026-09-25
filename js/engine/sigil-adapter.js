@@ -1,5 +1,6 @@
 /* Sigils share validation and completion; each effect has one implementation. */
 var SIGIL_CASTS={
+"transmutation":function(context){return transmutationPicker(context);},
 "firestorm":function(context){var use=context.use,F=floorNo,bountySpots=context.spots;
 burst(player.x,player.y,'fire',60,0.12); ents.slice().forEach(function(e){ if(e.foe && dist(player,e)<=3){ var fd=applyDamage(e,8+floorNo,'fire',player); floatText(e.x,e.y,String(fd),'fire'); applyStatus(e,'burn',3,sDMG(2)); if(e.hp<=0) kill(e,player); } });
     for(var dy=-2;dy<=2;dy++) for(var dx=-2;dx<=2;dx++) if(dx||dy) ignite(player.x+dx,player.y+dy,'player'); log('Flames burst out around you.','c-fire');
@@ -126,8 +127,9 @@ function resolveSigilPuzzles(use){
     else if(k==='darktraps' && nearRoom(room, 2)) solvePuzzle(room, 'light floods the room and shows every trap.');
     else if(k==='baths' && nearRoom(room, 2)){ room.cooledUntil=turn+10; log('<b>Scalding baths:</b> the stone cools for 10 turns.','c-kill'); sfx('ice-melt'); }
   });}
-function useSigil(use){
+function useSigil(use,options){
   var context=prepareSigil(use);if(!context)return false;
+  if(use==='transmutation')return SIGIL_CASTS[use](Object.assign(context,options||{}));
   return gameActions.run('sigil',player,null,{sigil:use},function(event){
     sfx('sigil-use');setClip(player,'cast');
     SIGIL_CASTS[use](context);identifySigil(use);

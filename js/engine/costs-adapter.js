@@ -6,7 +6,7 @@ function actorTiming(actor){
 }
 function playerTiming(){
   var c=actorTiming(player),weapon=player.weapon||{},holy=infusion('holy')==='air'&&isBuffed();
-  c.agility=player.stats.agi;c.divine=divineStrength();c.rank=godRank();
+  c.agility=player.stats.agi;c.divine=divineStrength();c.rank=godRank();c.grom=player.god==='grom';
   c.attacking=player.lastAttack;c.unarmed=weapon.unarmed;c.dagger=/Dagger/.test(weapon.name||'');
   c.rampage=buff('rampage')&&player.lastAttackMelee;c.hunter=player.wizardHunterUntil>player.t;
   c.casting=player.castingSpell;c.tomeReduction=infusion('tome')==='air'?enchantValues('tome','air').castTimeReduction:0;

@@ -48,6 +48,7 @@ useAmulet = function(){
   }
   var k=a.amulet;
   if(k==='echo' && !player.lastSigil){ log('The amulet has no sigil to echo yet. Read one first.','c-info'); return; }
+  if(k==='echo' && player.lastSigil==='transmutation')return useSigil('transmutation',{echo:true,amulet:a});
   if(k==='echo' && !prepareSigil(player.lastSigil)) return;
   spendAmulet(a); setClip(player,'cast'); sfx('sigil-use');
   if(k==='seeking') amuletSeeking();

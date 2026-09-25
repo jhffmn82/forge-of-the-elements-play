@@ -33,10 +33,13 @@ function resistMult(target,type){
     element:b.el?elemToType(b.el):null,opposite:b.el?elemToType(OPPOSITE[b.el]):null,undead:b.undead||b.shadowy,
     wet:!!isWet(target),chilled:!!(target.st&&target.st.chill),warding:own?ringVal('warding'):0,immune:immunity,
     poisonward:B.poisonward>0,shadeward:B.shadeward>0,stormward:B.stormward>0,fireward:B.fireward>0,starward:B.starward>0,
-    hardened:own&&livingMountain(player)&&buff('hardened'),sanctuary:inSanctuary(target),divine:divineStrength()});
+    mountainResistance:own?.02*livingMountainStacks(player):0,sanctuary:inSanctuary(target),divine:divineStrength()});
 }
 function prepareAttack(event){
   var att=event.source,def=event.target,view=event.view=attackView(att,def,event.options);
+  if(att===player&&view.weapon&&view.weapon.unarmed&&!event.options.offhand&&!event.tags.has('proc')&&livingMountain(player)){
+    stackLivingMountain();view=event.view=attackView(att,def,event.options);
+  }
   event.multiplier=event.options.multiplier||1;event.label=event.options.label;
   event.hpBefore=def.hp;event.playerHPBefore=player.hp;
   event.thorns=def===player&&att!==player&&att.hp>0&&buff('thorns')&&dist(att,def)<=1;
@@ -245,7 +248,7 @@ function resolveWeaponDamage(event,strike){
     }
     if(player.aff.shadow && def.hp>0) addHollow(def, 0);
     if(view.weapon.unarmed && hasGod('grom') && def.hp>0 && rng() < (buff('ironbody')?0.3*actionDivine(view):0) + (godRank()>=3?0.15:0)){ applyStatus(def,'stun',1); note+=' staggered'; }
-    if(extra>0)dealDirectDamage(def,Math.round(extra*(el?resistMult(def,el):1)),el||'phys',player,{tags:['proc','enchant'],actionId:event.actionId});
+    if(extra>0)dealDirectDamage(def,Math.round(extra*(el?resistMult(def,el):1)),el||'phys',player,{tags:['proc','enchant'],actionId:event.actionId,resistanceApplied:!!el});
   }
   if(att!==player && att.base && att.base.el){
     el = att.base.el;
@@ -258,7 +261,7 @@ function resolveWeaponDamage(event,strike){
       else if(el==='air'){ applyStatus(def,'stun',1); note=' stunned'; }
       else if(el==='light'){ applyStatus(def,'blind',2); note=' dazzled'; }
     }
-    dealDirectDamage(def,add,elemToType(el),att,{tags:['proc','elemental-attack'],actionId:event.actionId});extra=add;
+    dealDirectDamage(def,add,elemToType(el),att,{tags:['proc','elemental-attack'],actionId:event.actionId,resistanceApplied:true});extra=add;
   }
   if(att.lifesteal && att.ally){ att.hp=Math.min(att.maxhp, att.hp+Math.round(phys*0.3)); }
   return {phys:phys,extra:extra,applied:applied,note:note,element:el};
@@ -282,8 +285,8 @@ function presentWeaponDamage(event,strike,damage){
   if(def.hp<=0){ kill(def, att); }
   if(att===player && hasP('cleaving') && !label){   /* 2026-09-22 audit: the swing carries on through a killing blow too */
     var other=ents.filter(function(o){ return o.foe && o!==def && dist(player,o)<=1; })[0];
-    if(other){ log('Your swing carries into '+other.name+'.','c-info'); attack(player,other,.5,'Cleave',{weapon:view.weapon,offhand:!!event.options.offhand}); }
+    if(other){ log('Your swing carries into '+other.name+'.','c-info'); attack(player,other,.5,'Cleave',{weapon:view.weapon,offhand:!!event.options.offhand,tags:['proc']}); }
   }
-  if(att===player && event.pendingExtra && event.pendingExtra===def && def.hp>0){ event.pendingExtra=null; attack(player,def,1,'Gust',{weapon:view.weapon,offhand:!!event.options.offhand}); }
+  if(att===player && event.pendingExtra && event.pendingExtra===def && def.hp>0){ event.pendingExtra=null; attack(player,def,1,'Gust',{weapon:view.weapon,offhand:!!event.options.offhand,tags:['proc']}); }
   event.pendingExtra=null;
 }

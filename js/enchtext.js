@@ -48,7 +48,7 @@ var ABILITY_LIVE = {
   livingflame: function(A){var sp=spellPower(A);return '100 mana: summon a Living Flame for 30 world turns. '+Math.round(28*sp)+' HP, '+Math.round(5*sp)+'–'+Math.round(9*sp)+' Fire damage. Every third ranged attack splashes nearby enemies for half damage. Shared two-summon limit.';}
 };
 var PRAYER_LIVE = {
-  ironhide: function(){return '+'+Math.round(5*divineStrength())+' armor and '+Math.round((5+2*godRank())*divineStrength())+' shield HP for '+fullDivineDuration(12)+' turns. Refreshes without stacking.';}
+  ironhide: function(){return 'Instant (no turn): +'+Math.round(5*divineStrength())+' armor and '+Math.round((5+2*godRank())*divineStrength())+' shield HP for '+fullDivineDuration(12)+' turns. Refreshes without stacking.';}
 ,
 bonespear:function(){return 'Piercing Dark damage '+Math.round(5*godRank()*divineStrength())+'–'+Math.round((5*godRank()+6)*divineStrength())+', range 6. Costs 5 Favor.';},
 arcanelance:function(){return 'Magic damage '+Math.round(5*godRank()*divineStrength())+'–'+Math.round((5*godRank()+6)*divineStrength())+', range 6. Costs 5 Favor; no cooldown.';}};

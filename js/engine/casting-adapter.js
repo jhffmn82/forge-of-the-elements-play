@@ -1,6 +1,6 @@
 /* One command owner for ability selection, self casts and target validation. */
 var SELF_CASTS={
-"ironbody":function(A,r,div){ player.buffs.ironbody=divineDuration(6); derive(player); log('Iron Body: your skin turns hard as iron.','c-good'); sfx('earth-cast'); sparkleFx(player.x,player.y,'earth',20); },
+"ironbody":function(A,r,div){ player.buffs.ironbody=divineDuration(12); derive(player); log('Iron Body: your skin turns hard as iron.','c-good'); sfx('earth-cast'); sparkleFx(player.x,player.y,'earth',20); },
 "bellow":function(A,r,div){  sfx('warchief-roar');
     ents.forEach(function(e){ if(e.foe && dist(e,player)<=3) applyStatus(e,'stun',1); });
     var h=Math.round(player.maxhp*(.10+.02*r)*div); healPlayer(h); floatText(player.x,player.y,'+'+h,'heal'); ringFx(player.x,player.y,'#B8453A',3.5);
@@ -100,7 +100,7 @@ function useAbility(i){
     var foe=nearestFoe(1);if(!foe){log('Nothing adjacent to strike.','c-info');return;}
     spendSpellMana(A);attack(player,foe,1,A.name);if(foe.hp>0)attack(player,foe,1,A.name);endTurn();return;
   }
-  if(A.kind==='self'){if(castSelf(key,A)===false)return;if(key==='temper'){updateUI();return;}endTurn();}
+  if(A.kind==='self'){if(castSelf(key,A)===false)return;if(key==='temper'){updateUI();return;}if(A.instant)FREE_ACTION=true;endTurn();}
 }
 function inRange(x,y){
   if(!aiming||!inb(x,y))return false;

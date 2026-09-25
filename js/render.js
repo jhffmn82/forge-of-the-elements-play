@@ -404,7 +404,25 @@ function setClip(e, name){
   e._clip={name:name, t0:t0};
   if(CLIP_WINDUP[name] && !ANIM.reduce && typeof fxClock==='number') fxClock = t0 + CLIP_WINDUP[name];
 }
-function castSheet(look){ var m=AS.cast && AS.cast[look]; if(!m) return null; var img=atl('cast-'+look+'.png'); return img ? {img:img, m:m} : null; }
+/* Appearance is derived from current faith; the saved look remains the same
+ * race/court/sex identity when joining or leaving Chad. */
+function castLookFor(look,god){
+  var variant=look+'-unclad';
+  return god==='grom' && !/^dwarf-[mf]$/.test(look) && AS.cast && AS.cast[variant] ? variant : look;
+}
+function playerCastLook(){return player && castLookFor(player.look,player.god);}
+function castSheet(look){
+  var m=AS.cast && AS.cast[look], img=m && atl('cast-'+look+'.png');
+  if(img)return {img:img,m:m,look:look};
+  if(/-unclad$/.test(look)){
+    /* Variant animations load on demand. The preloaded matching doll keeps
+     * appearance and attachment anchors stable while that sheet arrives. */
+    var doll=m && m.doll && atl('cast-'+look+'-doll.png');
+    if(doll)return {img:doll,m:m.doll,look:look};
+    return castSheet(look.replace(/-unclad$/,''));
+  }
+  return null;
+}
 function mobSheet(name){ var m=AS.mobs && AS.mobs[name]; if(!m) return null; var img=atl('mob-'+name+'.png'); return img ? {img:img, m:m} : null; }
 /* Share artwork without granting temporary swarms the raised-shade gameplay tag. */
 function isShadeSummon(e){return !!(e && e.ally && (e.shade || e.swarm));}
@@ -445,7 +463,7 @@ function drawCharacterSprite(e, px, py, opts){
   if(e.livingFlame)return drawLivingFlame(e,px,py,opts);
   opts=opts||{};
   if(e===player){
-    var cs = spriteOn ? castSheet(player.look) : null;
+    var cs = spriteOn ? castSheet(playerCastLook()) : null;
     if(cs){
       var fr=clipFrame(cs, e, opts.sliding), m=cs.m, cell=m.cell, sc=(TS*1.08)/m.stand;
       var w=cell*sc, h=cell*sc, dx=px+TS/2-w/2, dy=py+TS-(cell-m.foot)*sc;

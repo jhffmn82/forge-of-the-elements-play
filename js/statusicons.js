@@ -60,7 +60,7 @@ function statusList(e){
   for(var k in (e.st||{})){ if(k.indexOf('imm_')===0) continue; var s=e.st[k]; if(!s || !(s.t>0)) continue; out.push({k:k, t:s.t}); }
   if(e!==player && e.challenged) out.push({k:e.cowardMark?'coward':'challenged', t:e.challengeT||0});   /* a Cleric's Challenge has no timer: 0 shows no count */
   if(e===player){
-    for(var b in (player.buffs||{})) if(player.buffs[b]>0) out.push({k:b, t:player.buffs[b]});
+    for(var b in (player.buffs||{})) if(b!=='hardened'&&player.buffs[b]>0) out.push({k:b, t:player.buffs[b]});
     if(player.hidden>0) out.push({k:'hidden', t:player.hidden});
     if(player.levitate>0) out.push({k:'levitate', t:player.levitate});
   }
@@ -68,6 +68,7 @@ function statusList(e){
     var I=STATUS_INFO[o.k] || {name:cap(o.k), icon:'', d:''};
     /* Sylla's web starts as Root, then becomes Slow. Show silk in both phases. */
     if(o.k==='root'&&e.syllaWeb>0) I={name:'Webbed',icon:'st-web',bad:1,d:'Pinned in silk. When released, moves and acts at half speed.'};
+    if(o.k==='livingmountain') I=Object.assign({},I,{name:I.name+' ×'+(e.st.livingmountain.n||0)});
     return {k:o.k, t:o.t, name:I.name, icon:I.icon, d:I.d, bad:!!I.bad};
   });
 }

@@ -229,7 +229,7 @@ function slotCard(key){
 }
 function wireEquip(root){
   /* the doll box is wider now, so the figure is drawn bigger to match (2026-09-17) */
-  if(typeof paintDoll==='function') paintDoll($('dollArt'), 210); else paintArt($('dollArt'),'cast',player.look,210);
+  if(typeof paintDoll==='function') paintDoll($('dollArt'), 210); else paintArt($('dollArt'),'cast',playerCastLook(),210);
   root.querySelectorAll('[data-mote]').forEach(function(e){ paintArt(e,'items','mote-'+e.getAttribute('data-mote'),16); });
   root.querySelectorAll('[data-kicon]').forEach(function(e){ paintArt(e,'items',e.getAttribute('data-kicon'),18); });
   root.querySelectorAll('[data-gicon]').forEach(function(e){ var n=e.getAttribute('data-gicon'); if(n) e.appendChild(iconCanvas(n, 42, '?')); });

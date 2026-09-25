@@ -1,7 +1,6 @@
 /* Forge commands validate their complete transaction before spending resources.
  * Every successful operation has one stats/description refresh and one receipt. */
 function forgeTarget(slot){
-  if(slot==='fists'||slot==='body')return livingMountain(player)?{slot:slot,item:{name:slot==='fists'?'Fists':'Body',enchant:player[slot==='fists'?'gromFistEnchant':'gromBodyEnchant']},kind:slot==='fists'?'weapon':'armor',field:slot==='fists'?'gromFistEnchant':'gromBodyEnchant'}:null;
   if(slot==='weapon')return player.weapon&&!player.weapon.unarmed?{slot:slot,item:player.weapon,kind:'weapon'}:null;
   if(slot==='ranged')return isRangedWeapon(player.ranged)?{slot:slot,item:player.ranged,kind:'weapon'}:null;
   if(slot==='armor')return player.armorItem?{slot:slot,item:player.armorItem,kind:'armor'}:null;
@@ -9,8 +8,8 @@ function forgeTarget(slot){
   return null;
 }
 function enchantTargets(){
-  var labels={weapon:'Main hand',off:'Off hand',ranged:'Ranged',armor:'Armor',fists:'Living Mountain · fists',body:'Living Mountain · body'};
-  return ['weapon','off','ranged','armor','fists','body'].map(forgeTarget).filter(Boolean).map(function(t){return {slot:t.slot,label:labels[t.slot],it:t.item,text:t.kind?ENCHANT_TEXT[t.kind]:null};});
+  var labels={weapon:'Main hand',off:'Off hand',ranged:'Ranged',armor:'Armor'};
+  return ['weapon','off','ranged','armor'].map(forgeTarget).filter(Boolean).map(function(t){return {slot:t.slot,label:labels[t.slot],it:t.item,text:t.kind?ENCHANT_TEXT[t.kind]:null};});
 }
 function finishForge(html){derive(player);refreshBagNames();updateUI();renderForge();forgeSay(html);}
 function enchantItem(slot,element){
@@ -22,7 +21,7 @@ function enchantItem(slot,element){
   if(!(player.motes[element]>0)){log('You have no '+element+' mote.','c-info');return false;}
   if(item.enchant===element){log('Your '+gearName(item)+' already carries '+element+'. A second mote would change nothing.','c-info');sfx('ui-error');return false;}
   var before=Object.assign({},player.motes);player.motes=FoteInventory.consumeMaterials(player.motes,{[element]:1});
-  if(target.field)player[target.field]=element;else item.enchant=element;
+  item.enchant=element;
   if(player.god==='anvil')gainPiety(20,undefined,{deferStats:true});
   if(item.cursed)breakCurse(item,{deferRefresh:true});
   secondHeat(before);

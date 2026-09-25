@@ -37,7 +37,7 @@ function turnAnimationClipEnd(e,now){
   if(clip.t0>Math.max(now,typeof fxClock==='number'?fxClock:0)+1)return now;
   if(e.livingFlame)return now;
   var shade=typeof isShadeSummon==='function'&&isShadeSummon(e);
-  var sheet=e===player?AS.cast&&AS.cast[player.look]:AS.mobs&&AS.mobs[shade?'m-shade':e.base&&e.base.sprite];
+  var sheet=e===player?AS.cast&&AS.cast[playerCastLook()]:AS.mobs&&AS.mobs[shade?'m-shade':e.base&&e.base.sprite];
   var frames=sheet&&sheet.clips&&sheet.clips[clip.name];
   var heldStill=e.base&&e.base.stillPose&&!shade&&sheet&&sheet.static_row!==undefined;
   var end=frames&&!heldStill?clip.t0+frames.frames*(CLIP_MS[clip.name]||70):now;

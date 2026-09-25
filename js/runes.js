@@ -40,7 +40,7 @@ var RUNES = {
 var FUTHARK = ['fehu','uruz','thurisaz','ansuz','raidho','kenaz','gebo','wunjo','hagalaz','nauthiz','isa','jera','eihwaz','perthro','elhaz','sowilo','tiwaz','berkana','ehwaz','mannaz','laguz','ingwaz','dagaz','othala'];
 var BIND_RUNES = ['starbind','crossbind','rootbind'];
 var BIND_NAMES = {starbind:'Star-bound', crossbind:'Cross-bound', rootbind:'Root-bound'};
-var RARE_SIGILS = ['aegis','ascension','wisdom'];
+var RARE_SIGILS = ['aegis','ascension','wisdom','transmutation'];
 function runeTitle(look){ return BIND_NAMES[look] ? BIND_NAMES[look]+' rune' : cap(look)+' rune'; }
 
 /* ---------------------------------------------------------------- the atlas */
@@ -115,7 +115,12 @@ shuffleSigils = function(){
 function ensureRuneLooks(){
   if(!RUN) return;
   var ok = RUN.sigilLooks && Object.keys(SIGILS).every(function(k){ return RUNES[RUN.sigilLooks[k]]; });
-  if(!ok) RUN.sigilLooks = assignRunes(mulberry32((worldSeed^0x1234567)>>>0));
+  if(!ok){
+    var defaults=assignRunes(mulberry32((worldSeed^0x1234567)>>>0));
+    RUN.sigilLooks=RUN.sigilLooks||{};
+    // A newly added recipe must not change runes the player already knows.
+    Object.keys(SIGILS).forEach(function(k){if(!RUNES[RUN.sigilLooks[k]])RUN.sigilLooks[k]=defaults[k];});
+  }
   Object.keys(SIGILS).forEach(function(k){ sigilLook[k]=runeTitle(RUN.sigilLooks[k]); if(sigilKnown[k]===undefined) sigilKnown[k]=false; });
   (player.bag||[]).forEach(function(b){ if(b.kind==='sigil' && b.data) b.name=sigilName(b.data.use); });
 }

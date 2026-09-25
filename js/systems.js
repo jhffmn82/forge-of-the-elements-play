@@ -515,5 +515,6 @@ function useBagFood(idx){
 
 function useBagSigil(idx){
   var it=player.bag[idx];if(!it||it.kind!=='sigil')return false;
+ if(it.data.use==='transmutation')return useSigil(it.data.use,{entry:it});
  if(useSigil(it.data.use)===false) return false; consume(idx); endTurn(); return true;
 }

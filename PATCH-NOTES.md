@@ -1,5 +1,18 @@
 # Beta 1.1
 
+- Added a craftable Sigil of Transmutation for turning equipment into a different random item of the same category while preserving its quality, upgrades and existing enchantment. Canceling the selection keeps the sigil or Echo charge.
+- Chad’s followers now use underwear versions of their existing character sprites, including movement and combat animations. Ordinary character appearances are preserved.
+
+- The god of the bare fist is now Chad the Unclad. Existing characters retain their devotion and progression.
+
+- Chad now refuses new dwarf worshippers. Existing dwarf followers remain loadable with their faith and equipment intact.
+
+- Chad’s Living Mountain now builds strength with repeated punches, improving defense, accuracy, evasion, critical chance and damage. Divine Power helps that momentum last longer. This replaces Hardened and the old fist and body enchantments with a stronger reward for sustained melee combat.
+
+- Chad’s Iron Body, Iron Hide and Pummel now activate instantly without giving enemies a turn. Their mana and Favor costs remain unchanged, and descriptions explain the timing.
+
+- Extended Iron Body and strengthened Chad’s unarmored fighting style with rank-based movement and evasion bonuses, barehanded parrying, and faster punches at higher ranks.
+
 - Restored direct touch dragging from inventory to the hotbar or equipment slots. Tapping still inspects an item, and releasing a drag does not use it.
 
 - Made tablet inventory slots compact and arranged worn gear beside the bag so equipment stays accessible on iPad-sized screens.
@@ -50,7 +63,7 @@
 
 - Reworked divine abilities around Divine Power. Invocations spend mana; prayers spend divine favor. God restrictions prevent forbidden actions, and Clerics keep their chosen god.
 
-- Grom now permits only holy symbols, rings and amulets. Reworked divine buffs, summons and favor rewards so their strength follows the chosen god and equipment.
+- Chad now permits only holy symbols, rings and amulets. Reworked divine buffs, summons and favor rewards so their strength follows the chosen god and equipment.
 
 - Vellum now offers Communion, repeatable divine attacks, stronger equipment passives and chances for knockback and free casting. Two-handed weapons and bows are forbidden.
 

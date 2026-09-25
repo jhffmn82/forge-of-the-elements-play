@@ -19,6 +19,41 @@ function makeAmulet(type,cursed){
   if(!cursed)rng();
   return {kind:'amulet',amulet:type,name:AMULETS[type].name,plus:0,level:1,cursed:!!cursed,unid:true,charges:1,progress:0,charge:0,uses:0,icon:'item-amulet-'+RUN.amuletLook[type]};
 }
+function transmutationKind(item,hint){
+  if(!item||item.unarmed||item===EMPTY_OFF)return null;
+  if(item.ring&&RINGS[item.ring])return 'ring';
+  if(item.amulet&&AMULETS[item.amulet])return 'amulet';
+  if(item.weapon||item.kind==='weapon')return 'weapon';
+  return ['armor','off'].indexOf(item.kind||hint)>=0?item.kind||hint:null;
+}
+function transmutationCatalog(kind){return {weapon:WEAPONS,armor:ARMORS,off:OFFHANDS,ring:RINGS,amulet:AMULETS}[kind]||{};}
+function transmutationKey(item,kind){
+  if(kind==='ring')return item.ring;if(kind==='amulet')return item.amulet;
+  var table=transmutationCatalog(kind),key=item.key;
+  if(key&&table[key])return key;
+  return Object.keys(table).find(function(k){return table[k].name===item.name;})||Object.keys(table).find(function(k){return table[k].icon===item.icon;})||null;
+}
+function transmutationKeys(item,kind){
+  var key=transmutationKey(item,kind);if(!key)return [];
+  return Object.keys(transmutationCatalog(kind)).filter(function(k){return k!==key;});
+}
+function transmutedGear(item,kind,key){
+  var table=transmutationCatalog(kind),base=table[key];if(!base)return null;
+  var source=Object.assign({},item);source[kind==='ring'?'ring':kind==='amulet'?'amulet':'key']=transmutationKey(item,kind);
+  if(kind==='ring'||kind==='amulet'){
+    var looks=kind==='ring'?RUN.ringLook:RUN.amuletLook;
+    base={name:base.name,icon:'item-'+kind+'-'+looks[key]};
+  }
+  var next=FoteGear.transmute(source,kind,key,base);if(!next)return null;
+  if(kind==='amulet'){
+    // Missing legacy charge fields describe an already-depleted item here;
+    // transformation never manufactures a charge or resets recharge progress.
+    if(next.charges===undefined)next.charges=(item.charge||0)>0?0:1;
+    if(next.progress===undefined)next.progress=0;
+    amuletSync(next);
+  }else if(kind!=='ring')tierNormalize(next);
+  return next;
+}
 function rollEquipmentCandidate(){
   var roll=rng(),gear;
   if(roll<.5){var w=pick(['sword','dagger','mace','longsword','axe','bow','staff','wand','spear','censer']);gear={kind:'weapon',it:clone(WEAPONS[w])};}

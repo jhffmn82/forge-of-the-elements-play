@@ -2,7 +2,7 @@
 (function(root){
   'use strict';
   function resistance(type,c){
-    if(type==='phys')return 1;
+    if(type==='phys')return Math.max(0,1-(c.player?c.mountainResistance||0:0));
     var m=1;
     if(c.player){
       m-=c.armorResistance||0;m-=c.tomeResistance||0;m-=c.godResistance||0;
@@ -26,9 +26,9 @@
       if(c.poisonward&&type==='poison')m=0;
       if(c.shadeward&&type==='dark'||c.stormward&&type==='lightning'||c.fireward&&type==='fire')m*=.5;
       if(c.starward&&type!=='magic')m*=.8;
-      if(c.hardened&&['fire','ice','lightning','poison','light','dark'].indexOf(type)>=0)m=Math.max(0,m-.15*c.divine);
     }
     if(c.sanctuary)m=Math.max(.25,m-.15*c.divine);
+    if(c.player)m=Math.max(0,m-(c.mountainResistance||0));
     return m;
   }
   function spellDamage(amount,c){

@@ -130,9 +130,9 @@ function paintArtCanvas(el, group, name, size){
   if(group==='cast'){
     /* 2026-09-22 (Justin): character selection draws the 256px doll cut-out (cast-<look>-doll.png, the paper doll's
        sheet) instead of the 128px portrait, feet on the box's floor; the portrait stays the fallback while it loads. */
-    var dm=AS.cast && AS.cast[name] && AS.cast[name].doll, di=dm && atl('cast-'+name+'-doll.png');
+    var base=name.replace(/-unclad$/,''), dm=AS.cast && AS.cast[name] && AS.cast[name].doll, di=dm && atl('cast-'+name+'-doll.png');
     if(di){ var ds=S*0.98/dm.stand, dw=dm.cell*ds; x.drawImage(di,0,0,dm.cell,dm.cell,(S-dw)/2,S-(dm.cell-(dm.foot||0))*ds+S*0.02,dw,dw); el.innerHTML=''; el.appendChild(c); return; }
-    var pt=AS.portraits && AS.portraits.items[name], pimg=pt && atl('portraits.png');
+    var pt=AS.portraits && (AS.portraits.items[name]||AS.portraits.items[base]), pimg=pt && atl('portraits.png');
     if(pimg){ var pc=AS.portraits.cell, sc=S/pc*1.1; x.drawImage(pimg,pt[0],pt[1],pc,pc,(S-pc*sc)/2,S-pc*sc+S*0.02,pc*sc,pc*sc); if(dm) setTimeout(function(){ if(el.isConnected) paintArt(el,group,name,size); }, 300); }
     else if(pt){ setTimeout(function(){ if(el.isConnected) paintArt(el,group,name,size); }, 300); return; }
   } else if(o){

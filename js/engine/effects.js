@@ -24,6 +24,7 @@
     stone:{tags:['stone']},
     aura:{tags:['beneficial','aura'],periodic:true},
     wardshield:{tags:['beneficial','shield']},
+    livingmountain:{tags:['beneficial','stacking']},
     challenged:{tags:['harmful','challenge']},
     coward:{tags:['harmful','challenge']}
   };

@@ -15,10 +15,8 @@ function criticalMultiplier(){return 1.6+(infusion('orb')==='shadow'?enchantValu
    ========================================================================== */
 
 function livingMountain(p){return p && p.god==='grom' && pietyRank(p.piety||0)>=5;}
-function bodyArmor(p){
-  if(livingMountain(p) && !p.armorItem) return {armor:0,eva:0,enchant:p.gromBodyEnchant||null};
-  return p.armorItem || {};
-}
+function livingMountainStacks(p){var s=p&&p.st&&p.st.livingmountain;return livingMountain(p)&&s&&s.t>0?Math.max(0,Math.min(10,s.n||0)):0;}
+function bodyArmor(p){return p.armorItem || {};}
 
 var FISTS = {name:'Fists', dmg:[1,3], acc:5, hands:1, unarmed:true, icon:'ic-iron-body', kind:'weapon'};
 function isScoundrel(){ return player.cls==='scoundrel'; }

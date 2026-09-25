@@ -80,7 +80,9 @@ function startGame(){
 
 /* A failed or undecoded required atlas must never reveal an incomplete scene. */
 function preloadArt(done){
-  var files=(window.ASSETS && ASSETS.files)||[];
+  /* New faith variants keep their small dolls ready, but decode their large
+   * animation sheet only when that appearance is actually selected. */
+  var files=((window.ASSETS && ASSETS.files)||[]).filter(function(file){return !/^cast-.*-unclad\.png$/.test(file);});
   var veil=document.createElement('div'); veil.id='loadVeil';
   veil.style.cssText='position:fixed;inset:0;z-index:99;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;background:#0B0A09;color:#A79C93;font:14px sans-serif';
   var title=document.createElement('h1'); title.textContent='Forge of the Elements'; veil.appendChild(title);

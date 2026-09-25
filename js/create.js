@@ -91,6 +91,7 @@ function rollName(c){
   return pick(other.length ? other : list);
 }
 function lookFor(c){ var s=RACES[c.race].sexes[c.sex]; return c.race==='fae' ? s.replace('%s', c.court) : s; }
+function creationCastLook(c){return castLookFor(lookFor(c),c.cls==='cleric'?c.god:null);}
 function statsFor(c){
   var s={mig:10,agi:10,vit:10,foc:10}, rm=RACES[c.race].mods, cm=CLASSES[c.cls].mods;
   for(var k in s){ s[k]+= (rm[k]||0) + (cm[k]||0) + (c.race==='human'?1:0); }
@@ -105,11 +106,12 @@ function openCreate(){
 }
 function renderCreate(){
   var el=$('create'), c=CHOICE;
+  if(c.cls==='cleric' && creationRefuses(c,c.god))c.god='murk';
   if(!c.name) c.name=rollName(c);
   var h='<div class="wrap"><h1>Forge of the Elements</h1><div class="tag2">Descend twenty floors, from the Dungeon to the Underdark, fuse elemental motes at the Forge, and bring down each biome&rsquo;s lord.</div>';
   h+='<div class="step">1 &middot; Race</div><div class="cards">';
   Object.keys(RACES).forEach(function(r){
-    var R=RACES[r], look=lookFor({race:r, sex:c.sex, court:c.court});
+    var R=RACES[r], look=creationCastLook({race:r,sex:c.sex,court:c.court,cls:c.cls,god:c.god});
     h+='<button class="card'+(c.race===r?' on':'')+'" data-race="'+r+'"><div class="port" data-look="'+look+'"></div><b>'+R.name+'</b><span>'+R.blurb+'</span></button>';
   });
   h+='</div><div class="step">Appearance</div><div class="cards" style="grid-template-columns:repeat(auto-fill,minmax(120px,1fr))">'+
@@ -117,7 +119,7 @@ function renderCreate(){
   if(c.race==='fae'){
     h+='<div class="step">Fae court (your locked element)</div><div class="cards">';
     Object.keys(RACES.fae.courts).forEach(function(el2){
-      h+='<button class="card'+(c.court===el2?' on':'')+'" data-court="'+el2+'"><div class="port" data-look="'+RACES.fae.sexes[c.sex].replace('%s',el2)+'"></div><b style="color:'+AFF_COL[el2]+'">'+RACES.fae.courts[el2]+'</b><span>'+cap(el2)+' 1 from the start: '+T1_TEXT[el2]+'.</span></button>';
+      h+='<button class="card'+(c.court===el2?' on':'')+'" data-court="'+el2+'"><div class="port" data-look="'+creationCastLook({race:'fae',sex:c.sex,court:el2,cls:c.cls,god:c.god})+'"></div><b style="color:'+AFF_COL[el2]+'">'+RACES.fae.courts[el2]+'</b><span>'+cap(el2)+' 1 from the start: '+T1_TEXT[el2]+'.</span></button>';
     });
     h+='</div>';
   }
@@ -141,7 +143,7 @@ function renderCreate(){
   }
   var st=statsFor(c), C2=CLASSES[c.cls], kit=startingKit(c);
   var kitNames=[kit.main&&WEAPONS[kit.main].name, kit.alt&&WEAPONS[kit.alt].name, kit.armor&&ARMORS[kit.armor].name, kit.off&&offKitItem(kit.off).name].filter(Boolean);
-  if(c.cls==='cleric' && c.god==='grom') kitNames=['Fists (Grom forbids weapons and body armour)','Holy Symbol'];
+  if(c.cls==='cleric' && c.god==='grom') kitNames=['Fists (Chad forbids weapons and body armour)','Holy Symbol'];
   h+='<div class="summary"><div class="big" id="bigPort"></div><div>'+
      '<div class="step" style="margin-top:0">3 &middot; Name</div><input id="cname" type="text" maxlength="24" value="'+c.name.replace(/"/g,'')+'"> <button id="reroll">Random</button>'+
      '<div class="who" style="margin-top:8px;font-size:13px">'+RACES[c.race].name+' '+C2.name+(c.cls==='cleric'?' of '+GODS[c.god].name:'')+(c.race==='fae'?' &middot; '+RACES.fae.courts[c.court]:'')+'</div>'+
@@ -157,7 +159,7 @@ function renderCreate(){
   el.querySelectorAll('[data-look]').forEach(function(p){ paintArt(p,'cast',p.getAttribute('data-look'),118); });
   el.querySelectorAll('[data-icon]').forEach(function(p){ paintArt(p,'icons',p.getAttribute('data-icon'),44); });
   el.querySelectorAll('[data-shrine]').forEach(function(p){ paintArt(p,'structures',p.getAttribute('data-shrine'),110); });
-  paintArt($('bigPort'),'cast',lookFor(c),220);
+  paintArt($('bigPort'),'cast',creationCastLook(c),220);
   $('cname').oninput=function(){ c.name=this.value; };
   $('reroll').onclick=function(){ sfx('ui-click'); c.name=rollName(c); renderCreate(); };
   $('begin').onclick=function(){ audioInit(); sfx('ui-click'); $('create').classList.remove('on'); newRun(Date.now()%1000000, CHOICE); };
@@ -182,8 +184,10 @@ function createRunCharacter(choice){
   return {actor:p,bagWeapon:alt&&!p.ranged?alt:null};
 }
 function newRun(seed,choice){
+  choice=choice||LAST_CHOICE||CHOICE;
+  if(choice.cls==='cleric' && choice.god==='grom' && choice.race==='dwarf')return false;
   gameTurns.cancel();PACING.pending=null;stopTravel();fxClock=0;
-  choice=choice||LAST_CHOICE||CHOICE;LAST_CHOICE=JSON.parse(JSON.stringify(choice));
+  LAST_CHOICE=JSON.parse(JSON.stringify(choice));
   if(typeof SANDBOX!=='undefined')SANDBOX.normalTitle=false;
   if(typeof MAPVIEW!=='undefined')MAPVIEW.on=false;
   worldSeed=seed>>>0;rng=mulberry32(worldSeed);newRunState(worldSeed);

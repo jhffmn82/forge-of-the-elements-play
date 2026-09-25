@@ -9,6 +9,7 @@
       if(c.attacking){
         if(c.unarmed)cost*=.80;
         else if(c.dagger)cost*=.90;
+        if(c.grom&&c.unarmed&&c.rank>=3)cost/=1+.10*c.rank;
         if(c.rampage)cost/=1+.20*c.divine;
         if(c.hunter)cost/=1+.05*c.rank*c.divine;
       }
@@ -25,6 +26,7 @@
     if(c.freeStep)return 0;
     var cost=10000/(c.speed*(1-(c.chill||0)))*(c.fleet?.85:1)/(1+.10*(c.air||0));
     if(c.water&&!c.levitate)cost*=1.25;
+    if(c.grom&&c.rank>=1)cost/=1+.10*c.rank;
     if(c.hunter)cost/=1+.05*c.rank*c.divine;
     cost=Math.round(cost);
     if(c.storm)cost=Math.round(cost*.5);

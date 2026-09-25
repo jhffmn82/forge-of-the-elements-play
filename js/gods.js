@@ -86,7 +86,7 @@ function shrineGifts(id, g, mine){
 function openShrine(){
   var id=RUN.shrineGod, g=GODS[id];
   sfx('shrine-open');
-  var mine = player.god===id, refused = typeof godRefuses==='function' ? godRefuses(id) : (g.refuses && player.race===g.refuses);
+  var mine = player.god===id, refused = !mine && (typeof godRefuses==='function' ? godRefuses(id) : (g.refuses && player.race===g.refuses));
   var art = '<div class="shrine-art" data-art="'+g.sprite+'"></div>';
   var html = '<div class="shrine">'+art+'<div><h3 style="color:'+g.color+'">'+g.name+'</h3><div class="who">'+cap(g.title)+'</div>'+
     '<p><b>Rule.</b> '+g.rule+'</p><p><b>Piety comes from:</b> '+g.gain+' Piety earned deeper is worth more: x1.3 per biome below the first. Favor is not multiplied.</p>'+
@@ -97,7 +97,8 @@ function openShrine(){
   if(refused) html+='<p class="c-you"><b>'+(typeof godRefuses==='function' ? refusalText(id) : g.name+' will not accept a '+RACES[player.race].name+'.')+'</b></p>';
   else if(!mine) buttons.push({label:'Swear to '+g.name.split(',')[0], cls:'primary', fn:function(){
     confirmBox('Swear to '+g.name, (player.god?'Abandoning <b>'+GODS[player.god].name+'</b> brings their wrath for a while. ':'')+'Your piety starts at '+startPiety+'. '+g.rule, 'Swear', function(){
-      joinGod(id, startPiety); log('You swear yourself to <b>'+g.name+'</b>.','c-kill'); sfx('shrine-convert'); sparkleFx(player.x,player.y,'light',40); closeModal(); updateUI();
+      if(joinGod(id,startPiety)===false)return;
+      log('You swear yourself to <b>'+g.name+'</b>.','c-kill'); sfx('shrine-convert'); sparkleFx(player.x,player.y,'light',40); closeModal(); updateUI();
     });
   }});
   if(mine){
@@ -249,6 +250,7 @@ function performPrayer(id){
     log("<b>Anvil's Toll.</b> The hammer strikes "+struck+(struck===1?' foe.':' foes.'),'c-good');player.hidden=0;
   }
   else if(id==='rolldice2')greaterPrayer();
+  if(PRAYERS[id].instant)FREE_ACTION=true;
   endTurn();return true;
 }
 function prayFieldSmelt(){

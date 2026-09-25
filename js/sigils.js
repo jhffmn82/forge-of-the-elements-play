@@ -35,6 +35,7 @@ var SIGIL_ORDER = {
     aegis:     {name:'Sigil of the Aegis', motes:['earth','earth','light'], desc:'A shield of 50% of your max HP for 15 turns, and stone skin.'},
     ascension: {name:'Sigil of Ascension', motes:['fire','water','air','earth','light','shadow'], desc:'Upgrade one piece of gear by +1 for free (up to +3). Breaks a curse.'},
     naturesbounty: {name:"Nature's Bounty", cost:300, motes:['light','earth','water'], desc:'Creates a Honeycake, Mushroom Skewer, and Moonberry Tart on nearby open ground.'},
+    transmutation: {name:'Sigil of Transmutation', cost:1000, motes:['fire','water','air','earth','light','shadow'], desc:'Choose a carried or worn ring, amulet, weapon, off-hand item or armor. It becomes a random different item of the same category, keeping its quality, enhancement, infusion and curse. Amulets keep their level and stored charge progress. Crafted only at the Forge.'},
     wisdom:    {name:'Sigil of Wisdom', motes:['fire','water','air','earth','light','shadow'], desc:'Gain a level.'}
   };
   for(var k in add) S[k]=add[k];
@@ -103,6 +104,83 @@ function natureBountySpots(){
   return spots;
 }
 
+
+/* Transmutation defers both payment and time until a valid selection commits.
+   This picker uses the same rows and modal as Knowing/Ascension. */
+function transmutationTargets(){
+  var list=[],seen=new Set(),labels={main:'main hand',ranged:'ranged slot',off:'off hand',armor:'armor',ring0:'ring 1',ring1:'ring 2',amulet:'amulet'};
+  function add(item,kind,where,slot,entry){
+    kind=transmutationKind(item,kind);if(!kind||seen.has(item)||!transmutationKeys(item,kind).length)return;
+    seen.add(item);list.push({it:item,kind:kind,where:where,slot:slot,entry:entry});
+  }
+  Object.keys(labels).forEach(function(slot){add(FoteInventory.slotItem(player,slot),slot==='main'||slot==='ranged'?'weapon':slot.indexOf('ring')===0?'ring':slot,labels[slot],slot,null);});
+  player.bag.forEach(function(entry){if(FoteInventory.gear(entry.kind))add(entry.data,entry.kind,'in your bag',null,entry);});
+  return list;
+}
+function transmutationFits(slot,item,kind){
+  if(equipmentForbidden(slot,item)||!meetsReq(item))return false;
+  if(slot==='main')return kind==='weapon'&&!isRangedWeapon(item)&&!(item.hands===2&&player.off&&player.off!==EMPTY_OFF&&(player.off.block||player.off.weapon||player.off.cursed));
+  if(slot==='ranged')return kind==='weapon'&&isRangedWeapon(item);
+  if(slot==='off')return !player.twoHanded&&!isRangedWeapon(item)&&(kind==='off'||kind==='weapon'&&item.hands!==2&&item.light);
+  return slot==='armor'?kind==='armor':slot==='amulet'?kind==='amulet':slot.indexOf('ring')===0&&kind==='ring';
+}
+function transmutationPayment(context){
+  if(context.echo)return context.amulet===player.amulet&&amuletOk(context.amulet)&&context.amulet.amulet==='echo'&&context.amulet.charges>0;
+  return context.entry&&player.bag.indexOf(context.entry)>=0&&context.entry.kind==='sigil'&&context.entry.data.use==='transmutation'&&context.entry.n>0;
+}
+function transmutationReady(target,context){
+  if(!transmutationPayment(context))return false;
+  if(target.slot?FoteInventory.slotItem(player,target.slot)!==target.it:player.bag.indexOf(target.entry)<0||target.entry.data!==target.it)return false;
+  var keys=transmutationKeys(target.it,target.kind);if(!keys.length)return false;
+  // Validate capacity before the random draw, including the slot released by
+  // consuming the final sigil. A rejected choice never becomes a free reroll.
+  var remaining=player.bag.length-(!context.echo&&context.entry.n===1?1:0);
+  return !target.slot||remaining<BAG_MAX||keys.every(function(key){return transmutationFits(target.slot,transmutedGear(target.it,target.kind,key),target.kind);});
+}
+function putTransmutedGear(target,item,keepWorn){
+  if(!target.slot){target.entry.data=item;target.entry.kind=target.kind;target.entry.icon=gearBagIcon(target.kind);return;}
+  var slot=target.slot,value=keepWorn?item:slot==='main'?FISTS:slot==='off'?EMPTY_OFF:null;
+  if(keepWorn&&slot==='off'&&target.kind==='weapon')offHandWeapon(value);
+  if(slot==='main')player.sets[player.activeSet||0]=value;
+  else if(slot==='armor')player.armorItem=value;
+  else if(slot.indexOf('ring')===0)player.rings[+slot.slice(-1)]=value;
+  else player[slot]=value;
+  if(!keepWorn)addBag(gearBagIcon(target.kind),gearName(item),{kind:target.kind,data:item});
+}
+function transmutationPicker(context){
+  if(gameTurns.busy()||!transmutationPayment(context))return false;
+  var list=transmutationTargets(),eligible=list.filter(function(target){return transmutationReady(target,context);});
+  if(!eligible.length){log(list.length?'Make room in your bag for an item that may no longer fit its worn slot.':'You have no equipment that can be transmuted.','c-info');return false;}
+  var done=false,hero=player,run=RUN;
+  var html='<p class="c-info">Choose one item. Its new base type is random; quality, enhancement, infusion and curse stay the same. An item you can no longer wear goes into your bag.</p>'+list.map(function(target,i){
+    return '<div class="frow"><div class="ftext"><b>'+gearName(target.it)+'</b> <span class="c-info">('+target.where+')</span></div><button data-transmute="'+i+'"'+(eligible.indexOf(target)>=0?'':' disabled title="Make room in your bag first"')+'>Transmute</button></div>';
+  }).join('');
+  openModal(SIGILS.transmutation.name,html,[{label:context.echo?'Cancel':'Keep the sigil',fn:function(){done=true;closeModal();updateUI();}}]);
+  document.querySelectorAll('[data-transmute]').forEach(function(button){button.onclick=function(){
+    if(done||player!==hero||RUN!==run||gameTurns.busy()||!modalOpen||!button.isConnected)return;
+    var target=list[+button.getAttribute('data-transmute')];
+    if(!target||!transmutationReady(target,context)||sigilConduct('transmutation')===false)return;
+    var key=pick(transmutationKeys(target.it,target.kind)),before=gearName(target.it);
+    var result=transmutedGear(target.it,target.kind,key),keepWorn=target.slot&&transmutationFits(target.slot,result,target.kind);
+    if(!result)return;done=true;
+    gameActions.run('sigil',player,null,{sigil:'transmutation'},function(event){
+      if(context.echo){
+        spendAmulet(context.amulet);
+        // Echo may transform its own amulet; preserve the charge just spent and
+        // the use/level progression earned by this activation in the result.
+        if(target.it===context.amulet)result=transmutedGear(target.it,target.kind,key);
+      }else consume(player.bag.indexOf(context.entry));
+      putTransmutedGear(target,result,keepWorn);
+      if(!context.echo)player.lastSigil='transmutation';
+      identifySigil('transmutation');derive(player);refreshBagNames();
+      log('Your <b>'+before+'</b> becomes <b>'+gearName(result)+'</b>'+(target.slot&&!keepWorn?' and moves into your bag':'')+'.','c-kill');
+      setClip(player,'cast');sfx('sigil-use');sparkleFx(player.x,player.y,'magic',30);
+      closeModal();updateUI();if(typeof refreshSheet==='function')refreshSheet();event.result=true;
+    });
+    endTurn();
+  };});
+  return true;
+}
 
 /* Sigil of Ascension: choose what to raise */
 function sigilUpgradePicker(context){

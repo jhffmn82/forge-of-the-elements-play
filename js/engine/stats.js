@@ -45,10 +45,9 @@
     var enchantBonus=content.enchantments.godBonus(options);
     var mountain=actor.god==='grom'&&rank>=5;
     weapon=weapon||(actor.sets||[])[actor.activeSet||0]||content.fists;
-    if(mountain&&weapon.unarmed)weapon=Object.assign({},weapon,{enchant:actor.gromFistEnchant||null});
     var off=weapon.hands===2?null:actor.off;
     return {rank:rank,gearBonus:gearBonus,enchantBonus:enchantBonus,mountain:mountain,
-      weapon:weapon,off:off,armor:actor.armorItem||(mountain?{armor:0,eva:0,enchant:actor.gromBodyEnchant||null}:{}),
+      weapon:weapon,off:off,armor:actor.armorItem||{},
       divine:1+((weapon.cursed?0:weapon.divine||0)+(off&&!off.cursed?off.divine||0:0))*gearBonus,
       passives:passivesFor(actor.stats,content.passives),aff:actor.aff||{},buffs:actor.buffs||{},
       enchant:function(slot,el){return content.enchantments.values(slot,el,(actor.aff||{})[el]||0,options);}};
@@ -107,17 +106,25 @@
     if(actor.forgeHeat&&actor.forgeHeat.n>0){var heat=2*actor.forgeHeat.n;out.armor+=heat;out.dmg=out.dmg.map(function(n){return n+heat;});}
     if(actor.god==='grom'){
       out.armor+=c.rank;
+      if(c.rank>=1)out.eva=Math.round(out.eva*(1+.10*c.rank));
       if(out.weapon.unarmed){
+        if(c.rank>=1)out.parry=.08+actor.stats.agi/300;
         var f=content.gromFists[Math.min(5,c.rank)];
         function damage(n){return Math.max(1,Math.round(n*content.numberScale*content.lethality));}
         out.dmg=[out.dmg[0]-c.rank-damage(1)+damage(f[0]),out.dmg[1]-c.rank-damage(3)+damage(f[1])];
+      }
+      var mountain=actor.st&&actor.st.livingmountain;
+      var stacks=c.mountain&&mountain&&mountain.t>0?Math.max(0,Math.min(10,mountain.n||0)):0;
+      if(stacks){
+        out.acc=Math.round(out.acc*(1+.02*stacks));out.eva=Math.round(out.eva*(1+.02*stacks));
+        out.crit+=.02*stacks;
+        out.dmg=out.dmg.map(function(n){return n+2*stacks;});
       }
     }
     if(actor.god==='reginald')out.crit+=.02*c.rank;
     out.luck=actor.god==='wobbles'?.03*c.rank:0;
     if(out.luck){out.crit+=out.luck;if(out.parry)out.parry+=out.luck;if(out.block)out.block=Math.min(.75,out.block+out.luck);}
     if(c.buffs.might>0)out.dmg=out.dmg.map(function(n){return Math.round(n*1.2);});
-    if(c.mountain&&c.buffs.hardened>0)out.armor+=Math.round(4*c.divine);
     if(c.buffs.temper>0)out.armor+=Math.round(4*c.divine);
     if(actor.race==='dwarf')out.armor++;
     out.affLevel=out.element?c.aff[out.element]:0;
