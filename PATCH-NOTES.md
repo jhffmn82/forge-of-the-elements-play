@@ -2,6 +2,7 @@
 
 Release targets: /forge and /forge-of-the-elements-play/.
 
+- Expanded the landscape map by removing its outer gutters and tightening the side panels. Menu buttons use two rows, the combat log has more room, and phone movement controls use the space beneath your stats.
 - Landscape ability and prayer descriptions now use the full row, with costs, cooldowns and charges below the name to keep the text readable.
 - Mobile defaults to Landscape, with a saved Portrait or Landscape choice in Options. Landscape places stats and controls on the left, menus and a taller combat log on the right, and menu screens over the map with the hotbar below.
 - Mobile equipment keeps two columns of worn slots beside the full bag, with matching tiles sized to fit phone and tablet screens.

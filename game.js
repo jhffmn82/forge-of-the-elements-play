@@ -197,8 +197,12 @@ function resize(){
   var zm=(typeof MAP_ZOOM_MUL!=='undefined' && MAP_ZOOM_MUL[MAP_ZOOM]) || 1;
   if(zm!==1) z=[Math.max(7, Math.round(z[0]*zm)), Math.max(6, Math.round(z[1]*zm))];
   TS = clamp(Math.floor(Math.min(W/z[0], H/z[1])), 14, 72);
-  viewW = clamp(Math.floor(W/TS), 8, MW);
-  viewH = clamp(Math.floor(H/TS), 6, MH);
+  /* Cover landscape's map panel with whole tiles and clip the excess at its
+     edges. Rounding down left a visible frame around the centered canvas.
+     Keep CSS pixels tied to TS so tapping still picks the drawn tile. */
+  var tileCount=document.body.classList.contains('touch') && innerWidth>innerHeight ? Math.ceil : Math.floor;
+  viewW = clamp(tileCount(W/TS), 8, MW);
+  viewH = clamp(tileCount(H/TS), 6, MH);
   var dpr=window.devicePixelRatio||1;
   cv.width=viewW*TS*dpr; cv.height=viewH*TS*dpr;
   cv.style.width=(viewW*TS)+'px'; cv.style.height=(viewH*TS)+'px';

@@ -3,6 +3,7 @@ var FOTE_VERSION = 'Beta 1.2';
 /* Keep newest first; describe only changes already present in this build. */
 var FOTE_PATCHES = [
   {version:'Beta 1.2', notes:[
+    "Expanded the landscape map by removing its outer gutters and tightening the side panels. Menu buttons use two rows, the combat log has more room, and phone movement controls use the space beneath your stats.",
     "Made landscape ability and prayer descriptions use the full row, with mana, cooldowns and charges below the name so they no longer squeeze the text.",
     "Mobile defaults to Landscape, while Options remembers your choice of Portrait or Landscape. Stats and movement sit on the left, menu buttons and a larger combat log on the right, and menus over the map with the hotbar below.",
     "Mobile equipment now keeps two columns of worn slots beside the full bag, with matching tiles that fit phone and tablet screens.",
