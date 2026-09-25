@@ -23,6 +23,7 @@ function presentRestoredFloor(at){
   var spot = at && walkable(at.x,at.y) && !ents.some(function(e){ return e!==player && e.x===at.x && e.y===at.y; }) ? at : (at ? nearFree(at.x,at.y,3) : null);
   if(spot){ player.x=spot.x; player.y=spot.y; }
   player._lx=undefined;
+  if(typeof FoteShadowClone!=='undefined')FoteShadowClone.arrive();
   computeFOV(); resize(); updateUI(); draw();
 }
 function findTile(t){ for(var i=0;i<map.length;i++) if(map[i]===t) return {x:i%MW, y:(i/MW)|0}; return null; }
@@ -39,7 +40,7 @@ function placeArrivalStairs(){
   setT(player.x,player.y,UPSTAIRS);floorMeta.upAt={x:player.x,y:player.y};
   computeFOV();items=items.filter(function(it){return !(it.x===player.x&&it.y===player.y);});draw();
 }
-function findTileIn(stash, t){ var m=stash.map; for(var i=0;i<m.length;i++) if(m[i]===t) return {x:i%MW, y:(i/MW)|0}; return null; }
+function findTileIn(stash, t){ var m=stash.map,w=FoteState.dimensions(stash).width; for(var i=0;i<m.length;i++) if(m[i]===t) return {x:i%w, y:(i/w)|0}; return null; }
 
 /* stepping on it, the key, the button */
 
@@ -60,4 +61,4 @@ function addUpstairsLights(L, now, prp){
 }
 
 /* Named travel and entry stages; ordered by transition-adapter.js. */
-function entryUpstairsHint(){ if(at(player.x,player.y)===UPSTAIRS) log('Stairs up to floor '+(floorNo-1)+'. '+(document.body.classList.contains('touch') ? 'Tap them to climb.' : 'Press <b>&lt;</b> to climb.'),'c-kill');  }
+function entryUpstairsHint(){ if(at(player.x,player.y)===UPSTAIRS&&!(typeof FoteChaosCampaign!=='undefined'&&FoteChaosCampaign.entryHint())) log('Stairs up to floor '+(floorNo-1)+'. '+(document.body.classList.contains('touch') ? 'Tap them to climb.' : 'Press <b>&lt;</b> to climb.'),'c-kill');  }

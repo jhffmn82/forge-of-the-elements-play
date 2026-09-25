@@ -262,6 +262,7 @@ grab = function(){
 function searchAround(resting, quiet){
   if(gameTurns.busy())return false;
   if(!player || player.hp<=0) return;
+  if(playerFearAction())return false;
   var spot=idxOf(player.x,player.y);
   floorMeta.searched=floorMeta.searched||{};
   var prev=floorMeta.searched[spot]||0; floorMeta.searched[spot]=prev+1;

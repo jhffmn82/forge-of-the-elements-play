@@ -192,7 +192,8 @@ function bossBar(){
   if(!b){ if(el) el.style.display='none'; return; }
   if(!el){ el=document.createElement('div'); el.id='bossbar'; el.className='bossbar'; $('map').appendChild(el); }
   el.style.display='block';
-  var intent = b.dazed>0 ? ' &mdash; <span style="color:#E8D27A">DAZED</span>' : b.windup ? ' &mdash; <span style="color:#FF7A5A">'+({slam:'GROUND SLAM in '+b.windup.due, ring:'SHOCKWAVE in '+b.windup.due, charge:'CHARGE!'}[b.windup.kind]||'')+'</span>' : '';
+  var warning=b.windup&&(b.windup.unmaker?{cleave:'GREAT CLEAVE',beam:'PRISM LANCE',ring:'INVERSION PULSE',pulse:'DISCORD PULSE '+b.windup.beat+'/2'}[b.windup.kind]:{slam:'GROUND SLAM in '+b.windup.due,ring:'SHOCKWAVE in '+b.windup.due,charge:'CHARGE!'}[b.windup.kind]);
+  var intent = b.dazed>0 ? ' &mdash; <span style="color:#E8D27A">DAZED</span>' : warning ? ' &mdash; <span style="color:#FF7A5A">'+warning+'</span>' : '';
   el.innerHTML=b.name+intent+'<div class="bb"><i style="width:'+Math.max(0,Math.round(b.hp/b.maxhp*100))+'%"></i></div>';
 }
 function bars(){
@@ -392,7 +393,7 @@ var TILE_HINTS = {5:'Bump it to fuse motes, enchant gear or craft sigils.',9:'Ne
   19:'Step on it to climb back to the floor above.',20:'Step in to cross into the plane beyond. Its guardian holds a treasure grotto.'};
 function inspectHTML(mx,my){
   if(!inb(mx,my) || !(revealAll||seen[idxOf(mx,my)])) return '';
-  var e=ents.filter(function(o){ return o.x===mx && o.y===my && o!==player; })[0];
+  var e=ents.find(function(o){return entityOccupies(o,mx,my)&&o!==player&&!actorConcealed(o);});
   if(e && e.parent) e=e.parent;   /* a big elite's other cells report the creature itself, not its proxy */
   if(e && (revealAll||vis[idxOf(mx,my)])){
     if(e.ally) return '<div class="nm">'+e.name+'</div><div class="row"><span>HP</span><b>'+Math.max(0,e.hp)+' / '+e.maxhp+'</b></div><div class="hint">Fights for you.</div>';
@@ -416,7 +417,13 @@ function inspectHTML(mx,my){
     return '<div class="nm">'+cap(itemLabel(it))+'</div><div class="hint">'+(it.kind==='sigil'&&!sigilKnown[it.use]?'Unidentified sigil.':'')+'</div>';
   }
   var p=propAt(mx,my);
+  var restorationForge=typeof FoteUnmakerEncounter!=='undefined'&&FoteUnmakerEncounter.forgeInfo(mx,my);
+  if(restorationForge)return '<div class="nm">'+restorationForge.name+'</div><div class="hint">'+restorationForge.hint+'</div>';
   if(p){
+    if(p.previewPortal&&typeof FoteChaosPreview!=='undefined'){
+      var gateway=FoteChaosPreview.atPortal(mx,my);
+      if(gateway)return '<div class="nm">'+gateway.label+'</div><div class="hint">A two-way passage to another '+FoteChaosPreview.active().name+' island. Step into the gateway to travel.</div>';
+    }
     var lever=leverDetails(p);
     if(lever){
       var action=document.body.classList.contains('touch')?'Tap':'Click';
@@ -441,6 +448,17 @@ function inspectHTML(mx,my){
   if(t===SHRINE) label='Shrine to '+GODS[RUN.shrineGod].name;
   if(typeof PORTAL!=='undefined' && t===PORTAL && floorMeta.portal && typeof PLANE_TITLE!=='undefined') label='Portal to '+PLANE_TITLE[floorMeta.portal];
   var tileHint=t===EXIT ? 'Opens when '+bossNameForFloor()+' falls.' : TILE_HINTS[t];
+  var chaosCurrent=typeof FoteChaosCampaign!=='undefined'&&FoteChaosCampaign.currentInfo(mx,my);
+  if(chaosCurrent){label=chaosCurrent.label;tileHint=chaosCurrent.hint;}
+  var crucibleGate=typeof FoteUnmakerPreview!=='undefined'&&FoteUnmakerPreview.gateInfo(mx,my);
+  if(crucibleGate){label=crucibleGate.name;tileHint=crucibleGate.hint;}
+  if(t===PORTAL&&typeof FoteChaosPreview!=='undefined'&&FoteChaosPreview.active()){
+    var linked=FoteChaosPreview.atPortal(mx,my);if(linked){label=linked.label;tileHint='A two-way passage to another '+FoteChaosPreview.active().name+' island. Step onto it to travel.';}
+  }
+  var chaosEntryPortal=typeof FoteChaosEntryPreview!=='undefined'&&FoteChaosEntryPreview.portalInfo(mx,my);
+  if(chaosEntryPortal){label=chaosEntryPortal.name;tileHint=chaosEntryPortal.hint;}
+  var materialPortal=typeof FoteChaosCampaign!=='undefined'&&FoteChaosCampaign.materialPortalInfo(mx,my);
+  if(materialPortal){label=materialPortal.name;tileHint=materialPortal.hint;}
   var puzzleDoor=t===SEALED&&puzzleAtDoor(mx,my);
   if(puzzleDoor&&puzzleDoor.puzzle.kind==='barricade'&&!puzzleDoor.puzzle.solved){label='Wooden barricade';tileHint='A wooden barricade. It looks flammable.';}
   return '<div class="nm">'+label+'</div>'+
@@ -473,14 +491,14 @@ window.addEventListener('keydown', function(ev){
 var REST_SEQUENCE=0;
 function stopRest(){REST_SEQUENCE++;}
 function rest(){
-  if(ents.some(function(e){ return e.foe && vis[idxOf(e.x,e.y)]; })){ log('You cannot rest with enemies in sight.','c-info'); return; }
+  if(ents.some(function(e){ return e.foe && actorVisible(e); })){ log('You cannot rest with enemies in sight.','c-info'); return; }
   var n=0,restRun=RUN,restPlayer=player,restId=++REST_SEQUENCE; log('You rest...','c-info');
   (function step(){
     if(restId!==REST_SEQUENCE || RUN!==restRun || player!==restPlayer || uiOpen())return;
     if(turnSequenceBusy()){afterTurn(function(){setTimeout(step,0);});return;}
     if(n++>=150 || player.hp<=0) return;
     if(player.hp>=player.maxhp && player.mp>=player.maxmp){ log('Rested.','c-good'); return; }
-    if(ents.some(function(e){ return e.foe && vis[idxOf(e.x,e.y)]; })){ log('Something approaches! You stop resting.','c-you'); return; }
+    if(ents.some(function(e){ return e.foe && actorVisible(e); })){ log('Something approaches! You stop resting.','c-you'); return; }
     if(player.hunger<300 && n>1){ log('You are too hungry to rest well.','c-info'); return; }
     if(typeof searchAround==='function') searchAround(true, true); else endTurn();   /* resting searches at half chance */
     /* Schedule only the next rest action. A save flush finishes the current

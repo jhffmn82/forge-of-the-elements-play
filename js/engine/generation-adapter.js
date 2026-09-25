@@ -36,4 +36,14 @@ var floorGeneration=FoteGeneration.create({
     {name:'biome-balance',run:balanceGeneratedEnemies}
   ]
 });
-function generate(seed){return floorGeneration.generate(seed);}
+// Dimension changes never allocate floor arrays. Builders install a new map
+// immediately afterwards, which also invalidates map-identity render caches.
+function setMapDimensions(width,height){
+  var size=FoteState.dimensions({MW:width,MH:height});
+  MW=size.width;MH=size.height;return size;
+}
+function resetMapDimensions(){return setMapDimensions(FoteState.defaultDimensions.width,FoteState.defaultDimensions.height);}
+function generate(seed){
+  if(typeof FoteChaosCampaign!=='undefined'&&FoteChaosCampaign.handles(floorNo))return FoteChaosCampaign.build(floorNo,seed);
+  resetMapDimensions();return floorGeneration.generate(seed);
+}

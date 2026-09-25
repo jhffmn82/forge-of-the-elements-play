@@ -20,18 +20,31 @@ var renderSurface=FoteRendering.sequence([
   renderPass('sanctuary',drawSanctuarySurface),renderPass('last-cast',drawLastCastSurface)
 ]);
 var renderTelegraphs=FoteRendering.sequence([
+  renderPass('Prism-preview-portals',function(now){if(typeof FoteChaosPreviewRenderer!=='undefined'&&FoteChaosPreviewRenderer.active())FoteChaosPreviewRenderer.drawPortals(now);}),
   renderPass('crypt-floor-stains',drawCryptFloorStains),renderPass('boss-windups',drawBossTelegraphs),renderPass('smoke',drawSmokeTelegraphs),
   renderPass('element-ground',drawElementGroundTelegraphs),renderPass('crypt-clouds-and-marks',drawCryptTelegraphs),renderPass('corpses',drawCorpseTelegraphs),
   renderPass('portal',drawPortalTelegraphs),renderPass('vein-glints',drawVeinGlints),renderPass('crystal-face-glints',drawCrystalFaceGlints),
   renderPass('shock-clouds',drawShockCloudTelegraphs),renderPass('darkness',drawDarknessTelegraphs)
 ]);
 var renderLightSources=FoteRendering.sequence([
+  renderPass('chaos-currents',function(lights,now){if(typeof FoteChaosCurrentRenderer!=='undefined')FoteChaosCurrentRenderer.addLights(lights,now);}),
+  renderPass('Prism-preview-lights',function(lights,now){if(typeof FoteChaosPreviewRenderer!=='undefined'&&FoteChaosPreviewRenderer.active())FoteChaosPreviewRenderer.addLights(lights,now);}),
   renderPass('sigils',addSigilLights),renderPass('crypt',addCryptLights),renderPass('crypt-mushrooms',addCryptMushroomLights),
-  renderPass('crypt-rooms',addCryptRoomLights),renderPass('upstairs',addUpstairsLights),renderPass('portal-and-plane',addPortalLights),
+  renderPass('crypt-rooms',addCryptRoomLights),renderPass('upstairs',addUpstairsLights),renderPass('portal-and-plane',function(lights,now,position){
+    if(typeof FoteChaosPreviewRenderer==='undefined'||!FoteChaosPreviewRenderer.mixed())return addPortalLights(lights,now,position);
+    // Captured Prism inlay lights share the normal pipeline, but remembered
+    // sources cannot illuminate another island in the combined preview.
+    var local=[];addPortalLights(local,now,position);local.forEach(function(light){if(revealAll||inb(light.tx,light.ty)&&vis[idxOf(light.tx,light.ty)])lights.push(light);});
+  }),
   renderPass('natural-terrain',addNaturalTerrainLights),renderPass('cavern-strength',shadeCavernLights),
   renderPass('stormward',addStormwardLight),renderPass('underdark-strength-and-lava',addUnderdarkLights)
 ]);
-function drawPropSurface(p,x,y,alpha){return renderProp(p,x,y,alpha);}
+function drawPropSurface(p,x,y,alpha){
+  // An explicit set-piece sprite owns its appearance before any name-based
+  // legacy decoration. Placement and depth remain the ordinary set renderer.
+  if(p.artName)return p.set?drawSetSprite(p,alpha):false;
+  return renderProp(p,x,y,alpha);
+}
 function drawSurfaceDeco(){renderSurface();}
 function drawTelegraphs(now){renderTelegraphs(now);}
 function gatherLights(now,position){var lights=gatherBaseLights(now,position);renderLightSources(lights,now,position);return lights;}
@@ -40,7 +53,7 @@ function gatherLights(now,position){var lights=gatherBaseLights(now,position);re
  * through packedSetArt, so only the shrine redirect has a bounded guard. */
 var renderShrineLookup=false;
 function objArt(group,name){
-  var art=null;
+  var art=typeof FoteChaosPreviewArt!=='undefined'?FoteChaosPreviewArt.lookup(group,name):null;
   if(!renderShrineLookup&&typeof name==='string'&&name.indexOf('shrine-')===0){
     renderShrineLookup=true;try{art=setArt(name);}finally{renderShrineLookup=false;}
   }
@@ -48,16 +61,20 @@ function objArt(group,name){
     art=runeObjectArt(group,name)||packedObjectArt(group,name);
     art=tintCryptObject(art,group,name);art=weatherDungeonObject(art,group,name);art=tintPlaneObject(art,group,name);
   }
+  if(typeof FoteChaosPreviewRenderer!=='undefined'&&typeof FoteChaosPreviewRenderer.objectArt==='function')art=FoteChaosPreviewRenderer.objectArt(art,group,name);
   if(art)art.nm=name;
   return art;
 }
 function setArt(name){
   var art=(PACK_CRYPT[name]||PACK_PLANE[name])?packArt(name):null;
-  if(art)return art;
-  art=gradeCryptSet(packedSetArt(name),name);art=tintCryptSet(art,name);
-  return art||caveArt(name)||deepArt(name);
+  if(!art){
+    art=gradeCryptSet(packedSetArt(name),name);art=tintCryptSet(art,name);
+    art=art||caveArt(name)||deepArt(name);
+  }
+  if(typeof FoteChaosPreviewRenderer!=='undefined'&&typeof FoteChaosPreviewRenderer.objectArt==='function')art=FoteChaosPreviewRenderer.objectArt(art,'props',name);
+  return art;
 }
-function caveArt(name){var art=packedCaveArt(name);if(art)art.nm=name;return art;}
+function caveArt(name){var art=packedCaveArt(name);if(typeof FoteChaosPreviewRenderer!=='undefined')art=FoteChaosPreviewRenderer.objectArt(art,'cave',name);if(art)art.nm=name;return art;}
 function drawObj(art,x,y,options){var drawn=drawObjectSprite(art,x,y,options);if(drawn)drawObjectAnimation(art,x,y,options);return drawn;}
 function drawCaveArt(art,center,bottom,alpha,flip){
   var adjusted=bottom,opacity=alpha;
@@ -68,18 +85,21 @@ function drawCaveArt(art,center,bottom,alpha,flip){
 function floorTile(x,y){
   if(inDeep()&&floorMeta.deepRegion){var raster=deepRasterTile(x,y);DEEP_RC=!!raster;DEEP_AT=deepCellReg(x,y);if(raster)return raster;}
   else {DEEP_RC=false;DEEP_AT=-1;}
-  return ptMat()?(ptTile(x,y)||{flat:ptFlat(x,y)}):masonryFloorTile(x,y);
+  return ptMat(x,y)?(ptTile(x,y)||{flat:ptFlat(x,y)}):masonryFloorTile(x,y);
 }
 function wallTile(x,y){
   if(inDeep()&&floorMeta.deepRegion){
     var raster=deepRasterTile(x,y);DEEP_AT=deepCellReg(x,y);DEEP_RC=!!raster&&!deepBuiltWall(x,y);if(raster)return raster;
     if(DEEP_STYLE[DEEP_AT]!=='rect'){var top=surfImg('top');if(top)return {img:top,sx:smod(x+surfOff(3))*64,sy:smod(y+surfOff(4))*64,sw:64,sh:64,deepDim:wallFaces(x,y)?.5:1-DEEP_TOP_DIM};}
   }else {DEEP_RC=false;DEEP_AT=-1;}
-  return ptMat()?(ptTile(x,y)||{flat:ptFlat(x,y)}):masonryWallTile(x,y);
+  return ptMat(x,y)?(ptTile(x,y)||{flat:ptFlat(x,y)}):masonryWallTile(x,y);
 }
 function tileSprite(x,y,tile){
   if(tile===EXIT&&floorMeta&&floorMeta.caveExit){var caveExit=caveArt('worm-burrow-open');if(caveExit)return caveExit;}
-  if(tile===PORTAL)return objArt('structures','portal-arch');
+  if(tile===PORTAL){
+    if(floorMeta&&floorMeta.chaosPreview){var gateway=propAt(x,y);if(gateway&&gateway.previewPortal)return null;}
+    return objArt('structures','portal-arch');
+  }
   if(tile===UPSTAIRS)return objArt('structures','stairs-up')||objArt('structures','stairs-down');
   if(inCrypt()&&tile===DOOR){var door=setArtAsObj('crypt-door');if(door)return door;}
   return baseTileSprite(x,y,tile);
@@ -94,7 +114,7 @@ function blitTile(art,x,y,alpha){
 }
 function drawWallEdges(x,y,tile,px,py,alpha){
   var keep=DEEP_AT;if(inDeep()&&floorMeta.deepRegion)DEEP_AT=deepCellReg(x,y);
-  try{if(!ptMat())return drawMasonryWallEdges(x,y,tile,px,py,alpha);}finally{DEEP_AT=keep;}
+  try{if(!ptMat(x,y))return drawMasonryWallEdges(x,y,tile,px,py,alpha);}finally{DEEP_AT=keep;}
 }
 function drawDeco(piece,x,y,alpha,options){
   var keep=DEEP_AT;
@@ -104,7 +124,7 @@ function drawDeco(piece,x,y,alpha,options){
     return drawSurfaceDecal(piece,x,y,alpha,options);
   }finally{DEEP_AT=keep;}
 }
-function wallTorchAt(x,y){return masonryTorchAt(x,y)&&(!inDeep()||!floorMeta.deepRegion||(deepCellReg(x,y)!==1&&!deepIsRaster(x,y)));}
+function wallTorchAt(x,y){if(typeof FoteChaosPreviewRenderer!=='undefined'&&typeof FoteChaosPreviewRenderer.terrainMaterial==='function'&&FoteChaosPreviewRenderer.terrainMaterial(x,y))return false;return masonryTorchAt(x,y)&&(!inDeep()||!floorMeta.deepRegion||(deepCellReg(x,y)!==1&&!deepIsRaster(x,y)));}
 function drawWangLayer(key,tile){
   DEEP_RC=false;DEEP_AT=-1;
   var suppressed=key==='water'&&ptMat()||key==='chasm'&&(inCaverns()||biomeChasmsOn());
@@ -134,6 +154,7 @@ function drawSideDoor(x,y,tile,px,py,alpha){
 }
 
 var renderActor=FoteRendering.layered([
+  {name:'actor-concealment',paint:function(job){if(actorConcealed(job.entity))return true;}},
   {name:'underdark-pose',enter:prepareUnderdarkActor},
   {name:'maw-and-eels',enter:prepareMawActor,paint:drawCavernActor},
   {name:'large-creature',paint:function(job){return drawLargeCreature(job.entity,job.x,job.y,job.options)?true:undefined;}},
@@ -167,7 +188,7 @@ function drawFramePasses(){
     var restoreVisibility=prepareShadeVisibility();
     try{drawScene();}finally{restoreVisibility();}
     if(AUTOMAP_ON)drawAutomap();
-    if(ptMat()&&PT_CACHE.built>=PT_BUDGET)requestTerrainRedraw();
+    if((ptMat()||typeof FoteChaosPreviewRenderer!=='undefined'&&FoteChaosPreviewRenderer.mixed())&&PT_CACHE.built>=PT_BUDGET)requestTerrainRedraw();
     drawBowAimOverlay();drawAutoAimOverlay();
   }finally{DEEP_RC=false;DEEP_AT=-1;}
   if(inDeep()&&DC.built>=DEEP_BUDGET)requestTerrainRedraw();

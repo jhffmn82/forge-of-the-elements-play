@@ -82,7 +82,7 @@ randomSigilUse = function(){
 
 
 /* ---------------------------------------------------------------- effects */
-function visibleFoes(maxD){ return ents.filter(function(e){ return e.foe && vis[idxOf(e.x,e.y)] && (maxD===undefined || dist(player,e)<=maxD); }); }
+function visibleFoes(maxD){ return ents.filter(function(e){ return e.foe && actorVisible(e) && (maxD===undefined || dist(player,e)<=maxD); }); }
 function hurt(e, n, type){ var d=applyDamage(e, n, type, player); floatText(e.x,e.y,String(d), type==='ice'?'ice':type); if(e.hp<=0) kill(e,player); return d; }
 function cleanseAll(){ ['burn','poison','chill','fear','blind','stun','root','frozen','wet'].forEach(function(k){ delete player.st[k]; }); }
 function giveWard(n, turns){ player.ward=Math.round(n); player.buffs.arcaneward=turns; }

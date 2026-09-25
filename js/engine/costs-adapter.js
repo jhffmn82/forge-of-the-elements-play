@@ -15,7 +15,7 @@ function playerTiming(){
   c.water=at(player.x,player.y)===WATER;c.levitate=player.levitate;
   return c;
 }
-function actCost(actor){return FoteCosts.action(actor===player?playerTiming():actorTiming(actor));}
+function actCost(actor){return actor.shadowClone&&typeof FoteShadowClone!=='undefined'?FoteShadowClone.cost(actor):FoteCosts.action(actor===player?playerTiming():actorTiming(actor));}
 function moveCost(){return FoteCosts.movement(playerTiming());}
 function playerShield(){return FoteCosts.shields(player).reduce(function(sum,pool){return sum+pool.amount;},0);}
 function shieldParts(){

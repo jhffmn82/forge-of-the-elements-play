@@ -15,12 +15,12 @@ function reachFoe(dx, dy){
   if(reachLen()<2 || (!dx && !dy)) return null;
   var mx=player.x+dx, my=player.y+dy, fx=player.x+2*dx, fy=player.y+2*dy;
   if(!inb(fx,fy) || opaque(mx,my) || !walkable(mx,my)) return null;              /* open ground between */
-  if(ents.some(function(e){ return e!==player && e.x===mx && e.y===my; })) return null;
-  return ents.filter(function(e){ return e.foe && e.hp>0 && e.x===fx && e.y===fy && (revealAll || vis[idxOf(fx,fy)]); })[0] || null;
+  if(occupied(mx,my,player))return null;
+  var foe=foeAt(fx,fy);return foe&&actorVisible(foe)?foe:null;
 }
 /* is this enemy in reach from where you stand? returns the direction if so */
 function reachDir(foe){
-  var dx=foe.x-player.x, dy=foe.y-player.y;
+  var edge=entityPoint(foe,player),dx=edge.x-player.x,dy=edge.y-player.y;
   if(Math.max(Math.abs(dx),Math.abs(dy))!==2) return null;
   if(!((dx===0 || Math.abs(dx)===2) && (dy===0 || Math.abs(dy)===2))) return null;   /* a straight line only */
   var d=[Math.sign(dx), Math.sign(dy)];
@@ -43,11 +43,11 @@ function moveReachAttack(dx,dy){
   if(player && player.hp>0 && !player.st.frozen && !player.st.stun && reachLen()>=2){
     /* a click on a reachable enemy arrives as a 2-tile move (travel.js) */
     if(Math.abs(dx)===2 || Math.abs(dy)===2){
-      var tf=ents.filter(function(e){ return e.foe && e.x===player.x+dx && e.y===player.y+dy; })[0], td=tf && reachDir(tf);
+      var tf=foeAt(player.x+dx,player.y+dy),td=tf&&reachDir(tf);
       if(td){ lastDir=td; reachAttack(tf, td); return true; }
       return true;
     }
-    var adj=ents.some(function(e){ return e.foe && e.x===player.x+dx && e.y===player.y+dy; });
+    var adj=foeAt(player.x+dx,player.y+dy);
     var rf=!adj && reachFoe(dx, dy);
     if(rf){ reachAttack(rf, [dx,dy]); return true; }
   }

@@ -70,7 +70,7 @@ function drawBaseAutomap(){
   (feats||[]).forEach(function(f){ if(f.found && known(f.y*MW+f.x)) dots.push([ox+f.x*cell, oy+f.y*cell, '#D0605A', 0.6]); });
   dots.forEach(function(d){ var s=Math.max(2, Math.round(cell*d[3])); g.fillStyle=d[2]; g.fillRect(d[0]+(cell-s)/2, d[1]+(cell-s)/2, s, s); });
   /* allies and seen foes in view, then you */
-  (ents||[]).forEach(function(e){ if(e===player || !vis[e.y*MW+e.x]) return; g.fillStyle=e.ally ? '#7FD08A' : '#E0564A'; var s=Math.max(2,Math.round(cell*0.6)); g.fillRect(ox+e.x*cell+(cell-s)/2, oy+e.y*cell+(cell-s)/2, s, s); });
+  (ents||[]).forEach(function(e){ if(e===player || !actorVisible(e)) return; g.fillStyle=e.ally ? '#7FD08A' : '#E0564A'; var s=Math.max(2,Math.round(cell*0.6)); g.fillRect(ox+e.x*cell+(cell-s)/2, oy+e.y*cell+(cell-s)/2, s, s); });
   var pulse = ANIM.reduce ? 1 : 0.75+0.25*Math.sin(performance.now()/220);
   g.fillStyle='rgba(255,255,255,'+pulse.toFixed(2)+')';
   var ps=Math.max(3, Math.round(cell*1.1)); g.fillRect(ox+player.x*cell+(cell-ps)/2, oy+player.y*cell+(cell-ps)/2, ps, ps);

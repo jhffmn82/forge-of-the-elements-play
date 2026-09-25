@@ -1,7 +1,7 @@
 /* Floor ownership, paused deadlines, and ordered tile-entry stages. */
 (function(root,factory){var api=factory();if(typeof module==='object'&&module.exports)module.exports=api;else root.FoteTransitions=api;})(globalThis,function(){
   'use strict';
-  var floorKeys=Object.freeze(['map','seen','vis','feats','items','ents','rooms','ground','fireT','fireSrc','props','propGrid','chestKind','floorMeta',
+  var floorKeys=Object.freeze(['MW','MH','map','seen','vis','feats','items','ents','rooms','ground','fireT','fireSrc','props','propGrid','chestKind','floorMeta',
     'levers','plates','altars','iceG','rootG','holyG','spawnedExtra','nextSpawn','worldSeed']);
   function capture(state){
     var player=state.get('player'),saved={};
@@ -34,6 +34,10 @@
     ['hazardPending','fwaPending','mortyReturn','pendingLich','maw'].forEach(function(key){path(meta,[key],'at',turns);});
     ['corpses','regrow'].forEach(function(key){path(meta,[key,'*'],'at',turns);});
     path(meta,['smoke'],'until',turns);path(meta,['sanctuary'],'until',ticks);
+    path(meta,['chaosCombat','hazards','*'],'bornAt',ticks);path(meta,['chaosCombat','hazards','*'],'expiresAt',ticks);
+    path(meta,['chaosCombat'],'lastPulse',ticks);
+    ['majorReadyAt','rushReadyAt','summonReadyAt'].forEach(function(key){path(meta,['unmakerEncounter'],key,ticks);});
+    path(meta,['unmakerEncounter','warning'],'armedTurn',turns);
     path(meta,['matron'],'nextRit',turns);path(meta,['matron','rit'],'at',turns);path(meta,['matron','venom'],'at',turns);
     fields(meta,['_arcTurn'],turns);
     path(saved,['items','*'],'until',turns);path(saved,['props','*'],'until',turns);
@@ -44,12 +48,14 @@
       fields(e,['stormChargeAt','stormReady','sparkReady','stoneImm','caughtOff','_surfT','_burnedAt','_fumeAt','_shellTurn','_blockTurn','_hitKey','_immuneMsg'],turns);
       ['zap','grasp','brand','erupt'].forEach(function(key){path(e,[key],'at',turns);});
       fields(e,['rallyUntil','challengeUntil'],ticks);
+      fields(e,['chaosCooldown','chaosDebuffReadyAt'],ticks);
       path(e,['st','*'],'bornAt',ticks);
     });
     saved.turn=turn;saved.clock=clock;
   }
   function restore(state,saved,floor){
-    var player=state.get('player');resumeClocks(saved,state.get('turn'),player.t);
+    var size=state.dimensions(saved),player=state.get('player');resumeClocks(saved,state.get('turn'),player.t);
+    state.set('MW',size.width);state.set('MH',size.height);
     floorKeys.forEach(function(key){if(saved[key]!==undefined)state.set(key,saved[key]);});
     state.set('ents',saved.ents.concat([player]));state.set('floorNo',floor);
     player.keys={iron:saved.keys&&saved.keys.iron||0,crystal:saved.keys&&saved.keys.crystal||0};

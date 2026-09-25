@@ -2,6 +2,12 @@
 (function(root,factory){var api=factory();if(typeof module==='object'&&module.exports)module.exports=api;else root.FoteGeometry=api;})(globalThis,function(){
   'use strict';
   var octants=[[1,0,0,1],[0,1,1,0],[0,-1,1,0],[-1,0,0,1],[-1,0,0,-1],[0,-1,-1,0],[0,1,-1,0],[1,0,0,-1]];
+  // Explicit collision size; legacy `big` sprites may still own proxy limbs.
+  function bodySize(entity){return Math.max(1,Math.floor(entity&&entity.base&&entity.base.footprint||1));}
+  function bodyContains(entity,x,y){var n=bodySize(entity);return !!entity&&x>=entity.x&&y>=entity.y&&x<entity.x+n&&y<entity.y+n;}
+  function bodyPoint(entity,toward){var n=bodySize(entity);return {x:Math.max(entity.x,Math.min(entity.x+n-1,toward.x)),y:Math.max(entity.y,Math.min(entity.y+n-1,toward.y))};}
+  function bodyDistance(a,b){var an=bodySize(a),bn=bodySize(b);return Math.max(0,a.x-b.x-bn+1,b.x-a.x-an+1,a.y-b.y-bn+1,b.y-a.y-an+1);}
+  function bodyIntersects(entity,tiles){return tiles.some(function(p){return bodyContains(entity,Array.isArray(p)?p[0]:p.x,Array.isArray(p)?p[1]:p.y);});}
   function terrain(t){
     var floors=new Set([t.floor,t.open,t.stairs,t.rubble,t.water,t.bridge]);
     var walls=new Set([t.wall,t.door,t.locked,t.iceDoor,t.thorns,t.secret,t.sealed,t.toll]);
@@ -65,5 +71,6 @@
     if(view.weight==='medium')value-=.10;else if(view.weight==='heavy')value-=.25;
     value+=view.extra||0;return Math.max(0,Math.min(.9,value));
   }
-  return Object.freeze({terrain:terrain,radius:radius,cast:cast,mask:mask,revealRock:revealRock,stealth:stealth});
+  return Object.freeze({terrain:terrain,radius:radius,cast:cast,mask:mask,revealRock:revealRock,stealth:stealth,
+    bodySize:bodySize,bodyContains:bodyContains,bodyPoint:bodyPoint,bodyDistance:bodyDistance,bodyIntersects:bodyIntersects});
 });

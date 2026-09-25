@@ -186,6 +186,7 @@ function createRunCharacter(choice){
 function newRun(seed,choice){
   choice=choice||LAST_CHOICE||CHOICE;
   if(choice.cls==='cleric' && choice.god==='grom' && choice.race==='dwarf')return false;
+  resetMapDimensions();
   gameTurns.cancel();PACING.pending=null;stopTravel();fxClock=0;
   LAST_CHOICE=JSON.parse(JSON.stringify(choice));
   if(typeof SANDBOX!=='undefined')SANDBOX.normalTitle=false;

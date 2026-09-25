@@ -10,7 +10,11 @@ function mulberry32(a){ var next=function(){ a|=0; a=a+0x6D2B79F5|0; var t=Math.
 var rng = mulberry32(48213);
 function ri(a,b){ return a + Math.floor(rng()*(b-a+1)); }
 function pick(arr){ return arr[Math.floor(rng()*arr.length)]; }
-function dist(a,b){ return Math.max(Math.abs(a.x-b.x), Math.abs(a.y-b.y)); }
+function entitySize(e){return FoteGeometry.bodySize(e);}
+function entityOccupies(e,x,y){return FoteGeometry.bodyContains(e,x,y);}
+function entityPoint(e,toward){return FoteGeometry.bodyPoint(e,toward);}
+function entityIntersects(e,tiles){return FoteGeometry.bodyIntersects(e,tiles);}
+function dist(a,b){return FoteGeometry.bodyDistance(a,b);}
 function roll(a,b){ return a + Math.floor(rng()*(b-a+1)); }
 
 /* ============ world data ============ */
@@ -155,7 +159,7 @@ function renderPos(e){
        where the figure is drawn, at a steady pace: the slide lasts in proportion to the distance left and runs
        linear instead of easing to a stop at every tile. A step from rest keeps its ease in and out. */
     var chained=!!(s.mt && now-s.mt<(s.dur||MOVE_MS) && jump<=3);
-    s.fx=cur.x;s.fy=cur.y;s.x=e.x;s.y=e.y;s.lin=chained;
+    s.fx=cur.x;s.fy=cur.y;s.x=e.x;s.y=e.y;s.lin=chained;s.hopHeight=1;
     s.dur=chained?Math.round(MOVE_MS*Math.max(0.5,jump)):MOVE_MS;
     s.mt=(ANIM.reduce || jump>3)?0:(e!==player && typeof fxClock==='number'?Math.max(now,fxClock):now);
   }
@@ -168,7 +172,7 @@ function slideAt(e,now){
   if(p<0) return {x:s.fx,y:s.fy,hop:0};
   if(p>=1){s.mt=0;return {x:s.x,y:s.y,hop:0};}
   var q=s.lin?p:(p<0.5?2*p*p:1-Math.pow(-2*p+2,2)/2);
-  return {x:s.fx+(s.x-s.fx)*q,y:s.fy+(s.y-s.fy)*q,hop:Math.sin(p*Math.PI)};
+  return {x:s.fx+(s.x-s.fx)*q,y:s.fy+(s.y-s.fy)*q,hop:Math.sin(p*Math.PI)*(s.hopHeight||1)};
 }
 function breathOf(e){
   if(ANIM.reduce) return 0;
@@ -359,8 +363,8 @@ cv.addEventListener('click', function(ev){
   var r=cv.getBoundingClientRect();
   var mx=camX+Math.floor((ev.clientX-r.left+camOX)/TS), my=camY+Math.floor((ev.clientY-r.top+camOY)/TS);
   if(aiming){ castAt(mx,my); return; }
-  var foe=ents.filter(function(e){ return e.foe && e.x===mx && e.y===my; })[0];
-  if(foe && player.range>1 && dist(player,foe)<=player.range && vis[my*MW+mx]){ shootAt(foe); return; }
+  var foe=foeAt(mx,my);
+  if(foe && player.range>1 && dist(player,foe)<=player.range && vis[my*MW+mx]){shootAt(foe,{x:mx,y:my});return;}
   var dx=Math.sign(mx-player.x), dy=Math.sign(my-player.y);
   if(dx||dy){ lastDir=[dx,dy]; tryMove(dx,dy); }
 });

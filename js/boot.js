@@ -117,7 +117,9 @@ function preloadArt(done){
       loaded++;status.textContent='Loading artwork '+loaded+' / '+files.length;
     },function(){failed.push(file);});})).then(function(){
       if(failed.length){status.textContent='Could not load '+failed.length+' artwork file(s). Check your connection and retry.';retry.hidden=false;return;}
-      return scriptsReady.then(function(){return document.fonts?document.fonts.ready:undefined;}).then(function(){
+      return scriptsReady.then(function(){
+        if(typeof FoteChaosCampaign!=='undefined'){status.textContent='Preparing the Realm of Chaos…';return FoteChaosCampaign.prepare();}
+      }).then(function(){return document.fonts?document.fonts.ready:undefined;}).then(function(){
         return new Promise(function(resolve){requestAnimationFrame(function(){resize();draw();requestAnimationFrame(resolve);});});
       }).then(function(){done();veil.remove();});
     }).catch(function(){status.textContent='The scene could not be prepared. Retry loading.';retry.hidden=false;});

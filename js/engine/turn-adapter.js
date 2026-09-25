@@ -57,6 +57,7 @@ function turnWorldPulse(clock){
   [player].concat(ents.filter(function(e){return e!==player;})).forEach(function(e){
     if(e.tomb>0){e.tomb--;if(!e.tomb){log('The ice around '+e.name+' shatters.','c-info');sfx('ice-melt');}return;}
     worldStatusPulse(e,clock);
+    if(typeof FoteShadowClone!=='undefined')FoteShadowClone.pulse(e,clock);
     if(e!==player&&!e.undeadServant){
       var key=e.shadeLife>0?'shadeLife':'life';
       if(e[key]>0){e[key]--;if(e[key]<=0)ents=ents.filter(function(other){return other!==e;});}
@@ -72,6 +73,7 @@ function turnWorldPulse(clock){
     player.levitate--;if(!player.levitate&&at(player.x,player.y)===CHASM)fallIntoChasm();
   }
   groundTick();godsWorldAdvance(clock-100,clock);
+  if(typeof FoteChaosEnemies!=='undefined')FoteChaosEnemies.globalPulse(clock);
 }
 function turnExplore(){
   spotTraps();if(!floorMeta.boss)wanderingSpawn();godTick(turnInCombat());
@@ -111,6 +113,7 @@ var gameTurns=FoteTurns.create({
   finalize:[turnPhase('finalize-action',turnFinalizeAction)]
 });
 function endTurn(){
+  if(!player.movedThisTurn&&!player.lastAttack&&!player.castingSpell&&playerFearAction())return;
   var result=gameActions.suspend(function(){return gameTurns.action();});
   if(result&&typeof result.catch==='function')result.catch(function(error){console.error('Enemy turn failed',error);stopTravel();PACING.pending=null;});
   return result;

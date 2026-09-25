@@ -63,6 +63,10 @@
         if(t.indexOf('hard-control')>=0&&e.resolveUntil>now())return 'resolve';
         if(d.element&&affinity(d.element)>=(d.immuneRank||3))return 'element';
       }else {
+        /* Creature content names statuses or shared tags, not individual spell
+         * paths: Slow includes Frost/Freeze, and Root includes Web. */
+        var immunities=e.base&&e.base.statusImmunities;
+        if(Array.isArray(immunities)&&immunities.some(function(key){var immune=canonical(key);return immune===d.key||t.indexOf(immune)>=0;}))return 'creature-immunity';
         if(e.stunImmune&&t.indexOf('stun')>=0)return 'sap-immunity';
         if(has(e,'imm_'+canonical(key)))return 'temporary-immunity';
       }
@@ -91,9 +95,10 @@
       if(options.durationModifiers!==false){
         if(hooks.bonusDuration)turns+=hooks.bonusDuration(e,key,turns)||0;
         if(player(e)&&perk(e,'ironConst'))turns=Math.max(1,Math.round(turns/2));
-        if(!player(e)&&boss(e)&&d.bossControl)turns=1;
       }
+      if((options.durationModifiers!==false||options.bossControl)&&!player(e)&&boss(e)&&d.bossControl)turns=1;
       var status=Object.assign({},previous||{},options.data||{});
+      if(!options.data||!options.data.sourceAffinity){delete status.sourceAffinity;delete status.sourceDuration;}
       status.t=options.refresh==='replace'?turns:Math.max(turns,previous&&previous.t||0);
       status.bornAt=options.bornAt===undefined?now():options.bornAt;
       if(extra!==undefined)status.d=extra;
@@ -105,19 +110,20 @@
       event.options=options;emit('onApplied',event);
       return {applied:true,key:key,status:status,previous:previous};
     }
-    function addChill(e){
+    function addChill(e,options){
+      options=options||{};
       var reason=blocked(e,'chill');
       if(reason||e.tomb>0)return {applied:false,reason:reason||'entombed',key:'chill'};
-      var rank=player(e)?0:affinity('water'),need=player(e)||rank>=6?3:4;
+      var rank=player(e)?0:options.sourceAffinity?options.sourceAffinity.water||0:affinity('water'),need=player(e)||rank>=6?3:4;
       var previous=e.st&&e.st.chill,n=(previous&&previous.n||0)+1,result;
       if(n>=need&&!has(e,'imm_frozen')){
-        remove(e,'chill','transformed');result=apply(e,'frozen',2);
+        remove(e,'chill','transformed');result=apply(e,'frozen',2,undefined,options);
         if(result.applied&&!player(e))apply(e,'imm_frozen',5,undefined,{durationModifiers:false,ignoreImmunity:true});
         if(result.applied)emit('onFrozen',{entity:e,status:result.status});
-      }else result=apply(e,'chill',4,undefined,{data:{n:Math.min(n,need-1),waterRank:rank},refresh:'replace',durationModifiers:false});
+      }else result=apply(e,'chill',4,undefined,Object.assign({},options,{data:Object.assign({},options.data,{n:Math.min(n,need-1),waterRank:rank}),refresh:'replace',durationModifiers:false}));
       /* Chill's direct stacking path historically receives Iron Constitution, not Sylla's extension. */
       if(result.applied&&result.key==='chill'&&player(e)&&perk(e,'ironConst'))result.status.t=2;
-      if(result.applied)emit('onChill',{entity:e,result:result});
+      if(result.applied)emit('onChill',{entity:e,result:result,options:options});
       return result;
     }
     function applyWeb(e,settings){

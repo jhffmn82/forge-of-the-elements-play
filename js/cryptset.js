@@ -26,13 +26,13 @@ function addSetPiece(x, y, name, w, h, extra){
 
 
 function drawSetSprite(p, alpha){
-  var o=setArt(p.name); if(!o) return false;
+  var o=(typeof FoteChaosPreviewArt!=='undefined'?FoteChaosPreviewArt.artForSet(p,alpha):null)||setArt(p.artName||p.name); if(!o) return false;
   if(p.half){ o={img:o.img, sx:o.sx+(p.half==='r'?Math.floor(o.sw/2):0), sy:o.sy, sw:Math.ceil(o.sw/2), sh:o.sh}; }   /* one urn of the pair */
   /* the art itself (its trimmed box) fills the piece's tiles, standing on their bottom edge */
   var fit=p.wall ? 0.9 : 0.98, sc=Math.min((p.w*TS*fit)/o.sw, (p.h*TS*(p.w===1&&p.h===1?1.15:1.02))/o.sh);
   var dw=o.sw*sc, dh=o.sh*sc, px=(p.x-camX)*TS+(p.w*TS-dw)/2, py=p.wall ? (p.y-camY)*TS+(TS-dh)/2 : (p.y-camY+p.h)*TS-dh-TS*0.02;
   ctx.save(); ctx.globalAlpha=alpha; ctx.imageSmoothingEnabled=false;
-  if(!p.wall && !p.flat && !/^(soul-urn|soul-brazier|kobold-campfire)$/.test(p.name)){   /* what lies flat in the ground casts no shadow */
+  if(!p.wall && !p.flat && !p.noShadow && !/^(soul-urn|soul-brazier|kobold-campfire)$/.test(p.name)){   /* flat art and explicitly shadowless set pieces omit the contact oval */
     ctx.fillStyle='rgba(8,6,12,0.38)'; ctx.beginPath(); ctx.ellipse(px+dw/2, (p.y-camY+p.h)*TS-TS*0.1, dw*0.48, TS*0.2, 0, 0, 7); ctx.fill();
   }
   ctx.drawImage(o.img, o.sx, o.sy, o.sw, o.sh, px, py, dw, dh);

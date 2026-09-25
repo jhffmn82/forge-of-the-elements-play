@@ -4,6 +4,7 @@ function rejectDamage(event,reason){event.reason=reason;event.amount=0;return fa
 var damagedMultipartBodies=new WeakMap();
 function damageCreatureRules(event){
   var target=event.target,source=event.source,type=event.type,b=target.base;
+  if(typeof FoteChaosEnemies!=='undefined'&&FoteChaosEnemies.damageRules(event)===false)return false;
   event.wasStatused=syllaStatused(target);
   event.iceBefore=player.iceArmor||0;
   if(target.syllaResist>0&&event.amount>0)event.amount*=1-target.syllaResist;
@@ -61,8 +62,9 @@ function damageOutgoingRules(event){
     if(holy==='fire'&&source===player&&target!==player)event.amount*=1+enchantValues('holy','fire').damageBonus;
     if(holy==='earth'&&target===player)event.amount*=1-enchantValues('holy','earth').damageReduction;
   }
-  if(source&&source.foe&&source.st&&source.st.poison&&combo('earth','shadow'))event.amount*=.8;
+  if(source&&source.foe&&source.st&&source.st.poison&&(target.shadowClone&&target.cloneStats?(target.cloneStats.aff.earth||0)>=3&&(target.cloneStats.aff.shadow||0)>=2:combo('earth','shadow')))event.amount*=.8;
   if(target===player&&player.tombed||target.tomb>0)return rejectDamage(event,'tomb');
+  if(target===player&&type==='poison'&&buff('poisonward'))return rejectDamage(event,'poison-ward');
   if(target===player){for(var el in IMMUNE_TYPE)if(IMMUNE_TYPE[el]===type&&aff(el)>=6){floatText(player.x,player.y,'immune','miss');return rejectDamage(event,'element-immunity');}}
   if(target!==player){
     if((source===player||source==='player')&&aff('fire')>=3&&target.st&&target.st.burn)event.amount*=1+.05*aff('fire');
@@ -71,6 +73,7 @@ function damageOutgoingRules(event){
   return true;
 }
 function damageDefenses(event){
+  if(typeof FoteShadowClone!=='undefined'&&FoteShadowClone.defend(event))return;
   var target=event.target,source=event.source,type=event.type,amount=event.amount,d=amount;
   var isPlayer=target===player,foe=source&&source!==player&&source.foe;
   var wardChance=player.block>0?player.block:Math.min(.40,.25+.01*Math.max(0,player.stats.mig-10));
@@ -110,6 +113,8 @@ function damageDefenses(event){
 function commitDamage(event){
   var target=event.target,d=event.damage;
   target.hp-=d;
+  if(d>0)revealActor(target);
+  if(d>0&&typeof FoteChaosEnemies!=='undefined')FoteChaosEnemies.onDamaged(event);
   if(d>0&&event.options.reactions!==false)godDamageResolved(target,d,event.type,event.source,event);
   if(event.options.visuals!==false){
     target._hit=Math.max(performance.now(),fxClock);

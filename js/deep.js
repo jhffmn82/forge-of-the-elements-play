@@ -35,7 +35,7 @@
    ===================================================================== */
 
 var LAVA = 21;
-LAST_FLOOR = 20;                          /* 2026-09-19: the Underdark is built; floor 15's Maw burrow leads down to 16 */
+LAST_FLOOR = 25;                          /* The Realm of Chaos ends at the Unmaker's Crucible. */
 BIOME_NAMES[3] = 'Underdark';
 TILE_NAMES[LAVA] = 'Lava';
 TILE_HINTS[LAVA] = 'Impassable. Burns anything that stands beside it; sets webs and grass alight.';

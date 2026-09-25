@@ -10,6 +10,7 @@ function shieldEnchantValues(el){return enchantValues('shield',el);}
 
 /* called from attack() the moment a blow is blocked, with the damage that was coming */
 function onShieldBlock(att, def, raw){
+  if(def.shadowClone&&typeof FoteShadowClone!=='undefined'){FoteShadowClone.block(def,att,raw);return;}
   if(def!==player || !att || att===player) return;
   var sh=player.off, el=sh && sh.enchant;
   if(!el || !(sh.block>0)) return;

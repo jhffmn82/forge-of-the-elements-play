@@ -39,11 +39,11 @@ function removeProp(p){ var i=props.indexOf(p); if(i<0) return; props.splice(i,1
 function isDoorish(t){ return t===DOOR||t===OPEN||t===LOCKED||t===ICEDOOR||t===THORNS||t===TOLL||t===SEALED||t===SECRET; }
 function findRectangularRoom(x,y){ for(var i=0;i<rooms.length;i++){ var r=rooms[i]; if(x>=r.x&&x<r.x+r.w&&y>=r.y&&y<r.y+r.h) return r; } return null; }
 function inRoom(x,y){ return !!roomAt(x,y); }
-function occupied(x,y){
-  if(ents.some(function(e){return e.x===x && e.y===y;}))return true;
+function occupied(x,y,ignore){
+  if(ents.some(function(e){return e!==ignore&&entityOccupies(e,x,y);} ))return true;
   if(!fx || !fx.length)return false;
   var now=performance.now();
-  return fx.some(function(f){return f.k==='d' && f.e && f.e.x===x && f.e.y===y && now<f.t0+f.dur;});
+  return fx.some(function(f){return f.k==='d' && f.e && f.e!==ignore && entityOccupies(f.e,x,y) && now<f.t0+f.dur;});
 }
 function itemAt(x,y){ for(var i=0;i<items.length;i++) if(items[i].x===x && items[i].y===y) return items[i]; return null; }
 function freeCell(x,y){ return at(x,y)===FLOOR && !propAt(x,y) && !itemAt(x,y) && !occupied(x,y) && !feats.some(function(f){return f.x===x&&f.y===y;}); }

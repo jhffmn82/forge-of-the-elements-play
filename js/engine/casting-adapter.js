@@ -78,9 +78,10 @@ function useShadowstep(){
 function useAbility(i){
   if(gameTurns.busy())return false;
   var key=player.abilities[i],A=ABILITIES[key];if(!A)return;
+  if(playerFearAction())return false;
   var forbidden=spellForbidden(A);
   if(forbidden){if(aiming&&aiming.i===i)cancelAim();log('<b>'+GODS[player.god].name+'</b> forbids '+forbidden+'. '+A.name+' will not come to you.','c-info');sfx('ui-error');return;}
-  if(aiming&&!aiming.amulet&&aiming.i===i&&aiming.auto){var target=autoAimLive();if(target)castAt(target.x,target.y);else cancelAim();return;}
+  if(aiming&&!aiming.amulet&&aiming.i===i&&aiming.auto){var target=autoAimLive(),point=target&&autoAimPoint(target);if(point)castAt(point.x,point.y);else cancelAim();return;}
   if(key==='shadowstep')return useShadowstep();
   if(key==='charge'){
     if(cdLeft(key)>0){log('Charge is not ready ('+cdLeft(key)+' turns).','c-info');sfx('ui-error');return;}
@@ -120,6 +121,7 @@ function resolveTargetedCast(x,y,selection){
 function castAt(x,y){
   if(gameTurns.busy())return false;
   var selection=aiming;if(!selection)return false;
+  if(playerFearAction())return false;
   var A=selection.A;
   if(!selection.amulet&&!selection.prayer){
     var forbidden=spellForbidden(A);

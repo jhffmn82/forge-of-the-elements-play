@@ -1,6 +1,6 @@
 /* Scene score shares the HUD's encounter predicate. Floor changes call
    playSceneMusic() directly, so a later biome never inherits Dungeon music. */
-var ASTRA_SCORE=['crypt','caverns','underdark','plane-fire','plane-water','plane-air','plane-earth','plane-light','plane-shadow','boss-morty','boss-maw','boss-matron','chaos','boss-chaos'];
+var ASTRA_SCORE=['crypt','caverns','underdark','plane-fire','plane-water','plane-air','plane-earth','plane-light','plane-shadow','boss-morty','boss-maw','boss-matron','chaos','boss-chaos','boss-unmaker'];
 var BIOME_SCORE=['dungeon','crypt','caverns','underdark','chaos'];
 window.AUDIO_FILES=window.AUDIO_FILES||[];ASTRA_SCORE.forEach(function(k){if(window.AUDIO_FILES.indexOf('music-'+k)<0)window.AUDIO_FILES.push('music-'+k);});   /* the packed registry lists them since the gap pass; never twice */
 ['door-close','trap-gas','skeleton-death'].forEach(function(n){if(window.AUDIO_FILES.indexOf(n)<0)window.AUDIO_FILES.push(n);});
@@ -18,6 +18,9 @@ function sceneScore(){
   var boss=activeBossEncounter();
   if(!boss)return explorationScore();
   var name=((boss.base&&boss.base.name)||boss.name||boss.kind||'').toLowerCase();
+  /* Each Unmaker form keeps this encounter ID, so changing its name or entity
+     does not restart the battle theme. Exact names support an unsplit form. */
+  if((boss.base&&boss.base.encounterId)==='unmaker'||/^(?:the )?unmaker$/.test(name.trim()))return 'boss-unmaker';
   return /mort/.test(name)?'boss-morty':/maw/.test(name)?'boss-maw':/matron/.test(name)?'boss-matron':floorNo>=21?'boss-chaos':'boss';
 }
 function playSceneMusic(){

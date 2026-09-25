@@ -4,7 +4,7 @@ function floorIntro(){
   if(floorMeta.forge) log('You feel heat in the stones. <b>The Elemental Forge</b> is on this floor.','c-kill');
   if(floorMeta.shrine) log('A distant hum of prayer: a <b>shrine to '+GODS[RUN.shrineGod].name+'</b> is on this floor.','c-kill');
   if(floorMeta.vault) log('Somewhere an iron vault is locked. Its key walks with one of the monsters.','c-info');
-  if(floorMeta.boss&&!inCaverns()&&!inDeep()) log('<b>The Warchief\'s hall.</b> Grukk waits on his throne. Kill him to open the way on.','c-you');
+  if(floorMeta.boss&&!inCaverns()&&!inDeep()&&!floorMeta.unmakerPreview) log('<b>The Warchief\'s hall.</b> Grukk waits on his throne. Kill him to open the way on.','c-you');
   (floorMeta.notes||[]).forEach(function(n){ log(n,'c-info'); });
   playSceneMusic();
 
@@ -16,6 +16,7 @@ function floorIntro(){
  }
 }
 function bossDefeated(e){
+ if(typeof FoteUnmakerEncounter!=='undefined'&&FoteUnmakerEncounter.onDefeated(e))return;
  if(floorMeta.bossRewarded)return;floorMeta.bossRewarded=true;
  if(RUN.cores===undefined)RUN.cores=0;var capBefore=affinityCap();
 
@@ -67,6 +68,10 @@ function renderEndSummary(won){
   if(won && floorNo>=LAST_FLOOR && inDeep()){
     var tt=$('overT'); if(tt) tt.textContent='The Underdark is behind you';
     var p=$('overP'); if(p) p.innerHTML=p.innerHTML.replace(/^[\s\S]*?<br><br>/, player.name+' cut down the Matron of the Web beneath her goddess\'s idol. The Underdark is behind you.<br><br>');
+  }
+  if(won&&floorMeta.unmakerEncounter&&floorMeta.unmakerEncounter.status==='victory'){
+    $('overT').textContent='The Forge of the Elements is restored';
+    $('overP').innerHTML=$('overP').innerHTML.replace(/^[\s\S]*?<br><br>/,player.name+' defeated the Unmaker and restored balance to the material plane. The elements burn in harmony once more.<br><br>');
   }
 }
 function renderEndActions(won){

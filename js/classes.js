@@ -114,8 +114,8 @@ function cdLeft(key){ return Math.max(0, ((player.cds||{})[key]||0) - turn); }
 
 function chargeLane(f, ground){
   /* Justin, 2026-09-22: Charge also targets open ground, so a warrior can break away from a crowd. */
-  var path=boltPath(player.x,player.y,f.x,f.y), end=path[path.length-1];
-  if(!end || end.x!==f.x || end.y!==f.y) return null;                 /* something stands in the line */
+  var target=entityPoint(f,player),path=boltPath(player.x,player.y,target.x,target.y), end=path[path.length-1];
+  if(!end || !entityOccupies(f,end.x,end.y)) return null;                 /* something stands in the line */
   var run=ground ? path : path.slice(0,-1);                           /* to the tile itself, or every tile short of the enemy */
   if(run.length>ABILITIES.charge.range-1) return null;
   for(var i=0;i<run.length;i++){ var t=run[i]; if(!walkable(t.x,t.y) || occupied(t.x,t.y)) return null; }
@@ -159,7 +159,7 @@ function noticeChance(e, see, d, asleep){
 }
 
 function castChargeTarget(x,y){
-  var f=ents.filter(function(e){ return e.foe && e.hp>0 && e.x===x && e.y===y; })[0];
+  var f=foeAt(x,y);
   if(!inRange(x,y)){ log('Too far to charge.','c-info'); sfx('ui-error'); return false; }
   if(!f && (x===player.x && y===player.y || !walkable(x,y) || occupied(x,y))){ log('Charge at an enemy or onto open ground.','c-info'); sfx('ui-error'); return false; }
   if(!f && dist(player,{x:x,y:y})>ABILITIES.charge.range-1){ log('Too far to charge.','c-info'); sfx('ui-error'); return false; }

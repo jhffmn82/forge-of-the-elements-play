@@ -11,7 +11,7 @@ function turnAnimationVisible(e){
   if(!e||!turnAnimationOnscreen(e.x,e.y,e.base&&e.base.big||0))return false;
   if(e===player)return true;
   if(e.parent||e.kind==='mawlimb')return false;
-  return !!(revealAll||(inb(e.x,e.y)&&vis[idxOf(e.x,e.y)])||(e.foe&&player.dawnUntil>turn));
+  return actorVisible(e,true);
 }
 function turnAnimationActors(){
   return [player].concat(ents.filter(function(e){return e!==player;})).filter(turnAnimationVisible);
@@ -37,7 +37,10 @@ function turnAnimationClipEnd(e,now){
   if(clip.t0>Math.max(now,typeof fxClock==='number'?fxClock:0)+1)return now;
   if(e.livingFlame)return now;
   var shade=typeof isShadeSummon==='function'&&isShadeSummon(e);
-  var sheet=e===player?AS.cast&&AS.cast[playerCastLook()]:AS.mobs&&AS.mobs[shade?'m-shade':e.base&&e.base.sprite];
+  var sheet=e===player||e.shadowClone?AS.cast&&AS.cast[e.shadowClone?e.cloneLook:playerCastLook()]:AS.mobs&&AS.mobs[shade?'m-shade':e.base&&e.base.sprite];
+  if(!sheet&&e!==player&&!shade&&typeof FoteChaosEnemyArt!=='undefined'){
+    var chaosSheet=FoteChaosEnemyArt.sheet(e.base&&e.base.sprite);if(chaosSheet)sheet=chaosSheet.m;
+  }
   var frames=sheet&&sheet.clips&&sheet.clips[clip.name];
   var heldStill=e.base&&e.base.stillPose&&!shade&&sheet&&sheet.static_row!==undefined;
   var end=frames&&!heldStill?clip.t0+frames.frames*(CLIP_MS[clip.name]||70):now;

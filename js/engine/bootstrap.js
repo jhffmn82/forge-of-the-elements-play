@@ -19,7 +19,7 @@
   root.FoteReady=(async()=>{
     if(!root.FOTE_RUNTIME||!Array.isArray(FOTE_RUNTIME.modules))throw new Error('Runtime manifest is missing.');
     for(const path of FOTE_RUNTIME.modules){
-      if(!FOTE_RUNTIME.development&&path==='js/sandbox-builds.js')continue;
+      if(!FOTE_RUNTIME.development&&(FOTE_RUNTIME.developmentOnly||['js/sandbox-builds.js']).includes(path))continue;
       await load(path);
     }
     if(!FOTE_RUNTIME.development)await load('js/public-mode.js');

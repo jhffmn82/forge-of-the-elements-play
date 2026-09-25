@@ -22,6 +22,7 @@ function attackView(att,def,options){
   return Object.assign({},player,{weapon:selected,dmg:stats.dmg,acc:stats.acc,crit:stats.crit});
 }
 function resistMult(target,type){
+  if(target.shadowClone&&target.cloneStats&&typeof FoteShadowClone!=='undefined')return FoteShadowClone.resistance(target,type);
   var own=target===player,b=target.base||{},B=target.buffs||{},arm=own?bodyArmor(player):{},immunity=false;
   if(own)for(var el in IMMUNE_TYPE)if(IMMUNE_TYPE[el]===type&&aff(el)>=6)immunity=true;
   return FoteActions.resistance(type,{player:own,
@@ -37,6 +38,7 @@ function resistMult(target,type){
 }
 function prepareAttack(event){
   var att=event.source,def=event.target,view=event.view=attackView(att,def,event.options);
+  revealActor(att);
   if(att===player&&view.weapon&&view.weapon.unarmed&&!event.options.offhand&&!event.tags.has('proc')&&livingMountain(player)){
     stackLivingMountain();view=event.view=attackView(att,def,event.options);
   }
@@ -146,12 +148,17 @@ function rollWeaponHit(event){
   else { lungeFx(att, def.x, def.y); if(att===player || !att.base.sfx)sfx('swing',{at:tSwing}); }
   if(!ranged && att!==player && att.base.sfx) sfx(att.base.sfx+'-attack',{at:tSwing});
   if(def===player && att.foe) ch=hostileHitChance(ch);
+  if(def.shadowClone&&def.cloneStats){
+    var echoDefense=def.cloneStats;
+    if(ranged&&rng()<echoDefense.deflect||dist(att,def)<=1&&rng()<echoDefense.parry){floatText(def.x,def.y,'deflected','miss');return;}
+    ch-=echoDefense.luck||0;if(echoDefense.blur)ch=Math.max(.15,ch*.8);
+  }
   if(def===player && player.parry && dist(att,def)<=1 && combatRoll(player.parry,true)){
     log('You parry '+att.name+'.','c-good'); sfx('parry'); floatText(def.x,def.y,'parry','miss');
     if(att.hp>0){ log('Riposte!','c-good'); attack(player, att, 0.5, 'Riposte'); }
     return;
   }
-  var blocked = (def===player && player.block && combatRoll(player.block,true));
+  var blocked = def.shadowClone&&def.cloneStats?rng()<def.cloneStats.block:(def===player && player.block && combatRoll(player.block,true));
   if(att===player ? !combatRoll(ch,true) : def===player ? combatRoll(1-ch,true) : rng()>ch){
     log(who+' miss'+(att===player?'':'es')+' '+foe+' <span class="roll">('+Math.round(ch*100)+'% to hit)</span>','c-miss');
     floatText(def.x, def.y, 'miss', 'miss'); sfx('miss'); if(att===player && def.state!=='hunt' && def.state!=='throne') def.state='hunt'; if(att===player) def.caughtOff=-1; return;
@@ -195,7 +202,7 @@ function rollWeaponDamage(event,strike){
       /* 2026-09-22 (Justin): no piety for surprise attacks at all - his followers simply cannot sneak (stealthScore), and
          his only foul is Shadow (gods.js, forge.js). */ }
   } else {
-    crit = !(def===player && hasP('bulwark')) && rng() < 0.05;
+    crit = !(def===player && hasP('bulwark')||def.shadowClone&&def.cloneStats.passives.bulwark) && rng() < 0.05;
   }
   if(crit){base *= att===player?actionCritMultiplier(view):1.6;}
   if(att===player&&pummelHit&&def.hp>0)applyStatus(def,'stun',1);

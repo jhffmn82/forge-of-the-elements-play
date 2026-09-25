@@ -1,14 +1,17 @@
 /* Public travel actions use one floor store and one explicit entry pipeline. */
 function stashFloor(){
   if(!RUN)return;
+  if(typeof FoteChaosCampaign!=='undefined'&&FoteChaosCampaign.stashEntry())return;
   (RUN.floorStash||(RUN.floorStash={}))[floorNo]=FoteTransitions.capture(gameState);
 }
 function restoreFloor(n,arrival){
   var saved=RUN&&RUN.floorStash&&RUN.floorStash[n];if(!saved)return false;
   FoteTransitions.restore(gameState,saved,n);delete RUN.floorStash[n];
+  if(typeof FoteChaosCampaign!=='undefined')FoteChaosCampaign.restore();
   presentRestoredFloor(arrival);return true;
 }
 function descend(fell){
+  if(typeof FoteChaosCampaign!=='undefined'&&FoteChaosCampaign.descend(fell))return;
   if(floorMeta&&floorMeta.plane){
     log('There are no stairs in '+PLANE_TITLE[floorMeta.plane]+'. The portal is the way home.','c-info');
   }else if(!RUN||floorNo>=LAST_FLOOR&&!(RUN.floorStash&&RUN.floorStash[floorNo+1])){
@@ -19,18 +22,19 @@ function descend(fell){
     if(saved){
       if(!fell)sfx('stairs');player.levitate=0;
       restoreFloor(target,saved.floorMeta&&saved.floorMeta.upAt);
-      log('You climb back down to <b>floor '+floorNo+'</b>. It is as you left it.','c-kill');playSceneMusic();
+      log((floorMeta.chaosCampaign?'The current carries you back to ':'You climb back down to ')+'<b>floor '+floorNo+'</b>. It is as you left it.','c-kill');playSceneMusic();
     }else{generateNextFloor(fell);placeArrivalStairs();}
   }
   if(RUN&&!RUN.over)writeSlot('auto','floor '+floorNo);
 }
 function ascend(){
-  if(at(player.x,player.y)!==UPSTAIRS){log('No stairs up here.','c-info');return;}
+  if(at(player.x,player.y)!==UPSTAIRS&&!(typeof FoteChaosCampaign!=='undefined'&&FoteChaosCampaign.materialPortalInfo(player.x,player.y))){log('No stairs up here.','c-info');return;}
+  if(typeof FoteChaosCampaign!=='undefined'&&FoteChaosCampaign.ascend())return;
   if(!RUN.floorStash||!RUN.floorStash[floorNo-1]){log('The way up has collapsed.','c-info');return;}
   stashFloor();sfx('stairs');player.levitate=0;
   var target=floorNo-1,saved=RUN.floorStash[target],arrival=findTileIn(saved,STAIRS)||findTileIn(saved,EXIT);
   restoreFloor(target,arrival);
-  log('You climb back up to <b>floor '+floorNo+'</b>. It is as you left it.','c-kill');
+  log((floorMeta.chaosCampaign?'The current carries you back to ':'You climb back up to ')+'<b>floor '+floorNo+'</b>. It is as you left it.','c-kill');
   if(floorMeta.forge)log('The Elemental Forge still burns on this floor.','c-info');
   playSceneMusic();if(!RUN.over)writeSlot('auto','floor '+floorNo);
 }
@@ -57,7 +61,7 @@ var planeGeneration=FoteTransitions.stages([
   {name:'plane-clusters',run:function(c){dressPlaneClusters(c.element,c.seed);}},
   {name:'elemental-plane-hazards',run:function(c){dressElementalPlane(c.element,c.seed);}}
 ]);
-function buildPlaneFloor(element,seed){planeGeneration.run({element:element,seed:seed});}
+function buildPlaneFloor(element,seed){resetMapDimensions();planeGeneration.run({element:element,seed:seed});if(typeof FoteShadowClone!=='undefined')FoteShadowClone.arrive();}
 
 var tileEntry=FoteTransitions.stages([
   {name:'collect-core',run:entryCollectCores},
@@ -71,6 +75,9 @@ var tileEntry=FoteTransitions.stages([
 function stepOn(){tileEntry.run({hpBefore:player.hp});}
 
 var movementEntry=FoteTransitions.stages([
+  {name:'impassable-void',run:function(c){
+    if(floorMeta&&floorMeta.impassableVoid&&at(player.x+c.dx,player.y+c.dy)===CHASM){log('The void cannot be crossed. Use a bridge or portal.','c-info');return true;}
+  }},
   {name:'plane-terrain',run:function(c){return movePlaneTerrain(c.dx,c.dy);}},
   {name:'deep-terrain',run:function(c){return moveDeepTerrain(c.dx,c.dy);}},
   {name:'reach-attack',run:function(c){return moveReachAttack(c.dx,c.dy);}},
@@ -85,4 +92,4 @@ var movementEntry=FoteTransitions.stages([
     if(player.x!==x||player.y!==y)afterTurn(enterTile);
   }}
 ]);
-function tryMove(dx,dy){if(!gameTurns.busy())movementEntry.run({dx:dx,dy:dy});}
+function tryMove(dx,dy){if(!gameTurns.busy()&&!playerFearAction())movementEntry.run({dx:dx,dy:dy});}

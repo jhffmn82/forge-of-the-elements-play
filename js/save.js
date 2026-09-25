@@ -33,7 +33,8 @@ function saveApply(data){
     restoreRandom:function(document,state){rng=mulberry32(Number.isInteger(document.rngState)?document.rngState:((state.worldSeed||1)^(state.turn*2654435761))>>>0);},
     migrations:[restoreRunReferences,migrateXpCurve,repairCoreProgress,repairWallMemorials,
       refreshCavernResidents,refreshEncounterTuning,repairSavedEffectClocks,
-      saveMigrateSigils,sigilNamesRefresh,ensureRuneLooks,migrateRangedSlot,hideRetiredSwapSlots,restorePuzzleState],
+      saveMigrateSigils,sigilNamesRefresh,ensureRuneLooks,migrateRangedSlot,hideRetiredSwapSlots,restorePuzzleState,
+      function(){if(typeof FoteChaosCampaign!=='undefined')FoteChaosCampaign.restore();if(typeof FoteUnmakerPreview!=='undefined')FoteUnmakerPreview.repairGates();if(typeof FoteUnmakerEncounter!=='undefined')FoteUnmakerEncounter.restore();}],
     recompute:function(){derive(player);}
   });
   gameTurns.cancel();PACING.pending=null;stopTravel();fxClock=0;
@@ -51,6 +52,7 @@ function saveApply(data){
   playSceneMusic();
 }
 function restoreRunReferences(){
+  if(typeof FoteShadowClone!=='undefined')FoteShadowClone.arrive();
   if(player.buffs)delete player.buffs.unbound;
   floorMeta.puzzles=rooms.filter(function(room){return room&&room.puzzle;});
   ents.forEach(function(entity){entity._lx=undefined;entity._ly=undefined;});

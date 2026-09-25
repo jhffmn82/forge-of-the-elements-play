@@ -145,7 +145,7 @@ function beginCast(A){
   setClip(player,'cast');
   sfx(A.el==='fire'?'fire-cast':A.el==='water'?'ice-cast':A.el==='air'?'lightning-cast':A.el==='earth'?'earth-cast':A.el==='light'?'light-cast':'shadow-cast');
 }
-function foeAt(x,y){ return ents.filter(function(e){ return e.foe && e.x===x && e.y===y; })[0]; }
+function foeAt(x,y){return ents.find(function(e){return e.foe&&e.hp>0&&entityOccupies(e,x,y);});}
 function summonCount(){ return ents.filter(function(e){ return e.ally && (e.undeadServant || e.livingFlame); }).length; }
 
 
@@ -160,7 +160,7 @@ function livingFlameBehavior(e){
   if(!e.rangedAlly) return false;
   if(e.hp<=0)return true; if(e.life<=0){ ents=ents.filter(function(o){ return o!==e; }); log('Your '+e.name+' gutters out.','c-info'); return true; }
 
-  var tgt=ents.filter(function(o){ if(!o.foe || o.hp<=0 || !vis[idxOf(o.x,o.y)] || dist(e,o)>e.rangedAlly) return false; var pth=boltPath(e.x,e.y,o.x,o.y), en=pth[pth.length-1]; return en && en.x===o.x && en.y===o.y; })
+  var tgt=ents.filter(function(o){return o.foe&&o.hp>0&&actorVisible(o)&&dist(e,o)<=e.rangedAlly&&clearShot(e,o);})
     .sort(function(a,b){ return dist(a,e)-dist(b,e); })[0];
   if(tgt){
     setClip(e,'attack'); boltFx(e.x,e.y,tgt.x,tgt.y,'fire');
@@ -188,7 +188,7 @@ function castElementTarget(x,y){
     beginCast(A); boltFx(player.x,player.y,x,y,'fire'); explosionFx(x,y);
     var dmg=spellRoll(A), tiles=[];
     for(var ty=y-A.radius;ty<=y+A.radius;ty++) for(var tx=x-A.radius;tx<=x+A.radius;tx++){ if(!inb(tx,ty)) continue; tiles.push([tx,ty]); ignite(tx,ty,'player'); burnWorld(tx,ty); }
-    ents.slice().forEach(function(e){ if(!e.foe || Math.max(Math.abs(e.x-x),Math.abs(e.y-y))>A.radius) return; spellHit(e,A,dmg,'fire'); if(e.hp>0) applyStatus(e,'burn',3,Math.max(1,Math.round(burnDmg()*spellPower(A)))); finishHit(e); });
+    ents.slice().forEach(function(e){ if(!e.foe || dist(e,{x:x,y:y})>A.radius) return; spellHit(e,A,dmg,'fire'); if(e.hp>0) applyStatus(e,'burn',3,Math.max(1,Math.round(burnDmg()*spellPower(A)))); finishHit(e); });
     markGround(tiles, A);
     log('<b>Fireball!</b>','c-fire');
   }
@@ -196,7 +196,7 @@ function castElementTarget(x,y){
     var dmg2=spellRoll(A), hitT=effectFootprint(A,x,y);
     beginCast(A);
     hitT.forEach(function(t){ burst(t[0],t[1],'ice',5,0.05); });
-    ents.slice().forEach(function(e){ if(!e.foe || !hitT.some(function(t){ return t[0]===e.x&&t[1]===e.y; })) return;
+    ents.slice().forEach(function(e){ if(!e.foe || !entityIntersects(e,hitT)) return;
       spellHit(e,A,dmg2,'ice'); if(e.hp>0){ addChill(e);
         var kx=e.x+Math.sign(e.x-player.x), ky=e.y+Math.sign(e.y-player.y);
         if(!e.base.boss && walkable(kx,ky) && !occupied(kx,ky)){ e.x=kx; e.y=ky; } }
@@ -213,7 +213,7 @@ function castElementTarget(x,y){
       boltFx(from.x,from.y,cur.x,cur.y,'lightning');
       spellHit(cur,A,amt,'lightning');
       from={x:cur.x,y:cur.y}; amt=Math.max(1,Math.round(amt*0.75));
-      var nx=ents.filter(function(e){ return e.foe && e.hp>0 && hit.indexOf(e)<0 && dist(e,from)<=3 && vis[idxOf(e.x,e.y)]; }).sort(function(a,b){ return dist(a,from)-dist(b,from); })[0];
+      var nx=ents.filter(function(e){return e.foe&&e.hp>0&&hit.indexOf(e)<0&&dist(e,from)<=3&&actorVisible(e);}).sort(function(a,b){return dist(a,from)-dist(b,from);})[0];
       finishHit(cur);
       if(nx) hit.push(nx); cur=nx;
     }
@@ -226,7 +226,7 @@ function castElementTarget(x,y){
     beginCast(A);
     var dmg3=spellRoll(A);
     bt.forEach(function(t){ sparkleFx(t[0],t[1],'light',4); });
-    ents.slice().forEach(function(e){ if(!e.foe || !bt.some(function(t){ return t[0]===e.x&&t[1]===e.y; })) return; spellHit(e,A,dmg3,'light'); if(e.hp>0 && rng()<.05*aff('light')) applyStatus(e,'blind',2); finishHit(e); });
+    ents.slice().forEach(function(e){ if(!e.foe || !entityIntersects(e,bt)) return; spellHit(e,A,dmg3,'light'); if(e.hp>0 && rng()<.05*aff('light')) applyStatus(e,'blind',2); finishHit(e); });
     markGround(bt, A);
     log('<b>Radiant Beam.</b>','c-hit');
   }
@@ -299,12 +299,14 @@ function castElementTarget(x,y){
   else if(A.kind==='umbral'){
     if(!walkable(x,y) || occupied(x,y)){ log('You cannot step there.','c-info'); return false; }
     if(ents.some(function(e){ return e.foe && dist(e,{x:x,y:y})<=1; })){ log('An enemy stands beside that spot.','c-info'); return false; }
+    var departure={x:player.x,y:player.y},echo=FoteShadowClone.snapshot();
     beginCast(A);
     sparkleFx(player.x,player.y,'dark',24); player.x=x; player.y=y; player._lx=undefined; sparkleFx(x,y,'dark',24);
+    FoteShadowClone.create(departure.x,departure.y,echo);
     player.hidden=3;
     ents.forEach(function(e){ if(e.foe && e.state==='hunt'){ e.state='wander'; e.lastSeen=null; } });
     computeFOV();
-    log('<b>Umbral Passage.</b> You step through the dark.','c-good');
+    log('<b>Umbral Passage.</b> You step through the dark, leaving your shadow to fight.','c-good');
   }
   endTurn(); return true;
 }

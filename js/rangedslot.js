@@ -46,7 +46,7 @@ function isRangedWeapon(it){ return !!(it && it.kind!=='off' && (it.range||0) > 
 var BOWAIM = null;
 function bowReady(){ return !!(player && isRangedWeapon(player.ranged)); }
 function bowCanHit(e){
-  return !!(e && e.foe && e.hp>0 && (revealAll||vis[idxOf(e.x,e.y)]) && dist(player,e)>1 && dist(player,e)<=player.range && (typeof clearShot!=='function' || clearShot(player,e)));
+  return !!(e&&e.foe&&e.hp>0&&actorVisible(e)&&dist(player,e)>1&&dist(player,e)<=player.range&&projectileLine(player,e,{visible:true,range:player.range}));
 }
 function bowLive(){ return (BOWAIM && ents.indexOf(BOWAIM)>=0 && bowCanHit(BOWAIM)) ? BOWAIM : null; }
 function bowNextTarget(){
@@ -58,6 +58,7 @@ function bowNextTarget(){
   return list[(i+1) % list.length];
 }
 function bowSlotPress(){
+  if(gameTurns.busy()||playerFearAction())return false;
   if(!bowReady()){ log('Nothing is slung across your back. Put a bow in your ranged slot first.','c-info'); return; }
   if(typeof aiming!=='undefined' && aiming && typeof cancelAim==='function') cancelAim();
   var live=bowLive();
@@ -73,7 +74,7 @@ function bowSlotPress(){
 function drawBowAimOverlay(){
   var e=bowLive(); if(!e || typeof ctx==='undefined' || !ctx) return;
   var ox=typeof camOX!=='undefined' ? camOX : 0, oy=typeof camOY!=='undefined' ? camOY : 0;
-  var x0=(e.x-camX)*TS-ox+2, y0=(e.y-camY)*TS-oy+2, S=TS-4, c=Math.max(3, TS*0.13);
+  var x0=(e.x-camX)*TS-ox+2,y0=(e.y-camY)*TS-oy+2,S=TS*entitySize(e)-4,c=Math.max(3,TS*.13);
   ctx.save(); ctx.globalAlpha=0.7; ctx.strokeStyle='#9FD8FF'; ctx.lineWidth=1; ctx.beginPath();
   ctx.moveTo(x0, y0+c); ctx.lineTo(x0, y0); ctx.lineTo(x0+c, y0);
   ctx.moveTo(x0+S-c, y0); ctx.lineTo(x0+S, y0); ctx.lineTo(x0+S, y0+c);

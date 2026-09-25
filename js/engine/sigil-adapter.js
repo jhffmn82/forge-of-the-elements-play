@@ -128,6 +128,7 @@ function resolveSigilPuzzles(use){
     else if(k==='baths' && nearRoom(room, 2)){ room.cooledUntil=turn+10; log('<b>Scalding baths:</b> the stone cools for 10 turns.','c-kill'); sfx('ice-melt'); }
   });}
 function useSigil(use,options){
+  if(gameTurns.busy()||playerFearAction())return false;
   var context=prepareSigil(use);if(!context)return false;
   if(use==='transmutation')return SIGIL_CASTS[use](Object.assign(context,options||{}));
   return gameActions.run('sigil',player,null,{sigil:use},function(event){

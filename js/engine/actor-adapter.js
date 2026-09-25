@@ -3,20 +3,35 @@
 function canSeePlayer(e){
   if(player.hidden>0)return false;
   if(e&&e.base&&e.base.darksight&&DEEP_RAWVIS)return !!DEEP_RAWVIS[idxOf(e.x,e.y)];
-  return !!vis[idxOf(e.x,e.y)];
+  for(var y=e.y;y<e.y+entitySize(e);y++)for(var x=e.x;x<e.x+entitySize(e);x++)if(inb(x,y)&&vis[idxOf(x,y)])return true;
+  return false;
 }
 function canActorMove(e){
   var base=e&&e.base||{};
+  if(typeof FoteChaosEnemies!=='undefined'&&FoteChaosEnemies.holdsPosition(e))return false;
   return FoteActors.movementAllowed(e,gameEffects)&&!base.still&&!base.object&&!e.parent&&e.kind!=='mawlimb';
 }
-function actorCellAllowed(e,x,y,dx,dy,options){
+function actorFootprintAllowed(e,x,y,options){
   options=options||{};
-  if(!inb(x,y)||occupied(x,y))return false;
-  var tile=at(x,y);
-  if(!(walkable(x,y)||(options.doors&&tile===DOOR))||tile===CHASM||deepLava(x,y))return false;
-  if(e.base.aquatic&&!eelWater(x,y))return false;
-  if(options.avoidFire&&fireT[idxOf(x,y)]>0&&e.base.el!=='fire')return false;
-  if(dx&&dy&&!walkable(e.x+dx,e.y)&&!walkable(e.x,e.y+dy))return false;
+  var n=entitySize(e);
+  for(var yy=y;yy<y+n;yy++)for(var xx=x;xx<x+n;xx++){
+    if(!inb(xx,yy)||!options.terrainOnly&&occupied(xx,yy,e))return false;
+    if(typeof FoteChaosEnemies!=='undefined'&&!FoteChaosEnemies.cellAllowed(e,xx,yy))return false;
+    var crucibleGate=typeof FoteUnmakerPreview!=='undefined'&&FoteUnmakerPreview.gateAt(xx,yy);
+    if(crucibleGate&&!crucibleGate.open)return false;
+    var tile=at(xx,yy);
+    if(!(walkable(xx,yy)||(n===1&&options.doors&&tile===DOOR))||tile===CHASM||deepLava(xx,yy))return false;
+    if(e.base.aquatic&&!eelWater(xx,yy))return false;
+    if(options.avoidFire&&fireT[idxOf(xx,yy)]>0&&e.base.el!=='fire')return false;
+  }
+  return true;
+}
+function actorCellAllowed(e,x,y,dx,dy,options){
+  if(!actorFootprintAllowed(e,x,y,options))return false;
+  if(dx&&dy){
+    if(entitySize(e)===1){if(!walkable(e.x+dx,e.y)&&!walkable(e.x,e.y+dy))return false;}
+    else if(!actorFootprintAllowed(e,e.x+dx,e.y,options)&&!actorFootprintAllowed(e,e.x,e.y+dy,options))return false;
+  }
   return true;
 }
 function stepEnt(e,dx,dy){
@@ -36,9 +51,26 @@ function stepEnt(e,dx,dy){
   }
   return false;
 }
+function actorFootprintField(e,target){
+  var field=new Int32Array(MW*MH).fill(-1),queue=[],n=entitySize(e),options={terrainOnly:true};
+  for(var y=target.y-n;y<=target.y+entitySize(target);y++)for(var x=target.x-n;x<=target.x+entitySize(target);x++){
+    if(!inb(x,y)||dist({x:x,y:y,base:e.base},target)!==1||!actorFootprintAllowed(e,x,y,options))continue;
+    field[idxOf(x,y)]=0;queue.push({x:x,y:y});
+  }
+  for(var head=0;head<queue.length;head++){
+    var p=queue[head];
+    FoteActors.neighbors.forEach(function(offset){
+      var x=p.x+offset[0],y=p.y+offset[1];
+      if(!inb(x,y)||field[idxOf(x,y)]>=0||!actorFootprintAllowed(e,x,y,options))return;
+      if(offset[0]&&offset[1]&&!actorFootprintAllowed(e,x,p.y,options)&&!actorFootprintAllowed(e,p.x,y,options))return;
+      field[idxOf(x,y)]=field[idxOf(p.x,p.y)]+1;queue.push({x:x,y:y});
+    });
+  }
+  return field;
+}
 function actorPathStep(e,target,field){
   if(!canActorMove(e))return false;
-  field=field||bfsFrom(target.x,target.y);
+  field=entitySize(e)>1?actorFootprintField(e,target):(field||bfsFrom(target.x,target.y));
   var step=FoteActors.bestStep(e,function(x,y){return inb(x,y)?field[idxOf(x,y)]:-1;},function(x,y,dx,dy){return actorCellAllowed(e,x,y,dx,dy,{doors:true,avoidFire:true});});
   return step?stepEnt(e,step.dx,step.dy):false;
 }
@@ -96,8 +128,11 @@ var gameActors=FoteActors.create({
     actorBehavior('morty',function(e){return e.kind==='morty';},function(e){mortyAct(e);return true;}),
     actorBehavior('deep-maw',function(e){return e.kind==='deepmaw';},function(e){mawAct(e);return true;}),
     actorBehavior('matron',function(e){return e.kind==='matron';},function(e){matronAct(e);return true;}),
+    actorBehavior('unmaker',function(e){return e.base.encounterId==='unmaker'&&typeof FoteUnmakerEncounter!=='undefined';},function(e){return FoteUnmakerEncounter.act(e);}),
+    actorBehavior('shadow-clone',function(e){return e.shadowClone&&typeof FoteShadowClone!=='undefined';},function(e){return FoteShadowClone.act(e);}),
     actorBehavior('living-flame',function(e){return e.ally&&e.rangedAlly;},function(e){livingFlameBehavior(e);return true;}),
     actorBehavior('ally',function(e){return e.ally;},basicAllyBehavior),
+    actorBehavior('chaos-preview',function(e){return !!e.base.chaosAI&&typeof FoteChaosEnemies!=='undefined';},function(e){return FoteChaosEnemies.act(e);}),
     actorBehavior('summon-retaliation',function(e){return e.foe&&!e.base.boss;},petRetaliationBehavior),
     actorBehavior('elemental-plane',function(e){return inFwa()&&e.base.fwa;},elementalPlaneBehavior),
     actorBehavior('underdark',function(e){return !!e.base.deepAI;},deepCreatureBehavior),

@@ -23,9 +23,8 @@ function performPlayerMove(dx,dy){
   if(player.st.frozen){ log('You are frozen solid.','c-info'); endTurn(); return; }
   if(player.st.stun){ log('You are stunned.','c-info'); endTurn(); return; }
   var nx=player.x+dx, ny=player.y+dy;
-  var foe=ents.filter(function(e){ return e.foe && e.x===nx && e.y===ny; })[0];
+  var foe=foeAt(nx,ny);
   if(foe){
-    if(player.st.fear && rng()<0.5){ log('You are too afraid to attack.','c-info'); endTurn(); return; }
     attack(player, foe);
     offHandSwing(foe);
     player.hidden=0; endTurn(); return;
@@ -36,6 +35,7 @@ function performPlayerMove(dx,dy){
   var pr=propAt(nx,ny);
   if(pr && bumpProp(pr)) return;
   var t=at(nx,ny);
+  if(typeof FoteUnmakerPreview!=='undefined'&&FoteUnmakerPreview.bumpGate(nx,ny))return;
   if(t===DOOR){ setT(nx,ny,OPEN); log('You open the door.','c-info'); sfx('door-open'); computeFOV(); endTurn(); return; }
   if(t===CHEST){ openChest(nx,ny); endTurn(); return; }
   if(t===LOCKED){ return bumpLocked(nx,ny); }
@@ -61,6 +61,7 @@ function performPlayerMove(dx,dy){
 /* close an open door next to you: Shift+C closes every empty adjacent door, right-click closes one */
 function doorClosable(x, y){
   if(at(x,y)!==OPEN) return false;
+  if(typeof FoteUnmakerPreview!=='undefined'&&FoteUnmakerPreview.gateAt(x,y))return false;
   if(Math.max(Math.abs(x-player.x), Math.abs(y-player.y))!==1) return false;
   if(itemAt(x,y) || propAt(x,y)) return false;
   for(var i=0;i<ents.length;i++) if(ents[i].x===x && ents[i].y===y) return false;
@@ -70,17 +71,19 @@ function closeDoorAt(x, y){
   if(gameTurns.busy())return false;
   if(at(x,y)!==OPEN) return false;
   if(Math.max(Math.abs(x-player.x), Math.abs(y-player.y))!==1){ log('You need to stand next to the door.','c-info'); return true; }
+  if(typeof FoteUnmakerPreview!=='undefined'&&FoteUnmakerPreview.gateAt(x,y)){log('The Crucible gates stay raised once opened.','c-info');return true;}
   if(!doorClosable(x,y)){ log(x===player.x&&y===player.y ? 'Step out of the doorway first.' : 'Something is in the way of the door.','c-info'); return true; }
   setT(x,y,DOOR); log('You close the door.','c-info'); sfx('door-close'); computeFOV(); endTurn(); return true;
 }
 function closeAdjacentDoors(){
-  var open=[], blocked=0;
+  var open=[], blocked=0,crucibleGate=false;
   for(var dy=-1;dy<=1;dy++) for(var dx=-1;dx<=1;dx++){
     if(!dx && !dy) continue; var x=player.x+dx, y=player.y+dy;
     if(at(x,y)!==OPEN) continue;
+    if(typeof FoteUnmakerPreview!=='undefined'&&FoteUnmakerPreview.gateAt(x,y)){crucibleGate=true;continue;}
     if(doorClosable(x,y)) open.push([x,y]); else blocked++;
   }
-  if(!open.length){ log(at(player.x,player.y)===OPEN ? 'You are standing in the doorway. Step out of it to close the door.' : blocked ? 'Something is in the way of the door.' : 'There is no open door next to you.','c-info'); return; }
+  if(!open.length){ log(crucibleGate?'The Crucible gates stay raised once opened.':at(player.x,player.y)===OPEN ? 'You are standing in the doorway. Step out of it to close the door.' : blocked ? 'Something is in the way of the door.' : 'There is no open door next to you.','c-info'); return; }
   open.forEach(function(c){ setT(c[0],c[1],DOOR); });
   log(open.length>1 ? 'You close the doors.' : 'You close the door.','c-info'); sfx('door-close'); computeFOV(); endTurn();
 }
@@ -99,7 +102,7 @@ function entryItemsAndTerrain(){
   }
   if(plates) pressPlateAt(player.x,player.y,player);
   var t=at(player.x,player.y);
-  if(t===STAIRS) log('Stairs down to floor '+(floorNo+1)+'. '+(document.body.classList.contains('touch') ? 'Tap them to descend.' : 'Press <b>&gt;</b> or click <b>Stairs</b> to descend.'),'c-kill');
+  if(t===STAIRS&&!(typeof FoteChaosCampaign!=='undefined'&&FoteChaosCampaign.entryHint())) log('Stairs down to floor '+(floorNo+1)+'. '+(document.body.classList.contains('touch') ? 'Tap them to descend.' : 'Press <b>&gt;</b> or click <b>Stairs</b> to descend.'),'c-kill');
   if(t===EXIT && floorMeta.exitOpen){ if(floorNo<LAST_FLOOR) descend(); else victory(); }
   if(t===CHASM && !(player.levitate>0)) fallIntoChasm();
 }
@@ -193,6 +196,9 @@ function leverDetails(p){
     result:p.puzzleSwitch?'The guardians are shut off.':'The bridge is already lowered.'};
 }
 function bumpProp(p){
+  if(typeof FoteUnmakerEncounter!=='undefined'&&FoteUnmakerEncounter.forgeInfo(p.x,p.y)){
+    FoteUnmakerEncounter.interactForge(p.x,p.y);return true;
+  }
   if(p.puzzleSwitch)return activatePuzzleSwitch(p);
   if(p.name==='elemental-lock' && !p.opened){
     if(player.motes[p.element]>0){
@@ -437,15 +443,17 @@ function grab(){
 function consume(idx){ var it=player.bag[idx]; if(it.n>1) it.n--; else player.bag.splice(idx,1); }
 
 
-function shootAt(e){
+function shootAt(e,preferred){
   if(!e)return false;
+  if(gameTurns.busy()||playerFearAction())return false;
   var direction=reachLen()>=2&&reachDir(e);
   if(direction){lastDir=direction;reachAttack(e,direction);return true;}
-  if(dist(player,e)<=1){var dx=Math.sign(e.x-player.x),dy=Math.sign(e.y-player.y);lastDir=[dx,dy];tryMove(dx,dy);return true;}
-  if(player.range<=1 || dist(player,e)>player.range || !vis[idxOf(e.x,e.y)])return false;
-  var path=boltPath(player.x,player.y,e.x,e.y), end=path[path.length-1];
-  if(!end || end.x!==e.x || end.y!==e.y){
-    var front=end&&ents.filter(function(other){return other.x===end.x&&other.y===end.y&&other.hp>0;})[0];
+  var line=projectileLine(player,e,{target:preferred,visible:true,range:player.range}),edge=line?line.to:entityPoint(e,player);
+  if(dist(player,e)<=1){var dx=Math.sign(edge.x-player.x),dy=Math.sign(edge.y-player.y);lastDir=[dx,dy];tryMove(dx,dy);return true;}
+  if(player.range<=1 || dist(player,e)>player.range || !actorVisible(e))return false;
+  var path=line?line.path:boltPath(player.x,player.y,edge.x,edge.y),end=path[path.length-1];
+  if(!end || !entityOccupies(e,end.x,end.y)){
+    var front=end&&ents.find(function(other){return entityOccupies(other,end.x,end.y)&&other.hp>0;});
     if(!front||!front.foe){log(front?'Your '+front.name+' is in the way.':'Something is in the way.','c-info');return true;}
     log('The <b>'+front.name+'</b> is in the way and takes the arrow.','c-info');e=front;
   }
@@ -469,6 +477,7 @@ function generateNextFloor(fell){
   if(!fell) sfx('stairs');
   player.levitate=0; aiming=null;
   generate(worldSeed);
+  if(typeof FoteShadowClone!=='undefined')FoteShadowClone.arrive();
   player._lx=undefined;
   resize();
   floorIntro();

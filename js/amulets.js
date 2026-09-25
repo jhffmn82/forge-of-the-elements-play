@@ -35,6 +35,7 @@ function amuletOk(a){ return a && AMULETS[a.amulet]; }
 
 useAmulet = function(){
   if(gameTurns.busy())return false;
+  if(playerFearAction())return false;
   var a=player.amulet; if(!a){ log('You are not wearing an amulet.','c-info'); return; }
   if(!amuletOk(a)){ log('This amulet has lost its power.','c-info'); return; }
   amuletSync(a);
@@ -75,7 +76,7 @@ function boltPathRaw(x0,y0,x1,y1){
   return out;
 }
 function amuletHook(x,y,check){
-  var foe=ents.filter(function(e){ return e.x===x && e.y===y && e.foe; })[0];
+  var foe=foeAt(x,y);
   var path=boltPathRaw(player.x,player.y,x,y);
   if(foe){
     if(foe.base.boss){ if(!check) return false; log(foe.name+' is far too heavy to drag.','c-info'); return false; }
@@ -108,8 +109,9 @@ function amuletHook(x,y,check){
   return true;
 }
 function amuletSwap(x,y,check){
-  var who=ents.filter(function(e){ return e.x===x && e.y===y; })[0];
+  var who=ents.find(function(e){return entityOccupies(e,x,y);});
   if(!who){ if(check) log('Aim at a creature.','c-info'); return false; }
+  if(typeof FoteUnmakerPreview!=='undefined'&&!FoteUnmakerPreview.destinationAllowed(x,y)){if(check)log('The sealed gate prevents you from trading places beyond it.','c-info');return false;}
   if(who.base && who.base.boss){ if(check) log(who.name+' will not be moved.','c-info'); return false; }
   if(check) return true;
   var px=player.x, py=player.y;

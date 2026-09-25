@@ -1,7 +1,20 @@
 /* Release history and title-screen freshness checks. Saves are never cleared. */
-var FOTE_VERSION = 'Beta 1.1';
+var FOTE_VERSION = 'Beta 1.2';
 /* Keep newest first; describe only changes already present in this build. */
 var FOTE_PATCHES = [
+  {version:'Beta 1.2', notes:[
+    "Opened the Realm of Chaos beyond the Matron, extending the adventure through the final encounter and the Forge of the Elements.",
+    "Added a quiet treasure room before entering Chaos, with essence, Masterwork equipment, elemental motes and rations to prepare for the last biome.",
+    "Chaos floors mix five floating islands drawn from four distinct realms. Portals connect islands, magical currents carry you between floors, and a dedicated elemental gateway marks the crossing to the material plane.",
+    "Added animated Chaos demons with distinct attacks, status effects and immunities. Enemy groups react together to make late-game encounters more demanding.",
+    "Chaos contains no god shrines; your existing faith and powers remain with you.",
+    "Added the Unmaker's three-form final encounter, dedicated animation and battle music, a preparation forge and gates tied to the battle. His larger body occupies the full space shown and can be targeted across it.",
+    "The Heart of Discord calls Chaos demons into the fight. Boss attack warnings use colored areas without numbers printed on the floor.",
+    "Defeating the Unmaker opens the way to the Forge. Interact with it when you are ready to retire and finish the run, or keep exploring.",
+    "Fixed Fear so affected players retreat, and preserved explored floors, treasure and encounter state when traveling or continuing a saved run.",
+    "Strengthened Ring of Mending's regeneration and corrected its healing conversion so its displayed benefit matches actual healing each global round.",
+    "Umbral Passage now leaves a shadow copy of your character to cast Shadow Bolt. It inherits your combat stats, follows you between floors, and remains until killed or replaced by another Passage."
+  ]},
   {version:'Beta 1.1', notes:[
     "Improved terrain loading by removing an obsolete image request and waiting for artwork to finish loading before drawing it.",
     "Added a craftable Sigil of Transmutation for turning equipment into a different random item of the same category while preserving its quality, upgrades and existing enchantment. Canceling the selection keeps the sigil or Echo charge.",

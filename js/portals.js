@@ -20,6 +20,7 @@ function portalOpen(){ return floorMeta.plane ? true : (floorMeta.portal && !flo
 /* the swirl inside the arch, animated */
 
 function drawPortalTelegraphs(now){
+  if(typeof FoteChaosCurrentRenderer!=='undefined'&&floorMeta&&floorMeta.portalAt&&FoteChaosCurrentRenderer.materialGateAt(floorMeta.portalAt.x,floorMeta.portalAt.y))return;
 
   var p=floorMeta && floorMeta.portalAt; if(!p || at(p.x,p.y)!==PORTAL || !(revealAll||seen[idxOf(p.x,p.y)])) return;
   if(!portalOpen()) return;
@@ -341,8 +342,27 @@ function planeCreatureBehavior(e){
 
 /* Saved actors retain their old base records; apply only the requested tuning. */
 function refreshEncounterTuning(){
+  var chaosCombat=floorMeta&&floorMeta.chaosPreview&&floorMeta.chaosCombat;
+  if(chaosCombat&&chaosCombat.damageVersion!==2){
+    (chaosCombat.hazards||[]).forEach(function(h){h.damage=Math.max(1,Math.round(h.damage*1.5));});
+    chaosCombat.damageVersion=2;
+  }
   ents.forEach(function(e){
     if(!e.base || e.hp<=0)return;
+    if(floorMeta&&floorMeta.chaosPreview&&e.base.chaosAI){
+      var current=MONSTERS[e.kind];
+      if(current&&current.chaosAI){
+        if(e.base.hp>0&&e.base.hp!==current.hp){
+          var healthFraction=e.hp/e.maxhp;
+          e.maxhp=Math.max(1,Math.round(e.maxhp*current.hp/e.base.hp));
+          e.hp=Math.max(1,Math.min(e.maxhp,Math.round(e.maxhp*healthFraction)));
+        }
+        if(String(e.base.dmg)!==String(current.dmg))e.dmg=current.dmg.map(function(n){return sDMG(n);});
+        e.base=Object.assign({},e.base,{hp:current.hp,dmg:current.dmg.slice(),hint:current.hint,statusImmunities:(current.statusImmunities||[]).slice()});
+        if(current.spawnInvisible)e.base.spawnInvisible=true;else delete e.base.spawnInvisible;
+        if(e.windup&&e.windup.chaos)e.windup=null;
+      }
+    }
     if(e.kind==='bonearcher')e.base=Object.assign({},e.base,{poisons:MONSTERS.bonearcher.poisons});
     if(e.kind==='mountainheart'){
       e.base=Object.assign({},e.base,{dmg:MONSTERS.mountainheart.dmg.slice()});
@@ -434,6 +454,22 @@ function placeGeneratedPortal(seed){
 /* Named travel and entry stages; ordered by transition-adapter.js. */
 function entryPortalPrompt(){
   if(at(player.x,player.y)!==PORTAL) return;
+  if(typeof FoteChaosEntryPreview!=='undefined'&&FoteChaosEntryPreview.prompt())return;
+  if(typeof FoteChaosCampaign!=='undefined'&&FoteChaosCampaign.materialPortalPrompt())return;
+  if(typeof FoteChaosPreview!=='undefined'&&FoteChaosPreview.active()){
+    var linked=FoteChaosPreview.atPortal(player.x,player.y);if(!linked)return;
+    stopTravel();
+    confirmBox(linked.label,'This portal leads to another island of '+FoteChaosPreview.active().name+' on this floor. The way back stays open.','Step through',function(){
+      if(gameTurns.busy()||!FoteChaosPreview.active())return;
+      var trip=FoteChaosPreview.travelPortal(linked);
+      if(trip){
+        var region=FoteChaosPreview.active().regions.find(function(r){return r.id===trip.destination.regionId;});
+        log('You step into '+(region?region.name:'the next island')+'. The portal behind you stays open.','c-info');
+        player.movedThisTurn=false;endTurn();afterTurn(function(){writeSlot('auto','Chaos portal');});
+      }
+    });
+    return;
+  }
   if(floorMeta.plane){
     confirmBox('Leave '+PLANE_TITLE[floorMeta.plane], (floorMeta.eliteDead ? 'The way home shimmers.' : 'The guardian of this plane still lives.')+' Return to the Crypt? The portal closes behind you.', 'Return', function(){ leavePlane(); });
   } else if(floorMeta.portal && !floorMeta.portalUsed){

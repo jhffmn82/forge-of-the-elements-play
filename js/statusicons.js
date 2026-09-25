@@ -12,7 +12,7 @@ var STATUS_INFO = {
   frozen: {name:'Frozen', icon:'st-frozen', bad:1, d:'Can\'t act. A physical hit shatters the ice for double damage.'},
   root:   {name:'Rooted', icon:'st-root', bad:1, d:'Can\'t move, but can still attack.'},
   stun:   {name:'Stunned', icon:'st-stun', bad:1, d:'Can\'t act.'},
-  fear:   {name:'Afraid', icon:'st-fear', bad:1, d:'Runs away instead of fighting.'},
+  fear:   {name:'Afraid', icon:'st-fear', bad:1, d:'Forces retreat instead of fighting. If escape is blocked, you cower in place.'},
   blind:  {name:'Blind', icon:'st-blind', bad:1, d:'Attacks miss far more often.'},
   poison: {name:'Poisoned', icon:'st-poison', bad:1, d:'Takes damage every turn and doesn\'t regenerate.'},
   wet:    {name:'Wet', icon:'ic-tidal-surge', bad:1, d:'Takes more lightning damage; fire goes out.'},

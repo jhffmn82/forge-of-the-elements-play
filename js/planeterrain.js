@@ -96,7 +96,10 @@ var PT_MAT = {
     rockHi:'#F2F6FC', rockMid:'#D2DCEA', rockLo:'#A6B4CA', rockEdge:'#6E7E98', motif:'sun'
   }
 };
-function ptMat(){return floorMeta&&floorMeta.plane&&PT_MAT[floorMeta.plane]||((map&&inCaverns())||DEEP_RC?PT_MAT.cavern:null);}
+function ptMat(x,y){
+  var preview=typeof FoteChaosPreviewRenderer!=='undefined'&&typeof FoteChaosPreviewRenderer.terrainMaterial==='function'?FoteChaosPreviewRenderer.terrainMaterial(x,y):null;
+  return preview||floorMeta&&floorMeta.plane&&PT_MAT[floorMeta.plane]||((map&&inCaverns())||DEEP_RC?PT_MAT.cavern:null);
+}
 function ptSalt(){ return (typeof surfSalt==='function' ? surfSalt() : floorNo*31) + 911; }
 
 /* ---------------------------------------------------------------- noise in world space */
@@ -176,7 +179,7 @@ function ptKind(wx, wy, salt, raster){
 /* ---------------------------------------------------------------- one cell */
 function ptMix(a, b, t){ return [a[0]+(b[0]-a[0])*t, a[1]+(b[1]-a[1])*t, a[2]+(b[2]-a[2])*t]; }
 function ptCellRaster(x, y){
-  var M=ptMat(); if(!M) return null;
+  var M=ptMat(x,y); if(!M) return null;
   /* A raster is synchronous: its map/material/distance field cannot change halfway
      through a pixel. Resolve them once, instead of rebuilding the floor cache key
      for every neighbour of every pixel. Keep distance and wall semantics separate:
@@ -218,12 +221,12 @@ function ptCellRaster(x, y){
         var f=ptVor(wx, wy, 1.5, salt+11), ddx=wx-f.sx, ddy=wy-f.sy, ang=Math.atan2(ddy,ddx), turn=hash2(f.ix,f.iy,salt+13)*6.28;
         var facet=Math.floor(((ang+turn)%6.2832+6.2832)%6.2832/1.2566);                      /* five planes per mass */
         var fa=facet*1.2566-turn+0.628, lit=-(Math.cos(fa)*0.7+Math.sin(fa)*0.7);            /* plane facing toward the light = bright */
-        col = lit>0.35 ? M.topHi : lit>-0.35 ? M.top : M.topLo;
+        col = M.organicRock ? ptMix(M.topLo,M.topHi,Math.max(0,Math.min(1,.48+lit*.25+(ptVal(wx*2.7,wy*2.7,salt+116)-.5)*.6))) : lit>0.35 ? M.topHi : lit>-0.35 ? M.top : M.topLo;
         col = ptMix(col, M.topLav, 0.25*ptVal(wx*0.35, wy*0.35, salt+14));
         var mot=(ptVal(wx*3.2, wy*3.2, salt+15)-0.5)*9 + (ptVal(wx*7.5, wy*7.5, salt+16)-0.5)*5;   /* soft mottling */
         col=[col[0]+mot, col[1]+mot, col[2]+mot*1.05];
         if(hash2(Math.floor(wx*R), Math.floor(wy*R), salt+17)<0.03) col=ptMix(col, M.topLo, 0.35);   /* sparse pits */
-        if(f.d2-f.d1<0.03) col=ptMix(col, M.topLo, 0.5);
+        if(f.d2-f.d1<0.03) col=ptMix(col, M.topLo, M.organicRock?0.16:0.5);
         var back=0; for(var b=1;b<=4;b++){ if(K(u2, v2-b*2)===2){ back=1-(b-1)/4; break; } }
         if(back) col=ptMix(col, M.topLo, 0.45*back);
         /* now and then a mineral vein runs through the rock, following the facet seams */
@@ -236,6 +239,12 @@ function ptCellRaster(x, y){
           else col=ptMix(col, M.veinDark, 0.55*amt);
         }
         if(K(u2-1,v2)===0 || K(u2+1,v2)===0 || K(u2,v2-1)===0) col=ptMix(col, M.edge, 0.55);
+      }
+      /* Porous limestone is an opt-in material using the same solid mask. */
+      if(M.organicRock){
+        var pore=ptVor(wx,wy,0.2,salt+117),poreRadius=.019+.023*hash2(pore.ix,pore.iy,salt+118);
+        if(pore.d1<poreRadius)col=ptMix(col,M.faceLo,.45);
+        else if(pore.d1<poreRadius+.015&&wy>pore.sy)col=ptMix(col,M.lip,.25);
       }
       /* Fine rock grain follows world coordinates, including cliff faces. */
       var rockGrain=(hash2(Math.floor(wx*R),Math.floor(wy*R),salt+114)-0.5)*10;
@@ -347,12 +356,13 @@ function ptCellRaster(x, y){
           var mv=ptVor(wx+0.3*ptVal(wx*1.4, wy*1.4, salt+67), wy, 1.5, salt+61);     /* the crack network the moss follows */
           var along=Math.max(0, 1-(mv.d2-mv.d1)/0.16);                               /* 1 on a crack, 0 away from it */
           var drift=ptVal(wx*1.1, wy*1.1, salt+64)*0.6 + ptVal(wx*2.8, wy*2.8, salt+65)*0.4;
-          var damp=mfield*along*(0.55+drift*0.7);
+          var damp=mfield*(M.organicRock?Math.max(along*.6,Math.max(0,(drift-.2)*2)):along)*(0.55+drift*0.7);
           if(damp>0.1){
             col=ptMix(col, M.moss[2], Math.min(0.6, damp*0.75));                     /* 1: the dark damp stain, broad and soft */
-            if(damp>0.26) col=ptMix(col, M.moss[0], Math.min(0.7, (damp-0.26)*1.5)); /* 2: the green body */
+            if(damp>0.26) col=ptMix(col, M.moss[0], Math.min(M.organicRock?.88:.7, (damp-0.26)*(M.organicRock?2.4:1.5))); /* 2: the green body */
             var sp=hash2(Math.floor(wx*R), Math.floor(wy*R), salt+62);
-            if(damp>0.34 && sp < (damp-0.34)*0.85) col=M.moss[3];                    /* 3: bright specks catching the light */
+            if(M.organicRock){if(damp>0.2)col=ptMix(col,M.moss[1],Math.max(0,sp-.45)*.16);}
+            else if(damp>0.34 && sp < (damp-0.34)*.85) col=M.moss[3];                    /* 3: bright specks catching the light */
             else if(damp>0.2 && sp>0.985) col=M.moss[1];
           }
         }
@@ -364,7 +374,7 @@ function ptCellRaster(x, y){
     D[p]=col[0]; D[p+1]=col[1]; D[p+2]=col[2]; D[p+3]=255;
   }
   g.putImageData(im,0,0);
-  if(ptWallCell(x,y) && inb(x,y+1) && !ptWallCell(x,y+1) && hash2(x,y,salt+51)<0.16) ptCrystal(g, x, y, salt, M);
+  if(M.faceCrystals!==false && ptWallCell(x,y) && inb(x,y+1) && !ptWallCell(x,y+1) && hash2(x,y,salt+51)<0.16) ptCrystal(g, x, y, salt, M);
   return c;
 }
 function ptCrystal(g, x, y, salt, M){
@@ -401,7 +411,7 @@ function ptShard(g, ox, by, w, h, lean, cyan, M){
   if(h>14){ g.globalAlpha=0.7; g.fillRect(Math.round(midX), Math.round(by-h*0.55), 1, Math.round(h*0.3)); g.globalAlpha=1; }
 }
 function ptCrystalCells(){
-  var M=ptMat(); if(!M) return [];
+  var M=ptMat(); if(!M||M.faceCrystals===false) return [];
   if(floorMeta._ptCrystals) return floorMeta._ptCrystals;
   var salt=ptSalt(), out=[];
   for(var y=0;y<MH;y++) for(var x=0;x<MW;x++) if(ptWallCell(x,y) && inb(x,y+1) && !ptWallCell(x,y+1) && hash2(x,y,salt+51)<0.14) out.push({x:x,y:y});
@@ -426,7 +436,7 @@ function ptTile(x, y){
   return cells[k] ? {img:cells[k], sx:0, sy:0, sw:PT_R, sh:PT_R, crisp:true} : null;
 }
 var PT_BUDGET = 14;
-function ptFlat(x, y){ var M=ptMat(); var c=!ptWallCell(x,y) ? M.floor : ptCellDist(x,y)>=2 ? M.void : M.top; return 'rgb('+c[0]+','+c[1]+','+c[2]+')'; }
+function ptFlat(x, y){ var M=ptMat(x,y); var c=!ptWallCell(x,y) ? M.floor : ptCellDist(x,y)>=2 ? M.void : M.top; return 'rgb('+c[0]+','+c[1]+','+c[2]+')'; }
 
 /* ---------------------------------------------------------------- hooking the renderer */
 
@@ -437,7 +447,7 @@ function ptFlat(x, y){ var M=ptMat(); var c=!ptWallCell(x,y) ? M.floor : ptCellD
 /* crystal glow is handled by the lighting system */
 
 function addNaturalTerrainLights(L, now, prp){
-  var M=ptMat(); if(!M) return L;
+  var M=ptMat(); if(!M||M.sourceLightsOnly) return L;
   /* a wide, soft fill so the rock around you reads: without it, rock whose neighbours are all rock gets no light at all */
   L.push({x:prp.x, y:prp.y, c:hexRGB(M.fill||'#FFFFFF'), r:13, s:0.34, tx:player.x, ty:player.y});
   ptCrystalCells().forEach(function(c){
@@ -544,15 +554,16 @@ function drawSunDaisProp(p, px, py, alpha){
    - a few asymmetric crystal groups against selected walls elsewhere: one large, a couple small, some fragments */
 /* how mossy this spot is, read smoothly from the ground of the cells around it, so moss never stops at a tile edge */
 function ptMossField(wx, wy){
-  if(!ground) return 0;
+  var preview=floorMeta&&floorMeta.chaosPreview,mask=preview&&(preview.biome==='rot-hollows'||preview.biome==='chaos-mixed'&&FoteChaosPreviewRenderer.themeAt(wx,wy)==='rot-hollows')&&preview.mossMask;
+  if(!ground&&!mask) return 0;
   var cx=Math.floor(wx), cy=Math.floor(wy), f=0, tot=0;
   for(var oy=-2;oy<=2;oy++) for(var ox=-2;ox<=2;ox++){
     var nx=cx+ox, ny=cy+oy; if(!inb(nx,ny)) continue;
     var dx=wx-(nx+0.5), dy=wy-(ny+0.5), d=Math.sqrt(dx*dx+dy*dy)/1.9;
     if(d>=1) continue;
     var w=(1-d)*(1-d); tot+=w;
-    var g=ground[idxOf(nx,ny)];
-    if(g===G_MOSS || g===G_GRASS) f+=w;
+    var g=ground&&ground[idxOf(nx,ny)];
+    if(mask?mask[idxOf(nx,ny)]:(g===G_MOSS || g===G_GRASS)) f+=w;
   }
   return tot ? f/tot : 0;
 }
@@ -845,7 +856,7 @@ var PT_STONE_PROPS = {'stepping-stone':1, 'mossy-boulder':1, 'stalagmite-light':
 function ptHex(h){ var n=parseInt(h.slice(1),16); return [(n>>16)&255, (n>>8)&255, n&255]; }
 function ptPropTint(name, o){
   var M=ptMat(); if(!M) return o;
-  var key=floorMeta.plane+':'+name; if(PT_PROPS[key]) return PT_PROPS[key];
+  var key=(typeof FoteChaosPreviewRenderer!=='undefined'&&FoteChaosPreviewRenderer.active()?FoteChaosPreviewRenderer.themeAt():floorMeta.plane)+':'+name; if(PT_PROPS[key]) return PT_PROPS[key];
   if(!o || !o.img || !o.img.complete || !o.img.naturalWidth) return o;
   var W=o.sw+2, H=o.sh+2, c=document.createElement('canvas'); c.width=W; c.height=H; var g=c.getContext('2d');
   g.drawImage(o.img, o.sx, o.sy, o.sw, o.sh, 1, 1, o.sw, o.sh);
@@ -916,12 +927,13 @@ function ptGlints(){
 
 function drawVeinGlints(now){
 
-  var M=ptMat(); if(!M || ANIM.reduce) return;
+  var M=ptMat(),mixedTerrain=typeof FoteChaosPreviewRenderer!=='undefined'&&FoteChaosPreviewRenderer.mixed(); if((!M&&!mixedTerrain) || ANIM.reduce) return;
   var t=(now||performance.now())/1000;
   ctx.save(); ctx.globalCompositeOperation='lighter';
   ptGlints().forEach(function(g){
+    if(mixedTerrain){M=ptMat(g.x,g.y);if(!M)return;}
     if(g.x<camX-1 || g.x>camX+viewW+1 || g.y<camY-1 || g.y>camY+viewH+1) return;
-    var i=idxOf(Math.floor(g.x), Math.floor(g.y)); if(!(revealAll||seen[i])) return;
+    var i=idxOf(Math.floor(g.x), Math.floor(g.y)); if(!(revealAll||(M.sourceLightsOnly?vis[i]:seen[i]))) return;
     var ph=((t*g.sp + g.ph)%1);
     if(ph>0.16) return;                                                        /* a brief catch of light, then dark for a while */
     var k=Math.sin(ph/0.16*Math.PI), px=(g.x-camX)*TS, py=(g.y-camY)*TS, r=TS*0.16;

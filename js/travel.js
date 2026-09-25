@@ -34,6 +34,7 @@ function knownTile(x,y){ return inb(x,y) && (revealAll || seen[idxOf(x,y)]); }
 function travelWalkable(x,y){
   if(walkable(x,y)) return true;
   if(!inb(x,y) || at(x,y)!==CHASM || !player) return false;
+  if(floorMeta&&floorMeta.impassableVoid)return false;
   if(!(player.levitate>0 || (typeof aff==='function' && aff('air')>=3))) return false;
   var p=propAt(x,y); return !(p && p.b);
 }
@@ -41,11 +42,11 @@ function useTile(t){ return t===DOOR || t===CHEST || t===SHRINE || t===FORGE || 
 function clickSpellReady(foe){
   var k=player.clickSpell; if(!k || player.abilities.indexOf(k)<0) return false;
   var A=ABILITIES[k]; if(!A) return false;
-  return dist(player, foe) <= Math.max(1, spellRange(A)) && vis[idxOf(foe.x,foe.y)];
+  return dist(player, foe) <= Math.max(1, spellRange(A)) && actorVisible(foe);
 }
 function clickIntent(x, y){
   if(!player || player.hp<=0 || !knownTile(x,y)) return null;
-  var foe=ents.filter(function(e){ return e.foe && e.x===x && e.y===y && (revealAll||vis[idxOf(x,y)]); })[0];
+  var foe=foeAt(x,y);if(foe&&!actorVisible(foe))foe=null;
   if(foe){
     if(clickSpellReady(foe)) return {kind:'cast', foe:foe};
     if(dist(player,foe)<=1) return {kind:'attack', foe:foe};
@@ -64,6 +65,8 @@ function clickIntent(x, y){
   if(typeof UPSTAIRS!=='undefined' && t===UPSTAIRS) return {kind:'upstairs'};
   if(t===OPEN && Math.max(Math.abs(x-player.x),Math.abs(y-player.y))===1 && doorClosable(x,y)) return {kind:'close'};
   var pr=propAt(x,y), lever=leverDetails(pr);
+  var restorationForge=typeof FoteUnmakerEncounter!=='undefined'&&FoteUnmakerEncounter.forgeInfo(x,y);
+  if(restorationForge)return {kind:restorationForge.ready?'use':'inspect',restorationForge:restorationForge};
   if(lever) return {kind:lever.used?'inspect':'use',lever:pr};
   if(pr && pr.br && !pr.hoard) return {kind:'break'};
   if(t===EXIT) return {kind: floorMeta.exitOpen ? 'exit' : 'use'};
@@ -89,7 +92,7 @@ function travelPath(tx, ty, stopAdjacent){
       var t=at(nx,ny), isGoal = ni===goal;
       var ok = travelWalkable(nx,ny) || t===DOOR || t===OPEN || (isGoal && (useTile(t) || t===EXIT));
       if(!ok || (knownTrap[ni] && !isGoal)) continue;
-      if(!isGoal && ents.some(function(e){ return e!==player && e.x===nx && e.y===ny && !e.ally; })) continue;
+      if(!isGoal && ents.some(function(e){ return e!==player && entityOccupies(e,nx,ny) && !e.ally && !actorConcealed(e); })) continue;
       prev[ni]=i; q.push(ni);
     }
   }
@@ -99,7 +102,7 @@ function travelPath(tx, ty, stopAdjacent){
 }
 
 /* ---------------------------------------------------------------- walking */
-function visibleFoeIds(){ return ents.filter(function(e){ return e.foe && vis[idxOf(e.x,e.y)] && e.state!=='asleep'; }).map(function(e){ return e.id; }); }
+function visibleFoeIds(){ return ents.filter(function(e){ return e.foe && actorVisible(e) && e.state!=='asleep'; }).map(function(e){ return e.id; }); }
 var TRAVEL_TIMER=null;
 function queueTravel(ms){clearTimeout(TRAVEL_TIMER);TRAVEL_TIMER=setTimeout(function(){TRAVEL_TIMER=null;travelStep();},ms);}
 function stopTravel(why){clearTimeout(TRAVEL_TIMER);TRAVEL_TIMER=null;if(TRAVEL){ TRAVEL=null; if(why) log(why,'c-info'); } }
@@ -150,11 +153,11 @@ function travelStep(){
 }
 
 /* ---------------------------------------------------------------- the click itself */
-function castClickSpell(foe){
+function castClickSpell(foe,selected){
   var i=player.abilities.indexOf(player.clickSpell); if(i<0) return false;
   if(aiming) cancelAim();
   useAbility(i);
-  if(aiming){ castAt(foe.x, foe.y); return true; }
+  if(aiming){var target=selected&&entityOccupies(foe,selected.x,selected.y)?selected:autoAimPoint(foe)||entityPoint(foe,player);castAt(target.x,target.y);return true;}
   return false;
 }
 function handleMapClick(ev){
@@ -162,6 +165,21 @@ function handleMapClick(ev){
   if(!it) return false;
   stopTravel();
   if(it.kind==='inspect') return true;
+  if(it.restorationForge){
+    var forge=it.restorationForge;
+    if(forge.near)FoteUnmakerEncounter.interactForge(p.x,p.y);
+    else{
+      var approaches=[];
+      for(var fy=forge.y-1;fy<=forge.y+forge.h;fy++)for(var fx=forge.x-1;fx<=forge.x+forge.w;fx++){
+        if(fx>=forge.x&&fx<forge.x+forge.w&&fy>=forge.y&&fy<forge.y+forge.h)continue;
+        if(!knownTile(fx,fy)||!travelWalkable(fx,fy))continue;
+        var route=travelPath(fx,fy,false);if(route)approaches.push(route);
+      }
+      approaches.sort(function(a,b){return a.length-b.length;});
+      if(approaches.length)startTravel(approaches[0]);else log('You can\'t find a way to the Forge.','c-info');
+    }
+    return true;
+  }
   if(it.lever){
     var nearLever=function(){return Math.max(Math.abs(p.x-player.x),Math.abs(p.y-player.y))===1;};
     var pullLever=function(){
@@ -170,7 +188,7 @@ function handleMapClick(ev){
     if(nearLever()) pullLever(); else startTravel(travelPath(p.x,p.y,true),pullLever);
     return true;
   }
-  if(it.kind==='cast'){ castClickSpell(it.foe); return true; }
+  if(it.kind==='cast'){castClickSpell(it.foe,p);return true;}
   if(it.kind==='shoot') return false;            /* the game's own click shoots */
   if(it.kind==='close'){ closeDoorAt(p.x, p.y); return true; }
   if(it.kind==='break'){
@@ -179,8 +197,8 @@ function handleMapClick(ev){
     if(near()) hit(); else startTravel(travelPath(p.x, p.y, true), hit);
     return true;
   }
-  if(it.kind==='attack'){ var dx=it.foe.x-player.x, dy=it.foe.y-player.y; lastDir=[dx,dy]; tryMove(dx,dy); return true; }
-  if(it.foe){ startTravel(travelPath(it.foe.x, it.foe.y, true)); return true; }
+  if(it.kind==='attack'){var edge=entityPoint(it.foe,player),dx=edge.x-player.x,dy=edge.y-player.y;lastDir=[dx,dy];tryMove(dx,dy);return true;}
+  if(it.foe){var goal=entityPoint(it.foe,player);startTravel(travelPath(goal.x,goal.y,true));return true;}
   var x=p.x, y=p.y;
   if(it.kind==='grab' && x===player.x && y===player.y){ if(grab()) endTurn(); return true; }
   if(it.kind==='stairs' && x===player.x && y===player.y){ descend(); return true; }

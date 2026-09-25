@@ -613,7 +613,7 @@ inspectHTML = function(mx, my){
   var h=_inspectHTMLDeepMobs(mx, my);
   if(!inb(mx,my)) return h;
   var e=ents.filter(function(o){ return o.x===mx && o.y===my && o!==player; })[0];
-  if(e && h && e.base && DEEP_HINT[e.kind] && (revealAll||vis[idxOf(mx,my)])){
+  if(e && h && e.base && DEEP_HINT[e.kind] && actorVisible(e)){
     if(e.kind==='matron') h=h.replace('on his throne','on her throne');
     var line='<div class="hint">'+DEEP_HINT[e.kind]+'</div>', at2=h.indexOf('<div class="odds">');
     return at2>=0 ? h.slice(0,at2)+line+h.slice(at2) : h+line;
