@@ -6,4 +6,4 @@ Explore elemental dungeons, shape your build at the Forge, and face each biome's
 
 [Beta 1.2 patch notes](PATCH-NOTES.md). The in-game Version button also lists changes and checks for updates.
 
-Generated from source commit `ae7a10fc3c0965fe073b1cd1d5bf63b0446f3164`. Built 2026-09-25 16:44:22 UTC.
+Generated from source commit `d6e6a3331e18d03a93c62075eab9a63f2a67c373`. Built 2026-09-25 16:54:15 UTC.
