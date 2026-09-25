@@ -2,7 +2,9 @@
 
 Release targets: /forge and /forge-of-the-elements-play/.
 
-- Phones default to Portrait, with a saved Landscape choice in Options. Landscape places stats and controls on the left, menus and a taller combat log on the right, and menu screens over the map with the hotbar below.
+- Landscape ability and prayer descriptions now use the full row, with costs, cooldowns and charges below the name to keep the text readable.
+- Mobile defaults to Landscape, with a saved Portrait or Landscape choice in Options. Landscape places stats and controls on the left, menus and a taller combat log on the right, and menu screens over the map with the hotbar below.
+- Mobile equipment keeps two columns of worn slots beside the full bag, with matching tiles sized to fit phone and tablet screens.
 - Fixed Character, Equipment and Faith screens disappearing on phones in landscape, including after rotating the device.
 - Kept confirmation dialogs above other menus, made title buttons reachable on short screens, and removed the small-phone rotation blockade. Embedded games leave fullscreen handling to their host.
 - Replaced the Caverns' chirping ambience with a quieter underground music loop, and gave Chaos demons creature voices and sounds for their special attacks.

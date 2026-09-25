@@ -22,9 +22,10 @@
   /* Orientation is a touch-device preference, independent of the responsive
      layout. Browsers which cannot lock rotation keep their normal layout and
      explain how to rotate manually instead of hiding the game. */
-  var orientationPreference='portrait', orientationMessage='', orientationAttempt=0;
+  var orientationPreference='landscape', orientationMessage='', orientationAttempt=0;
   try{
-    if(localStorage.getItem('astra-temple-orientation')==='landscape') orientationPreference='landscape';
+    var savedOrientation=localStorage.getItem('astra-temple-orientation');
+    if(savedOrientation==='portrait' || savedOrientation==='landscape') orientationPreference=savedOrientation;
   }catch(e){}
   function orientationHint(value){
     return 'Turn your device '+(value==='landscape'?'sideways':'upright')+'. Your browser controls rotation here; enable auto-rotate if needed.';
@@ -57,7 +58,7 @@
   }
   window.FoteMobileOrientation=Object.freeze({
     getPreference:function(){ return orientationPreference; },
-    getStatus:function(){ return orientationMessage || (orientationPreference==='portrait'?'Portrait is the default. Turn your device upright if needed.':'Landscape selected. Turn your device sideways if needed.'); },
+    getStatus:function(){ return orientationMessage || (orientationPreference==='portrait'?'Portrait selected. Turn your device upright if needed.':'Landscape selected. Turn your device sideways if needed.'); },
     setPreference:function(value){
       if(!DEVICE || (value!=='portrait' && value!=='landscape')) return Promise.resolve(false);
       orientationPreference=value;
@@ -207,7 +208,7 @@
   if(window.visualViewport) visualViewport.addEventListener('resize', function(){ setTimeout(sync, 0); });
 
   if(DEVICE){
-    /* First tap applies portrait by default, or the player's saved choice. */
+    /* First tap applies landscape by default, or the player's saved choice. */
     window.addEventListener('pointerdown', function once(){
       window.removeEventListener('pointerdown', once, true);
       applyOrientation();

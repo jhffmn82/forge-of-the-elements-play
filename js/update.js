@@ -3,7 +3,9 @@ var FOTE_VERSION = 'Beta 1.2';
 /* Keep newest first; describe only changes already present in this build. */
 var FOTE_PATCHES = [
   {version:'Beta 1.2', notes:[
-    "Phones start upright, with a saved Landscape choice in Options. Landscape places stats and movement on the left, menu buttons and a larger combat log on the right, and menus over the map with the hotbar below.",
+    "Made landscape ability and prayer descriptions use the full row, with mana, cooldowns and charges below the name so they no longer squeeze the text.",
+    "Mobile defaults to Landscape, while Options remembers your choice of Portrait or Landscape. Stats and movement sit on the left, menu buttons and a larger combat log on the right, and menus over the map with the hotbar below.",
+    "Mobile equipment now keeps two columns of worn slots beside the full bag, with matching tiles that fit phone and tablet screens.",
     "Fixed Character, Equipment and Faith screens disappearing on phones in landscape. Menus now reserve only the space used by the hotbar, including after rotating the device.",
     "Kept confirmation dialogs above the screen that opened them, made title buttons reachable on short screens, and removed the small-phone rotation blockade. Embedded games now leave fullscreen handling to their host.",
     "Replaced the Caverns' chirping ambience with a quieter underground music loop, and gave Chaos demons creature voices and sounds for their special attacks.",
