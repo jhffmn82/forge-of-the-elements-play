@@ -2,6 +2,9 @@
 
 Release targets: /forge and /forge-of-the-elements-play/.
 
+- Phones default to Portrait, with a saved Landscape choice in Options. Landscape places stats and controls on the left, menus and a taller combat log on the right, and menu screens over the map with the hotbar below.
+- Fixed Character, Equipment and Faith screens disappearing on phones in landscape, including after rotating the device.
+- Kept confirmation dialogs above other menus, made title buttons reachable on short screens, and removed the small-phone rotation blockade. Embedded games leave fullscreen handling to their host.
 - Replaced the Caverns' chirping ambience with a quieter underground music loop, and gave Chaos demons creature voices and sounds for their special attacks.
 - Myconids now rest in place between actions. Crates, pots, urns and mushroom groups use fixed artwork so their pieces no longer disappear or overlap unpredictably.
 - Defeated creatures leave their bodies on the floor for a while. These remains survive saving and returning to a floor without obstructing movement.

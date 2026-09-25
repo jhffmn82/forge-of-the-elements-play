@@ -19,6 +19,54 @@
   var DEVICE = q==='1' ? true : q==='0' ? false : !!coarse;
   window.MOBILE = DEVICE;
 
+  /* Orientation is a touch-device preference, independent of the responsive
+     layout. Browsers which cannot lock rotation keep their normal layout and
+     explain how to rotate manually instead of hiding the game. */
+  var orientationPreference='portrait', orientationMessage='', orientationAttempt=0;
+  try{
+    if(localStorage.getItem('astra-temple-orientation')==='landscape') orientationPreference='landscape';
+  }catch(e){}
+  function orientationHint(value){
+    return 'Turn your device '+(value==='landscape'?'sideways':'upright')+'. Your browser controls rotation here; enable auto-rotate if needed.';
+  }
+  function showOrientationStatus(message){
+    orientationMessage=message;
+    var el=document.getElementById('orientationStatus'); if(el) el.textContent=message;
+  }
+  async function applyOrientation(){
+    if(!DEVICE) return false;
+    var attempt=++orientationAttempt;
+    showOrientationStatus('Applying '+orientationPreference+' orientation…');
+    /* A host such as itch.io already owns its iframe's fullscreen session.
+       Locking from that iframe is still allowed where the browser supports it. */
+    if(window.self===window.top && !document.fullscreenElement && document.documentElement.requestFullscreen){
+      try{ await document.documentElement.requestFullscreen({navigationUI:'hide'}); }catch(e){}
+    }
+    if(attempt!==orientationAttempt) return false;
+    var wanted=orientationPreference;
+    try{
+      if(!window.screen || !screen.orientation || typeof screen.orientation.lock!=='function') throw new Error('Orientation lock unavailable');
+      await screen.orientation.lock(wanted);
+      if(attempt!==orientationAttempt) return false;
+      showOrientationStatus((wanted==='landscape'?'Landscape':'Portrait')+' orientation enabled.');
+      return true;
+    }catch(e){
+      if(attempt===orientationAttempt) showOrientationStatus(orientationHint(wanted));
+      return false;
+    }
+  }
+  window.FoteMobileOrientation=Object.freeze({
+    getPreference:function(){ return orientationPreference; },
+    getStatus:function(){ return orientationMessage || (orientationPreference==='portrait'?'Portrait is the default. Turn your device upright if needed.':'Landscape selected. Turn your device sideways if needed.'); },
+    setPreference:function(value){
+      if(!DEVICE || (value!=='portrait' && value!=='landscape')) return Promise.resolve(false);
+      orientationPreference=value;
+      try{ localStorage.setItem('astra-temple-orientation', value); }catch(e){}
+      return applyOrientation();
+    },
+    apply:applyOrientation
+  });
+
   /* the phone layout also comes on in a narrow desktop window, where the desktop bars overflow anyway */
   function wantTouch(){
     if(q==='1') return true;
@@ -151,9 +199,6 @@
   function sync(){
     var on=wantTouch(), was=document.body.classList.contains('touch');
     document.body.classList.toggle('touch', on);
-    /* Wide phones have a separate three-column landscape layout. Smaller landscape
-       viewports retain the upright prompt because the touch targets cannot fit. */
-    document.body.classList.toggle('needs-portrait', on && innerWidth > innerHeight && innerHeight <= 560 && innerWidth < 740);
     if(on && !was) shortenTop();
     applyZoom();
   }
@@ -162,14 +207,10 @@
   if(window.visualViewport) visualViewport.addEventListener('resize', function(){ setTimeout(sync, 0); });
 
   if(DEVICE){
-    /* fullscreen on the first tap: on Android that is what hides the address bar and the navigation bar,
-       which is most of the screen a phone has to spare. The orientation is not locked - both ways work. */
+    /* First tap applies portrait by default, or the player's saved choice. */
     window.addEventListener('pointerdown', function once(){
       window.removeEventListener('pointerdown', once, true);
-      var el=document.documentElement;
-      try{
-        if(!document.fullscreenElement && el.requestFullscreen) el.requestFullscreen({navigationUI:'hide'}).catch(function(){});
-      }catch(e){}
+      applyOrientation();
     }, true);
 
     /* no pinch zoom, no double-tap zoom, no long-press menu on the map */

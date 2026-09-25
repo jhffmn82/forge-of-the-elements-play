@@ -81,33 +81,50 @@
     ' body.touch .tgear .cell{max-width:84px}',
     '}',
 
-    /* Wide phone landscape: controls | map + hotbar | menus, vitals and log.
-       Flatten layout containers only; retain the same elements and their event handlers. */
-    '@media (orientation:landscape) and (min-width:740px) and (max-height:560px){',
-    ' body.touch #title .menu{top:12px;bottom:12px;overflow-y:auto;justify-content:center;gap:6px}',
+    /* Keep every title action reachable even on a short phone screen. */
+    '@media (max-height:560px){',
+    ' body.touch #title .menu{top:12px;bottom:12px;overflow-y:auto;justify-content:safe center;gap:6px}',
     ' body.touch #title .menu button{font-size:20px;min-height:44px;padding:6px 14px;flex-shrink:0}',
-    ' body.touch #app{display:grid!important;box-sizing:border-box;grid-template-columns:140px minmax(352px,1fr) 190px;grid-template-rows:92px 82px 62px minmax(0,1fr) 54px;gap:6px;padding:6px max(6px,env(safe-area-inset-right)) 6px max(6px,env(safe-area-inset-left))}',
+    '}',
+    /* Landscape: vitals and controls | map and hotbar | menus and combat log.
+       Keep the existing elements and handlers; sheets stay inside the map. */
+    '@media (orientation:landscape) and (min-width:600px){',
+    ' body.touch #app{display:grid!important;box-sizing:border-box;grid-template-columns:clamp(128px,16vw,176px) minmax(0,1fr) clamp(150px,21vw,240px);grid-template-rows:84px 64px minmax(0,1fr) 54px;gap:6px;padding:6px max(6px,env(safe-area-inset-right)) 6px max(6px,env(safe-area-inset-left))}',
     ' body.touch #strip,body.touch #mid,body.touch #ctl{display:contents!important}',
-    ' body.touch #map{grid-column:2;grid-row:1/5;min-width:0;min-height:0;overflow:hidden}',
-    ' body.touch #hotbar{grid-column:2;grid-row:5;align-self:stretch;grid-template-rows:1fr!important;gap:4px!important;order:0;margin:0;min-width:0}',
+    ' body.touch #map{grid-column:2;grid-row:1/4;min-width:0;min-height:0;overflow:hidden}',
+    ' body.touch #hotbar{grid-column:2;grid-row:4;align-self:stretch;grid-template-rows:1fr!important;gap:4px!important;order:0;margin:0;min-width:0}',
     ' body.touch #hotbar .slot{height:100%!important;min-width:0;aspect-ratio:auto;max-height:54px}',
-    ' body.touch #hotbar .slot .ico{width:44px!important;height:44px!important}',
-    ' body.touch #dpad{grid-column:1;grid-row:1/-1;align-self:center;justify-self:center;grid-template-columns:repeat(3,44px)!important;grid-auto-rows:44px!important;gap:3px!important}',
-    ' body.touch #fx{position:static!important;grid-column:1;grid-row:1;align-self:start;display:flex!important;max-width:100%;justify-content:center;pointer-events:auto;max-height:86px;overflow:auto}',
-    ' body.touch #top{grid-column:3;grid-row:1;min-height:0!important;min-width:0;padding:0!important;border:0}',
+    ' body.touch #hotbar .slot .ico{width:86%!important;height:auto!important;aspect-ratio:1;max-height:44px;max-width:44px}',
+    ' body.touch #dpad{grid-column:1;grid-row:3/5;align-self:center;justify-self:center;grid-template-columns:repeat(3,clamp(40px,5.2vw,52px))!important;grid-auto-rows:clamp(40px,5.2vw,52px)!important;gap:3px!important}',
+    ' body.touch #app:has(#shade.on) #dpad{opacity:.45}',
+    ' body.touch #fx{display:none!important}',
+    ' body.touch #top{grid-column:3;grid-row:1/3;align-self:start;min-height:0!important;min-width:0;padding:0!important;border:0}',
     ' body.touch #brand{display:none!important}',
-    ' body.touch #tabs{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px!important;align-self:stretch}',
+    ' body.touch #tabs{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px!important;align-self:stretch}',
     ' body.touch #tabs button{min-height:44px!important;min-width:0!important;padding:0 2px!important;font-size:13px!important;letter-spacing:0}',
-    ' body.touch #bars{grid-column:3;grid-row:2;grid-template-columns:1fr;gap:3px}',
-    ' body.touch #bars .bar{height:25px!important}',
-    ' body.touch #bars .bar span{font-size:13px!important}',
-    ' body.touch #hud2{grid-column:3;grid-row:3;display:flex;flex-wrap:wrap!important;align-content:start;justify-content:flex-start;gap:3px;overflow:auto;font-size:11px}',
-    ' body.touch #hud2 .chip{padding:2px 4px;font-size:11px}',
-    ' body.touch #log{grid-column:3;grid-row:4/6;position:static!important;width:auto!important;height:auto!important;max-height:none!important;min-height:0;contain:size;pointer-events:auto;overflow:auto;font-size:12px;line-height:1.3;padding:6px;background:#151110;border:1px solid var(--edge)}',
-    ' body.touch #shade{top:6px!important;bottom:6px!important;left:6px!important;right:6px!important}',
-    ' body.touch.gearopen #shade{bottom:66px!important}',
+    ' body.touch #app #bars{grid-column:1;grid-row:1;display:grid!important;grid-template-columns:1fr;gap:3px}',
+    ' body.touch #app #bars .bar{height:26px!important}',
+    ' body.touch #app #bars .bar span{font-size:12px!important;padding:0 5px!important}',
+    ' body.touch #app #hud2{grid-column:1;grid-row:2;display:flex!important;flex-wrap:wrap!important;align-content:start;justify-content:flex-start;gap:3px;overflow:auto;font-size:11px}',
+    ' body.touch #app #hud2 .chip{padding:2px 4px!important;font-size:11px!important;max-width:100%;overflow-x:auto}',
+    ' body.touch #app #ctl{display:contents!important}',
+    ' body.touch #app #log{grid-column:3;grid-row:3/5;display:flex!important;position:static!important;width:auto!important;height:auto!important;max-height:none!important;min-height:0;contain:size;pointer-events:auto;overflow:auto;font-size:12px;line-height:1.3;padding:6px;background:#151110;border:1px solid var(--edge)}',
+    ' body.touch #app #map #shade{position:absolute!important;inset:0!important;padding:0!important}',
+    ' body.touch #shade .cols3{grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr))}',
+    ' body.touch #shade .optgrid{grid-template-columns:minmax(0,1fr)}',
+    ' body.touch #shade .optrow{flex-wrap:wrap}',
+    ' body.touch #shade .tgear .tg-top{grid-template-columns:minmax(0,1fr)!important}',
+    ' body.touch #shade .tgear .tg-slots,body.touch #shade .tgear .tg-cells{grid-template-columns:repeat(5,minmax(0,1fr))!important}',
+    ' body.touch #shade .tgear .gslot{width:100%!important;height:auto!important;max-width:84px;aspect-ratio:1}',
+    ' body.touch #shade .tgear .cell{width:100%;max-width:84px}',
+    ' body.touch #shade .tgear .tg-tot{grid-template-columns:repeat(auto-fit,minmax(min(100%,190px),1fr))}',
     ' body.touch.gearopen #hotbar{z-index:65}',
     ' body.touch #dtip{max-height:calc(100dvh - 24px);overflow:auto}',
+    '}',
+    '@media (orientation:landscape) and (min-width:1100px){',
+    ' body.touch #shade .tgear .tg-top{grid-template-columns:176px minmax(0,1fr)!important}',
+    ' body.touch #shade .tgear .tg-slots{grid-template-columns:repeat(2,84px)!important}',
+    ' body.touch #shade .tgear .tg-cells{grid-template-columns:repeat(5,minmax(56px,84px))!important}',
     '}',
 
     /* ---- the hotbar's long-press menu */
@@ -170,6 +187,9 @@
     var c=dp.querySelector('[data-d="5"]'); if(c){ c.innerHTML='&#9906;'; c.title='Wait and search'; }   /* a magnifier-ish ring */
     dp.addEventListener('click', function(ev){
       var b=ev.target.closest && ev.target.closest('button'); if(!b) return;
+      // Landscape keeps the controls visible beside sheets, but browsing a
+      // menu must never spend a turn or move the character underneath it.
+      if(typeof uiOpen==='function' && uiOpen()){ ev.stopImmediatePropagation(); ev.preventDefault(); return; }
       /* while aiming, the d-pad cancels the aim instead of stepping (autoaim.js) */
       if(typeof aiming!=='undefined' && aiming){ ev.stopImmediatePropagation(); ev.preventDefault(); cancelAim(); return; }
       if(b.getAttribute('data-d')!=='5') return;
@@ -350,8 +370,11 @@
     var on = touch() && typeof openSheet!=='undefined' && (openSheet==='Equip' || openSheet==='Char' || openSheet==='Faith');
     document.body.classList.toggle('gearopen', on);
     if(typeof resize==='function') resize();
-    var st=document.getElementById('strip');
-    if(on && st) document.body.style.setProperty('--hotb', Math.max(0, innerHeight - st.getBoundingClientRect().top)+'px');
+    // Landscape flattens #strip with display:contents, so it has no box.
+    // Reserve only the rendered hotbar, in either orientation.
+    var hotbar=document.getElementById('hotbar');
+    if(on && hotbar) document.body.style.setProperty('--hotb', Math.max(0, innerHeight - hotbar.getBoundingClientRect().top)+'px');
+    else document.body.style.removeProperty('--hotb');
   }
   var _showSheetTouch = showSheet;
   showSheet = function(){ var r=_showSheetTouch.apply(this, arguments); gearMode(); return r; };

@@ -3,6 +3,9 @@ var FOTE_VERSION = 'Beta 1.2';
 /* Keep newest first; describe only changes already present in this build. */
 var FOTE_PATCHES = [
   {version:'Beta 1.2', notes:[
+    "Phones start upright, with a saved Landscape choice in Options. Landscape places stats and movement on the left, menu buttons and a larger combat log on the right, and menus over the map with the hotbar below.",
+    "Fixed Character, Equipment and Faith screens disappearing on phones in landscape. Menus now reserve only the space used by the hotbar, including after rotating the device.",
+    "Kept confirmation dialogs above the screen that opened them, made title buttons reachable on short screens, and removed the small-phone rotation blockade. Embedded games now leave fullscreen handling to their host.",
     "Replaced the Caverns' chirping ambience with a quieter underground music loop, and gave Chaos demons creature voices and sounds for their special attacks.",
     "Myconids now rest in place between actions. Crates, pots, urns and mushroom groups use fixed artwork so their pieces no longer disappear or overlap unpredictably.",
     "Defeated creatures leave their bodies on the floor for a while. These remains survive saving and returning to a floor without obstructing movement.",
@@ -108,7 +111,6 @@ function showVersion(){
   var html='<p id="versionPanelStatus" role="status"></p><button id="versionInstall" hidden>Install update</button><button id="versionCheck">Check again</button>';
   FOTE_PATCHES.forEach(function(p){ html+='<section><h3>'+p.version+'</h3><ul>'+p.notes.map(function(n){return '<li>'+n+'</li>';}).join('')+'</ul></section>'; });
   openModal('Version',html,[{label:'Close',fn:closeModal}]);
-  document.getElementById('modal').style.zIndex='70';
   document.getElementById('versionInstall').onclick=function(){forceUpdate(this);};
   document.getElementById('versionCheck').onclick=checkGameVersion;
   paintVersionStatus();

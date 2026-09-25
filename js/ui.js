@@ -5,7 +5,7 @@
 
 (function injectCSS(){
   var css = `
-  #modal{position:fixed;inset:0;z-index:30;display:none;align-items:center;justify-content:center;background:rgba(6,5,4,.78);padding:16px}
+  #modal{position:fixed;inset:0;z-index:90;display:none;align-items:center;justify-content:center;background:rgba(6,5,4,.78);padding:16px}
   #modal.on{display:flex}
   #modal .mbox{width:min(620px,100%);max-height:min(88vh,760px);display:flex;flex-direction:column;background:linear-gradient(180deg,#221D1A,#171310);
     border:1px solid #4A3E34;border-radius:10px;box-shadow:0 24px 60px rgba(0,0,0,.7)}

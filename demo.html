@@ -11,7 +11,7 @@
 <link rel="apple-touch-icon" sizes="167x167" href="art/icons/apple-touch-icon-167.png">
 <link rel="apple-touch-icon" sizes="152x152" href="art/icons/apple-touch-icon-152.png">
 <meta name="theme-color" content="#0F0D0C">
-<meta name="fote-build" content="2026-09-25 16:54:15 UTC">
+<meta name="fote-build" content="2026-09-25 20:19:29 UTC">
 <link rel="manifest" href="manifest.json">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Grenze+Gotisch:wght@500;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
 <style>
@@ -207,10 +207,10 @@
   }
   @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 
-  /* ---------- phone and tablet: touch-sized bars, landscape only (2026-09-17) ----------
+  /* ---------- phone and tablet: touch-sized bars ----------
      A phone's scarce dimension in landscape is height, so the message log and the status tags move onto the
      map as translucent overlays and the top and bottom bars carry nothing but controls, at finger size
-     (44px targets). js/mobile.js adds body.touch, locks the orientation where it can, and zooms the map in. */
+     (44px targets). js/mobile.js adds body.touch and zooms the map in. */
   body.touch{-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;touch-action:manipulation}
   body.touch #app{position:relative}
   body.touch #top{min-height:46px;gap:8px;padding:0 10px;align-items:center}
@@ -242,16 +242,6 @@
   body.touch #dpad{grid-template-columns:repeat(3,44px);grid-auto-rows:34px;gap:4px}
   body.touch #dpad button{font-size:17px}
 
-  /* portrait only: a phone turned sideways gets the card, not a letterboxed game */
-  #rotate{display:none;position:fixed;inset:0;z-index:40;align-items:center;justify-content:center;
-    background:var(--bg);text-align:center;padding:24px}
-  #rotate .box{max-width:300px}
-  #rotate .ic{font-size:40px;margin-bottom:10px}
-  #rotate h2{font-family:var(--display);font-size:22px;color:var(--gold);margin:0 0 6px}
-  #rotate p{color:var(--ash);margin:0;font-size:13px;line-height:1.5}
-  body.needs-portrait #app{display:none}
-  body.needs-portrait #rotate{display:flex}
-
   /* portrait is the phone's better shape: 360x800 gives a squarer map with bigger tiles than a 800x360
      letterbox, and the bottom UI folds into rows that the thumbs reach. The bars stay their own row, the
      hotbar becomes 4x2, and the d-pad sits beside the action buttons. */
@@ -274,9 +264,6 @@
     body.touch .equip,body.touch .cols{grid-template-columns:1fr}
   }
 </style>
-
-<div id="rotate"><div class="box"><div class="ic">&#128241;</div><h2>Turn your phone upright</h2>
-  <p>Forge of the Elements plays in portrait, so you can see far enough in every direction.</p></div></div>
 
 <div id="app">
   <div id="top">
