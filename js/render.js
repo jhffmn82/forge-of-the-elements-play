@@ -461,6 +461,9 @@ function clipFrame(sheet, e, sliding){
   /* 2026-09-19: Justin - a sleeping creature kept playing its idle (the Myconid swayed about with a Z over it).
      Asleep it holds its still pose until something wakes it. */
   if(e.state==='asleep'){ var sr=m.static_row!==undefined ? m.static_row : (m.clips.idle?m.clips.idle.row:0); return {sx:0, sy:sr*cell}; }
+  /* The Myconid's supplied idle row changes foot positions like a run. Its
+     planted pose breathes below; attack and hurt clips still take precedence. */
+  if(e.base && e.base.sprite==='m-myconid' && !sliding && m.static_row!==undefined)return {sx:0,sy:m.static_row*cell};
   if(sliding && m.clips.walk){ var w=m.clips.walk; return {sx:(Math.floor(now/CLIP_MS.walk)%w.frames)*cell, sy:w.row*cell}; }
   if(m.clips.idle){ var id=m.clips.idle, ph=((e.id||0)*97)%500; return {sx:(Math.floor((now+ph)/CLIP_MS.idle)%id.frames)*cell, sy:id.row*cell}; }
   return {sx:0, sy:(m.static_row||0)*cell};
@@ -487,13 +490,13 @@ function drawCharacterSprite(e, px, py, opts){
   var isShade=isShadeSummon(e),visualBase=isShade?{art:.9}:e.base;
   var ms = spriteOn ? (isShade?shadeSummonSheet():mobSheet(e.base.sprite)) : null;
   if(ms){
-    var f2=clipFrame(ms, e, false), mm=ms.m, c2=mm.cell, box=mm.box||[0,0,c2,c2];
+    var f2=clipFrame(ms, e, !!opts.sliding), mm=ms.m, c2=mm.cell, box=mm.box||[0,0,c2,c2];
     var target=TS*(visualBase.art||0.9)*(e.big&&!isShade?1.25:1), s2=target/Math.max(box[3], box[2]*0.8);
     var w2=c2*s2, h2=c2*s2, feet=(box[1]+box[3]);
     var dx2=px+TS/2-(box[0]+box[2]/2)*s2, dy2=py+TS*0.97-feet*s2;
     /* Tier-two reference art has a single pose: give it a restrained breath,
        attack compression and recoil without altering simulation state. */
-    if((visualBase.elementTier || visualBase.stillPose) && !ANIM.reduce && e.state!=='asleep'){
+    if((visualBase.elementTier || visualBase.stillPose || visualBase.sprite==='m-myconid') && !ANIM.reduce && e.state!=='asleep'){
       var msNow=performance.now(), age2=e._clip?msNow-e._clip.t0:9999;
       var action2=e._clip&&e._clip.name==='attack'&&age2>=0&&age2<540?Math.sin(age2/540*Math.PI):0;
       var pulse2=Math.sin(msNow/330+(e.id||0))*.012;
@@ -959,7 +962,7 @@ function drawScene(){
       ctx.globalAlpha=0.35; ctx.fillStyle='#000'; ctx.beginPath(); ctx.ellipse(px0+TS/2,py0+TS*0.9,TS*0.26*(e.base.art||0.9),TS*0.09,0,0,7); ctx.fill(); ctx.globalAlpha=1;
       var flip = e.ally && typeof e.facingLeft==='boolean' ? e.facingLeft : player.x < e.x;
       if(e.base && e.base.artLeft) flip = !flip;   /* art painted facing left (goblin) */
-      if(!drawCharacter(e, px, py, {flip:flip, flash:flashOf(e), breath:breathOf(e), outline:e.foe && !!vis[idxOf(e.x,e.y)]})){
+      if(!drawCharacter(e, px, py, {flip:flip, flash:flashOf(e), breath:breathOf(e), sliding:motionActive(e,now), outline:e.foe && !!vis[idxOf(e.x,e.y)]})){
         var bb=breathOf(e)*TS*0.6;
         ctx.fillStyle=e.col; roundRect(px+TS*0.14,py+TS*0.1-bb,TS*0.72,TS*0.72+bb,TS*0.16); ctx.fill(); glyph(e.ch,px,py,'#120F0D');
       }

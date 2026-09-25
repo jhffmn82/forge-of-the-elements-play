@@ -55,6 +55,9 @@ function ambienceForScene(){
   if(activeBossEncounter())return null;
   if(floorMeta && (floorMeta.forge||floorMeta.plane==='fire'))return 'amb-fire';
   if(floorMeta && floorMeta.plane==='water')return 'amb-water';
+  // The replacement cavern score already contains quiet air and stone. Do
+  // not layer the old dungeon droplets back over its chirp-free ambience.
+  if(!(floorMeta&&floorMeta.plane)&&floorScore(typeof floorNo==='number'?floorNo:1)==='caverns')return null;
   return 'amb-dungeon';
 }
 var AMBIENCE_REQUEST=0;

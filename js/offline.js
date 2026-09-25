@@ -66,5 +66,14 @@
   }
 
   /* after the first turn or two, not during loading */
-  FoteLifecycle.whenReady(function(){ setTimeout(function(){ fill(); }, 3000); });
+  FoteLifecycle.whenReady(function(){ setTimeout(function(){
+    fill().catch(function(error){
+      /* Embedded browsers can expose these APIs while denying storage access.
+         Offline caching is optional; it must never interrupt the game or leave
+         a progress badge claiming a copy is ready when it was not completed. */
+      if(badge){badge.remove();badge=null;}
+      window.OFFLINE_READY={files:0,failed:0,total:0,unavailable:true};
+      console.warn('Offline storage is unavailable in this browser.',error);
+    });
+  }, 3000); });
 })();

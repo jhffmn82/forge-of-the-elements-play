@@ -30,14 +30,22 @@ function bossDefeated(e){
  log('<b>'+e.base.name+' falls.</b> '+(e.kind==='matron'?'Her':'His')+' <b>'+coreName()+'</b> clatters to the floor, still burning with light. The exit gate will answer to it.','c-kill');
  if(affinityCap()!==capBefore)log('Your affinity cap is now <b>'+affinityCap()+'</b>.','c-kill');
 }
+function caveExitSpot(x,y,radius){
+  for(var r=0;r<=radius;r++)for(var dy=-r;dy<=r;dy++)for(var dx=-r;dx<=r;dx++){
+    if(Math.max(Math.abs(dx),Math.abs(dy))!==r)continue;
+    var nx=x+dx,ny=y+dy;
+    if(inb(nx,ny)&&at(nx,ny)===FLOOR&&walkable(nx,ny)&&!occupied(nx,ny)&&!itemAt(nx,ny))return {x:nx,y:ny};
+  }
+  return null;
+}
 function caveBossDown(){
     if(!RUN || RUN.victory || RUN.over || !floorMeta || floorMeta.caveWon) return;
     floorMeta.caveWon=true; RUN.bossDead=true;
     var A=floorMeta.bossArena, spot=null;
-    if(A){ var c={x:A.x+Math.floor(A.w/2), y:A.y+Math.floor(A.h/2)}; spot=(walkable(c.x,c.y) && !occupied(c.x,c.y)) ? c : nearFree(c.x,c.y,6); }
-    if(!spot) spot=nearFree(player.x,player.y,4);
-    if(spot){ setT(spot.x, spot.y, EXIT); floorMeta.exitOpen=true; floorMeta.caveExit=spot; if(typeof sparkleFx==='function') sparkleFx(spot.x,spot.y,'earth',30); }
-    log(floorNo<LAST_FLOOR?'<b>The Deep Maw is dead.</b> Its burrow gapes open, and warm air breathes up from far below: the way down into the Underdark. Gather what it left, then step in.':'<b>The Deep Maw is dead.</b> Its burrow gapes open: the way up and out of the Caverns. Gather what it left, then step in.','c-kill');
+    if(A)spot=caveExitSpot(A.x+Math.floor(A.w/2),A.y+Math.floor(A.h/2),6);
+    if(!spot)spot=caveExitSpot(player.x,player.y,4);
+    if(spot){ setT(spot.x, spot.y, EXIT); floorMeta.exitOpen=false; floorMeta.caveExit=spot; if(typeof sparkleFx==='function') sparkleFx(spot.x,spot.y,'earth',30); }
+    log(floorNo<LAST_FLOOR?'<b>The Deep Maw is dead.</b> Warm air rises through its burrow from the Underdark. Bring the Cavern Core to the opening to clear the way down.':'<b>The Deep Maw is dead.</b> Bring the Cavern Core to its burrow to clear the way out of the Caverns.','c-kill');
     if(!spot){var completedRun=RUN;setTimeout(function(){if(RUN===completedRun&&!RUN.over&&!RUN.victory)victory();},1500);}
     if(typeof draw==='function') draw();
   }

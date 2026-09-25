@@ -52,26 +52,27 @@ function boltFx(ax,ay,bx,by,type,opts){
   fx.push({k:'p', ax:ax, ay:ay, bx:bx, by:by, type:type, arrow: !!(opts&&opts.arrow), t0:fxAt(dur, dur*0.85), dur:dur, hit:false, sfxHit: opts&&opts.sfxHit, silentHit:!!(opts&&opts.silentHit)});
 }
 
-function drawCorpse(f, p){
+function drawCorpse(f, p, opacity){
+  opacity=opacity===undefined?1:opacity;
   var px=(f.e.x-camX)*TS, py=(f.e.y-camY)*TS;
   var ms = spriteOn && f.e.sprite ? mobSheet(f.e.sprite) : null;
   if(ms && ms.m.clips.death && !CAVE_TOPPLE[f.e.sprite] && !DEEP_TOPPLE[f.e.sprite]){
     var c=ms.m.clips.death, cell=ms.m.cell, fr=Math.min(c.frames-1, Math.floor(p*c.frames*1.05)), box=ms.m.box||[0,0,cell,cell];
     var target=TS*(f.e.art||0.9), s=target/Math.max(box[3], box[2]*0.8);
     var dx=px+TS/2-(box[0]+box[2]/2)*s, dy=py+TS*0.97-(box[1]+box[3])*s;
-    ctx.save(); ctx.globalAlpha = p<0.75 ? 1 : (1-p)/0.25; ctx.imageSmoothingEnabled=true;
+    ctx.save(); ctx.globalAlpha = opacity*(f.remains?1:p<0.75?1:(1-p)/0.25); ctx.imageSmoothingEnabled=true;
     if(f.e.flip){ ctx.translate(px+TS/2,0); ctx.scale(-1,1); ctx.translate(-(px+TS/2),0); }
     ctx.drawImage(ms.img, fr*cell, c.row*cell, cell, cell, dx, dy, cell*s, cell*s); ctx.restore();
     return;
   }
-  /* no death clip yet: the standing sprite flashes, keels over onto its side and fades */
+  /* No usable death clip: the standing sprite flashes and keels onto its side. */
   if(ms){
     var m=ms.m, cell2=m.cell, box2=m.box||[0,0,cell2,cell2], srow=m.static_row!==undefined ? m.static_row : (m.clips.idle ? m.clips.idle.row : 0);
     var t2=TS*(f.e.art||0.9), s2=t2/Math.max(box2[3], box2[2]*0.8);
     var fall=Math.min(1, p/0.45), ease=fall*fall, dir=f.e.flip ? -1 : 1;
     var fx0=px+TS/2, fy0=py+TS*0.95;
     ctx.save();
-    ctx.globalAlpha = p<0.6 ? 1 : Math.max(0,(1-p)/0.4);
+    ctx.globalAlpha = opacity*(f.remains?1:p<0.6?1:Math.max(0,(1-p)/0.4));
     ctx.translate(fx0, fy0); ctx.rotate(dir*ease*Math.PI*0.5); ctx.translate(-fx0, -fy0);
     ctx.imageSmoothingEnabled=true;
     ctx.drawImage(ms.img, 0, srow*cell2, cell2, cell2, px+TS/2-(box2[0]+box2[2]/2)*s2, py+TS*0.97-(box2[1]+box2[3])*s2, cell2*s2, cell2*s2);
@@ -79,6 +80,23 @@ function drawCorpse(f, p){
     ctx.restore();
     if(!f.dust && p>0.4){ f.dust=true; if(typeof burst==='function') burst(f.e.x, f.e.y, 'earth', 10, 0.03); }
   }
+}
+
+/* Cosmetic remains are floor state, never actors or props. This keeps them
+ * beneath creatures, nonblocking, and intact across saves and floor travel. */
+function turnDeathRemains(clock){
+  if(floorMeta&&floorMeta.deathRemains)floorMeta.deathRemains=floorMeta.deathRemains.filter(function(c){return clock<c.expiresAt;});
+}
+function drawDeathRemains(){
+  if(!floorMeta||!floorMeta.deathRemains)return;
+  var now=performance.now(),animating=new Set();
+  fx.forEach(function(f){if(f.k==='d'&&f.remains&&now<f.t0+f.dur)animating.add(f.remains);});
+  floorMeta.deathRemains.forEach(function(c){
+    var e=c.e,i=idxOf(e.x,e.y);
+    if(worldNow()>=c.expiresAt||!(revealAll||seen[i]))return;
+    if(animating.has(c))return;
+    drawCorpse({e:e,remains:c,dust:true},1,(revealAll||vis[i])?1:memA(.45));
+  });
 }
 
 function drawFX(){

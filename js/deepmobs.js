@@ -62,19 +62,6 @@ function deepMobsOn(){ return typeof bidx==='function' && bidx()===3 && !(floorM
   if(typeof DMG_COL!=='undefined' && !DMG_COL.blood) DMG_COL.blood='#E0404A';
 })();
 var DEEP_KINDS = ['drowblade','drowpriestess','thoughteater','webspitter','spiderling','drider','fireimp','emberspider'];
-/* hover-card lines: what each one does, in a sentence */
-var DEEP_HINT = {
-  drowblade:'A duelist. Its cuts bleed, and it throws globes of darkness it can see through.',
-  drowpriestess:'Heals and wards the drow, calls spiderlings, and drinks from the blood bolts she throws. Kill her first.',
-  thoughteater:'Saps your mana to heal itself, and half of what it takes tears you as magic damage. With no mana left, it dazes you instead. Fragile.',
-  webspitter:'A landed web shot always pins you for a turn, then slows you for three. Its bite can bleed.',
-  spiderling:'Weak alone, never alone.',
-  drider:'Shoots from range, poisons with its fangs up close, and webs you in place.',
-  fireimp:'Hurls a fire bolt every turn from up to 6 tiles; a hit always sets you burning and lights webs and grass. Backs away from melee.',
-  emberspider:'Its bite burns.',
-  matron:'Channels rituals on the circles: hit her hard, or stun her, to break them. Calls driders and spiderlings.'
-};
-
 /* ---------------------------------------------------------------- tunables (placeholders, all of them) */
 var BLEED   = {turns:4, base:3, per:0.25};                 /* 2026-09-23 (Justin): 3 + 0.25 per floor (7 at floor 16), 4 turns; it ignores armour */
 var GLOBE   = {r:1, turns:5, cd:[10,14], first:[1,3]};     /* 3x3 of darkness on you for 5 turns */
@@ -613,11 +600,7 @@ inspectHTML = function(mx, my){
   var h=_inspectHTMLDeepMobs(mx, my);
   if(!inb(mx,my)) return h;
   var e=ents.filter(function(o){ return o.x===mx && o.y===my && o!==player; })[0];
-  if(e && h && e.base && DEEP_HINT[e.kind] && actorVisible(e)){
-    if(e.kind==='matron') h=h.replace('on his throne','on her throne');
-    var line='<div class="hint">'+DEEP_HINT[e.kind]+'</div>', at2=h.indexOf('<div class="odds">');
-    return at2>=0 ? h.slice(0,at2)+line+h.slice(at2) : h+line;
-  }
+  if(e && h && e.kind==='matron')h=h.replace('on his throne','on her throne');
   if(!h && !e){
     var p=propAt(mx,my) || props.filter(function(q){ return q.hatch && !q.hatched && mx>=q.x && my>=q.y && mx<q.x+(q.w||1) && my<q.y+(q.h||1); })[0];
     if(p && p.hatch && !p.hatched && (revealAll||seen[idxOf(mx,my)])) return '<div class="nm">Cocoon</div><div class="hint">Something twitches inside. It will burst if you come close.</div>';

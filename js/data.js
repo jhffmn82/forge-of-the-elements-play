@@ -108,7 +108,7 @@ var GODS = {
     "boons": [
       "Iron Flesh: +2 armor, +10% movement speed and +10% Evasion per rank. Fists can parry using the normal Agility-based parry chance. Base fist damage is 2-5 at rank 1, 3-6 at rank 2, 5-9 at ranks 3-4, and 7-12 at rank 5. Every damaging unarmed hit earns 1 piety.",
       "Staggering Blows: unarmed hits stun 15% of the time. From rank 3, gain +10% unarmed attack speed per god rank.",
-      "Living Mountain: every unarmed attack, including misses, adds a stack, up to 10, and refreshes all stacks for 6 × Divine Power global turns. Each stack grants +2 percentage points of all-damage resistance and shared critical-hit chance, +2% Accuracy and Evasion, and +2 flat attack damage before Might scaling."
+      "Living Mountain: every unarmed attack, including misses, adds a stack, up to 10, and refreshes all stacks for 6 × Divine Power global turns. Each stack grants +2 percentage points of shared critical-hit chance, +2% Accuracy, and +2 flat attack damage before Might scaling."
     ],
     "gain": "Damaging unarmed hits, plus kills while your hands are empty; elites and bosses grant extra."
   },

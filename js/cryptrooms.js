@@ -276,76 +276,39 @@ function gradeCryptSet(o, name){
 
 }
 
-/* ---------------------------------------------------------------- urn groups: two or three small vessels sharing one cell
-   Patterns vary per cell (triangle, back row, diagonal, pair with a little one); vessels come from the urn family. */
-PROPS['urn-group'] = {b:1, br:1, loot:0.4, sfx:'pot-break'};
-var URN_PATTERNS = [   /* [x, foot y, height, special] in cell units */
-  [[0.3,0.62,0.55],[0.7,0.62,0.55],[0.5,0.92,0.6]],                                   /* three-urn triangle: two behind, one in front */
-  [[0.28,0.62,0.52],[0.56,0.6,0.58],[0.4,0.84,0.5],[0.72,0.88,0.44]],                /* four-urn group, staggered and overlapping */
-  [[0.4,0.84,0.7],[0.74,0.9,0.42]],                                                    /* mixed pair: a medium urn beside a small one */
-  [[0.22,0.58,0.46],[0.46,0.56,0.62],[0.74,0.62,0.5],[0.34,0.84,0.4],[0.62,0.9,0.44]],/* five-urn collection, varied heights */
-  [[0.3,0.64,0.55],[0.58,0.62,0.62],[0.64,0.94,0.46,'tip']],                           /* disturbed: two upright, one tipped over */
-  [[0.36,0.74,0.64],[0.66,0.92,0,'shards'],[0.8,0.7,0,'lid']]                          /* broken: one intact, pottery shards, a fallen lid */
-];
-function urnGroupExtra(){
-  var fam=['urn-tall','urn-squat','urn-ornate','urn'].filter(function(n){ return n==='urn' ? !!objArt('props','urn') : !!setArt(n); });
-  var pat=Math.floor(rng()*URN_PATTERNS.length), kinds=[];
-  for(var i=0;i<URN_PATTERNS[pat].length;i++) kinds.push(fam[Math.floor(rng()*fam.length)]);
-  return {pattern:pat, kinds:kinds, flip:rng()<0.5};
+/* Fixed cluster sprites: one draw owns the whole group, so no member can
+ * disappear behind another independently cached or depth-sorted sprite.
+ * The atlas is authored by tools/pack-prop-clusters.py from the existing art. */
+var SCENERY_CLUSTER_FAMILIES=['crate','barrel','pot','urn','mushroom-teal','mushroom-violet','mushroom-amber','mushroom-crypt'];
+function sceneryClusterArt(family,variant){
+  var row=SCENERY_CLUSTER_FAMILIES.indexOf(family),img=atl('prop-clusters.png');
+  if(row<0||!img)return null;
+  return {img:img,sx:((Math.floor(variant)||0)%5+5)%5*128,sy:row*128,sw:128,sh:128};
 }
-function drawUrnGroup(p, alpha){
-  var pat=URN_PATTERNS[p.pattern||0]||URN_PATTERNS[0];
-  var pts=pat.map(function(q,i){ return {x:q[0], y:q[1], s:q[2], sp:q[3], k:(p.kinds||[])[i]||'urn', i:i}; }).sort(function(a,b){ return a.y-b.y; });
-  var u=TS/32;
-  ctx.save(); ctx.globalAlpha=alpha; ctx.imageSmoothingEnabled=false;
-  pts.forEach(function(q){
-    var fx=p.flip ? 1-q.x : q.x, cx=(p.x-camX)*TS+fx*TS, fy=(p.y-camY)*TS+q.y*TS;
-    if(q.sp==='shards'){
-      for(var k=0;k<5;k++){ var sx=cx+(hash2(p.x+k,p.y,31)-0.5)*TS*0.36, sy=fy-(hash2(p.x,p.y+k,32))*TS*0.14, r=(1.5+hash2(k,p.x,33)*2)*u;
-        ctx.fillStyle='#2A2230'; ctx.beginPath(); ctx.moveTo(sx-r,sy); ctx.lineTo(sx,sy-r*0.9); ctx.lineTo(sx+r*1.1,sy-r*0.2); ctx.lineTo(sx+r*0.3,sy+r*0.6); ctx.closePath(); ctx.fill();
-        ctx.fillStyle=p.name==='stack-group' ? (k%2 ? '#8A6440' : '#A57A4E') : (k%2 ? '#7A5C74' : '#8E6E86'); ctx.beginPath(); ctx.moveTo(sx-r+u*0.6,sy); ctx.lineTo(sx,sy-r*0.9+u*0.6); ctx.lineTo(sx+r*1.1-u*0.6,sy-r*0.2); ctx.closePath(); ctx.fill(); }
-      ctx.fillStyle='rgba(150,146,160,0.35)'; ctx.beginPath(); ctx.ellipse(cx, fy-u, TS*0.16, TS*0.05, 0, 0, 7); ctx.fill();   /* spilled ash */
-      return;
-    }
-    if(q.sp==='lid'){
-      var lw=TS*0.16, lh=TS*0.07;
-      if(p.name==='stack-group'){ ctx.fillStyle='#3A2616'; ctx.fillRect(Math.round(cx-lw), Math.round(fy-lh), Math.round(lw*2), Math.round(lh*1.4)); ctx.fillStyle='#9A7248'; ctx.fillRect(Math.round(cx-lw+u), Math.round(fy-lh), Math.round(lw*2-2*u), Math.round(lh)); return; }   /* a loose plank */
-      ctx.fillStyle='#1E1A26'; ctx.beginPath(); ctx.ellipse(cx, fy, lw, lh, 0.5, 0, 7); ctx.fill();
-      ctx.fillStyle='#5E5670'; ctx.beginPath(); ctx.ellipse(cx-u*0.5, fy-u*0.8, lw*0.88, lh*0.8, 0.5, 0, 7); ctx.fill();
-      ctx.fillStyle='#8A82A0'; ctx.fillRect(Math.round(cx-u*2), Math.round(fy-u*2), Math.round(2*u), Math.max(1,Math.round(u)));
-      return;
-    }
-    var wood=p.name==='stack-group';
-    var o = q.sp==='tip' ? (wood ? objArt('props', q.k==='crate' ? 'barrel' : q.k) : setArt('urn-shattered')) : (q.k==='urn' || wood) ? objArt('props', q.k) : setArt(q.k); if(!o) return;
-    var h=TS*q.s, w=h*(o.sw/o.sh);
-    if(q.sp==='tip' && !wood){ w=TS*q.s*1.3; h=w*(o.sh/o.sw); }
-    if(q.sp==='tip' && wood){   /* a barrel or pot lying on its side */
-      var tw=TS*q.s*1.05, th=tw*(o.sw/o.sh);
-      ctx.save(); ctx.translate(cx, fy-th/2); ctx.rotate(p.flip ? -Math.PI/2 : Math.PI/2); ctx.drawImage(o.img, o.sx, o.sy, o.sw, o.sh, -th/2, -tw/2, th, tw); ctx.restore();
-      return;
-    }
-    var X=cx-w/2, Y=fy-h;
-    if(p.flip && q.sp==='tip'){ ctx.save(); ctx.translate(cx,0); ctx.scale(-1,1); ctx.drawImage(o.img, o.sx, o.sy, o.sw, o.sh, -w/2, Y, w, h); ctx.restore(); }
-    else ctx.drawImage(o.img, o.sx, o.sy, o.sw, o.sh, X, Y, w, h);
-  });
-  ctx.restore();
+function drawSceneryCluster(family,variant,px,py,alpha,flip,shear){
+  var o=sceneryClusterArt(family,variant);if(!o)return false;
+  var baked=family.indexOf('mushroom-')===0&&typeof vegBaked==='function'?vegBaked(o):null;
+  ctx.save();ctx.globalAlpha=alpha;ctx.imageSmoothingEnabled=false;
+  ctx.translate(px+TS*.5,py+TS);if(shear)ctx.transform(1,0,-shear,1,0,0);if(flip)ctx.scale(-1,1);
+  if(baked)ctx.drawImage(baked,0,0,128,128,-TS*.5,-TS,TS,TS);
+  else ctx.drawImage(o.img,o.sx,o.sy,128,128,-TS*.5,-TS,TS,TS);
+  ctx.restore();return true;
 }
-
-function drawUrnGroupProp(p, px, py, alpha){ if(p.name==='urn-group' || p.name==='stack-group'){ drawUrnGroup(p, alpha); return true; } return false;
+PROPS['urn-group']={b:1,br:1,loot:.4,sfx:'pot-break'};
+PROPS['stack-group']={b:1,br:1,burn:1,loot:.45,sfx:'crate-break'};
+function urnGroupExtra(){return {clusterFamily:'urn',clusterVariant:Math.floor(rng()*5),flip:rng()<.5};}
+function stackGroupExtra(seedName){return {clusterFamily:['crate','barrel','pot'].includes(seedName)?seedName:'crate',clusterVariant:Math.floor(rng()*5),flip:rng()<.5};}
+function drawUrnGroup(p,alpha){
+  // Legacy saves retain their exact footprint, breakability and loot. Old
+  // pattern/kinds data selects a stable baked replacement without migration.
+  var family=p.clusterFamily||(p.name==='urn-group'?'urn':(p.kinds||[])[0]||'crate');
+  if(SCENERY_CLUSTER_FAMILIES.indexOf(family)<0)family=p.name==='urn-group'?'urn':'crate';
+  return drawSceneryCluster(family,p.clusterVariant===undefined?p.pattern||0:p.clusterVariant,(p.x-camX)*TS,(p.y-camY)*TS,alpha,p.flip,0);
 }
-/* in the Crypt, about a third of lone urns become groups; urn chambers mix them into their rows */
-
-
-/* ---------------------------------------------------------------- the same for crates, barrels and pots everywhere else
-   (explosive barrels and supply crates stay single: they are gameplay pieces) */
-PROPS['stack-group'] = {b:1, br:1, burn:1, loot:0.45, sfx:'crate-break'};
-function stackGroupExtra(seedName){
-  var fam=['crate','barrel','pot'].filter(function(n){ return !!objArt('props', n); });
-  var pat=Math.floor(rng()*URN_PATTERNS.length), kinds=[], lead=fam.indexOf(seedName)>=0 ? seedName : fam[0];
-  for(var i=0;i<URN_PATTERNS[pat].length;i++) kinds.push(rng()<0.55 ? lead : fam[Math.floor(rng()*fam.length)]);
-  return {pattern:pat, kinds:kinds, flip:rng()<0.5};
+function drawUrnGroupProp(p,px,py,alpha){
+  if(p.name==='urn-group'||p.name==='stack-group')return drawUrnGroup(p,alpha);
+  return false;
 }
-
 
 /* Named character presentation passes; composed by render-adapter.js. */
 

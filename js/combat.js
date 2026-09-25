@@ -6,7 +6,7 @@ function enchantValues(slot,el,actor){actor=actor||player;return FoteEnchantment
 function gearPassiveBonus(){return FoteEnchantments.gearBonus(enchantContext().vellumRank);}
 function enchantGodBonus(){return FoteEnchantments.godBonus(enchantContext());}
 function orbRootCrit(target){return infusion('orb')==='earth'&&target&&effectHasTag(target,'root')?enchantValues('orb','earth').critChance:0;}
-function criticalMultiplier(){return 1.6+(infusion('orb')==='shadow'?enchantValues('orb','shadow').critMultiplier:0);}
+function criticalMultiplier(){return FoteActions.criticalMultiplier(player.stats.agi,infusion('orb')==='shadow'?enchantValues('orb','shadow').critMultiplier:0);}
 
 /* ============================================================================
    combat.js - character math, damage, statuses, spells, abilities, monster AI.
@@ -29,9 +29,9 @@ var PASSIVES={
        {at:21,id:'cleaving',  name:'Cleaving Swings',d:'your attacks also hit one other adjacent enemy for half'},
        {at:25,id:'unstoppable',name:'Unstoppable',d:'immune to stun, slow and knockback, +20% melee damage'}],
   agi:[{at:12,id:'lightFeet',name:'Light Feet',d:'+8 evasion'},
-       {at:15,id:'deadeye',  name:'Deadeye',d:'+8% crit chance'},
+       {at:15,id:'deadeye',  name:'Deadeye',d:'+8 percentage points of crit chance and +25 percentage points of critical damage for all attacks and spells'},
        {at:18,id:'fleet',    name:'Fleet',d:'moving costs 15% less time'},
-       {at:21,id:'keenAim',  name:'Keen Aim',d:'your attacks ignore 25% of the target\'s evasion'},
+       {at:21,id:'keenAim',  name:'Keen Aim',d:'your attacks ignore 25% of the target\'s evasion; +25 more percentage points of critical damage for all attacks and spells'},
        {at:25,id:'blur',     name:'Blur',d:'hostile direct attacks have 20% less chance to hit you (minimum 15%)'}],
   vit:[{at:12,id:'tough',    name:'Tough',d:'+15% max HP'},
        {at:15,id:'resilient',name:'Resilient',d:'HP regeneration doubles below half HP'},
@@ -75,7 +75,7 @@ function costOf(A){
 /* Caster gear has distinct roles (2026-09-16):
    staff - the most spell damage and +1 spell range, and a real weapon, but two-handed
    wand  - a little spell damage; spells cost less mana; the off-hand stays free
-   orb   - no damage bonus; spell critical hits (x1.5). A cursed orb is a spell damage penalty instead. */
+   orb   - shared critical-hit chance for attacks and spells. A cursed orb is a spell damage penalty instead. */
 
 
 function focusKey(it){ if(!it) return null; var ic=(it.icon||'').replace(/^item-/,''); return FOCUS_BONUS[ic] ? ic : null; }
@@ -214,7 +214,9 @@ function previewPath(ax,ay,bx,by,A){
 
 /* ---------------------------------------------------------------- monster AI */
 var PDIST=null;
-function refreshPlayerDistance(){ PDIST=bfsFrom(player.x,player.y); }
+/* AI movement uses eight legal directions and adjacent attack positions.
+ * Generation's cardinal flood fill remains independent. */
+function refreshPlayerDistance(){ PDIST=actorFootprintField({base:{}},player);PDIST.targetX=player.x;PDIST.targetY=player.y; }
 
 /* 2026-09-18: a surprise attack lands on anything that has not noticed you - asleep, or awake but not hunting
    you - and on something that noticed you only on its last turn (the door you just opened): it is still

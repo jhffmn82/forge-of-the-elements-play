@@ -104,12 +104,10 @@ function drawOrdinaryPlants(now){
     var i=idxOf(sp.x,sp.y); if(!(revealAll||seen[i])) return;
     var a=(revealAll||vis[i]) ? 1 : memA(0.42), px=(sp.x-camX)*TS, py=(sp.y-camY)*TS, sw=vegSway(sp.x,sp.y,now,vegBend(sp.x,sp.y));
     if(set==='caverns'){
-      /* two to four mushrooms of one colour, each bobbing on its own */
-      var col=['teal','violet','amber'][Math.floor(hash2(sp.x,sp.y,71)*3)], n=2+Math.floor(hash2(sp.x,sp.y,72)*3);
-      for(var k=0;k<n;k++){
-        var ox=0.2+0.6*hash2(sp.x+k,sp.y,73), oy=0.55+0.4*hash2(sp.x,sp.y+k,74), sc=0.55+0.4*hash2(k,sp.x+sp.y,75);
-        vegDraw(vegArt('caverns-mushroom-'+col+'-'+(1+Math.floor(hash2(k,sp.x,76)*2))), px+TS*ox, py+TS*oy, sc, sw*0.5, a, hash2(k,sp.y,77)<0.5);
-      }
+      /* One of five baked arrangements per color; the entire clump sways
+       * together and never reassembles itself as individual sprites. */
+      var col=['teal','violet','amber'][Math.floor(hash2(sp.x,sp.y,71)*3)];
+      drawSceneryCluster('mushroom-'+col,Math.floor(hash2(sp.x,sp.y,72)*5),px,py,a,hash2(sp.x,sp.y,77)<.5,sw*.5);
     } else {
       var kind = sp.wet ? 'fern' : (hash2(sp.x,sp.y,78)<0.55 ? 'bush' : 'fern');
       vegDraw(vegArt('earth-'+kind+'-'+(1+Math.floor(hash2(sp.x,sp.y,79)*3))), px+TS*0.5, py+TS*0.95, 0.85, sw*(kind==='bush'?0.35:0.8), a, hash2(sp.x,sp.y,80)<0.5);

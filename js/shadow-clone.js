@@ -5,10 +5,18 @@
   var types=['phys','fire','ice','lightning','poison','light','dark','magic'];
   function copy(value){return value===undefined?undefined:JSON.parse(JSON.stringify(value));}
   function isClone(e){return !!(e&&e.shadowClone&&e.cloneStats);}
+  function migrateSnapshot(s){
+    if((s.version||1)<3){
+      // Older echoes saved the base and gear multiplier before Agility's perks.
+      // Use their own frozen stats and gear, never the current player's build.
+      s.criticalMultiplier=FoteActions.criticalMultiplier(s.stats&&s.stats.agi,(s.criticalMultiplier||1.6)-1.6);
+      s.version=3;
+    }
+  }
   function statModel(p){var out={};['name','race','cls','level','god','piety','stats','aff','buffs','sets','activeSet','off','rings','armorItem','forgeHeat'].forEach(function(k){out[k]=copy(p[k]);});out.st={livingmountain:copy(p.st&&p.st.livingmountain)};return out;}
   function buffed(e){return Object.keys(e.buffs||{}).some(function(k){return k!=='hardened'&&e.buffs[k]>0;})||e.cloneExtraBuff>0||!!(e.st.livingmountain&&e.st.livingmountain.t>0);}
   function refreshStats(e){
-    var s=e.cloneStats;if(!s.statModel)return;
+    var s=e.cloneStats;migrateSnapshot(s);if(!s.statModel)return;
     var model=Object.assign({},s.statModel,{buffs:e.buffs,st:{livingmountain:e.st.livingmountain},forgeHeat:e.cloneForgeHeat}),now=FoteStats.compute(model,statContent());
     ['acc','eva','armor','crit','block','parry','speed'].forEach(function(k){e[k]=s[k]+now[k]-s.statInitial[k];if(['acc','eva','armor','speed'].includes(k))e.base[k]=e[k];});
     if(!(e.buffs.ironhide>0))e.hideShield=0;
@@ -26,13 +34,13 @@
         water:aff('water'),vitality:p.stats.vit,bulwark:!!perks.bulwark,lightVulnerable:p.race==='gloomling',
         courtOpposite:p.race==='fae'&&p.court?elemToType(OPPOSITE[p.court]):null,warding:ringVal('warding'),
         immune:Object.keys(IMMUNE_TYPE).some(function(el){return IMMUNE_TYPE[el]===type&&aff(el)>=6;}),
-        mountainResistance:.02*livingMountainStacks(p),divine:divineStrength()};
+        divine:divineStrength()};
     });
     var timing=Object.assign({},playerTiming(),{attacking:false,casting:true,free:false,freeStep:false,chill:0,slow:0});
     var model=statModel(p),extraBuff=Math.max(p.levitate||0,p.hidden||0,p.st&&p.st.stone&&p.st.stone.t||0,p.st&&p.st.aura&&p.st.aura.t||0);
     var immunities=[];Object.keys(FoteEffects.registry).forEach(function(key){var d=FoteEffects.registry[key];if(d.element&&(p.aff[d.element]||0)>=(d.immuneRank||3))immunities.push(key);});
     if(perks.unstoppable)immunities.push('slow','root','stun','knockback');
-    return {version:2,stats:copy(p.stats),aff:copy(p.aff),passives:perks,resist:resist,resistanceContexts:contexts,
+    return {version:3,stats:copy(p.stats),aff:copy(p.aff),passives:perks,resist:resist,resistanceContexts:contexts,
       statModel:model,statInitial:FoteStats.compute(model,statContent()),timing:timing,stormTurns:Math.max(0,(p.stormUntil||0)-p.t)/100,extraBuff:extraBuff,
       spellPowerBase:spellPower()/(buff('rally')?1.1:1),holyAir:infusion('holy')==='air',holyReduction:infusion('holy')==='air'?enchantValues('holy','air').actionTimeReduction:0,
       holyCrit:infusion('holy')==='shadow'?enchantValues('holy','shadow').critChance:0,holyFire:infusion('holy')==='fire'?enchantValues('holy','fire').damageBonus:0,holyEarth:infusion('holy')==='earth'?enchantValues('holy','earth').damageReduction:0,
@@ -54,6 +62,7 @@
   }
   function create(x,y,s){
     if(!s||!walkable(x,y)||occupied(x,y))return null;
+    migrateSnapshot(s);
     ents=ents.filter(function(e){return !isClone(e)||e.cloneOwnerId!==player.id;});
     var e=spawnRaw('shadowclone',x,y);
     Object.assign(e,{foe:false,ally:true,state:'ally',name:player.name+'\'s Shadow',shadowClone:true,cloneOwnerId:player.id,cloneStats:s,cloneLook:s.look,
@@ -142,6 +151,7 @@
     if(s.grumbokCapstone&&type!=='phys'&&foe)d*=.5;
     if(s.magicBarrier&&foe&&!event.tags.has('area')&&dist(source,e)>1&&d>0)d=Math.max(1,d-5);
     if(s.fortitude&&foe&&d>0&&!(e.fortUntil>worldNow())){d*=.5;e.fortUntil=worldNow()+1500;}
+    if(type==='phys'&&d>0)d=Math.max(1,d);
     if(!event.options.bypassShields){if(e.ward>0&&!(e.buffs.arcaneward>0||e.buffs.communion>0))e.ward=0;var absorption=FoteDamage.absorb(d,['ward','iceArmor','hideShield','mward','guard'].map(function(k){return{key:k,amount:e[k]||0,type:'dark'};}));d=absorption.remaining;event.absorbed=absorption.absorbed;Object.keys(absorption.pools).forEach(function(key){e[key]=absorption.pools[key];});}
     if(e.challenged&&e.challengeBoost)d*=1.2;if(e.dazed>0)d*=1.5;
     if(d>0)e.lastDamageTime=worldNow();event.amount=d;return true;
@@ -163,7 +173,7 @@
     refreshStats(e);return FoteCosts.action(Object.assign({},s.timing,{speed:e.speed,storm:e.cloneStormTurns>0,holyAir:s.holyAir&&buffed(e),holyReduction:s.holyReduction,chill:e.st.chill?chillSlow(e):0,slow:e.st.slow?(e.st.slow.mult||SYLLA.slowMult):0}));}
   function resistance(e,type){
     var s=e.cloneStats,c=s.resistanceContexts&&s.resistanceContexts[type];if(!c)return s.resist[type]===undefined?1:s.resist[type];
-    return FoteActions.resistance(type,Object.assign({},c,{wet:!!isWet(e),chilled:!!e.st.chill,sanctuary:inSanctuary(e),mountainResistance:s.statModel?.god==='grom'&&e.st.livingmountain?.t>0?.02*e.st.livingmountain.n:0,
+    return FoteActions.resistance(type,Object.assign({},c,{wet:!!isWet(e),chilled:!!e.st.chill,sanctuary:inSanctuary(e),
       poisonward:e.buffs.poisonward>0,shadeward:e.buffs.shadeward>0,stormward:e.buffs.stormward>0,fireward:e.buffs.fireward>0,starward:e.buffs.starward>0}));
   }
   function arrive(){

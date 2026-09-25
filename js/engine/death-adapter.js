@@ -31,7 +31,7 @@ function prepareCreatureDeath(event){
   if(b.rises&&!e.risen&&e._lastType!=='fire'&&e._lastType!=='light'&&!(e.st&&e.st.burn)){
     ents=ents.filter(function(other){return other!==e;});floorMeta.corpses=floorMeta.corpses||[];floorMeta.corpses.push({x:e.x,y:e.y,at:turn+3,kind:e.kind,maxhp:e.maxhp});
     if(vis[idxOf(e.x,e.y)])log('The <b>Shambler</b> collapses... and twitches. Finish it, or burn it.','c-info');
-    deathAnimation(e);event.deferred='shambler';return false;
+    deathAnimation(e,false);event.deferred='shambler';return false;
   }
   if(b.bursts){addCloud(e.x,e.y,1,5,sDMG(3+Math.floor(floorNo/3)),'bloat');if(vis[idxOf(e.x,e.y)])log('The <b>Grave Bloat</b> bursts in a cloud of rot!','c-you');sfx('trap-gas');}
   if(inCrypt()&&b.living!==false&&!b.object){floorMeta.deathSpots=floorMeta.deathSpots||[];floorMeta.deathSpots.push({x:e.x,y:e.y});if(floorMeta.deathSpots.length>12)floorMeta.deathSpots.shift();}
@@ -42,10 +42,18 @@ function prepareCreatureDeath(event){
   if(e.kind==='phylactery')phylacteryBreaks(e);
   return true;
 }
-function deathAnimation(e){
+function deathAnimation(e,persistent){
+  var visual={x:e.x,y:e.y,col:e.col,sprite:e.base.sprite,art:(e.base.art||.9)*(e.big?1.25:1),flip:(player.x<e.x)!==!!e.base.artLeft};
+  var remains;
+  if(persistent!==false&&visual.sprite){
+    floorMeta.deathRemains=floorMeta.deathRemains||[];
+    remains={id:e.id,e:visual,bornAt:worldNow(),expiresAt:worldNow()+2000};
+    floorMeta.deathRemains.push(remains);
+  }
   if(!(vis[idxOf(e.x,e.y)]||revealAll))return;
-  fx.push({k:'d',e:{x:e.x,y:e.y,col:e.col,sprite:e.base.sprite,art:e.base.art,flip:(player.x<e.x)!==!!e.base.artLeft},t0:Math.max(performance.now(),fxClock)+60,dur:900});
+  fx.push({k:'d',e:visual,remains:remains,t0:Math.max(performance.now(),fxClock)+60,dur:900});
 }
+
 function commitCreatureDeath(event){
   var e=event.entity,by=event.source;
   ents=ents.filter(function(other){return other!==e;});deathAnimation(e);

@@ -358,7 +358,7 @@ function refreshEncounterTuning(){
           e.hp=Math.max(1,Math.min(e.maxhp,Math.round(e.maxhp*healthFraction)));
         }
         if(String(e.base.dmg)!==String(current.dmg))e.dmg=current.dmg.map(function(n){return sDMG(n);});
-        e.base=Object.assign({},e.base,{hp:current.hp,dmg:current.dmg.slice(),hint:current.hint,statusImmunities:(current.statusImmunities||[]).slice()});
+        e.base=Object.assign({},e.base,{hp:current.hp,dmg:current.dmg.slice(),sfx:current.sfx,statusImmunities:(current.statusImmunities||[]).slice()});
         if(current.spawnInvisible)e.base.spawnInvisible=true;else delete e.base.spawnInvisible;
         if(e.windup&&e.windup.chaos)e.windup=null;
       }

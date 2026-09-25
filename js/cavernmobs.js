@@ -34,7 +34,7 @@
   M.caveslime     = Object.assign({}, M.slime, {name:'Basalt Slime',hp:64,dmg:[7,10],acc:62,armor:5,xp:38,art:1,band:[11,15], w:10});
   delete M.caverat.biome; delete M.cavebat.biome; delete M.caveslime.biome;
   /* The Deep Maw: tuned by hand for floor 15, so no floor curve (fixed, like the plane elites) */
-  M.deepmaw       = {name:'The Deep Maw', sprite:'m-deep-maw', col:'#B07A4A', ch:'W', hp:480, dmg:[12,17], acc:70, eva:0, armor:4, speed:100, range:1, xp:600,
+  M.deepmaw       = {name:'The Deep Maw', sprite:'m-deep-maw', col:'#B07A4A', ch:'W', hp:720, dmg:[24,34], acc:70, eva:0, armor:4, speed:100, range:1, xp:600,
                      band:[15,15], w:0, boss:true, elite:true, big:2, fixed:true, heavy:true, living:true, art:2.0, bigScale:1.5, artLeft:true, sfx:'maw'};
   M.mawlimb       = {name:'The Deep Maw', sprite:'m-deep-maw', col:'#B07A4A', ch:'W', hp:9999, dmg:[0,0], acc:0, eva:0, armor:4, speed:100, range:0, xp:0,
                      band:[0,0], w:0, object:true, fixed:true, art:0.1};
@@ -68,7 +68,9 @@ CAVE_ELEMENT_TIERS.forEach(function(r){CAVE_SWAP[r.old]=r.kind;});
    status and timing while refreshing only these two obsolete Caverns kinds. */
 function refreshCavernResidents(){
   if(!inCaverns())return;
-  ents.forEach(function(e){
+  var residents=ents.slice(),buried=floorMeta.maw&&floorMeta.maw.ent;
+  if(buried&&residents.indexOf(buried)<0)residents.push(buried);
+  residents.forEach(function(e){
     if(!e.foe||e.hp<=0||!e.base)return;
     var tier=CAVE_ELEMENT_TIERS.filter(function(r){return r.old===e.kind;})[0];
     if(tier){var oldRatio=e.hp/Math.max(1,e.maxhp), newer=MONSTERS[tier.kind];e.kind=tier.kind;e.name=newer.name;e.base=newer;e.maxhp=sHP(newer.hp);e.hp=Math.max(1,Math.ceil(e.maxhp*oldRatio));e.dmg=newer.dmg.map(sDMG);return;}
@@ -384,7 +386,7 @@ function prepareMawActor(job){
      up      - it stays out for 3 turns (2 below half health): the window to hit it. It bites anything
                touching it. Then it dives, and the loop starts again.
    Below half health each eruption on you also marks the ring around the nearest mound (flying rubble). */
-var MAW = {bite:[24,32], biteCap:0.40, rubble:[10,14], warnTurns:2, upTurns:3, upTurnsHurt:2};
+var MAW = {bite:[48,64], biteCap:0.40, rubble:[20,28], warnTurns:2, upTurns:3, upTurnsHurt:2};
 function spawnDeepMaw(arena){
   if(!arena || !floorMeta) return null;
   var mounds=(arena.mounds||[]).filter(function(m){ return m && inb(m.x,m.y); });

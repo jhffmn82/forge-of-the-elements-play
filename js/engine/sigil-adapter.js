@@ -47,7 +47,11 @@ Object.keys(SIGILS).forEach(function(k){ identifySigilQuiet(k); });
     douseAround(5); log('Clear water runs over everything you own. You know every sigil'+(n?' and '+n+' piece'+(n>1?'s':'')+' of gear':'')+'.','c-kill');
 },
 "levitate2":function(context){var use=context.use,F=floorNo,bountySpots=context.spots;
-player.levitate=Math.max(player.levitate||0,60); player.buffs.haste=10; derive(player); log('You rise on the wind, light and quick.','c-good'); sparkleFx(player.x,player.y,'lightning',30);
+player.levitate=Math.max(player.levitate||0,60); player.buffs.haste=Math.max(player.buffs.haste||0,10); derive(player); log('You rise on the wind, light and quick.','c-good'); sparkleFx(player.x,player.y,'lightning',30);
+},
+"haste":function(context){
+player.buffs.haste=Math.max(player.buffs.haste||0,20);derive(player);
+log('The wind quickens your movement, attacks and spellcasting by 30%.','c-good');sparkleFx(player.x,player.y,'lightning',24);
 },
 "stoneskin2":function(context){var use=context.use,F=floorNo,bountySpots=context.spots;
 applyStatus(player,'stone',30); giveWard(player.maxhp*0.2, 30); log('Your skin hardens to granite.','c-good');
@@ -62,8 +66,9 @@ player.hidden=5; ents.forEach(function(e){ if(e.foe && e.state==='hunt'){ e.stat
 player.buffs.cinder=10; derive(player); player._cinderAt={x:player.x,y:player.y}; log('Your feet catch fire. Run.','c-fire');
 },
 "magma":function(context){var use=context.use,F=floorNo,bountySpots=context.spots;
+player.buffs.moltenring=Math.max(player.buffs.moltenring||0,5);
 for(var my=-2;my<=2;my++) for(var mx=-2;mx<=2;mx++){ var tx=player.x+mx, ty=player.y+my; if((mx||my) && inb(tx,ty) && walkable(tx,ty)) fireT[idxOf(tx,ty)]=Math.max(fireT[idxOf(tx,ty)],5); }
-    ents.forEach(function(e){ if(e.foe && dist(e,player)<=2) applyStatus(e,'burn',3,sDMG(2)); }); log('The floor around you melts into a ring of fire.','c-fire');
+    ents.forEach(function(e){ if(e.foe && dist(e,player)<=2) applyStatus(e,'burn',3,sDMG(2)); }); log('The floor around you melts into a ring of fire. Your attacks gain 5 fire damage.','c-fire');
 },
 "smoke":function(context){var use=context.use,F=floorNo,bountySpots=context.spots;
 raiseSmoke();

@@ -10,38 +10,22 @@
     'violet-warrens':['lash-dancer','razor-dancer','silk-weaver','hookfang']
   };
   var content={
-    'prism-seer':{name:'Prism Seer',hp:225,dmg:[18,26],acc:76,eva:22,armor:2,speed:95,art:1.05,spellcaster:true,
-      hint:'Fires regular elemental bolts between stronger instant rays, cycling fire, ice and lightning. The ice ray can Freeze for one world turn. Cover blocks its shots.'},
-    'folded-horror':{name:'Folded Horror',hp:270,dmg:[27,38],acc:73,eva:14,armor:4,speed:85,art:1.18,
-      hint:'Ordinary blows reach two clear tiles. Its occasional instant heavy strike also inflicts up to two world turns of Fear, forcing retreat. Cover stops its reach.'},
-    'rift-skitter':{name:'Rift Skitter',hp:225,dmg:[15,23],acc:75,eva:33,armor:1,speed:135,art:.75,
-      hint:'Blinks up to three clear land steps, then must attack before blinking again. Its bite can Slow for two world turns, at most once every three world turns. Root prevents the blink.'},
-    'lens-bearer':{name:'Lens Bearer',hp:225,dmg:[11,15],acc:69,eva:15,armor:4,speed:90,art:1.05,
-      hint:'Spends an action shielding one nearby ally for four world turns. The finite shield cannot stack, and it cannot shield another Lens Bearer.'},
-    'plague-bloat':{name:'Plague Bloat',hp:390,dmg:[30,42],acc:70,eva:9,armor:3,speed:65,art:1.28,
-      hint:'Slow, tough and heavy in melee. Vents poison over nearby floor immediately. Its three-world-turn cloud deals direct poison damage reduced by resistance.'},
-    'brood-carrier':{name:'Brood Carrier',hp:285,dmg:[14,21],acc:69,eva:12,armor:3,speed:85,art:1.14,
-      hint:'Alternates releasing Rotlings with launching poison clouds; neither has a windup. Its three-world-turn cloud inflicts up to four world turns of Poison when it damages you. At most two offspring alive and four born in total; offspring give no XP, loot or globes.'},
-    'bile-spitter':{name:'Bile Spitter',hp:225,dmg:[9,15],acc:73,eva:20,armor:2,speed:95,art:.9,
-      hint:'Fires poison spits between instant three-world-turn cloud patches. A spit can Blind for two world turns, at most once every three world turns. Its close bite is weak.'},
-    'rotling':{name:'Rotling',hp:63,dmg:[11,15],acc:70,eva:26,armor:0,speed:125,art:.64,rots:true,
-      hint:'A fragile, quick physical biter. Damaging bites inflict up to 20 world turns of Rot, preventing natural HP regeneration. Repeated bites refresh Rot. It cannot create more creatures.'},
-    'horned-reaver':{name:'Horned Reaver',hp:263,dmg:[27,38],acc:75,eva:18,armor:4,speed:95,art:1.08,
-      hint:'Follows ordinary physical swings with occasional instant frontal cleaves. A landed cleave can Stun for one world turn. It resumes fighting immediately afterward.'},
-    'gorehound':{name:'Gorehound',hp:225,dmg:[21,30],acc:74,eva:24,armor:3,speed:110,art:1.0,
-      hint:'Leaps immediately at a target two to five tiles away and bites on landing. The leap needs clear land and cannot cross walls, void, portals or creatures. Root prevents the leap; it can leap again after four world turns.'},
-    'ironbound':{name:'Ironbound',hp:368,dmg:[18,26],acc:71,eva:10,armor:9,speed:75,art:1.16,
-      hint:'Periodically braces for two world turns, staying still and reducing incoming damage by 45%. It remains vulnerable and cannot brace continuously.'},
-    'chain-reaver':{name:'Chain Reaver',hp:225,dmg:[17,26],acc:77,eva:21,armor:3,speed:95,art:1.03,
-      hint:'Throws a harpoon without a windup, at most once every five world turns. A landed physical hit pulls up to two clear land tiles towards it. Cover and bodies stop the line.'},
-    'lash-dancer':{name:'Lash Dancer',hp:225,dmg:[18,26],acc:78,eva:29,armor:2,speed:110,art:1.02,
-      hint:'Physical lashes reach two clear tiles. Every five world turns it can use a barbed lash without a windup, inflicting up to three world turns of Bleed. Active healing closes the wound.'},
-    'razor-dancer':{name:'Razor Dancer',hp:225,dmg:[18,26],acc:77,eva:31,armor:2,speed:130,art:.95,
-      hint:'A fast melee hunter. Prefers nearby bleeding targets and deals 30% more physical damage to them. No extra follow-up strike.'},
-    'silk-weaver':{name:'Silk Weaver',hp:225,dmg:[9,15],acc:74,eva:22,armor:2,speed:90,art:.93,
-      hint:'Fires a web without a windup, at most once every five world turns. A hit Roots for one world turn, then Slows for three, using ordinary control protections. Its web does not Bleed.'},
-    'hookfang':{name:'Hookfang',hp:240,dmg:[24,33],acc:74,eva:18,armor:4,speed:100,art:1.04,
-      hint:'Sturdy, straightforward physical melee pressure. Its fangs add no poison, bleed or control effect.'}
+    'prism-seer':{name:'Prism Seer',hp:225,dmg:[18,26],acc:76,eva:22,armor:2,speed:95,art:1.05,spellcaster:true},
+    'folded-horror':{name:'Folded Horror',hp:270,dmg:[27,38],acc:73,eva:14,armor:4,speed:85,art:1.18},
+    'rift-skitter':{name:'Rift Skitter',hp:225,dmg:[15,23],acc:75,eva:33,armor:1,speed:135,art:.75},
+    'lens-bearer':{name:'Lens Bearer',hp:225,dmg:[11,15],acc:69,eva:15,armor:4,speed:90,art:1.05},
+    'plague-bloat':{name:'Plague Bloat',hp:390,dmg:[30,42],acc:70,eva:9,armor:3,speed:65,art:1.28},
+    'brood-carrier':{name:'Brood Carrier',hp:285,dmg:[14,21],acc:69,eva:12,armor:3,speed:85,art:1.14},
+    'bile-spitter':{name:'Bile Spitter',hp:225,dmg:[9,15],acc:73,eva:20,armor:2,speed:95,art:.9},
+    'rotling':{name:'Rotling',hp:63,dmg:[11,15],acc:70,eva:26,armor:0,speed:125,art:.64,rots:true},
+    'horned-reaver':{name:'Horned Reaver',hp:263,dmg:[27,38],acc:75,eva:18,armor:4,speed:95,art:1.08},
+    'gorehound':{name:'Gorehound',hp:225,dmg:[21,30],acc:74,eva:24,armor:3,speed:110,art:1.0},
+    'ironbound':{name:'Ironbound',hp:368,dmg:[18,26],acc:71,eva:10,armor:9,speed:75,art:1.16},
+    'chain-reaver':{name:'Chain Reaver',hp:225,dmg:[17,26],acc:77,eva:21,armor:3,speed:95,art:1.03},
+    'lash-dancer':{name:'Lash Dancer',hp:225,dmg:[18,26],acc:78,eva:29,armor:2,speed:110,art:1.02},
+    'razor-dancer':{name:'Razor Dancer',hp:225,dmg:[18,26],acc:77,eva:31,armor:2,speed:130,art:.95},
+    'silk-weaver':{name:'Silk Weaver',hp:225,dmg:[9,15],acc:74,eva:22,armor:2,speed:90,art:.93},
+    'hookfang':{name:'Hookfang',hp:240,dmg:[24,33],acc:74,eva:18,armor:4,speed:100,art:1.04}
   };
   var immunities={
     'prism-seer':['blind'],'folded-horror':['fear'],'rift-skitter':['slow'],'lens-bearer':['stun'],
@@ -49,25 +33,34 @@
     'horned-reaver':['fear'],'gorehound':['fear'],'ironbound':['stun','knockback'],'chain-reaver':['root'],
     'lash-dancer':['fear'],'razor-dancer':['slow'],'silk-weaver':['root'],'hookfang':['fear']
   };
+  // Reuse the recorded creature voices. The shared combat and death pipelines
+  // play these on the animation's impact frame; no per-turn vocal loops.
+  var voices={
+    'prism-seer':'wisp','folded-horror':'mimic','rift-skitter':'imp','lens-bearer':'elementaling',
+    'plague-bloat':'zombie','brood-carrier':'slime','bile-spitter':'slime','rotling':'imp',
+    'horned-reaver':'brute','gorehound':'hound','ironbound':'golem','chain-reaver':'brute',
+    'lash-dancer':'drow','razor-dancer':'drow','silk-weaver':'spider','hookfang':'spider'
+  };
   // Rewards remain stable across difficulty tuning and older sandbox saves.
   var rewards={'prism-seer':68,'folded-horror':81,'rift-skitter':68,'lens-bearer':68,
     'plague-bloat':117,'brood-carrier':86,'bile-spitter':68,'rotling':19,
     'horned-reaver':79,'gorehound':68,'ironbound':110,'chain-reaver':68,
     'lash-dancer':68,'razor-dancer':68,'silk-weaver':68,'hookfang':72};
   Object.keys(groups).forEach(function(biome){groups[biome].forEach(function(slug){
-    var row=content[slug],kind='chaos-'+slug;
-    if(slug==='lash-dancer'||slug==='razor-dancer'){row.spawnInvisible=true;row.hint='Starts invisible; attacking or taking damage reveals it. '+row.hint;}
-    row.statusImmunities=immunities[slug];row.hint+=' Immune to '+row.statusImmunities.map(function(k){return k==='slow'?'Slow (including Chill and Freeze)':k==='root'?'Root (including Web)':k.charAt(0).toUpperCase()+k.slice(1);}).join(', ')+'.';
+    var row=content[slug],kind='chaos-'+slug;row.sfx=voices[slug];
+    if(slug==='lash-dancer'||slug==='razor-dancer'){row.spawnInvisible=true;}
+    row.statusImmunities=immunities[slug];
     MONSTERS[kind]=Object.assign({sprite:'m-'+kind,ch:row.name.charAt(0),col:biome==='rot-hollows'?'#A0C85A':biome==='prism-archives'?'#84CCEE':biome==='cinder-bastion'?'#D97555':'#C998E8',
       range:1,xp:rewards[slug],band:[99,99],w:0,living:true,artLeft:false,chaosAI:true,chaosBiome:biome},row);
     DROPS[kind]={chance:.22,table:{essence:12,gear:3,food:2}};
-    if(typeof DEEP_HINT!=='undefined')DEEP_HINT[kind]=row.hint;
   });});
   if(typeof STATUS_INFO!=='undefined'){
     STATUS_INFO.chaoslens={name:'Lens Shield',icon:'ic-arcane-ward',d:'A finite lens shield absorbs damage. It cannot stack and expires after four world turns.'};
     STATUS_INFO.chaosbrace={name:'Iron Brace',icon:'ic-arcane-ward',d:'Stays in place and takes 45% less damage for two world turns. Still vulnerable.'};
   }
   var elements=['fire','ice','lightning'];
+  function sound(name,volume){if(typeof sfx==='function')sfx(name,{vol:volume===undefined?.7:volume});}
+  function castSound(element){return element==='poison'?'status-poison':element==='web'?'trap-web':element+'-cast';}
   function active(){return !!(floorMeta&&floorMeta.chaosPreview);}
   function state(){return floorMeta.chaosCombat||(floorMeta.chaosCombat={version:1,damageVersion:2,hazards:[],nextHazard:1});}
   function regionAt(x,y){return active()&&inb(x,y)?floorMeta.chaosPreview.regionByCell[idxOf(x,y)]:null;}
@@ -159,6 +152,11 @@
   }
   function release(e,w){
     revealActor(e);setClip(e,'attack');e.chaosCooldown=now()+500;
+    // Physical specials already get their voice from attack(). Non-physical
+    // releases need an audible cast even when their projectile misses.
+    if(w.kind==='chaos-ray'||w.kind==='chaos-web')sound(castSound(w.element));
+    else if(w.kind==='chaos-vent'||w.kind==='chaos-bile')sound('trap-gas');
+    else if(w.kind==='chaos-brood')sound('slime-split',.65);
     var victim;
     if(w.kind==='chaos-ray'||w.kind==='chaos-harpoon'||w.kind==='chaos-web'){
       victim=projectileVictim(e,w);var end=w.tiles[w.tiles.length-1];boltFx(e.x,e.y,end[0],end[1],w.element);
@@ -202,7 +200,7 @@
     }
     choices.sort(function(a,b){return Math.abs(dist(a,target)-2)-Math.abs(dist(b,target)-2)||b.n-a.n||a.y-b.y||a.x-b.x;});if(!choices.length)return false;
     var to=choices[0],concealed=actorConcealed(e);if(!concealed)sparkleFx(e.x,e.y,'light',10);e.x=to.x;e.y=to.y;e._lx=undefined;e._ly=undefined;if(typeof MOTION_STATE!=='undefined')MOTION_STATE.delete(e);if(!concealed)sparkleFx(e.x,e.y,'light',10);
-    e.chaosBlinkNeedsAttack=true;e.chaosCooldown=now()+500;return true;
+    sound('vanish',.5);e.chaosBlinkNeedsAttack=true;e.chaosCooldown=now()+500;return true;
   }
   function immediate(e,kind,tiles,label,element,extra){
     if(!tiles.length)return false;
@@ -213,7 +211,7 @@
     var range=e.kind==='chaos-prism-seer'?6:5,tiles=line(e,target,range);
     if(!reaches(tiles,target))return false;
     var type=e.kind==='chaos-prism-seer'?e.chaosNextElement:'poison';
-    revealActor(e);setClip(e,'attack');boltFx(e.x,e.y,target.x,target.y,type);
+    revealActor(e);setClip(e,'attack');sound(castSound(type));boltFx(e.x,e.y,target.x,target.y,type);
     if(spellLands(e,target)){
       var damage=direct(e,target,sDMG(e.kind==='chaos-prism-seer'?24:15),type,false);
       if(damage>0&&target.hp>0&&e.kind==='chaos-bile-spitter'&&now()>=(e.chaosDebuffReadyAt||0)){afflict(e,target,'blind',2);e.chaosDebuffReadyAt=now()+300;}
@@ -257,7 +255,7 @@
       case 'chaos-rift-skitter':if(d>=2&&d<=5)return blink(e,target);break;
       case 'chaos-lens-bearer':
         var ally=ents.filter(function(o){return o!==e&&o.foe&&o.hp>0&&o.kind!=='chaos-lens-bearer'&&sameRegion(e,o)&&dist(e,o)<=4&&!gameEffects.has(o,'chaoslens')&&clearShot(e,o);}).sort(function(a,b){return dist(a,target)-dist(b,target)||a.id-b.id;})[0];
-        if(ally){revealActor(e);gameEffects.apply(ally,'chaoslens',4,undefined,{durationModifiers:false,refresh:'replace',data:{n:sHP(35),sourceId:e.id}});if(!actorConcealed(ally))boltFx(e.x,e.y,ally.x,ally.y,'light');setClip(e,'attack');e.chaosCooldown=now()+500;return true;}break;
+        if(ally){revealActor(e);gameEffects.apply(ally,'chaoslens',4,undefined,{durationModifiers:false,refresh:'replace',data:{n:sHP(35),sourceId:e.id}});if(!actorConcealed(ally))boltFx(e.x,e.y,ally.x,ally.y,'light');setClip(e,'attack');sound('light-cast',.55);e.chaosCooldown=now()+500;return true;}break;
       case 'chaos-plague-bloat':if(d<=2)return immediate(e,'vent',area(e.x,e.y,1,region),'vents poison','poison');break;
       case 'chaos-brood-carrier':
         var canBrood=d<=6&&(e.chaosBorn||0)<4&&ents.filter(function(o){return o.hp>0&&o.chaosOwnerId===e.id;}).length<2;
@@ -267,7 +265,7 @@
       case 'chaos-horned-reaver':if(d<=1){var dx=Math.sign(target.x-e.x),dy=Math.sign(target.y-e.y);tiles=area(e.x,e.y,1,region).filter(function(t){return (t[0]-e.x)*dx+(t[1]-e.y)*dy>0;});return immediate(e,'cleave',tiles,'Frontal Cleave');}break;
       case 'chaos-gorehound':
         return leap(e,target);
-      case 'chaos-ironbound':if(d<=4){gameEffects.apply(e,'chaosbrace',2,undefined,{durationModifiers:false,refresh:'replace'});e.chaosCooldown=now()+700;setClip(e,'attack');floatText(e.x,e.y,'braced','phys');return true;}break;
+      case 'chaos-ironbound':if(d<=4){gameEffects.apply(e,'chaosbrace',2,undefined,{durationModifiers:false,refresh:'replace'});e.chaosCooldown=now()+700;setClip(e,'attack');sound('hit-armor',.55);floatText(e.x,e.y,'braced','phys');return true;}break;
       case 'chaos-chain-reaver':if(d>=2){tiles=line(e,target,6);if(reaches(tiles,target))return immediate(e,'harpoon',tiles,'casts its hooked harpoon');}break;
       case 'chaos-lash-dancer':tiles=line(e,target,2);if(reaches(tiles,target))return immediate(e,'lash',tiles,'lashes with a barbed whip','blood');break;
       case 'chaos-silk-weaver':if(d>=2&&!gameEffects.hasTag(target,'root')&&!gameEffects.hasTag(target,'slow')){tiles=line(e,target,5);if(reaches(tiles,target))return immediate(e,'web',tiles,'casts a silver web','web');}break;

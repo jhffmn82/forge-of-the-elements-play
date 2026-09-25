@@ -51,14 +51,18 @@ function stepEnt(e,dx,dy){
   }
   return false;
 }
-function actorFootprintField(e,target){
-  var field=new Int32Array(MW*MH).fill(-1),queue=[],n=entitySize(e),options={terrainOnly:true};
+function actorFootprintField(e,target,options){
+  var field=new Int32Array(MW*MH).fill(-1),queue=[],n=entitySize(e);
+  options=Object.assign({terrainOnly:true,doors:true},options||{});
   for(var y=target.y-n;y<=target.y+entitySize(target);y++)for(var x=target.x-n;x<=target.x+entitySize(target);x++){
     if(!inb(x,y)||dist({x:x,y:y,base:e.base},target)!==1||!actorFootprintAllowed(e,x,y,options))continue;
     field[idxOf(x,y)]=0;queue.push({x:x,y:y});
   }
   for(var head=0;head<queue.length;head++){
     var p=queue[head];
+    // A per-actor route only needs the gradient back to this actor. The shared
+    // player field has no origin coordinates and still covers the whole floor.
+    if(p.x===e.x&&p.y===e.y)break;
     FoteActors.neighbors.forEach(function(offset){
       var x=p.x+offset[0],y=p.y+offset[1];
       if(!inb(x,y)||field[idxOf(x,y)]>=0||!actorFootprintAllowed(e,x,y,options))return;
@@ -70,16 +74,22 @@ function actorFootprintField(e,target){
 }
 function actorPathStep(e,target,field){
   if(!canActorMove(e))return false;
-  field=entitySize(e)>1?actorFootprintField(e,target):(field||bfsFrom(target.x,target.y));
-  var step=FoteActors.bestStep(e,function(x,y){return inb(x,y)?field[idxOf(x,y)]:-1;},function(x,y,dx,dy){return actorCellAllowed(e,x,y,dx,dy,{doors:true,avoidFire:true});});
+  field=entitySize(e)>1||e.base.aquatic?actorFootprintField(e,target):(field||actorFootprintField(e,target));
+  function select(){return FoteActors.bestStep(e,function(x,y){return inb(x,y)?field[idxOf(x,y)]:-1;},function(x,y,dx,dy){return actorCellAllowed(e,x,y,dx,dy,{doors:true,avoidFire:true});});}
+  var step=select();
+  if(!step&&dist(e,target)>1){
+    // The shared field ignores bodies. If its next step is occupied, route around
+    // the obstruction instead of repeatedly walking straight into it.
+    field=actorFootprintField(e,target,{terrainOnly:false,doors:true,avoidFire:true});step=select();
+  }
   return step?stepEnt(e,step.dx,step.dy):false;
 }
 function stepToward(e,x,y){
   if(!canActorMove(e))return false;
   return actorPathStep(e,{x:x,y:y})||stepEnt(e,Math.sign(x-e.x),Math.sign(y-e.y));
 }
-function chaseStep(e){if(!PDIST)refreshPlayerDistance();return actorPathStep(e,player,PDIST)||stepToward(e,player.x,player.y);}
-function allyFollowStep(e){if(!PDIST)refreshPlayerDistance();return actorPathStep(e,player,PDIST)||stepToward(e,player.x,player.y);}
+function chaseStep(e){if(!PDIST||PDIST.targetX!==player.x||PDIST.targetY!==player.y)refreshPlayerDistance();return actorPathStep(e,player,PDIST)||stepToward(e,player.x,player.y);}
+function allyFollowStep(e){if(!PDIST||PDIST.targetX!==player.x||PDIST.targetY!==player.y)refreshPlayerDistance();return actorPathStep(e,player,PDIST)||stepToward(e,player.x,player.y);}
 function fleeStep(e,threat){
   if(!canActorMove(e))return false;threat=threat||player;
   var step=FoteActors.bestStep(e,function(x,y){return dist({x:x,y:y},threat);},function(x,y,dx,dy){return actorCellAllowed(e,x,y,dx,dy);},true);

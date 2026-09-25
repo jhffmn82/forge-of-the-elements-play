@@ -392,30 +392,16 @@ function shroomGlowRaster(x, y){
   var gr=g.createRadialGradient(16,18,1,16,18,15); gr.addColorStop(0,'rgba(190,110,255,0.55)'); gr.addColorStop(0.5,'rgba(140,60,230,0.22)'); gr.addColorStop(1,'rgba(90,30,180,0)');
   g.fillStyle=gr; g.fillRect(0,0,R,R); return c;
 }
-/* 2026-09-20: packet 08's mushrooms replace the code-drawn caps. Justin: "make sure they are tiny and in groups on
-   the ground" - so a patch is four to seven small caps of mixed size scattered across the tile, each one swaying and
-   bobbing on its own clock (vegart.js), over the same violet glow the patch always had. */
-var CRYPT_SHROOM_ART = 6;
-function cryptShroomArt(i){ return (typeof vegArt==='function') ? vegArt('crypt-shroom-'+i) : null; }
-
+/* Crypt mushrooms use five fixed clumps of the packet's authored sprites.
+ * Their existing glow and trampled terrain are unchanged. */
 function drawMushroomGrass(x,y,px,py,alpha,layer,now){
-  if(!cryptShrooms()) return false;
-  if(layer==='front') return;   /* mushrooms are short: nothing to draw over whoever stands in them */
+  if(!cryptShrooms())return false;
+  if(layer==='front')return;
   now=now||performance.now();
-  var t=ANIM.reduce ? 0 : now/1000, pulse=0.65+0.35*Math.sin(t*1.8 + hash2(x,y,5)*6.28);
-  ctx.save(); ctx.globalCompositeOperation='lighter'; ctx.globalAlpha=alpha*pulse*0.8;
-  ctx.drawImage(cachedRaster('shg@', x, y, shroomGlowRaster), 0,0,32,32, px-TS*0.25, py-TS*0.25, TS*1.5, TS*1.5);
-  ctx.restore();
-  if(!cryptShroomArt(1)) return blitRaster(cachedRaster('shr@', x, y, function(a,b){ return shroomRaster(a,b,false); }), px, py, alpha);
-  var n=4+Math.floor(hash2(x,y,301)*4);                       /* four to seven caps: a clump, never one lone cap */
-  for(var k=0;k<n;k++){
-    var o=cryptShroomArt(1+Math.floor(hash2(x+k,y,302+k)*CRYPT_SHROOM_ART)); if(!o) continue;
-    var ox=0.12+0.76*hash2(x,y+k,303+k), oy=0.45+0.5*hash2(x+k,y+k,304+k);
-    var sc=0.30+0.22*hash2(k,x+y,305+k);                      /* tiny: about a third of a tile at most */
-    var sw=vegSway(x+k*0.3, y, now, 0)*0.5;
-    vegDraw(o, px+TS*ox, py+TS*oy, sc, sw, alpha, hash2(k,x,306)<0.5);
-  }
-
+  var t=ANIM.reduce?0:now/1000,pulse=.65+.35*Math.sin(t*1.8+hash2(x,y,5)*6.28);
+  ctx.save();ctx.globalCompositeOperation='lighter';ctx.globalAlpha=alpha*pulse*.8;
+  ctx.drawImage(cachedRaster('shg@',x,y,shroomGlowRaster),0,0,32,32,px-TS*.25,py-TS*.25,TS*1.5,TS*1.5);ctx.restore();
+  return drawSceneryCluster('mushroom-crypt',Math.floor(hash2(x,y,301)*5),px,py,alpha,hash2(x,y,306)<.5,vegSway(x,y,now,0)*.5);
 }
 
 function drawMushroomGroundDecal(gv, x, y, px, py, alpha, now){

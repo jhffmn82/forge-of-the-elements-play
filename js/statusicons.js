@@ -10,7 +10,7 @@ var STATUS_INFO = {
   chill:  {name:'Chilled', icon:'st-chill', bad:1, d:'Acts more slowly; takes more ice damage.'},
   slow:   {name:'Slowed', icon:'st-slow', bad:1, d:'Acts more slowly.'},
   frozen: {name:'Frozen', icon:'st-frozen', bad:1, d:'Can\'t act. A physical hit shatters the ice for double damage.'},
-  root:   {name:'Rooted', icon:'st-root', bad:1, d:'Can\'t move, but can still attack.'},
+  root:   {name:'Rooted', icon:'ic-earth-root', bad:1, d:'Can\'t move, but can still attack.'},
   stun:   {name:'Stunned', icon:'st-stun', bad:1, d:'Can\'t act.'},
   fear:   {name:'Afraid', icon:'st-fear', bad:1, d:'Forces retreat instead of fighting. If escape is blocked, you cower in place.'},
   blind:  {name:'Blind', icon:'st-blind', bad:1, d:'Attacks miss far more often.'},
@@ -31,11 +31,12 @@ var STATUS_INFO = {
   rally:     {name:'Rally', icon:'pr-rally', d:'+10% damage and spell power.'},
   temper:    {name:'Temper', icon:'ic-temper', d:'Increases weapon damage, scaled by Divine Power.'},
   arcaneward:{name:'Ward', icon:'ic-arcane-ward', d:'A ward absorbs damage.'},
-  haste:     {name:'Haste', icon:'ic-flame-step', d:'You move and act faster.'},
+  haste:     {name:'Haste', icon:'ic-flame-step', d:'Movement, attacks and spellcasting are 30% faster.'},
+  moltenring:{name:'Molten Ring', icon:'ic-firebolt', d:'Attacks deal 5 additional fire damage.'},
   cinder:    {name:'Cinder Stride', icon:'ic-flame-step', d:'Faster, leaving fire where you step.'},
   manaflow:  {name:'Mana Flow', icon:'pr-manatide', d:'Mana returns twice as fast.'},
   afterglow: {name:'Afterglow', icon:'ic-heal', d:'Light lingers: you heal 5% of your maximum HP each turn.'},
-  thorns:    {name:'Thorns', icon:'st-root', d:'Attackers take damage back.'},
+  thorns:    {name:'Thorns', icon:'ic-earth-root', d:'Attackers take damage back.'},
   /* other timers on the player */
   hidden:    {name:'Hidden', icon:'st-hidden', d:'Enemies can\'t see you; your next hit is a surprise attack.'},
   levitate:  {name:'Floating', icon:'ic-storm-form', d:'Cross chasms and water; floor traps don\'t trigger.'}
@@ -69,7 +70,7 @@ function statusList(e){
     /* Sylla's web starts as Root, then becomes Slow. Show silk in both phases. */
     if(o.k==='root'&&e.syllaWeb>0) I={name:'Webbed',icon:'st-web',bad:1,d:'Pinned in silk. When released, moves and acts at half speed.'};
     if(o.k==='livingmountain') I=Object.assign({},I,{name:I.name+' ×'+(e.st.livingmountain.n||0)});
-    return {k:o.k, t:o.t, name:I.name, icon:I.icon, d:I.d, bad:!!I.bad};
+    return {k:o.k, t:o.t, stacks:o.k==='livingmountain'?Math.min(10,e.st.livingmountain.n||0):0, name:I.name, icon:I.icon, d:I.d, bad:!!I.bad};
   });
 }
 
@@ -81,6 +82,7 @@ function statusList(e){
     '#statusbar .sico.bad{border-color:#A04A3A}',
     '#statusbar .sico img{width:26px;height:26px;image-rendering:pixelated}',
     '#statusbar .sico .n{position:absolute;right:2px;bottom:0;font-size:11px;font-weight:700;color:#fff;text-shadow:0 0 2px #000,0 1px 2px #000}',
+    '#statusbar .sico .stacks{position:absolute;left:1px;top:0;padding:0 2px;border-radius:3px;background:rgba(18,15,13,.85);font-size:12px;font-weight:700;color:var(--gold);text-shadow:0 1px 2px #000}',
     '#statusbar .sico .fb{font-size:10px;color:var(--ash)}',
     '#fx{display:none!important}',
     '.tipstat{display:flex;align-items:center;gap:6px;margin-top:3px;font-size:11.5px}',
@@ -98,11 +100,11 @@ function renderStatusBar(){
   var list=statusList(player);
   bar.innerHTML=list.map(function(s, i){
     var url=statusIconURL(s.icon);
-    return '<div class="sico'+(s.bad?' bad':'')+'" data-si="'+i+'">'+(url?'<img src="'+url+'" alt="">':'<span class="fb">'+s.name.slice(0,3)+'</span>')+'<span class="n">'+s.t+'</span></div>';
+    return '<div class="sico'+(s.bad?' bad':'')+'" data-si="'+i+'">'+(url?'<img src="'+url+'" alt="">':'<span class="fb">'+s.name.slice(0,3)+'</span>')+(s.stacks?'<span class="stacks">×'+s.stacks+'</span>':'')+'<span class="n">'+s.t+'</span></div>';
   }).join('');
   bar.querySelectorAll('[data-si]').forEach(function(el){
     var s=list[+el.getAttribute('data-si')];
-    if(typeof hoverCard==='function') hoverCard(el, function(){ return '<div class="nm">'+s.name+'</div><div class="row"><span>Turns left</span><b>'+s.t+'</b></div><div class="hint">'+s.d+'</div>'; });
+    if(typeof hoverCard==='function') hoverCard(el, function(){ return '<div class="nm">'+s.name+'</div>'+(s.stacks?'<div class="row"><span>Stacks</span><b>'+s.stacks+' / 10</b></div>':'')+'<div class="row"><span>Turns left</span><b>'+s.t+'</b></div><div class="hint">'+s.d+'</div>'; });
   });
 }
 

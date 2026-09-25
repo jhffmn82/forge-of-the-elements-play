@@ -10,7 +10,7 @@
    New: Smoke (Fire + Shadow) and Rot (Shadow + Earth). Deep Map is Light + Earth; the Aegis takes three motes. */
 var SIGIL_ORDER = {
   singles: ['firestorm','identify','levitate','stoneskin','heal','vanish'],
-  plus:    ['firestorm2','identify2','levitate2','stoneskin2','heal2','vanish2'],
+  plus:    ['firestorm2','identify2','levitate2','haste','stoneskin2','heal2','vanish2'],
   pairs:   ['cinder','magma','sunburst','smoke','storm','mire','purify','mana','recall','blink','mapping','rot'],
   triple:  ['aegis'],
   grand:   ['ascension','wisdom']
@@ -19,12 +19,13 @@ var SIGIL_ORDER = {
   var S=SIGILS, add={
     firestorm2:{name:'Fire sigil+', motes:['fire','fire'], desc:'Flames burst out to 4 tiles: 14 + floor fire damage and Burning.'},
     identify2: {name:'Water sigil+', motes:['water','water'], desc:'Identify every sigil and every piece of gear you carry or wear, learn the look of every sigil this run, and put out every fire within 5 tiles.'},
-    levitate2: {name:'Air sigil+', motes:['air','air'], desc:'Float for 60 turns, and move 30% faster for 10.'},
+    levitate2: {name:'Air sigil+', motes:['air','air'], desc:'Float for 60 turns. Movement, attacks and spellcasting are 30% faster for 10 global turns.'},
+    haste:     {name:'Sigil of Haste', motes:['air','air'], desc:'Movement, attacks and spellcasting are 30% faster for 20 global turns. Refreshes Haste instead of stacking it.'},
     stoneskin2:{name:'Earth sigil+', motes:['earth','earth'], desc:'Stone skin for 30 turns and a shield of 20% of your max HP.'},
     heal2:     {name:'Light sigil+', motes:['light','light'], desc:'Heal to full and cleanse harmful conditions.'},
     vanish2:   {name:'Shadow sigil+', motes:['shadow','shadow'], desc:'Vanish for 5 turns; enemies lose track of you.'},
     cinder:    {name:'Sigil of Cinder Stride', motes:['fire','air'], desc:'Move 50% faster for 10 turns, leaving fire where you step.'},
-    magma:     {name:'Sigil of the Molten Ring', motes:['fire','earth'], desc:'The ground 2 tiles around you (not under you) burns for 5 turns.'},
+    magma:     {name:'Sigil of the Molten Ring', motes:['fire','earth'], desc:'The ground 2 tiles around you (not under you) burns for 5 turns. Your weapon and unarmed attacks also deal 5 additional fire damage for 5 global turns.'},
     sunburst:  {name:'Sigil of Sunburst', motes:['fire','light'], desc:'Every enemy you can see takes light damage and is Blinded for 3 turns.'},
     smoke:     {name:'Sigil of Smoke', motes:['fire','shadow'], desc:'Smoke fills the room (4 tiles around you in a corridor) for 12 turns. Nobody inside, you included, sees past 1 tile, so no one can shoot or cast across it. Enemies hunting you lose track, and one that lost you can be surprised.'},
     storm:     {name:'Sigil of the Storm', motes:['water','air'], desc:'Lightning strikes up to 3 enemies you can see (more against the wet, may stun); rain soaks the rest.'},

@@ -40,7 +40,7 @@ function offhandCard(item){
   else if(d.unid||d.cursed)h='<div class="nm">'+gearName(d)+'</div><div class="hint">'+(d.unid?'':d.note||'')+'</div>'+unidHint(d)+(d.cursed&&!d.unid?'<div class="hint" style="color:#D0605A">Cursed.</div>':'');
   else h=d.weapon?weaponCard(d)+'<div class="hint">Off-hand strike: 60% damage.</div>':'<div class="nm">'+gearName(d)+'</div><div class="hint">'+(d.note||'')+'</div>';
   if(d.enchant&&!d.unid){
-    var slot=d.block>0?'shield':(d.icon||'').replace(/^item-/,'');
+    var key=itemKey(d),slot=key==='holy'?'holy':d.block>0?'shield':key;
     if(ENCHANT_TEXT[slot])h+='<div class="row"><span>Infusion</span><b style="color:'+AFF_COL[d.enchant]+'">'+cap(d.enchant)+'</b></div><div class="hint">'+enchantLive(slot,d.enchant)+'</div>';
   }
   h=tierTint(h,d);

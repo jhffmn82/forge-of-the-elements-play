@@ -138,22 +138,6 @@ function fwaSprite(kind){
   Object.keys(FWA_ART).forEach(function(k){ DROPS[k]=DROPS[k] || (MONSTERS[k].elite ? {chance:0.6, table:{essence:6, gear:8, sigil:2}} : {chance:0.3, table:{essence:8, sigil:2, gear:3}}); });
   for(var el in PLANE_ROSTER_FWA) PLANE_ROSTER[el]=PLANE_ROSTER_FWA[el];
 })();
-/* hover-card lines: what each one does, in a sentence (the same treatment the Underdark's creatures get) */
-var FWA_HINT = {
-  cinderimp:'Hops the last few tiles at you and leaves the ground burning behind it.',
-  magmacrawler:'Slow and heavily armoured. It bursts when it dies - do not be standing next to it.',
-  flamedancer:'Hard to hit, and its touch sets you alight.',
-  emberlord:'Calls up eruptions where you stand, and below half health the ground around him catches fire.',
-  tidecrab:'Its shell turns the first blow of every turn. Slow, and it hits hard.',
-  siren:'Her song drags you a step toward her and costs you the turn. Kill her first, or break her line of sight.',
-  drownedone:'Drags you a tile toward it - and into the deep water, if that is where it is standing.',
-  leviathaneel:'Submerges in the pool where nothing can touch it, and comes up beside you. Its tail throws you across the chamber.',
-  stormhawk:'Swoops in from range and knocks you back a tile.',
-  thundertotem:'Cannot move. Zaps anything standing in a straight line from it - step out of the line.',
-  windwisp:'Shoves you about. Harmless on its own, dangerous beside a vent or a drop.',
-  tempestdjinn:'Pulls you into the whirlwind and stuns you, and throws lightning at anything it can see.'
-};
-
 /* ---------------------------------------------------------------- the portal tile in biome 4
    portals.js puts the arch in a plain room 4x4 or bigger, furthest from where you start. In the Underdark that
    misses in two ways: about one floor in twenty has no room that passes at all, and about one in ten puts the
@@ -447,18 +431,20 @@ function elementalPlaneBehavior(e){
       if(vis[idxOf(e.x,e.y)]) log('The <b>Flame Dancer</b> spins out of reach.','c-info');
        return true; }
   }
-  if(kind==='siren' && e.state==='hunt' && see && d>=2 && d<=5 && (e.songCd=(e.songCd||0)-1)<=0 && fwaSees(e)){
-    e.songCd=4; setClip(e,'attack');
+  // Water creatures share a brief recovery window: a group cannot chain forced moves.
+  var waterPullReady=worldNow()>=(e.waterPullReadyAt||0)&&worldNow()>=(player.waterPullRecoveryUntil||0);
+  if(kind==='siren' && e.state==='hunt' && see && d>=2 && d<=5 && waterPullReady && fwaSees(e)){
+    e.waterPullReadyAt=worldNow()+500; setClip(e,'attack');
     sparkleFx(player.x, player.y, 'magic', 20);
     var step=fwaPush(player, e.x-player.x, e.y-player.y, 1);
-    applyStatus(player, 'stun', 1);
-    log('The <b>Siren</b> sings. You take a step toward her'+(step?'':' but your feet will not move')+' and lose your turn.','c-you');
+    if(step)player.waterPullRecoveryUntil=worldNow()+200;
+    log('The <b>Siren</b> sings. '+(step?'Her song draws you one step closer.':'You hold your ground.'),'c-you');
      return true;
   }
-  if(kind==='drowned' && e.state==='hunt' && d>=2 && d<=4 && see && (e.pullCd=(e.pullCd||0)-1)<=0 && fwaSees(e)){
-    e.pullCd=4; setClip(e,'attack');
-    var got=fwaPush(player, e.x-player.x, e.y-player.y, 2);
-    if(got){ log('The <b>Drowned One</b> hauls you '+got+' tile'+(got>1?'s':'')+' toward it.','c-you'); sfx('trap-web'); }
+  if(kind==='drowned' && e.state==='hunt' && d>=2 && d<=4 && see && waterPullReady && fwaSees(e)){
+    e.waterPullReadyAt=worldNow()+500; setClip(e,'attack');
+    var got=fwaPush(player, e.x-player.x, e.y-player.y, 1);
+    if(got){ player.waterPullRecoveryUntil=worldNow()+200;log('The <b>Drowned One</b> hauls you one tile toward it.','c-you'); sfx('trap-web'); }
      return true;
   }
   if(kind==='hawk' && canActorMove(e) && e.state==='hunt' && d>=3 && d<=5 && see && (e.swoopCd=(e.swoopCd||0)-1)<=0){
@@ -728,19 +714,6 @@ function drawElementPlaneSurface(){
   return;
 
 }
-
-/* ---------------------------------------------------------------- words */
-var _fwaInspectHTML = inspectHTML;
-inspectHTML = function(mx, my){
-  var h=_fwaInspectHTML(mx, my);
-  if(!inFwa() || !inb(mx,my)) return h;
-  var e=ents.filter(function(o){ return o.x===mx && o.y===my && o!==player; })[0];
-  if(e && h && e.base && FWA_HINT[e.kind] && (revealAll||vis[idxOf(mx,my)])){
-    var line='<div class="hint">'+FWA_HINT[e.kind]+'</div>', at2=h.indexOf('<div class="odds">');
-    return at2>=0 ? h.slice(0,at2)+line+h.slice(at2) : h+line;
-  }
-  return h;
-};
 
 /* Named floor-generation stages; ordered by generation-adapter.js. */
 function repairGeneratedDeepPortal(seed){

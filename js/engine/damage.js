@@ -4,7 +4,8 @@
   function physical(amount,options){
     var armor=Math.max(0,options.armor-(options.pierce||0));
     var flat=(options.heavy?0:Math.ceil(armor/2)+(options.earth||0))+(options.stone?3:0);
-    var damage=Math.max(0,amount-flat)*(1-Math.min(.5,.02*armor));
+    // Flat armor cannot erase a hit before percentage defenses are considered.
+    var damage=Math.max(0,amount-Math.min(flat,amount*.5))*(1-Math.min(.5,.02*armor));
     if(amount>0&&damage<1)damage=1;
     return damage*(options.frozen?2:1);
   }

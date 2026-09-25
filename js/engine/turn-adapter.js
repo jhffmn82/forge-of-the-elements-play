@@ -54,6 +54,7 @@ function turnRegeneration(context){
   if(infusion('holy')==='water'&&isBuffed())player.mp=Math.min(player.maxmp,player.mp+player.maxmp*.006*enchantValues('holy','water').manaRegen*scale);
 }
 function turnWorldPulse(clock){
+  turnDeathRemains(clock);
   [player].concat(ents.filter(function(e){return e!==player;})).forEach(function(e){
     if(e.tomb>0){e.tomb--;if(!e.tomb){log('The ice around '+e.name+' shatters.','c-info');sfx('ice-melt');}return;}
     worldStatusPulse(e,clock);

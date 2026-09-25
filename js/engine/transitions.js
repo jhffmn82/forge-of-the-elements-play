@@ -33,6 +33,7 @@
     ['marks','clouds','dark','shockClouds','tides','upheaval'].forEach(function(key){path(meta,[key,'*'],'until',turns);});
     ['hazardPending','fwaPending','mortyReturn','pendingLich','maw'].forEach(function(key){path(meta,[key],'at',turns);});
     ['corpses','regrow'].forEach(function(key){path(meta,[key,'*'],'at',turns);});
+    path(meta,['deathRemains','*'],'bornAt',ticks);path(meta,['deathRemains','*'],'expiresAt',ticks);
     path(meta,['smoke'],'until',turns);path(meta,['sanctuary'],'until',ticks);
     path(meta,['chaosCombat','hazards','*'],'bornAt',ticks);path(meta,['chaosCombat','hazards','*'],'expiresAt',ticks);
     path(meta,['chaosCombat'],'lastPulse',ticks);
@@ -47,7 +48,7 @@
     actors.forEach(function(e){
       fields(e,['stormChargeAt','stormReady','sparkReady','stoneImm','caughtOff','_surfT','_burnedAt','_fumeAt','_shellTurn','_blockTurn','_hitKey','_immuneMsg'],turns);
       ['zap','grasp','brand','erupt'].forEach(function(key){path(e,[key],'at',turns);});
-      fields(e,['rallyUntil','challengeUntil'],ticks);
+      fields(e,['rallyUntil','challengeUntil','waterPullReadyAt'],ticks);
       fields(e,['chaosCooldown','chaosDebuffReadyAt'],ticks);
       path(e,['st','*'],'bornAt',ticks);
     });

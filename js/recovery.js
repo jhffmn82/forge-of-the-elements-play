@@ -21,7 +21,7 @@ function stackLivingMountain(){
   derive(player);
 }
 
-if(typeof STATUS_INFO!=='undefined')STATUS_INFO.livingmountain={name:'Living Mountain',icon:'ic-iron-body',d:'Each stack grants +2 percentage points of all-damage resistance and critical-hit chance, +2% Accuracy and Evasion, and +2 flat attack damage before Might scaling. Up to 10 stacks; each unarmed attack refreshes all stacks for 6 × Divine Power global turns.'};
+if(typeof STATUS_INFO!=='undefined')STATUS_INFO.livingmountain={name:'Living Mountain',icon:'ic-iron-body',d:'Each stack grants +2 percentage points of critical-hit chance, +2% Accuracy, and +2 flat attack damage before Might scaling. Up to 10 stacks; each unarmed attack refreshes all stacks for 6 × Divine Power global turns.'};
 
 /* Anvil's Toll: a weapon attack on everything within two tiles, each thrown back and stunned (2026-09-23) */
 

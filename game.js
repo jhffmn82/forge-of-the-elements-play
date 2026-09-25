@@ -115,7 +115,8 @@ function entOffset(e){
 var fxIdleFrames=0, lastFrame=0;
 
 /* ============ combat ============ */
-function hitChance(acc,eva){ return clamp(acc/(acc+eva), 0.15, 0.95); }
+/* Opposed ratings: each point of Accuracy or Evasion moves the roll by 0.75%. */
+function hitChance(acc,eva){ return clamp(.75+.0075*(acc-80)-.0075*(eva-30), 0.15, 0.95); }
 
 /* ============ player actions ============ */
 function cancelAim(){ if(!aiming) return; aiming=null; abilityBar(); draw(); }

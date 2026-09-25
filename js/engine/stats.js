@@ -116,7 +116,7 @@
       var mountain=actor.st&&actor.st.livingmountain;
       var stacks=c.mountain&&mountain&&mountain.t>0?Math.max(0,Math.min(10,mountain.n||0)):0;
       if(stacks){
-        out.acc=Math.round(out.acc*(1+.02*stacks));out.eva=Math.round(out.eva*(1+.02*stacks));
+        out.acc=Math.round(out.acc*(1+.02*stacks));
         out.crit+=.02*stacks;
         out.dmg=out.dmg.map(function(n){return n+2*stacks;});
       }

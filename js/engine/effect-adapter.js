@@ -65,8 +65,10 @@ var gameEffects=FoteEffects.create({
     }else if(key==='poison'){
       var poisonScale=Number.isFinite(s.damageScale)&&s.damageScale>0?s.damageScale:1;
       damage=Math.max(1,Math.round(e.maxhp*(e.base&&e.base.boss?.05:.10)*poisonScale));
+      damage*=resistMult(e,'poison');
       if(e===player&&((player.buffs&&player.buffs.poisonward>0)||aff('earth')>=6))damage=0;
-      damage=dealDirectDamage(e,damage,'poison',null);floatText(e.x,e.y,String(damage),'poison');
+      if(e.base&&e.base.sporeproof)damage=0;
+      damage=dealDirectDamage(e,damage,'poison',null,{resistanceApplied:true});floatText(e.x,e.y,String(damage),'poison');
     }else if(key==='aura'&&e===player){
       ents.slice().forEach(function(o){if(o.foe&&dist(o,player)<=2){var dealt=applyDamage(o,s.d||3,'dark',player);floatText(o.x,o.y,String(dealt),'dark');healPlayer(1);if(o.hp<=0)kill(o,player);}});
     }

@@ -98,6 +98,8 @@ function damageDefenses(event){
     if(capstone('grumbok')&&type!=='phys'&&foe)d*=.5;
     d=d>0&&barrier>0?Math.max(1,d-barrier):Math.max(0,d);
     if(d>0&&foe&&hasP('fortitude')&&!(player.fortUntil>player.t)){d*=.5;player.fortUntil=player.t+1500;log('Fortitude blunts the blow.','c-good');}
+    // A landed physical hit survives rounding; actual shields can still absorb it.
+    if(type==='phys'&&d>0)d=Math.max(1,d);
     if(!event.options.bypassShields){
       if(player.ward>0&&!(buff('arcaneward')||buff('communion')))player.ward=0;
       var pools=[['ward','magic'],['iceArmor','ice'],['hideShield','phys'],['mward','magic'],['guard','phys']].map(function(p){return {key:p[0],amount:player[p[0]],type:p[1]};});
@@ -173,9 +175,6 @@ function applyDamage(target,amount,type,source,options){
 /* Pre-mitigated damage keeps explicit periodic/sacrifice rules. It emits a damage
  * event without accidentally triggering attack procs, shields or attack rewards. */
 function dealDirectDamage(target,amount,type,source,options){
-  // Periodic/environment damage bypasses ordinary defenses, but Living Mountain
-  // still protects it. Already-resisted hits and explicit HP costs must not pay twice.
-  if(target===player&&!(options&&options.resistanceApplied)&&!(options&&options.tags&&options.tags.indexOf('cost')>=0))amount*=1-.02*livingMountainStacks(player);
   return gameDamage.resolve(target,amount,type,source,Object.assign({preMitigated:true,bypassShields:true,reactions:false,visuals:false,tags:['periodic']},options||{})).damage;
 }
 function healPlayer(amount,natural){

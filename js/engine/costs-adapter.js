@@ -17,6 +17,14 @@ function playerTiming(){
 }
 function actCost(actor){return actor.shadowClone&&typeof FoteShadowClone!=='undefined'?FoteShadowClone.cost(actor):FoteCosts.action(actor===player?playerTiming():actorTiming(actor));}
 function moveCost(){return FoteCosts.movement(playerTiming());}
+/* Stable sheet values describe the next ordinary move/attack, not the last
+ * command or a one-use free-action receipt. 100 time units = one global turn. */
+function playerSpeedPercent(kind){
+  var c=playerTiming();c.free=false;c.freeStep=false;c.casting=false;
+  c.attacking=kind==='attack';c.rampage=!!buff('rampage')&&!((player.weapon||{}).range>1);
+  var cost=kind==='move'?FoteCosts.movement(c):FoteCosts.action(c);
+  return Math.round(10000/Math.max(1,cost))+'%';
+}
 function playerShield(){return FoteCosts.shields(player).reduce(function(sum,pool){return sum+pool.amount;},0);}
 function shieldParts(){
   return FoteCosts.shields(player).filter(function(pool){return pool.amount>0;}).map(function(pool){

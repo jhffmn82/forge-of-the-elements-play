@@ -85,9 +85,9 @@ function charHTML(){
   h+='<div class="sec">Affinity ('+totalAffinity()+' / '+affinityCap()+')</div>'+(pips || '<div class="c-info" style="font-size:11.5px">None yet. Carry a mote to the Elemental Forge (floor '+RUN.forgeFloor+').</div>');
   var hr=hitRange();
   h+='<div class="sec">Derived</div>'+kv([['HP',Math.round(player.hp)+' / '+player.maxhp+(playerShield()?' <span style="color:#9FD8FF">+'+playerShield()+'</span>':'')],['Mana',Math.floor(player.mp)+' / '+player.maxmp],
-    ['Damage per hit',hr[0]+'&ndash;'+hr[1]],['Crit',Math.round(player.crit*100)+'%'],['Accuracy',player.acc],['Evasion',player.eva],['Armor',player.armor],
+    ['Damage per hit',hr[0]+'&ndash;'+hr[1]],['Crit',Math.round(player.crit*100)+'%'],['Crit damage','&times;'+criticalMultiplier().toFixed(2)],['Accuracy',player.acc],['Evasion',player.eva],['Armor',player.armor],
     ['Block',Math.round(player.block*100)+'%'],['Parry',Math.round(player.parry*100)+'%'],['Spell power','&times;'+spellPower({}).toFixed(2)],['Divine power','&times;'+divineStrength().toFixed(2)],['Range',player.range],
-    ['Action time',actCost(player)],['Move time',moveCost()],['XP',player.xp+' / '+player.xpNext]]);
+    ['Attack speed',playerSpeedPercent('attack')],['Movement speed',playerSpeedPercent('move')],['XP',player.xp+' / '+player.xpNext]]);
   h+='<div class="sec">Resistances</div>'+resHTML()+'</div>';
 
   /* middle: activated abilities, prayers, amulet */
@@ -184,7 +184,7 @@ function equipHTML(){
   var w=player.weapon, off=player.twoHanded?null:player.off, ar=player.armorItem, r=player.rings||[null,null], stow=player.ranged;
   var hr=hitRange(), h='<div class="gearwrap">';
   /* left: totals */
-  h+='<div><div class="sec">Offense</div>'+kv([['Damage per hit',hr[0]+'&ndash;'+hr[1]],['Crit',Math.round(player.crit*100)+'%'],['Accuracy',player.acc],['Range',player.range],['Attack time',actCost(player)],['Spell power','&times;'+spellPower({}).toFixed(2)],['Divine power','&times;'+divineStrength().toFixed(2)]]);
+  h+='<div><div class="sec">Offense</div>'+kv([['Damage per hit',hr[0]+'&ndash;'+hr[1]],['Crit',Math.round(player.crit*100)+'%'],['Crit damage','&times;'+criticalMultiplier().toFixed(2)],['Accuracy',player.acc],['Range',player.range],['Attack speed',playerSpeedPercent('attack')],['Movement speed',playerSpeedPercent('move')],['Spell power','&times;'+spellPower({}).toFixed(2)],['Divine power','&times;'+divineStrength().toFixed(2)]]);
   h+='<div class="sec">Defense</div>'+kv([['HP',Math.round(player.hp)+' / '+player.maxhp],['Shield',playerShield()],['Armor',player.armor],['Evasion',player.eva],['Block',Math.round(player.block*100)+'%'],['Parry',Math.round(player.parry*100)+'%'],['Mana',Math.floor(player.mp)+' / '+player.maxmp]]);
   h+='<div class="sec">Attributes</div><div class="res">'+['mig','agi','vit','foc'].map(function(k){ return '<span>'+STAT_LABEL[k]+'<b>'+player.stats[k]+'</b></span>'; }).join('')+'</div>';
   h+='<div class="sec">Resistances</div>'+resHTML()+'</div>';

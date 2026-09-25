@@ -113,6 +113,7 @@ function newRunState(seed){
     shrineGod: godIds[Math.floor(r()*godIds.length)],
     /* one mote of every element somewhere in floors 1-4, plus a spare */
     motePlan: {1:[els[0]], 2:[els[1],els[2]], 3:[els[3]], 4:[els[4],els[5]], 5:[]},
+    cores: 0, coreClaims: [],
     resolveUsed: false, victory: false, bossDead: false, turns: 0, kills: 0
   };
   RUN.shrineGod = godDeal()[0];                    /* the first card of the four-god deal */

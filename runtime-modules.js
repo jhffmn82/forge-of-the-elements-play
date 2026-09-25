@@ -25,6 +25,7 @@ var FOTE_RUNTIME = {
   "js/keybind.js",
   "game.js",
   "js/data.js",
+  "js/enemy-lore.js",
   "js/world.js",
   "js/render.js",
   "js/surface.js",

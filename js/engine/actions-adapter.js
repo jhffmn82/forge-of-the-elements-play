@@ -8,7 +8,7 @@ function actionInfusion(kind,view){
 function actionDivine(view){var w=view.weapon||{},o=view.twoHanded?{}:view.off||{};return 1+((w.cursed?0:w.divine||0)+(o.cursed?0:o.divine||0))*gearPassiveBonus();}
 function actionCritBonus(view){return actionInfusion('holy',view)==='shadow'&&isBuffed()?enchantValues('holy','shadow').critChance:0;}
 function actionRootCrit(target,view){return actionInfusion('orb',view)==='earth'&&effectHasTag(target,'root')?enchantValues('orb','earth').critChance:0;}
-function actionCritMultiplier(view){return 1.6+(actionInfusion('orb',view)==='shadow'?enchantValues('orb','shadow').critMultiplier:0);}
+function actionCritMultiplier(view){return FoteActions.criticalMultiplier(view.stats.agi,actionInfusion('orb',view)==='shadow'?enchantValues('orb','shadow').critMultiplier:0);}
 function attackView(att,def,options){
   if(att!==player)return att;
   var selected=options.weapon;
@@ -34,7 +34,7 @@ function resistMult(target,type){
     element:b.el?elemToType(b.el):null,opposite:b.el?elemToType(OPPOSITE[b.el]):null,undead:b.undead||b.shadowy,
     wet:!!isWet(target),chilled:!!(target.st&&target.st.chill),warding:own?ringVal('warding'):0,immune:immunity,
     poisonward:B.poisonward>0,shadeward:B.shadeward>0,stormward:B.stormward>0,fireward:B.fireward>0,starward:B.starward>0,
-    mountainResistance:own?.02*livingMountainStacks(player):0,sanctuary:inSanctuary(target),divine:divineStrength()});
+    sanctuary:inSanctuary(target),divine:divineStrength()});
 }
 function prepareAttack(event){
   var att=event.source,def=event.target,view=event.view=attackView(att,def,event.options);
@@ -250,12 +250,20 @@ function resolveWeaponDamage(event,strike){
          sanctifies the ground it strikes now, so the capstone answers a swing as well as a spell. */
       if(typeof holyG!=='undefined' && holyG && typeof aff==='function' && aff('light')>=6 && inb(def.x,def.y))
         holyG[idxOf(def.x,def.y)]=3;
-      note+=' <span style="color:#FFF1B8">smite '+sm+'</span>';
+      // The weapon may have killed it already. Do not present a skipped proc as 0 damage.
+      if(sm>0)note+=' <span style="color:#FFF1B8">smite '+sm+'</span>';
       if(rng()<0.10*player.aff.light) applyStatus(def,'blind',2); sparkleFx(def.x,def.y,'light',10);
     }
     if(player.aff.shadow && def.hp>0) addHollow(def, 0);
     if(view.weapon.unarmed && hasGod('grom') && def.hp>0 && rng() < (buff('ironbody')?0.3*actionDivine(view):0) + (godRank()>=3?0.15:0)){ applyStatus(def,'stun',1); note+=' staggered'; }
     if(extra>0)dealDirectDamage(def,Math.round(extra*(el?resistMult(def,el):1)),el||'phys',player,{tags:['proc','enchant'],actionId:event.actionId,resistanceApplied:!!el});
+    if(player.buffs&&player.buffs.moltenring>0&&def.hp>0){
+      // This is its own fire packet, so another weapon enchant cannot change
+      // its element. The shared pipeline owns resistance and shield absorption.
+      var molten=applyDamage(def,5,'fire',player,{attackRolled:true,actionId:event.actionId,tags:['proc','molten-ring']});
+      applied+=molten;
+      if(molten>0){el=el||'fire';note+=' <span class="c-fire">molten ring '+molten+'</span>';}
+    }
   }
   if(att!==player && att.base && att.base.el){
     el = att.base.el;

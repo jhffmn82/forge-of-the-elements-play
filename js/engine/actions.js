@@ -1,8 +1,11 @@
 /* Action contexts and hit arithmetic. Inputs are explicit and never mutated. */
 (function(root){
   'use strict';
+  function criticalMultiplier(agility,gearBonus){
+    return 1.6+(agility>=15?.25:0)+(agility>=21?.25:0)+(gearBonus||0);
+  }
   function resistance(type,c){
-    if(type==='phys')return Math.max(0,1-(c.player?c.mountainResistance||0:0));
+    if(type==='phys')return 1;
     var m=1;
     if(c.player){
       m-=c.armorResistance||0;m-=c.tomeResistance||0;m-=c.godResistance||0;
@@ -28,7 +31,6 @@
       if(c.starward&&type!=='magic')m*=.8;
     }
     if(c.sanctuary)m=Math.max(.25,m-.15*c.divine);
-    if(c.player)m=Math.max(0,m-(c.mountainResistance||0));
     return m;
   }
   function spellDamage(amount,c){
@@ -56,6 +58,6 @@
     function suspend(resolve){var prior=active;active=null;try{return resolve();}finally{active=prior;}}
     return Object.freeze({run:run,suspend:suspend,current:function(){return active;},on:function(name,fn){(listeners[name]||(listeners[name]=[])).push(fn);return function(){listeners[name]=listeners[name].filter(function(f){return f!==fn;});};}});
   }
-  var api=Object.freeze({resistance:resistance,spellDamage:spellDamage,create:create});
+  var api=Object.freeze({criticalMultiplier:criticalMultiplier,resistance:resistance,spellDamage:spellDamage,create:create});
   root.FoteActions=api;if(typeof module==='object'&&module.exports)module.exports=api;
 })(typeof globalThis==='object'?globalThis:this);
