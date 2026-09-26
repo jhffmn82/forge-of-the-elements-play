@@ -12,8 +12,8 @@
   var content={
     'prism-seer':{name:'Prism Seer',hp:225,dmg:[18,26],acc:76,eva:22,armor:2,speed:95,art:1.05,spellcaster:true},
     'folded-horror':{name:'Folded Horror',hp:270,dmg:[27,38],acc:73,eva:14,armor:4,speed:85,art:1.18},
-    'rift-skitter':{name:'Rift Skitter',hp:225,dmg:[15,23],acc:75,eva:33,armor:1,speed:135,art:.75},
-    'lens-bearer':{name:'Lens Bearer',hp:225,dmg:[11,15],acc:69,eva:15,armor:4,speed:90,art:1.05},
+    'rift-skitter':{name:'Rift Skitter',hp:225,dmg:[15,23],acc:75,eva:48,armor:1,speed:135,art:.75},
+    'lens-bearer':{name:'Lens Bearer',hp:225,dmg:[11,15],acc:69,eva:15,armor:4,speed:90,art:1.05,el:'light'},
     'plague-bloat':{name:'Plague Bloat',hp:390,dmg:[30,42],acc:70,eva:9,armor:3,speed:65,art:1.28},
     'brood-carrier':{name:'Brood Carrier',hp:285,dmg:[14,21],acc:69,eva:12,armor:3,speed:85,art:1.14},
     'bile-spitter':{name:'Bile Spitter',hp:225,dmg:[9,15],acc:73,eva:20,armor:2,speed:95,art:.9},
@@ -22,8 +22,8 @@
     'gorehound':{name:'Gorehound',hp:225,dmg:[21,30],acc:74,eva:24,armor:3,speed:110,art:1.0},
     'ironbound':{name:'Ironbound',hp:368,dmg:[18,26],acc:71,eva:10,armor:9,speed:75,art:1.16},
     'chain-reaver':{name:'Chain Reaver',hp:225,dmg:[17,26],acc:77,eva:21,armor:3,speed:95,art:1.03},
-    'lash-dancer':{name:'Lash Dancer',hp:225,dmg:[18,26],acc:78,eva:29,armor:2,speed:110,art:1.02},
-    'razor-dancer':{name:'Razor Dancer',hp:225,dmg:[18,26],acc:77,eva:31,armor:2,speed:130,art:.95},
+    'lash-dancer':{name:'Lash Dancer',hp:225,dmg:[18,26],acc:78,eva:42,armor:2,speed:110,art:1.02},
+    'razor-dancer':{name:'Razor Dancer',hp:225,dmg:[18,26],acc:77,eva:46,armor:2,speed:130,art:.95},
     'silk-weaver':{name:'Silk Weaver',hp:225,dmg:[9,15],acc:74,eva:22,armor:2,speed:90,art:.93},
     'hookfang':{name:'Hookfang',hp:240,dmg:[24,33],acc:74,eva:18,armor:4,speed:100,art:1.04}
   };
@@ -133,6 +133,15 @@
   function spellLands(e,target){
     var chance=hitChance(accOf(e),evaOf(target));if(gameEffects.has(e,'blind'))chance*=.6;
     return target===player?!combatRoll(1-hostileHitChance(chance,true),true):rng()<chance;
+  }
+  function lensBeam(e,target){
+    if(now()<(e.chaosBeamReadyAt||0)||dist(e,target)>6||!clearShot(e,target))return false;
+    var tiles=line(e,target,6);if(!reaches(tiles,target))return false;
+    var victim=projectileVictim(e,{tiles:tiles});if(!victim)return false;
+    e.chaosLensActive=true;e.chaosBeamReadyAt=now()+600;revealActor(e);setClip(e,'attack');sound('light-cast');boltFx(e.x,e.y,victim.x,victim.y,'light');
+    if(spellLands(e,victim)){var damage=direct(e,victim,sDMG(24),'light',false);if(damage>0&&victim.hp>0)afflict(e,victim,'blind',2);}
+    else floatText(victim.x,victim.y,'miss','miss');
+    return true;
   }
   function area(cx,cy,r,region){var out=[];for(var y=cy-r;y<=cy+r;y++)for(var x=cx-r;x<=cx+r;x++)if(land(x,y,region))out.push([x,y]);return out;}
   function poison(e,w,damage){
@@ -255,7 +264,7 @@
       case 'chaos-rift-skitter':if(d>=2&&d<=5)return blink(e,target);break;
       case 'chaos-lens-bearer':
         var ally=ents.filter(function(o){return o!==e&&o.foe&&o.hp>0&&o.kind!=='chaos-lens-bearer'&&sameRegion(e,o)&&dist(e,o)<=4&&!gameEffects.has(o,'chaoslens')&&clearShot(e,o);}).sort(function(a,b){return dist(a,target)-dist(b,target)||a.id-b.id;})[0];
-        if(ally){revealActor(e);gameEffects.apply(ally,'chaoslens',4,undefined,{durationModifiers:false,refresh:'replace',data:{n:sHP(35),sourceId:e.id}});if(!actorConcealed(ally))boltFx(e.x,e.y,ally.x,ally.y,'light');setClip(e,'attack');sound('light-cast',.55);e.chaosCooldown=now()+500;return true;}break;
+        if(ally){revealActor(e);gameEffects.apply(ally,'chaoslens',4,undefined,{durationModifiers:false,refresh:'replace',data:{n:sHP(35),sourceId:e.id}});if(!actorConcealed(ally))boltFx(e.x,e.y,ally.x,ally.y,'light');setClip(e,'attack');sound('light-cast',.55);e.chaosCooldown=now()+500;e.chaosLensActive=true;return true;}return lensBeam(e,target);
       case 'chaos-plague-bloat':if(d<=2)return immediate(e,'vent',area(e.x,e.y,1,region),'vents poison','poison');break;
       case 'chaos-brood-carrier':
         var canBrood=d<=6&&(e.chaosBorn||0)<4&&ents.filter(function(o){return o.hp>0&&o.chaosOwnerId===e.id;}).length<2;
@@ -289,6 +298,7 @@
     if(!target){if(e.lastSeen&&sameRegion(e,e.lastSeen))stepToward(e,e.lastSeen.x,e.lastSeen.y);return true;}
     if(!e.chaosAlerted)alertPack(e,target);
     e.lastSeen={x:target.x,y:target.y};var d=dist(e,target);
+    if(e.kind==='chaos-lens-bearer'&&e.chaosLensActive&&lensBeam(e,target))return true;
     if(now()>=(e.chaosCooldown||0)&&special(e,target))return true;
     var reach=e.kind==='chaos-lash-dancer'||e.kind==='chaos-folded-horror'?2:1;
     if(d<=reach&&reaches(line(e,target,reach),target)){

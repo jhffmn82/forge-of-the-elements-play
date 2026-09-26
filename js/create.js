@@ -103,12 +103,14 @@ function openCreate(){
   el.classList.add('on');
   playMusic('title');
   renderCreate();
+  el.scrollTop=0;
+  $('cBack').focus({preventScroll:true});
 }
 function renderCreate(){
   var el=$('create'), c=CHOICE;
   if(c.cls==='cleric' && creationRefuses(c,c.god))c.god='murk';
   if(!c.name) c.name=rollName(c);
-  var h='<div class="wrap"><h1>Forge of the Elements</h1><div class="tag2">Descend twenty-five floors from the Dungeon into the Realm of Chaos. Fuse elemental motes, defeat the biome lords, and seek the Forge of the Elements.</div>';
+  var h='<div class="wrap"><nav aria-label="Character selection" style="display:flex;padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) 0 env(safe-area-inset-left,0px);margin-bottom:4px"><button id="cBack" type="button" aria-label="Back to title" style="min-width:88px;min-height:44px"><span aria-hidden="true">&larr;</span> Back</button></nav><h1>Forge of the Elements</h1><div class="tag2">Descend twenty-five floors from the Dungeon into the Realm of Chaos. Fuse elemental motes, defeat the biome lords, and seek the Forge of the Elements.</div>';
   h+='<div class="step">1 &middot; Race</div><div class="cards">';
   Object.keys(RACES).forEach(function(r){
     var R=RACES[r], look=creationCastLook({race:r,sex:c.sex,court:c.court,cls:c.cls,god:c.god});
@@ -151,6 +153,7 @@ function renderCreate(){
      '<span>Starting kit</span><b style="text-align:left">'+kitNames.join(', ')+'</b><span>Passive</span><b style="text-align:left;font-weight:400">'+C2.passive+'</b></div>'+
      '<button class="go btn-primary" id="begin">Enter the Dungeon</button> <span class="c-info" style="font-size:11px;margin-left:8px">Sound and music start with your first click. M mutes, N toggles music.</span></div></div></div>';
   el.innerHTML=h;
+  $('cBack').onclick=function(){sfx('ui-click');openTitle();};
   el.querySelectorAll('[data-race]').forEach(function(b){ b.onclick=function(){ sfx('ui-click'); c.race=b.getAttribute('data-race'); c.name=''; if(creationRefuses(c, c.god)) c.god='murk'; renderCreate(); }; });
   el.querySelectorAll('[data-sex]').forEach(function(b){ b.onclick=function(){ sfx('ui-click'); c.sex=b.getAttribute('data-sex'); c.name=''; renderCreate(); }; });
   el.querySelectorAll('[data-court]').forEach(function(b){ b.onclick=function(){ sfx('ui-click'); c.court=b.getAttribute('data-court'); renderCreate(); }; });

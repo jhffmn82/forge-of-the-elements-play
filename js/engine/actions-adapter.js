@@ -34,7 +34,7 @@ function resistMult(target,type){
     element:b.el?elemToType(b.el):null,opposite:b.el?elemToType(OPPOSITE[b.el]):null,undead:b.undead||b.shadowy,
     wet:!!isWet(target),chilled:!!(target.st&&target.st.chill),warding:own?ringVal('warding'):0,immune:immunity,
     poisonward:B.poisonward>0,shadeward:B.shadeward>0,stormward:B.stormward>0,fireward:B.fireward>0,starward:B.starward>0,
-    sanctuary:inSanctuary(target),divine:divineStrength()});
+    sanctuary:inSanctuary(target),divine:typeof holyGroundStrength==='function'?holyGroundStrength(target):divineStrength()});
 }
 function prepareAttack(event){
   var att=event.source,def=event.target,view=event.view=attackView(att,def,event.options);
@@ -87,6 +87,7 @@ function finishAttackReactions(event){
   if(att.base&&att.base.reloads&&def===player&&dist(att,def)>1){att.reloading=true;if(landed){applyStatus(player,'root',1);log('An arrow pins you in place.','c-you');}}
   if(att.base&&landed&&player.hp>0){if(att.base.arcs&&def===player)beetleArc(att);if(att.base.stingChain)jellyChain(att,def);if(att.base.aquatic){att._surfT=turn;if(def===player&&eelWater(att.x,att.y))applyStatus(player,'wet',3);}}
   if(att!==player&&att.base&&landed&&def.hp>0){var b=att.base;
+    if(b.chillTouch&&event.primaryDamage>0&&dist(att,def)<=1){addChill(def);floatText(def.x,def.y,'chilled','ice');}
     if(b.bleeds&&rng()<b.bleeds)inflictBleed(def,att);
     if(b.fangs&&dist(att,def)<=1&&rng()<b.fangs){applyStatus(def,'poison',DRIDER.poison[0],sDMG(DRIDER.poison[1]));floatText(def.x,def.y,'poisoned','poison');if(def===player)log('The <b>Drider</b>\'s fangs sink in: you are poisoned.','c-you');}
     if(b.emberBite&&rng()<b.emberBite&&!(def.st&&def.st.burn)){applyStatus(def,'burn',3,sDMG(2+Math.floor(floorNo/5)));if(def===player)log('The <b>Ember Spider</b>\'s bite sets you <span class="c-fire">burning</span>.','c-you');}}
@@ -133,9 +134,8 @@ function rollWeaponHit(event){
   if(att===player && ((view.weapon&&view.weapon.range)||1)>1 && dist(att,def)<=1) ch *= 0.7;
   if(att.st && att.st.blind) ch *= 0.6;
   if(def===player && typeof luckBonus==='function') ch -= luckBonus();   /* Lady Luck's Blessing: blows slide off */
-  if(def.st && (def.st.frozen || def.st.stun)) ch = 1;
   /* 2026-09-20: Justin - "surprise attacks shouldn't miss". Striking something that has not noticed you always
-     lands: the same rule frozen and stunned targets already had. */
+     lands. Immobilization instead uses the shared effective evasion rule. */
   if(att===player && def!==player && (typeof offGuard==='function' && offGuard(def) || (player.hidden>0||event.numbing) || def.surprised)) ch = 1;
   if(att===player && event.options.sureHit) ch = 1;
   var who = att===player ? 'You' : att.name;
@@ -177,7 +177,7 @@ function rollWeaponDamage(event,strike){
     /* 2026-09-17: Might is 4% per point above 10, mirroring Focus's 4% spell damage. It covers every weapon
        attack, bows included - drawing a heavy bow is strength, not nimbleness. Spells stay with Focus. */
     var gearPool = 0, statPool = 0.04*(player.stats.mig-10);
-    if(view.weapon.executioner && def.hp <= def.maxhp/2) gearPool += view.weapon.executioner;
+    if(view.weapon.executioner && def.hp <= def.maxhp/2) gearPool += gearPassiveValue(view.weapon.executioner);
     if(melee && hasP('heavyHands')) statPool += 0.10;
     if(melee && hasP('unstoppable')) statPool += 0.20;
     if(melee && buff('rampage')) statPool += 0.40*actionDivine(view);
@@ -216,7 +216,7 @@ function resolveWeaponDamage(event,strike){
   var att=event.source,def=event.target,mult=event.multiplier,label=event.label,view=event.view;
   var ranged=strike.ranged,ch=strike.ch,blocked=strike.blocked;
   var base=strike.base,crit=strike.crit,surprise=strike.surprise;
-  var phys=applyDamage(def,base,att.swarm?'dark':'phys',att,{hit:event.hit,attackRolled:true,actionId:event.actionId,tags:['attack',ranged?'ranged':'melee']}),extra=0,applied=0,note='',el=null;
+  var phys=applyDamage(def,base,att.swarm?'dark':att!==player&&att.base&&att.base.attackType||'phys',att,{hit:event.hit,attackRolled:true,actionId:event.actionId,tags:['attack',ranged?'ranged':'melee']}),extra=0,applied=0,note='',el=null;
   sfx(hitSfx(att,def,crit,blocked), {at:def._hit});
   if(att===player){
     var ench = view.weapon.enchant;
@@ -228,7 +228,6 @@ function resolveWeaponDamage(event,strike){
       if(ench==='fire'){ extra+=Math.round(base*values.extraDamage); if(roll1(values.burnChance)){ applyStatus(def,'burn',values.burnDuration,burnDmg()); note=' <span class="c-fire">burning</span>'; } }
       if(ench==='water' && roll1(values.chillChance)){ addChill(def); note=' chilled'; }
       if(ench==='earth' && roll1(values.rootChance)){ applyStatus(def,'root',values.rootDuration); note=' rooted'; }
-      if(ench==='light' && (def.base.undead||def.base.shadowy)) extra+=Math.round(base*values.extraDamage);
       if(ench==='shadow'){ if(def.st.hollow) extra+=values.hollowDamage;
         if(roll1(values.procChance)){
           extra+=Math.round(base*values.extraDamage); applyStatus(def,'corrupt',values.corruptDuration); note=' <span style="color:#B58BFF">corrupted</span>';
@@ -249,7 +248,7 @@ function resolveWeaponDamage(event,strike){
          since Glimmer's free Light point (religion.js) gets a normal race there a biome early. The smite
          sanctifies the ground it strikes now, so the capstone answers a swing as well as a spell. */
       if(typeof holyG!=='undefined' && holyG && typeof aff==='function' && aff('light')>=6 && inb(def.x,def.y))
-        holyG[idxOf(def.x,def.y)]=3;
+        markHolyGround(def.x,def.y,spellPower());
       // The weapon may have killed it already. Do not present a skipped proc as 0 damage.
       if(sm>0)note+=' <span style="color:#FFF1B8">smite '+sm+'</span>';
       if(rng()<0.10*player.aff.light) applyStatus(def,'blind',2); sparkleFx(def.x,def.y,'light',10);
@@ -265,10 +264,10 @@ function resolveWeaponDamage(event,strike){
       if(molten>0){el=el||'fire';note+=' <span class="c-fire">molten ring '+molten+'</span>';}
     }
   }
-  if(att!==player && att.base && att.base.el){
+  if(att!==player && att.base && att.base.el && def.hp>0){
     el = att.base.el;
-    var add = Math.max(1, Math.round(base*0.50*resistMult(def, elemToType(el))));   /* 2026-09-23 (Justin): half the blow as its element, past armour */
-    if(rng() < 0.22){
+    var add = applyDamage(def,base*.5,elemToType(el),att,{attackRolled:true,tags:['proc','elemental-attack'],actionId:event.actionId});
+    if(add>0&&def.hp>0&&rng() < 0.22){
       if(el==='fire'){ applyStatus(def,'burn',3,sDMG(2)); note=' <span class="c-fire">burning</span>'; }
       else if(el==='water'){ addChill(def); note=' chilled'; }
       else if(el==='earth'){ applyStatus(def,'root',2); note=' rooted'; }
@@ -276,7 +275,7 @@ function resolveWeaponDamage(event,strike){
       else if(el==='air'){ applyStatus(def,'stun',1); note=' stunned'; }
       else if(el==='light'){ applyStatus(def,'blind',2); note=' dazzled'; }
     }
-    dealDirectDamage(def,add,elemToType(el),att,{tags:['proc','elemental-attack'],actionId:event.actionId,resistanceApplied:true});extra=add;
+    extra=add;
   }
   if(att.lifesteal && att.ally){ att.hp=Math.min(att.maxhp, att.hp+Math.round(phys*0.3)); }
   return {phys:phys,extra:extra,applied:applied,note:note,element:el};
@@ -286,10 +285,11 @@ function presentWeaponDamage(event,strike,damage){
   var ranged=strike.ranged,ch=strike.ch,blocked=strike.blocked;
   var base=strike.base,crit=strike.crit,surprise=strike.surprise;
   var phys=damage.phys,extra=damage.extra,applied=damage.applied,note=damage.note,el=damage.element,who=strike.who,foe=strike.foe;
+  event.primaryDamage=phys;
   var total=phys+extra+applied;event.damage=total;event.landed=total>0;
   var bonus=extra+applied;
   var elTxt = bonus>0 ? ' <span class="c-fire">+'+bonus+(el?' '+el:'')+'</span>' : '';
-  floatText(def.x, def.y, String(total), bonus>0 && el ? elemToType(el) : 'phys', crit);
+  floatText(def.x, def.y, String(total), bonus>0 && el ? elemToType(el) : att!==player&&att.base&&att.base.attackType||'phys', crit);
   log((label?label+': ':'')+who+' hit '+foe+' <span class="roll">('+Math.round(ch*100)+'%'
       +(crit?', crit':'')+(surprise?', surprise':'')+(blocked?', blocked':'')+')</span> &mdash; <b>'+total+'</b>'+elTxt+note,
       att===player?'c-hit':'c-you');

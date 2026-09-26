@@ -31,7 +31,18 @@
       var beyond=typeof player!=='undefined'&&player&&player.y<=d.entryGate.y;
       d.gates={phase:'ready',walkthrough:!!beyond,legacyWalkthrough:!!beyond};
     }
-    d.version=2;syncGates();return true;
+    d.version=2;repairForgeArt(d);syncGates();return true;
+  }
+  function repairForgeArt(d){
+    var forge=d.trueForge;if(!forge)return;
+    forge.artName='final-forge';
+    // Migrate only the final Forge's authored footprint. Ordinary furnaces,
+    // collision, interaction state and the rest of a saved floor stay intact.
+    function atForge(piece){return piece&&piece.x===forge.x&&piece.y===forge.y&&piece.w===forge.w&&piece.h===forge.h;}
+    if(typeof props!=='undefined')props.forEach(function(piece){if(atForge(piece)){piece.name=forge.artName;piece.artName=forge.artName;}});
+    var preview=floorMeta.chaosPreview;if(!preview)return;
+    (preview.focals||[]).forEach(function(piece){if(atForge(piece))piece.artName=forge.artName;});
+    (preview.decor||[]).forEach(function(piece){if(atForge(piece))piece.kind=forge.artName;});
   }
   function refresh(){if(typeof computeFOV==='function')computeFOV();if(typeof updateUI==='function')updateUI();}
   function setWalkthrough(enabled){
@@ -156,7 +167,7 @@
       var details={version:2,layoutOnly:!encounterStarter,encounterImplemented:!!encounterStarter,arrival:{x:46,y:62},ordinaryForge:{x:50,y:60},
         bossStart:{x:48,y:35},arena:{outline:arenaOutline,bounds:{x:29,y:23,w:38,h:27}},cover:cover,
         entryGate:{x:45,y:52,w:5,h:1,open:false},rearSeal:{x:46,y:22,w:5,h:1,open:false},gates:{phase:'ready',walkthrough:false},
-        trueForge:{x:46,y:12,w:3,h:3,center:{x:47,y:13},arrival:{x:47,y:16},artName:'cinder-furnace'},floorInlays:[]};
+        trueForge:{x:46,y:12,w:3,h:3,center:{x:47,y:13},arrival:{x:47,y:16},artName:'final-forge'},floorInlays:[]};
       floorMeta.unmakerPreview=details;
       function rect(x,y,w,h,visit){for(var yy=y;yy<y+h;yy++)for(var xx=x;xx<x+w;xx++)visit(xx,yy);}
       function inside(x,y,points){
@@ -274,14 +285,14 @@
       inlay('disc','crucible',{x:48,y:35,r:1.6,color:'#FFE8BE',opacity:.75,lineWidth:2.2});
 
       // The rear passage changes from ember stone to pale Prism masonry. Its
-      // six elemental anchors surround one monumental furnace and azure lens.
+      // six elemental anchors surround the final Forge and azure lens.
       wall(45,20,1,3);wall(51,20,1,3);
       prop(45,19,'crystal-gold-small','Rear seal gold crystal');
       prop(51,19,'crystal-water-small','Rear seal blue crystal');
       light(45,19,'#FFCF78',3.4,.72);light(51,19,'#78CBFF',3.4,.72);
       landmark('rear-seal','threshold','Gate of the Elements — opens after the Unmaker falls','true-forge',46,22,5,1);
       inlay('threshold','true-forge',{x:46,y:22,w:5,h:1,color:'#BCEAFF'});
-      focal(46,12,'cinder-furnace','Forge of the Elements',3,3);
+      focal(46,12,'final-forge','Forge of the Elements',3,3);
       focal(46,9,'prism-lens','Elemental convergence lens',2,2);
       var anchors=[
         [42,12,'fire','#FF9265'],[51,11,'air','#D8F2FF'],[53,14,'water','#68C8FF'],

@@ -418,7 +418,7 @@ function shuffleSigils(){
   RUN.sigilLooks={};
   Object.keys(SIGILS).forEach(function(k,i){ sigilLook[k]=cap(looks[i%looks.length])+' sigil'; RUN.sigilLooks[k]=looks[i%looks.length]; sigilKnown[k]=false; });
 }
-function sigilName(use){ return sigilKnown[use] ? SIGILS[use].name : sigilLook[use]; }
+function sigilName(use){ return sigilKnown[use]&&SIGILS[use] ? SIGILS[use].name : sigilLook[use]||'Unidentified sigil'; }
 function identifySigil(use){
   if(sigilKnown[use]) return;
   sigilKnown[use]=true;
@@ -506,7 +506,10 @@ function wanderingSpawn(){
 
 function victory(){
   if(RUN.victory) return;
+  var ending=floorMeta&&floorMeta.unmakerEncounter;
+  if(!ending||ending.status!=='victory'||!ending.forgeRestored||!ending.retired)return;
   RUN.victory=true; stopMusic(); sfx('victory');   /* the fanfare is the victory sound; no victory music (Justin, 2026-09-22) */
+  finishRunHistory(true);
   showEnd(true);
 }
 
@@ -515,7 +518,7 @@ function useBagFood(idx){
   var it=player.bag[idx];if(!it||it.kind!=='food')return false;
 
     var fd=FOODS[it.data.food]; player.hunger=Math.min(HUNGER_MAX, player.hunger+fd.nutrition);
-    if(fd.heal){ var h=Math.round(player.maxhp*fd.heal*(hasGod('glimmer')?1+0.10*godRank():1)); healPlayer(h); floatText(player.x,player.y,'+'+h,'heal'); }
+    if(fd.heal){ var before=player.hp;healPlayer(Math.round(player.maxhp*fd.heal));var h=Math.round(player.hp-before);floatText(player.x,player.y,'+'+h,'heal'); }
     consume(idx); log('You eat the '+fd.name.toLowerCase()+'.','c-good'); sfx('eat');
     if(fd.buff && typeof eatFoodBuff==='function') eatFoodBuff(fd);
     endTurn(); return true;

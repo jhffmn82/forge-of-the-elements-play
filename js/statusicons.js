@@ -9,9 +9,9 @@ var STATUS_INFO = {
   burn:   {name:'Burning', icon:'st-burn', bad:1, d:'Takes fire damage every turn.'},
   chill:  {name:'Chilled', icon:'st-chill', bad:1, d:'Acts more slowly; takes more ice damage.'},
   slow:   {name:'Slowed', icon:'st-slow', bad:1, d:'Acts more slowly.'},
-  frozen: {name:'Frozen', icon:'st-frozen', bad:1, d:'Can\'t act. A physical hit shatters the ice for double damage.'},
-  root:   {name:'Rooted', icon:'ic-earth-root', bad:1, d:'Can\'t move, but can still attack.'},
-  stun:   {name:'Stunned', icon:'st-stun', bad:1, d:'Can\'t act.'},
+  frozen: {name:'Frozen', icon:'st-frozen', bad:1, d:'Can\'t act. Evasion is 0. A physical hit shatters the ice for double damage.'},
+  root:   {name:'Rooted', icon:'ic-earth-root', bad:1, d:'Can\'t move, but can still attack. Evasion is 0.'},
+  stun:   {name:'Stunned', icon:'st-stun', bad:1, d:'Can\'t act. Evasion is 0.'},
   fear:   {name:'Afraid', icon:'st-fear', bad:1, d:'Forces retreat instead of fighting. If escape is blocked, you cower in place.'},
   blind:  {name:'Blind', icon:'st-blind', bad:1, d:'Attacks miss far more often.'},
   poison: {name:'Poisoned', icon:'st-poison', bad:1, d:'Takes damage every turn and doesn\'t regenerate.'},
@@ -68,7 +68,8 @@ function statusList(e){
   return out.map(function(o){
     var I=STATUS_INFO[o.k] || {name:cap(o.k), icon:'', d:''};
     /* Sylla's web starts as Root, then becomes Slow. Show silk in both phases. */
-    if(o.k==='root'&&e.syllaWeb>0) I={name:'Webbed',icon:'st-web',bad:1,d:'Pinned in silk. When released, moves and acts at half speed.'};
+    if(o.k==='root'&&e.syllaWeb>0) I={name:'Webbed',icon:'st-web',bad:1,d:'Pinned in silk with 0 Evasion. When released, moves and acts at half speed.'};
+    if(o.k==='stone'&&e!==player) I={name:'Petrified',icon:'st-stone',bad:1,d:'Can\'t move or act. Evasion is 0.'};
     if(o.k==='livingmountain') I=Object.assign({},I,{name:I.name+' ×'+(e.st.livingmountain.n||0)});
     return {k:o.k, t:o.t, stacks:o.k==='livingmountain'?Math.min(10,e.st.livingmountain.n||0):0, name:I.name, icon:I.icon, d:I.d, bad:!!I.bad};
   });

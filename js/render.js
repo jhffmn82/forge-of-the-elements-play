@@ -13,6 +13,7 @@ function hash2(x,y,s){ var h=(x*374761393 + y*668265263 + (s||0)*2147483647)|0; 
 
 /* ---- sprite lookups ---- */
 function packedObjectArt(group, name){
+  if(group==='items'&&name==='item-hawaiian-shirt')group='hawaiian-shirt';
   if(group==='icons'&&AS.map&&AS.map[name]&&AS.map[name].items[name])group=name;
   if(name==='item-censer'||name==='held-censer'){group='knife';name='ceremonial-knife';}
   if(group==='structures'&&name==='stairs-up'&&AS.map&&AS.map.stairs)group='stairs';
@@ -845,7 +846,7 @@ function drawScene(){
     if(spr){
       var big = ot===FORGE||ot===SHRINE||ot===EXIT;   /* 2026-09-19: the god statues are two tiles tall - a shrine stands on its tile and rises above it */
       drawObj(spr, opx, opy, {feet:!isDoor && ot!==STAIRS && ot!==19 && ot!==BRIDGE, fit: isDoor?1.02 : ot===SHRINE?2.1 : ot===FORGE?2.3 : big?1.18 : (ot===STAIRS||ot===19)?0.95 : 0.85, alpha:oa, fill: isDoor});
-      if(ot===EXIT && !floorMeta.exitOpen){ ctx.globalAlpha=0.55*oa; ctx.fillStyle='#000'; ctx.fillRect(opx+TS*0.2,opy+TS*0.1,TS*0.6,TS*0.8); ctx.globalAlpha=1; }
+      if(ot===EXIT && !floorMeta.exitOpen && !floorMeta.caveExit){ ctx.globalAlpha=0.55*oa; ctx.fillStyle='#000'; ctx.fillRect(opx+TS*0.2,opy+TS*0.1,TS*0.6,TS*0.8); ctx.globalAlpha=1; }
       if(ot===SEALED && !(floorMeta.crystalDoor && floorMeta.crystalDoor.x===x && floorMeta.crystalDoor.y===y)){ ctx.globalAlpha=0.35*oa; ctx.fillStyle='#6FB7FF'; ctx.fillRect(opx,opy,TS,TS); ctx.globalAlpha=1; }
     } else {
       ctx.globalAlpha=oa;
@@ -955,13 +956,14 @@ function drawScene(){
     });
   }
   list.forEach(function(e){
-    standing(renderPos(e).y+1,function(){
+    /* Large creatures stand at the bottom of their footprint, not its first row. */
+    standing(renderPos(e).y+(!isShadeSummon(e)&&!e.livingFlame&&e.base.big||1),function(){
     var off=entOffset(e), rp=renderPos(e);
     atTile(rp.x,rp.y,function(px0,py0){
       var px=px0+off[0]+shakeOf(e), py=py0+off[1]-rp.hop*TS*0.14 - (e.base.flying ? TS*0.12 + (ANIM.reduce?0:Math.sin(now/180+e.id)*TS*0.04) : 0);
       ctx.globalAlpha=0.35; ctx.fillStyle='#000'; ctx.beginPath(); ctx.ellipse(px0+TS/2,py0+TS*0.9,TS*0.26*(e.base.art||0.9),TS*0.09,0,0,7); ctx.fill(); ctx.globalAlpha=1;
       var flip = e.ally && typeof e.facingLeft==='boolean' ? e.facingLeft : player.x < e.x;
-      if(e.base && e.base.artLeft) flip = !flip;   /* art painted facing left (goblin) */
+      if(e.base && e.base.artLeft && !isShadeSummon(e) && !e.livingFlame) flip = !flip;   /* respect the artwork actually displayed */
       if(!drawCharacter(e, px, py, {flip:flip, flash:flashOf(e), breath:breathOf(e), sliding:motionActive(e,now), outline:e.foe && !!vis[idxOf(e.x,e.y)]})){
         var bb=breathOf(e)*TS*0.6;
         ctx.fillStyle=e.col; roundRect(px+TS*0.14,py+TS*0.1-bb,TS*0.72,TS*0.72+bb,TS*0.16); ctx.fill(); glyph(e.ch,px,py,'#120F0D');

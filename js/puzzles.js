@@ -56,7 +56,9 @@ function mainRoomCell(){
   return o.length ? pick(o) : null;
 }
 function placeSolution(kind){
-  var c=mainRoomCell(); if(c) items.push({x:c.x, y:c.y, kind:'sigil', use:PUZZLE_KINDS[kind].sigil});
+  var use=PUZZLE_KINDS[kind]&&PUZZLE_KINDS[kind].sigil;
+  if(!use||!SIGILS[use])return;
+  var c=mainRoomCell(); if(c) items.push({x:c.x, y:c.y, kind:'sigil', use:use});
 }
 function farFrom(cells, door){ return cells.slice().sort(function(a,b){ return (Math.abs(b.x-door.x)+Math.abs(b.y-door.y))-(Math.abs(a.x-door.x)+Math.abs(a.y-door.y)); }); }
 function pzLoot(cells, n){

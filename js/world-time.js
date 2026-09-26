@@ -21,11 +21,14 @@ function repairSavedEffectClocks(){
   /* Scheduler stamps written against that former clock: Resolve, Fortitude, Storm Form, Grumbok's
      boons, Rally and Sanctuary.  One further ahead than its effect can reach is a relic of the old
      clock, not a live effect, so it expires now instead of granting hundreds of turns of immunity. */
-  var spans={resolveUntil:1000,fortUntil:1500,spellbreakUntil:1000,wizardHunterUntil:300,stormUntil:600};
+  var spans={resolveUntil:1000,fortUntil:600,spellbreakUntil:1000,wizardHunterUntil:300,stormUntil:600};
   Object.keys(spans).forEach(function(k){if(player[k]>now+spans[k])player[k]=now;});
   if(player.lastDamageTime>now)player.lastDamageTime=now;
   actors.forEach(function(e){if(e!==player&&e.rallyUntil>now+1300)e.rallyUntil=now;});
-  if(typeof floorMeta==='object'&&floorMeta&&floorMeta.sanctuary&&floorMeta.sanctuary.until>now+1300)floorMeta.sanctuary.until=now;
+  if(typeof floorMeta==='object'&&floorMeta&&floorMeta.sanctuary){
+    var ground=floorMeta.sanctuary,maxDuration=Number.isFinite(ground.duration)&&ground.duration>0?ground.duration:Math.max(1300,typeof fullDivineDuration==='function'?100*fullDivineDuration(10):1300);
+    if(ground.until>now+maxDuration)ground.until=now;
+  }
 }
 function knockback(e,dx,dy,n){
   /* DESIGN 12: Unstoppable is immune to knockback (2026-09-22: it was in the table, not in the code) */

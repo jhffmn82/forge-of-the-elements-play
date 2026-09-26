@@ -6,8 +6,8 @@ var SELF_CASTS={
     var h=Math.round(player.maxhp*(.10+.02*r)*div); healPlayer(h); floatText(player.x,player.y,'+'+h,'heal'); ringFx(player.x,player.y,'#B8453A',3.5);
     log('You bellow. Everything nearby reels.','c-good'); },
 "heal":function(A,r,div){
-    var prior=player.hp,bonus=typeof inSanctuary==='function'&&inSanctuary(player)?1+.25*divineStrength():1;
-    var raw=Math.round(player.maxhp*(.10+.02*r)*div*(1+.10*r));
+    var prior=player.hp,bonus=(1+.10*r)*(typeof inSanctuary==='function'&&inSanctuary(player)?1+.25*holyGroundStrength(player):1);
+    var raw=Math.round(player.maxhp*(.10+.02*r)*div);
     healPlayer(Math.min(raw,player.maxhp*.4/bonus));
     var hh=Math.round(player.hp-prior);
     floatText(player.x,player.y,'+'+hh,'heal');sparkleFx(player.x,player.y,'heal',30);sfx('heal');
@@ -60,11 +60,13 @@ function resolveElementSelf(A){  beginCast(A);
     log('<b>Storm Form.</b> The world slows around you.','c-good');
     updateUI(); draw(); return;   /* instant: no time passes */
   } else if(A.kind==='dawn'){
-    var n=0;
-    ents.forEach(function(e){ if(e.foe && vis[idxOf(e.x,e.y)]){ applyStatus(e,'blind',3); n++; } });
+    var n=0,tiles=[],damage=Math.round(sDMG(roll(A.base[0],A.base[1]))*spellPower(A));
+    var prior=AOE_HIT;AOE_HIT=true;
+    try{ents.slice().forEach(function(e){if(e.foe&&e.hp>0&&vis[idxOf(e.x,e.y)]){spellHit(e,A,damage,'light');if(e.hp>0)applyStatus(e,'blind',3);tiles.push([e.x,e.y]);finishHit(e);n++;}});}finally{AOE_HIT=prior;}
+    markGround(tiles,A);
     player.dawnUntil=turn+20;
     sparkleFx(player.x,player.y,'light',60); ringFx(player.x,player.y,'#F6E7B0',5);
-    log('<b>Dawn.</b> '+n+' enem'+(n===1?'y is':'ies are')+' blinded, and nothing on this floor can hide from you.','c-good');
+    log('<b>Dawn.</b> Light strikes '+n+' enem'+(n===1?'y':'ies')+'; survivors are blinded, and nothing on this floor can hide from you.','c-good');
   }
   endTurn();
 }

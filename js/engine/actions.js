@@ -30,7 +30,7 @@
       if(c.shadeward&&type==='dark'||c.stormward&&type==='lightning'||c.fireward&&type==='fire')m*=.5;
       if(c.starward&&type!=='magic')m*=.8;
     }
-    if(c.sanctuary)m=Math.max(.25,m-.15*c.divine);
+    if(c.sanctuary)m=Math.min(m,Math.max(.25,m-.15*c.divine));
     return m;
   }
   function spellDamage(amount,c){

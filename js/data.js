@@ -50,7 +50,7 @@ var WEAPONS = {
 };
 var ARMORS = {
   robe:    {name:'Cloth Robe', armor:0, eva:5,  weight:'cloth',  note:'no penalty', icon:'item-robe', kind:'armor'},
-  shirt:   {name:'Loud Shirt', armor:0, eva:0,  weight:'cloth',  note:'very loud, very brave', icon:'item-robe', kind:'armor'},
+  shirt:   {name:'Hawaiian Shirt', armor:0, eva:0,  weight:'cloth',  note:'Bright flowers, bold colors, and absolutely no armor.', icon:'item-hawaiian-shirt', kind:'armor'},
   leather: {name:'Leather Armor', armor:1, eva:5, weight:'light', note:'light', icon:'item-leather', kind:'armor'},
   chain:   {name:'Chain Shirt', armor:3, eva:0,  weight:'medium', note:'medium', icon:'item-chain', kind:'armor'},
   plate:   {name:'Plate Armor', armor:5, eva:-10, weight:'heavy', note:'heavy', icon:'item-plate', kind:'armor'}
@@ -87,7 +87,7 @@ var CLASSES = {
              kit:{main:'dagger', alt:'bow', armor:'leather', off:'dagger'}},
   tourist:  {name:'Tourist', mods:{}, ability:null, icon:'cls-tourist',
              passive:'Well-Traveled: +1 extra stat point every 2 levels.',
-             blurb:'No training, a loud shirt and a camera that does nothing. Grows faster than anyone.',
+             blurb:'No training, a Hawaiian shirt and a camera that does nothing. Grows faster than anyone.',
              kit:{main:'dagger', alt:null, armor:'shirt', off:'camera'}, extraFood:2}
 };
 
@@ -108,7 +108,7 @@ var GODS = {
     "boons": [
       "Iron Flesh: +2 armor, +10% movement speed and +10% Evasion per rank. Fists can parry using the normal Agility-based parry chance. Base fist damage is 2-5 at rank 1, 3-6 at rank 2, 5-9 at ranks 3-4, and 7-12 at rank 5. Every damaging unarmed hit earns 1 piety.",
       "Staggering Blows: unarmed hits stun 15% of the time. From rank 3, gain +10% unarmed attack speed per god rank.",
-      "Living Mountain: every unarmed attack, including misses, adds a stack, up to 10, and refreshes all stacks for 6 × Divine Power global turns. Each stack grants +2 percentage points of shared critical-hit chance, +2% Accuracy, and +2 flat attack damage before Might scaling."
+      "Living Mountain: every unarmed attack, including misses, adds a stack, up to 10, and refreshes all stacks for 6 × Divine Power global turns. Each stack grants +2% shared critical-hit chance, +2% Accuracy, and +2 flat attack damage before Might scaling."
     ],
     "gain": "Damaging unarmed hits, plus kills while your hands are empty; elites and bosses grant extra."
   },
@@ -136,7 +136,7 @@ var GODS = {
     "sprite": "shrine-glimmer",
     "color": "#F6E7B0",
     "refuses": "gloomling",
-    "rule": "No Shadow: no shadow affinity, enchantments or sigils. Light must be one of your elements.",
+    "rule": "No Shadow: no Shadow affinity, enchantments, spells or sigils. Light must be one of your elements.",
     "invoke": "heal",
     "prayers": [
       "consecrate",
@@ -144,7 +144,7 @@ var GODS = {
     ],
     "boons": [
       "Mending Light: all healing and HP regeneration +10%, and +10% damage against undead and shadow creatures, per rank.",
-      "Guiding Light: +15 / 20 / 25 percentage points of Smite chance at ranks 3 / 4 / 5.",
+      "Guiding Light: +15% / +20% / +25% Smite chance at ranks 3 / 4 / 5.",
       "Kindled: Saint Glimmer sets 1 Light affinity burning in you that does not count toward your cap."
     ],
     "gain": "Kills, extra for undead and shadow creatures.",
@@ -185,7 +185,7 @@ var GODS = {
       "lance"
     ],
     "boons": [
-      "Fair Fight: +4 accuracy, +2% crit and +10% damage against elites and bosses, per rank.",
+      "Fair Fight: +4 Accuracy and +2% crit chance per rank against all enemies. Weapon attacks deal +10% damage per rank against elites and bosses.",
       "Coward's Mark: distant attackers are challenged for five world turns. Their damage reduction and your bonus damage scale with Divine Power.",
       "Wall of One: for each enemy adjacent to you beyond the first, you take 10% less damage and deal 10% more, up to three."
     ],
@@ -204,7 +204,7 @@ var GODS = {
       "anviltoll"
     ],
     "boons": [
-      "Smith’s Blessing: +1 weapon damage and enchantments 10% stronger, per rank.",
+      "Smith’s Blessing: +1 weapon damage per rank. Enchantment bonus amounts are 10% stronger per rank; fixed durations, distances and limits are unchanged. Fire and Air orb effects are fixed.",
       "Second Heat: enchanting or carving a sigil at the Forge has a 30% / 40% / 50% chance at ranks 3 / 4 / 5 to give back its motes.",
       "Masterwork: Forge upgrades cost 30% less, and gear can be raised to +4."
     ],
@@ -223,7 +223,7 @@ var GODS = {
       "arcanenova"
     ],
     "boons": [
-      "Arcane Attunement: passive equipment bonuses are 5% stronger per rank.",
+      "Arcane Attunement: passive equipment bonus amounts are 5% stronger per rank. Base damage, armor, block, reach and fixed effects are unchanged.",
       "Repelling Force: successful attacks and single-target spells have a 10% chance per rank to knock enemies back two tiles.",
       "Perfect Invocation: invokes and spells have a 30% chance to cost no mana or Favor."
     ],
@@ -243,7 +243,7 @@ var GODS = {
     ],
     "boons": [
       "Lady Luck: +3% to eligible combat effects per rank. Combat damage raises Amusement; it drains slowly outside combat. High Amusement earns rewards; at zero, Wobbles plays a prank.",
-      "Favourite Toy: random prayers gain +10 / +15 / +20 percentage points of beneficial chance at ranks 3 / 4 / 5.",
+      "Favourite Toy: random prayers gain +10% / +15% / +20% beneficial chance at ranks 3 / 4 / 5.",
       "Last Laugh: survive one lethal event per unique floor at 1 HP, then receive Second Wind, Vanishing Act or Lucky Ward. Persists through travel and saves."
     ],
     "gain": "Kills and new floors earn piety. Dealing or taking damage earns Amusement, limited per world turn. It drains slowly outside combat, pays for prayers, brings rewards when full, and invites a prank when empty."
@@ -592,12 +592,14 @@ var ABILITIES = {
   "glacialtomb": {
     "name": "Glacial Tomb",
     "cost": 100,
+    "base": [32,48],
+    "radius": 1,
     "kind": "tomb",
     "range": 6,
     "type": "ice",
     "el": "water",
     "icon": "ic-glacial-tomb",
-    "desc": "Encase an enemy in ice: it cannot act or be hurt for 10 turns (6 for elites, 2 for bosses). Target yourself for 3 untouchable turns of regeneration."
+    "desc": "Encase the target enemy in ice: it cannot act or be hurt for 10 turns (6 for elites, 2 for bosses). Other enemies in the surrounding 3×3 area take 32–48 Ice damage, scaled by Spell Power. Target yourself instead for 3 untouchable turns, then recover 25% of maximum HP and mana."
   },
   "stormform": {
     "name": "Storm Form",
@@ -611,21 +613,23 @@ var ABILITIES = {
   "upheaval": {
     "name": "Upheaval",
     "cost": 100,
+    "base": [24,36],
     "kind": "upheaval",
     "range": 7,
     "type": "phys",
     "el": "earth",
     "icon": "ic-upheaval",
-    "desc": "Raise a line of stone walls up to 7 tiles toward a tile for 20 turns. Enemies next to a rising wall are rooted."
+    "desc": "Raise a line of stone walls up to 7 tiles toward a tile for 20 turns. Enemies and summons within 2 tiles of a rising wall take 24–36 Physical damage, scaled by Spell Power, once per cast; survivors damaged by the eruption are Rooted for 2 turns (1 for bosses). The caster is spared."
   },
   "dawn": {
     "name": "Dawn",
     "cost": 100,
+    "base": [24,36],
     "kind": "dawn",
     "type": "light",
     "el": "light",
     "icon": "ic-dawn",
-    "desc": "Every enemy in sight is Blinded for 3 turns, and every enemy on the floor is revealed to you for 20 turns."
+    "desc": "Strike every visible enemy for 24–36 Light damage scaled by Spell Power, Blind survivors for 3 turns, and reveal every enemy on the floor for 20 turns."
   },
   "umbral": {
     "name": "Umbral Passage",
@@ -703,10 +707,10 @@ var PRAYERS = {
     "desc": "Instant, 10 Favor: cleanse yourself and deal 8 Light damage, scaled by Divine Power, to undead and Shadow enemies within 3 tiles."
   },
   "sanctuary": {
-    "name": "Sanctuary",
+    "name": "Holy Ground",
     "favor": 25,
     "rank": 4,
-    "desc": "Create radius-3 holy ground for 10 base turns and Fear nearby enemies for four turns. Healing and nonphysical resistance bonuses scale with Divine Power."
+    "desc": "Create radius-3 Holy Ground for 10 base turns and Fear nearby enemies for four turns. Holy Ground heals allies for 2% max HP per world turn, increases other healing by 25%, grants 15% nonphysical resistance, and burns enemies (undead and shadow double), all scaled by Divine Power. Overlapping Holy Ground does not stack."
   },
   "laststand": {
     "name": "Last Stand",
@@ -849,7 +853,7 @@ var PROPS = {
 var MONSTERS = {
   rat:     {name:'Dungeon Rat', sprite:'m-rat', col:'#8C7A63', ch:'r', hp:8, dmg:[4,5], acc:56, eva:22, armor:0, speed:100, range:1, xp:4,
             band:[1,3], w:26, pack:[2,3], art:0.75, sfx:'rat', living:true},
-  bat:     {name:'Cave Bat', sprite:'m-bat', col:'#9E8CA8', ch:'b', hp:8, dmg:[2,3], acc:58, eva:32, armor:0, speed:170, range:1, xp:6,
+  bat:     {name:'Cave Bat', sprite:'m-bat', col:'#9E8CA8', ch:'b', hp:8, dmg:[2,3], acc:58, eva:44, armor:0, speed:170, range:1, xp:6,
             band:[1,2], w:6, erratic:true, flying:true, art:0.7, sfx:'bat', living:true},
   goblin:  {name:'Goblin', sprite:'m-goblin', col:'#6F9350', ch:'g', hp:16, dmg:[5,7], acc:60, eva:16, armor:1, speed:100, range:1, xp:8,
             band:[1,5], w:26, art:0.9, sfx:'goblin', living:true, artLeft:true},
@@ -857,7 +861,7 @@ var MONSTERS = {
             band:[2,5], w:18, kiter:true, art:0.9, sfx:'goblin', living:true},
   brute:   {name:'Goblin Brute', sprite:'m-goblin-brute', col:'#4E7A3C', ch:'G', hp:30, dmg:[5,8], acc:58, eva:10, armor:2, speed:100, range:1, xp:18,
             band:[3,5], w:14, art:1.05, sfx:'brute', living:true},
-  slime:   {name:'Rock Slime', sprite:'m-slime', col:'#7C8C9E', ch:'s', hp:22, dmg:[4,6], acc:54, eva:8, armor:3, speed:70, range:1, xp:14,
+  slime:   {name:'Rock Slime', sprite:'m-slime', col:'#7C8C9E', ch:'s', hp:22, dmg:[4,6], acc:54, eva:8, armor:3, speed:70, range:1, xp:14, rootSpit:true,
             band:[2,5], w:12, splits:true, art:0.8, sfx:'slime'},
   shaman:  {name:'Goblin Shaman', sprite:'m-goblin-shaman', col:'#C25A3A', ch:'h', hp:16, dmg:[3,5], acc:64, eva:14, armor:0, speed:100, range:1, xp:18,
             band:[3,5], w:10, caster:'firebolt', castRange:6, castEvery:4, el:'fire', art:0.9, sfx:'shaman', living:true, spellcaster:true},

@@ -14,7 +14,7 @@
       water:{chillChance:curve(.15,.05)},
       air:{repeatChance:curve(0,.05,{minimum:.05})},
       earth:{rootChance:curve(.15,.045),rootDuration:fixed(2)},
-      light:{accuracy:curve(10,3,{round:true}),extraDamage:curve(.25)},
+      light:{critChance:curve(.05,.01)},
       shadow:{procChance:curve(0,.05,{minimum:.05}),extraDamage:curve(.25),hollowDamage:fixed(1),corruptDuration:fixed(3)}
     },
     armor:{
@@ -50,6 +50,7 @@
   elements.forEach(function(el){rules.armor[el].resistance=curve(.10,.05);});
   function finite(v){return Number.isFinite(v)?v:0;}
   function gearBonus(rank){return 1+.05*Math.max(0,finite(rank));}
+  function amplifyBonus(value,multiplier){return value>0?value*multiplier:value||0;}
   function godBonus(context){context=context||{};return gearBonus(context.vellumRank)*(1+.10*Math.max(0,finite(context.anvilRank)));}
   function scale(mastery,context){return (1+.3*Math.max(0,finite(mastery)))*godBonus(context);}
   function values(slot,element,mastery,context){
@@ -88,7 +89,7 @@
       if(el==='water')return pct('chillChance')+' chance to Chill.';
       if(el==='air')return pct('repeatChance')+' chance of an instant extra attack, or an eligible spell landing twice.';
       if(el==='earth')return pct('rootChance')+' chance to Root for '+v.rootDuration+' turns.';
-      if(el==='light')return '+'+f('accuracy')+' accuracy; +'+pct('extraDamage')+' damage to undead and shadow.';
+      if(el==='light')return '+'+pct('critChance')+' crit chance.';
       if(el==='shadow')return pct('procChance')+' chance of +'+pct('extraDamage')+' dark damage and Corrupt; +'+v.hollowDamage+' damage to Hollowed targets.';
     }
     if(slot==='armor'){
@@ -137,7 +138,7 @@
   }
   Object.keys(rules).forEach(function(slot){Object.keys(rules[slot]).forEach(function(el){Object.keys(rules[slot][el]).forEach(function(k){Object.freeze(rules[slot][el][k]);});Object.freeze(rules[slot][el]);});Object.freeze(rules[slot]);});Object.freeze(rules);
   var api=Object.freeze({rules:rules,values:values,describe:function(slot,el,mastery,context){return describe(slot,el,mastery,context,false);},
-    formula:function(slot,el){return describe(slot,el,0,{},true);},formulaTable:formulaTable,gearBonus:gearBonus,godBonus:godBonus,scale:scale});
+    formula:function(slot,el){return describe(slot,el,0,{},true);},formulaTable:formulaTable,gearBonus:gearBonus,amplifyBonus:amplifyBonus,godBonus:godBonus,scale:scale});
   root.FoteEnchantments=api;
   if(typeof module!=='undefined'&&module.exports)module.exports=api;
 })(typeof globalThis!=='undefined'?globalThis:this);

@@ -232,12 +232,12 @@ function performPrayer(id){
     clearBad();ents.slice().forEach(function(e){if(e.foe&&dist(e,player)<=3&&(e.base.undead||e.base.shadowy)){var d=applyDamage(e,Math.round(8*div),'light',player);floatText(e.x,e.y,String(d),'light');if(e.hp<=0)kill(e,player);}});
     sparkleFx(player.x,player.y,'light',40);updateUI();return true;
   }
-  else if(id==='sanctuary'){floorMeta.sanctuary={x:player.x,y:player.y,until:player.t+100*fullDivineDuration(10)};ents.forEach(function(e){if(e.foe&&dist(e,player)<=3)applyStatus(e,'fear',4);});ringFx(player.x,player.y,'#FFE4A0',3);}
+  else if(id==='sanctuary'){var duration=100*fullDivineDuration(10);floorMeta.sanctuary={x:player.x,y:player.y,power:div,damage:Math.max(1,Math.round(sDMG(3+aff('light'))*div)),duration:duration,until:player.t+duration};ents.forEach(function(e){if(e.foe&&dist(e,player)<=3)applyStatus(e,'fear',4);});ringFx(player.x,player.y,'#FFE4A0',3);}
   else if(id==='trollblood'){healPlayer(player.maxhp*.4*div);clearBad();}
   else if(id==='rally'){
     healPlayer(player.maxhp*.25*div);clearBad();player.buffs.rally=10;
     ents.forEach(function(e){if(e.ally&&e.hp>0&&vis[idxOf(e.x,e.y)]){
-      e.hp=Math.min(e.maxhp,e.hp+e.maxhp*.25*div*(inSanctuary(e)?1+.25*div:1));
+      e.hp=Math.min(e.maxhp,e.hp+e.maxhp*.25*div*(1+.25*holyGroundStrength(e)));
       Object.keys(e.st||{}).forEach(function(k){if(STATUS_INFO[k]&&STATUS_INFO[k].bad)delete e.st[k];});e.rallyUntil=player.t+100*fullDivineDuration(10);
     }});
   }
@@ -282,7 +282,6 @@ function godDamageResolved(target,d,type,source,event){
     if(el==='water'&&pRoll(values.chillChance))addChill(target);
     if(el==='earth'&&pRoll(values.rootChance))applyStatus(target,'root',values.rootDuration);
     if(el==='air'&&pRoll(values.repeatChance))applyDamage(target,Math.round(d),type,source,inherited);
-    if(el==='light'&&(target.base.undead||target.base.shadowy))applyDamage(target,Math.round(d*values.extraDamage),'light',source,inherited);
     if(el==='shadow'&&pRoll(values.procChance)){applyDamage(target,Math.round(d*values.extraDamage),'dark',source,inherited);if(target.hp>0)applyStatus(target,'corrupt',values.corruptDuration);}
    }
  }

@@ -1,7 +1,26 @@
 /* Release history and title-screen freshness checks. Saves are never cleared. */
-var FOTE_VERSION = 'Beta 1.2';
+var FOTE_VERSION = 'Beta 1.3';
 /* Keep newest first; describe only changes already present in this build. */
 var FOTE_PATCHES = [
+  {version:'Beta 1.3', notes:[
+    "The final Forge of the Elements has its own animated artwork, with six elemental sources feeding the anvil. Existing saved final chambers receive the new art.",
+    "Added a richer victory and defeat summary with a final score and score breakdown. Previous Runs keeps a local high-score list, with victories first; sandbox runs are excluded.",
+    "Previous Runs and Settings are now available from the title screen, and character creation has a Back button. Audio, display and key bindings can be adjusted before starting a character; motion settings now persist.",
+    "The Unmaker calls reinforcements throughout the battle. In his second form, three crystal pylons fire independently telegraphed beams while he threatens other areas, making positioning matter throughout the fight.",
+    "Boss cores now land on reachable ground, separately from other treasure, even when a boss is defeated outside its lair. Loading an affected save repairs a missing or inaccessible core.",
+    "A loot-filled Caverns boss chamber can still open its exit, instead of ending the adventure early.",
+    "Fixed the Light realm getting stuck after lethal reflected damage. Older saves interrupted by this bug recover at one HP, while completed deaths remain final.",
+    "Glimmer and Light mastery now create the same Holy Ground, with matching visuals, healing, protection and damage. Fixed field healing and overlapping effects, and made Glimmer's healing boon apply consistently.",
+    "Dawn now strikes visible enemies with Light damage as well as blinding and revealing them. Attacking a blinded enemy now counts as a surprise attack.",
+    "Glacial Tomb now blasts the area around its entombed target with Ice damage. Upheaval raises its wall with a damaging eruption that roots nearby enemies and summons. Their targeting previews show the affected areas, and Upheaval spends nothing when no walls can rise.",
+    "Rooted, stunned and incapacitated creatures lose their Evasion until they recover. Combat checks and character displays use the same effective value.",
+    "Light weapon enchantments now improve critical chance, replacing their previous accuracy and extra damage bonuses.",
+    "Fortitude recovers more often and is no longer consumed by a blow that shields absorb completely. Selected nimble enemies are harder to hit, giving Accuracy more value.",
+    "Rock Slimes spit rooting stone, Shades chill with their touch, and Lens Bearers fire blinding Light beams. Elemental attack damage now consistently respects defenses, and every Light-realm creature is vulnerable to Shadow.",
+    "Corrected missing Vellum bonuses on equipment passives and made their item cards show the benefits actually received. Clarified Reginald's bonuses and standardized ability and item descriptions to use %.",
+    "Tourists now start with a Hawaiian Shirt and its own artwork. Fixed malformed puzzle sigils and repaired affected items in existing saves.",
+    "Corrected the Deep Maw appearing beneath its pits and the dark rectangle over its exit. Repaired raised weapon positions in the female Gloomling's walk, and made magical summons dissipate without leaving the wrong creature's corpse."
+  ]},
   {version:'Beta 1.2', notes:[
     "Expanded the landscape map by removing its outer gutters and tightening the side panels. Menu buttons use two rows, the combat log has more room, and phone movement controls use the space beneath your stats.",
     "Made landscape ability and prayer descriptions use the full row, with mana, cooldowns and charges below the name so they no longer squeeze the text.",

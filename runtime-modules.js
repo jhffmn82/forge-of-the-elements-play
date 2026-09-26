@@ -72,6 +72,7 @@ var FOTE_RUNTIME = {
   "js/options.js",
   "js/recovery-audio.js",
   "js/save.js",
+  "js/run-history.js",
   "js/boot.js",
   "js/enchtext.js",
   "js/spellench.js",

@@ -35,15 +35,14 @@ function applySpellWeaponEnchant(f, d, crit, A){
       log('<b>Gust.</b> The spell strikes twice &mdash; <b>'+d2+'</b> more.','c-good');
       if(f.hp<=0){ kill(f, player); return; }
     }
-    if(ench==='light' && (f.base.undead || f.base.shadowy)) extra += Math.round(d*values.extraDamage);
     if(ench==='shadow'){
       if(f.st.hollow) extra += values.hollowDamage;
       if(pRoll(values.procChance)){ extra += Math.round(d*values.extraDamage); applyStatus(f, 'corrupt', values.corruptDuration); note=' corrupted'; }
     }
 
     if(extra > 0){
-      dealDirectDamage(f,extra,ench==='light'?'light':ench==='fire'?'fire':'dark',player,{tags:['proc','enchant']});
-      floatText(f.x, f.y, String(extra), ench==='light' ? 'light' : ench==='fire' ? 'fire' : 'dark');
+      dealDirectDamage(f,extra,ench==='fire'?'fire':'dark',player,{tags:['proc','enchant']});
+      floatText(f.x, f.y, String(extra), ench==='fire' ? 'fire' : 'dark');
       if(f.hp<=0) kill(f, player);
     }
     if(note && f.hp>0) log('Your '+gearName(w)+' leaves it'+note+'.', 'c-good');

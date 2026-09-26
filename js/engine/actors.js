@@ -3,6 +3,15 @@
   var neighbors=Object.freeze([[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]].map(Object.freeze));
   function movementAllowed(actor,effects){return actor&&actor.hp>0&&!(actor.tomb>0)&&!effects.hasTag(actor,'root')&&!effects.hasTag(actor,'stun')&&!effects.hasTag(actor,'frozen')&&!effects.hasTag(actor,'stone');}
   function blocked(actor,effects){if(actor.tomb>0)return 'tomb';for(var tag of ['stun','frozen','stone'])if(effects.hasTag(actor,tag))return tag;return null;}
+  /* Evasion needs freedom to move. Share the movement-control taxonomy, but
+   * do not confuse a stationary creature's AI, Fear, or Slow with incapacity. */
+  function effectiveEvasion(actor,rating,effects,isPlayer){
+    if(!actor||actor.hp<=0||actor.state==='asleep'||actor.tombed)return 0;
+    var reason=blocked(actor,effects);
+    /* The legacy stone key is player Stone Skin, but NPC Petrify. */
+    if(isPlayer&&reason==='stone')reason=null;
+    return reason||effects.hasTag(actor,'root')?0:rating;
+  }
   function bestStep(origin,score,allowed,maximize){
     var best=null,value=score(origin.x,origin.y);
     if(!Number.isFinite(value)||value<0)value=maximize?-Infinity:Infinity;
@@ -31,5 +40,5 @@
     }
     return Object.freeze({takeTurn:takeTurn});
   }
-  return Object.freeze({create:create,movementAllowed:movementAllowed,blocked:blocked,bestStep:bestStep,candidates:candidates,neighbors:neighbors});
+  return Object.freeze({create:create,movementAllowed:movementAllowed,blocked:blocked,effectiveEvasion:effectiveEvasion,bestStep:bestStep,candidates:candidates,neighbors:neighbors});
 });

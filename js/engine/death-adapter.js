@@ -43,7 +43,13 @@ function prepareCreatureDeath(event){
   return true;
 }
 function deathAnimation(e,persistent){
-  var visual={x:e.x,y:e.y,col:e.col,sprite:e.base.sprite,art:(e.base.art||.9)*(e.big?1.25:1),flip:(player.x<e.x)!==!!e.base.artLeft};
+  var shade=!!(e.ally&&(e.shade||e.swarm)),flame=!!e.livingFlame;
+  var facing=e.ally&&typeof e.facingLeft==='boolean'?e.facingLeft:player.x<e.x;
+  var visual={id:e.id,x:e.x,y:e.y,col:e.col,sprite:shade?'m-shade':e.base.sprite,art:shade?.9:(e.base.art||.9)*(e.big?1.25:1),flip:facing!==!!(!shade&&!flame&&e.base.artLeft)};
+  if(shade)visual.shade=true;
+  if(flame){visual.livingFlame=true;visual.flameShots=e.flameShots||0;}
+  /* Magical bodies dissipate in their summoned form; they leave no borrowed corpse. */
+  if(shade||flame)persistent=false;
   var remains;
   if(persistent!==false&&visual.sprite){
     floorMeta.deathRemains=floorMeta.deathRemains||[];

@@ -179,13 +179,13 @@ var PLANE_ROSTER = {
   /* fixed: these are tuned for the plane they guard, so spawn() does not put the dungeon floor curve on top */
   function mk(o){ o.band=[0,0]; o.w=0; o.speed=o.speed||100; o.range=o.range||1; o.fixed=true; return o; }
   /* Light (Justin's creatures, 2026-09-17) */
-  M.dawnsentinel = mk({name:'Dawn Sentinel', sprite:'m-dawn-sentinel', col:'#F6E7B0', ch:'D', hp:75, dmg:[8,11], acc:66, eva:12, armor:5, xp:42, reflects:true, art:1.05, sfx:'golem'});
+  M.dawnsentinel = mk({name:'Dawn Sentinel', sprite:'m-dawn-sentinel', col:'#F6E7B0', ch:'D', hp:75, dmg:[8,11], acc:66, eva:12, armor:5, xp:42, reflects:true, el:'light', art:1.05, sfx:'golem'});
   M.halowisp     = mk({name:'Halo Wisp', sprite:'m-halo-wisp', col:'#FFE08A', ch:'w', hp:24, dmg:[4,6], acc:60, eva:34, armor:0, xp:30, healer:true, flying:true, el:'light', art:0.75, sfx:'wisp'});
   M.prismscarab  = mk({name:'Prism Scarab', sprite:'m-prism-scarab', col:'#C8F0FF', ch:'p', hp:55, dmg:[6,9], acc:66, eva:14, armor:3, xp:36, range:4, prism:true, el:'light', art:0.85, sfx:'spider'});
   /* 2026-09-18 (Justin): both wardens brought to the Heart's 110 HP and 8-12 - 150/140 and 9-14 was out of reach at level 8 */
   M.radiantwarden= mk({name:'Radiant Warden', sprite:'m-radiant-warden', col:'#FFD24A', ch:'R', hp:160, dmg:[11,15], acc:72, eva:18, armor:5, xp:300, elite:true, brands:true, el:'light', art:1.3, sfx:'radiant-warden'});
-  M.stalker      = mk({name:'Stalker', sprite:'m-stalker', col:'#2A2436', ch:'s', hp:75, dmg:[8,11], acc:70, eva:24, armor:1, xp:40, lurks:true, shadowy:true, art:1.0, sfx:'hound'});
-  M.gloommoth    = mk({name:'Gloom Moth', sprite:'m-gloom-moth', col:'#6A4F8A', ch:'m', hp:24, dmg:[4,6], acc:62, eva:30, armor:0, xp:30, snuffs:true, flying:true, erratic:true, art:0.85, sfx:'wisp'});
+  M.stalker      = mk({name:'Stalker', sprite:'m-stalker', col:'#2A2436', ch:'s', hp:75, dmg:[8,11], acc:70, eva:38, armor:1, xp:40, lurks:true, shadowy:true, art:1.0, sfx:'hound'});
+  M.gloommoth    = mk({name:'Gloom Moth', sprite:'m-gloom-moth', col:'#6A4F8A', ch:'m', hp:24, dmg:[4,6], acc:62, eva:44, armor:0, xp:30, snuffs:true, flying:true, erratic:true, art:0.85, sfx:'wisp'});
   M.umbralhound  = mk({name:'Umbral Hound', sprite:'m-umbral-hound', col:'#2A2436', ch:'h', hp:55, dmg:[6,9], acc:66, eva:20, armor:1, xp:34, howls:true, shadowy:true, art:0.95, sfx:'hound'});
   M.nightwarden  = mk({name:'Night Warden', sprite:'m-night-warden', col:'#B8B0D8', ch:'W', hp:160, dmg:[11,15], acc:72, eva:20, armor:4, xp:300, elite:true, moonbound:true, shadowy:true, art:1.2, sfx:'night-warden'});
   M.burrower     = mk({name:'Burrower', sprite:'m-burrower', col:'#8A6A4A', ch:'b', hp:55, dmg:[6,9], acc:64, eva:10, armor:3, xp:38, burrows:true, art:0.95, sfx:'golem'});
@@ -349,6 +349,9 @@ function refreshEncounterTuning(){
   }
   ents.forEach(function(e){
     if(!e.base || e.hp<=0)return;
+    if(['bat','slime','caveslime','shade','stalker','gloommoth','dawnsentinel','halowisp','prismscarab','radiantwarden','chaos-rift-skitter','chaos-lens-bearer','chaos-lash-dancer','chaos-razor-dancer'].indexOf(e.kind)>=0){
+      var tuned=MONSTERS[e.kind];if(tuned){e.base=Object.assign({},e.base);['eva','el','rootSpit','attackType','chillTouch'].forEach(function(key){if(tuned[key]!==undefined)e.base[key]=tuned[key];});}
+    }
     if(floorMeta&&floorMeta.chaosPreview&&e.base.chaosAI){
       var current=MONSTERS[e.kind];
       if(current&&current.chaosAI){

@@ -24,6 +24,7 @@ function presentRestoredFloor(at){
   if(spot){ player.x=spot.x; player.y=spot.y; }
   player._lx=undefined;
   if(typeof FoteShadowClone!=='undefined')FoteShadowClone.arrive();
+  if(typeof repairBossCore==='function')repairBossCore();
   computeFOV(); resize(); updateUI(); draw();
 }
 function findTile(t){ for(var i=0;i<map.length;i++) if(map[i]===t) return {x:i%MW, y:(i/MW)|0}; return null; }

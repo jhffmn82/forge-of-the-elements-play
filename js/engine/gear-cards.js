@@ -1,5 +1,12 @@
 /* Read-only item views. Cards normalize a copy, never an equipped item. */
 function gearCardView(item){return item?tierNormalize(Object.assign({},item)):null;}
+function passiveNumber(value){return String(Number(gearPassiveValue(value).toFixed(2)));}
+function weaponPassiveNote(w){
+  if(w.executioner)return '+'+passiveNumber(w.executioner*100)+'% damage to wounded targets';
+  if(w.pierce)return 'Ignores '+passiveNumber(w.pierce)+' armor';
+  if(w.critBonus)return '+'+passiveNumber(w.critBonus*100)+'% crit chance';
+  return w.note||'';
+}
 function weaponCard(item,worn){
   var w=gearCardView(item);if(!w)return '';
   var h;
@@ -10,12 +17,12 @@ function weaponCard(item,worn){
     var plus=itemPlus(w);
     h='<div class="nm">'+gearName(w)+'</div>'+
       '<div class="row"><span>Damage</span><b>'+(w.dmg[0]+plus)+'&ndash;'+(w.dmg[1]+plus)+'</b></div>'+
-      '<div class="row"><span>Accuracy</span><b>'+(w.acc>=0?'+':'')+(w.acc||0)+'</b></div>'+
+      '<div class="row"><span>Accuracy</span><b>'+(w.acc>=0?'+':'')+passiveNumber(w.acc)+'</b></div>'+
       '<div class="row"><span>Hands</span><b>'+(w.hands||1)+'</b></div>'+
       (w.range?'<div class="row"><span>Range</span><b>'+(w.range+(player.rangeBonus||0))+'</b></div>':'')+
       (w.enchant?'<div class="row"><span>Enchant</span><b style="color:'+AFF_COL[w.enchant]+'">'+cap(w.enchant)+'</b></div><div class="hint">'+enchantLive('weapon',w.enchant)+'</div>':'')+
       (w.divine?'<div class="row"><span>Invoke &amp; prayer strength</span><b>+'+Math.round(w.divine*gearPassiveBonus()*100)+'%</b></div>':'')+
-      (w.note?'<div class="hint">'+w.note+'</div>':'')+focusRows(w)+
+      (w.note?'<div class="hint">'+weaponPassiveNote(w)+'</div>':'')+focusRows(w)+
       (w.cursed?'<div class="hint" style="color:#D0605A">Cursed: it will not leave your hand until the curse is broken.</div>':'');
   }
   return tierTint(h,w)+(worn?'':reqRow(w));
@@ -27,7 +34,7 @@ function armorCard(item,worn){
   else{
     h='<div class="nm">'+gearName(a)+'</div>'+
       '<div class="row"><span>Armor</span><b>'+(a.armor+itemPlus(a))+'</b></div>'+
-      '<div class="row"><span>Evasion</span><b>'+((a.eva||0)>=0?'+':'')+(a.eva||0)+'</b></div>'+
+      '<div class="row"><span>Evasion</span><b>'+((a.eva||0)>=0?'+':'')+passiveNumber(a.eva)+'</b></div>'+
       (a.enchant?'<div class="row"><span>Enchant</span><b style="color:'+AFF_COL[a.enchant]+'">'+cap(a.enchant)+'</b></div><div class="hint">'+enchantLive('armor',a.enchant)+'</div>':'')+
       '<div class="hint">'+(a.note||'')+'</div>'+(a.cursed?'<div class="hint" style="color:#D0605A">Cursed: you cannot take it off until the curse is broken.</div>':'');
     if(itemKey(a)==='robe')h+='<div class="row"><span>Spell damage</span><b>+'+Math.round(robeSpell(a)*gearPassiveBonus()*100)+'%</b></div><div class="row"><span>Max mana</span><b>+'+Math.round(TIER_ROBE.mana[tierNum(a)]*gearPassiveBonus()*100)+'%</b></div>';

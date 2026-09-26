@@ -38,6 +38,55 @@ function repairCoreProgress(){
   return changed;
 }
 
+/* Important drops must stay on the player's side of walls and locked gates.
+   Ordinary nearFree() only checks distance; it can choose another room through
+   a wall when a boss has been pulled into a corridor. */
+function coreReachableTiles(){
+  var reachable=new Set(),queue=[{x:player.x,y:player.y}];
+  reachable.add(player.x+','+player.y);
+  for(var i=0;i<queue.length;i++)for(var dy=-1;dy<=1;dy++)for(var dx=-1;dx<=1;dx++){
+    if(!dx&&!dy)continue;
+    var x=queue[i].x+dx,y=queue[i].y+dy,key=x+','+y;
+    if(!inb(x,y)||reachable.has(key))continue;
+    var tile=at(x,y),prop=propAt(x,y);
+    if(!walkable(x,y)&&!(tile===DOOR&&!(prop&&prop.b)))continue;
+    reachable.add(key);queue.push({x:x,y:y});
+  }
+  return reachable;
+}
+function coreDropSpot(origin,reachable){
+  reachable=reachable||coreReachableTiles();origin=origin||player;
+  var best=null,bestScore=Infinity;
+  reachable.forEach(function(key){
+    var xy=key.split(','),x=Number(xy[0]),y=Number(xy[1]);
+    if(at(x,y)!==FLOOR||!walkable(x,y)||occupied(x,y)||itemAt(x,y)||propAt(x,y))return;
+    var score=Math.max(Math.abs(x-origin.x),Math.abs(y-origin.y))*100+Math.abs(x-player.x)+Math.abs(y-player.y);
+    if(score<bestScore){bestScore=score;best={x:x,y:y};}
+  });
+  /* A completely crowded room still has the player's reachable tile. */
+  return best||{x:player.x,y:player.y};
+}
+function dropBossCore(origin){
+  var name=coreName();
+  if(player.core===name)return null;
+  var existing=items.find(function(it){return it.kind==='core'&&it.name===name;});
+  if(existing)return existing;
+  var spot=coreDropSpot(origin),core={x:spot.x,y:spot.y,kind:'core',name:name};
+  items.push(core);return core;
+}
+function repairBossCore(){
+  if(!RUN||!player||!floorMeta||floorMeta.plane||floorNo<5||floorNo>20||floorNo%5!==0||floorMeta.exitOpen)return false;
+  /* RUN.bossDead refers to earlier floors too. Require this floor's evidence. */
+  var defeated=floorMeta.bossRewarded||floorNo===15&&(floorMeta.caveWon||floorMeta.maw&&floorMeta.maw.phase==='dead')||floorNo===20&&floorMeta.matron&&floorMeta.matron.phase==='dead';
+  if(!defeated||ents.some(function(e){return e.foe&&e.hp>0&&e.base&&e.base.boss;}))return false;
+  var name=coreName();if(player.core===name)return false;
+  var core=items.find(function(it){return it.kind==='core'&&it.name===name;});
+  if(!core){dropBossCore(player);return true;}
+  var reachable=coreReachableTiles(),prop=propAt(core.x,core.y);
+  if(reachable.has(core.x+','+core.y)&&walkable(core.x,core.y)&&!(prop&&prop.b))return false;
+  var spot=coreDropSpot(player,reachable);core.x=spot.x;core.y=spot.y;return true;
+}
+
 function absorbCoreAtGate(nx, ny){
   var name=player.core;
   if(!name||floorNo%5!==0||floorMeta.plane||name!==coreName())return false;

@@ -70,7 +70,7 @@ function rollEnhancement(minimum){
 
 /* ---------------------------------------------------------------- identity */
 function itemKey(it){
-  if(!it || it===EMPTY_OFF || it.unarmed || it.joke || it.kind==='ring' || it.kind==='amulet' || it.name==='Loud Shirt') return null;
+  if(!it || it===EMPTY_OFF || it.unarmed || it.joke || it.kind==='ring' || it.kind==='amulet' || it.name==='Loud Shirt' || it.name==='Hawaiian Shirt') return null;
   if(it.key) return it.key;
   var k=null;
   var tables=[['off',OFFHANDS],['armor',ARMORS],['weapon',WEAPONS]];

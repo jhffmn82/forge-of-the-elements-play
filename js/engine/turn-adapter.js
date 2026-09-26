@@ -44,7 +44,6 @@ function turnRegeneration(context){
   if(hasP('resilient')&&player.hp<player.maxhp/2)hpRate*=2;
   if(bodyArmor(player).enchant==='light')hpRate*=1+enchantValues('armor','light').hpRegen;
   if(hasGod('grumbok'))hpRate*=1+.20*godRank();
-  if(hasGod('glimmer'))hpRate*=1+.10*godRank();
   if(player.hunger<=0||gameEffects.has(player,'poison')||gameEffects.has(player,'rot')||fighting)hpRate=0;
   player.mp=Math.min(player.maxmp,player.mp+player.maxmp*mpRate*scale);
   healPlayer(player.maxhp*hpRate*scale,true);
@@ -75,6 +74,7 @@ function turnWorldPulse(clock){
   }
   groundTick();godsWorldAdvance(clock-100,clock);
   if(typeof FoteChaosEnemies!=='undefined')FoteChaosEnemies.globalPulse(clock);
+  if(typeof FoteUnmakerEncounter!=='undefined')FoteUnmakerEncounter.pulsePylons(clock);
 }
 function turnExplore(){
   spotTraps();if(!floorMeta.boss)wanderingSpawn();godTick(turnInCombat());
@@ -114,6 +114,9 @@ var gameTurns=FoteTurns.create({
   finalize:[turnPhase('finalize-action',turnFinalizeAction)]
 });
 function endTurn(){
+  // Reflection and other action-time damage can kill before scheduling starts.
+  // The scheduler rejects dead actors, so finish that death at the action boundary.
+  if(player&&player.hp<=0){death();updateUI();draw();return;}
   if(!player.movedThisTurn&&!player.lastAttack&&!player.castingSpell&&playerFearAction())return;
   var result=gameActions.suspend(function(){return gameTurns.action();});
   if(result&&typeof result.catch==='function')result.catch(function(error){console.error('Enemy turn failed',error);stopTravel();PACING.pending=null;});

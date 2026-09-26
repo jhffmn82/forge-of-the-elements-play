@@ -130,8 +130,11 @@ function cancelAim(){ if(!aiming) return; aiming=null; abilityBar(); draw(); }
 var spriteOn=true;
 var OS_REDUCE = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
 var ANIM={ mode:'auto', reduce: OS_REDUCE };
+try{var savedMotion=localStorage.getItem('astra-temple-motion');if(['auto','on','off'].indexOf(savedMotion)>=0)ANIM.mode=savedMotion;}catch(e){}
 function setMotion(mode){
+  if(['auto','on','off'].indexOf(mode)<0)mode='auto';
   ANIM.mode=mode; ANIM.reduce = mode==='off' || (mode==='auto' && OS_REDUCE);
+  try{localStorage.setItem('astra-temple-motion',mode);}catch(e){}
   var b=document.getElementById('bMotion');
   if(b) b.textContent = 'Motion: '+(mode==='auto' ? (OS_REDUCE?'auto (off)':'auto (on)') : mode);
 }

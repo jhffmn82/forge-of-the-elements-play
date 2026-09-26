@@ -87,9 +87,8 @@
     if(el==='water'&&rng()<v.chillChance)gameEffects.addChill(target,effectOptions(e));
     if(el==='earth'&&rng()<v.rootChance)status(e,target,'root',v.rootDuration);
     if(el==='air'&&rng()<v.repeatChance)damage(e,target,dealt,'dark');
-    if(el==='light'&&(target.base.undead||target.base.shadowy))extra+=Math.round(dealt*v.extraDamage);
     if(el==='shadow'){if(target.st.hollow)extra+=v.hollowDamage;if(rng()<v.procChance){extra+=Math.round(dealt*v.extraDamage);status(e,target,'corrupt',v.corruptDuration);}}
-    if(extra>0)dealDirectDamage(target,extra,el==='light'?'light':el==='fire'?'fire':'dark',e,{tags:['proc','enchant','shadow-clone','murk-inherited']});
+    if(extra>0)dealDirectDamage(target,extra,el==='fire'?'fire':'dark',e,{tags:['proc','enchant','shadow-clone','murk-inherited']});
   }
   function cast(e,target){
     refreshStats(e);var s=e.cloneStats,A=ABILITIES.shadowbolt,line=projectileLine(e,target,{range:s.range});if(!line)return;
@@ -150,9 +149,9 @@
     if(s.reginaldRank>=5&&foe)d*=1-.10*Math.min(3,Math.max(0,ents.filter(function(o){return o.foe&&o.hp>0&&dist(e,o)<=1;}).length-1));
     if(s.grumbokCapstone&&type!=='phys'&&foe)d*=.5;
     if(s.magicBarrier&&foe&&!event.tags.has('area')&&dist(source,e)>1&&d>0)d=Math.max(1,d-5);
-    if(s.fortitude&&foe&&d>0&&!(e.fortUntil>worldNow())){d*=.5;e.fortUntil=worldNow()+1500;}
     if(type==='phys'&&d>0)d=Math.max(1,d);
     if(!event.options.bypassShields){if(e.ward>0&&!(e.buffs.arcaneward>0||e.buffs.communion>0))e.ward=0;var absorption=FoteDamage.absorb(d,['ward','iceArmor','hideShield','mward','guard'].map(function(k){return{key:k,amount:e[k]||0,type:'dark'};}));d=absorption.remaining;event.absorbed=absorption.absorbed;Object.keys(absorption.pools).forEach(function(key){e[key]=absorption.pools[key];});}
+    if(s.fortitude&&foe&&Math.round(d)>0&&!(e.fortUntil>worldNow())){d*=.5;e.fortUntil=worldNow()+600;}
     if(e.challenged&&e.challengeBoost)d*=1.2;if(e.dazed>0)d*=1.5;
     if(d>0)e.lastDamageTime=worldNow();event.amount=d;return true;
   }
@@ -161,7 +160,7 @@
     var s=e.cloneStats,scale=(clock-e.clonePulseAt)/100;e.clonePulseAt=clock;
     var poisoned=gameEffects.has(e,'poison'),rot=gameEffects.has(e,'rot'),fighting=ents.some(function(o){return o.foe&&o.hp>0&&o.state==='hunt'&&dist(e,o)<=s.range&&clearShot(e,o);});
     var hp=s.fed&&!poisoned&&!rot&&!fighting?s.hpRate*(s.passives.resilient&&e.hp<e.maxhp/2?2:1):0;
-    if(s.fed&&!poisoned)hp+=s.mending;if(e.buffs.regeneration>0)hp+=s.foodRegen;e.hp=Math.min(e.maxhp,e.hp+e.maxhp*hp*scale*(inSanctuary(e)?1+(s.sanctuaryBonus||0):1));
+    if(s.fed&&!poisoned)hp+=s.mending;if(e.buffs.regeneration>0)hp+=s.foodRegen;e.hp=Math.min(e.maxhp,e.hp+e.maxhp*hp*scale*(1+.25*holyGroundStrength(e)));
     var mp=s.mpRate*(s.passives.tidalMind&&e.mp<e.maxmp/2?2:1)+(e.buffs.manaflow>0?s.manaflow:0);e.mp=Math.min(e.maxmp,e.mp+e.maxmp*mp*scale);
     if(clock-(e.lastDamageTime||0)>=500){e.iceArmor=Math.min(e.iceArmorMax,(e.iceArmor||0)+scale);e.guard=Math.min(e.guardMax,(e.guard||0)+scale);}
     Object.keys(e.buffs).forEach(function(key){e.buffs[key]=Math.max(0,e.buffs[key]-scale);});
@@ -173,7 +172,7 @@
     refreshStats(e);return FoteCosts.action(Object.assign({},s.timing,{speed:e.speed,storm:e.cloneStormTurns>0,holyAir:s.holyAir&&buffed(e),holyReduction:s.holyReduction,chill:e.st.chill?chillSlow(e):0,slow:e.st.slow?(e.st.slow.mult||SYLLA.slowMult):0}));}
   function resistance(e,type){
     var s=e.cloneStats,c=s.resistanceContexts&&s.resistanceContexts[type];if(!c)return s.resist[type]===undefined?1:s.resist[type];
-    return FoteActions.resistance(type,Object.assign({},c,{wet:!!isWet(e),chilled:!!e.st.chill,sanctuary:inSanctuary(e),
+    return FoteActions.resistance(type,Object.assign({},c,{wet:!!isWet(e),chilled:!!e.st.chill,sanctuary:inSanctuary(e),divine:holyGroundStrength(e),
       poisonward:e.buffs.poisonward>0,shadeward:e.buffs.shadeward>0,stormward:e.buffs.stormward>0,fireward:e.buffs.fireward>0,starward:e.buffs.starward>0}));
   }
   function arrive(){

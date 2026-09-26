@@ -55,7 +55,9 @@ function boltFx(ax,ay,bx,by,type,opts){
 function drawCorpse(f, p, opacity){
   opacity=opacity===undefined?1:opacity;
   var px=(f.e.x-camX)*TS, py=(f.e.y-camY)*TS;
-  var ms = spriteOn && f.e.sprite ? mobSheet(f.e.sprite) : null;
+  if(f.e.livingFlame){drawLivingFlame(f.e,px,py,{alpha:opacity*(1-p),flip:f.e.flip});return;}
+  var ms = spriteOn && f.e.sprite ? (f.e.shade?shadeSummonSheet():mobSheet(f.e.sprite)) : null;
+  if(f.e.shade)opacity*=.62;
   if(ms && ms.m.clips.death && !CAVE_TOPPLE[f.e.sprite] && !DEEP_TOPPLE[f.e.sprite]){
     var c=ms.m.clips.death, cell=ms.m.cell, fr=Math.min(c.frames-1, Math.floor(p*c.frames*1.05)), box=ms.m.box||[0,0,cell,cell];
     var target=TS*(f.e.art||0.9), s=target/Math.max(box[3], box[2]*0.8);
@@ -166,6 +168,18 @@ function drawFX(){
         ctx.fillStyle=g; ctx.fillRect(hx-TS*0.45,hy-TS*0.45,TS*0.9,TS*0.9);
         ctx.fillStyle=t.col[0]; ctx.beginPath(); ctx.arc(hx,hy,TS*0.09,0,7); ctx.fill(); ctx.restore();
       }
+    } else if(f.k==='beam'){
+      /* Grid beams preserve gaps in their warning; they never bridge safe cells. */
+      ctx.save();ctx.globalCompositeOperation='lighter';ctx.lineCap='round';ctx.lineJoin='round';ctx.beginPath();
+      var beamPrior=null;
+      f.tiles.forEach(function(tile){
+        if(!inb(tile[0],tile[1])||!(revealAll||vis[idxOf(tile[0],tile[1])])){beamPrior=null;return;}
+        var prior=beamPrior,x=(tile[0]-camX+.5)*TS,y=(tile[1]-camY+.5)*TS;beamPrior=tile;
+        if(!prior||Math.max(Math.abs(prior[0]-tile[0]),Math.abs(prior[1]-tile[1]))>1)ctx.moveTo(x,y);
+        else ctx.lineTo(x,y);
+      });
+      ctx.globalAlpha=(1-p)*.8;ctx.strokeStyle=f.col;ctx.lineWidth=TS*.18;ctx.stroke();
+      ctx.globalAlpha=1-p;ctx.strokeStyle='#FFF9E9';ctx.lineWidth=Math.max(1,TS*.045);ctx.stroke();ctx.restore();
     } else if(f.k==='b'){
       /* legacy straight bolt, kept for anything still calling it with k:'b' */
       var x=(f.ax+(f.bx-f.ax)*p-camX+0.5)*TS, y=(f.ay+(f.by-f.ay)*p-camY+0.5)*TS;

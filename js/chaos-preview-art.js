@@ -15,6 +15,7 @@
     'rot-pool':{file:'map-rot-pool.png',sx:52,sy:163,sw:1426,sh:708},
     'cinder-portal':{file:'map-cinder-portal.png',sx:39,sy:62,sw:1140,sh:1170},
     'cinder-furnace':{file:'map-cinder-furnace.png',sx:60,sy:80,sw:1134,sh:1088},
+    'final-forge':{file:'map-final-forge.png',sx:0,sy:6,sw:1236,sh:1233},
     'cinder-anvil':{file:'map-cinder-anvil.png',sx:161,sy:122,sw:1178,sh:810},
     'cinder-shields':{file:'map-cinder-shields.png',sx:34,sy:41,sw:1186,sh:1144},
     'violet-portal':{file:'map-violet-portal.png',sx:51,sy:17,sw:1154,sh:1203},
@@ -22,12 +23,13 @@
     'violet-eggs':{file:'map-violet-eggs.png',sx:67,sy:148,sw:1148,sh:1029},
     'violet-loom':{file:'map-violet-loom.png',sx:25,sy:78,sw:1487,sh:857}
   },pending=Object.create(null),decoded=Object.create(null);
-  var themePrefixes={'prism-archives':'prism-','rot-hollows':'rot-','cinder-bastion':'cinder-','violet-warrens':'violet-'};
-  var themeGroups={'chaos-mixed':Object.keys(themePrefixes),'unmaker-crucible':['cinder-bastion','prism-archives']};
+  var themePrefixes={'prism-archives':'prism-','rot-hollows':'rot-','cinder-bastion':'cinder-','violet-warrens':'violet-','unmaker-forge':'final-'};
+  var themeGroups={'chaos-mixed':['prism-archives','rot-hollows','cinder-bastion','violet-warrens'],'unmaker-crucible':['cinder-bastion','prism-archives','unmaker-forge']};
   // Activate only completed local strips. Each crop is the same union bounds
   // within every cell, so playback never changes a set piece's size or feet.
   // {file:'map-prism-lens-idle.png',cell:192,frames:8,fps:8,sx:0,sy:0,sw:192,sh:192}
   var animations={
+  "final-forge": {"file":"map-final-forge-idle.png","cell":192,"frames":9,"fps":5.5,"sx":12,"sy":8,"sw":171,"sh":176},
   "violet-portal": {"file":"map-violet-portal-idle.png","cell":192,"frames":9,"fps":4,"sx":11,"sy":8,"sw":169,"sh":176},
   "violet-pavilion": {"file":"map-violet-pavilion-idle.png","cell":192,"frames":9,"fps":4.5,"sx":11,"sy":8,"sw":170,"sh":176},
   "violet-eggs": {"file":"map-violet-eggs-idle.png","cell":192,"frames":9,"fps":4.5,"sx":8,"sy":23,"sw":176,"sh":161},

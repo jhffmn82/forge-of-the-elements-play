@@ -45,6 +45,8 @@ if(!MAP_ZOOM_MUL[MAP_ZOOM]) MAP_ZOOM='normal';
     '.binds button.custom{color:#9FD8FF}',
     '.optrow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:12px;color:var(--ash)}',
     '.optrow input[type=range]{width:140px;accent-color:#B08A48}',
+    '#titleSettings .optrow{flex-wrap:wrap}',
+    'body.touch #modal .title-settings button{min-height:44px}',
     '.seg{display:inline-flex;border:1px solid var(--edge);border-radius:4px;overflow:hidden}',
     '.seg button{border:0;border-right:1px solid var(--edge);background:var(--panel-2);color:var(--ash);padding:3px 9px;font-size:11px;border-radius:0}',
     '.seg button:last-child{border-right:0} .seg button.on{background:#3A2E1C;color:var(--gold)}',
@@ -53,7 +55,7 @@ if(!MAP_ZOOM_MUL[MAP_ZOOM]) MAP_ZOOM='normal';
   document.head.appendChild(st);
 })();
 function segHTML(id, opts, cur){ return '<span class="seg" data-seg="'+id+'">'+opts.map(function(o){ return '<button data-v="'+o[0]+'" class="'+(String(o[0])===String(cur)?'on':'')+'">'+o[1]+'</button>'; }).join('')+'</span>'; }
-function optionsHTML(){
+function settingsHTML(){
   var h='<div class="optgrid"><div><div class="sec">Key bindings <span style="text-transform:none;letter-spacing:0">(click, then press a key; Esc cancels)</span></div><div class="binds">';
   BIND_ACTIONS.forEach(function(b){
     var k=bindKey(b[0]);
@@ -64,8 +66,8 @@ function optionsHTML(){
   h+='<div><div class="sec">Audio</div>'+
      '<div class="optrow"><span>Sound</span>'+segHTML('mute', [[0,'On'],[1,'Off']], AUDIO.muted?1:0)+'</div>'+
      '<div class="optrow"><span>Music</span>'+segHTML('music', [[1,'On'],[0,'Off']], AUDIO.musicOn?1:0)+'</div>'+
-     '<div class="optrow"><span>Effects volume</span><input type="range" id="volSfx" min="0" max="100" value="'+Math.round((AUDIO.vol.sfx||0)*100)+'"></div>'+
-     '<div class="optrow"><span>Music volume</span><input type="range" id="volMusic" min="0" max="100" value="'+Math.round((AUDIO.vol.music||0)*100)+'"></div>'+
+     '<label class="optrow"><span>Effects volume</span><input type="range" id="volSfx" min="0" max="100" value="'+Math.round((AUDIO.vol.sfx||0)*100)+'"></label>'+
+     '<label class="optrow"><span>Music volume</span><input type="range" id="volMusic" min="0" max="100" value="'+Math.round((AUDIO.vol.music||0)*100)+'"></label>'+
      '<div class="sec">Display</div>'+
      (window.MOBILE && window.FoteMobileOrientation ? '<div class="optrow"><span>Orientation</span>'+segHTML('orientation', [['portrait','Portrait'],['landscape','Landscape']], FoteMobileOrientation.getPreference())+'</div><p id="orientationStatus" role="status" style="font-size:12px;color:var(--ash);line-height:1.4">'+FoteMobileOrientation.getStatus()+'</p>' : '')+
      '<div class="optrow"><span>Map zoom</span>'+segHTML('mapzoom', [['far','Far'],['normal','Normal'],['close','Close'],['closest','Closest']], MAP_ZOOM)+'</div>'+
@@ -77,9 +79,24 @@ function optionsHTML(){
      '<b>Bones at a door</b><span>a monster zoo behind it</span><b>Uneven stones</b><span>a hidden door nearby (search with F)</span><b>Tall grass</b><span>blocks sight, burns</span></div></div></div>';
   return h;
 }
-function wireOptions(root){
-  root.querySelectorAll('[data-bind]').forEach(function(b){ b.onclick=function(ev){ ev.stopPropagation(); REBINDING=b.getAttribute('data-bind'); refreshSheet(); }; });
-  var rb=$('bindReset'); if(rb) rb.onclick=function(){ BINDS={}; saveBinds(); refreshSheet(); };
+function optionsHTML(){return settingsHTML();}
+function refreshOptions(){
+  var root=$('titleSettings');
+  if(root&&typeof modalOpen!=='undefined'&&modalOpen){
+    var active=document.activeElement,selector='',scroll=root.parentElement.scrollTop;
+    if(root.contains(active)){
+      if(active.id)selector='#'+active.id;
+      else if(active.hasAttribute('data-bind'))selector='[data-bind="'+active.getAttribute('data-bind')+'"]';
+      else if(active.hasAttribute('data-v')&&active.closest('[data-seg]'))selector='[data-seg="'+active.closest('[data-seg]').getAttribute('data-seg')+'"] [data-v="'+active.getAttribute('data-v')+'"]';
+    }
+    root.innerHTML=settingsHTML();wireSettings(root);
+    var focus=selector&&root.querySelector(selector);if(focus)focus.focus({preventScroll:true});
+    root.parentElement.scrollTop=scroll;
+  }else if(typeof refreshSheet==='function')refreshSheet();
+}
+function wireSettings(root){
+  root.querySelectorAll('[data-bind]').forEach(function(b){ b.onclick=function(ev){ ev.stopPropagation(); REBINDING=b.getAttribute('data-bind'); refreshOptions(); }; });
+  var rb=root.querySelector('#bindReset'); if(rb) rb.onclick=function(){ BINDS={}; REBINDING=null; saveBinds(); refreshOptions(); };
   root.querySelectorAll('[data-seg]').forEach(function(seg){
     var id=seg.getAttribute('data-seg');
     seg.querySelectorAll('button').forEach(function(b){ b.onclick=function(){
@@ -90,10 +107,11 @@ function wireOptions(root){
       if(id==='motion'){ if(typeof setMotion==='function') setMotion(v); }
       if(id==='mapzoom'){ MAP_ZOOM=v; try{ localStorage.setItem('astra-temple-map-zoom', v); }catch(e){} resize(); }
       if(id==='speed'){ ANIM_SPEED=parseFloat(v)||1; try{ localStorage.setItem('astra-temple-anim-speed', String(ANIM_SPEED)); }catch(e){} applyAnimSpeed(); }
-      if(id==='orientation' && window.FoteMobileOrientation) FoteMobileOrientation.setPreference(v);
-      sfx('ui-click'); refreshSheet();
+      if(id==='orientation' && window.FoteMobileOrientation) FoteMobileOrientation.setPreference(v).then(function(){var status=root.querySelector('#orientationStatus');if(status)status.textContent=FoteMobileOrientation.getStatus();});
+      sfx('ui-click'); refreshOptions();
     }; });
   });
-  var vs=$('volSfx'); if(vs) vs.oninput=function(){ AUDIO.vol.sfx=vs.value/100; if(AUDIO.sfxBus) AUDIO.sfxBus.gain.value=AUDIO.vol.sfx; audioSave(); };
-  var vm=$('volMusic'); if(vm) vm.oninput=function(){ AUDIO.vol.music=vm.value/100; if(AUDIO.musicBus && AUDIO.musicOn) AUDIO.musicBus.gain.value=AUDIO.vol.music; audioSave(); };
+  var vs=root.querySelector('#volSfx'); if(vs) vs.oninput=function(){ AUDIO.vol.sfx=vs.value/100; if(AUDIO.sfxBus) AUDIO.sfxBus.gain.value=AUDIO.vol.sfx; audioSave(); };
+  var vm=root.querySelector('#volMusic'); if(vm) vm.oninput=function(){ AUDIO.vol.music=vm.value/100; if(AUDIO.musicBus && AUDIO.musicOn) AUDIO.musicBus.gain.value=AUDIO.vol.music; audioSave(); };
 }
+function wireOptions(root){wireSettings(root);}

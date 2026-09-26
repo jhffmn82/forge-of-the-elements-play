@@ -63,17 +63,17 @@
     if(actor.cls==='mage')mana=Math.ceil(mana*1.3);
     if(p.archmage)mana=Math.ceil(mana*1.2);
     if(o&&o.manaPct)mana=Math.ceil(mana*(1+o.manaPct*c.gearBonus));
-    var evaPenalty=a.eva||0;if(evaPenalty<0&&actor.race==='dwarf')evaPenalty=0;
+    var evaPenalty=content.enchantments.amplifyBonus(a.eva,c.gearBonus);if(evaPenalty<0&&actor.race==='dwarf')evaPenalty=0;
     var orb=o&&(o.icon||'').replace(/^item-/,'')==='orb'&&!o.cursed;
     var orbCrit=orb?((content.orbCrit.base[tierOf(o)]||0)+content.orbCrit.per*(o.plus||0))*c.gearBonus:0;
     var plus=upgradeValue(w,actor)+(actor.god==='anvil'?c.rank:0)+(c.buffs.temper>0?Math.round(2*c.divine):0)+(w.unarmed&&actor.god==='grom'?c.rank:0);
     return {name:actor.name||'Adventurer',who:race.name+' '+cls.name+(actor.god?' of '+content.gods[actor.god].name:''),
       weapon:w,twoHanded:w.hands===2,passives:p,abilities:abilityList(actor,content),speed:race.speed,maxhp:maxhp,maxmp:hp(mana),
-      acc:60+2*s.agi+(w.acc||0)+(actor.god==='reginald'?4*c.rank:0)+(w.enchant==='light'?Math.round(c.enchant('weapon','light').accuracy):0),
-      eva:10+2*s.agi+evaPenalty+(o&&o.eva||0)*c.gearBonus+(p.lightFeet?8:0)+(a.enchant==='water'?Math.round(c.enchant('armor','water').evasion):0),
+      acc:60+2*s.agi+content.enchantments.amplifyBonus(w.acc,c.gearBonus)+(actor.god==='reginald'?4*c.rank:0),
+      eva:10+2*s.agi+evaPenalty+content.enchantments.amplifyBonus(o&&o.eva,c.gearBonus)+(p.lightFeet?8:0)+(a.enchant==='water'?Math.round(c.enchant('armor','water').evasion):0),
       armor:(a.armor||0)+(a.armor>0?upgradeValue(a,actor):0)+(a.enchant==='earth'?Math.round(c.enchant('armor','earth').armor):0)+(actor.god==='grom'?c.rank:0)+(c.buffs.ironbody>0?Math.round(4*c.divine):0)+(c.buffs.ironhide>0?Math.round(5*c.divine):0),
       block:0,parry:o&&o.weapon?.08+s.agi/300:0,rangeBonus:actor.race==='elf'?1:0,
-      crit:.06+.02*(s.agi-10)+(p.deadeye?.08:0)+(w.critBonus||0)*c.gearBonus+orbCrit+(p.archmage?.05:0),
+      crit:.06+.02*(s.agi-10)+(p.deadeye?.08:0)+(w.critBonus||0)*c.gearBonus+orbCrit+(p.archmage?.05:0)+(w.enchant==='light'?c.enchant('weapon','light').critChance:0),
       dmg:[damage(w.dmg[0])+plus,damage(w.dmg[1])+plus],
       element:actor.primary||Object.keys(c.aff)[0]||null,
       iceArmorMax:(c.aff.water||0)*3+((c.aff.earth||0)>=3&&(c.aff.water||0)>=2?3*(c.aff.earth||0):0)};

@@ -32,7 +32,7 @@ var RANK_TEXT = {
      water:'Deep Freeze: three Chills freeze. Ice spells leave icy ground that Chills for 3 turns. Immune to ice.',
      air:'Lightning Reflexes: 15% of your attacks and spells take no time; lightning damage has a 15% stun chance. Immune to lightning.',
      earth:'Petrify: rooting a rooted enemy turns it to stone for 2 turns. Earth spells leave grasping roots for 3 turns. Immune to poison.',
-     light:'Consecration: your Light spells and your Smite sanctify the ground for 3 turns, burning enemies on it (undead double). Immune to light.',
+     light:'Holy Ground: Light spells and Smite leave Holy Ground for 3 world turns, scaled by Spell Power. It heals allies for 2% max HP per turn, increases other healing by 25%, grants 15% nonphysical resistance, and burns enemies (undead and shadow double). Overlapping Holy Ground does not stack. Immune to light.',
      shadow:'Hollowing: your dark damage stacks Hollow (max 5, 5 turns): +5% damage taken and -1 armor per stack. Immune to dark.'}
 };
 var IMMUNE_TYPE = {fire:'fire', water:'ice', air:'lightning', earth:'poison', light:'light', shadow:'dark'};
@@ -54,7 +54,7 @@ function markGround(tiles, A){
     if(A.el==='fire' && aff('fire')>=6 && at(x,y)!==WATER){ fireT[i]=Math.max(fireT[i],3); fireSrc[i]=1; }
     if(A.el==='water' && aff('water')>=6) iceG[i]=3;
     if(A.el==='earth' && aff('earth')>=6) rootG[i]=3;
-    if(A.el==='light' && aff('light')>=6) holyG[i]=3;
+    if(A.el==='light' && aff('light')>=6) markHolyGround(x,y,spellPower(A));
   });
 }
 
@@ -69,7 +69,6 @@ function drawElementGroundTelegraphs(now){
     var px=(x-camX)*TS, py=(y-camY)*TS;
     if(iceG[i]){ ctx.fillStyle='rgba(150,210,255,0.28)'; ctx.fillRect(px+1,py+1,TS-2,TS-2); }
     if(rootG[i]){ ctx.strokeStyle='rgba(127,160,90,0.8)'; ctx.lineWidth=Math.max(1,TS*0.05); ctx.beginPath(); ctx.moveTo(px+TS*0.2,py+TS*0.8); ctx.lineTo(px+TS*0.45,py+TS*0.35); ctx.moveTo(px+TS*0.55,py+TS*0.85); ctx.lineTo(px+TS*0.75,py+TS*0.3); ctx.stroke(); }
-    if(holyG[i]){ ctx.fillStyle='rgba(255,236,160,0.22)'; ctx.fillRect(px+1,py+1,TS-2,TS-2); }
   }
   ents.forEach(function(e){ if(e.tomb>0 && (revealAll||vis[idxOf(e.x,e.y)])){ var rp=renderPos(e), px=(rp.x-camX)*TS, py=(rp.y-camY)*TS; ctx.fillStyle='rgba(170,220,255,0.35)'; ctx.fillRect(px+2,py+2,TS-4,TS-4); ctx.strokeStyle='rgba(220,245,255,0.9)'; ctx.lineWidth=2; ctx.strokeRect(px+3,py+3,TS-6,TS-6); } });
   ctx.restore();
@@ -103,13 +102,13 @@ var ARCING=false;
 
 /* rank 6 ground ticks once a world turn */
 function groundTick(){
+  holyGroundPulse();
   if(!iceG || iceG.length!==MW*MH) return;
   ents.slice().forEach(function(e){
     if(!e.foe || e.hp<=0) return; var i=idxOf(e.x,e.y);
     if(iceG[i]) addChill(e);
-    if(holyG[i]){ var d=applyDamage(e, sDMG(3+aff('light'))*((e.base.undead||e.base.shadowy)?2:1), 'light', player); floatText(e.x,e.y,String(d),'light'); if(e.hp<=0) kill(e,player); }
   });
-  for(var k=0;k<iceG.length;k++){ if(iceG[k]) iceG[k]--; if(rootG[k]) rootG[k]--; if(holyG[k]) holyG[k]--; }
+  for(var k=0;k<iceG.length;k++){ if(iceG[k]) iceG[k]--; if(rootG[k]) rootG[k]--; if(holyG[k]){holyG[k]--;if(!holyG[k]&&floorMeta.holyGround)delete floorMeta.holyGround[k];} }
 }
 
 /* ---------------------------------------------------------------- the player's turn: Fade, Reflexes, Storm Form, Upheaval */
@@ -134,7 +133,8 @@ function turnElementAfterAction(context){  /* Fade (Shadow 3) */
 }
 
 /* ---------------------------------------------------------------- casting the new spells */
-function spellRoll(A){ var b=sDMG(roll(AOE_BASE[0],AOE_BASE[1])) + (aff('fire') && !A.divine ? aff('fire') : 0); return Math.round(b*spellPower(A)); }
+function spellBaseDamage(A,amount){return Math.round((sDMG(amount)+(aff('fire')&&!A.divine?aff('fire'):0))*spellPower(A));}
+function spellRoll(A){ var base=A.base||AOE_BASE;return spellBaseDamage(A,roll(base[0],base[1])); }
 
 function finishHit(f){ if(f && f.hp<=0 && ents.indexOf(f)>=0) kill(f, player); }
 function beginCast(A){
@@ -276,25 +276,47 @@ function castElementTarget(x,y){
       advanceTomb();return true;
     }
     if(!f){ log('Glacial Tomb needs an enemy, or yourself.','c-info'); return false; }
+    var tombTiles=glacialTombTiles(x,y),splashTiles=tombTiles.filter(function(t){return t[0]!==x||t[1]!==y;}),tombDamage=spellRoll(A);
     beginCast(A);
     f.tomb = f.base.boss ? 2 : (f.elite||f.base.elite) ? 6 : 10;
     ['burn','poison','chill','frozen'].forEach(function(k){ delete f.st[k]; });
+    var tombArea=AOE_HIT;AOE_HIT=true;
+    try{
+      splashTiles.forEach(function(t){burst(t[0],t[1],'ice',12,0.05);});
+      ents.slice().forEach(function(e){
+        if(e===f||!e.foe||e.hp<=0||!entityIntersects(e,splashTiles))return;
+        spellHit(e,A,tombDamage,'ice');finishHit(e);
+      });
+    }finally{AOE_HIT=tombArea;}
+    markGround(tombTiles,A);
     burst(f.x,f.y,'ice',30,0.06); floatText(f.x,f.y,'entombed','ice');
     log('<b>Glacial Tomb.</b> '+f.name+' is sealed in ice for '+f.tomb+' turns.','c-good');
   }
   else if(A.kind==='upheaval'){
-    var line=bresenham(player.x,player.y,x,y,7), raised=0;
+    var walls=upheavalWallTiles(x,y);
+    if(!walls.length){log('There is no open floor here to raise.','c-info');sfx('ui-error');return false;}
+    var impact=upheavalImpactTiles(walls),upheavalDamage=spellRoll(A);
     beginCast(A); SHAKE=8;
     floorMeta.upheaval=floorMeta.upheaval||[];
-    line.forEach(function(t){
+    walls.forEach(function(t){
       var tx=t[0], ty=t[1];
-      if(at(tx,ty)!==FLOOR || occupied(tx,ty) || itemAt(tx,ty) || propAt(tx,ty)) return;
-      setT(tx,ty,WALL); raised++; floorMeta.upheaval.push({x:tx,y:ty,until:turn+20}); burst(tx,ty,'earth',10,0.05);
-      ents.forEach(function(e){ if(e.foe && dist(e,{x:tx,y:ty})<=1) applyStatus(e,'root',2); });
+      setT(tx,ty,WALL); floorMeta.upheaval.push({x:tx,y:ty,until:turn+20}); burst(tx,ty,'earth',10,0.05);
     });
-    markGround(line, A);
+    var upheavalArea=AOE_HIT;AOE_HIT=true;
+    try{
+      impact.forEach(function(t){burst(t[0],t[1],'earth',3,0.04);});
+      ents.slice().forEach(function(e){
+        if(e===player||(!e.foe&&!e.ally)||e.hp<=0||!entityIntersects(e,impact))return;
+        var dealt;
+        if(e.foe)dealt=spellHit(e,A,upheavalDamage,'phys');
+        else {dealt=applyDamage(e,upheavalDamage,'phys',player,{ability:A,tags:['area','spell']});floatText(e.x,e.y,String(dealt),'phys');}
+        if(dealt>0&&e.hp>0)applyStatus(e,'root',2);
+        if(e.foe)finishHit(e);else if(e.hp<=0)kill(e,null);
+      });
+    }finally{AOE_HIT=upheavalArea;}
+    markGround(impact, A);
     computeFOV();
-    log(raised ? '<b>Upheaval.</b> '+raised+' walls of stone tear up out of the floor.' : 'The ground shudders, but there is no open floor to raise.','c-good');
+    log('<b>Upheaval.</b> '+walls.length+' walls of stone tear up the floor, striking enemies and summons nearby.','c-good');
   }
   else if(A.kind==='umbral'){
     if(!walkable(x,y) || occupied(x,y)){ log('You cannot step there.','c-info'); return false; }

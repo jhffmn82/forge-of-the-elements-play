@@ -24,14 +24,16 @@ window.addEventListener('keydown', function(ev){
   var tgt=ev.target && ev.target.tagName; if(tgt==='INPUT' || tgt==='SELECT' || tgt==='TEXTAREA') return;
   if(REBINDING){
     ev.preventDefault(); ev.stopImmediatePropagation();
-    if(ev.key==='Escape'){ REBINDING=null; if(typeof refreshSheet==='function') refreshSheet(); return; }
+    if(ev.key==='Escape'){ REBINDING=null; if(typeof refreshOptions==='function')refreshOptions();else if(typeof refreshSheet==='function')refreshSheet(); return; }
     if(['Shift','Control','Alt','Meta'].indexOf(ev.key)>=0) return;
     var id=REBINDING; REBINDING=null;
     /* a key can only do one thing: whoever had it gets their default back */
     BIND_ACTIONS.forEach(function(b){ if(b[0]!==id && bindKey(b[0])===ev.key) delete BINDS[b[0]]; });
     BINDS[id]=ev.key; if(BINDS[id]===BIND_ACTIONS.filter(function(b){ return b[0]===id; })[0][2]) delete BINDS[id];
-    saveBinds(); if(typeof refreshSheet==='function') refreshSheet(); return;
+    saveBinds(); if(typeof refreshOptions==='function')refreshOptions();else if(typeof refreshSheet==='function')refreshSheet(); return;
   }
+  var title=document.getElementById('title'),create=document.getElementById('create');
+  if(typeof modalOpen!=='undefined'&&modalOpen||title&&title.classList.contains('on')||create&&create.classList.contains('on'))return;
   if(ev.key.indexOf('Arrow')===0) return;
   var custom=null, displaced=false;
   BIND_ACTIONS.forEach(function(b){

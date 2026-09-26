@@ -4,6 +4,7 @@ function enchantContext(actor){
 }
 function enchantValues(slot,el,actor){actor=actor||player;return FoteEnchantments.values(slot,el,actor&&actor.aff&&actor.aff[el]||0,enchantContext(actor));}
 function gearPassiveBonus(){return FoteEnchantments.gearBonus(enchantContext().vellumRank);}
+function gearPassiveValue(value){return FoteEnchantments.amplifyBonus(value,gearPassiveBonus());}
 function enchantGodBonus(){return FoteEnchantments.godBonus(enchantContext());}
 function orbRootCrit(target){return infusion('orb')==='earth'&&target&&effectHasTag(target,'root')?enchantValues('orb','earth').critChance:0;}
 function criticalMultiplier(){return FoteActions.criticalMultiplier(player.stats.agi,infusion('orb')==='shadow'?enchantValues('orb','shadow').critMultiplier:0);}
@@ -29,14 +30,14 @@ var PASSIVES={
        {at:21,id:'cleaving',  name:'Cleaving Swings',d:'your attacks also hit one other adjacent enemy for half'},
        {at:25,id:'unstoppable',name:'Unstoppable',d:'immune to stun, slow and knockback, +20% melee damage'}],
   agi:[{at:12,id:'lightFeet',name:'Light Feet',d:'+8 evasion'},
-       {at:15,id:'deadeye',  name:'Deadeye',d:'+8 percentage points of crit chance and +25 percentage points of critical damage for all attacks and spells'},
+       {at:15,id:'deadeye',  name:'Deadeye',d:'+8% crit chance and +25% critical damage for all attacks and spells'},
        {at:18,id:'fleet',    name:'Fleet',d:'moving costs 15% less time'},
-       {at:21,id:'keenAim',  name:'Keen Aim',d:'your attacks ignore 25% of the target\'s evasion; +25 more percentage points of critical damage for all attacks and spells'},
+       {at:21,id:'keenAim',  name:'Keen Aim',d:'your attacks ignore 25% of the target\'s evasion; +25% additional critical damage for all attacks and spells'},
        {at:25,id:'blur',     name:'Blur',d:'hostile direct attacks have 20% less chance to hit you (minimum 15%)'}],
   vit:[{at:12,id:'tough',    name:'Tough',d:'+15% max HP'},
        {at:15,id:'resilient',name:'Resilient',d:'HP regeneration doubles below half HP'},
        {at:18,id:'ironConst',name:'Iron Constitution',d:'statuses on you last half as long'},
-       {at:21,id:'fortitude',name:'Fortitude',d:'a hit against you is halved (every 15 turns)'},
+       {at:21,id:'fortitude',name:'Fortitude',d:'halve damage that gets through your shields, once every 6 global turns; fully absorbed hits do not consume it'},
        {at:25,id:'bulwark',  name:'Bulwark',d:'immune to critical hits; +5% resistance to non-physical damage'}],
   foc:[{at:12,id:'arcaneStudy',name:'Arcane Study',d:'+10% spell damage'},
        {at:15,id:'meditation',name:'Meditation',d:'+25% mana regeneration'},
@@ -94,7 +95,7 @@ function spellRange(A){
   return A.range ? A.range + (player.rangeBonus||0) + (!A.tech && !A.divine && typeof staffRange==='function' ? staffRange() : 0) : 0;
 }
 function accOf(e){ return e===player ? player.acc : (e.base.acc + (e.ally?0:0)); }
-function evaOf(e){ return e===player ? player.eva : e.base.eva; }
+function evaOf(e){ return FoteActors.effectiveEvasion(e,e===player?player.eva:e.base.eva,gameEffects,e===player); }
 function armorOf(e){ return e===player ? player.armor : Math.max(0, (e.base.armor||0) - (e.st.hollow?e.st.hollow.n:0)); }
 
 /* ---------------------------------------------------------------- damage */
@@ -223,6 +224,7 @@ function refreshPlayerDistance(){ PDIST=actorFootprintField({base:{}},player);PD
    catching up, so your next swing or spell is a surprise. Once hit, it knows. */
 function offGuard(e){
   if(!e || e===player) return false;
+  if(e.st&&e.st.blind&&e.st.blind.t>0)return true;
   if(e.state==='throne') return false;
   return e.state!=='hunt' || e.caughtOff===turn;
 }
@@ -248,13 +250,23 @@ function basicMonsterBehavior(e){
   if(e.state==='hunt'){
     /* the boss */
     if(e.base.boss && bossTurn(e, see, d)){  return true; }
+    if(e.base.rootSpit&&see&&d>1&&d<=5&&!(e.rootSpitReadyAt>worldNow())&&clearShot(e,player)){
+      e.rootSpitReadyAt=worldNow()+600;setClip(e,'attack');sfx('slime-attack');boltFx(e.x,e.y,player.x,player.y,'earth');
+      var spitChance=hostileHitChance(hitChance(accOf(e),evaOf(player))*(e.st.blind?.6:1),true);
+      if(!combatRoll(1-spitChance,true)){
+        var spit=applyDamage(player,roll(e.dmg[0],e.dmg[1]),'phys',e,{tags:['single-target','projectile']});
+        floatText(player.x,player.y,String(spit),'phys');if(spit>0&&player.hp>0)applyStatus(player,'root',2);
+        log(e.name+' spits clinging stone: '+spit+'.','c-you');
+      }else floatText(player.x,player.y,'miss','miss');
+      return true;
+    }
     /* casters */
     if(e.base.caster && see && d<=e.base.castRange){
       e.castCd=(e.castCd||0)-1;
       if(e.castCd<=0 && clearShot(e,player)){   /* a shaman behind its own goblins holds the bolt */
         e.castCd=e.base.castEvery; setClip(e,'attack'); sfx('shaman-cast');
         boltFx(e.x,e.y,player.x,player.y,'fire');
-        if(rng() < hostileHitChance(hitChance(e.base.acc+10, player.eva),true)){
+        if(rng() < hostileHitChance(hitChance(e.base.acc+10, evaOf(player)),true)){
           var fd=applyDamage(player, roll(5,8)+floorNo, 'fire', e); floatText(player.x,player.y,String(fd),'fire'); var brn=rng()<0.5; if(brn) applyStatus(player,'burn',3,sDMG(2));
           log(e.name+' hurls a firebolt &mdash; <b>'+fd+'</b> fire'+(brn?', burning':'')+'.','c-you');
           if(player.hp<=0) kill(player,e);

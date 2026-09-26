@@ -69,7 +69,7 @@ function startGame(){
   }
 
   newRun(Date.now()%1000000, CHOICE);
-  setMotion('auto');
+  setMotion(ANIM.mode);
   requestAnimationFrame(resize);
   requestAnimationFrame(fxTick);
   setTimeout(resize, 150);

@@ -299,7 +299,7 @@
          '<div><p class="tg-sec">Offence</p>'+kv([['Damage per hit',hr[0]+'&ndash;'+hr[1]],['Crit',Math.round(player.crit*100)+'%'],['Crit damage','&times;'+criticalMultiplier().toFixed(2)],
             ['Accuracy',player.acc],['Range',player.range],['Attack speed',playerSpeedPercent('attack')],['Movement speed',playerSpeedPercent('move')],['Spell power','&times;'+spellPower({}).toFixed(2)],['Divine power','&times;'+divineStrength().toFixed(2)]])+'</div>'+
          '<div><p class="tg-sec">Defence</p>'+kv([['HP',Math.round(player.hp)+' / '+player.maxhp],['Shield',playerShield()],
-            ['Armor',player.armor],['Evasion',player.eva],['Block',Math.round(player.block*100)+'%'],['Mana',Math.floor(player.mp)+' / '+player.maxmp]])+'</div>'+
+            ['Armor',player.armor],['Evasion',evaOf(player)],['Block',Math.round(player.block*100)+'%'],['Mana',Math.floor(player.mp)+' / '+player.maxmp]])+'</div>'+
          '</div></div>';
 
       var motes=ELEMENTS.filter(function(m){ return player.motes[m]>0; }).map(function(m){

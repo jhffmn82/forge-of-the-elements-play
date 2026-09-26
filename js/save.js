@@ -27,13 +27,14 @@ function saveSnapshot(label){
     state:saveEncode(g), rngState:typeof rng.state==='function'?rng.state():null, log:logHtml};
 }
 function saveApply(data){
+  var recoveredInterruptedDeath=false;
   FotePersistence.restore(data,{
     decode:saveDecode,validate:FoteState.validate,state:gameState,
     getRandom:function(){return rng;},setRandom:function(value){rng=value;},
     restoreRandom:function(document,state){rng=mulberry32(Number.isInteger(document.rngState)?document.rngState:((state.worldSeed||1)^(state.turn*2654435761))>>>0);},
-    migrations:[restoreRunReferences,migrateXpCurve,repairCoreProgress,repairWallMemorials,
+    migrations:[function(){recoveredInterruptedDeath=repairInterruptedPlayerDeath();},restoreRunReferences,migrateXpCurve,repairCoreProgress,repairBossCore,repairWallMemorials,
       refreshCavernResidents,refreshEncounterTuning,repairSavedEffectClocks,
-      saveMigrateSigils,sigilNamesRefresh,ensureRuneLooks,migrateRangedSlot,hideRetiredSwapSlots,restorePuzzleState,
+      saveMigrateSigils,sigilNamesRefresh,ensureRuneLooks,repairTouristShirts,migrateRangedSlot,hideRetiredSwapSlots,restorePuzzleState,
       function(){if(typeof FoteChaosCampaign!=='undefined')FoteChaosCampaign.restore();if(typeof FoteUnmakerPreview!=='undefined')FoteUnmakerPreview.repairGates();if(typeof FoteUnmakerEncounter!=='undefined')FoteUnmakerEncounter.restore();}],
     recompute:function(){derive(player);}
   });
@@ -45,11 +46,18 @@ function saveApply(data){
   if(typeof SURF_CACHE!=='undefined') SURF_CACHE.key=null;
   var L=$('log'); if(L){ L.innerHTML=''; (data.log||[]).forEach(function(p){ log(p[1], p[0]); }); }
   log('<b>Game loaded.</b> '+player.name+', level '+player.level+', floor '+floorNo+'.','c-kill');
+  if(recoveredInterruptedDeath)log('This save was interrupted by an old damage bug. Your character has been recovered at 1 HP.','c-info');
   var ov=$('over'); if(ov) ov.style.display='none';
   closeTitle(); if($('create')) $('create').classList.remove('on');
   if(openSheet) showSheet(openSheet);
   resize(); if(typeof abilityBar==='function') abilityBar(); updateUI(); draw();
-  playSceneMusic();
+  if(player.hp<=0)death();else playSceneMusic();
+}
+function repairInterruptedPlayerDeath(){
+  // Only legacy, unfinished deaths are recovered. Completed deaths stay final.
+  if(!player||!RUN||RUN.over||RUN.victory||!Number.isFinite(player.hp)||player.hp>0)return false;
+  player.hp=1;
+  return true;
 }
 function restoreRunReferences(){
   if(typeof FoteShadowClone!=='undefined')FoteShadowClone.arrive();
@@ -63,9 +71,9 @@ function restoreRunReferences(){
 /* sigils cut or renamed since a save was made become their nearest current sigil, and new sigils get a look */
 var SIGIL_RENAMED = {mana2:'identify2', steam:'smoke', soulfire:'smoke', mist:'mana', sandstorm:'mire'};
 function saveMigrateSigils(){
-  function fix(use){ return SIGILS[use] ? use : (SIGIL_RENAMED[use] && SIGILS[SIGIL_RENAMED[use]] ? SIGIL_RENAMED[use] : 'firestorm'); }
-  (player.bag||[]).forEach(function(b){ if(b.kind==='sigil' && b.data){ b.data.use=fix(b.data.use); b.uid='sigil:'+b.data.use; b.name=sigilName(b.data.use)||b.name; } });
-  (items||[]).forEach(function(it){ if(it.kind==='sigil'){ if(it.use) it.use=fix(it.use); if(it.it && it.it.use) it.it.use=fix(it.it.use); } });
+  function fix(use){ return SIGILS[use] ? use : (SIGIL_RENAMED[use] && SIGILS[SIGIL_RENAMED[use]] ? SIGIL_RENAMED[use] : 'identify'); }
+  (player.bag||[]).forEach(function(b){ if(b.kind==='sigil'){ b.data=b.data||{};b.data.use=fix(b.data.use); b.uid='sigil:'+b.data.use; b.name=sigilName(b.data.use)||b.name; } });
+  savedItemLists().forEach(function(list){list.forEach(function(it){if(it.kind==='sigil')it.use=fix(it.use||(it.it&&it.it.use));});});
   var used={}; Object.keys(sigilLook||{}).forEach(function(k){ used[sigilLook[k]]=1; });
   var spare=SIGIL_LOOKS.map(function(l){ return cap(l)+' sigil'; }).filter(function(n){ return !used[n]; });
   Object.keys(SIGILS).forEach(function(k){
@@ -86,6 +94,15 @@ function deleteRunSaves(){
   var gone=0;
   SAVE_SLOTS.concat(['rescue']).forEach(function(s){ if(saveBelongsToRun(readSlot(s))){ deleteSlot(s); gone++; } });
   return gone;
+}
+function savedItemLists(){
+  return [items||[]].concat(Object.keys(RUN.floorStash||{}).map(function(key){return RUN.floorStash[key].items||[];}),[RUN.planeStash&&RUN.planeStash.items||[],RUN.chaosEntryStash&&RUN.chaosEntryStash.items||[]]);
+}
+function repairTouristShirts(){
+  function repair(it){if(it&&(it.name==='Loud Shirt'||it.name==='Hawaiian Shirt'||it.key==='shirt')){it.name=ARMORS.shirt.name;it.icon=ARMORS.shirt.icon;it.note=ARMORS.shirt.note;}}
+  repair(player.armorItem);(player.bag||[]).forEach(function(b){repair(b.data);});
+  savedItemLists().forEach(function(list){list.forEach(function(it){repair(it.it);});});
+  refreshBagNames();
 }
 
 
@@ -170,12 +187,13 @@ function importSave(){
     '#title{position:fixed;inset:0;z-index:45;display:none;background:#0B0908 url(art/title/title.jpg) center/cover no-repeat}',
     '#title.on{display:block}',
     '#title::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(8,6,5,.72) 0%,rgba(8,6,5,.25) 38%,rgba(8,6,5,0) 60%);pointer-events:none}',
-    '#title .menu{position:absolute;z-index:1;left:clamp(16px,6vw,90px);top:52%;display:flex;flex-direction:column;gap:10px;width:min(300px,calc(100vw - 32px))}',
-    '#title .menu button{font-family:var(--display);font-size:24px;letter-spacing:.02em;text-align:left;padding:9px 18px;color:#F2D9A0;',
+    '#title .menu{position:absolute;z-index:1;left:max(clamp(16px,6vw,90px),env(safe-area-inset-left,0px));bottom:max(16px,env(safe-area-inset-bottom,0px));max-height:calc(100% - 32px - env(safe-area-inset-top,0px));overflow-y:auto;display:flex;flex-direction:column;gap:10px;width:min(300px,calc(100vw - 32px))}',
+    '#title .menu button{font-family:var(--display);font-size:24px;letter-spacing:.02em;text-align:left;padding:9px 18px;min-height:44px;flex-shrink:0;color:#F2D9A0;',
     '  background:rgba(20,15,12,.82);border:1px solid #5A4630;border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,.5)}',
     '#title .menu button:hover:not(:disabled),#title .menu button:focus-visible{border-color:#E8B44A;color:#FFE7B0;background:rgba(42,30,20,.9);outline:none}',
     '#title .menu button:disabled{opacity:.4;cursor:default}',
     '#title .menu .sub{font-family:var(--mono);font-size:11px;color:var(--ash);display:block;letter-spacing:0}',
+    '@media(max-height:560px){body.touch #title.on .menu{gap:4px}body.touch #title.on .menu>button{font-size:18px;line-height:1.1;padding:4px 12px;min-height:44px}body.touch #title.on .menu .sub{font-size:10px;line-height:1.1}}',
     '#title .panel{position:absolute;z-index:2;left:50%;top:50%;transform:translate(-50%,-50%);width:min(560px,calc(100vw - 32px));max-height:calc(100vh - 40px);overflow-y:auto;',
     '  background:rgba(18,14,11,.96);border:1px solid #5A4630;border-radius:8px;padding:18px 20px;box-shadow:0 10px 40px rgba(0,0,0,.7)}',
     '#title .panel h2{font-family:var(--display);color:var(--gold);font-size:26px;margin:0 0 10px}',
@@ -222,15 +240,26 @@ function renderTitleMenu(){
     (last ? '<button id="tContinue">Continue<span class="sub">'+(lastD.summary.name||'')+' &middot; level '+lastD.summary.level+' &middot; floor '+lastD.summary.floor+'</span></button>' : '')+
     '<button id="tNew">New Game</button>'+
     '<button id="tLoad">Load Game</button>'+
+    '<button id="tSettings">Settings</button>'+
+    '<button id="tHistory">Previous Runs</button>'+
     '<button id="tAbout">About</button>'+
     '<button id="tUpdate">Version &middot; '+(typeof FOTE_VERSION==='string'?FOTE_VERSION:'Beta 1.1')+'<span id="versionStatus" class="sub" role="status"></span></button></div>';
   if($('tContinue')) $('tContinue').onclick=function(){ audioInit(); loadFrom(last); };
   $('tNew').onclick=function(){ audioInit(); sfx('ui-click'); closeTitle(); openCreate(); };
   $('tLoad').onclick=function(){ audioInit(); sfx('ui-click'); renderLoadPanel(); };
+  $('tSettings').onclick=function(){audioInit();openTitleSettings();};
+  $('tHistory').onclick=function(){audioInit();openRunHistory('title');};
   $('tAbout').onclick=function(){ audioInit(); sfx('ui-click'); renderAbout(); };
   $('tUpdate').onclick=function(){ audioInit(); sfx('ui-click'); if(typeof showVersion==='function') showVersion(); };
   if(typeof checkGameVersion==='function') checkGameVersion();
   var first=el.querySelector('.menu button'); if(first) first.focus();
+}
+function openTitleSettings(){
+  REBINDING=null;
+  openModal('Settings','<div id="titleSettings">'+settingsHTML()+'</div>',[{label:'Back',fn:closeModal}],'wide title-settings');
+  modalOnClose=function(){REBINDING=null;var back=$('tSettings');if(back)back.focus();};
+  wireSettings($('titleSettings'));
+  $('mX').focus();
 }
 function slotRows(mode){
   var rows=SAVE_SLOTS.map(function(s){ return {s:s, d:readSlot(s)}; });

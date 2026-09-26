@@ -35,23 +35,24 @@ function forgeConfirm(title, text, yesLabel, onYes){
 /* ---------------------------------------------------------------- enchanting */
 
 function enchantPanelHTML(){
-  var have=ELEMENTS.filter(function(el){ return (player.motes[el]||0)>0; });
-  if(forgeMote && !(player.motes[forgeMote]>0)) forgeMote=null;
+  var have=ELEMENTS.filter(function(el){ return (player.motes[el]||0)>0&&!forbiddenElement(el); });
+  if(forgeMote && (!(player.motes[forgeMote]>0)||forbiddenElement(forgeMote))) forgeMote=null;
   if(!forgeMote && have.length) forgeMote=have[0];
   var h='<p class="c-info">Choose a mote, then click the gear to set it into. Each enchantment shows how its bonuses grow with elemental mastery.</p>';
   h+='<div class="moterow">'+ELEMENTS.map(function(el){
     var n=player.motes[el]||0;
-    return '<button data-emote="'+el+'" class="'+(forgeMote===el?'on':'')+'" '+(n?'':'disabled')+'><span class="dot" style="background:'+AFF_COL[el]+'"></span>'+cap(el)+' &times;'+n+'</button>';
+    var blocked=forbiddenElement(el);
+    return '<button data-emote="'+el+'" class="'+(forgeMote===el?'on':'')+'" '+(blocked?'title="'+GODS[player.god].name+' forbids this enchantment" ':'')+(n&&!blocked?'':'disabled')+'><span class="dot" style="background:'+AFF_COL[el]+'"></span>'+cap(el)+' &times;'+n+'</button>';
   }).join('')+'</div>';
   if(!forgeMote) return h+'<p class="c-info">You have no motes to set.</p>';
   var el=forgeMote;
   h+='<div class="enchcards">'+enchantTargets().map(function(t, i){
     /* 2026-09-18: an unidentified piece may already hold an enchantment you cannot see, and setting a mote
        would quietly destroy it. The Forge refuses it the same way it refuses to upgrade one. */
-    var can=!!t.text && !t.it.unarmed && !t.it.unid, cur=t.it.enchant && !t.it.unid ? t.it.enchant : null;
+    var can=!!t.text && !t.it.unarmed && !t.it.unid && !forbiddenElement(el), cur=t.it.enchant && !t.it.unid ? t.it.enchant : null;
     var now = cur ? '<div class="now">Now: <span style="color:'+AFF_COL[cur]+'">'+cap(cur)+'</span> &mdash; '+(t.text ? t.text[cur] : '')+'</div>'
                   : '<div class="now">'+(t.it.unid ? 'Unidentified' : 'Not enchanted')+'</div>';
-    var why = t.it.unid ? 'The Forge will not work metal you do not know. Identify it first.'
+    var why = forbiddenElement(el) ? GODS[player.god].name+' forbids this enchantment.' : t.it.unid ? 'The Forge will not work metal you do not know. Identify it first.'
             : t.slot==='off' ? 'A weapon, shield, orb, tome or holy symbol takes an enchantment here. This does not.'
             : 'Cannot be enchanted.';
     var nu = can ? '<div class="new">'+(cur===el ? 'Already '+el : 'With '+el+': '+t.text[el])+'</div>' : '<div class="now c-info">'+why+'</div>';

@@ -39,6 +39,10 @@
     path(meta,['chaosCombat'],'lastPulse',ticks);
     ['majorReadyAt','rushReadyAt','summonReadyAt'].forEach(function(key){path(meta,['unmakerEncounter'],key,ticks);});
     path(meta,['unmakerEncounter','warning'],'armedTurn',turns);
+    path(meta,['unmakerEncounter'],'pylonPulseAt',ticks);
+    path(meta,['unmakerEncounter','pylons','*'],'readyAt',ticks);
+    path(meta,['unmakerEncounter','pylons','*','warning'],'armedTurn',turns);
+    path(meta,['unmakerEncounter','pylons','*','warning'],'fireAt',ticks);
     path(meta,['matron'],'nextRit',turns);path(meta,['matron','rit'],'at',turns);path(meta,['matron','venom'],'at',turns);
     fields(meta,['_arcTurn'],turns);
     path(saved,['items','*'],'until',turns);path(saved,['props','*'],'until',turns);
@@ -49,7 +53,7 @@
       fields(e,['stormChargeAt','stormReady','sparkReady','stoneImm','caughtOff','_surfT','_burnedAt','_fumeAt','_shellTurn','_blockTurn','_hitKey','_immuneMsg'],turns);
       ['zap','grasp','brand','erupt'].forEach(function(key){path(e,[key],'at',turns);});
       fields(e,['rallyUntil','challengeUntil','waterPullReadyAt'],ticks);
-      fields(e,['chaosCooldown','chaosDebuffReadyAt'],ticks);
+      fields(e,['chaosCooldown','chaosDebuffReadyAt','chaosBeamReadyAt','rootSpitReadyAt'],ticks);
       path(e,['st','*'],'bornAt',ticks);
     });
     saved.turn=turn;saved.clock=clock;

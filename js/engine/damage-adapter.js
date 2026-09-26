@@ -82,7 +82,8 @@ function damageDefenses(event){
   }
   var barrier=isPlayer&&hasP('magicBarrier')&&!event.tags.has('area')&&foe&&dist(source,player)>1?5:0;
   if(type==='phys'){
-    var pierce=(source===player?player.weapon.pierce||0:0)+(source&&source.base?source.base.pierce||0:0);
+    var hitWeapon=event.hit&&event.hit.view?event.hit.view.weapon:player.weapon;
+    var pierce=(source===player?gearPassiveValue(hitWeapon&&hitWeapon.pierce):0)+(source&&source.base?source.base.pierce||0:0);
     d=FoteDamage.physical(d,{armor:armorOf(target),pierce:pierce,heavy:!!(source&&source.base&&source.base.heavy),earth:isPlayer?player.aff.earth||0:0,stone:isPlayer&&target.st.stone,frozen:target.st&&target.st.frozen});
     if(isPlayer)d*=resistMult(target,'phys');
     if(target.st&&target.st.frozen){gameEffects.remove(target,'frozen','shattered');if(!isPlayer)gameEffects.apply(target,'imm_frozen',3,undefined,{durationModifiers:false,ignoreImmunity:true});floatText(target.x,target.y,'shatter','ice');}
@@ -97,7 +98,6 @@ function damageDefenses(event){
     if(hasGod('reginald')&&godRank()>=3&&foe&&source.hp>0&&!source.challenged&&dist(source,player)>1){source.challenged=true;source.challengeUntil=worldNow()+500;source.state='hunt';source.cowardMark=true;log('<b>'+(source.name||'It')+'</b> strikes from afar. Sir Reginald marks the coward: it must face you.','c-good');}
     if(capstone('grumbok')&&type!=='phys'&&foe)d*=.5;
     d=d>0&&barrier>0?Math.max(1,d-barrier):Math.max(0,d);
-    if(d>0&&foe&&hasP('fortitude')&&!(player.fortUntil>player.t)){d*=.5;player.fortUntil=player.t+1500;log('Fortitude blunts the blow.','c-good');}
     // A landed physical hit survives rounding; actual shields can still absorb it.
     if(type==='phys'&&d>0)d=Math.max(1,d);
     if(!event.options.bypassShields){
@@ -107,6 +107,7 @@ function damageDefenses(event){
       Object.keys(absorption.pools).forEach(function(key){player[key]=absorption.pools[key];});
       absorption.absorbed.forEach(function(pool){floatText(player.x,player.y,'-'+Math.round(pool.amount),pool.type);if(pool.key==='ward'&&player.ward<=0)log('Your Arcane Ward shatters.','c-info');});
     }
+    if(Math.round(d)>0&&foe&&hasP('fortitude')&&!(player.fortUntil>worldNow())){d*=.5;player.fortUntil=worldNow()+600;log('Fortitude blunts the blow.','c-good');}
   }
   if(target.challenged&&target.challengeBoost)d*=1.2;
   if(target.dazed>0)d*=1.5;
@@ -177,9 +178,10 @@ function applyDamage(target,amount,type,source,options){
 function dealDirectDamage(target,amount,type,source,options){
   return gameDamage.resolve(target,amount,type,source,Object.assign({preMitigated:true,bypassShields:true,reactions:false,visuals:false,tags:['periodic']},options||{})).damage;
 }
-function healPlayer(amount,natural){
+function healPlayer(amount,natural,options){
   if(!player||!(amount>0))return 0;
-  if(inSanctuary(player))amount*=1+.25*divineStrength();
+  if(hasGod('glimmer'))amount*=1+.10*godRank();
+  if(!(options&&options.holyGround)&&inSanctuary(player))amount*=1+.25*(typeof holyGroundStrength==='function'?holyGroundStrength(player):divineStrength());
   var result=FoteDamage.heal(player.hp,player.maxhp,amount);player.hp=result.hp;
   if(result.overflow>0&&combo('light','water'))player.iceArmor=Math.min(player.iceArmorMax,player.iceArmor+result.overflow);
   if(!natural&&amount>=1)deepStanch(player);

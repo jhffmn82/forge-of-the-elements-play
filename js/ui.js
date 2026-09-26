@@ -397,13 +397,13 @@ function inspectHTML(mx,my){
   if(e && e.parent) e=e.parent;   /* a big elite's other cells report the creature itself, not its proxy */
   if(e && (revealAll||vis[idxOf(mx,my)])){
     if(e.ally) return '<div class="nm">'+e.name+'</div><div class="row"><span>HP</span><b>'+Math.max(0,e.hp)+' / '+e.maxhp+'</b></div><div class="hint enemy-lore">'+enemyLore(e)+'</div><div class="hint">Fights for you.</div>';
-    var ch=Math.round(hitChance(player.acc,e.base.eva)*100), back=Math.round(hitChance(e.base.acc,player.eva)*100);
+    var ch=Math.round(hitChance(player.acc,evaOf(e))*100), back=Math.round(hitChance(e.base.acc,evaOf(player))*100);
     var lo=Math.max(1,Math.round(player.dmg[0]-Math.min(armorOf(e),player.dmg[0]*0.5))), hi=Math.max(1,Math.round(player.dmg[1]-Math.min(armorOf(e),player.dmg[1]*0.5)));
     var st=Object.keys(e.st).filter(function(k){ return k.indexOf('imm_')!==0; }).map(function(k){ return '<span class="tag t-'+k+'">'+k+'</span>'; }).join(' ');
     return '<div class="nm">'+e.name+'</div>'+
       '<div class="hint enemy-lore">'+enemyLore(e)+'</div>'+
       '<div class="row"><span>HP</span><b>'+Math.max(0,e.hp)+' / '+e.maxhp+'</b></div>'+
-      '<div class="row"><span>Armor &middot; Evasion</span><b>'+armorOf(e)+' &middot; '+e.base.eva+'</b></div>'+
+      '<div class="row"><span>Armor &middot; Evasion</span><b>'+armorOf(e)+' &middot; '+evaOf(e)+'</b></div>'+
       (e.base.el?'<div class="row"><span>Element</span><b style="color:'+AFF_COL[e.base.el]+'">'+cap(e.base.el)+'</b></div>':'')+
       '<div class="row"><span>State</span><b>'+(e.st.stun?'knocked out':e.st.frozen?'frozen':e.state==='throne'?'on his throne':e.state)+'</b></div>'+
       (e.keyholder?'<div class="row"><span>Carries</span><b>an iron key</b></div>':'')+
@@ -470,13 +470,22 @@ function inspectHTML(mx,my){
 /* ---------------------------------------------------------------- keys */
 window.addEventListener('keydown', function(ev){
   var tgt=ev.target.tagName;
-  if(tgt==='INPUT'||tgt==='SELECT'||tgt==='TEXTAREA') return;
-  if($('create') && $('create').classList.contains('on')) { ev.stopImmediatePropagation(); return; }
+  var editing=tgt==='INPUT'||tgt==='SELECT'||tgt==='TEXTAREA';
+  if($('create') && $('create').classList.contains('on')) { if(!editing)ev.stopImmediatePropagation(); return; }
   if(modalOpen){
-    if(ev.key==='Escape'){ closeModal(); }
-    else if(ev.key==='Enter'){ var pri=document.querySelector('#mFoot .primary'); if(pri) pri.click(); }
-    ev.stopImmediatePropagation(); ev.preventDefault(); return;
+    if(ev.key==='Escape'){closeModal();ev.preventDefault();}
+    else if(ev.key==='Tab'){
+      var modal=$('modal'),focusable=Array.from(modal.querySelectorAll('button,input,select,textarea,a[href],[tabindex]')).filter(function(el){return !el.disabled&&el.tabIndex>=0&&el.getClientRects().length;});
+      var first=focusable[0],last=focusable[focusable.length-1],outside=!modal.contains(document.activeElement);
+      if(ev.shiftKey&&(document.activeElement===first||outside)){if(last)last.focus();ev.preventDefault();}
+      else if(!ev.shiftKey&&(document.activeElement===last||outside)){if(first)first.focus();ev.preventDefault();}
+    }else if(!editing&&tgt!=='BUTTON'&&tgt!=='A'){
+      if(ev.key==='Enter'){var pri=document.querySelector('#mFoot .primary');if(pri)pri.click();}
+      ev.preventDefault();
+    }
+    ev.stopImmediatePropagation();return;
   }
+  if(editing)return;
   if(RUN && (RUN.over || RUN.victory)){ ev.stopImmediatePropagation(); return; }
   var k=ev.key;
   if(k==='m'){ audioInit(); toggleMute(); syncAudioButtons(); ev.stopImmediatePropagation(); return; }
