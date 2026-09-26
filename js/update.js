@@ -5,6 +5,7 @@ var FOTE_PATCHES = [
   {version:'Beta 1.3', notes:[
     "The final Forge of the Elements has its own animated artwork, with six elemental sources feeding the anvil. Existing saved final chambers receive the new art.",
     "Added a richer victory and defeat summary with a final score and score breakdown. Previous Runs keeps a local high-score list, with victories first; sandbox runs are excluded.",
+    "Scoring now rewards XP and essence earned relative to turns taken, together with depth, level and faith progress. Winning multiplies the result, and spending essence does not reduce your earned total. Earlier scores stay in their own groups; older saves clearly label estimated earnings.",
     "Previous Runs and Settings are now available from the title screen, and character creation has a Back button. Audio, display and key bindings can be adjusted before starting a character; motion settings now persist.",
     "The Unmaker calls reinforcements throughout the battle. In his second form, three crystal pylons fire independently telegraphed beams while he threatens other areas, making positioning matter throughout the fight.",
     "Boss cores now land on reachable ground, separately from other treasure, even when a boss is defeated outside its lair. Loading an affected save repairs a missing or inaccessible core.",

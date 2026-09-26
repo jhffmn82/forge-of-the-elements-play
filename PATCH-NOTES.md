@@ -6,6 +6,7 @@
 
 - The final Forge of the Elements has dedicated animated artwork, with six elemental sources feeding its anvil. Existing final-chamber saves receive the new art.
 - Victory and defeat screens show your final score, build and accomplishments, with a score breakdown. Previous Runs keeps a local high-score list with winners first. Sandbox runs are excluded.
+- Scoring rewards XP and essence earned relative to turns taken, together with depth, level and faith progress. Winning multiplies the result, and spending essence does not reduce earned essence. Earlier scores remain in their own groups; older saves clearly label estimated earnings.
 - Previous Runs and Settings are available from the title screen. Character creation has a Back button, and audio, display and key bindings can be adjusted before starting a run. Motion preferences now persist.
 - The Unmaker calls reinforcements throughout the battle. In phase two, three crystal pylons independently charge beams while the boss attacks other areas. Distinct warning colors and charge bars show overlapping threats; the marked floor remains free of numbers.
 - Boss cores land on reachable ground, separately from other treasure, even when a boss dies outside its lair. Affected saves recover missing or inaccessible cores.

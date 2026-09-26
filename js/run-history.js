@@ -5,12 +5,13 @@
   else root.FoteRunHistory=api;
 })(globalThis,function(){
   'use strict';
-  var KEY='astra-temple-run-history',BACKUP=KEY+'-backup',VERSION=1;
+  var KEY='astra-temple-run-history',BACKUP=KEY+'-backup',VERSION=1,SCORE_VERSION=2;
   function count(value){return Math.max(0,Math.min(Number.MAX_SAFE_INTEGER,Math.floor(Number(value)||0)));}
   function text(value){return typeof value==='string'?value:'';}
   function score(record){
-    var parts={depth:count(record.depth)*1000,level:count(record.level)*100,bosses:count(record.bosses)*2500,kills:Math.min(500,count(record.kills))*5,victory:record.won?25000:0};
-    return {version:1,total:Object.keys(parts).reduce(function(n,key){return n+parts[key];},0),parts:parts};
+    var parts={xp:count(record.xpGained),essence:count(record.essenceGained),turns:Math.max(1,count(record.turns)),depth:count(record.depth),level:count(record.level),faithRank:count(record.faithRank),multiplier:record.won?2:1};
+    var total=((parts.xp+parts.essence)/parts.turns*parts.depth+parts.level+parts.faithRank)*parts.multiplier;
+    return {version:SCORE_VERSION,total:Math.min(Number.MAX_SAFE_INTEGER,Math.round(total)),parts:parts};
   }
   function legacyId(row){
     var source=JSON.stringify([row.name,row.race,row.cls,row.finishedAt||row.date,row.floor,row.level,row.turns,row.kills,row.score,row.won||row.victory]),hash=2166136261;
@@ -24,9 +25,13 @@
     ['name','race','cls','who','god','faith','biome','finishedAt','buildVersion'].forEach(function(k){r[k]=text(row[k]);});
     r.finishedAt=r.finishedAt||text(row.date);r.name=r.name||'Unknown adventurer';
     ['level','kills','turns','bosses','faithRank'].forEach(function(k){r[k]=count(row[k]);});
+    var hasEarnings=Number.isFinite(row.xpGained)&&row.xpGained>=0&&Number.isFinite(row.essenceGained)&&row.essenceGained>=0;
+    if(hasEarnings){r.xpGained=count(row.xpGained);r.essenceGained=count(row.essenceGained);}
+    r.earningsEstimated=row.earningsEstimated===true;
     r.floor=count(row.floor);r.depth=Math.max(r.floor,count(row.depth));r.affinities=Array.isArray(row.affinities)?row.affinities.filter(function(a){return a&&typeof a.element==='string';}).map(function(a){return{element:a.element,rank:count(a.rank)};}):[];
     if(Number.isFinite(row.score)&&row.score>=0){r.score=Math.floor(row.score);r.scoreVersion=count(row.scoreVersion);}
-    else{var result=score(r);r.score=result.total;r.scoreVersion=result.version;r.scoreParts=result.parts;}
+    else if(hasEarnings){var result=score(r);r.score=result.total;r.scoreVersion=result.version;r.scoreParts=result.parts;}
+    else{r.score=0;r.scoreVersion=0;r.scoreUnavailable=true;delete r.scoreParts;}
     return r;
   }
   function decode(raw){
@@ -40,7 +45,7 @@
     Array.prototype.slice.call(arguments).forEach(function(rows){(rows||[]).forEach(function(r){if(r&&!byId.has(r.id))byId.set(r.id,r);});});
     return Array.from(byId.values());
   }
-  function sort(rows){return rows.slice().sort(function(a,b){return Number(b.won)-Number(a.won)||b.score-a.score||String(b.finishedAt).localeCompare(String(a.finishedAt))||a.id.localeCompare(b.id);});}
+  function sort(rows){return rows.slice().sort(function(a,b){return Number(b.won)-Number(a.won)||Number(b.scoreVersion===SCORE_VERSION)-Number(a.scoreVersion===SCORE_VERSION)||b.scoreVersion-a.scoreVersion||b.score-a.score||String(b.finishedAt).localeCompare(String(a.finishedAt))||a.id.localeCompare(b.id);});}
   function createStore(storage){
     var memory=[],persisted=false,blocked=false;
     function read(){
@@ -60,7 +65,7 @@
       persisted:function(){return persisted;}
     };
   }
-  return Object.freeze({key:KEY,backupKey:BACKUP,version:VERSION,score:score,normalize:normalize,decode:decode,sort:sort,createStore:createStore});
+  return Object.freeze({key:KEY,backupKey:BACKUP,version:VERSION,scoreVersion:SCORE_VERSION,score:score,normalize:normalize,decode:decode,sort:sort,createStore:createStore});
 });
 
 (function(root){
@@ -81,7 +86,8 @@
     return defeated.size;
   }
   function snapshot(won){
-    var depth=deepest(),record={id:runId(),name:player.name,who:player.who,race:player.race,cls:player.cls,level:player.level,floor:floorNo,depth:depth,
+    var earnings=ensureRunEarnings(),depth=deepest(),record={id:runId(),name:player.name,who:player.who,race:player.race,cls:player.cls,level:player.level,floor:floorNo,depth:depth,
+      xpGained:earnings.xp,essenceGained:earnings.essence,earningsEstimated:!!earnings.legacyBaseline,
       biome:biomeName(),kills:RUN.kills||0,turns:RUN.turns||0,bosses:bossCount(depth),god:player.god||'',faith:player.god&&GODS[player.god]?GODS[player.god].name:'No patron',faithRank:player.god?godRank():0,
       affinities:Object.keys(player.aff||{}).filter(function(el){return player.aff[el]>0;}).map(function(el){return{element:el,rank:player.aff[el]};}),
       won:!!won,finishedAt:new Date().toISOString(),buildVersion:typeof FOTE_VERSION==='undefined'?'':FOTE_VERSION,sandbox:!!RUN.sandbox};
@@ -96,14 +102,27 @@
   function summary(won){return RUN.finishedRecord||snapshot(won);}
   function breakdown(record){
     var p=record.scoreParts;
+    if(record.scoreUnavailable)return '<p class="run-note">This older record has no saved score or earnings totals.</p>';
     if(!p)return '<p class="run-note">Score recorded under an earlier scoring version.</p>';
+    if(record.scoreVersion===FoteRunHistory.scoreVersion){
+      var rows=[['Total XP earned',p.xp],['Total essence earned',p.essence],['Turns (minimum 1)',p.turns],['Deepest floor reached',p.depth],['Character level',p.level],['God rank',p.faithRank],['Victory multiplier','×'+p.multiplier]];
+      return '<details class="run-breakdown"><summary>How this score was earned</summary><dl>'+rows.map(function(pair){return '<dt>'+pair[0]+'</dt><dd>'+(typeof pair[1]==='string'?escaped(pair[1]):number(pair[1]))+'</dd>';}).join('')+'</dl><p>((XP earned + essence earned) ÷ turns × deepest floor + character level + god rank) × victory multiplier. A win doubles the whole result. Rounded once at the end; spending essence does not reduce earned essence.</p>'+(record.earningsEstimated?'<p>This run began before earnings tracking. Earlier XP is estimated from saved progress; earlier essence includes only the remaining pouch. Past spending and some XP were not recorded.</p>':'')+'</details>';
+    }
+    if(record.scoreVersion!==1)return '<p class="run-note">Score recorded under different scoring rules.</p>';
     return '<details class="run-breakdown"><summary>How this score was earned</summary><dl>'+[['Depth reached',p.depth],['Character level',p.level],['Campaign bosses',p.bosses],['Enemies defeated',p.kills],['Victory',p.victory]].map(function(pair){return '<dt>'+pair[0]+'</dt><dd>'+number(pair[1])+'</dd>';}).join('')+'</dl><p>1,000 per floor reached · 100 per level · 2,500 per campaign boss · 5 per kill (first 500) · 25,000 for victory. Time does not affect your score.</p></details>';
   }
   function build(record){return escaped(record.who||[cap(record.race),cap(record.cls)].filter(Boolean).join(' '));}
   function openHistory(origin){
-    var rows=store.read(),html='<p class="run-note">Victories lead the list, then score. Finished runs are kept in this browser; sandbox runs are excluded.</p>';
+    var rows=store.read(),html='<p class="run-note">Victories lead the list. Scores are ranked within the same rules, with current scores before earlier scores. Finished runs are kept in this browser; sandbox runs are excluded.</p>';
     if(!rows.length)html+='<div class="run-empty"><b>Your story starts here.</b><p>Finish a run to earn a place in these records.</p></div>';
-    else html+='<ol class="run-history">'+rows.map(function(r,i){var date=new Date(r.finishedAt),when=isNaN(date.getTime())?'':date.toLocaleDateString();return '<li class="run-entry'+(r.won?' winner':'')+'"><div class="run-entry-heading"><span class="run-rank">'+(i+1)+'</span><div><span class="run-outcome">'+(r.won?'Victory':'Fallen')+'</span><strong>'+escaped(r.name)+'</strong><span class="run-build">'+build(r)+'</span></div><b class="run-points">'+number(r.score)+'<small>score</small></b></div><p>Level '+r.level+' · deepest floor '+r.depth+' · '+number(r.kills)+' kills · '+number(r.turns)+' turns</p><p>'+escaped(r.faith||'No patron')+(r.faithRank?' · rank '+r.faithRank:'')+(when?' · '+escaped(when):'')+'</p>'+breakdown(r)+'</li>';}).join('')+'</ol>';
+    else {
+      var previousGroup=null,rank=0;
+      rows.forEach(function(r){
+        var current=r.scoreVersion===FoteRunHistory.scoreVersion,group=String(r.won)+'-'+r.scoreVersion,date=new Date(r.finishedAt),when=isNaN(date.getTime())?'':date.toLocaleDateString();
+        if(group!==previousGroup){if(previousGroup!==null)html+='</ol>';rank=0;html+='<h3 class="run-group">'+(r.won?'Victories':'Other runs')+(current?'':' · earlier scoring')+'</h3><ol class="run-history">';previousGroup=group;}
+        html+='<li class="run-entry'+(r.won?' winner':'')+'"><div class="run-entry-heading"><span class="run-rank">'+(++rank)+'</span><div><span class="run-outcome">'+(r.won?'Victory':'Fallen')+'</span><strong>'+escaped(r.name)+'</strong><span class="run-build">'+build(r)+'</span></div><b class="run-points">'+(r.scoreUnavailable?'—':number(r.score))+'<small>'+(current?(r.earningsEstimated?'estimated score':'score'):'earlier score')+'</small></b></div><p>Level '+r.level+' · deepest floor '+r.depth+' · '+number(r.kills)+' kills · '+number(r.turns)+' turns</p><p>'+escaped(r.faith||'No patron')+(r.faithRank?' · rank '+r.faithRank:'')+(when?' · '+escaped(when):'')+'</p>'+breakdown(r)+'</li>';
+      });html+='</ol>';
+    }
     openModal('Previous Runs',html,[{label:origin==='end'?'Back to summary':'Back to title',fn:closeModal}],'run-history-modal');
     modalOnClose=function(){var button=document.getElementById(origin==='end'?'bHistoryEnd':'tHistory');if(button)button.focus();};
   }
@@ -117,6 +136,7 @@
     '.end-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin:16px 0}.end-stats span{display:flex;flex-direction:column;gap:5px;padding:9px 5px;border:1px solid var(--edge);border-radius:5px;background:#0d0b09}.end-stats small{color:var(--ash);font-size:10px;text-transform:uppercase}.end-stats b{color:var(--ink);font-size:15px}',
     '.end-affinities{font-size:12px;line-height:1.7;color:var(--ash);margin:8px 0 12px}.end-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:16px}.end-actions button{min-height:44px;margin:0!important}',
     '.run-note{color:var(--ash);font-size:12px;line-height:1.55}.run-empty{text-align:center;padding:35px 10px;color:var(--gold)}.run-empty p{color:var(--ash)}',
+    '.run-group{margin:22px 0 8px;color:var(--gold);font-size:16px}.run-group+.run-history{margin-top:0}',
     '.run-history{list-style:none;margin:14px 0 0;padding:0;display:flex;flex-direction:column;gap:12px}.run-entry{border:1px solid var(--edge);border-radius:6px;padding:14px;background:#14110e}.run-entry.winner{border-color:#8b6c35;background:linear-gradient(120deg,#2a2112,#14110e)}',
     '.run-entry-heading{display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:10px;align-items:center}.run-rank{color:var(--dim)}.run-outcome{display:block;text-transform:uppercase;font-size:10px;letter-spacing:.12em;color:var(--ash)}.winner .run-outcome{color:var(--gold)}.run-entry strong{display:block;color:var(--ink);font-family:var(--display);font-size:22px;overflow-wrap:anywhere}.run-build{display:block;font-size:11px;color:var(--ash)}',
     '.run-points{color:var(--gold);font-size:21px;text-align:right}.run-points small{display:block;color:var(--dim);font-size:10px;font-weight:normal}.run-entry p{font-size:11px;line-height:1.6;color:var(--ash);margin:10px 0 0}',

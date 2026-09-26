@@ -102,7 +102,7 @@ function recyclePanelHTML(){
 }
 function recycleAt(i){
   var b=player.bag[i], v=recycleValue(b); if(!v) return;
-  player.bag.splice(i,1); player.essence+=v;
+  player.bag.splice(i,1); gainEssence(v);
   log('The Forge melts down your <b>'+b.name+'</b>: +'+v+' essence.','c-good'); sfx('forge-craft');
 }
 function wireRecyclePanel(panel){
@@ -112,7 +112,7 @@ function wireRecyclePanel(panel){
   if(all) all.onclick=function(){
     var n=player.bag.filter(function(b){ return recycleValue(b)>0; }).length, tot=player.bag.reduce(function(a,b){ return a+recycleValue(b); },0);
     forgeConfirm('Recycle all', 'Melt down <b>'+n+'</b> piece'+(n>1?'s':'')+' of gear from your bag for <b>'+tot+' essence</b>?', 'Recycle', function(){
-      for(var i=player.bag.length-1;i>=0;i--) if(recycleValue(player.bag[i])>0){ var b=player.bag[i]; player.essence+=recycleValue(b); player.bag.splice(i,1); }
+      for(var i=player.bag.length-1;i>=0;i--) if(recycleValue(player.bag[i])>0){ var b=player.bag[i]; gainEssence(recycleValue(b)); player.bag.splice(i,1); }
       log('The Forge melts down '+n+' pieces of gear: +'+tot+' essence.','c-good'); sfx('forge-craft');
       updateUI();
     });

@@ -76,7 +76,7 @@ function renderEndSummary(won){
   body.innerHTML='<div class="end-elements" aria-hidden="true">'+['#f57a40','#7ac9f4','#bcb2fa','#acb573','#ffe298','#b286ce'].map(function(col){return '<span style="--element:'+col+'"></span>';}).join('')+'</div>'+
     '<div class="end-name">'+esc(record.name)+'</div><div class="run-build">'+ui.build(record)+'</div>'+
     '<p class="end-story">'+(won?'You defeated the Unmaker and restored balance to the material plane. Fire, water, air, earth, light and shadow burn in harmony once more. Your work is done.':'Floor '+record.floor+' of the '+esc(record.biome)+' claimed another adventurer. Your journey is remembered.')+'</p>'+
-    '<b class="end-score">'+n(record.score)+'<small>Final score'+(record.sandbox?' · sandbox':'')+'</small></b>'+
+    '<b class="end-score">'+(record.scoreUnavailable?'—':n(record.score))+'<small>'+(record.earningsEstimated?'Estimated final score':'Final score')+(record.sandbox?' · sandbox':'')+'</small></b>'+
     '<div class="end-stats">'+[['Deepest floor',record.depth],['Level',record.level],['Bosses defeated',record.bosses],['Enemies defeated',n(record.kills)],['Turns',n(record.turns)],['Faith',record.faithRank?'Rank '+record.faithRank:'None']].map(function(pair){return '<span><small>'+pair[0]+'</small><b>'+pair[1]+'</b></span>';}).join('')+'</div>'+
     '<div class="end-affinities">'+esc(record.faith||'No patron')+'<br>'+record.affinities.map(function(a){return esc(cap(a.element))+' '+a.rank;}).join(' · ')+'</div>'+ui.breakdown(record)+
     (record.sandbox?'<p class="run-note">Sandbox run — not added to Previous Runs.</p>':RUN.historySaved===false?'<p class="run-note">Local storage is unavailable. This result is kept for this session only.</p>':'');

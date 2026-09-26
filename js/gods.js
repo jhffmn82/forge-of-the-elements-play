@@ -53,7 +53,7 @@ function wobblesIntervention(big){
     else if(o==='sheep' && foes.length){ var t=pick(foes.filter(function(f){ return !f.base.boss; })); if(t){ var x=t.x,y=t.y; ents=ents.filter(function(e){ return e!==t; }); var r=spawn('rat',x,y); r.name='Very Confused Rat'; r.state='wander'; r.noXp=true; log('<b>Wobbles giggles.</b> '+t.name+' turns into a rat!','c-kill'); sparkleFx(x,y,'magic',30); } }
     else if(o==='escape'){ var o2=[]; for(var yy=0;yy<MH;yy++) for(var xx=0;xx<MW;xx++) if(walkable(xx,yy)&&!occupied(xx,yy)&&inRoom(xx,yy)&&dist({x:xx,y:yy},player)>15) o2.push({x:xx,y:yy});
       var s=pick(o2); if(s){ player.x=s.x; player.y=s.y; player._lx=undefined; log('<b>Wobbles giggles.</b> You are somewhere else, and safe.','c-kill'); } }
-    else { var n=ri(20,40); player.essence+=n; log('<b>Wobbles giggles.</b> '+n+' essence rains from nowhere.','c-kill'); }
+    else { var n=ri(20,40); gainEssence(n); log('<b>Wobbles giggles.</b> '+n+' essence rains from nowhere.','c-kill'); }
   } else {
     var bad=pick(['status','rats','teleport','butterfingers']);
     if(bad==='status'){ applyStatus(player, pick(['blind','chill','root']), 3); log('<b>Wobbles snickers.</b> Oops.','c-you'); }
@@ -259,7 +259,7 @@ function prayFieldSmelt(){
   if(!choices.length){log('No recyclable items in your bag.','c-info');return false;}
   openModal('Field Smelt','Choose one carried item to destroy for its full recycling value.',choices.map(function(o){return {label:o.b.name+' → '+o.v+' essence',fn:function(){
     if(!canPray('fieldsmelt')||player.bag[o.i]!==o.b)return;
-    spendPrayer('fieldsmelt');player.bag.splice(o.i,1);player.essence+=recycleValue(o.b);closeModal();updateUI();
+    spendPrayer('fieldsmelt');player.bag.splice(o.i,1);gainEssence(recycleValue(o.b));closeModal();updateUI();
   }};}));return true;
 }
 
@@ -290,7 +290,7 @@ function godDamageResolved(target,d,type,source,event){
 function combatAmusement(side){var k='_amuse_'+side,t=Math.floor(worldNow()/100);if(player[k]===t)return;player[k]=t;player.amusement=Math.min(100,(player.amusement||0)+1);}
 function resolveAmusement(){
  if(player.god!=='wobbles')return;
- if(player.amusement>=100){player.amusement-=50;if(player.hp<player.maxhp*.75){healPlayer(player.maxhp*.4);log('Wobbles rewards you with healing.','c-good');}else if(rng()<.5){var it=randomGear();it.x=player.x;it.y=player.y;items.push(it);log('Wobbles leaves you a gift.','c-good');}else{player.essence+=ri(20,40);log('Wobbles showers you with essence.','c-good');}}
+ if(player.amusement>=100){player.amusement-=50;if(player.hp<player.maxhp*.75){healPlayer(player.maxhp*.4);log('Wobbles rewards you with healing.','c-good');}else if(rng()<.5){var it=randomGear();it.x=player.x;it.y=player.y;items.push(it);log('Wobbles leaves you a gift.','c-good');}else{gainEssence(ri(20,40));log('Wobbles showers you with essence.','c-good');}}
  else if(player.amusement<=0){player.amusement=50;applyStatus(player,pick(['blind','chill']),2);log('Bored, Wobbles plays a prank.','c-you');}
 }
 

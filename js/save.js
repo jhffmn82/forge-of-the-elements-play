@@ -32,7 +32,7 @@ function saveApply(data){
     decode:saveDecode,validate:FoteState.validate,state:gameState,
     getRandom:function(){return rng;},setRandom:function(value){rng=value;},
     restoreRandom:function(document,state){rng=mulberry32(Number.isInteger(document.rngState)?document.rngState:((state.worldSeed||1)^(state.turn*2654435761))>>>0);},
-    migrations:[function(){recoveredInterruptedDeath=repairInterruptedPlayerDeath();},restoreRunReferences,migrateXpCurve,repairCoreProgress,repairBossCore,repairWallMemorials,
+    migrations:[function(){recoveredInterruptedDeath=repairInterruptedPlayerDeath();},restoreRunReferences,ensureRunEarnings,migrateXpCurve,repairCoreProgress,repairBossCore,repairWallMemorials,
       refreshCavernResidents,refreshEncounterTuning,repairSavedEffectClocks,
       saveMigrateSigils,sigilNamesRefresh,ensureRuneLooks,repairTouristShirts,migrateRangedSlot,hideRetiredSwapSlots,restorePuzzleState,
       function(){if(typeof FoteChaosCampaign!=='undefined')FoteChaosCampaign.restore();if(typeof FoteUnmakerPreview!=='undefined')FoteUnmakerPreview.repairGates();if(typeof FoteUnmakerEncounter!=='undefined')FoteUnmakerEncounter.restore();}],

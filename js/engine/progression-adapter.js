@@ -1,4 +1,25 @@
 /* One owner for devotion, level rewards and permanent undead servants. */
+function ensureRunEarnings(){
+  if(!RUN||!player)return null;
+  if(RUN.earnings&&RUN.earnings.version===1&&Number.isFinite(RUN.earnings.xp)&&Number.isFinite(RUN.earnings.essence))return RUN.earnings;
+  // This runs before XP-curve migration. Old saves cannot reveal essence already
+  // spent or XP discarded at the level cap; retain an explicitly marked baseline.
+  var growth=XP_GROWTH_BY_VERSION[RUN.xpCurveVersion||1]||1.55;
+  var xp=RUN.sandbox?0:Math.max(0,lifetimeXp(player,function(level){return xpToNextAt(growth,level);}));
+  var essence=RUN.sandbox?0:Math.max(0,(player.essence||0)-(player.cls==='tourist'?30:0));
+  RUN.earnings={version:1,xp:xp,essence:essence,legacyBaseline:{xp:xp,essence:essence,xpCurveVersion:RUN.xpCurveVersion||1}};
+  return RUN.earnings;
+}
+function recordRunEarning(kind,amount,options){
+  var earned=ensureRunEarnings();
+  if(earned&&!(options&&options.earned===false)&&Number.isFinite(amount)&&amount>0)earned[kind]+=amount;
+}
+function gainEssence(amount,options){
+  amount=Number(amount);if(!Number.isFinite(amount)||amount<=0)return 0;
+  recordRunEarning('essence',amount,options);
+  player.essence=(player.essence||0)+amount;
+  return amount;
+}
 function totalAffinity(){
   var total=0;for(var key in player.aff)total+=player.aff[key]||0;
   return total-(player.glimmerLight?1:0);
@@ -69,8 +90,10 @@ function godOnKill(entity,source){
   if(reward.healingRanks)healPlayer(Math.round(reward.healingRanks*divineStrength()));
 }
 function levelStatPoints(character,level){return FoteProgression.statPoints(character,level);}
-function gainXP(amount){
+function gainXP(amount,options){
+  amount=Number(amount);if(!Number.isFinite(amount)||amount<=0)return;
   player.xpNext=xpToNext(player.level);var gained=FoteProgression.experience(amount,player.cls);
+  recordRunEarning('xp',gained,options);
   player.xp+=gained;floatText(player.x,player.y,'+'+gained+' xp','xp');
   if(player.level>=20){player.xp=Math.min(player.xp,player.xpNext-1);return;}
   while(player.xp>=player.xpNext&&player.level<20){

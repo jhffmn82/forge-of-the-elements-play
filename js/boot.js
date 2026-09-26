@@ -33,7 +33,7 @@ function startGame(){
     if(e && addBag(e[0],e[1],e[2])) log('A <b>'+e[1]+'</b> appears in your bag.','c-good');
     updateUI(); refreshSheet();
   };
-  $('bLevel').onclick=function(){ gainXP(player.xpNext-player.xp); updateUI(); };
+  $('bLevel').onclick=function(){ gainXP(player.xpNext-player.xp,{earned:false}); updateUI(); };
   $('bAgain').onclick=function(){ $('over').style.display='none'; openCreate(); };
 
   /* help sheet */

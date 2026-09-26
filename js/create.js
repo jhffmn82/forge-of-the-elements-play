@@ -196,6 +196,7 @@ function newRun(seed,choice){
   if(typeof MAPVIEW!=='undefined')MAPVIEW.on=false;
   worldSeed=seed>>>0;rng=mulberry32(worldSeed);newRunState(worldSeed);
   RUN.xpCurveVersion=XP_CURVE_VERSION;
+  RUN.earnings={version:1,xp:0,essence:0,legacyBaseline:null};
   floorNo=1;turn=0;revealAll=false;aiming=null;PARTS.length=0;fx=[];speedFxList();
   var created=createRunCharacter(choice);player=created.actor;
   shuffleSigils();ensureTrinketLooks();
