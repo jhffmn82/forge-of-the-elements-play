@@ -672,5 +672,6 @@ function spawnRaw(kind,x,y){
   var e={id:nextId++, kind:kind, name:b.name, ch:b.ch, col:b.col, x:x, y:y,
          hp:sHP(b.hp), maxhp:sHP(b.hp), base:b, t:(typeof player!=='undefined' && player && player.t) ? player.t : 0, state:'asleep', st:{}, foe:true,
          dmg:[sDMG(b.dmg[0]), sDMG(b.dmg[1])], castCd:ri(1,3)};
+  if(typeof applyFloorOneEnemyTuning==='function')applyFloorOneEnemyTuning(e);
   ents.push(e); return e;
 }

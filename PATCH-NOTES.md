@@ -4,6 +4,7 @@
 
 ## Changes
 
+- Dungeon Rats and Goblins hit less hard on the first floor, making the opening fights more forgiving. Their damage on later floors is unchanged.
 - The final Forge of the Elements has dedicated animated artwork, with six elemental sources feeding its anvil. Existing final-chamber saves receive the new art.
 - Victory and defeat screens show your final score, build and accomplishments, with a score breakdown. Previous Runs keeps a local high-score list with winners first. Sandbox runs are excluded.
 - Scoring rewards XP and essence earned relative to turns taken, together with depth, level and faith progress. Winning multiplies the result, and spending essence does not reduce earned essence. Earlier scores remain in their own groups; older saves clearly label estimated earnings.

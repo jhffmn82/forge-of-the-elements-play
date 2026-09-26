@@ -349,6 +349,7 @@ function refreshEncounterTuning(){
   }
   ents.forEach(function(e){
     if(!e.base || e.hp<=0)return;
+    if(typeof applyFloorOneEnemyTuning==='function')applyFloorOneEnemyTuning(e);
     if(['bat','slime','caveslime','shade','stalker','gloommoth','dawnsentinel','halowisp','prismscarab','radiantwarden','chaos-rift-skitter','chaos-lens-bearer','chaos-lash-dancer','chaos-razor-dancer'].indexOf(e.kind)>=0){
       var tuned=MONSTERS[e.kind];if(tuned){e.base=Object.assign({},e.base);['eva','el','rootSpit','attackType','chillTouch'].forEach(function(key){if(tuned[key]!==undefined)e.base[key]=tuned[key];});}
     }
