@@ -184,6 +184,10 @@ var SPIKES_SRC = {name:'Spikes', base:{pierce:99}};
 
 
 function drawTrap(f,px,py,alpha,now){
+  if(!spriteOn){
+    var block={dart:['#A69B87','↗'],fire:['#F58B42','F'],gas:['#91BC61','P'],frost:['#9FD8FF','I'],spark:['#FFE080','ϟ'],teleport:['#B58CFF','O'],web:['#D8D5C6','#'],alarm:['#E8B44A','!'],pit:['#94887C','□'],spikes:['#B9B3AA','^']}[f.kind]||['#B9B3AA','^'];
+    ctx.save();ctx.globalAlpha=alpha;ctx.fillStyle='#292421';ctx.fillRect(px+TS*.15,py+TS*.15,TS*.7,TS*.7);ctx.strokeStyle=block[0];ctx.lineWidth=Math.max(1,TS*.04);ctx.strokeRect(px+TS*.15,py+TS*.15,TS*.7,TS*.7);glyph(block[1],px,py,block[0]);ctx.restore();return;
+  }
   if(f.kind!=='spikes') return drawOrdinaryTrap(f, px, py, alpha, now);
   var u=TS/32; ctx.save(); ctx.globalAlpha=alpha;
   ctx.fillStyle='#2A2522'; ctx.fillRect(px+4*u,py+4*u,24*u,24*u);

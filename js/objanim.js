@@ -184,9 +184,9 @@ function drawObjectAnimation(o, px, py, opt){
 }
 function drawCaveAnimation(o, cx, bottom, alpha, flipX){
     if(o && o.nm && objFxFor(o.nm)){
-      var s=caveArtScale(o), left=cx-o.fullW*s/2, top=bottom-o.fullH*s, dx=left+o.ox*s, w=o.sw*s;
+      var s=caveArtScale(o), left=cx-o.fullW*s/2, top=bottom-o.fullH*s, dx=left+o.ox*s, w=o.sw*s/(o.res||1);
       if(flipX) dx = 2*cx - (dx+w);
-      objFxDraw(o, dx, top+o.oy*s, w, o.sh*s, alpha, !!flipX);
+      objFxDraw(o, dx, top+o.oy*s, w, o.sh*s/(o.res||1), alpha, !!flipX);
     }
 
 

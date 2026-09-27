@@ -3,7 +3,7 @@
    (js/planeterrain.js) with a cave material; on top of it:
    - chasms: black void, the delivered lip / corner art laid round every edge a quarter tile at a time, and
      floating debris drifting in the dark;
-   - rope bridges drawn in code, planked across most of the tile (the delivered bridge art is a quarter tile wide);
+   - rope bridges use cached 128px sections of the recovered painted wood-and-rope master;
    - the cave pieces (map-cave.png) at their natural size: 64 px of art = one tile, standing on their footprint,
      tall art rising above it; clusters and decals flat on the floor; stalactites, glowworms, fossils and the
      waterfall hung on cliff faces.
@@ -37,20 +37,23 @@ function packedCaveArt(name){
 
 
 /* draw a piece at its natural size: the canvas's bottom centre on the footprint's bottom centre */
-function caveArtScale(o){ return TS/64*(o.nm && /^(giant-mushroom|mushroom-pair)/.test(o.nm)?.65:1); }
+function caveArtScale(o){
+  // Crystal pylons fit their one-tile footing; their glow uses this scale too.
+  var scale=/^pylon-[12]$/.test(o.nm||'')?.55:/^(giant-mushroom|mushroom-pair)/.test(o.nm||'')?.65:1;
+  return TS/64*scale;
+}
 function drawCaveSprite(o, cx, bottom, alpha, flipX){
   if(o.nm==='kobold-crate'){
     ctx.save();ctx.globalAlpha=alpha;ctx.imageSmoothingEnabled=false;
-    var cs=Math.min(TS*.46/o.sw,TS*.53/o.sh), cw=o.sw*cs,ch=o.sh*cs;
-    var boxes=[[-.24,-.20],[.23,-.14]];
-    if(Math.abs(Math.round(cx/TS)+Math.round(bottom/TS))%2===0)boxes.push([0,0]);
-    boxes.forEach(function(b){ctx.drawImage(o.img,o.sx,o.sy,o.sw,o.sh,cx+b[0]*TS-cw/2,bottom+b[1]*TS-ch,cw,ch);});
+    var cs=Math.min(TS*.68/o.sw,TS*.74/o.sh), cw=o.sw*cs,ch=o.sh*cs;
+    if(flipX){ctx.translate(cx,0);ctx.scale(-1,1);ctx.translate(-cx,0);}
+    ctx.drawImage(o.img,o.sx,o.sy,o.sw,o.sh,cx-cw/2,bottom-ch,cw,ch);
     ctx.restore();return;
   }
   var s=caveArtScale(o), left=cx-o.fullW*s/2, top=bottom-o.fullH*s;
   ctx.save(); ctx.globalAlpha=alpha; ctx.imageSmoothingEnabled=false;
   if(flipX){ ctx.translate(cx, 0); ctx.scale(-1, 1); ctx.translate(-cx, 0); }
-  ctx.drawImage(o.img, o.sx, o.sy, o.sw, o.sh, left+o.ox*s, top+o.oy*s, o.sw*s, o.sh*s);
+  ctx.drawImage(o.img, o.sx, o.sy, o.sw, o.sh, left+o.ox*s, top+o.oy*s, o.sw*s/(o.res||1), o.sh*s/(o.res||1));
   ctx.restore();
 }
 
@@ -73,11 +76,41 @@ function drawCaveProp(p, px, py, alpha){
 function caveLand(x, y){ if(!inb(x,y)) return false; var t=at(x,y); return t!==CHASM && t!==BRIDGE && !isWallLike(t); }
 
 /* ---------------------------------------------------------------- rope bridges */
+var CAVE_BRIDGE_ART={image:null,frames:null};
+function caveBridgeFrames(){
+  var art=CAVE_BRIDGE_ART;
+  if(art.frames)return art.frames;
+  if(!art.image){
+    var image=new Image();art.image=image;
+    image.onload=function(){
+      if(player&&map&&map.length&&vis&&seen&&vis.length===map.length&&seen.length===map.length)draw();
+    };
+    image.src='art/packed/cave-bridge-master.png'+(typeof ASSETS!=='undefined'&&ASSETS.build?'?v='+ASSETS.build:'');
+  }
+  if(!art.image.complete||!art.image.naturalWidth)return null;
+  // The unchanged master is a long continuous bridge. Quarter sections keep
+  // its plank proportions instead of squeezing the whole span into each tile.
+  art.frames=[];
+  for(var k=0;k<4;k++){
+    var canvas=document.createElement('canvas');canvas.width=canvas.height=128;
+    var g=canvas.getContext('2d');g.imageSmoothingEnabled=true;g.imageSmoothingQuality='high';
+    g.drawImage(art.image,k*313.5,504,313.5,272,0,16,128,96);
+    art.frames.push(canvas);
+  }
+  return art.frames;
+}
 function drawCaveBridge(x, y, px, py, alpha){
   var ew = caveLand(x-1,y) || at(x-1,y)===BRIDGE || caveLand(x+1,y) || at(x+1,y)===BRIDGE;
   var ns = caveLand(x,y-1) || at(x,y-1)===BRIDGE || caveLand(x,y+1) || at(x,y+1)===BRIDGE;
   var horiz = ew && !(ns && !(at(x-1,y)===BRIDGE || at(x+1,y)===BRIDGE));
   var endA = horiz ? caveLand(x-1,y) : caveLand(x,y-1), endB = horiz ? caveLand(x+1,y) : caveLand(x,y+1);
+  var painted=spriteOn?caveBridgeFrames():null;
+  if(painted){
+    var frame=painted[(((horiz?x:y)%4)+4)%4];
+    ctx.save();ctx.globalAlpha=alpha;ctx.imageSmoothingEnabled=false;
+    ctx.translate(px+TS/2,py+TS/2);if(!horiz)ctx.rotate(Math.PI/2);
+    ctx.drawImage(frame,-TS/2,-TS/2,TS,TS);ctx.restore();return;
+  }
   ctx.save(); ctx.globalAlpha=alpha;
   ctx.translate(px+TS/2, py+TS/2); if(!horiz) ctx.rotate(Math.PI/2); ctx.translate(-TS/2, -TS/2);
   var u=TS/24, d0=TS*0.17, d1=TS*0.83, n=5, pw=TS/n;
@@ -147,7 +180,7 @@ function drawCaveWalls(now){
     ctx.save(); ctx.globalAlpha=a; ctx.imageSmoothingEnabled=false;
     /* wall art attaches at its top: the waterfall's lip sits at the top of the rock and its basin on the floor below */
     var top = w.fall ? py : py+TS*0.18;
-    ctx.drawImage(o.img, o.sx, o.sy, o.sw, o.sh, px+o.ox*s, top+o.oy*s, o.sw*s, o.sh*s);
+    ctx.drawImage(o.img, o.sx, o.sy, o.sw, o.sh, px+o.ox*s, top+o.oy*s, o.sw*s/(o.res||1), o.sh*s/(o.res||1));
     if(w.fall && !ANIM.reduce){
       /* a shimmer running down the falling water */
       var t=now/1000, yy=top+TS*(0.35+((t*1.6)%1)*1.1);

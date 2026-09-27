@@ -14,7 +14,10 @@ function levelMaterialAt(x,y){
  var id=floorMeta && floorMeta.plane;
  if(!id && typeof inDeep==='function' && inDeep())id=DEEP_REGIONS[deepCellReg(x,y)];
  if(!id)id=typeof inCaverns==='function' && inCaverns()?'caverns':bidx()===1?'crypt':'dungeon';
- var depth={caverns:1.15,underdark:1.05,volcanic:0.95,light:1.3,shadow:1,earth:1.1,fire:0.9,water:1.2,air:1.4}[id];
+ /* Painted cave detail catches nearby light 20% farther into visible rock.
+  * This changes only natural Caverns/Underdark wall attenuation: constructed
+  * walls, elemental planes, source strength, floor light and FOV keep their profiles. */
+ var depth={caverns:1.38,underdark:1.26,volcanic:1.14,light:1.3,shadow:1,earth:1.1,fire:0.9,water:1.2,air:1.4}[id];
  return {id:id,depthLight:depth!==undefined,depthTiles:depth,massFloor:0.1};
 }
 function drawLightmap(now, prp){

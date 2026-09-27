@@ -76,7 +76,7 @@ function oozeRaster(x, y){
     D[p]=col[0]; D[p+1]=col[1]; D[p+2]=col[2]; D[p+3]=a; any=true;
   }
   if(!any) return null;
-  g.putImageData(im,0,0); return c;
+  g.putImageData(im,0,0); c.environmentTerrain={pixels:D}; return c;
 }
 function drawOoze(now){
   if(!floorMeta || !floorMeta.ooze) return;
@@ -121,7 +121,7 @@ function grimeBlobs(cx, cy, salt){
   return out;
 }
 function grimeRaster(x, y){
-  var R=32, salt=surfSalt()+19, blobs=[];
+  var R=128, salt=surfSalt()+19, blobs=[];
   for(var oy=-1;oy<=1;oy++) for(var ox=-1;ox<=1;ox++) blobs=blobs.concat(grimeBlobs(x+ox, y+oy, salt));
   if(!blobs.length) return null;
   var c=document.createElement('canvas'); c.width=R; c.height=R;
@@ -130,16 +130,18 @@ function grimeRaster(x, y){
     var wx=x+(u+0.5)/R, wy=y+(v+0.5)/R, f=0;
     for(var b=0;b<blobs.length;b++){ var dx=wx-blobs[b][0], dy=wy-blobs[b][1], d=Math.sqrt(dx*dx+dy*dy)/blobs[b][2]; if(d<1) f+=(1-d); }
     if(f<=0) continue;
-    var grain=hash2(Math.floor(wx*24), Math.floor(wy*24), salt+40), clump=ptValG(wx*3.2, wy*3.2, salt+41);
-    var joint=grimeJoint(wx, wy);
-    var val=f*0.75 + (grain-0.5)*0.3 + (clump-0.5)*0.4 + joint*0.55 - 0.08;
-    if(val<0.35) continue;
-    var p=(v*R+u)*4, moss=grain>0.72;
-    var col = moss ? [74,110,38] : [44+grain*14, 62+grain*18, 30];
-    D[p]=col[0]; D[p+1]=col[1]; D[p+2]=col[2]; D[p+3]=Math.round(Math.min(150, (val-0.35)*260) * (moss?1:0.8)); any=true;
+    var grain=mossNoise(wx*48,wy*48,salt+40), clump=ptValG(wx*3.2, wy*3.2, salt+41);
+    // Stay in the original damp-wall blobs. Sampling the retired floor's grout
+    // painted a second, coarse grid over the new stone slabs.
+    var val=f*0.85 + (grain-0.5)*0.18 + (clump-0.5)*0.4;
+    if(val<=0.30) continue;
+    var p=(v*R+u)*4, fleck=mossEdge(grain,.60,.25);
+    var detail=(hash2(Math.floor(wx*128),Math.floor(wy*128),salt+42)-.5)*8;
+    D[p]=44+grain*14+16*fleck+detail; D[p+1]=62+grain*18+30*fleck+detail; D[p+2]=30+8*fleck+detail*.5;
+    D[p+3]=Math.round(Math.min(150,(val-.30)*260)*(.8+.2*fleck)); any=true;
   }
   if(!any) return null;
-  g.putImageData(im,0,0); return c;
+  g.putImageData(im,0,0); c.environmentTerrain={pixels:D,nativeDetail:true}; return c;
 }
 /* how much of a joint lies under this spot of floor (0..1), read from the floor texture itself */
 var GRIME_FLOOR = {img:null, data:null, W:0};
@@ -438,7 +440,7 @@ function addCryptMushroomLights(L, now, prp){
 function cryptMossIs(x,y){ if(!inb(x,y) || isWallLike(at(x,y))) return false; var g=ground[idxOf(x,y)]; return g===G_GRASS || g===G_SHORT; }
 function cryptMossSig(x,y){ var s=''; for(var yy=y-1;yy<=y+1;yy++) for(var xx=x-1;xx<=x+1;xx++) s+=cryptMossIs(xx,yy)?'1':'0'; return s; }
 function cryptMossRaster(x, y){
-  var R=32, cells=[];
+  var R=128, cells=[];
   for(var yy=y-1;yy<=y+1;yy++) for(var xx=x-1;xx<=x+1;xx++) if(cryptMossIs(xx,yy)) cells.push([xx+0.5,yy+0.5]);
   if(!cells.length) return null;
   var c=document.createElement('canvas'); c.width=R; c.height=R;
@@ -446,14 +448,18 @@ function cryptMossRaster(x, y){
   for(var v=0; v<R; v++) for(var u=0; u<R; u++){
     var wx=x+(u+0.5)/R, wy=y+(v+0.5)/R, f=0;
     for(var k=0;k<cells.length;k++){ var dx=wx-cells[k][0], dy=wy-cells[k][1], d=Math.sqrt(dx*dx+dy*dy)/1.25; if(d<1) f+=(1-d)*(1-d); }
-    var val=f + (ptValG(wx*2.2, wy*2.2, salt)-0.5)*0.35 + (hash2(Math.floor(wx*16), Math.floor(wy*16), salt+1)-0.5)*0.1;
+    var val=f + (ptValG(wx*2.2, wy*2.2, salt)-0.5)*0.35 + (mossNoise(wx*16,wy*16,salt+1)-0.5)*0.1;
     if(val<0.28) continue;
-    var p=(v*R+u)*4, dense=Math.min(1,(val-0.28)*1.8), n=hash2(Math.floor(wx*16), Math.floor(wy*16), salt+2);
-    var col = n<0.12 ? [104,128,60] : n>0.9 ? [84,50,116] : [48+18*dense, 72+16*dense, 38];
-    D[p]=col[0]; D[p+1]=col[1]; D[p+2]=col[2]; D[p+3]=Math.round((n<0.12?110:58)+92*dense); any=true;   /* ~23-60%: the caps' own glow is drawn over this with 'lighter', so a Dungeon-weight bed vanished under it */
+    var p=(v*R+u)*4, dense=Math.min(1,(val-0.28)*1.8), n=mossNoise(wx*48,wy*48,salt+2);
+    var fleck=mossEdge(n,.60,.25), violet=mossEdge(mossNoise(wx*9,wy*9,salt+3),.66,.22);
+    var grain=(hash2(Math.floor(wx*128),Math.floor(wy*128),salt+4)-.5)*8;
+    D[p]=48+18*dense+32*fleck+22*violet+grain;
+    D[p+1]=72+16*dense+35*fleck-14*violet+grain;
+    D[p+2]=38+14*fleck+50*violet+grain*.5;
+    D[p+3]=Math.round((58+40*fleck+92*dense)*mossEdge(val,.28,.10)); any=true;
   }
   if(!any) return null;
-  g.putImageData(im,0,0); return c;
+  g.putImageData(im,0,0); c.environmentTerrain={pixels:D,nativeDetail:true}; return c;
 }
 function drawCryptMoss(){
   if(!cryptShrooms()) return;

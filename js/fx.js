@@ -55,6 +55,9 @@ function boltFx(ax,ay,bx,by,type,opts){
 function drawCorpse(f, p, opacity){
   opacity=opacity===undefined?1:opacity;
   var px=(f.e.x-camX)*TS, py=(f.e.y-camY)*TS;
+  if(!spriteOn){
+    ctx.save();ctx.globalAlpha=opacity*(f.remains?1:1-p);ctx.fillStyle=f.e.col||'#7C6654';ctx.fillRect(px+TS*.18,py+TS*.6,TS*.64,TS*.2);ctx.restore();return;
+  }
   if(f.e.livingFlame){drawLivingFlame(f.e,px,py,{alpha:opacity*(1-p),flip:f.e.flip});return;}
   var ms = spriteOn && f.e.sprite ? (f.e.shade?shadeSummonSheet():mobSheet(f.e.sprite)) : null;
   if(f.e.shade)opacity*=.62;
@@ -129,7 +132,7 @@ function drawFX(){
       var cx=f.ax+(f.bx-f.ax)*ease, cy=f.ay+(f.by-f.ay)*ease;
       var t=TRAIL[f.type]||TRAIL.phys;
       if(f.arrow){
-        var ang=Math.atan2(f.by-f.ay, f.bx-f.ax), ao=objArt('items','item-arrow');
+        var ang=Math.atan2(f.by-f.ay, f.bx-f.ax), ao=spriteOn?objArt('items','item-arrow'):null;
         var hx=(cx-camX+0.5)*TS, hy=(cy-camY+0.5)*TS;
         /* a light streak behind the point, fading back along the flight line */
         var tail=TS*1.25, txp=hx-Math.cos(ang)*tail, typ=hy-Math.sin(ang)*tail;

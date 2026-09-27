@@ -1,0 +1,509 @@
+{
+  "version": 1,
+  "pixelsPerCell": 128,
+  "assets": {
+    "dungeon-floor": {
+      "file": "environment-terrain-dungeon-floor.png",
+      "width": 2048,
+      "height": 1024,
+      "columns": 16,
+      "rows": 8,
+      "dim": 0
+    },
+    "dungeon-face": {
+      "file": "environment-terrain-dungeon-face.png",
+      "width": 768,
+      "height": 128,
+      "columns": 6,
+      "rows": 1,
+      "dim": 0.4
+    },
+    "dungeon-rim-n": {
+      "file": "environment-terrain-dungeon-rim-n.png",
+      "width": 768,
+      "height": 40,
+      "columns": 6,
+      "rows": 1
+    },
+    "dungeon-rim-v": {
+      "file": "environment-terrain-dungeon-rim-v.png",
+      "width": 40,
+      "height": 768,
+      "columns": 1,
+      "rows": 6
+    },
+    "dungeon-top": {
+      "file": "environment-terrain-dungeon-top.png",
+      "width": 1024,
+      "height": 1024,
+      "columns": 8,
+      "rows": 8,
+      "dim": 0.28
+    },
+    "crypt-floor": {
+      "file": "environment-terrain-crypt-floor.png",
+      "width": 2048,
+      "height": 1024,
+      "columns": 16,
+      "rows": 8,
+      "dim": 0
+    },
+    "crypt-face": {
+      "file": "environment-terrain-crypt-face.png",
+      "width": 768,
+      "height": 128,
+      "columns": 6,
+      "rows": 1,
+      "dim": 0
+    },
+    "crypt-rim-n": {
+      "file": "environment-terrain-crypt-rim-n.png",
+      "width": 768,
+      "height": 40,
+      "columns": 6,
+      "rows": 1
+    },
+    "crypt-rim-v": {
+      "file": "environment-terrain-crypt-rim-v.png",
+      "width": 40,
+      "height": 768,
+      "columns": 1,
+      "rows": 6
+    },
+    "crypt-top": {
+      "file": "environment-terrain-crypt-top.png",
+      "width": 1024,
+      "height": 1024,
+      "columns": 8,
+      "rows": 8,
+      "dim": 0
+    },
+    "prism-floor": {
+      "file": "environment-terrain-prism-floor.png",
+      "width": 2048,
+      "height": 1024,
+      "columns": 16,
+      "rows": 8,
+      "dim": 0
+    },
+    "prism-face": {
+      "file": "environment-terrain-prism-face.png",
+      "width": 768,
+      "height": 128,
+      "columns": 6,
+      "rows": 1,
+      "dim": 0
+    },
+    "prism-rim-n": {
+      "file": "environment-terrain-prism-rim-n.png",
+      "width": 768,
+      "height": 40,
+      "columns": 6,
+      "rows": 1
+    },
+    "prism-rim-v": {
+      "file": "environment-terrain-prism-rim-v.png",
+      "width": 40,
+      "height": 768,
+      "columns": 1,
+      "rows": 6
+    },
+    "prism-top": {
+      "file": "environment-terrain-prism-top.png",
+      "width": 1024,
+      "height": 1024,
+      "columns": 8,
+      "rows": 8,
+      "dim": 0
+    },
+    "cinder-floor": {
+      "file": "environment-terrain-cinder-floor.png",
+      "width": 2048,
+      "height": 1024,
+      "columns": 16,
+      "rows": 8,
+      "dim": 0
+    },
+    "cinder-face": {
+      "file": "environment-terrain-cinder-face.png",
+      "width": 768,
+      "height": 128,
+      "columns": 6,
+      "rows": 1,
+      "dim": 0
+    },
+    "cinder-rim-n": {
+      "file": "environment-terrain-cinder-rim-n.png",
+      "width": 768,
+      "height": 40,
+      "columns": 6,
+      "rows": 1
+    },
+    "cinder-rim-v": {
+      "file": "environment-terrain-cinder-rim-v.png",
+      "width": 40,
+      "height": 768,
+      "columns": 1,
+      "rows": 6
+    },
+    "cinder-top": {
+      "file": "environment-terrain-cinder-top.png",
+      "width": 1024,
+      "height": 1024,
+      "columns": 8,
+      "rows": 8,
+      "dim": 0
+    },
+    "temple-floor": {
+      "file": "environment-terrain-temple-floor.png",
+      "width": 1024,
+      "height": 1024,
+      "columns": 8,
+      "rows": 8,
+      "sourcePixelsPerCell": [
+        156.75,
+        156.75
+      ],
+      "logicalPeriodPreserved": false
+    },
+    "temple-face": {
+      "file": "environment-terrain-temple-face.png",
+      "width": 1536,
+      "height": 128,
+      "columns": 12,
+      "rows": 1,
+      "sourcePixelsPerCell": [
+        180.83333333333334,
+        725.0
+      ],
+      "logicalPeriodPreserved": true
+    },
+    "temple-top": {
+      "file": "environment-terrain-temple-top.png",
+      "width": 1536,
+      "height": 1536,
+      "columns": 12,
+      "rows": 12,
+      "sourcePixelsPerCell": [
+        104.5,
+        104.5
+      ],
+      "logicalPeriodPreserved": true
+    },
+    "temple-rim-n": {
+      "file": "environment-terrain-temple-rim-n.png",
+      "width": 1536,
+      "height": 40,
+      "columns": 12,
+      "rows": 1,
+      "sourcePixelsPerCell": [
+        180.83333333333334,
+        725.0
+      ],
+      "logicalPeriodPreserved": true
+    },
+    "temple-rim-v": {
+      "file": "environment-terrain-temple-rim-v.png",
+      "width": 40,
+      "height": 1536,
+      "columns": 1,
+      "rows": 12
+    },
+    "underdark-floor": {
+      "file": "environment-terrain-underdark-floor.png",
+      "width": 1024,
+      "height": 1024,
+      "columns": 8,
+      "rows": 8,
+      "sourcePixelsPerCell": [
+        156.75,
+        156.75
+      ],
+      "logicalPeriodPreserved": false
+    },
+    "underdark-face": {
+      "file": "environment-terrain-underdark-face.png",
+      "width": 1536,
+      "height": 128,
+      "columns": 12,
+      "rows": 1,
+      "sourcePixelsPerCell": [
+        180.83333333333334,
+        725.0
+      ],
+      "logicalPeriodPreserved": true
+    },
+    "underdark-top": {
+      "file": "environment-terrain-underdark-top.png",
+      "width": 1536,
+      "height": 1536,
+      "columns": 12,
+      "rows": 12,
+      "sourcePixelsPerCell": [
+        104.5,
+        104.5
+      ],
+      "logicalPeriodPreserved": true
+    },
+    "underdark-rim-n": {
+      "file": "environment-terrain-underdark-rim-n.png",
+      "width": 1536,
+      "height": 40,
+      "columns": 12,
+      "rows": 1,
+      "sourcePixelsPerCell": [
+        180.83333333333334,
+        725.0
+      ],
+      "logicalPeriodPreserved": true
+    },
+    "underdark-rim-v": {
+      "file": "environment-terrain-underdark-rim-v.png",
+      "width": 40,
+      "height": 1536,
+      "columns": 1,
+      "rows": 12
+    },
+    "volcanic-floor": {
+      "file": "environment-terrain-volcanic-floor.png",
+      "width": 1920,
+      "height": 1920,
+      "columns": 15,
+      "rows": 15,
+      "sourcePixelsPerCell": [
+        83.6,
+        83.6
+      ],
+      "logicalPeriodPreserved": true
+    },
+    "volcanic-face": {
+      "file": "environment-terrain-volcanic-face.png",
+      "width": 1536,
+      "height": 128,
+      "columns": 12,
+      "rows": 1,
+      "sourcePixelsPerCell": [
+        180.83333333333334,
+        725.0
+      ],
+      "logicalPeriodPreserved": true
+    },
+    "volcanic-top": {
+      "file": "environment-terrain-volcanic-top.png",
+      "width": 1536,
+      "height": 1536,
+      "columns": 12,
+      "rows": 12,
+      "sourcePixelsPerCell": [
+        104.5,
+        104.5
+      ],
+      "logicalPeriodPreserved": true
+    },
+    "volcanic-rim-n": {
+      "file": "environment-terrain-volcanic-rim-n.png",
+      "width": 1536,
+      "height": 40,
+      "columns": 12,
+      "rows": 1,
+      "sourcePixelsPerCell": [
+        180.83333333333334,
+        725.0
+      ],
+      "logicalPeriodPreserved": true
+    },
+    "volcanic-rim-v": {
+      "file": "environment-terrain-volcanic-rim-v.png",
+      "width": 40,
+      "height": 1536,
+      "columns": 1,
+      "rows": 12
+    },
+    "stone-detail": {
+      "file": "environment-terrain-stone-detail.png",
+      "width": 1024,
+      "height": 1024,
+      "columns": 8,
+      "rows": 8,
+      "role": "master-derived high-frequency material; native contour mask remains unchanged"
+    },
+    "fluid-detail": {
+      "file": "environment-terrain-fluid-detail.png",
+      "width": 1024,
+      "height": 1024,
+      "columns": 8,
+      "rows": 8,
+      "role": "master-derived sheen only; no source islands or shore geometry copied"
+    },
+    "lava-flow": {
+      "file": "environment-terrain-lava-flow.png",
+      "width": 768,
+      "height": 768,
+      "columns": 6,
+      "rows": 6,
+      "role": "painted lava master; native six-cell flow period, native hazard mask"
+    },
+    "cave-rock": {
+      "file": "environment-terrain-cave-rock.png",
+      "width": 1024,
+      "height": 1024,
+      "columns": 8,
+      "rows": 8,
+      "role": "new painted natural rock; native wall mask and biome palette remain authoritative"
+    }
+  },
+  "sources": [
+    {
+      "file": "art/packed/dungeon-style-floor-v2.png",
+      "size": [
+        1254,
+        1254
+      ],
+      "sha256": "628de98d291f69e08d6a8eec8f1afdf2e38c7c67a581387eaae7992d4184e61b"
+    },
+    {
+      "file": "art/packed/dungeon-style-wall-face-v3.png",
+      "size": [
+        2172,
+        724
+      ],
+      "sha256": "c396f7e7d900995fdb9e9b6236b70046988ee0a38a9f934465bf97b75ca75a80"
+    },
+    {
+      "file": "art/packed/dungeon-style-wall-top-v3.png",
+      "size": [
+        1254,
+        1254
+      ],
+      "sha256": "1a21309bd364c1edb6f32e5d3647d219026b5295fa6c827c21c0c2c957f4213d"
+    },
+    {
+      "file": "art/concepts/underdark-floor-refresh/temple-floor-source.png",
+      "size": [
+        1254,
+        1254
+      ],
+      "sha256": "571b1b96c53a6c142b9cdccdf6faa51435fe2541f6cd18f259e217bd388b6b64"
+    },
+    {
+      "file": "art/incoming/Packet-06-Underdark-Terrain/masters/temple-face.png",
+      "size": [
+        2170,
+        725
+      ],
+      "sha256": "a2dbd0f40303d0cb7c21c5f9a78546bef362d9d879d1bec7c5aae809a298a8cf"
+    },
+    {
+      "file": "art/incoming/Packet-06-Underdark-Terrain/masters/temple-top.png",
+      "size": [
+        1254,
+        1254
+      ],
+      "sha256": "aafff69c7d4c5b10ac8fec7c5abc51c7bb146ecc69647479bd46219507c9f295"
+    },
+    {
+      "file": "art/incoming/Packet-06-Underdark-Terrain/masters/temple-rim-n.png",
+      "size": [
+        2170,
+        725
+      ],
+      "sha256": "6c08f73f8226e8e876fa7345b4e88a9272bf2238de306f26665b201965cec82a"
+    },
+    {
+      "file": "art/concepts/underdark-floor-refresh/underdark-floor-source.png",
+      "size": [
+        1254,
+        1254
+      ],
+      "sha256": "f82782e6552946ee6e2b72369447610f7c6555d039a9f65369e804d06446365a"
+    },
+    {
+      "file": "art/incoming/Packet-06-Underdark-Terrain/masters/underdark-face.png",
+      "size": [
+        2170,
+        725
+      ],
+      "sha256": "f3f1d686e5a614d4afb7d58e3ed8f2035f8bf40b45bd331d881a9c5627d8ca45"
+    },
+    {
+      "file": "art/incoming/Packet-06-Underdark-Terrain/masters/underdark-top.png",
+      "size": [
+        1254,
+        1254
+      ],
+      "sha256": "2f8d666446fc4a9adac34c611e6cf9d74bad574dad2b3c73721ad3cf5b731b32"
+    },
+    {
+      "file": "art/incoming/Packet-06-Underdark-Terrain/masters/underdark-rim-n.png",
+      "size": [
+        2170,
+        725
+      ],
+      "sha256": "4b49a21cc97ae435da766a04e3dee91ac062ac827956433151cdcf9ee09b8319"
+    },
+    {
+      "file": "art/incoming/Packet-06-Underdark-Terrain/masters/volcanic-floor.png",
+      "size": [
+        1254,
+        1254
+      ],
+      "sha256": "b446496dac6ea48ee4fc41a8cbd40aed90ca21860b5ed96544710b58665d3b09"
+    },
+    {
+      "file": "art/incoming/Packet-06-Underdark-Terrain/masters/volcanic-face.png",
+      "size": [
+        2170,
+        725
+      ],
+      "sha256": "504aaf60a489eb32ccad5e2d1f571577e4c12c0997c1f8d5698b4ff5a0fa9eea"
+    },
+    {
+      "file": "art/incoming/Packet-06-Underdark-Terrain/masters/volcanic-top.png",
+      "size": [
+        1254,
+        1254
+      ],
+      "sha256": "571b9ab3a20ba4595b1b75ffea044d4b252f9f7f63d5ae0d61a26026b1214535"
+    },
+    {
+      "file": "art/incoming/Packet-06-Underdark-Terrain/masters/volcanic-rim-n.png",
+      "size": [
+        2170,
+        725
+      ],
+      "sha256": "ba66358d9db97c85402452e7da24280a42108ae50062cead76a0e86977bef46e"
+    },
+    {
+      "file": "art/incoming/Packet-06-Underdark-Terrain/masters/underdark-top.png",
+      "size": [
+        1254,
+        1254
+      ],
+      "sha256": "2f8d666446fc4a9adac34c611e6cf9d74bad574dad2b3c73721ad3cf5b731b32"
+    },
+    {
+      "file": "art/incoming/Packet-04-Water-Plane/masters/terrain/hazard-water.png",
+      "size": [
+        1254,
+        1254
+      ],
+      "sha256": "6b9531c380997ae8c375f5efcc1a3a44f88df16deb621f80cdd0cea21d956247"
+    },
+    {
+      "file": "art/incoming/Packet-04-Fire-Plane/masters/terrain/lava.png",
+      "size": [
+        1254,
+        1254
+      ],
+      "sha256": "2e3ae376789682d029a9a8f4c279a1431c07146e2adae809bf4a62433d955b3b"
+    },
+    {
+      "file": "art/concepts/cave-walls/rock-material-source.png",
+      "size": [
+        1254,
+        1254
+      ],
+      "sha256": "89d7e1405edc013747f7e046f4e5f7ad6bba494e1e10629920121b7181f008c0"
+    }
+  ]
+}

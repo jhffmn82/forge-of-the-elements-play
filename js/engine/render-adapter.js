@@ -20,8 +20,8 @@ var renderSurface=FoteRendering.sequence([
   renderPass('sanctuary',drawSanctuarySurface),renderPass('last-cast',drawLastCastSurface)
 ]);
 var renderTelegraphs=FoteRendering.sequence([
-  renderPass('Prism-preview-portals',function(now){if(typeof FoteChaosPreviewRenderer!=='undefined'&&FoteChaosPreviewRenderer.active())FoteChaosPreviewRenderer.drawPortals(now);}),
-  renderPass('crypt-floor-stains',drawCryptFloorStains),renderPass('boss-windups',drawBossTelegraphs),renderPass('smoke',drawSmokeTelegraphs),
+  renderPass('Prism-preview-portals',function(now){if(spriteOn&&typeof FoteChaosPreviewRenderer!=='undefined'&&FoteChaosPreviewRenderer.active())FoteChaosPreviewRenderer.drawPortals(now);}),
+  renderPass('crypt-floor-stains',drawCryptFloorStains,function(){return spriteOn;}),renderPass('boss-windups',drawBossTelegraphs),renderPass('smoke',drawSmokeTelegraphs),
   renderPass('element-ground',drawElementGroundTelegraphs),renderPass('crypt-clouds-and-marks',drawCryptTelegraphs),renderPass('corpses',drawCorpseTelegraphs),renderPass('fallen-creatures',drawDeathRemains),
   renderPass('portal',drawPortalTelegraphs),renderPass('vein-glints',drawVeinGlints),renderPass('crystal-face-glints',drawCrystalFaceGlints),
   renderPass('shock-clouds',drawShockCloudTelegraphs),renderPass('darkness',drawDarknessTelegraphs)
@@ -165,7 +165,10 @@ var renderActor=FoteRendering.layered([
   {name:'crypt-outline',enter:prepareCryptActor},
   {name:'character-sprite',paint:function(job){return drawCharacterSprite(job.entity,job.x,job.y,job.options);}}
 ]);
-function drawCharacter(entity,x,y,options){return renderActor({entity:entity,x:x,y:y,options:options});}
+function drawCharacter(entity,x,y,options){
+  if(!spriteOn)return actorConcealed(entity)||entity.kind==='mawlimb'||hidePlaneActor({entity:entity})===true;
+  return renderActor({entity:entity,x:x,y:y,options:options});
+}
 
 var terrainRedrawFrame=null;
 function sharedAnimationWillDraw(){
@@ -200,7 +203,7 @@ function draw(){
   try{
     var changed=renderPreviousMap!==map||renderPreviousMeta!==floorMeta;
     drawFramePasses();
-    if(changed){
+    if(changed&&spriteOn){
       var ptBudget=PT_BUDGET,deepBudget=DEEP_BUDGET;
       try{
         PT_BUDGET=DEEP_BUDGET=1000000;PT_CACHE.built=0;DC.built=0;

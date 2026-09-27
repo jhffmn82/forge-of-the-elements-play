@@ -38,7 +38,7 @@ function chsRaster(x, y){
     any=true; D[p]=col[0]; D[p+1]=col[1]; D[p+2]=col[2]; D[p+3]=a;
   }
   if(!any) return null;
-  g.putImageData(im,0,0);
+  g.putImageData(im,0,0);c.environmentTerrain={pixels:D};
   return c;
 }
 function chsNear(x, y){ for(var oy=-1;oy<=1;oy++) for(var ox=-1;ox<=1;ox++) if(chsVoidCell(x+ox,y+oy)) return true; return false; }

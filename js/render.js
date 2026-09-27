@@ -57,7 +57,7 @@ function drawObjectSprite(o, px, py, opt){
   if(opt.flip){ ctx.translate(dx+w/2,0); ctx.scale(-1,1); ctx.translate(-(dx+w/2),0); }
   if(opt.outline){
     var cut=whiteCut(o.img,o.sx,o.sy,o.sw,o.sh), edge=Math.max(1,Math.round(TS/40));
-    ctx.globalAlpha=(opt.alpha===undefined?1:opt.alpha)*0.22;
+    ctx.globalAlpha=(opt.alpha===undefined?1:opt.alpha)*0.11;
     [[-edge,0],[edge,0],[0,-edge],[0,edge],[-edge,-edge],[edge,-edge],[-edge,edge],[edge,edge]].forEach(function(d){ctx.drawImage(cut,dx+d[0],dy+d[1],w,h);});
     ctx.globalAlpha=(opt.alpha===undefined?1:opt.alpha);
   }
@@ -131,10 +131,51 @@ function baseTileSprite(x,y,t){
   return null;
 }
 
+var OPEN_DOOR_APERTURES=new WeakMap();
+function openDoorAperture(art){
+  var entries=OPEN_DOOR_APERTURES.get(art.img),key=[art.sx,art.sy,art.sw,art.sh].join(',');
+  if(entries&&entries[key])return entries[key];
+  if(!entries){entries={};OPEN_DOOR_APERTURES.set(art.img,entries);}
+  var c=document.createElement('canvas');c.width=art.sw;c.height=art.sh;
+  var g=c.getContext('2d',{willReadFrequently:true});g.drawImage(art.img,art.sx,art.sy,art.sw,art.sh,0,0,c.width,c.height);
+  var pixels=g.getImageData(0,0,c.width,c.height).data,path=new Path2D(),mid=Math.floor(c.width/2);
+  function clear(x,y){return pixels[(y*c.width+x)*4+3]<32;}
+  // Scan once per source crop. Only the transparent space enclosed by both
+  // stone jambs is floor; exterior alpha continues to show the wall backing.
+  for(var y=0;y<c.height;y++){
+    if(!clear(mid,y))continue;
+    var left=mid,right=mid;while(left>=0&&clear(left,y))left--;while(right<c.width&&clear(right,y))right++;
+    if(left>=0&&right<c.width)path.rect(left+1,y,right-left-1,1);
+  }
+  entries[key]=path;return path;
+}
+function drawOpenDoorFloor(art,rect,x,y,px,py,alpha,floor){
+  if(!floor)return;
+  ctx.save();ctx.beginPath();ctx.rect(px,py,TS,TS);ctx.clip();
+  ctx.translate(rect.x,rect.y);ctx.scale(rect.w/art.sw,rect.h/art.sh);ctx.clip(openDoorAperture(art));
+  ctx.scale(art.sw/rect.w,art.sh/rect.h);ctx.translate(-rect.x,-rect.y);
+  blitTile(floor,px,py,alpha);ctx.restore();
+}
 /* an open door: stone jambs flush with the wall, the leaf swung back against one side */
 function drawOpenDoor(x, y, px, py, alpha){
   var wallsLR = isWallLike(at(x-1,y)) || isWallLike(at(x+1,y));
   var iron = !!(floorMeta.ironDoors && floorMeta.ironDoors[idxOf(x,y)]);
+  // The object atlas has matching open arches. Previously OPEN bypassed it
+  // entirely, replacing the new stone frame with a solid procedural plank.
+  // Keep the closed frame's destination bounds so opening cannot resize or
+  // move the doorway as the separately trimmed open artwork is selected.
+  if(wallsLR&&spriteOn){
+    var family=iron?'door-iron':'door-wood',openArt=objArt('structures',family+'-open'),closedArt=objArt('structures',family);
+    if(openArt&&closedArt){
+      var scale=Math.max(TS/closedArt.sw,TS/closedArt.sh),w=closedArt.sw*scale,h=closedArt.sh*scale;
+      var rect=placementRect(px+(TS-w)/2,py+(TS-h)/2,w,h);
+      var floor=typeof FoteEnvironmentTerrain!=='undefined'&&FoteEnvironmentTerrain.floorSample?FoteEnvironmentTerrain.floorSample(x,y):atlasFloorTile(x,y);
+      drawOpenDoorFloor(openArt,rect,x,y,px,py,alpha,floor);
+      ctx.save();ctx.globalAlpha=alpha;ctx.imageSmoothingEnabled=true;
+      ctx.drawImage(openArt.img,openArt.sx,openArt.sy,openArt.sw,openArt.sh,rect.x,rect.y,rect.w,rect.h);
+      ctx.restore();return;
+    }
+  }
   var jamb='#5C554C', jambHi='#7A7266', jambLo='#2A2622', leaf= iron ? '#6E7078' : '#6B4726', leafHi= iron ? '#9A9CA4' : '#8A5E34', band= iron ? '#3A3C44' : '#3A2614';
   ctx.save(); ctx.globalAlpha=alpha;
   var j=Math.max(3, Math.round(TS*0.16));
@@ -253,6 +294,25 @@ function drawVines(x, y, px, py, alpha, now){
 }
 
 /* ---- traps: set into the floor, drawn flat so they sit in the tile like the flagstones around them ---- */
+var TRAP_BASE_BOUNDS={dart:[7,7,18,18],fire:[7,8,18,16],gas:[7,8,18,16],frost:[7,8,18,16],spark:[6,6,20,20],teleport:[5,5,22,22],web:[2,2,28,28],alarm:[4,14,24,7],pit:[7,7,18,18]};
+function drawTrapArtwork(f,px,py,covered,t){
+  var bounds=TRAP_BASE_BOUNDS[f.kind],info=TRAPS[f.kind];
+  if(!spriteOn||!bounds||!info||covered&&/^(dart|fire|gas|frost|spark)$/.test(f.kind))return false;
+  var art=objArt('traps',info.sprite);
+  // Keep the procedural fallback while the replacement atlas is loading.
+  if(!art||!(art.res>=2))return false;
+  var u=TS/32,x=px+bounds[0]*u,y=py+bounds[1]*u,w=bounds[2]*u,h=bounds[3]*u;
+  ctx.save();ctx.imageSmoothingEnabled=true;
+  if(f.kind==='alarm'){
+    // Separate only the hanging bell from its authored wire and posts. Its
+    // existing sway keeps the same period and .8 logical-pixel amplitude.
+    var bx=.405,by=.445,bw=.185,bh=1-by,shift=ANIM.reduce?0:Math.sin(t*5)*.8*u;
+    ctx.save();ctx.beginPath();ctx.rect(x,y,w,h);ctx.rect(x+bx*w,y+by*h,bw*w,bh*h);ctx.clip('evenodd');
+    ctx.drawImage(art.img,art.sx,art.sy,art.sw,art.sh,x,y,w,h);ctx.restore();
+    ctx.drawImage(art.img,art.sx+bx*art.sw,art.sy+by*art.sh,bw*art.sw,bh*art.sh,x+bx*w+shift,y+by*h,bw*w,bh*h);
+  }else ctx.drawImage(art.img,art.sx,art.sy,art.sw,art.sh,x,y,w,h);
+  ctx.restore();return true;
+}
 function drawOrdinaryTrap(f, px, py, alpha, now){
   var t = ANIM.reduce ? 0 : now/1000, H=function(k){ return grassHash(f.x,f.y,k); };
   var cx=px+TS/2, cy=py+TS/2, u=TS/32;              /* u: one pixel of a 32px tile */
@@ -261,9 +321,10 @@ function drawOrdinaryTrap(f, px, py, alpha, now){
      the prop's feet. Under a prop only the glow and what leaks out are drawn; the plate and grate stay hidden. */
   var covered = typeof propAt==='function' && !!propAt(f.x,f.y);
   ctx.save(); ctx.globalAlpha=alpha;
+  var painted=drawTrapArtwork(f,px,py,covered,t);
   /* a sunken stone plate: dark seam, lit lower-right lip, flat face */
   function plate(face, x0, y0, w, h){
-    if(covered) return;
+    if(covered||painted) return;
     P(x0-1, y0-1, w+2, h+2, 'rgba(8,6,6,.75)');
     P(x0, y0, w, h, face);
     P(x0, y0, w, 1, 'rgba(0,0,0,.35)'); P(x0, y0, 1, h, 'rgba(0,0,0,.35)');
@@ -276,12 +337,12 @@ function drawOrdinaryTrap(f, px, py, alpha, now){
   var k=f.kind, pulse=0.5+0.5*Math.sin(t*2.4 + f.x + f.y*1.7);
   if(k==='dart'){
     plate('#4A4540', 8, 8, 16, 16);
-    if(!covered) for(var i=0;i<3;i++) for(var j=0;j<3;j++){ P(10+i*5, 10+j*5, 2, 2, '#15110F'); P(10+i*5, 12+j*5, 2, 1, 'rgba(255,255,255,.08)'); }
+    if(!covered&&!painted) for(var i=0;i<3;i++) for(var j=0;j<3;j++){ P(10+i*5, 10+j*5, 2, 2, '#15110F'); P(10+i*5, 12+j*5, 2, 1, 'rgba(255,255,255,.08)'); }
   } else if(k==='fire' || k==='gas' || k==='frost'){
     /* an iron vent grate; what leaks out tells you which */
     var col = k==='fire' ? '#FF7A30' : k==='gas' ? '#7FC05A' : '#9FD8FF';
     plate('#2E2A28', 8, 9, 16, 14);
-    if(!covered) for(var b=0;b<4;b++) P(10+b*4, 11, 2, 10, '#5A534C');
+    if(!covered&&!painted) for(var b=0;b<4;b++) P(10+b*4, 11, 2, 10, '#5A534C');
     glowDot(16, 16, 9, col, 0.25+0.2*pulse);
     if(!ANIM.reduce) for(var w=0; w<3; w++){
       var ph=((t*0.6 + H(w)) % 1), wx=11+H(w+5)*10 + Math.sin(t*2+w)*1.5, wy=16 - ph*14;
@@ -289,7 +350,7 @@ function drawOrdinaryTrap(f, px, py, alpha, now){
     }
   } else if(k==='spark'){
     plate('#5C5A58', 7, 7, 18, 18);
-    if(!covered) P(9, 9, 14, 14, '#6E6B66');
+    if(!covered&&!painted) P(9, 9, 14, 14, '#6E6B66');
     var sc = pulse>0.75 ? '#FFF1A8' : '#E8B44A';
     [[17,10],[15,13],[18,14],[14,18],[16,21]].forEach(function(q,i2,arr){ if(i2) { var a=arr[i2-1]; ctx.strokeStyle=sc; ctx.lineWidth=Math.max(1.5,1.6*u); ctx.beginPath(); ctx.moveTo(px+a[0]*u,py+a[1]*u); ctx.lineTo(px+q[0]*u,py+q[1]*u); ctx.stroke(); } });
     glowDot(16, 16, 8, '#E8B44A', 0.15+0.25*pulse);
@@ -301,21 +362,27 @@ function drawOrdinaryTrap(f, px, py, alpha, now){
     for(var r2=0;r2<6;r2++){ var ang=t*0.6 + r2*Math.PI/3; P(16+Math.cos(ang)*9-1, 16+Math.sin(ang)*9-1, 2, 2, '#E3D2FF'); }
     glowDot(16, 16, 10, '#8A5CFF', 0.12+0.18*pulse);
   } else if(k==='web'){
+    if(!painted){
     ctx.strokeStyle='rgba(225,225,215,.55)'; ctx.lineWidth=Math.max(1,u);
     for(var s2=0;s2<8;s2++){ var a2=s2/8*Math.PI*2+H(1); ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(cx+Math.cos(a2)*14*u, cy+Math.sin(a2)*14*u); ctx.stroke(); }
     for(var rr=1; rr<=3; rr++){ ctx.beginPath(); for(s2=0;s2<=8;s2++){ a2=s2/8*Math.PI*2+H(1); var R2=4.2*rr*u; if(!s2) ctx.moveTo(cx+Math.cos(a2)*R2, cy+Math.sin(a2)*R2); else ctx.lineTo(cx+Math.cos(a2)*R2, cy+Math.sin(a2)*R2); } ctx.stroke(); }
+    }
   } else if(k==='alarm'){
+    if(!painted){
     /* a tripwire strung between two pegs, with a little brass bell */
     P(4, 14, 3, 4, '#3A2E24'); P(25, 14, 3, 4, '#3A2E24');
     ctx.strokeStyle='rgba(220,210,190,.7)'; ctx.lineWidth=Math.max(1,u); ctx.beginPath(); ctx.moveTo(px+6*u,py+15*u); ctx.quadraticCurveTo(cx, py+17*u, px+26*u, py+15*u); ctx.stroke();
     var sw = ANIM.reduce ? 0 : Math.sin(t*5)*0.8;
     P(14+sw, 16, 4, 4, '#C9962E'); P(15+sw, 20, 2, 1, '#7A5A1E'); P(14+sw, 16, 1, 2, '#F0C860');
+    }
   } else if(k==='pit'){
+    if(!painted){
     /* loose boards over a hole */
     P(7, 7, 18, 18, '#050404');
     P(8, 8, 16, 16, '#0C0908');
     for(var pb=0; pb<3; pb++){ P(7, 9+pb*6, 18, 3, pb===1 ? '#4E3A26' : '#6A5033'); P(7, 9+pb*6, 18, 1, 'rgba(255,230,200,.12)'); }
     P(12, 12, 2, 3, '#050404'); P(20, 18, 2, 3, '#050404');
+    }
   } else {
     plate('#4A4540', 9, 9, 14, 14);
   }
@@ -470,6 +537,7 @@ function clipFrame(sheet, e, sliding){
   return {sx:0, sy:(m.static_row||0)*cell};
 }
 function drawCharacterSprite(e, px, py, opts){
+  if(!spriteOn)return false;
   if(e.livingFlame)return drawLivingFlame(e,px,py,opts);
   opts=opts||{};
   if(e===player||e.shadowClone){
@@ -511,7 +579,7 @@ function drawCharacterSprite(e, px, py, opts){
     if(opts.flip){ ctx.translate(px+TS/2,0); ctx.scale(-1,1); ctx.translate(-(px+TS/2),0); }
     if(opts.outline){
       var cut2=whiteCut(ms.img,f2.sx,f2.sy,c2,c2),edge2=Math.max(1,Math.round(TS/40));
-      ctx.globalAlpha=actorAlpha*.22;
+      ctx.globalAlpha=actorAlpha*.11;
       [[-edge2,0],[edge2,0],[0,-edge2],[0,edge2],[-edge2,-edge2],[edge2,-edge2],[-edge2,edge2],[edge2,edge2]].forEach(function(d){ctx.drawImage(cut2,dx2+d[0],dy2+d[1],w2,h2);});
       ctx.globalAlpha=actorAlpha;
     }
@@ -772,7 +840,9 @@ function drawScene(){
       else blitTile(floorTile(x,y), px, py, a);
     } else {
       var B=biome();
-      ctx.globalAlpha=a; ctx.fillStyle = isWallLike(t) ? B.wall : t===CHASM ? '#050408' : t===WATER ? '#243A4A' : B.floor; ctx.fillRect(px,py,TS,TS);
+      var deepWater=t===WATER&&floorMeta.fwaDeep&&floorMeta.fwaDeep[i];
+      ctx.globalAlpha=a; ctx.fillStyle = isWallLike(t) ? B.wall : t===CHASM ? '#050408' : t===LAVA ? '#B94820' : t===WATER ? deepWater?'#123C6C':'#243A4A' : B.floor; ctx.fillRect(px,py,TS,TS);
+      if(t===LAVA||deepWater)glyph(t===LAVA?'~':'≈',px,py,t===LAVA?'#FFC05A':'#70BFFF');
     }
     /* shadow cast by a wall face onto the floor below it */
     /* (not under the organic rock of the Caverns and the planes, where a tile-wide band showed as square blocks) */
@@ -805,13 +875,17 @@ function drawScene(){
 
   /* ---- surface decoration: moss, grit, drains (surface.js) ---- */
   if(artOK && typeof drawSurfaceDeco==='function') drawSurfaceDeco();
-  if(typeof FoteChaosPreviewRenderer!=='undefined'&&FoteChaosPreviewRenderer.active())FoteChaosPreviewRenderer.drawVoid(now);
+  if(spriteOn&&typeof FoteChaosPreviewRenderer!=='undefined'&&FoteChaosPreviewRenderer.active())FoteChaosPreviewRenderer.drawVoid(now);
   ctx.globalAlpha=1;
 
   /* ---- ground decals ---- */
   for(y=camY;y<=camY+viewH;y++) for(x=camX;x<=camX+viewW;x++){
     if(!inb(x,y)) continue; var gi=idxOf(x,y), gv=ground[gi]; if(!gv || !(revealAll||seen[gi])) continue;
     var ga=(revealAll||vis[gi])?1:memA(0.4), gpx=(x-camX)*TS, gpy=(y-camY)*TS, go=objArt('terrain', GROUND_ART[gv]);
+    if(!spriteOn){
+      ctx.save();ctx.globalAlpha=ga*.4;ctx.fillStyle=gv===G_GRASS||gv===G_SHORT?'#4A6A32':gv===G_ASH||gv===G_SCORCH?'#3A3632':'#A9A08B';ctx.fillRect(gpx+TS*.08,gpy+TS*.08,TS*.84,TS*.84);
+      ctx.globalAlpha=ga;glyph(gv===G_GRASS?'"':gv===G_WEB?'#':'.',gpx,gpy,'#B7B49F');ctx.restore();continue;
+    }
     if(gv===G_GRASS){ drawGrassTile(x, y, gpx, gpy, ga, 'back', now); continue; }
     if(drawGroundDecal(gv, x, y, gpx, gpy, ga, now)) continue;
     if(go) drawObj(go, gpx, gpy, {fit:0.9, alpha:ga*0.95});
@@ -832,10 +906,17 @@ function drawScene(){
   function paintTileObject(x,y,scoped){
     if(!scoped&&typeof FoteChaosPreviewRenderer!=='undefined'&&FoteChaosPreviewRenderer.mixed())return FoteChaosPreviewRenderer.withCell(x,y,function(){return paintTileObject(x,y,true);});
     if(!inb(x,y)) return; var oi=idxOf(x,y); if(!(revealAll||seen[oi])) return;
-    var ot=map[oi]; if(ot===FLOOR||ot===WALL||ot===WATER||ot===CHASM||ot===SECRET) return;
+    var ot=map[oi]; if(ot===FLOOR||ot===WALL||ot===WATER||ot===CHASM||ot===SECRET||!spriteOn&&ot===LAVA) return;
     // Multi-tile preview gateways are painted once by the ordinary set renderer.
-    if(ot===PORTAL&&floorMeta&&floorMeta.chaosPreview){var gateway=propAt(x,y);if(gateway&&gateway.previewPortal)return;}
+    if(spriteOn&&ot===PORTAL&&floorMeta&&floorMeta.chaosPreview){var gateway=propAt(x,y);if(gateway&&gateway.previewPortal)return;}
     var oa=(revealAll||vis[oi])?1:memA(0.45), opx=(x-camX)*TS, opy=(y-camY)*TS, spr=spriteOn?tileSprite(x,y,ot):null;
+    if(!spriteOn){
+      ctx.save();ctx.globalAlpha=oa;
+      if(ot===OPEN){ctx.strokeStyle='#AD8352';ctx.lineWidth=Math.max(2,TS*.07);ctx.strokeRect(opx+TS*.1,opy+TS*.1,TS*.8,TS*.8);glyph('/',opx,opy,'#AD8352');}
+      else {ctx.fillStyle=ot===PORTAL?'#7955A8':ot===FORGE?'#BE663C':ot===SHRINE?'#B3A36E':ot===CHEST?'#B08A48':ot===BRIDGE?'#7A5A34':ot===EXIT||ot===STAIRS||ot===UPSTAIRS?'#436779':'#6B4B2A';ctx.fillRect(opx+TS*.12,opy+TS*.12,TS*.76,TS*.76);
+        glyph(ot===PORTAL?'O':ot===FORGE?'F':ot===SHRINE?'A':ot===CHEST?'C':ot===BRIDGE?'=':ot===EXIT||ot===STAIRS?'>':ot===UPSTAIRS?'<':'+',opx,opy,'#F0DFBB');}
+      ctx.restore();return;
+    }
     if(typeof FoteChaosCurrentRenderer!=='undefined'&&FoteChaosCurrentRenderer.drawGate(x,y,opx,opy,oa))return;
     if(typeof FoteChaosCampaign!=='undefined'&&FoteChaosCampaign.currentInfo(x,y))return;
     if(typeof FoteUnmakerPreview!=='undefined'&&FoteUnmakerPreview.drawGate(x,y,opx,opy,oa))return;
@@ -862,7 +943,8 @@ function drawScene(){
   if(plates) plates.cells.forEach(function(p){
     if(!(revealAll||seen[idxOf(p.x,p.y)])) return;
     var ppx=(p.x-camX)*TS, ppy=(p.y-camY)*TS;
-    drawObj(objArt('structures', p.pressed?'plate-glow':'trap-plate') || objArt('traps','trap-plate'), ppx, ppy, {fit:0.8, alpha:(revealAll||vis[idxOf(p.x,p.y)])?1:memA(0.45)});
+    if(spriteOn)drawObj(objArt('structures', p.pressed?'plate-glow':'trap-plate') || objArt('traps','trap-plate'), ppx, ppy, {fit:0.8, alpha:(revealAll||vis[idxOf(p.x,p.y)])?1:memA(0.45)});
+    else {ctx.save();ctx.globalAlpha=(revealAll||vis[idxOf(p.x,p.y)])?1:memA(.45);ctx.fillStyle=p.pressed?'#877444':'#49433D';ctx.fillRect(ppx+TS*.1,ppy+TS*.1,TS*.8,TS*.8);ctx.restore();}
     ctx.fillStyle = p.pressed ? '#FFE9A0' : '#D8CFC0'; ctx.font='700 '+Math.round(TS*0.42)+'px serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
     ctx.fillText({moon:'\u263E', sun:'\u2600', star:'\u2605'}[p.symbol], ppx+TS/2, ppy+TS/2);
   });
@@ -878,6 +960,10 @@ function drawScene(){
     if(!scoped&&typeof FoteChaosPreviewRenderer!=='undefined'&&FoteChaosPreviewRenderer.mixed())return FoteChaosPreviewRenderer.withCell(p.x,p.y,function(){return paintProp(p,true);});
     if(!(revealAll||seen[idxOf(p.x,p.y)])) return;
     var ppx=(p.x-camX)*TS, ppy=(p.y-camY)*TS, pa=(revealAll||vis[idxOf(p.x,p.y)])?1:memA(0.45);
+    if(!spriteOn){
+      ctx.save();ctx.globalAlpha=pa;ctx.fillStyle=p.b?'#6A5A48':p.name==='vines'?'#4A6A32':'#4A4038';ctx.fillRect(ppx+TS*.15,ppy+TS*.15,TS*((p.w||1)-.3),TS*((p.h||1)-.3));
+      if(p.previewPortal||p.prisoner||p.altar||p.name==='elemental-lock'||p.name==='updraft-vent')glyph(p.previewPortal?'O':p.prisoner?'!':p.altar?'A':p.name==='updraft-vent'?'↑':'+',ppx,ppy,p.name==='updraft-vent'?'#CDEEFF':p.element?AFF_COL[p.element]:'#E8B44A');ctx.restore();return;
+    }
     var artName=p.artName||p.name;
     var o=spriteOn ? objArt('props',artName)||objArt('structures',artName)||objArt('chests',artName)||objArt('terrain',artName) : null;   /* an opened chest's art lives with the chests */
     if(p.name==='elemental-lock' && p.opened) pa*=0.6;
@@ -965,8 +1051,9 @@ function drawScene(){
       var flip = e.ally && typeof e.facingLeft==='boolean' ? e.facingLeft : player.x < e.x;
       if(e.base && e.base.artLeft && !isShadeSummon(e) && !e.livingFlame) flip = !flip;   /* respect the artwork actually displayed */
       if(!drawCharacter(e, px, py, {flip:flip, flash:flashOf(e), breath:breathOf(e), sliding:motionActive(e,now), outline:e.foe && !!vis[idxOf(e.x,e.y)]})){
-        var bb=breathOf(e)*TS*0.6;
-        ctx.fillStyle=e.col; roundRect(px+TS*0.14,py+TS*0.1-bb,TS*0.72,TS*0.72+bb,TS*0.16); ctx.fill(); glyph(e.ch,px,py,'#120F0D');
+        var bb=breathOf(e)*TS*0.6,blockSize=!spriteOn&&!isShadeSummon(e)&&!e.livingFlame&&e.base.big||1;
+        ctx.fillStyle=e.col||'#A98C6C'; roundRect(px+TS*0.14,py+TS*0.1-bb,TS*(blockSize-.28),TS*(blockSize-.28)+bb,TS*0.16); ctx.fill(); glyph(e.ch||'?',px+TS*(blockSize-1)/2,py+TS*(blockSize-1)/2,'#120F0D');
+        if(!spriteOn&&e.base.moonbound)drawMoonboundOverlay(e,px,py,{});
       }
       if(e.st&&e.st.burn)drawBurningFlame(px+TS*.5,py+TS*.88,TS*.56,now,e.id||0,.44);
       if(typeof FoteChaosEnemyArt!=='undefined')FoteChaosEnemyArt.drawActorCues(e,px0,py0,now);
@@ -988,7 +1075,7 @@ function drawScene(){
       var ix=px0+TS*0.02;
       if(e.surprised && e.foe) { mark('!',px0+TS*0.78,py0+TS*0.02,'#FFD24A'); }
       if(e.state==='asleep') { mark('z',px0+TS*0.78,py0+TS*0.08+(ANIM.reduce?0:Math.sin(now/400+e.id)*2),'#CFE0FF'); }
-      if(e.keyholder){ drawObj(objArt('items','item-key-iron'), px0+TS*0.52, py0-TS*0.34, {fit:0.4}); }
+      if(e.keyholder){ if(spriteOn)drawObj(objArt('items','item-key-iron'), px0+TS*0.52, py0-TS*0.34, {fit:0.4});else mark('k',px0+TS*.8,py0-TS*.2,'#E8B44A'); }
       /* 2026-09-20: Justin - "we need some art for conditions and not just a black placeholder symbol". The icons
          were drawn straight onto the scene, so a dark one over a dark creature read as a black box. Each sits on a
          small chip of its own colour now, with a dark rim, so it reads against anything. */
@@ -999,7 +1086,7 @@ function drawScene(){
         ctx.fillStyle='rgba(10,8,6,0.85)'; ctx.beginPath(); ctx.arc(cx, cy, rr*1.25, 0, 7); ctx.fill();
         ctx.fillStyle=col; ctx.beginPath(); ctx.arc(cx, cy, rr, 0, 7); ctx.fill();
         ctx.restore();
-        if(!drawObj(objArt('icons',status.icon||'st-'+k), cx-TS/2, cy-TS/2, {fit:0.26})){
+        if(!spriteOn||!drawObj(objArt('icons',status.icon||'st-'+k), cx-TS/2, cy-TS/2, {fit:0.26})){
           ctx.save();
           ctx.fillStyle='#120F0D'; ctx.font='600 '+Math.max(7,Math.round(TS*0.2))+'px "IBM Plex Mono",monospace';
           ctx.textAlign='center'; ctx.textBaseline='middle';
@@ -1017,7 +1104,7 @@ function drawScene(){
   /* tall grass sits on top: its front blades are drawn over everything standing on the tile */
   for(y=camY;y<=camY+viewH;y++) for(x=camX;x<=camX+viewW;x++){
     if(!inb(x,y)) continue; var fgi=idxOf(x,y); if(ground[fgi]!==G_GRASS || !(revealAll||seen[fgi])) continue;
-    drawGrassTile(x, y, (x-camX)*TS, (y-camY)*TS, (revealAll||vis[fgi])?1:memA(0.4), 'front', now);
+    if(spriteOn)drawGrassTile(x, y, (x-camX)*TS, (y-camY)*TS, (revealAll||vis[fgi])?1:memA(0.4), 'front', now);
   }
 
   if(lightingOn()) drawLightmap(now, prp);
@@ -1057,6 +1144,7 @@ function drawScene(){
 
 /* Compact summoned elemental; all movement respects reduced-motion settings. */
 function drawLivingFlame(e,px,py,opts){
+  if(!spriteOn)return false;
   opts=opts||{};
   var img=atl('living-flame.png');if(!img||!img.complete||!img.naturalWidth)return false;
   var t=ANIM.reduce?0:performance.now()/1000,phase=(e.id||0)*1.37;

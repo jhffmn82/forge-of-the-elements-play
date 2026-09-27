@@ -3,6 +3,9 @@ var FOTE_VERSION = 'Beta 1.3';
 /* Keep newest first; describe only changes already present in this build. */
 var FOTE_PATCHES = [
   {version:'Beta 1.3', notes:[
+    "Refreshed floors, walls, doors, bridges, props, traps and vegetation with detailed artwork, including cave walls throughout the elemental planes. Smaller scenery and softer enemy outlines make the map easier to read.",
+    "The Goblin family has matching animated artwork, including Grukk. The final Forge and the Unmaker's beam pylons have dedicated animations.",
+    "Block Art is available in Options and remembers your choice, with consistent blocks and symbols for map scenery, creatures, hazards and remains.",
     "The title screen now uses the instrumental menu theme, continuing smoothly into character creation. Level-up and victory sounds are quieter.",
     "Grukk's battle now has a subdued ambient theme with low sustained tones and quiet dungeon sounds, leaving more room for combat audio.",
     "Cursed rings now apply their intended penalties, including life drain from Mending and worse trap spotting from Keen Eyes. Corrected older cursed rings whose upgrade values could accidentally grant benefits.",

@@ -1,7 +1,7 @@
 /* Explicit module installation order. Start a run only after installation completes. */
 var FOTE_RUNTIME = {
   development: false,
-  developmentOnly: ["js/sandbox-builds.js"],
+  developmentOnly: ["js/sandbox-builds.js", "js/dungeon-style-art.js", "js/dungeon-style-preview.js"],
   modules: [
   "js/engine/state.js",
   "js/engine/codec.js",
@@ -150,9 +150,20 @@ var FOTE_RUNTIME = {
   "js/chaos-enemy-art.js",
   "js/chaos-encounters.js",
   "js/unmaker-encounter.js",
+  "js/unmaker-pylon-art.js",
   "js/chaos-entry-preview.js",
   "js/chaos-campaign.js",
   "js/chaos-current-render.js",
-  "js/shadow-clone.js"
+  "js/shadow-clone.js",
+  "js/environment-terrain.js",
+  "art/packed/environment-deco-meta.js",
+  "js/environment-deco.js",
+  "js/environment-props.js",
+  "art/packed/environment-vegetation-meta.js",
+  "js/environment-vegetation.js",
+  "js/shambler-art.js",
+  "js/goblin-family-art.js",
+  "js/dungeon-style-art.js",
+  "js/dungeon-style-preview.js"
 ]
 };

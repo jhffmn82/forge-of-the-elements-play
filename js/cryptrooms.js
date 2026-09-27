@@ -286,6 +286,12 @@ function sceneryClusterArt(family,variant){
   return {img:img,sx:((Math.floor(variant)||0)%5+5)%5*128,sy:row*128,sw:128,sh:128};
 }
 function drawSceneryCluster(family,variant,px,py,alpha,flip,shear){
+  // Crates, pots and barrels use one readable object at each existing placement.
+  // Saved group data still owns collision, breaking, loot and seeded layout.
+  if(family==='crate'||family==='pot'||family==='barrel'){
+    var single=objArt('props',family);
+    if(single)return drawObjectSprite(single,px,py,{feet:true,fit:.78,alpha:alpha,flip:flip});
+  }
   var o=sceneryClusterArt(family,variant);if(!o)return false;
   var baked=family.indexOf('mushroom-')===0&&typeof vegBaked==='function'?vegBaked(o):null;
   ctx.save();ctx.globalAlpha=alpha;ctx.imageSmoothingEnabled=false;
@@ -314,6 +320,6 @@ function drawUrnGroupProp(p,px,py,alpha){
 
 function prepareCryptActor(job){
   if(job.entity===player||!cryptRoomsOn())return;
-  ctx.save();ctx.shadowColor='rgba(226,218,246,0.48)';ctx.shadowBlur=Math.max(2,TS*.07);ctx.shadowOffsetX=0;ctx.shadowOffsetY=0;
+  ctx.save();ctx.shadowColor=job.entity.foe?'rgba(226,218,246,0.24)':'rgba(226,218,246,0.48)';ctx.shadowBlur=Math.max(2,TS*.07);ctx.shadowOffsetX=0;ctx.shadowOffsetY=0;
   return function(){ctx.restore();};
 }

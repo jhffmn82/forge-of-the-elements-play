@@ -1,0 +1,23 @@
+{
+  "file": "unmaker-pylon-animation.png",
+  "cell": 192,
+  "box": [
+    62,
+    32,
+    67,
+    128
+  ],
+  "staticRow": 2,
+  "clips": {
+    "idle": {
+      "row": 0,
+      "frames": 9,
+      "fps": 5.5
+    },
+    "charge": {
+      "row": 1,
+      "frames": 9,
+      "fps": 8
+    }
+  }
+}

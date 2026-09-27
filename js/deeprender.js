@@ -184,6 +184,7 @@ function deepCellRaster(x, y){
   }
   var c=document.createElement('canvas'); c.width=64; c.height=64;
   var g=c.getContext('2d'), im=g.createImageData(64,64), D=im.data;
+  var terrainMask=new Uint8Array(64*64),terrainRegions=new Uint8Array(64*64),terrainShade=new Float32Array(64*64),terrainFaceY=new Uint8Array(64*64),wallDepth=new Float32Array(64*64).fill(-1);
   var o0=surfOff(0), o1=surfOff(1), o2=surfOff(2), o3=surfOff(3), o4=surfOff(4);
   for(var V=0; V<64; V++) for(var U=0; U<64; U++){
     var mu=U>>1, mv=V>>1, kk=K(mu,mv), rgn=reg[(mv+1)*W+(mu+1)], T=TX[rgn], p=(V*64+U)*4, r, gg, b, q, sh=1;
@@ -195,8 +196,11 @@ function deepCellRaster(x, y){
       if(K(mu-1,mv) || K(mu+1,mv)) sh*=0.86;
     } else {
       var d=dn[mv*RF+mu];
+      terrainMask[V*64+U]=d>0?1:2;
       if(d>0){
         var e=d*2-(V&1);                                  /* pixels above the ground line */
+        terrainFaceY[V*64+U]=64-Math.min(64,e);
+        if(style!=='rect')wallDepth[V*64+U]=terrainFaceY[V*64+U]/64;
         if(style==='rect'){
           q=deepTexel(T.face, (x+o2)*64+U, 64-Math.min(64,e)); r=T.face.d[q]; gg=T.face.d[q+1]; b=T.face.d[q+2];
         } else {
@@ -219,9 +223,11 @@ function deepCellRaster(x, y){
         }
       }
     }
+    terrainRegions[V*64+U]=rgn;terrainShade[V*64+U]=sh;
     D[p]=Math.min(255,r*sh); D[p+1]=Math.min(255,gg*sh); D[p+2]=Math.min(255,b*sh); D[p+3]=255;
   }
   g.putImageData(im,0,0);
+  c.environmentTerrain={mask:terrainMask,regions:terrainRegions,shade:terrainShade,faceY:terrainFaceY,pixels:D,wallDepth:wallDepth};
   return c;
 }
 function deepRasterTile(x, y){
@@ -235,7 +241,8 @@ function deepRasterTile(x, y){
     if(r===undefined) return null;
     C.cells[key]=r;
   }
-  return C.cells[key] ? {img:C.cells[key], sx:0, sy:0, sw:64, sh:64, crisp:true} : null;
+  var img=C.cells[key];if(img&&typeof FoteEnvironmentTerrain!=='undefined')img=FoteEnvironmentTerrain.enhance(img,x,y,'deep');
+  return img ? {img:img, sx:0, sy:0, sw:img.width, sh:img.height, crisp:img.width===64} : null;
 }
 function deepIsRaster(x, y){ if(!inDeep() || !floorMeta.deepRegion) return false; return deepNeedsRaster(x, y, deepSig(x,y)); }
 
@@ -281,21 +288,26 @@ function deepLavaRasters(x, y){
     }
   }
   if(!any) return null;
-  gm.putImageData(im,0,0); gc.putImageData(ic,0,0);
+  gm.putImageData(im,0,0); gc.putImageData(ic,0,0);crust.environmentTerrain={pixels:Cc};
   return {mask:mask, crust:crust};
 }
 function deepLavaRaster(x, y){
   var C=deepCache(), k=x+','+y+':'+deepLavaSig(x,y);
   if(!(k in C.lava)) C.lava[k]=deepLavaRasters(x,y);
-  return C.lava[k];
+  var art=C.lava[k];
+  if(art&&typeof FoteEnvironmentTerrain!=='undefined')return {mask:art.mask,crust:FoteEnvironmentTerrain.enhance(art.crust,x,y,'lava-crust')};
+  return art;
 }
 var DEEP_LB = null, DEEP_LM = null;
 function drawDeepLava(now){
   if(!floorMeta.lava) return;
   /* a plane with lava of its own (packet 04's Fire plane) uses its art; everything else uses the Underdark's */
   var lava=(floorMeta.plane && AS.surface && AS.surface[floorMeta.plane+'-lava'] && atl('surface-'+floorMeta.plane+'-lava.png')) || atl('surface-lava.png');
+  var painted=typeof FoteEnvironmentTerrain!=='undefined'&&FoteEnvironmentTerrain.lavaFlow();if(painted)lava=painted;
   if(!lava) return;
-  var S=32, W=(viewW+3)*S, H=(viewH+3)*S, ox=camX-1, oy=camY-1, list=[], near=[];
+  // Field generation remains32px and cached. Only texture compositing follows
+  // screen pixels (capped64); no128px field/noise loops run during animation.
+  var S=painted?Math.max(32,Math.min(64,Math.round(TS))):32, W=(viewW+3)*S, H=(viewH+3)*S, ox=camX-1, oy=camY-1, list=[], near=[];
   for(var y=camY-1; y<=camY+viewH+1; y++) for(var x=camX-1; x<=camX+viewW+1; x++){
     if(!inb(x,y) || !(revealAll||seen[idxOf(x,y)]) || isWallLike(at(x,y))) continue;
     if(at(x,y)===LAVA) list.push([x,y]);
@@ -309,24 +321,25 @@ function drawDeepLava(now){
   var g=DEEP_LB.g, gm=DEEP_LM.g, t=(ANIM.reduce ? 0 : now/1000);
   /* the mask of every lava cell in view, then the flow cut to it in one go (per-tile compositing would clear the rest) */
   gm.clearRect(0,0,W,H);
-  list.forEach(function(c){ var rr=deepLavaRaster(c[0],c[1]); if(rr) gm.drawImage(rr.mask, (c[0]-ox)*S, (c[1]-oy)*S); });
+  gm.imageSmoothingEnabled=true;
+  list.forEach(function(c){ var rr=deepLavaRaster(c[0],c[1]); if(rr) gm.drawImage(rr.mask, (c[0]-ox)*S, (c[1]-oy)*S,S,S); });
   g.globalCompositeOperation='source-over'; g.globalAlpha=1; g.clearRect(0,0,W,H);
   /* the flow: the lava surface at half size (a tile = 32 px here), anchored to the world, drifting slowly;
      a second sheet flipped over it drifts the other way, and the whole flow breathes brighter and dimmer */
-  var P=192, sx=((ox*S + t*5) % P + P) % P, sy=((oy*S + t*3) % P + P) % P;
+  var P=6*S, speed=S/32, sx=((ox*S + t*5*speed) % P + P) % P, sy=((oy*S + t*3*speed) % P + P) % P;
   for(var yy=-sy; yy<H; yy+=P) for(var xx=-sx; xx<W; xx+=P) g.drawImage(lava, 0, 0, lava.naturalWidth, lava.naturalHeight, xx, yy, P, P);
-  g.globalAlpha=0.35; var sx2=((ox*S - t*2) % P + P) % P, sy2=((oy*S + t*1.5) % P + P) % P;
+  g.globalAlpha=0.35; var sx2=((ox*S - t*2*speed) % P + P) % P, sy2=((oy*S + t*1.5*speed) % P + P) % P;
   for(var y2=-sy2; y2<H; y2+=P) for(var x2=-sx2; x2<W; x2+=P){ g.save(); g.translate(x2+P, y2+P); g.scale(-1,-1); g.drawImage(lava, 0, 0, lava.naturalWidth, lava.naturalHeight, 0, 0, P, P); g.restore(); }
   var pulse=ANIM.reduce ? 0.12 : 0.1+0.1*Math.sin(t*1.4);
   g.globalAlpha=pulse; g.fillStyle='#FFB040'; g.fillRect(0,0,W,H);
   g.globalAlpha=1; g.globalCompositeOperation='destination-in'; g.drawImage(DEEP_LM, 0, 0);
   g.globalCompositeOperation='source-over';
-  ctx.save(); ctx.imageSmoothingEnabled=false;
-  near.concat(list).forEach(function(c){ var rr=deepLavaRaster(c[0],c[1]); if(!rr) return; ctx.globalAlpha=(revealAll||vis[idxOf(c[0],c[1])]) ? 1 : memA(0.45); ctx.drawImage(rr.crust, 0,0,S,S, (c[0]-camX)*TS, (c[1]-camY)*TS, TS, TS); });
+  ctx.save(); ctx.imageSmoothingEnabled=!!painted;
+  near.concat(list).forEach(function(c){ var rr=deepLavaRaster(c[0],c[1]); if(!rr) return; ctx.globalAlpha=(revealAll||vis[idxOf(c[0],c[1])]) ? 1 : memA(0.45); ctx.drawImage(rr.crust, 0,0,rr.crust.width,rr.crust.height, (c[0]-camX)*TS, (c[1]-camY)*TS, TS, TS); });
   ctx.globalAlpha=1;
   ctx.drawImage(DEEP_LB, 0, 0, W, H, -TS, -TS, W*TS/S, H*TS/S);
   /* the bright rim sits on top of the flow */
-  list.forEach(function(c){ var rr=deepLavaRaster(c[0],c[1]); if(rr) ctx.drawImage(rr.crust, 0,0,S,S, (c[0]-camX)*TS, (c[1]-camY)*TS, TS, TS); });
+  list.forEach(function(c){ var rr=deepLavaRaster(c[0],c[1]); if(rr) ctx.drawImage(rr.crust, 0,0,rr.crust.width,rr.crust.height, (c[0]-camX)*TS, (c[1]-camY)*TS, TS, TS); });
   ctx.restore();
 }
 
@@ -383,17 +396,17 @@ function deepDrawPiece(p, alpha){
   } else if(p.wall){
     /* hung from the top of the wall face it is set on */
     flip=!!p.flipX;
-    dw=o.sw*s; dh=o.sh*s; dx=X+(TS-o.fullW*s)/2+o.ox*s; dy=Y+o.oy*s+(p.name.indexOf('web-corner')===0 ? 0 : TS*0.12);
+    dw=o.sw*s/(o.res||1); dh=o.sh*s/(o.res||1); dx=X+(TS-o.fullW*s)/2+o.ox*s; dy=Y+o.oy*s+(p.name.indexOf('web-corner')===0 ? 0 : TS*0.12);
     if(flip) dx=X+TS-(dx-X)-dw;
   } else if(p.flat || !p.b){
     /* lies in the floor: the canvas centred on its footprint, no shadow */
     flip=!!(p.cluster || /^web-floor|^cocoons-small|^basalt|^obsidian|^candles/.test(p.name)) && hash2(p.x,p.y,5)<0.5;
-    dw=o.sw*s; dh=o.sh*s; dx=X+(w*TS-o.fullW*s)/2+o.ox*s; dy=Y+(h*TS-o.fullH*s)/2+o.oy*s;
+    dw=o.sw*s/(o.res||1); dh=o.sh*s/(o.res||1); dx=X+(w*TS-o.fullW*s)/2+o.ox*s; dy=Y+(h*TS-o.fullH*s)/2+o.oy*s;
     if(flip) dx=X+w*TS-(dx-X)-dw;
   } else {
     /* stands on the bottom edge of its footprint, set down by its own solid bottom, over a contact shadow */
     var bottom=Y+h*TS+deepBottomPad(o)*s;
-    dw=o.sw*s; dh=o.sh*s; dx=X+(w*TS-o.fullW*s)/2+o.ox*s; dy=bottom-o.fullH*s+o.oy*s;
+    dw=o.sw*s/(o.res||1); dh=o.sh*s/(o.res||1); dx=X+(w*TS-o.fullW*s)/2+o.ox*s; dy=bottom-o.fullH*s+o.oy*s;
   }
   if(flip){ ctx.translate(dx+dw/2, 0); ctx.scale(-1,1); ctx.translate(-(dx+dw/2), 0); }
   ctx.drawImage(o.img, o.sx, o.sy, o.sw, o.sh, Math.round(dx), Math.round(dy), Math.round(dw), Math.round(dh));
@@ -415,7 +428,7 @@ function drawUnderdarkDoor(x,y,t,px,py,alpha){
   if(t===STAIRS && inDeep()){
     var o=deepArt('stairs-down-drow');
     if(o){
-      var s=TS/64, bottom=py+TS+deepBottomPad(o)*s*0.5, dw=o.sw*s, dh=o.sh*s, dx=px+(TS-o.fullW*s)/2+o.ox*s, dy=bottom-o.fullH*s+o.oy*s;
+      var s=TS/64, bottom=py+TS+deepBottomPad(o)*s*0.5, dw=o.sw*s/(o.res||1), dh=o.sh*s/(o.res||1), dx=px+(TS-o.fullW*s)/2+o.ox*s, dy=bottom-o.fullH*s+o.oy*s;
       ctx.save(); ctx.globalAlpha=alpha; ctx.imageSmoothingEnabled=false;
       ctx.drawImage(o.img, o.sx, o.sy, o.sw, o.sh, Math.round(dx), Math.round(dy), Math.round(dw), Math.round(dh));
       ctx.restore();

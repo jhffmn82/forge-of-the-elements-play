@@ -346,6 +346,7 @@ function turnMortyReturn(context){
    twitches on the turn before it rises. */
 function drawLyingCorpse(c, now){
   var i=idxOf(c.x,c.y); if(!(revealAll || seen[i])) return;
+  if(!spriteOn){drawCorpse({e:c,remains:c},1,(revealAll||vis[i])?1:memA(.45));return;}
   var b=MONSTERS[c.kind] || {}, ms = spriteOn && b.sprite ? mobSheet(b.sprite) : null; if(!ms) return;
   var px=(c.x-camX)*TS, py=(c.y-camY)*TS, lit=(revealAll||vis[i]) ? 1 : memA(0.45);
   var m=ms.m, cell=m.cell, box=m.box||[0,0,cell,cell], s=TS*(b.art||0.9)/Math.max(box[3], box[2]*0.8);

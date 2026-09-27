@@ -32,6 +32,16 @@ var MAP_ZOOM_MUL = {far:1.3, normal:1, close:0.8, closest:0.65}, MAP_ZOOM='norma
 try { MAP_ZOOM = localStorage.getItem('astra-temple-map-zoom') || 'normal'; } catch(e){}
 if(!MAP_ZOOM_MUL[MAP_ZOOM]) MAP_ZOOM='normal';
 
+/* Map art is a display preference shared by ordinary Options and Sandbox. */
+try{spriteOn=localStorage.getItem('astra-temple-map-art')!=='block';}catch(e){}
+function setMapArt(mode){
+  spriteOn=mode!=='block';
+  try{localStorage.setItem('astra-temple-map-art',spriteOn?'sprite':'block');}catch(e){}
+  var button=$('bArt');if(button)button.textContent=spriteOn?'Art: sprites':'Art: blocks';
+  if(typeof player!=='undefined'&&player&&typeof map!=='undefined'&&map&&typeof vis!=='undefined'&&vis&&typeof seen!=='undefined'&&seen)draw();
+}
+if($('bArt'))$('bArt').textContent=spriteOn?'Art: sprites':'Art: blocks';
+
 /* ---------------------------------------------------------------- the sheet */
 (function(){
   var st=document.createElement('style');
@@ -71,6 +81,7 @@ function settingsHTML(){
      '<div class="sec">Display</div>'+
      (window.MOBILE && window.FoteMobileOrientation ? '<div class="optrow"><span>Orientation</span>'+segHTML('orientation', [['portrait','Portrait'],['landscape','Landscape']], FoteMobileOrientation.getPreference())+'</div><p id="orientationStatus" role="status" style="font-size:12px;color:var(--ash);line-height:1.4">'+FoteMobileOrientation.getStatus()+'</p>' : '')+
      '<div class="optrow"><span>Map zoom</span>'+segHTML('mapzoom', [['far','Far'],['normal','Normal'],['close','Close'],['closest','Closest']], MAP_ZOOM)+'</div>'+
+     '<div class="optrow"><span>Block Art</span>'+segHTML('mapart', [['block','On'],['sprite','Off']], spriteOn?'sprite':'block')+'</div>'+
      '<div class="optrow"><span>Dynamic lighting</span>'+segHTML('light', [['on','On'],['off','Off']], lightOn?'on':'off')+'</div>'+
      '<div class="optrow"><span>Motion (sway, flicker, bob)</span>'+segHTML('motion', [['auto','Auto'],['on','On'],['off','Off']], ANIM.mode)+'</div>'+
      '<div class="optrow"><span>Animation speed</span>'+segHTML('speed', [[1,'1&times;'],[1.5,'1.5&times;'],[2,'2&times;'],[3,'3&times;']], ANIM_SPEED)+'</div>'+
@@ -105,6 +116,7 @@ function wireSettings(root){
       if(id==='music'){ audioInit(); if((v==='1')!==AUDIO.musicOn) toggleMusic(); if(typeof syncAudioButtons==='function') syncAudioButtons(); }
       if(id==='light'){ try{ localStorage.setItem('astra-temple-light', v); }catch(e){} var bl=$('bLight'); if(bl) bl.textContent='Lighting: '+v; draw(); }
       if(id==='motion'){ if(typeof setMotion==='function') setMotion(v); }
+      if(id==='mapart')setMapArt(v);
       if(id==='mapzoom'){ MAP_ZOOM=v; try{ localStorage.setItem('astra-temple-map-zoom', v); }catch(e){} resize(); }
       if(id==='speed'){ ANIM_SPEED=parseFloat(v)||1; try{ localStorage.setItem('astra-temple-anim-speed', String(ANIM_SPEED)); }catch(e){} applyAnimSpeed(); }
       if(id==='orientation' && window.FoteMobileOrientation) FoteMobileOrientation.setPreference(v).then(function(){var status=root.querySelector('#orientationStatus');if(status)status.textContent=FoteMobileOrientation.getStatus();});

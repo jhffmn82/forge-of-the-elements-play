@@ -396,7 +396,7 @@ $('bMotion').onclick=function(){
   setMotion(ANIM.mode==='auto' ? (ANIM.reduce?'on':'off') : ANIM.mode==='on' ? 'off' : 'auto');
   log('Motion: '+(ANIM.reduce?'off':'on')+'.','c-info');
 };
-$('bArt').onclick=function(){ spriteOn=!spriteOn; log(spriteOn?'Sprites on.':'Block art on.','c-info'); draw(); };
+$('bArt').onclick=function(){ setMapArt(spriteOn?'block':'sprite');log(spriteOn?'Sprites on.':'Block art on.','c-info'); };
 
 $('preset').onchange=function(){ player.build=$('preset').value; newRun(worldSeed); };
 $('numScale').onchange=function(){ NUM=parseFloat(this.value); newRun(worldSeed); };

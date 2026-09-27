@@ -39,7 +39,7 @@ function caveBottomPad(o){
     g.drawImage(o.img, o.sx, o.sy, o.sw, o.sh, 0, 0, o.sw, o.sh);
     var D=g.getImageData(0,0,o.sw,o.sh).data, lowest=-1;
     for(var y=o.sh-1; y>=0 && lowest<0; y--) for(var x=0;x<o.sw;x++) if(D[(y*o.sw+x)*4+3]>=140){ lowest=y; break; }
-    pad = (o.fullH - (o.oy + lowest + 1));        /* empty rows under the solid art, in canvas pixels */
+    pad = (o.fullH - (o.oy + (lowest + 1)/(o.res||1))); /* empty rows in logical art units */
   }catch(e){ pad=0; }
   return (CAVE_PAD[o.nm]=Math.max(0, pad-1));
 }
@@ -75,7 +75,7 @@ function shadeCavernLights(L, now, prp){
 function drawGlowingPoolProp(p, px, py, alpha){
   if(p && /^glowing-pool/.test(p.name) && typeof caveArt==='function'){
     var o=caveArt(p.name); if(o){
-      var w=p.w||2, h=p.h||2, X=(p.x-camX)*TS, Y=(p.y-camY)*TS, s=TS/64, artH=o.sh*s;
+      var w=p.w||2, h=p.h||2, X=(p.x-camX)*TS, Y=(p.y-camY)*TS, s=TS/64, artH=o.sh*s/(o.res||1);
       /* the art's solid box centred in the footprint (the standing-piece wrapper above adds the canvas padding) */
       var bottom = Y + h*TS/2 + artH/2;
       drawCaveArt(o, X+w*TS/2, bottom, alpha, false);

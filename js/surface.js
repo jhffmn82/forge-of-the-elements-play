@@ -81,7 +81,18 @@ function masonryWallTile(x, y){
 /* ---------------------------------------------------------------- wall edges, ends and fixtures */
 var DECO = {pebble:[0,1,2], crack:[3,4,5], drain:6, damage:[7,8], sconce:9, banner:[10,11], cap:12};
 var RIM = 20;   /* capstone depth in the 64px source */
+function masonryRimArt(name,index,x,y){
+  var enhanced=typeof FoteEnvironmentTerrain!=='undefined'&&FoteEnvironmentTerrain.rim?FoteEnvironmentTerrain.rim(name,index,x,y):null;
+  if(enhanced)return enhanced;
+  var img=surfImg(name,x,y);return img?{img:img,sx:name==='rim-n'?index*64:0,sy:name==='rim-v'?index*64:0,sw:name==='rim-n'?64:RIM,sh:name==='rim-n'?RIM:64}:null;
+}
+function masonryCapArt(x,y){
+  var enhanced=typeof FoteEnvironmentDeco!=='undefined'?FoteEnvironmentDeco.cap(x,y):null;
+  if(enhanced)return enhanced;
+  var img=surfImg('deco',x,y);return img?{img:img,sx:12*64+18,sy:18,sw:28,sh:28}:null;
+}
 function drawSurfaceDecal(i, px, py, alpha, opt){
+  if(typeof FoteEnvironmentDeco!=='undefined'&&FoteEnvironmentDeco.draw(i,px,py,alpha,opt))return;
   var img=surfImg('deco',Math.floor(px/TS)+camX,Math.floor(py/TS)+camY); if(!img) return;
   opt=opt||{};
   ctx.save(); ctx.globalAlpha=alpha*(opt.a===undefined?1:opt.a); ctx.imageSmoothingEnabled=false;
@@ -110,11 +121,12 @@ function drawMasonryWallEdges(x, y, t, px, py, a){
     }
   } else {
     /* a wall top meeting open ground: capstones along that edge, pillar caps where runs meet or turn */
-    var rn=surfImg('rim-n',x,y), rv=surfImg('rim-v',x,y), rw=Math.max(4, Math.round(TS*RIM/64));
+    var rn=masonryRimArt('rim-n',smod(x+surfOff(5)),x,y), rw=Math.max(4, Math.round(TS*RIM/64));
+    var rvW=masonryRimArt('rim-v',smod(y+surfOff(6)),x,y),rvE=masonryRimArt('rim-v',smod(y+surfOff(7)),x,y);
     var oN=openGround(x,y-1), oW=openGround(x-1,y), oE=openGround(x+1,y);
-    if(rn && oN) ctx.drawImage(rn, smod(x+surfOff(5))*64, 0, 64, RIM, px, py, TS, rw);
-    if(rv && oW) ctx.drawImage(rv, 0, smod(y+surfOff(6))*64, RIM, 64, px, py, rw, TS);
-    if(rv && oE) ctx.drawImage(rv, 0, smod(y+surfOff(7))*64, RIM, 64, px+TS-rw, py, rw, TS);
+    if(rn && oN) ctx.drawImage(rn.img,rn.sx,rn.sy,rn.sw,rn.sh,px,py,TS,rw);
+    if(rvW && oW) ctx.drawImage(rvW.img,rvW.sx,rvW.sy,rvW.sw,rvW.sh,px,py,rw,TS);
+    if(rvE && oE) ctx.drawImage(rvE.img,rvE.sx,rvE.sy,rvE.sw,rvE.sh,px+TS-rw,py,rw,TS);
     /* where a side run reaches the face row below it, it caps into that face's coping */
     var faceS = isWallLike(at(x,y+1)) && wallFaces(x,y+1);
     var caps=[];
@@ -126,7 +138,7 @@ function drawMasonryWallEdges(x, y, t, px, py, a){
     if(!oW && !oE && faceS && (openGround(x-1,y+1) || openGround(x+1,y+1))) caps.push([openGround(x-1,y+1)?0:1, 1]);
     caps.forEach(function(c){
       var cs=Math.round(rw*1.45), cx=px+(c[0]?TS-cs+Math.round((cs-rw)/2):-Math.round((cs-rw)/2)), cy=py+(c[1]?TS-cs+Math.round((cs-rw)/2):-Math.round((cs-rw)/2));
-      var img=surfImg('deco',x,y); if(img) ctx.drawImage(img, 12*64+18, 18, 28, 28, cx, cy, cs, cs);
+      var cap=masonryCapArt(x,y); if(cap) ctx.drawImage(cap.img,cap.sx,cap.sy,cap.sw,cap.sh,cx,cy,cs,cs);
     });
   }
   ctx.restore();
@@ -156,27 +168,37 @@ function mossSeeds(x, y){
   }
   return out;
 }
+/* Continuous world-space noise: crossing a cell or hash-grid boundary must not
+   turn an organic patch into a row of little square blocks. */
+function mossNoise(wx, wy, salt){
+  var x=Math.floor(wx),y=Math.floor(wy),fx=wx-x,fy=wy-y;
+  fx=fx*fx*(3-2*fx);fy=fy*fy*(3-2*fy);
+  var a=hash2(x,y,salt),b=hash2(x+1,y,salt),c=hash2(x,y+1,salt),d=hash2(x+1,y+1,salt);
+  return (a+(b-a)*fx)*(1-fy)+(c+(d-c)*fx)*fy;
+}
+function mossEdge(value, threshold, width){
+  var t=Math.max(0,Math.min(1,(value-threshold)/width));
+  return t*t*(3-2*t);
+}
 function mossRaster(x, y){
   if(inDeep())return null;
   var seeds=mossSeeds(x,y); if(!seeds.length) return null;
-  var R=32, c=document.createElement('canvas'); c.width=R; c.height=R;
+  var R=128, c=document.createElement('canvas'); c.width=R; c.height=R;
   var g=c.getContext('2d'), im=g.createImageData(R,R), D=im.data, any=false, salt=surfSalt();
   for(var v=0; v<R; v++) for(var u=0; u<R; u++){
     var wx=x+(u+0.5)/R, wy=y+(v+0.5)/R, d=0;
     for(var k=0;k<seeds.length;k++){ var s=seeds[k], dd=Math.sqrt((wx-s.x)*(wx-s.x)+(wy-s.y)*(wy-s.y))/s.r; if(dd<1) d=Math.max(d, 1-dd); }
     if(d<=0) continue;
-    /* grain: two scales of hashed noise break the edge into clumps and stray pixels */
-    var gx=Math.floor(wx*16), gy=Math.floor(wy*16), n1=hash2(gx,gy,salt+50), n2=hash2(Math.floor(wx*6),Math.floor(wy*6),salt+51);
-    /* clumps with holes: coarse noise decides the clump, fine noise ragged-edges it */
+    var n1=mossNoise(wx*16,wy*16,salt+50), n2=mossNoise(wx*6,wy*6,salt+51);
     var val=d*1.1 + (n2-0.5)*0.55 + (n1-0.5)*0.18;
-    if(val<0.62) continue;
+    if(val<=0.57) continue;
     var dense=Math.min(1,(val-0.62)*2.6), p=(v*R+u)*4;
-    var cols=[[70,80,36],[86,96,42],[104,112,52],[56,64,30]];
-    var cc=cols[Math.min(3, Math.floor(n1*3 + dense))];
-    D[p]=cc[0]; D[p+1]=cc[1]; D[p+2]=cc[2]; D[p+3]=Math.round(210+45*dense); any=true;
+    var leaf=mossNoise(wx*48,wy*48,salt+52), grain=(hash2(Math.floor(wx*128),Math.floor(wy*128),salt+53)-.5)*10;
+    D[p]=54+42*leaf+grain; D[p+1]=65+47*leaf+grain; D[p+2]=29+21*leaf+grain*.5;
+    D[p+3]=Math.round((205+40*Math.max(0,dense))*mossEdge(val,.57,.10)); any=true;
   }
   if(!any) return null;
-  g.putImageData(im,0,0); return c;
+  g.putImageData(im,0,0); c.environmentTerrain={pixels:D,nativeDetail:true}; return c;
 }
 function bonesRaster(x, y){
   // Native canvas decoration: fine contours instead of magnified 32px blocks.
@@ -300,7 +322,10 @@ function drawMasonryDoor(x, y, t, px, py, a){
   }
   if(t===OPEN){
     /* swung back into the room, lying edge-on against the wall above the doorway */
-    var roomE = !!roomAt(x+1,y), ox = roomE ? px+TS-Math.round(lw*0.2) : px-TS+Math.round(lw*0.2);
+    // The closed leaf is hinged at (cx,py). Keep that same hinge when it is
+    // swung flat against the north wall; the previous endpoint detached it
+    // from the post by roughly half a tile.
+    var roomE = !!roomAt(x+1,y), ox = roomE ? cx : cx-TS;
     plankH(ox, py-Math.round(lw*0.55), TS, Math.max(4, Math.round(lw*0.55)));
   } else {
     /* the door fills the hall from post to post */
@@ -312,10 +337,11 @@ function drawMasonryDoor(x, y, t, px, py, a){
   }
   /* the frame: a capstone lintel along the wall above and below the doorway, outside the hall square,
      ending in square caps laid exactly where the wall's own corner caps sit so the two overlap */
-  var rn=surfImg('rim-n',x,y), cs=Math.round(rw*1.45), ofs=Math.round((cs-rw)/2);
+  var cs=Math.round(rw*1.45), ofs=Math.round((cs-rw)/2),cap=masonryCapArt(x,y);
   [[py-rw, py-rw+rw-cs+ofs], [py+TS, py+TS-ofs]].forEach(function(r, k){
-    if(rn) ctx.drawImage(rn, smod(x+surfOff(8+k))*64, 0, 64, RIM, px, r[0], TS, rw);
-    [[px-ofs], [px+TS-cs+ofs]].forEach(function(c){ ctx.drawImage(deco, 12*64+18, 18, 28, 28, c[0], r[1], cs, cs); });
+    var rn=masonryRimArt('rim-n',smod(x+surfOff(8+k)),x,y);
+    if(rn) ctx.drawImage(rn.img,rn.sx,rn.sy,rn.sw,rn.sh,px,r[0],TS,rw);
+    [[px-ofs], [px+TS-cs+ofs]].forEach(function(c){ if(cap)ctx.drawImage(cap.img,cap.sx,cap.sy,cap.sw,cap.sh,c[0],r[1],cs,cs); });
   });
   ctx.restore();
   return true;
@@ -350,7 +376,7 @@ function waterRaster(x, y){
     D[p]=col[0]; D[p+1]=col[1]; D[p+2]=col[2]; D[p+3]= rim ? 170 : Math.round(185+45*deep); any=true;
   }
   if(!any) return null;
-  g.putImageData(im,0,0); return c;
+  g.putImageData(im,0,0); c.environmentTerrain={pixels:D}; return c;
 }
 if(!AS.wang_water) AS.wang_water={cell:64, tiles:{}, procedural:true};   /* keeps render.js's square fallback off */
 
@@ -388,7 +414,7 @@ function grassRaster(x, y){
     D[p]=24; D[p+1]=44; D[p+2]=18; D[p+3]=Math.round(40+70*dense); any=true;
   }
   if(!any) return null;
-  g.putImageData(im,0,0); return c;
+  g.putImageData(im,0,0); c.environmentTerrain={pixels:D}; return c;
 }
 /* trampled grass (G_SHORT): the flattened mat the blades lie on. A flat fillRect over the tile read as a green
    square on the stone, so this is the same ragged field as the tall-grass bed, at a smaller radius, and it leans
@@ -426,7 +452,7 @@ function tramRaster(x, y){
     D[p]=dark?22:32; D[p+1]=dark?38:54; D[p+2]=dark?16:24; D[p+3]=Math.round(26+44*dense); any=true;
   }
   if(!any) return null;
-  g2.putImageData(im,0,0); return c;
+  g2.putImageData(im,0,0); c.environmentTerrain={pixels:D}; return c;
 }
 function drawGrassBed(){
   for(var y=camY; y<=camY+viewH; y++) for(var x=camX; x<=camX+viewW; x++){
