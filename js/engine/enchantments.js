@@ -5,7 +5,7 @@
 (function(root){
   'use strict';
   var elements=['fire','water','air','earth','light','shadow'];
-  var damageTypes={fire:'fire',water:'ice',air:'lightning',earth:'poison',light:'light',shadow:'shadow'};
+  var damageTypes={fire:'fire',water:'frost',air:'lightning',earth:'poison',light:'light',shadow:'shadow'};
   function curve(base,per,extra){return Object.assign({base:base,per:per||0},extra);}
   function fixed(value){return curve(value,0,{amplify:false});}
   var rules={
@@ -90,7 +90,7 @@
       if(el==='air')return pct('repeatChance')+' chance of an instant extra attack, or an eligible spell landing twice.';
       if(el==='earth')return pct('rootChance')+' chance to Root for '+v.rootDuration+' turns.';
       if(el==='light')return '+'+pct('critChance')+' crit chance.';
-      if(el==='shadow')return pct('procChance')+' chance of +'+pct('extraDamage')+' dark damage and Corrupt; +'+v.hollowDamage+' damage to Hollowed targets.';
+      if(el==='shadow')return pct('procChance')+' chance of +'+pct('extraDamage')+' shadow damage and Corrupt; +'+v.hollowDamage+' damage to Hollowed targets.';
     }
     if(slot==='armor'){
       var prefix='+'+pct('resistance')+' '+damageTypes[el]+' resistance; ';

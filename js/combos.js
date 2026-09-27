@@ -14,11 +14,11 @@ var COMBOS = {
   'water/earth': {name:'Permafrost',    d:'Rooted enemies gain a Chill stack each turn they stay rooted.'},
   'water/light': {name:'Clear Waters',  d:'When Ice Armor absorbs damage, heal 25% of the amount absorbed.'},
   'water/shadow':{name:'Numbing Dark',  d:'Your attacks and spells against Chilled enemies count as surprise attacks.'},
-  'air/fire':    {name:'Friction',      d:'Every 3rd weapon hit in a row on the same target sets it Burning.'},
+  'air/fire':    {name:'Friction',      d:'Every 3rd attack or single-target spell hit in a row on the same target sets it Burning.'},
   'air/shadow':  {name:'Windwalker',    d:'When an enemy hits you in melee, you step 1 tile away at once (every 5 turns).'},
-  'air/water':   {name:'Riptide',       d:'Your weapon hits push enemies 1 tile; slammed into a wall or creature, they are Chilled.'},
+  'air/water':   {name:'Riptide',       d:'Your attacks and single-target spell hits push enemies 1 tile; slammed into a wall or creature, they are Chilled.'},
   'air/light':   {name:'Glint',         d:'Your critical hits Blind the target for 1 turn.'},
-  'earth/fire':  {name:'Forge Heat',    d:'Every blow you land stokes the heat: +2 damage and +2 armour per stack, up to 5. The heat fades three turns after you stop swinging.'},
+  'earth/fire':  {name:'Forge Heat',    d:'Every attack or single-target spell hit stokes the heat: +2 attack damage and +2 armor per stack, up to 5. The heat fades after three turns without a hit.'},
   'earth/light': {name:'Radiant Roots', d:'Rooted enemies are also Blinded.'},
   'earth/shadow':{name:'Blight',        d:'Poisoned enemies deal 20% less damage.'},
   'earth/water': {name:'Silt Shield',   d:'Max Ice Armor +3 per Earth point, refilling twice as fast out of combat.'},
@@ -52,12 +52,12 @@ function afterPlayerHit(def, H){
     if(combo('shadow','earth') && typeof applyPoison==='function') applyPoison(def, false, 3);   /* the card says 3 turns (2026-09-22 audit) */
   }
   if(H.surprise && combo('shadow','air')) player.freeStep=true;
-  if(!H.spell && H.melee!==false){
+  if(!H.spell || H.singleTarget){
     if(combo('air','fire') && alive){
       var fr=player.friction && player.friction.def===def ? player.friction : (player.friction={def:def, n:0});
       fr.n++; if(fr.n>=3){ fr.n=0; applyStatus(def,'burn',3,burnDmg()); floatText(def.x,def.y,'friction','fire'); }
     }
-    if(combo('air','water') && alive && H.melee && !def.base.boss){
+    if(combo('air','water') && alive && !def.base.boss){
       var kx=def.x+Math.sign(def.x-player.x), ky=def.y+Math.sign(def.y-player.y);
       if(walkable(kx,ky) && !occupied(kx,ky)){ def.x=kx; def.y=ky; } else addChill(def);
     }
@@ -68,11 +68,11 @@ function numbingDark(f){ return !!(f && f.st && f.st.chill && combo('water','sha
 
 
 /* Smite procs: Searing Light, Swift Judgment, Beacon Root */
-function onSmiteProc(def){
+function onSmiteProc(def,actionId){
   var extra=0;
   if(def.hp>0 && combo('light','fire')) applyStatus(def,'burn',3,burnDmg());
   if(def.hp>0 && combo('light','earth') && (def.base.range>1 || def.base.caster || def.base.spellcaster)) applyStatus(def,'root',1);   /* 2026-09-22 audit: spellcasters are ranged attackers too */
-  if(def.hp>0 && combo('light','air')){ extra=applyDamage(def, smiteDamage(), 'light', player); sparkleFx(def.x,def.y,'light',10); }
+  if(def.hp>0 && combo('light','air')){ extra=applyDamage(def,smiteDamage(),'light',player,{tags:['proc','smite'],actionId:actionId}); sparkleFx(def.x,def.y,'light',10); }
   return extra;
 }
 

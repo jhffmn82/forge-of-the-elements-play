@@ -78,7 +78,7 @@ function damageDefenses(event){
   var isPlayer=target===player,foe=source&&source!==player&&source.foe;
   var wardChance=player.block>0?player.block:Math.min(.40,.25+.01*Math.max(0,player.stats.mig-10));
   if(isPlayer&&!event.options.attackRolled&&!event.tags.has('area')&&foe&&hasP('spellWard')&&wardChance>0&&combatRoll(wardChance,true)){
-    d*=.25;onShieldBlock(source,player,amount);log('Your shield turns the '+(type==='phys'?'blow':type)+' from '+(source.name||'the attack')+'.','c-good');floatText(player.x,player.y,'block','miss');sfx('block');
+    d*=.25;onShieldBlock(source,player,amount);log('Your shield turns the '+(type==='phys'?'blow':FoteDamage.label(type))+' from '+(source.name||'the attack')+'.','c-good');floatText(player.x,player.y,'block','miss');sfx('block');
   }
   var barrier=isPlayer&&hasP('magicBarrier')&&!event.tags.has('area')&&foe&&dist(source,player)>1?5:0;
   if(type==='phys'){
@@ -157,9 +157,8 @@ function damageReceivedReactions(event){
 }
 function damageAttackReactions(event){
   var target=event.target,hit=event.hit;
-  if(!syllaOn()||target===player||target.ally||!hit||hit.att!==player||hit.def!==target||hit._syl||event.tags.has('periodic'))return;
-  hit._syl=true;var rank=godRank();
-  if(rank>=3&&target.hp>0){syllaPoison(target,SYLLA.poisonTurns,rank);if(event.wasStatused&&target.hp>0){var venom=gameDamage.resolve(target,rank,'poison',player,{tags:['proc','venomtouch']});if(venom.damage>0)floatText(target.x,target.y,String(venom.damage),'poison');}}
+  if(!syllaOn()||!(event.damage>0)||event.source!==player||target===player||!target.foe||target.ally||!hit||hit.att!==player||hit.def!==target||hit._syl||event.tags.has('periodic')||event.tags.has('proc')||event.tags.has('reflected')||event.tags.has('arc'))return;
+  hit._syl=true;syllaHitReactions(event);
 }
 var gameDamage=FoteDamage.create({
   actionId:function(){var action=typeof gameActions!=='undefined'&&gameActions.current();return action?action.actionId:'world:'+turn;},

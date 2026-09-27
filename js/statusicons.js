@@ -7,7 +7,7 @@
 var STATUS_INFO = {
   /* statuses (player.st / enemy.st) */
   burn:   {name:'Burning', icon:'st-burn', bad:1, d:'Takes fire damage every turn.'},
-  chill:  {name:'Chilled', icon:'st-chill', bad:1, d:'Acts more slowly; takes more ice damage.'},
+  chill:  {name:'Chilled', icon:'st-chill', bad:1, d:'Acts more slowly; takes more frost damage.'},
   slow:   {name:'Slowed', icon:'st-slow', bad:1, d:'Acts more slowly.'},
   frozen: {name:'Frozen', icon:'st-frozen', bad:1, d:'Can\'t act. Evasion is 0. A physical hit shatters the ice for double damage.'},
   root:   {name:'Rooted', icon:'ic-earth-root', bad:1, d:'Can\'t move, but can still attack. Evasion is 0.'},
@@ -16,10 +16,10 @@ var STATUS_INFO = {
   blind:  {name:'Blind', icon:'st-blind', bad:1, d:'Attacks miss far more often.'},
   poison: {name:'Poisoned', icon:'st-poison', bad:1, d:'Takes damage every turn and doesn\'t regenerate.'},
   wet:    {name:'Wet', icon:'ic-tidal-surge', bad:1, d:'Takes more lightning damage; fire goes out.'},
-  corrupt:{name:'Corrupted', icon:'ic-shadow-swarm', bad:1, d:'Takes extra dark damage.'},
+  corrupt:{name:'Corrupted', icon:'ic-shadow-swarm', bad:1, d:'Takes extra shadow damage.'},
   hollow: {name:'Hollowed', icon:'ic-shadow-bolt', bad:1, d:'Shadow damage finds its weak spots.'},
   stone:  {name:'Stone skin', icon:'st-stone', d:'Physical hits deal 3 less damage.'},
-  aura:   {name:'Unholy Aura', icon:'pr-unholyaura', d:'Enemies within 2 tiles take dark damage each turn, healing you for each enemy hit.'},
+  aura:   {name:'Unholy Aura', icon:'pr-unholyaura', d:'Enemies within 2 tiles take shadow damage each turn, healing you for each enemy hit.'},
   /* 2026-09-23 (Justin): the Challenge and Coward's Mark show on the foe as debuffs */
   challenged:{name:'Challenged', icon:'st-challenged', bad:1, d:'Called out: it must come to you and fight. A follower of Sir Reginald deals it +25% and, from rank 3, takes 15 / 20 / 25% less from it.'},
   coward:    {name:"Coward's Mark", icon:'st-coward', bad:1, d:'It struck from afar and Sir Reginald marked it: it must come to you, deals 15 / 20 / 25% less to you and takes +25% from you.'},
@@ -32,7 +32,7 @@ var STATUS_INFO = {
   temper:    {name:'Temper', icon:'ic-temper', d:'Increases weapon damage, scaled by Divine Power.'},
   arcaneward:{name:'Ward', icon:'ic-arcane-ward', d:'A ward absorbs damage.'},
   haste:     {name:'Haste', icon:'ic-flame-step', d:'Movement, attacks and spellcasting are 30% faster.'},
-  moltenring:{name:'Molten Ring', icon:'ic-firebolt', d:'Attacks deal 5 additional fire damage.'},
+  moltenring:{name:'Molten Ring', icon:'ic-firebolt', d:'Attacks and single-target spells deal 5 additional fire damage.'},
   cinder:    {name:'Cinder Stride', icon:'ic-flame-step', d:'Faster, leaving fire where you step.'},
   manaflow:  {name:'Mana Flow', icon:'pr-manatide', d:'Mana returns twice as fast.'},
   afterglow: {name:'Afterglow', icon:'ic-heal', d:'Light lingers: you heal 5% of your maximum HP each turn.'},

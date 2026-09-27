@@ -91,14 +91,24 @@ function syllaWeb(t, r){
 var _clearBadSyl = clearBad;
 clearBad = function(){ _clearBadSyl(); delete player.st.slow; player.syllaWeb=0; };
 
-/* ---------------------------------------------------------------- boons 2 and 3, and the brood's toughness
-   Venomtouch and Fangs in the Dark both answer one landed blow, and a blow is one LAST_HIT: combat.js sets it
-   just before the damage goes in, for a swing, a shot and a spell alike, so hooking applyDamage catches all
-   three with the target's statuses still as they were before this hit. _syl marks a LAST_HIT already paid out,
-   so a smite proc or the venom's own damage cannot trigger it a second time. */
+/* One successful weapon, bow or spell hit pays out here. The damage adapter
+   admits a hostile hit once, using its explicit hit identity rather than the
+   mutable LAST_HIT global. Venom checks the status snapshot from before this
+   hit, so its own poison and Web cannot create an immediate extra payout. */
+function syllaHitReactions(event){
+  var target=event.target,hit=event.hit,rank=godRank();
+  if(rank>=3&&target.hp>0){
+    syllaPoison(target,SYLLA.poisonTurns,rank);
+    if(event.wasStatused&&target.hp>0){
+      var venom=gameDamage.resolve(target,rank,'poison',player,{tags:['proc','venomtouch']});
+      if(venom.damage>0)floatText(target.x,target.y,String(venom.damage),'poison');
+    }
+  }
+  if(rank>0&&target.hp>0&&rng()<SYLLA.webChance*rank)syllaWeb(target,rank);
+  if(hit.surprise)gainPiety(hit.view&&hit.view.hidden>0?SYLLA.pietyUnseen:SYLLA.pietySurprise);
+}
 
-
-/* ---------------------------------------------------------------- boon 1, the brood's bite, Into the Dark's opener */
+/* ---------------------------------------------------------------- the brood's bite */
 
 
 /* a spiderling's bite is the same web you throw, and venom on top: they are Sylla's own children */

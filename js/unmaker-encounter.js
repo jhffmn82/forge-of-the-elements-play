@@ -126,7 +126,7 @@
   }
   function direct(e,target,amount,type){
     var damage=applyDamage(target,sDMG(amount),type,e,{tags:['area','unmaker']});floatText(target.x,target.y,String(damage),type,true);
-    if(target===player&&damage>0)log(e.name+' deals '+damage+' '+type+' damage.','c-you');if(target.hp<=0)kill(target,e);return damage;
+    if(target===player&&damage>0)log(e.name+' deals '+damage+' '+FoteDamage.label(type)+' damage.','c-you');if(target.hp<=0)kill(target,e);return damage;
   }
   function spell(e,target){
     var s=state(),type=elements[s.elementIndex++%elements.length],chance=hitChance(accOf(e),evaOf(target));

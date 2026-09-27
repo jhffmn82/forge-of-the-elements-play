@@ -14,6 +14,8 @@ function affPts(el){ return (player.aff && player.aff[el]) || 0; }
 /* called from castAt after a spell's damage lands (combat.js) */
 function applySpellOffhandEffects(f, d, crit, A){
   if(crit)orbOnCritical(f);
+}
+function spellKillReward(f){
   if(f.hp<=0 && infusion('tome')==='shadow'){
     var h=Math.max(1, Math.round(player.maxhp*enchantValues('tome','shadow').killHeal));
     healPlayer(h); floatText(player.x,player.y,'+'+h,'heal');

@@ -3,6 +3,9 @@ var FOTE_VERSION = 'Beta 1.3';
 /* Keep newest first; describe only changes already present in this build. */
 var FOTE_PATCHES = [
   {version:'Beta 1.3', notes:[
+    "Ordinary Goblins have less health on the first two floors, shortening the opening fights. Existing saves receive the adjustment without healing wounded enemies. Rats keep their original health.",
+    "Single-target spells now trigger general on-hit effects, including weapon enchantments, elemental bonuses and combinations, Molten Ring, and Sylla's Web and concealed opening strike. Magic Missile and divine bolts follow the same rules; secondary damage cannot trigger these effects again.",
+    "Damage labels now consistently use physical, poison, light, shadow, frost, fire, magic and lightning. Corrected Air attacks being labeled as air damage, mixed-element bonus labels, and repeated spells using the wrong damage type or applying resistance twice.",
     "Dungeon Rats and Goblins hit less hard on the first floor, making the opening fights more forgiving. Their damage on later floors is unchanged.",
     "The final Forge of the Elements has its own animated artwork, with six elemental sources feeding the anvil. Existing saved final chambers receive the new art.",
     "Added a richer victory and defeat summary with a final score and score breakdown. Previous Runs keeps a local high-score list, with victories first; sandbox runs are excluded.",
@@ -14,7 +17,7 @@ var FOTE_PATCHES = [
     "Fixed the Light realm getting stuck after lethal reflected damage. Older saves interrupted by this bug recover at one HP, while completed deaths remain final.",
     "Glimmer and Light mastery now create the same Holy Ground, with matching visuals, healing, protection and damage. Fixed field healing and overlapping effects, and made Glimmer's healing boon apply consistently.",
     "Dawn now strikes visible enemies with Light damage as well as blinding and revealing them. Attacking a blinded enemy now counts as a surprise attack.",
-    "Glacial Tomb now blasts the area around its entombed target with Ice damage. Upheaval raises its wall with a damaging eruption that roots nearby enemies and summons. Their targeting previews show the affected areas, and Upheaval spends nothing when no walls can rise.",
+    "Glacial Tomb now blasts the area around its entombed target with Frost damage. Upheaval raises its wall with a damaging eruption that roots nearby enemies and summons. Their targeting previews show the affected areas, and Upheaval spends nothing when no walls can rise.",
     "Rooted, stunned and incapacitated creatures lose their Evasion until they recover. Combat checks and character displays use the same effective value.",
     "Light weapon enchantments now improve critical chance, replacing their previous accuracy and extra damage bonuses.",
     "Fortitude recovers more often and is no longer consumed by a blow that shields absorb completely. Selected nimble enemies are harder to hit, giving Accuracy more value.",

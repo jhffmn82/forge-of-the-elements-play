@@ -26,7 +26,7 @@ if(typeof STATUS_INFO!=='undefined')STATUS_INFO.livingmountain={name:'Living Mou
 /* Anvil's Toll: a weapon attack on everything within two tiles, each thrown back and stunned (2026-09-23) */
 
 var ARCANE_NOVA={name:'Arcane Nova',kind:'aoe',range:6,radius:1,divine:true,cost:0};
-var BONE_SPEAR={name:'Bone Spear',kind:'bolt',type:'dark',el:'shadow',range:6,base:[10,16],divine:true,cost:0};
+var BONE_SPEAR={name:'Bone Spear',kind:'bolt',piercing:true,type:'dark',el:'shadow',range:6,base:[10,16],divine:true,cost:0};
 
 
 function spearPath(ax,ay,bx,by){

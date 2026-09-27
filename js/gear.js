@@ -17,7 +17,7 @@ var RINGS = {
   mending:    {name:'Ring of Mending',    step:1/3, unit:'% of max HP healed per global round',pct:true, desc:'Extra HP regeneration while fed and not poisoned.'},
   sustenance: {name:'Ring of Sustenance', step:0.15, unit:'% less hunger',    pct:true, desc:'You get hungry more slowly.'},
   haste:      {name:'Ring of Haste',      step:0.05, unit:'% speed',          pct:true, desc:'Speed.'},
-  warding:    {name:'Ring of Warding',    step:0.10, unit:'% elemental resistance', pct:true, desc:'Resistance to fire, ice, lightning, poison, light and dark.'},
+  warding:    {name:'Ring of Warding',    step:0.10, unit:'% elemental resistance', pct:true, desc:'Resistance to fire, frost, lightning, poison, light and shadow.'},
   keeneyes:   {name:'Ring of Keen Eyes',  step:0.08, unit:'% trap spotting',  pct:true, desc:'Spot traps and hidden doors more easily.'},
   luck:       {name:'Ring of Luck',       step:0.25, unit:'% loot from enemies', pct:true, desc:'Enemies drop loot more often.'}
 };

@@ -4,6 +4,9 @@
 
 ## Changes
 
+- Ordinary Goblins have 11 HP instead of 16 on floors 1–2, shortening the opening fights. Rats keep their original 8 HP. Existing saves receive the Goblin adjustment without healing wounded enemies; later floors and stronger variants keep their health.
+- Single-target spells trigger general on-hit effects, including weapon enchantments, elemental bonuses and combinations, Molten Ring, and Sylla's Web and concealed opening strike. Magic Missile and divine bolts follow the same rules. Secondary damage cannot trigger these effects again; area and piercing spells retain their existing scope.
+- Damage labels consistently use physical, poison, light, shadow, frost, fire, magic and lightning. Fixed Air attacks being labeled as air damage, mixed-element bonus labels, and repeated spells using the wrong damage type or applying resistance twice.
 - Dungeon Rats and Goblins hit less hard on the first floor, making the opening fights more forgiving. Their damage on later floors is unchanged.
 - The final Forge of the Elements has dedicated animated artwork, with six elemental sources feeding its anvil. Existing final-chamber saves receive the new art.
 - Victory and defeat screens show your final score, build and accomplishments, with a score breakdown. Previous Runs keeps a local high-score list with winners first. Sandbox runs are excluded.

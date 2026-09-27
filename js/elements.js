@@ -29,11 +29,11 @@ var RANK_TEXT = {
      light:'Radiance: heal 1 HP per Light point whenever you deal light damage. Immune to Blind.',
      shadow:'Fade: after 50 turns out of combat you are fully hidden. Immune to Fear.'},
   6:{fire:'Wildfire: when a Burning enemy dies its fire leaps to the nearest enemy within 3. Fire spells leave flames for 3 turns. Immune to fire.',
-     water:'Deep Freeze: three Chills freeze. Ice spells leave icy ground that Chills for 3 turns. Immune to ice.',
+     water:'Deep Freeze: three Chills freeze. Water spells leave icy ground that Chills for 3 turns. Immune to frost.',
      air:'Lightning Reflexes: 15% of your attacks and spells take no time; lightning damage has a 15% stun chance. Immune to lightning.',
      earth:'Petrify: rooting a rooted enemy turns it to stone for 2 turns. Earth spells leave grasping roots for 3 turns. Immune to poison.',
      light:'Holy Ground: Light spells and Smite leave Holy Ground for 3 world turns, scaled by Spell Power. It heals allies for 2% max HP per turn, increases other healing by 25%, grants 15% nonphysical resistance, and burns enemies (undead and shadow double). Overlapping Holy Ground does not stack. Immune to light.',
-     shadow:'Hollowing: your dark damage stacks Hollow (max 5, 5 turns): +5% damage taken and -1 armor per stack. Immune to dark.'}
+     shadow:'Hollowing: your shadow damage stacks Hollow (max 5, 5 turns): +5% damage taken and -1 armor per stack. Immune to shadow.'}
 };
 var IMMUNE_TYPE = {fire:'fire', water:'ice', air:'lightning', earth:'poison', light:'light', shadow:'dark'};
 function aff(el){ return (player && player.aff && player.aff[el]) || 0; }

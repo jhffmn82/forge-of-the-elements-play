@@ -1,6 +1,14 @@
 /* Damage events and numeric rules. No actor globals, browser or content tables. */
 (function(root){
   'use strict';
+  var labels=Object.freeze({phys:'physical',poison:'poison',light:'light',dark:'shadow',ice:'frost',fire:'fire',magic:'magic',lightning:'lightning'});
+  var aliases=Object.freeze({physical:'phys',shadow:'dark',frost:'ice',water:'ice',air:'lightning',earth:'poison'});
+  function damageType(value){
+    if(value===undefined||value===null||value==='')return 'phys';
+    if(Object.prototype.hasOwnProperty.call(labels,value))return value;
+    return Object.prototype.hasOwnProperty.call(aliases,value)?aliases[value]:null;
+  }
+  function damageLabel(value){return labels[damageType(value)]||labels.phys;}
   function physical(amount,options){
     var armor=Math.max(0,options.armor-(options.pierce||0));
     var flat=(options.heavy?0:Math.ceil(armor/2)+(options.earth||0))+(options.stone?3:0);
@@ -32,11 +40,12 @@
     function emit(name,event){(listeners[name]||[]).slice().forEach(function(fn){fn(event);});}
     function resolve(target,amount,type,source,options){
       options=options||{};
-      var parent=active,event={id:++sequence,target:target,source:source||null,type:type||'phys',rawAmount:amount,
+      var parent=active,event={id:++sequence,target:target,source:source||null,type:damageType(type),rawAmount:amount,
         amount:amount,damage:0,absorbed:[],tags:new Set(options.tags||[]),
         actionId:options.actionId!==undefined?options.actionId:parent?parent.actionId:ports.actionId(),
         procDepth:parent?parent.procDepth+1:0,parentId:parent?parent.id:null,options:options,
         hit:options.hit||null,ability:options.ability||null,reason:null};
+      if(!event.type){event.reason='invalid-type';return event;}
       if(!target||!Number.isFinite(amount)||amount<0||!Number.isFinite(target.hp)||target.hp<=0){event.reason='invalid';return event;}
       if(event.procDepth>32){event.reason='proc-depth';return event;}
       active=event;
@@ -53,6 +62,6 @@
     }
     return Object.freeze({resolve:resolve,current:function(){return active;},on:function(name,fn){(listeners[name]||(listeners[name]=[])).push(fn);return function(){listeners[name]=listeners[name].filter(function(f){return f!==fn;});};},emit:emit});
   }
-  var api=Object.freeze({physical:physical,elemental:elemental,absorb:absorb,heal:heal,create:create});
+  var api=Object.freeze({types:labels,type:damageType,label:damageLabel,physical:physical,elemental:elemental,absorb:absorb,heal:heal,create:create});
   root.FoteDamage=api;if(typeof module==='object'&&module.exports)module.exports=api;
 })(typeof globalThis==='object'?globalThis:this);

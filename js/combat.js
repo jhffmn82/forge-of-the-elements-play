@@ -427,7 +427,7 @@ function basicAllyBehavior(e){
       if(typeof boltFx==='function') boltFx(e.x, e.y, target.x, target.y, 'shadow');
       var ld=applyDamage(target, roll(e.dmg[0], e.dmg[1]), 'dark', e);
       floatText(target.x, target.y, String(ld), 'dark');
-      log('Your '+e.name+' hurls a shadow bolt &mdash; <b>'+ld+'</b> dark.','c-good');
+      log('Your '+e.name+' hurls a shadow bolt &mdash; <b>'+ld+'</b> shadow.','c-good');
       if(target.hp<=0) kill(target, e);
        return true;
     }
@@ -505,13 +505,12 @@ function castBoltTarget(x,y){
     endTurn(); return true;
   }
   var hit = A.always || combatRoll(hitChance(player.acc+10, evaOf(f)),true);
-  if(!hit){ log(A.name+' misses '+f.name+'.','c-miss'); floatText(f.x,f.y,'miss','miss'); endTurn(); return true; }
+  if(!hit){ if(player.friction)player.friction.n=0; log(A.name+' misses '+f.name+'.','c-miss'); floatText(f.x,f.y,'miss','miss'); endTurn(); return true; }
   var dmgType = A.type==='magic' ? 'magic' : A.type;
   var base;
   if(A.tech){ base = roll(A.base[0],A.base[1]) + Math.floor((player.dmg[0]+player.dmg[1])/4); }
   else base = Math.round((sDMG(roll(A.base[0],A.base[1])) + (A.perAffinity ? A.perAffinity*totalAffinity() : 0)) * spellPower(A));   /* affinity adds before spell power */
   if(key==='smite' && (f.base.undead||f.base.shadowy)) base=Math.round(base*1.5);
-  if(player.aff.fire && !A.divine) base += player.aff.fire;   /* Kindled: +1 per Fire point on spells too */
   var wasAsleep=f.state==='asleep'||offGuard(f);
   var hitEvent=resolveSpellStrike(f,A,base,dmgType,{bolt:true}),d=hitEvent.damage,crit=hitEvent.hit.crit;
   floatText(f.x,f.y,String(d),dmgType==='phys'?'phys':dmgType,crit);
@@ -523,10 +522,11 @@ function castBoltTarget(x,y){
   if(A.stunChance && rng()<A.stunChance){ applyStatus(f,'stun',1); note+=' stunned'; }
   if(A.blindChance && rng()<A.blindChance){ applyStatus(f,'blind',2); note+=' blinded'; }
   if(A.type==='fire'){ ignite(f.x,f.y,'player'); }
+  if(d>0)markGround([[end.x,end.y]],A);
   if(f.state==='asleep' && key!=='sap') f.state='hunt';
   if(key==='sap'&&f.hp>0&&f.st.stun&&!f.stunImmune){f.sapped=true;f.stunImmune=true;}
   if(d>0)playerHitRewards(f,true);
-  log(A.name+' hits '+f.name+' &mdash; <b>'+d+'</b> '+(dmgType==='phys'?'physical':dmgType)+(crit?' (crit)':'')+note,'c-hit');
+  log(A.name+' hits '+f.name+' &mdash; <b>'+d+'</b> '+FoteDamage.label(dmgType)+(crit?' (crit)':'')+note,'c-hit');
   if(f.hp<=0){
     kill(f,player);
   }

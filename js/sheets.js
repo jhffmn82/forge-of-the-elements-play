@@ -48,7 +48,7 @@
 })();
 
 var STAT_LABEL = {mig:'Might', agi:'Agility', vit:'Vitality', foc:'Focus'};
-var RES_TYPES = [['fire','Fire'],['ice','Ice'],['lightning','Lightning'],['poison','Poison'],['light','Light'],['dark','Dark'],['magic','Magic']];
+var RES_TYPES = [['fire','Fire'],['ice','Frost'],['lightning','Lightning'],['poison','Poison'],['light','Light'],['dark','Shadow'],['magic','Magic']];
 function pct(v){ return (v>0?'+':'')+Math.round(v*100)+'%'; }
 function resHTML(){
   return '<div class="res">'+RES_TYPES.map(function(r){

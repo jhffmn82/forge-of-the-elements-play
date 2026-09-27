@@ -25,7 +25,7 @@ var SIGIL_ORDER = {
     heal2:     {name:'Light sigil+', motes:['light','light'], desc:'Heal to full and cleanse harmful conditions.'},
     vanish2:   {name:'Shadow sigil+', motes:['shadow','shadow'], desc:'Vanish for 5 turns; enemies lose track of you.'},
     cinder:    {name:'Sigil of Cinder Stride', motes:['fire','air'], desc:'Move 50% faster for 10 turns, leaving fire where you step.'},
-    magma:     {name:'Sigil of the Molten Ring', motes:['fire','earth'], desc:'The ground 2 tiles around you (not under you) burns for 5 turns. Your weapon and unarmed attacks also deal 5 additional fire damage for 5 global turns.'},
+    magma:     {name:'Sigil of the Molten Ring', motes:['fire','earth'], desc:'The ground 2 tiles around you (not under you) burns for 5 turns. Your attacks and single-target spells also deal 5 additional fire damage for 5 global turns.'},
     sunburst:  {name:'Sigil of Sunburst', motes:['fire','light'], desc:'Every enemy you can see takes light damage and is Blinded for 3 turns.'},
     smoke:     {name:'Sigil of Smoke', motes:['fire','shadow'], desc:'Smoke fills the room (4 tiles around you in a corridor) for 12 turns. Nobody inside, you included, sees past 1 tile, so no one can shoot or cast across it. Enemies hunting you lose track, and one that lost you can be surprised.'},
     storm:     {name:'Sigil of the Storm', motes:['water','air'], desc:'Lightning strikes up to 3 enemies you can see (more against the wet, may stun); rain soaks the rest.'},

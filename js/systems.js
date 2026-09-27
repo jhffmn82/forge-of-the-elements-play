@@ -352,7 +352,7 @@ function triggerTrap(tr,e){
   else if(tr.kind==='fire'){ d=applyDamage(e, roll(4,7)+floorNo, 'fire', null); applyStatus(e,'burn',3,sDMG(2)); floatText(e.x,e.y,String(d),'fire'); ignite(e.x,e.y,null);
     burst(e.x,e.y,'fire',24,0.05); log('A fire vent erupts &mdash; '+d+' fire, burning.', isP?'c-you':'c-info'); sfx('trap-fire'); }
   else if(tr.kind==='frost'){ d=applyDamage(e, roll(3,6)+floorNo, 'ice', null); addChill(e); addChill(e); floatText(e.x,e.y,String(d),'ice'); burst(e.x,e.y,'ice',24,0.05);
-    log('A frost jet blasts '+(isP?'you':e.name)+' &mdash; '+d+' ice, chilled.', isP?'c-you':'c-info'); sfx('trap-frost'); }
+    log('A frost jet blasts '+(isP?'you':e.name)+' &mdash; '+d+' frost, chilled.', isP?'c-you':'c-info'); sfx('trap-frost'); }
   else if(tr.kind==='spark'){ d=applyDamage(e, trapDmg(e, roll(4,8)+floorNo), 'lightning', null); if(rng()<0.5) applyStatus(e,'stun',1); floatText(e.x,e.y,String(d),'lightning'); burst(e.x,e.y,'lightning',18,0.06);
     log('A spark plate discharges &mdash; '+d+' lightning.', isP?'c-you':'c-info'); sfx('trap-spark'); }
   else if(tr.kind==='gas'){ for(var gy=-1;gy<=1;gy++) for(var gx=-1;gx<=1;gx++) ents.forEach(function(o){ if(o.x===e.x+gx && o.y===e.y+gy) applyStatus(o,'poison',6,2); });

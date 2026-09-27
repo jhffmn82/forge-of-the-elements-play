@@ -354,7 +354,7 @@ var ABILITIES = {
     },
     "icon": "ic-frost-shard",
     "el": "water",
-    "desc": "Ice damage and Chill. Three Chills freeze the target solid."
+    "desc": "Frost damage and Chill. Three Chills freeze the target solid."
   },
   "spark": {
     "name": "Spark",
@@ -418,7 +418,7 @@ var ABILITIES = {
     },
     "icon": "ic-shadow-bolt",
     "el": "shadow",
-    "desc": "Dark damage and the target flees in Fear."
+    "desc": "Shadow damage and the target flees in Fear."
   },
   "ironbody": {
     "name": "Iron Body",
@@ -577,7 +577,7 @@ var ABILITIES = {
     "el": "shadow",
     "icon": "ic-shadow-swarm",
     "summon": {"hp": 10, "damage": 10, "duration": 5},
-    "desc": "Summon up to nine Shades in a 3×3 area. Base 10 HP, 10 Dark damage and 5 world turns, all multiplied by Spell Power at casting. Benefits from Murk’s Grave Strength. Replaces your previous swarm."
+    "desc": "Summon up to nine Shades in a 3×3 area. Base 10 HP, 10 Shadow damage and 5 world turns, all multiplied by Spell Power at casting. Benefits from Murk’s Grave Strength. Replaces your previous swarm."
   },
   "livingflame": {
     "name": "Living Flame",
@@ -599,7 +599,7 @@ var ABILITIES = {
     "type": "ice",
     "el": "water",
     "icon": "ic-glacial-tomb",
-    "desc": "Encase the target enemy in ice: it cannot act or be hurt for 10 turns (6 for elites, 2 for bosses). Other enemies in the surrounding 3×3 area take 32–48 Ice damage, scaled by Spell Power. Target yourself instead for 3 untouchable turns, then recover 25% of maximum HP and mana."
+    "desc": "Encase the target enemy in ice: it cannot act or be hurt for 10 turns (6 for elites, 2 for bosses). Other enemies in the surrounding 3×3 area take 32–48 Frost damage, scaled by Spell Power. Target yourself instead for 3 untouchable turns, then recover 25% of maximum HP and mana."
   },
   "stormform": {
     "name": "Storm Form",
@@ -647,7 +647,7 @@ var ABILITIES = {
     "icon": "pr-unholyaura",
     "divine": true,
     "god": "murk",
-    "desc": "Invoke: enemies within 2 tiles take 4 × god rank × Divine Power Dark damage per world turn for 8 base turns. Heal 1 HP per enemy hit. Costs 8 mana."
+    "desc": "Invoke: enemies within 2 tiles take 4 × god rank × Divine Power Shadow damage per world turn for 8 base turns. Heal 1 HP per enemy hit. Costs 8 mana."
   },
   "intothedark": {
     "name": "Into the Dark",
@@ -656,7 +656,7 @@ var ABILITIES = {
     "icon": "ic-into-the-dark",
     "divine": true,
     "god": "sylla",
-    "desc": "Invoke: concealment for 3 base turns. Your next successful weapon hit while concealed gains +10% damage per god rank, scaled by Divine Power. Misses preserve the bonus."
+    "desc": "Invoke: concealment for 3 base turns. Your next successful attack or single-target spell hit while concealed gains +10% damage per god rank, scaled by Divine Power. Missed weapon attacks preserve the bonus; casting ends concealment."
   }
 };
 var ELEMENT_ABILS = {fire:{2:'firebolt'}, water:{2:'frostshard'}, air:{2:'spark'}, earth:{2:'root'}, light:{2:'smite'}, shadow:{2:'shadowbolt'}};
@@ -771,7 +771,7 @@ var PRAYERS = {
     "name": "Bone Spear",
     "rank": 4,
     "favor": 5,
-    "desc": "Pierces a line up to six tiles. Dark damage scales with god rank and Divine Power. Costs 5 Favor."
+    "desc": "Pierces a line up to six tiles. Shadow damage scales with god rank and Divine Power. Costs 5 Favor."
   },
   "arcanelance": {
     "name": "Arcane Lance",

@@ -119,7 +119,7 @@
   }
   function direct(e,target,amount,type,area){
     var damage=applyDamage(target,amount,type,e,{tags:area?['area']:[]});floatText(target.x,target.y,String(damage),type,true);
-    if(target===player&&damage>0)log(e.name+' deals '+damage+' '+type+' damage.','c-you');if(target.hp<=0)kill(target,e);return damage;
+    if(target===player&&damage>0)log(e.name+' deals '+damage+' '+FoteDamage.label(type)+' damage.','c-you');if(target.hp<=0)kill(target,e);return damage;
   }
   function projectileVictim(e,w){
     var region=regionAt(e.x,e.y);
@@ -259,7 +259,7 @@
   function special(e,target){
     var d=dist(e,target),region=e.chaosRegionId,tiles;
     switch(e.kind){
-      case 'chaos-prism-seer':tiles=line(e,target,6);if(reaches(tiles,target))return immediate(e,'ray',tiles,'fires a '+e.chaosNextElement+' ray',e.chaosNextElement);break;
+      case 'chaos-prism-seer':tiles=line(e,target,6);if(reaches(tiles,target))return immediate(e,'ray',tiles,'fires a '+FoteDamage.label(e.chaosNextElement)+' ray',e.chaosNextElement);break;
       case 'chaos-folded-horror':tiles=line(e,target,2);if(reaches(tiles,target))return immediate(e,'reach',tiles,'Heavy Reach');break;
       case 'chaos-rift-skitter':if(d>=2&&d<=5)return blink(e,target);break;
       case 'chaos-lens-bearer':
