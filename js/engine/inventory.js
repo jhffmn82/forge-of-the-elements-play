@@ -4,6 +4,7 @@
   'use strict';
   var gearKinds=['weapon','armor','off','ring','amulet'];
   function gear(kind){return gearKinds.indexOf(kind)>=0;}
+  function curseBinds(item){return !!(item&&item.cursed&&(item.kind!=='amulet'||!item.unid));}
   function bagKind(kind,item){return kind==='off'&&item&&(item.weapon||item.kind==='weapon')?'weapon':kind;}
   function slotItem(actor,slot){
     if(slot==='main')return (actor.sets||[])[actor.activeSet||0]||null;
@@ -36,10 +37,10 @@
     if(!policy.meets(item))return {error:'requirements',item:item};
     var current=slotItem(actor,slot),displaced=[];
     function present(it){return it&&it!==policy.empty&&!it.unarmed;}
-    if(present(current)&&current.cursed)return {error:'cursed',item:current};
+    if(present(current)&&curseBinds(current))return {error:'cursed',item:current};
     if(present(current))displaced.push({item:current,kind:slot==='main'||slot==='ranged'?'weapon':slot.indexOf('ring')===0?'ring':slot});
     var stowOff=slot==='main'&&item.hands===2&&present(actor.off)&&(actor.off.block||actor.off.weapon);
-    if(slot==='main'&&item.hands===2&&present(actor.off)&&actor.off.cursed)return {error:'cursed',item:actor.off};
+    if(slot==='main'&&item.hands===2&&present(actor.off)&&curseBinds(actor.off))return {error:'cursed',item:actor.off};
     if(stowOff)displaced.push({item:actor.off,kind:'off'});
     if(actor.bag.length-1+displaced.length>policy.capacity)return {error:'full'};
     return {slot:slot,index:index,entry:entry,item:entry.data,normalized:item,displaced:displaced,stowOff:!!stowOff,offhandWeapon:slot==='off'&&kind==='weapon'};
@@ -56,6 +57,6 @@
   }
   function consumeMaterials(motes,need){var next=Object.assign({},motes);for(var el in need){next[el]-=need[el];if(next[el]<=0)delete next[el];}return next;}
   function cleanse(item){if(!item||!item.cursed)return null;return {cursed:false,unid:false,plus:item.kind==='ring'?0:Math.max(0,item.plus||0)};}
-  var api=Object.freeze({gear:gear,bagKind:bagKind,slotItem:slotItem,defaultSlot:defaultSlot,planEquip:planEquip,planCraft:planCraft,consumeMaterials:consumeMaterials,cleanse:cleanse});
+  var api=Object.freeze({gear:gear,curseBinds:curseBinds,bagKind:bagKind,slotItem:slotItem,defaultSlot:defaultSlot,planEquip:planEquip,planCraft:planCraft,consumeMaterials:consumeMaterials,cleanse:cleanse});
   root.FoteInventory=api;if(typeof module==='object'&&module.exports)module.exports=api;
 })(typeof globalThis==='object'?globalThis:this);

@@ -26,7 +26,7 @@ function renderAmuletCharges(){
     if(!s || s.type!=='amulet' || !a) continue;
     var c=btns[i].querySelector('.c'); if(!c) continue;
     amuletSync(a);
-    c.textContent = aiming && aiming.amulet ? 'aiming...' : a.charges+'/'+amuletCap(a)+' charges'+(a.charges<amuletCap(a) ? ' · '+(amuletKillsNeeded(a)-(a.progress||0))+' kills' : '');
+    c.textContent = aiming && aiming.amulet ? 'aiming...' : a.charges+'/'+amuletCap(a)+' charges'+(a.charges<amuletCap(a) ? ' · '+(a.unid?'?':amuletKillsNeeded(a)-(a.progress||0))+' kills' : '');
     btns[i].disabled = a.charges<=0;
     if(aiming && aiming.amulet) btns[i].classList.add('armed');
   }

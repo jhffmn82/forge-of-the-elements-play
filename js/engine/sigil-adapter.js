@@ -113,7 +113,7 @@ function prepareSigil(use){
   if(use==='naturesbounty'){context.spots=natureBountySpots();if(context.spots.length<3){log('Nature’s Bounty needs three empty spaces on nearby ground.','c-info');return null;}}
   if(use==='ascension'&&!allUpgradeTargets().some(function(o){return upgradeCost(o.it)!==null;})){log('Nothing you carry can be raised any higher.','c-info');return null;}
   if(use==='wisdom'&&player.level>=20){log('Your wisdom can no longer grow. This sigil would do nothing.','c-info');return null;}
-  if(use==='rot'&&!wornGear().some(function(it){return it.cursed;})){log('Nothing you wear is cursed. The sigil stays quiet.','c-info');return null;}
+  if(use==='rot'&&!wornGear().some(FoteInventory.curseBinds)){log('Nothing you wear has a known curse. The sigil stays quiet.','c-info');return null;}
   if(use==='recall'){
     var goal=null;for(var i=0;i<map.length;i++)if(map[i]===STAIRS||(map[i]===EXIT&&floorMeta.exitOpen)){goal={x:i%MW,y:(i/MW)|0};break;}
     if(!goal){log('There is nowhere to be carried to.','c-info');return null;}

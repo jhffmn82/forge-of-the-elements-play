@@ -64,16 +64,16 @@ function trinketCard(item){
   if(!item)return '';
   if(item.kind==='ring'){
     var known=!item.unid||RUN.ringKnown[item.ring];
-    return '<div class="nm">'+gearName(item)+'</div>'+(known?'<div class="hint">'+RINGS[item.ring].desc+'</div>':'')+
+    return '<div class="nm">'+gearName(item)+'</div>'+(known?'<div class="hint">'+ringDescription(item)+'</div>':'')+
       (!item.unid?'<div class="row"><span>Effect</span><b'+(item.cursed?' style="color:#D0605A"':'')+'>'+ringLine(item)+'</b></div>':'')+
       (item.cursed&&!item.unid?'<div class="hint" style="color:#D0605A">Cursed: it will not come off until the curse is broken.</div>':'')+unidHint(item);
   }
   if(!amuletOk(item))return '<div class="nm">'+gearName(item)+'</div><div class="hint">This amulet has lost its power.</div>';
   var state=FoteGear.amuletState(item,amuletKillsNeeded(item)),cap=amuletCap(item),knownAmulet=!item.unid||RUN.amuletKnown[item.amulet];
-  return '<div class="nm">'+gearName(item)+'</div>'+(knownAmulet?'<div class="hint">'+AMULETS[item.amulet].desc+'</div><div class="row"><span>Kills per charge</span><b>'+(item.unid?'?':amuletKillsNeeded(item))+'</b></div>':'')+
+  return '<div class="nm">'+gearName(item)+'</div>'+(knownAmulet?'<div class="hint">'+amuletDescription(item)+'</div><div class="row"><span>Kills per charge</span><b>'+(item.unid?'?':amuletKillsNeeded(item))+'</b></div>':'')+
     '<div class="row"><span>Charges</span><b>'+state.charges+' / '+cap+'</b></div>'+
     (state.charges<cap&&!item.unid?'<div class="row"><span>Next charge</span><b>'+(amuletKillsNeeded(item)-(state.progress||0))+' more kills</b></div>':'')+
-    (item.cursed&&!item.unid?'<div class="hint" style="color:#D0605A">Cursed: charges build 30% slower, every use costs 10% of your current HP, and it will not come off.</div>':'')+unidHint(item)+
+    (item.cursed&&!item.unid?'<div class="hint" style="color:#D0605A">Recharging requires 30% more kills. It will not come off until cleansed.</div>':'')+unidHint(item)+
     '<div class="hint">Holds '+cap+' charge'+(cap>1?'s':'')+' at level '+state.level+'; using it often raises its level (up to 3). Kills build charges; elites and bosses count 3.</div>';
 }
 function bagCard(entry){

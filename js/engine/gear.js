@@ -1,7 +1,7 @@
 /* Item resource rules shared by progression and read-only cards. */
 (function(root){
   'use strict';
-  function ringPower(item){return !item?0:item.cursed?(item.plus||-1):(item.plus||0)+1;}
+  function ringPower(item){return !item?0:item.cursed||item.plus<0?-Math.max(1,Math.abs(item.plus||0)):(item.plus||0)+1;}
   function amuletCapacity(item){return Math.max(1,Math.min(3,item.level||1));}
   function amuletKills(item,base){return Math.max(2,Math.round(base*(item.cursed?1.3:1)));}
   function amuletState(item,kills){

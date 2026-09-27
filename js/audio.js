@@ -71,10 +71,12 @@ var SFX_ALIASES={
   'heart-alert':'heart-intro','heart-attack':'golem-attack'
 };
 var SFX_LAST={},SFX_VOICES=[],SFX_STEP=0;
+function sfxGain(name,opts){return (opts&&opts.vol!==undefined?opts.vol:1)*((name==='level-up'||name==='victory')?.5:1);}
 function sfx(name, opts){
   if(!AUDIO.ctx || AUDIO.muted || !name) return;
   var now=performance.now();
   opts=opts||{};
+  if(opts.vol===0)return;
   /* game sounds follow the animation queue: a swing sounds when the swing plays, not when the key was pressed */
   var at = opts.at===undefined ? (name.indexOf('ui-')!==0 && typeof fxClock==='number' ? Math.max(now, fxClock) : now) : opts.at;
   var alert=/-alert$/.test(name), group=alert?'creature-alert':name;
@@ -87,7 +89,7 @@ function sfx(name, opts){
     if(buf){
       var s=c.createBufferSource(); s.buffer=buf; s.playbackRate.value=opts.rate||1;
       while(SFX_VOICES.length>=24){var old=SFX_VOICES.shift();try{old.stop();}catch(e){}}
-      var g=c.createGain(); g.gain.value=(opts.vol===undefined?1:opts.vol)*(alert?.55:1); s.connect(g); g.connect(AUDIO.sfxBus);
+      var g=c.createGain(); g.gain.value=sfxGain(name,opts)*(alert?.55:1); s.connect(g); g.connect(AUDIO.sfxBus);
       if(/^(fire|ice|lightning|earth|light|shadow|magic|cast|shrine|pray|summon|heal|forge|wrath)/.test(name))g.connect(AUDIO.verb);
       SFX_VOICES.push(s);s.onended=function(){var i=SFX_VOICES.indexOf(s);if(i>=0)SFX_VOICES.splice(i,1);s.disconnect();g.disconnect();};s.start(t);
     } else synth(name, t, opts);
@@ -138,7 +140,7 @@ function synth(name, t, opts){
   if(n==='arrow-hit') return noise(t,0.08,0.3,'lowpass',1500,300);
   if(n==='player-hurt') { tone(t,'sawtooth',220,140,0.18,0.12); return noise(t,0.12,0.25,'lowpass',800,200); }
   if(n==='player-death') { tone(t,'sawtooth',220,55,1.2,0.18); return tone(t+0.2,'sine',110,40,1.2,0.2); }
-  if(n==='level-up') return arp(t,[523,659,784,1046,1318],0.09,'triangle',0.16);
+  if(n==='level-up') return arp(t,[523,659,784,1046,1318],0.09,'triangle',0.16*sfxGain(name,opts));
   if(n==='new-ability'||n==='puzzle-solved'||n==='identify') return arp(t,[784,988,1175,1568],0.08,'sine',0.14);
   if(/^pickup-mote/.test(n)) return arp(t,[440,660,880,1320],0.06,'sine',0.12);
   if(/^pickup-essence/.test(n)) return arp(t,[1320,1760],0.05,'sine',0.08);
@@ -187,7 +189,7 @@ function synth(name, t, opts){
   if(n==='ui-open') return noise(t,0.18,0.08,'bandpass',2500,1200,2);
   if(n==='ui-close') return noise(t,0.14,0.07,'bandpass',1200,2500,2);
   if(n==='stat-point') return tone(t,'sine',1320,0,0.2,0.1);
-  if(n==='victory') return arp(t,[523,659,784,1046,784,1046,1318,1568],0.14,'triangle',0.16);
+  if(n==='victory') return arp(t,[523,659,784,1046,784,1046,1318,1568],0.14,'triangle',0.16*sfxGain(name,opts));
   tone(t,'sine',660,0,0.08,0.05);
 }
 

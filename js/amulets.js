@@ -26,6 +26,9 @@ var AMULET_MAX_CHARGES = 3;
 
 /* older saves or items made before the rework */
 function amuletOk(a){ return a && AMULETS[a.amulet]; }
+function amuletDescription(a){
+  return a.cursed&&!a.unid?'Cursed: each use spends a charge and triggers a random trap instead of its normal power.':AMULETS[a.amulet].desc;
+}
 
 
 /* ---------------------------------------------------------------- recharge from kills */
@@ -33,13 +36,28 @@ function amuletOk(a){ return a && AMULETS[a.amulet]; }
 
 /* ---------------------------------------------------------------- using one */
 
+function failCursedAmulet(a){
+  if(!a||!a.cursed)return false;
+  amuletSync(a);if(a.charges<=0)return false;
+  aiming=null;
+  identifyGear(a,true);spendAmulet(a);
+  log('Your <b>'+gearName(a)+'</b> fails. A curse unleashes a trap instead!','c-you');
+  setClip(player,'cast');sfx('wrath');
+  // Resolve real trap rules at the wearer without creating permanent terrain
+  // or using travel traps that can bypass a sealed boss arena.
+  var kind=pick(['dart','fire','frost','spark','gas','web','alarm']);
+  triggerTrap({kind:kind,x:player.x,y:player.y,found:true},player);
+  abilityBar();endTurn();return true;
+}
+
 useAmulet = function(){
   if(gameTurns.busy())return false;
   if(playerFearAction())return false;
   var a=player.amulet; if(!a){ log('You are not wearing an amulet.','c-info'); return; }
   if(!amuletOk(a)){ log('This amulet has lost its power.','c-info'); return; }
   amuletSync(a);
-  if(a.charges<=0){ log('The '+gearName(a)+' has no charges. '+a.charge+' more kill'+(a.charge>1?'s':'')+' for the next.','c-info'); sfx('ui-error'); return; }
+  if(a.charges<=0){ log('The '+gearName(a)+' has no charges. '+(a.unid?'Defeat enemies to recharge it.':a.charge+' more kill'+(a.charge>1?'s':'')+' for the next.'),'c-info'); sfx('ui-error'); return; }
+  if(failCursedAmulet(a))return true;
   var A=AMULETS[a.amulet];
   if(A.aim){
     if(aiming && aiming.amulet){ cancelAim(); return; }
@@ -189,9 +207,12 @@ function turnExpireAmuletTerrain(context){  if(!floorMeta) return;
 function castAmuletTarget(x,y){
   var a=player.amulet, k=a && a.amulet;
   if(!amuletOk(a)){ aiming=null; return false; }
+  amuletSync(a);
+  if(a.charges<=0){aiming=null;log('The '+gearName(a)+' has no charges.','c-info');abilityBar();return false;}
   if(dist(player,{x:x,y:y})>AMULETS[k].range || !inb(x,y) || !(revealAll||vis[idxOf(x,y)])){ log('Out of range.','c-info'); sfx('ui-error'); return false; }
   var ok = k==='hook' ? amuletHook(x,y,true) : k==='swap' ? amuletSwap(x,y,true) : k==='tide' ? true : k==='pillar' ? amuletPillar(x,y,true) : false;
   if(!ok) return false;
+  if(failCursedAmulet(a))return true;
   aiming=null; spendAmulet(a); setClip(player,'cast'); sfx('sigil-use');
   if(k==='hook') amuletHook(x,y); else if(k==='swap') amuletSwap(x,y); else if(k==='tide') amuletTide(x,y); else if(k==='pillar') amuletPillar(x,y);
   abilityBar(); endTurn(); return true;

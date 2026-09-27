@@ -214,7 +214,7 @@ function openTitle(){
   if(!el){ el=document.createElement('div'); el.id='title'; document.body.appendChild(el); }
   el.classList.add('on');
   if($('create')) $('create').classList.remove('on');
-  playMusic('menu');   /* the vocal song; character creation plays the instrumental intro (Justin, 2026-09-22) */
+  playMusic('title');   /* Keep the instrumental menu music through character creation. */
   renderTitleMenu();
 }
 /* a browser only lets a page close a window it opened itself: try, and otherwise say goodbye so the tab can be closed */
@@ -225,7 +225,7 @@ function exitGame(){
     var el=$('title'); if(!el) return;
     el.innerHTML='<div class="panel" style="text-align:center"><h2>Farewell</h2><p>The forge fire banks low. Your saves are kept in this browser; close this tab or window whenever you like.</p>'+
       '<div class="panelfoot" style="justify-content:center"><button id="tBack">Back to the title</button></div></div>';
-    $('tBack').onclick=function(){ playMusic('menu'); renderTitleMenu(); };
+    $('tBack').onclick=function(){ playMusic('title'); renderTitleMenu(); };
   }, 150);
 }
 function closeTitle(){ var el=$('title'); if(el) el.classList.remove('on'); }
@@ -287,8 +287,8 @@ function renderAbout(){
     '<p><b>Forge of the Elements</b> is a turn-based roguelike. Pick a race and a class and descend twenty-five floors through the Dungeon, the Crypt, the Caverns, the Underdark and the Realm of Chaos. Defeat the biome lords and explore the six elemental planes along the way. Fuse elemental motes at forges to shape your gear and your magic, follow a god, and cross the floating islands of Chaos on your quest to reach the Forge of the Elements.</p>'+
     '<p>Everything happens in turns: you act, then the dungeon answers. Hover anything for details. Tab opens your character, I your gear, P your faith, Esc closes windows. Key bindings, sound, lighting and animation speed live in the Options tab, along with saving.</p>'+
     '<h3>Credits</h3>'+
-    '<p>Created by <b>Justin Hoffman</b>: design, story, world, balance, and the direction of every creature, map and sound in it. The title theme, <i>Strike the Steel</i>, and the end-credits song, <i>To Bind the Flame</i>, are written by Justin.</p>'+
-    '<p>Creature and map art painted to his direction with ChatGPT image generation and brought to life with PixelLab; score with Google Lyria; sound effects with ElevenLabs; code written with Claude and OpenAI Codex. Storybook in spirit, hand-picked throughout.</p>'+
+    '<p>Created by <b>Justin Hoffman</b>: design, story, world, balance, and the direction of every creature, map and sound in it. The end-credits song, <i>To Bind the Flame</i>, is written by Justin.</p>'+
+    '<p>Creature and map art painted to his direction with ChatGPT image generation and brought to life with PixelLab; score with Google Lyria and original procedural ambient compositions; sound effects with ElevenLabs; code written with Claude and OpenAI Codex. Storybook in spirit, hand-picked throughout.</p>'+
     '<div class="panelfoot"><span></span><button id="tBack">Back</button></div></div>';
   $('tBack').onclick=renderTitleMenu;
 }

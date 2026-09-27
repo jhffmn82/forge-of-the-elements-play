@@ -108,7 +108,7 @@ function charHTML(){
   }
   if(player.amulet && typeof AMULETS!=='undefined' && AMULETS[player.amulet.amulet]){
     var a=player.amulet, known=!a.unid || (RUN.amuletKnown||{})[a.amulet];
-    h+='<div class="sec">Amulet</div><div class="arow"><span class="ic" data-icon="'+a.icon+'"></span><span><span class="n">'+gearName(a)+'</span><div class="d">'+(known?AMULETS[a.amulet].desc:'Use it to learn what it does.')+'</div></span><span class="c" style="color:var(--gold)">'+(a.charges!==undefined?a.charges+' ch.':'')+'</span></div>';
+    h+='<div class="sec">Amulet</div><div class="arow"><span class="ic" data-icon="'+a.icon+'"></span><span><span class="n">'+gearName(a)+'</span><div class="d">'+(known?amuletDescription(a):'Use it to learn what it does.')+'</div></span><span class="c" style="color:var(--gold)">'+(a.charges!==undefined?a.charges+' ch.':'')+'</span></div>';
   }
   h+='</div>';
 
@@ -151,7 +151,7 @@ function charHTML(){
     });
   }
   var gear=[];
-  (player.rings||[]).forEach(function(r){ if(r) gear.push([gearName(r), r.unid ? 'Strength unknown until it is identified.' : (RINGS[r.ring].desc+' '+ringLine(r))]); });
+  (player.rings||[]).forEach(function(r){ if(r) gear.push([gearName(r), r.unid ? 'Strength unknown until it is identified.' : (ringDescription(r)+' '+ringLine(r))]); });
   var w=player.weapon;
   if(w && !w.unarmed && (w.note || w.enchant)) gear.push([gearName(w), (w.note||'')+(w.enchant && !w.unid ? ' &middot; '+enchantLive('weapon',w.enchant) : '')]);
   var ar=player.armorItem;

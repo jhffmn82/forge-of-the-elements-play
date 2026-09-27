@@ -377,7 +377,7 @@ function spotTraps(){
   for(var i=0;i<feats.length;i++){
     var f=feats[i];
     if(f.found || !vis[idxOf(f.x,f.y)] || dist(player,f)>3) continue;
-    var ch=(0.04 + 0.02*Math.max(0,player.stats.agi-10) + (isScoundrel()?0.12:0)) * ((f.room||f.puzzle) ? 0.2 : 1);
+    var ch=Math.max(0,0.04 + 0.02*Math.max(0,player.stats.agi-10) + (isScoundrel()?0.12:0) + Math.min(0,ringVal('keeneyes'))) * ((f.room||f.puzzle) ? 0.2 : 1);
     if(rng()<ch){ f.found=true; log('You spot '+(/^[AEIOU]/.test(trapName(f.kind))?'an':'a')+' <b>'+trapName(f.kind)+' trap</b>.','c-info'); sfx('trap-spot'); break; }
   }
   props.forEach(function(p){});

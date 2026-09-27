@@ -299,10 +299,10 @@ function rotPicker(context){
   var done=false,echo=!!(context&&context.echo);
   var html='<p class="c-info">Choose a cursed item. It rots away and is gone for good.</p>'+slots.map(function(o,i){
     return '<div class="frow"><div class="ftext"><b>'+gearName(o.it)+'</b> <span class="c-info">('+o.where+')</span></div>'+
-      '<button data-rot="'+i+'"'+(o.it.cursed?'':' disabled title="Only cursed items can be rotted away"')+'>'+(o.it.cursed?'Rot away':'Not cursed')+'</button></div>'; }).join('');
+      '<button data-rot="'+i+'"'+(FoteInventory.curseBinds(o.it)?'':' disabled title="Only known cursed items can be rotted away"')+'>'+(FoteInventory.curseBinds(o.it)?'Rot away':o.it.unid?'Unidentified':'Not cursed')+'</button></div>'; }).join('');
   openModal('Sigil of Rot', html, [{label:echo?'Cancel':'Keep the sigil', fn:function(){ if(!done){ done=true; if(!echo){addBag('✦', SIGILS.rot.name, {kind:'sigil', data:{use:'rot'}, uid:'sigil:rot'}); log('You set the sigil aside.','c-info');} } closeModal(); updateUI(); }}]);
   document.querySelectorAll('[data-rot]').forEach(function(b){ b.onclick=function(){
-    if(done) return; var o=slots[+b.getAttribute('data-rot')]; if(!o.it.cursed) return; done=true;
+    if(done) return; var o=slots[+b.getAttribute('data-rot')]; if(!FoteInventory.curseBinds(o.it)) return; done=true;
     var nm=gearName(o.it); o.gone(); derive(player); if(typeof refreshBagNames==='function') refreshBagNames();
     burst(player.x,player.y,'dark',40,0.08); sfx('wrath');
     log('Your <b>'+nm+'</b> blackens, softens and falls away to nothing. The curse goes with it.','c-kill');

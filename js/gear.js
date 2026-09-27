@@ -6,7 +6,7 @@
    ===================================================================== */
 
 /* ---------------------------------------------------------------- tables */
-/* rings: power is the ring's plus, +1..+3, or -1..-3 for a cursed one; every effect is step x power */
+/* Rings: +0 has one point of power; upgrades add one each. Curses have -1..-3 power. */
 var RINGS = {
   protection: {name:'Ring of Protection', step:1,    unit:'armor',            desc:'Armor.'},
   evasion:    {name:'Ring of Evasion',    step:5,    unit:'evasion',          desc:'Evasion.'},
@@ -23,8 +23,8 @@ var RINGS = {
 };
 var RING_LOOKS = ['jade','ruby','iron','bone','opal','copper','obsidian','silver','amber','moonstone','coral','onyx'];
 
-/* amulets: activated from the hotbar, then recharge. plus shortens the recharge 10% per point;
-   a cursed amulet recharges 50% slower and fizzles a quarter of the time */
+/* Cursed amulets reveal themselves on use, replace their power with a trap,
+   and require 30% more kills to recharge. Identification can expose them early. */
 
 
 /* how much use identifies a piece of gear */
@@ -66,17 +66,39 @@ function unidHint(it){
 /* Mending is stored in percentage points per 100 units of world time.
    One point of ring power grants exactly 1/300 max HP before gear bonuses. */
 function mendingRate(value){return value/100;}
+function drainCursedMending(actor,rate,scale){
+  if(!(rate<0)||!(scale>0)||actor.hp<=0)return;
+  // Carry fractions through saves rather than rounding a small curse to zero.
+  actor.mendingDebt=(actor.mendingDebt||0)-actor.maxhp*rate*scale;
+  var drain=Math.floor(actor.mendingDebt+1e-9);actor.mendingDebt=Math.max(0,actor.mendingDebt-drain);
+  if(drain>0)dealDirectDamage(actor,drain,'magic',null,{tags:['periodic','curse']});
+  if(actor!==player&&actor.hp<=0)kill(actor,null);
+}
 function ringLine(r){
   var R=RINGS[r.ring], pw=ringPower(r), v=R.step*pw*gearPassiveBonus();
-  if(r.ring==='mending')return (v>=0?'+':'')+Number((mendingRate(v)*100).toFixed(2))+R.unit;
+  if(r.ring==='mending')return v<0?Number((-v).toFixed(2))+'% of max HP lost per global round':'+'+Number(v.toFixed(2))+R.unit;
+  if(r.ring==='sustenance'&&v<0)return Math.round(-v*100)+'% more hunger';
+  if(r.ring==='keeneyes'&&v<0)return Math.round(-v*100)+'% less chance to spot traps or find hidden doors';
   return (v>=0?'+':'')+(R.pct?Math.round(v*100):Math.round(v*100)/100)+(R.pct?'':' ')+R.unit;
+}
+function ringDescription(r){
+  if(!r.unid&&ringPower(r)<0){
+    if(r.ring==='mending')return 'Drains your life while worn.';
+    if(r.ring==='sustenance')return 'You get hungry more quickly.';
+    if(r.ring==='keeneyes')return 'Makes traps and hidden doors harder to discover.';
+  }
+  return RINGS[r.ring].desc;
 }
 
 
 /* ---------------------------------------------------------------- identification */
 /* nothing but a curse gives an item a negative upgrade level, so treat one as proof of the other: a
    Masterwork staff reading -3 with no curse on it was the tell that this could drift apart (2026-09-17) */
-function fixNegativePlus(it){ if(it && (it.plus||0)<0 && !it.cursed) it.cursed=true; return it; }
+function fixNegativePlus(it){
+  if(it&&(it.plus||0)<0)it.cursed=true;
+  if(it&&it.kind==='ring'&&it.cursed)it.plus=-Math.max(1,Math.abs(it.plus||0));
+  return it;
+}
 function identifyGear(it, quiet){
   fixNegativePlus(it);
   if(!it || !it.unid) return false;
@@ -106,14 +128,15 @@ function useCount(it, kind, n){
   it.useN=(it.useN||0)+(n||1);
   if(it.useN>=ID_USE[kind]) identifyGear(it);
 }
-/* a curse shows itself the moment you put the thing on */
+/* Worn gear reveals its curse immediately, except for untested amulets. */
 function onPutOn(it){
-  if(!it) return;
+  if(!it) return;fixNegativePlus(it);
+  if(it.kind==='amulet'&&it.unid)return;
   if(it.cursed){ identifyGear(it, true); log('The <b>'+gearName(it)+'</b> tightens around you. <span class="c-you">It is cursed!</span>','c-you'); sfx('wrath'); }
   else if(it.kind==='ring' && it.unid && !RUN.ringKnown[it.ring]){ RUN.ringKnown[it.ring]=true; refreshBagNames(); log('You recognise it: a <b>'+RINGS[it.ring].name+'</b>. How strong it is, time will tell.','c-info'); }
 }
 function cursedBlock(it, what){
-  if(it && it.cursed){ log('Your <b>'+gearName(it)+'</b> is cursed. It will not '+(what||'come off')+'.','c-you'); sfx('ui-error'); return true; }
+  if(FoteInventory.curseBinds(it)){ log('Your <b>'+gearName(it)+'</b> is cursed. It will not '+(what||'come off')+'.','c-you'); sfx('ui-error'); return true; }
   return false;
 }
 

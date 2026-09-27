@@ -10,6 +10,8 @@ function normalizeActorGear(actor){
   if(actor===player)enforceDivineEquipment(actor);
   if(!actor.buffs)actor.buffs={};
   if(!actor.rings)actor.rings=[null,null];
+  actor.rings.forEach(function(item){if(item)fixNegativePlus(item);});
+  (actor.bag||[]).forEach(function(entry){if(entry.kind==='ring'&&entry.data)fixNegativePlus(entry.data);});
   var gear=(actor.sets||[]).concat([actor.ranged,actor.armorItem,actor.off]);
   (actor.bag||[]).forEach(function(entry){if(['weapon','armor','off'].indexOf(entry.kind)>=0)gear.push(entry.data);});
   var seen=new Set();

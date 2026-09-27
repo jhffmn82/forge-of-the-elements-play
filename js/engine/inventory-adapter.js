@@ -73,7 +73,7 @@ function putOnAmulet(index){return equipFromBag(index,'amulet');}
 function removeEquipment(slot,spendTurn){
   if(gameTurns.busy())return false;
   var item=FoteInventory.slotItem(player,slot);if(!item||item===EMPTY_OFF||item.unarmed)return false;
-  if(item.cursed)return inventoryFailure({error:'cursed',item:item});
+  if(FoteInventory.curseBinds(item))return inventoryFailure({error:'cursed',item:item});
   if(player.bag.length>=BAG_MAX)return inventoryFailure({error:'full'});
   var kind=slot==='ranged'||slot==='main'?'weapon':slot.indexOf('ring')===0?'ring':slot;
   if(slot.indexOf('ring')===0)player.rings[+slot.slice(-1)]=null;

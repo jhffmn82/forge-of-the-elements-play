@@ -4,6 +4,10 @@
 
 ## Changes
 
+- The title screen uses the instrumental menu theme and continues it into character creation. Level-up and victory sound effects play at half their previous volume, preserving your chosen volume settings.
+- Replaced Grukk's first-boss music with a subdued ambient loop of low sustained tones and quiet dungeon sounds, leaving combat audio clear.
+- Cursed rings apply their intended penalties. Mending drains life rather than silently doing nothing, Keen Eyes worsens trap spotting, and old cursed rings with positive upgrade values no longer grant benefits. Item descriptions reflect these effects.
+- Amulet curses stay hidden when equipped. Using one reveals the curse, spends a charge and triggers a random trap instead of the normal ability. Explicit identification can still reveal the curse safely; a revealed cursed amulet must be cleansed before removal.
 - Ordinary Goblins have 11 HP instead of 16 on floors 1–2, shortening the opening fights. Rats keep their original 8 HP. Existing saves receive the Goblin adjustment without healing wounded enemies; later floors and stronger variants keep their health.
 - Single-target spells trigger general on-hit effects, including weapon enchantments, elemental bonuses and combinations, Molten Ring, and Sylla's Web and concealed opening strike. Magic Missile and divine bolts follow the same rules. Secondary damage cannot trigger these effects again; area and piercing spells retain their existing scope.
 - Damage labels consistently use physical, poison, light, shadow, frost, fire, magic and lightning. Fixed Air attacks being labeled as air damage, mixed-element bonus labels, and repeated spells using the wrong damage type or applying resistance twice.

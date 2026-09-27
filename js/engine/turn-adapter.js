@@ -48,7 +48,13 @@ function turnRegeneration(context){
   player.mp=Math.min(player.maxmp,player.mp+player.maxmp*mpRate*scale);
   healPlayer(player.maxhp*hpRate*scale,true);
   if(player.t-(player.lastDamageTime||0)>=500&&player.iceArmor<player.iceArmorMax)player.iceArmor=Math.min(player.iceArmorMax,player.iceArmor+scale);
-  var mending=ringVal('mending');if(mending&&player.hunger>0&&!gameEffects.has(player,'poison'))healPlayer(player.maxhp*mendingRate(mending)*scale);
+  var mending=ringVal('mending');
+  if(mending<0){
+    drainCursedMending(player,mendingRate(mending),scale);
+  }else{
+    player.mendingDebt=0;
+    if(mending>0&&player.hunger>0&&!gameEffects.has(player,'poison'))healPlayer(player.maxhp*mendingRate(mending)*scale);
+  }
   if(player.buffs&&player.buffs.manaflow>0)player.mp=Math.min(player.maxmp,player.mp+player.maxmp*.009*scale);
   if(infusion('holy')==='water'&&isBuffed())player.mp=Math.min(player.maxmp,player.mp+player.maxmp*.006*enchantValues('holy','water').manaRegen*scale);
 }

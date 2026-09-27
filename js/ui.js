@@ -238,7 +238,7 @@ function trinketSlots(){
       '<span class="l" style="text-transform:none;letter-spacing:.02em;color:var(--ash)">'+sub+'</span></div>';
   }
   if(a && typeof amuletSync==='function') amuletSync(a);
-  var aSub = a ? (a.charges!==undefined ? a.charges+'/3 charges'+(a.charges<3?' &middot; next in '+(amuletKillsNeeded(a)-(a.progress||0))+' kills':'') : '') : 'activated; kills build charges';
+  var aSub = a ? (a.charges!==undefined ? a.charges+'/'+amuletCap(a)+' charges'+(a.charges<amuletCap(a)?' &middot; next in '+(a.unid?'?':amuletKillsNeeded(a)-(a.progress||0))+' kills':'') : '') : 'activated; kills build charges';
   return one('Amulet', a, 'amulet', aSub)+
     one('Ring', r[0], 'ring0', r[0] ? (r[0].unid ? 'strength unknown' : ringLine(r[0])) : 'passive')+
     one('Ring', r[1], 'ring1', r[1] ? (r[1].unid ? 'strength unknown' : ringLine(r[1])) : 'passive');

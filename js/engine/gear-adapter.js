@@ -83,7 +83,6 @@ function spendAmulet(item){
   var first=item.unid&&!RUN.amuletKnown[item.amulet];RUN.amuletKnown[item.amulet]=true;
   item.uses=(item.uses||0)+1;useCount(item,'amulet');refreshBagNames();
   if(first)log('It is an <b>'+AMULETS[item.amulet].name+'</b>!','c-kill');
-  if(item.cursed){var cost=Math.max(1,Math.round(player.hp*.10));dealDirectDamage(player,cost,'dark',null,{tags:['cost','curse']});floatText(player.x,player.y,String(cost),'dark');log('The cursed amulet drinks '+cost+' HP.','c-you');}
   var level=item.level||1;
   if(level<3&&item.uses>=AMULET_LEVEL_USES[level]){
     item.level=level+1;amuletSync(item);refreshBagNames();
@@ -96,7 +95,8 @@ function gearName(item){
     ensureTrinketLooks();
     if(item.unid&&!RUN.ringKnown[item.ring])return cap(RUN.ringLook[item.ring])+' ring';
     if(item.unid)return item.name+' ?';
-    return item.name+' '+((item.plus||0)>=0?'+':'')+(item.plus||0)+(item.cursed?' (cursed)':'');
+    var plus=item.cursed?ringPower(item):(item.plus||0);
+    return item.name+' '+(plus>=0?'+':'')+plus+(item.cursed?' (cursed)':'');
   }
   if(item.kind==='amulet'){
     ensureTrinketLooks();

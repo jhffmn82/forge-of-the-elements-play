@@ -160,7 +160,8 @@
     var s=e.cloneStats,scale=(clock-e.clonePulseAt)/100;e.clonePulseAt=clock;
     var poisoned=gameEffects.has(e,'poison'),rot=gameEffects.has(e,'rot'),fighting=ents.some(function(o){return o.foe&&o.hp>0&&o.state==='hunt'&&dist(e,o)<=s.range&&clearShot(e,o);});
     var hp=s.fed&&!poisoned&&!rot&&!fighting?s.hpRate*(s.passives.resilient&&e.hp<e.maxhp/2?2:1):0;
-    if(s.fed&&!poisoned)hp+=s.mending;if(e.buffs.regeneration>0)hp+=s.foodRegen;e.hp=Math.min(e.maxhp,e.hp+e.maxhp*hp*scale*(1+.25*holyGroundStrength(e)));
+    if(s.fed&&!poisoned&&s.mending>0)hp+=s.mending;if(e.buffs.regeneration>0)hp+=s.foodRegen;e.hp=Math.min(e.maxhp,e.hp+e.maxhp*hp*scale*(1+.25*holyGroundStrength(e)));
+    drainCursedMending(e,s.mending,scale);if(e.hp<=0)return;
     var mp=s.mpRate*(s.passives.tidalMind&&e.mp<e.maxmp/2?2:1)+(e.buffs.manaflow>0?s.manaflow:0);e.mp=Math.min(e.maxmp,e.mp+e.maxmp*mp*scale);
     if(clock-(e.lastDamageTime||0)>=500){e.iceArmor=Math.min(e.iceArmorMax,(e.iceArmor||0)+scale);e.guard=Math.min(e.guardMax,(e.guard||0)+scale);}
     Object.keys(e.buffs).forEach(function(key){e.buffs[key]=Math.max(0,e.buffs[key]-scale);});
