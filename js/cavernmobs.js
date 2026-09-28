@@ -125,7 +125,7 @@ function beetleArc(b){
   var near=others.filter(function(o){ return dist(o,player)<=1; })[0];
   if(near){ boltFx(near.x,near.y,player.x,player.y,'lightning'); caveZap(player, sDMG(roll(BEETLE_ARC[0],BEETLE_ARC[1])), near, 'Lightning arcs from beetle to beetle and into you'); }
   else if(caveVis(b.x,b.y)) log('Lightning arcs between the <b>Storm Beetles</b>.','c-info');
-  sfx('lightning-hit');
+  sfx('lightning-hit',{from:b});
 }
 /* Spark Jelly: the sting jumps to up to two more targets within 2 tiles of whatever it stung */
 function jellyChain(j, first){
@@ -165,7 +165,7 @@ function stormBeetleAct(e){
     if(turn<=e.stormChargeAt){  return true; }
     if(e.hp<=0)return true;var path=e.stormCharge; e.stormCharge=null; e.stormChargeAt=0; e.stormReady=turn+5;
     floorMeta.marks=(floorMeta.marks||[]).filter(function(m){return m.kind!=='storm'+e.id;});
-    setClip(e,'attack'); sfx('lightning-cast');
+    setClip(e,'attack'); sfx('lightning-cast',{from:e});
     for(var k=0;k<path.length;k++){
       var p=path[k];
       if(!walkable(p.x,p.y) || occupied(p.x,p.y)) break;
@@ -187,7 +187,7 @@ function stormBeetleAct(e){
   if(e.hp<=0)return true;e.stormCharge=lane.filter(function(p){return p.x!==e.x||p.y!==e.y;}).slice(0,5);
   e.stormChargeAt=turn;
   floorMeta.marks=(floorMeta.marks||[]).concat([{cells:e.stormCharge.map(function(p){return idxOf(p.x,p.y);}),col:'#7FD8FF',until:turn+2,kind:'storm'+e.id}]);
-  setClip(e,'attack'); sfx('lightning-cast');
+  setClip(e,'attack'); sfx('lightning-cast',{from:e});
   log('The <b>Storm Beetle</b> crackles and lowers its shell. Move out of its charge lane!','c-you');
    return true;
 }
@@ -195,7 +195,7 @@ function sparkJellyAct(e){
   var d=dist(e,player); if(d<=1 || d>5 || turn<(e.sparkReady||0)) return false;
   var path=boltPath(e.x,e.y,player.x,player.y), last=path[path.length-1];
   if(!last || last.x!==player.x || last.y!==player.y) return false;
-  if(e.hp<=0)return true;e.sparkReady=turn+3; setClip(e,'attack'); sfx('lightning-cast');
+  if(e.hp<=0)return true;e.sparkReady=turn+3; setClip(e,'attack'); sfx('lightning-cast',{from:e});
   boltFx(e.x,e.y,player.x,player.y,'lightning');
   if(rng()<hostileHitChance(hitChance(e.base.acc+5,evaOf(player)),true)){
     caveZap(player,sDMG(roll(5,8)),e,'The <b>Spark Jelly</b> hurls an electric bolt');
@@ -235,7 +235,7 @@ function myconidAct(e){
   e.sporeCd=(e.sporeCd===undefined ? 1 : e.sporeCd)-1;
   e.sproutCd=(e.sproutCd===undefined ? 3 : e.sproutCd)-1;
   if(d>=2 && d<=5 && e.sporeCd<=0){   /* it lobs them: close in and it just swats */
-    if(e.hp<=0)return true;e.sporeCd=4; setClip(e,'attack'); sfx('trap-gas');
+    if(e.hp<=0)return true;e.sporeCd=4; setClip(e,'attack'); sfx('trap-gas',{from:e});
     boltFx(e.x,e.y,player.x,player.y,'poison');
     addCloud(player.x, player.y, 1, 5, sDMG(2+Math.floor(floorNo/4)), 'spores');
     floorMeta.clouds[floorMeta.clouds.length-1].owner=e.id;   /* so the Deep Maw's death can settle its Worm Tenders' clouds */
@@ -280,7 +280,7 @@ function eelAct(e){
   if(e.zap){
     var z=e.zap; e.zap=null; floorMeta.marks=(floorMeta.marks||[]).filter(function(m){ return m.kind!=='eel'+e.id; });
     if(turn<=z.at+1){
-      setClip(e,'attack'); e._surfT=turn; sfx('lightning-hit'); SHAKE=Math.max(SHAKE||0,3);
+      setClip(e,'attack'); e._surfT=turn; sfx('lightning-hit',{from:e}); SHAKE=Math.max(SHAKE||0,3);
       z.cells.forEach(function(i){ if(rng()<0.35) burst(i%MW, (i/MW)|0, 'lightning', 5, 0.05); });
       var hitAny=false;
       ents.slice().forEach(function(t){
@@ -439,7 +439,7 @@ function mawPlan(M){
   floorMeta.marks=(floorMeta.marks||[]).filter(function(k){ return k.kind!=='maw'; })
     .concat([{cells:M.cells.concat(M.rubble), col:'#FF3A2A', until:turn+MAW.warnTurns, kind:'maw'}]);
   M.phase='warn'; M.at=turn+MAW.warnTurns;
-  SHAKE=Math.max(SHAKE||0, 4); sfx('trap-gas');
+  SHAKE=Math.max(SHAKE||0, 4); sfx('trap-gas',{from:M.site});
   var sc=M.site.mound ? {x:M.site.x+0.5, y:M.site.y+0.5} : {x:player.x, y:player.y};
   burst(Math.round(sc.x), Math.round(sc.y), 'earth', 26, 0.07);
   log(M.site.mound ? 'The ground heaves around a burrow mound. <b>Stay off the red!</b>' : 'The floor bulges and cracks <b>under your feet</b>. Move off the red!','c-you');
@@ -448,7 +448,7 @@ function mawPlan(M){
 function mawErupt(M){
   var e=M.ent, hurt=e.hp<e.maxhp/2;
   floorMeta.marks=(floorMeta.marks||[]).filter(function(k){ return k.kind!=='maw'; });
-  SHAKE=10; sfx('explosion');
+  SHAKE=10; sfx('explosion',{from:M.site});
   /* the bite */
   ents.slice().forEach(function(t){
     if(t===e || t.parent===e) return;
@@ -482,7 +482,7 @@ function mawErupt(M){
   });
   ringFx(s.x+1, s.y+1, '#C08A50', 3);
   M.phase='up'; M.at=turn+(hurt ? MAW.upTurnsHurt : MAW.upTurns); M.n++;
-  log('<b>The Deep Maw</b> bursts out of the ground! Hit it before it dives again.','c-you'); sfx('maw-intro');
+  log('<b>The Deep Maw</b> bursts out of the ground! Hit it before it dives again.','c-you'); sfx('maw-intro',{from:e});
   mawCallTender(M);
 }
 /* 2026-09-28 (Justin): a Worm Tender climbs out beside a burrow mound (the mound itself is solid) from a random

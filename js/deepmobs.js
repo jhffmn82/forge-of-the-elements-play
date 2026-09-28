@@ -183,7 +183,7 @@ function throwDarkness(e){
   var cells=[];
   for(var dy=-GLOBE.r;dy<=GLOBE.r;dy++) for(var dx=-GLOBE.r;dx<=GLOBE.r;dx++){ var x=player.x+dx, y=player.y+dy; if(inb(x,y) && at(x,y)!==WALL) cells.push(idxOf(x,y)); }
   floorMeta.dark=deepDarkActive().concat([{cells:cells, until:turn+GLOBE.turns}]);
-  setClip(e,'attack'); boltFx(e.x,e.y,player.x,player.y,'dark'); sfx('shaman-cast');
+  setClip(e,'attack'); boltFx(e.x,e.y,player.x,player.y,'dark'); sfx('shaman-cast',{from:e});
   burst(player.x, player.y, 'dark', 40, 0.08);
   log('The <b>Drow Blade</b> flings a <b>globe of darkness</b> over you. You can barely see past your own hands, but the drow can.','c-you');
   computeFOV();
@@ -214,7 +214,7 @@ function drawDarknessTelegraphs(now){
 
 /* ---------------------------------------------------------------- webs: pinned for a turn (you can still attack) */
 function webShot(e, who){
-  setClip(e,'attack'); boltFx(e.x,e.y,player.x,player.y,'web'); sfx('trap-web');
+  setClip(e,'attack'); boltFx(e.x,e.y,player.x,player.y,'web'); sfx('trap-web',{from:e});
   if(rng() < hostileHitChance(hitChance(e.base.acc+8, evaOf(player)),true)){
     applyStatus(player, 'root', WEBSHOT.pin);
     player.syllaWeb=WEBSHOT.slow;   /* tickStatus applies the slow as soon as the one-turn pin ends */
@@ -244,7 +244,7 @@ var DEEP_AI = {
     var near=function(o){ return o!==player && o.foe && o.hp>0 && !o.parent && dist(o,e)<=PRIEST.range; };
     var hurt=ents.filter(function(o){ return near(o) && o.hp<o.maxhp*0.65 && o.base && !o.base.object; }).sort(function(a,z){ return a.hp/a.maxhp - z.hp/z.maxhp; })[0];
     if(hurt && e.healCd<=0){
-      if(e.hp<=0)return true;e.healCd=PRIEST.healCd; setClip(e,'attack'); sfx('shaman-cast');
+      if(e.hp<=0)return true;e.healCd=PRIEST.healCd; setClip(e,'attack'); sfx('shaman-cast',{from:e});
       var h=Math.min(Math.round(hurt.maxhp*PRIEST.healPct), sHP(PRIEST.healFlat+floorNo));
       hurt.hp=Math.min(hurt.maxhp, hurt.hp+h); floatText(hurt.x, hurt.y, '+'+h, 'heal'); sparkleFx(hurt.x, hurt.y, 'blood', 20); deepStanch(hurt);
       if(deepVis(e.x,e.y)) log('The <b>Drow Priestess</b> '+(hurt===e ? 'mends her own wounds' : 'mends the '+hurt.name)+' with blood magic (+'+h+').','c-info');
@@ -254,7 +254,7 @@ var DEEP_AI = {
       var mine=ents.filter(function(o){ return o.kind==='spiderling' && o.owner===e.id; }).length;
       var all=ents.filter(function(o){ return o.kind==='spiderling'; }).length;
       if(mine<PRIEST.capEach && all<PRIEST.capFloor){
-        if(e.hp<=0)return true;e.callCd=PRIEST.callCd; setClip(e,'attack'); sfx('shaman-cast');
+        if(e.hp<=0)return true;e.callCd=PRIEST.callCd; setClip(e,'attack'); sfx('shaman-cast',{from:e});
         var n=Math.min(ri(PRIEST.callN[0],PRIEST.callN[1]), PRIEST.capEach-mine), got=0;
         for(var k=0;k<n;k++){ var c=nearFree(e.x,e.y,1) || nearFree(e.x,e.y,2); if(!c || deepLava(c.x,c.y)) break; var s=deepSpawnRaw('spiderling', c.x, c.y); s.state='hunt'; s.noLoot=true; s.owner=e.id; s.t=e.t; sparkleFx(c.x,c.y,'web',14); got++; }
         if(got && deepVis(e.x,e.y)) log('The <b>Drow Priestess</b> hisses a prayer and '+(got>1 ? got+' <b>Spiderlings</b> scuttle' : 'a <b>Spiderling</b> scuttles')+' out of the dark to her.','c-info');
@@ -264,7 +264,7 @@ var DEEP_AI = {
     if(e.wardCd<=0){
       var front=ents.filter(function(o){ return near(o) && o!==e && o.base && !o.base.object && !o.st.wardshield && o.state==='hunt'; }).sort(function(a,z){ return dist(a,player)-dist(z,player); })[0];
       if(front){
-        if(e.hp<=0)return true;e.wardCd=PRIEST.wardCd; setClip(e,'attack'); sfx('shaman-cast');
+        if(e.hp<=0)return true;e.wardCd=PRIEST.wardCd; setClip(e,'attack'); sfx('shaman-cast',{from:e});
         front.st.wardshield={t:PRIEST.wardTurns, n:sDMG(PRIEST.ward+floorNo*0.5)};
         ringFx(front.x, front.y, '#C0203A', 1); sparkleFx(front.x, front.y, 'blood', 16);
         if(deepVis(e.x,e.y)) log('The <b>Drow Priestess</b> wraps the '+front.name+' in a <b>blood ward</b>.','c-info');
@@ -273,7 +273,7 @@ var DEEP_AI = {
     }
     if(d<=2 && canActorMove(e) && deepCanFlee(e)){ if(e.hp<=0)return true;fleeStep(e);  return true; }
     if(d>=2 && d<=PRIEST.range && deepShot(e)){
-      if(e.hp<=0)return true;setClip(e,'attack'); boltFx(e.x,e.y,player.x,player.y,'blood'); sfx('shaman-cast');
+      if(e.hp<=0)return true;setClip(e,'attack'); boltFx(e.x,e.y,player.x,player.y,'blood'); sfx('shaman-cast',{from:e});
       if(rng()<hostileHitChance(hitChance(e.base.acc+6, evaOf(player)),true)){
         var bd=deepHurt(player, roll(e.dmg[0], e.dmg[1]), 'dark', e, 'The <b>Drow Priestess</b>\'s blood bolt hits you');
         if(bd>0 && e.hp>0 && e.hp<e.maxhp){ var hh=Math.min(bd, e.maxhp-e.hp); e.hp+=hh; floatText(e.x,e.y,'+'+hh,'heal'); }
@@ -287,7 +287,7 @@ var DEEP_AI = {
     e.sapCd=(e.sapCd===undefined ? 1 : e.sapCd)-1;
     if(d<=2 && canActorMove(e) && deepCanFlee(e)){ if(e.hp<=0)return true;fleeStep(e);  return true; }
     if(d>=2 && d<=SAP.range && deepShot(e)){
-      if(e.hp<=0)return true;setClip(e,'attack'); boltFx(e.x,e.y,player.x,player.y,'magic'); sfx('shaman-cast');
+      if(e.hp<=0)return true;setClip(e,'attack'); boltFx(e.x,e.y,player.x,player.y,'magic'); sfx('shaman-cast',{from:e});
       if(rng() >= hostileHitChance(hitChance(e.base.acc+10, evaOf(player)),true)){ log('The Thought Eater\'s '+(e.sapCd<=0 ? 'mana sap' : 'lash')+' slides off your mind.','c-miss'); floatText(player.x,player.y,'miss','miss'); if(e.sapCd<=0) e.sapCd=1;  return true; }
       if(e.sapCd<=0){
         e.sapCd=SAP.cd;
@@ -327,7 +327,7 @@ var DEEP_AI = {
   imp: function(e, d){
     e.boltCd=(e.boltCd===undefined ? 1 : e.boltCd)-1;
     if(e.boltCd<=0 && d>=2 && d<=IMP.range && deepShot(e)){
-      if(e.hp<=0)return true;e.boltCd=IMP.cd; setClip(e,'attack'); boltFx(e.x,e.y,player.x,player.y,'fire'); sfx('shaman-cast');
+      if(e.hp<=0)return true;e.boltCd=IMP.cd; setClip(e,'attack'); boltFx(e.x,e.y,player.x,player.y,'fire'); sfx('shaman-cast',{from:e});
       if(rng()<hostileHitChance(hitChance(e.base.acc+6, evaOf(player)),true)){
         var fd=deepHurt(player, roll(e.dmg[0], e.dmg[1]), 'fire', e, 'The <b>Fire Imp</b>\'s fire bolt hits you');
         if(player.hp>0 && rng()<IMP.burn){ applyStatus(player,'burn',3,sDMG(2)); log('You are <span class="c-fire">burning</span>.','c-you'); }
@@ -371,7 +371,7 @@ function deepHatchTick(){
       if(!c || deepLava(c.x,c.y)) continue;
       var s=deepSpawnRaw('spiderling', c.x, c.y); s.state='hunt'; s.t=player.t; s.caughtOff=turn; got++;
     }
-    sfx('trap-web'); SHAKE=Math.max(SHAKE||0, 3);
+    sfx('trap-web',{from:p}); SHAKE=Math.max(SHAKE||0, 3);
     log('A cocoon splits open with a wet tearing sound, and '+(got>1 ? '<b>'+got+' Spiderlings</b> spill' : 'a <b>Spiderling</b> spills')+' out of it!','c-you');
   });
 }
@@ -431,7 +431,7 @@ function matronWake(e, M){
   e.state='hunt'; e.caughtOff=-1; M.nextRit=turn+4;
   ents.forEach(function(o){ if(o.guard && o.foe) o.state='hunt'; });
   log('<b>The Matron of the Web</b> uncoils from her throne, eight legs unfolding. "Another offering walks in on its own."','c-you');
-  sfx('matron-intro'); if(typeof playMusic==='function') playMusic('boss'); SHAKE=8;
+  sfx('matron-intro',{from:e}); if(typeof playMusic==='function') playMusic('boss'); SHAKE=8;
 }
 function matronStartRitual(e, M){
   var kinds = M.phase>=2 ? ['tithe','brood','tithe'] : ['tithe','brood'], kind=kinds[M.n%kinds.length];
@@ -453,7 +453,7 @@ function matronStartRitual(e, M){
   var p=matronCircleProp(circle); if(p) p.name='ritual-circle-active';
   floorMeta.marks=(floorMeta.marks||[]).filter(function(k){ return k.kind!=='matron-rit'; }).concat([{cells:cells, col:'#D0203A', until:M.rit.at, kind:'matron-rit'}]);
   M.n++; M.nextRit=turn+MATRON.ritTurns+MATRON.ritEvery[Math.min(2,M.phase)];
-  setClip(e,'attack'); sfx('shaman-cast'); SHAKE=Math.max(SHAKE||0, 4); ringFx(e.x, e.y, '#D0203A', 2);
+  setClip(e,'attack'); sfx('shaman-cast',{from:e}); SHAKE=Math.max(SHAKE||0, 4); ringFx(e.x, e.y, '#D0203A', 2);
   var nm = kind==='tithe' ? 'Blood Tithe' : 'Brood Call';
   log('The Matron '+(circle ? 'drops onto a ritual circle on a line of silk' : 'rears up')+' and begins the <b>'+nm+'</b>! '+
       'Break it: <b>'+M.rit.need+' damage in '+MATRON.ritTurns+' turns</b>, or stun her.','c-you');
@@ -467,7 +467,7 @@ function matronEndRitual(M){
 function matronBreak(e, M){
   matronEndRitual(M);
   applyStatus(e, 'stun', 1); floatText(e.x, e.y, 'broken!', 'magic', true);
-  ringFx(e.x, e.y, '#FFFFFF', 2); sfx('parry');
+  ringFx(e.x, e.y, '#FFFFFF', 2); sfx('parry',{from:e});
   log('<b>You break the Matron\'s ritual!</b> The circle gutters out and she reels.','c-good');
 }
 function matronBrood(e, driders, spiders, why){
@@ -489,7 +489,7 @@ function matronBrood(e, driders, spiders, why){
 }
 function matronFinish(e, M){
   var R=M.rit; matronEndRitual(M);
-  SHAKE=10; ringFx(e.x, e.y, '#D0203A', 6); sfx('explosion');
+  SHAKE=10; ringFx(e.x, e.y, '#D0203A', 6); sfx('explosion',{from:e});
   if(R.kind==='tithe'){
     var raw=Math.min(roll(MATRON.tithe[0], MATRON.tithe[1]), Math.round(player.maxhp*MATRON.titheCap));   /* never a one-shot */
     boltFx(player.x, player.y, e.x, e.y, 'blood'); burst(player.x, player.y, 'blood', 40, 0.08);
@@ -505,7 +505,7 @@ function matronVenomTick(){
   var M=matronState(); if(!M || !M.venom || turn<M.venom.at || !player || player.hp<=0) return;
   var V=M.venom, e=matronEnt(); M.venom=null;
   floorMeta.marks=(floorMeta.marks||[]).filter(function(k){ return k.kind!=='matron-venom'; });
-  sfx('trap-gas');
+  sfx('trap-gas',{from:V.cells.map(function(i){ return {x:i%MW, y:(i/MW)|0}; })});   /* 2026-09-28: where it lands, which you may have left */
   V.cells.forEach(function(i){ if(rng()<0.6) burst(i%MW, (i/MW)|0, 'poison', 10, 0.05); });
   ents.slice().forEach(function(t){
     if(t!==player && !t.ally) return;
@@ -530,7 +530,7 @@ function matronAct(e){
   /* phase shrieks */
   var pct=e.hp/e.maxhp;
   if(M.phase<2 && pct<MATRON.phase[M.phase]){
-    M.phase++; setClip(e,'attack'); sfx('matron-intro'); SHAKE=10; ringFx(e.x, e.y, '#8A1A3A', 4);
+    M.phase++; setClip(e,'attack'); sfx('matron-intro',{from:e}); SHAKE=10; ringFx(e.x, e.y, '#8A1A3A', 4);
     matronBrood(e, 1, M.phase===1 ? 2 : 3, '<b>The Matron shrieks</b>, and the webs overhead shake.');
      return;
   }
@@ -545,7 +545,7 @@ function matronAct(e){
     var cells=[]; for(var y=player.y-1;y<=player.y+1;y++) for(var x=player.x-1;x<=player.x+1;x++) if(inb(x,y) && walkable(x,y)) cells.push(idxOf(x,y));
     M.venom={cells:cells, at:turn+2}; M.venomCd=MATRON.venomCd;
     floorMeta.marks=(floorMeta.marks||[]).filter(function(k){ return k.kind!=='matron-venom'; }).concat([{cells:cells, col:'#FF3A2A', until:turn+2, kind:'matron-venom'}]);
-    setClip(e,'attack'); sfx('trap-gas'); boltFx(e.x, e.y, player.x, player.y, 'poison');
+    setClip(e,'attack'); sfx('trap-gas',{from:e}); boltFx(e.x, e.y, player.x, player.y, 'poison');
     log('The Matron spits a spray of <b>venom</b> high into the air above you. <b>Move off the red!</b>','c-you');
      return;
   }

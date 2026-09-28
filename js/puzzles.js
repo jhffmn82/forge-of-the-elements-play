@@ -225,11 +225,12 @@ function turnPuzzleHazards(context){  if(player.windCarry && at(player.x,player.
     if(player.st.stone || mastered(k)) solvePuzzle(room, 'the sentinels take you for one of their own and sleep on.');
     else {
       room.puzzle.solved=true;
-      props.filter(function(p){ return p.sentinel && roomAt(p.x,p.y)===room; }).forEach(function(p){
+      var woke=props.filter(function(p){ return p.sentinel && roomAt(p.x,p.y)===room; });
+      woke.forEach(function(p){
         removeProp(p); var m=spawn('brute',p.x,p.y); m.name='Stone Sentinel';m.sentinelRoom=room.puzzle.door; m.maxhp=m.hp=40+floorNo*6; m.state='hunt'; m.base=Object.assign({},m.base,{armor:6, sprite:'m-stoneling', col:'#8C8C84'}); m.t=player.t;
         burst(p.x,p.y,'earth',20,0.06);
       });
-      SHAKE=8; log('<b>The stone sentinels wake!</b>','c-you'); sfx('golem-alert');
+      SHAKE=8; log('<b>The stone sentinels wake!</b>','c-you'); sfx('golem-alert',{from:woke});
     }
   }
   else if(k==='library' && (player.god==='reginald'||(!(player.hidden>0) && aff('shadow')<3)) && player.movedLast){
@@ -283,7 +284,7 @@ function searchAround(resting, quiet){
       if(tellHere || rng()<ch){ setT(x,y,DOOR); found++; log('You find a <b>hidden door</b>!','c-kill'); sfx('door-secret'); sparkleFx(x,y,'light',14); }
     }
   }
-  feats.forEach(function(f){ if(!f.found && Math.max(Math.abs(f.x-player.x),Math.abs(f.y-player.y))<=2 && rng()<ch){ f.found=true; found++; log('You find '+(/^[AEIOU]/.test(trapName(f.kind))?'an':'a')+' <b>'+trapName(f.kind)+' trap</b>.','c-info'); sfx('trap-spot'); } });
+  feats.forEach(function(f){ if(!f.found && Math.max(Math.abs(f.x-player.x),Math.abs(f.y-player.y))<=2 && rng()<ch){ f.found=true; found++; log('You find '+(/^[AEIOU]/.test(trapName(f.kind))?'an':'a')+' <b>'+trapName(f.kind)+' trap</b>.','c-info'); sfx('trap-spot'); if(typeof trapSpotFx==='function') trapSpotFx(f); } });
   if(found) computeFOV();
   else if(!quiet) log('You search carefully'+(prev?' again':'')+' and find nothing.','c-info');
   endTurn();
@@ -301,13 +302,13 @@ window.addEventListener('keydown', function(ev){
 
 function turnMeltHoard(context){
   if(!props || !props.some(function(p){ return p.hoard; })) return;
-  var melted=0;
+  var melted=0, gone=[];
   props.filter(function(p){ return p.hoard; }).forEach(function(p){
     var hot=false;
     for(var dy=-1;dy<=1 && !hot;dy++) for(var dx=-1;dx<=1;dx++){ var x=p.x+dx, y=p.y+dy; if(inb(x,y) && fireT[idxOf(x,y)]){ hot=true; break; } }
-    if(hot){ removeProp(p); burst(p.x,p.y,'ice',16,0.05); melted++; }
+    if(hot){ removeProp(p); burst(p.x,p.y,'ice',16,0.05); melted++; gone.push(p); }
   });
-  if(melted){ log('Fire melts '+(melted>1?melted+' blocks':'a block')+' of ice.','c-kill'); sfx('ice-melt');
+  if(melted){ log('Fire melts '+(melted>1?melted+' blocks':'a block')+' of ice.','c-kill'); sfx('ice-melt',{from:gone});
     if(!props.some(function(p){ return p.hoard; })){ var hr=(floorMeta.puzzles||[]).filter(function(r){ return r.puzzle.kind==='hoard' && !r.puzzle.solved; })[0]; if(hr) solvePuzzle(hr, 'the last of the ice runs away as water.'); }
     draw(); }
 

@@ -84,7 +84,7 @@ function finishAttackReactions(event){
     if(best&&bd>1){player.x=best.x;player.y=best.y;player.windCd=turn+5;log('Windwalker: you slip away.','c-good');computeFOV();}}
   if(att===player&&landed){stokeForgeHeat();if(hasGod('grom')&&event.view.weapon.unarmed&&def.foe&&event.hpBefore>0)gainPiety(0.3,'punch',{pietyOnly:true});}
   if(att===player&&def.surprised)def.surprised=false;
-  if(att===player&&def.base&&def.base.fumes&&dist(att,def)<=1&&def.hp>0&&(def._fumeAt||-9)<turn-1){def._fumeAt=turn;addCloud(def.x,def.y,1,5,sDMG(2+Math.floor(floorNo/3)),'beetle');log('The <b>Grave Beetle</b> vents a cloud of noxious fumes!','c-you');sfx('trap-gas');}
+  if(att===player&&def.base&&def.base.fumes&&dist(att,def)<=1&&def.hp>0&&(def._fumeAt||-9)<turn-1){def._fumeAt=turn;addCloud(def.x,def.y,1,5,sDMG(2+Math.floor(floorNo/3)),'beetle');log('The <b>Grave Beetle</b> vents a cloud of noxious fumes!','c-you');sfx('trap-gas',{from:def});}
   if(att.base&&att.base.reloads&&def===player&&dist(att,def)>1){att.reloading=true;if(landed){applyStatus(player,'root',1);log('An arrow pins you in place.','c-you');}}
   if(att.base&&landed&&player.hp>0){if(att.base.arcs&&def===player)beetleArc(att);if(att.base.stingChain)jellyChain(att,def);if(att.base.aquatic){att._surfT=turn;if(def===player&&eelWater(att.x,att.y))applyStatus(player,'wet',3);}}
   if(att!==player&&att.base&&landed&&def.hp>0){var b=att.base;
@@ -163,7 +163,7 @@ function rollWeaponHit(event){
   LAST_HIT=null;
   if(!def || def.hp<=0) return;
   if(def===player && dist(att,def)>1 && deflectProjectile())return;
-  if(att.ally && def.x!==att.x) att.facingLeft=def.x<att.x;
+  if(att!==player && def.x!==att.x) att.facingLeft=def.x<att.x;   /* a creature turns to what it swings at */
   var ranged = (att.base && att.base.range>1 && dist(att,def)>1) || (att===player && ((view.weapon&&view.weapon.range)||1)>1 && dist(att,def)>1);
   var ch=hitChance(att===player?view.acc:accOf(att), evaOf(def) * (att===player && hasP('keenAim') ? 0.75 : 1));
   if(att===player){player.lastAttack=true;player.lastAttackMelee=!((view.weapon&&view.weapon.range||1)>1 && !player._reaching);}
@@ -180,9 +180,9 @@ function rollWeaponHit(event){
   if(att===player) setClip(player, ranged ? 'ranged' : 'melee');
   else setClip(att, 'attack');
   var tSwing = Math.max(performance.now(), fxClock);   /* the release or swing frame, after the clip's windup */
-  if(ranged){ boltFx(att.x,att.y,def.x,def.y,'phys',{arrow:true,silentHit:true}); sfx('bow-shot',{at:tSwing}); }
-  else { lungeFx(att, def.x, def.y); if(att===player || !att.base.sfx)sfx('swing',{at:tSwing}); }
-  if(!ranged && att!==player && att.base.sfx) sfx(att.base.sfx+'-attack',{at:tSwing});
+  if(ranged){ boltFx(att.x,att.y,def.x,def.y,'phys',{arrow:true,silentHit:true}); sfx('bow-shot',{at:tSwing,from:att}); }
+  else { lungeFx(att, def.x, def.y); if(att===player || !att.base.sfx)sfx('swing',{at:tSwing,from:att}); }
+  if(!ranged && att!==player && att.base.sfx) sfx(att.base.sfx+'-attack',{at:tSwing,from:att});
   if(def===player && att.foe) ch=hostileHitChance(ch);
   if(def.shadowClone&&def.cloneStats){
     var echoDefense=def.cloneStats;
@@ -197,7 +197,7 @@ function rollWeaponHit(event){
   var blocked = def.shadowClone&&def.cloneStats?rng()<def.cloneStats.block:(def===player && player.block && combatRoll(player.block,true));
   if(att===player ? !combatRoll(ch,true) : def===player ? combatRoll(1-ch,true) : rng()>ch){
     log(who+' miss'+(att===player?'':'es')+' '+foe+' <span class="roll">('+Math.round(ch*100)+'% to hit)</span>','c-miss');
-    floatText(def.x, def.y, 'miss', 'miss'); sfx('miss'); if(att===player && def.state!=='hunt' && def.state!=='throne') def.state='hunt'; if(att===player) def.caughtOff=-1; return;
+    floatText(def.x, def.y, 'miss', 'miss'); sfx('miss',{from:def}); if(att===player && def.state!=='hunt' && def.state!=='throne') def.state='hunt'; if(att===player) def.caughtOff=-1; return;
   }
   return {ranged:ranged,ch:ch,blocked:blocked,who:who,foe:foe};
 }
@@ -255,7 +255,7 @@ function resolveWeaponDamage(event,strike){
   var phys=applyDamage(def,base,att.swarm?'dark':att!==player&&att.base&&att.base.attackType||'phys',att,{hit:event.hit,attackRolled:true,actionId:event.actionId,tags:['attack',ranged?'ranged':'melee']}),extra=0,applied=0,note='',el=null,rawExtra={},bonuses={};
   function addRaw(type,n){rawExtra[type]=(rawExtra[type]||0)+n;}
   function addBonus(type,n){if(n>0){type=FoteDamage.type(type);bonuses[type]=(bonuses[type]||0)+n;}return n;}
-  sfx(hitSfx(att,def,crit,blocked), {at:def._hit});
+  sfx(hitSfx(att,def,crit,blocked), {at:def._hit, from:def});
   if(att===player){
     var ench = view.weapon.enchant;
     if(ench){

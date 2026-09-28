@@ -61,7 +61,7 @@ function turnRegeneration(context){
 function turnWorldPulse(clock){
   turnDeathRemains(clock);
   [player].concat(ents.filter(function(e){return e!==player;})).forEach(function(e){
-    if(e.tomb>0){e.tomb--;if(!e.tomb){log('The ice around '+e.name+' shatters.','c-info');sfx('ice-melt');}return;}
+    if(e.tomb>0){e.tomb--;if(!e.tomb){log('The ice around '+e.name+' shatters.','c-info');sfx('ice-melt',{from:e});}return;}
     worldStatusPulse(e,clock);
     if(typeof FoteShadowClone!=='undefined')FoteShadowClone.pulse(e,clock);
     if(e!==player&&!e.undeadServant){
@@ -87,7 +87,7 @@ function turnExplore(){
 }
 function turnFinalizeAction(context){
   if(context.freeStep)player.freeStep=false;
-  player.lastAttack=false;player.movedThisTurn=false;player.castingSpell=false;FREE_ACTION=false;
+  player.lastAttack=false;player.movedThisTurn=false;player.castingSpell=false;FREE_ACTION=false;delete player.grassStep;
   if(player.hp<context.hpBefore)player.lastDamageTime=player.t;
   player._worldBuffPrev=Object.assign({},player.buffs);
   player._buffPrev=Object.assign({},player.buffs);

@@ -27,7 +27,7 @@
   .pouch2{display:flex;gap:6px;flex-wrap:wrap}
   .mslot{width:64px;display:flex;flex-direction:column;align-items:center;gap:1px;padding:5px 2px;border:1px solid var(--edge);border-radius:6px;background:#141110;font-size:10px;color:var(--ash)}
   .mslot b{font-size:13px;color:var(--ink)} .mslot.none{opacity:.4}
-  .forge-info{font-size:12px;color:var(--ash);display:flex;flex-direction:column;gap:2px}
+  .forge-info{font-size:12px;color:#fff;font-weight:700;display:flex;flex-direction:column;gap:2px} .forge-info .c-info{color:#fff}   /* 2026-09-28 (Justin): bright white and bold; the affinity keeps its element colour, essence its gold */
   .ftabs{display:flex;gap:4px;margin:6px 0 10px} .ftabs button.on{border-color:var(--ember);color:var(--gold);background:#2A2015}
   .frow{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.05)}
   .frow .ftext{flex:1} .frow .d, .egrid .d{color:var(--dim);font-size:11px;display:block}
@@ -458,7 +458,8 @@ function inspectHTML(mx,my){
     if(it.kind==='weapon') return weaponCard(it.it);
     if(it.kind==='armor') return armorCard(it.it);
     if(it.kind==='off') return bagCard({kind:'off',data:it.it});
-    return '<div class="nm">'+cap(itemLabel(it))+'</div><div class="hint">'+(it.kind==='sigil'&&!sigilKnown[it.use]?'Unidentified sigil.':'')+'</div>';
+    /* 1.3.2 ruling 4 (Justin 2026-09-28): a mote says what it is for; a player who dies before floor 3 never met a Forge */
+    return '<div class="nm">'+cap(itemLabel(it))+'</div><div class="hint">'+(it.kind==='sigil'&&!sigilKnown[it.use]?'Unidentified sigil.':it.kind==='mote'?'Fuse it at the Elemental Forge (on the third or fourth floor of each biome) for a permanent point of affinity, set it into gear, or carve a sigil.':'')+'</div>';
   }
   var p=propAt(mx,my);
   var restorationForge=typeof FoteUnmakerEncounter!=='undefined'&&FoteUnmakerEncounter.forgeInfo(mx,my);
@@ -543,15 +544,24 @@ window.addEventListener('keydown', function(ev){
 }, true);
 var REST_SEQUENCE=0;
 function stopRest(){REST_SEQUENCE++;}
+/* 2026-09-28 (Justin): resting ran on through an alarm, so you "arrived" to a bell that rang many turns in. Rest now
+   also stops when a bell rings within earshot (12 spaces, the reach of the Beta 1.4 sound falloff) or a creature that
+   close starts hunting. An alarm is a one-use trap: one that has rung is gone from feats. */
+var REST_EARSHOT=12;
+function restAlarms(){ return feats.filter(function(f){ return f.kind==='alarm' && Math.max(Math.abs(f.x-player.x),Math.abs(f.y-player.y))<=REST_EARSHOT; }); }
+function restHunters(){ return ents.filter(function(e){ return e.foe && e.hp>0 && e.state==='hunt'; }); }
 function rest(){
   if(ents.some(function(e){ return e.foe && actorVisible(e); })){ log('You cannot rest with enemies in sight.','c-info'); return; }
-  var n=0,restRun=RUN,restPlayer=player,restId=++REST_SEQUENCE; log('You rest...','c-info');
+  var n=0,restRun=RUN,restPlayer=player,restId=++REST_SEQUENCE,alarms=restAlarms(),hunters=restHunters(); log('You rest...','c-info');
   (function step(){
     if(restId!==REST_SEQUENCE || RUN!==restRun || player!==restPlayer || uiOpen())return;
     if(turnSequenceBusy()){afterTurn(function(){setTimeout(step,0);});return;}
     if(n++>=150 || player.hp<=0) return;
     if(player.hp>=player.maxhp && player.mp>=player.maxmp){ log('Rested.','c-good'); return; }
     if(ents.some(function(e){ return e.foe && actorVisible(e); })){ log('Something approaches! You stop resting.','c-you'); return; }
+    if(alarms.some(function(f){ return feats.indexOf(f)<0; })){ log('The alarm bell rouses you. You stop resting.','c-you'); return; }
+    if(restHunters().some(function(e){ return hunters.indexOf(e)<0 && dist(e,player)<=REST_EARSHOT; })){ log('Something nearby is on the hunt. You stop resting.','c-you'); return; }
+    hunters=restHunters();
     if(player.hunger<300 && n>1){ log('You are too hungry to rest well.','c-info'); return; }
     if(typeof searchAround==='function') searchAround(true, true); else endTurn();   /* resting searches at half chance */
     /* Schedule only the next rest action. A save flush finishes the current

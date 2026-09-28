@@ -374,6 +374,17 @@ function drawCoveredTrapEmission(f, px, py, alpha, t){
     var sc = pulse>0.75 ? '#FFF1A8' : '#E8B44A';
     [[17,10],[15,13],[18,14],[14,18],[16,21]].forEach(function(q,i2,arr){ if(i2) { var a=arr[i2-1]; ctx.strokeStyle=sc; ctx.lineWidth=Math.max(1.5,1.6*u); ctx.beginPath(); ctx.moveTo(px+a[0]*u,py+a[1]*u); ctx.lineTo(px+q[0]*u,py+q[1]*u); ctx.stroke(); } });
     glowDot(16, 16, 8, '#E8B44A', 0.15+0.25*pulse);
+  } else if(k==='dart'){
+    /* 2026-09-28 (Justin): a found dart trap under a prop (a bush) drew nothing at all, so spotting it chimed and showed
+       no trap. Nothing leaks from a dart trap, so the steel tips of its darts show at the prop's feet, glinting. */
+    var tip = pulse>0.7 ? '#FFF8EA' : '#D9D0BE';
+    ctx.lineCap='round'; ctx.lineWidth=Math.max(1.5, 1.4*u);
+    /* in the strip below a prop's leaves, clear of its trunk: bore x,y and tip x,y (a 32px tile) */
+    [[4,31,2.5,27],[9,31.5,8,27.5],[23,31.5,24,27.5],[28,31,29.5,27]].forEach(function(q){
+      ctx.fillStyle='rgba(12,9,8,.8)'; ctx.beginPath(); ctx.ellipse(px+q[0]*u, py+q[1]*u, 1.4*u, 0.8*u, 0, 0, Math.PI*2); ctx.fill();
+      ctx.strokeStyle='#A49C8E'; ctx.beginPath(); ctx.moveTo(px+q[0]*u, py+(q[1]-0.3)*u); ctx.lineTo(px+q[2]*u, py+q[3]*u); ctx.stroke();
+      glowDot(q[2], q[3], 2, '#FFF8EA', 0.1+0.3*pulse); P(q[2]-0.6, q[3]-0.6, 1.2, 1.2, tip);
+    });
   }
 }
 /* 2026-09-27: the painted trap is the whole trap. The old procedural plates, grates, rune rings, webs, tripwires
@@ -1216,7 +1227,9 @@ function drawScene(){
     atTile(rp.x,rp.y,function(px0,py0){
       var px=px0+off[0]+shakeOf(e), py=py0+off[1]-rp.hop*TS*0.14 - (e.base.flying ? TS*0.12 + (ANIM.reduce?0:Math.sin(now/180+e.id)*TS*0.04) : 0);
       ctx.globalAlpha=0.35; ctx.fillStyle='#000'; ctx.beginPath(); ctx.ellipse(px0+TS/2,py0+TS*0.9,TS*0.26*(e.base.art||0.9),TS*0.09,0,0,7); ctx.fill(); ctx.globalAlpha=1;
-      var flip = e.ally && typeof e.facingLeft==='boolean' ? e.facingLeft : player.x < e.x;
+      /* 2026-09-28: a creature faces the way it last stepped or struck (it used to face the player whatever it did, so a wanderer
+         walked backwards); one that has not moved yet faces the player */
+      var flip = typeof e.facingLeft==='boolean' ? e.facingLeft : player.x < e.x;
       if(e.base && e.base.artLeft && !isShadeSummon(e) && !e.livingFlame) flip = !flip;   /* respect the artwork actually displayed */
       if(!drawCharacter(e, px, py, {flip:flip, flash:flashOf(e), breath:breathOf(e), sliding:motionActive(e,now), outline:e.foe && !!vis[idxOf(e.x,e.y)]})){
         var bb=breathOf(e)*TS*0.6,blockSize=!spriteOn&&!isShadeSummon(e)&&!e.livingFlame&&e.base.big||1;

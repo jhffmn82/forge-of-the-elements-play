@@ -149,7 +149,7 @@ function amuletTide(x,y){
     ents.forEach(function(e){ if(e.x===cx && e.y===cy && e.st){ if(e.st.burn) delete e.st.burn; e.st.wet={t:6}; } });
   }
   floorMeta.tides.push({cells:cells, until:turn+20});
-  burst(x,y,'ice',40,0.08); sfx('step-water');
+  burst(x,y,'ice',40,0.08); sfx('step-water',{from:{x:x,y:y}});
   log('Water surges out and floods the floor.','c-good');
   /* the wave runs through the whole room and trips its traps */
   var room=roomAt(x,y); if(!room) return;
@@ -178,7 +178,7 @@ function amuletPillar(x,y,check){
   if(!(at(x,y)===FLOOR || at(x,y)===OPEN) || occupied(x,y) || propAt(x,y) || itemAt(x,y)){ if(check) log('The pillar needs an empty tile.','c-info'); return false; }
   if(check) return true;
   addProp(x,y,'pillar',{b:1, pillar:true, until:turn+15});
-  burst(x,y,'earth',24,0.06); SHAKE=4; sfx('crate-break');
+  burst(x,y,'earth',24,0.06); SHAKE=4; sfx('crate-break',{from:{x:x,y:y}});
   log('A stone pillar grinds up out of the floor.','c-good');
   computeFOV(); return true;
 }

@@ -6,6 +6,18 @@
    as it is looked over. Anything found gets its own ping on top of the usual log line.
    ===================================================================== */
 
+/* 2026-09-28 (Justin): a spotted trap draws the eye. The chime used to ring with nothing on the map to say what
+   it meant ("it sounds like an important SFX", a player review), so every way of finding a trap (spotting it in
+   passing, searching, the Keen Eyes ring) rings its tile and lifts a "!" off it, starting with the chime. No
+   rng() (the "!" skips floatText, whose jitter draws from it), no timers, and nothing under reduced motion,
+   like the sweep below. */
+function trapSpotFx(f){
+  if(!f || (typeof ANIM!=='undefined' && ANIM.reduce) || typeof fx==='undefined') return;
+  var t0=Math.max(performance.now(), typeof fxClock==='number' ? fxClock : 0);   /* when sfx() plays the chime */
+  if(typeof ringFx==='function') ringFx(f.x, f.y, '#E2622B', 1.2, {at:t0});
+  fx.push({k:'t', x:f.x, y:f.y, text:'!', col:'#E2622B', big:false, t0:t0, dur:760, jitter:0});
+}
+
 /* the sweep: a ring at the search radius, dust at the player's feet, and glints walking outward */
 function searchSweepFx(quiet){
   if(typeof ANIM!=='undefined' && ANIM.reduce) return;
@@ -37,7 +49,6 @@ function searchSweepFx(quiet){
 if(typeof searchAround==='function'){
   var _searchAroundFx = searchAround;
   searchAround = function(resting, quiet){
-    var before = (typeof feats!=='undefined') ? feats.filter(function(f){ return f.found; }).length : 0;
     var secretsBefore = 0, i;
     if(typeof map!=='undefined') for(i=0;i<map.length;i++) if(map[i]===SECRET) secretsBefore++;
 
@@ -45,16 +56,8 @@ if(typeof searchAround==='function'){
 
     var r = _searchAroundFx(resting, quiet);
 
-    /* a found trap or door gets a ring of its own, so the eye goes straight to it */
-    if(typeof feats!=='undefined'){
-      feats.forEach(function(f){
-        if(f.found && !f._pinged && Math.max(Math.abs(f.x-player.x), Math.abs(f.y-player.y))<=2){
-          f._pinged = true;
-          if(typeof ringFx==='function') ringFx(f.x, f.y, '#E2622B', 1.2);
-          if(typeof sparkleFx==='function') sparkleFx(f.x, f.y, 'fire', 10);
-        }
-      });
-    }
+    /* a found door gets a ring of its own, so the eye goes straight to it (a found trap rings where it is found:
+       trapSpotFx, 2026-09-28) */
     var secretsAfter = 0;
     if(typeof map!=='undefined') for(i=0;i<map.length;i++) if(map[i]===SECRET) secretsAfter++;
     if(secretsAfter < secretsBefore && typeof ringFx==='function'){

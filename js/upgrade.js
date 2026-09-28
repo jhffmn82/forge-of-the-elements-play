@@ -37,8 +37,8 @@ var AMULET_LEVEL_USES = [0, 10, 30];
 
 function turnRevealKeenEyes(context){  if(!player || player.hp<=0 || !(ringVal('keeneyes')>0)) return;
   var ch=ringVal('keeneyes');
-  feats.forEach(function(f){ if(!f.found && vis[idxOf(f.x,f.y)] && rng()<ch){ f.found=true; log('Your ring tingles: '+(/^[AEIOU]/.test(trapName(f.kind))?'an':'a')+' <b>'+trapName(f.kind)+' trap</b>.','c-info'); } });
-  for(var y=0;y<MH;y++) for(var x=0;x<MW;x++){ if(at(x,y)===SECRET && vis[idxOf(x,y)] && rng()<ch*0.5){ setT(x,y,DOOR); log('Your ring tingles: a <b>hidden door</b>.','c-kill'); sfx('door-secret'); computeFOV(); } }
+  feats.forEach(function(f){ if(!f.found && vis[idxOf(f.x,f.y)] && rng()<ch){ f.found=true; log('Your ring tingles: '+(/^[AEIOU]/.test(trapName(f.kind))?'an':'a')+' <b>'+trapName(f.kind)+' trap</b>.','c-info'); if(typeof trapSpotFx==='function') trapSpotFx(f); } });
+  for(var y=0;y<MH;y++) for(var x=0;x<MW;x++){ if(at(x,y)===SECRET && vis[idxOf(x,y)] && rng()<ch*0.5){ setT(x,y,DOOR); log('Your ring tingles: a <b>hidden door</b>.','c-kill'); sfx('door-secret',{from:{x:x,y:y}}); computeFOV(); } }
 
 }
 RINGS.keeneyes.desc='Spot traps and hidden doors anywhere in sight, and find more of them when you search.';   /* 2026-09-23 audit: doors are found by searching, not in passing */

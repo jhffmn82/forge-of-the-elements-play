@@ -15,13 +15,13 @@ var gameEffects=FoteEffects.create({
     var e=event.entity,key=event.key,sourceAff=event.options&&event.options.sourceAffinity;
     function rank(el){return sourceAff?sourceAff[el]||0:aff(el);}
     function hasCombo(a,b){return sourceAff?rank(a)>=3&&rank(b)>=2:combo(a,b);}
-    if(['burn','stun','fear','root','blind','poison','bleed','slow'].indexOf(key)>=0)sfx('status-'+key);
+    if(['burn','stun','fear','root','blind','poison','bleed','slow'].indexOf(key)>=0)sfx('status-'+key,{from:e});
     if(e===player&&key==='fear'){stopTravel();stopRest();PACING.pending=null;}
     if(e===player||!e.foe||e.hp<=0)return;
     if(key==='root'){
       if(rank('earth')>=6&&event.previous&&!(e.stoneImm>turn)){
         service.apply(e,'stone',2,undefined,{durationModifiers:false,refresh:'replace'});e.stoneImm=turn+4;
-        floatText(e.x,e.y,'stone','earth');log(e.name+' turns to stone.','c-good');sfx('earth-cast');
+        floatText(e.x,e.y,'stone','earth');log(e.name+' turns to stone.','c-good');sfx('earth-cast',{from:e});
       }
       if(rank('earth')>=3&&!service.has(e,'poison')){
         if(sourceAff)service.apply(e,'poison',Math.min(3,Math.max(1,rank('earth')-2)),undefined,{durationModifiers:false,refresh:'replace',data:{sourceAffinity:sourceAff}});
@@ -33,7 +33,7 @@ var gameEffects=FoteEffects.create({
       service.apply(e,'blind',Math.max(1,event.turns),undefined,{durationModifiers:false});
     }
   },
-  onFrozen:function(event){sfx('status-freeze');floatText(event.entity.x,event.entity.y,'frozen','ice');},
+  onFrozen:function(event){sfx('status-freeze',{from:event.entity});floatText(event.entity.x,event.entity.y,'frozen','ice');},
   onChill:function(event){
     var e=event.entity,options=event.options||{},affinity=options.sourceAffinity,source=options.sourcePoint||player;
     if(e===player||!e.foe||!(affinity?(affinity.water||0)>=3&&(affinity.air||0)>=2:combo('water','air'))||e.base.boss)return;

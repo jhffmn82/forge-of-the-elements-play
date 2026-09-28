@@ -70,18 +70,38 @@ var SFX_ALIASES={
   'morty-alert':'morty-intro','radiant-warden-alert':'radiant-warden-intro',
   'heart-alert':'heart-intro','heart-attack':'golem-attack'
 };
-var SFX_LAST={},SFX_VOICES=[],SFX_STEP=0;
-function sfxGain(name,opts){return (opts&&opts.vol!==undefined?opts.vol:1)*((name==='level-up'||name==='victory')?.5:1);}
+var SFX_LAST={},SFX_LAST_GAIN={},SFX_VOICES=[],SFX_STEP=0,SFX_SYNTH_GAIN=1;
+/* per-sound level, on top of a call's own vol. 2026-09-28 (Justin): spotting a trap and the magic missile hit (every
+   magic-type impact) were too loud, halved like the level-up and victory stings */
+var SFX_LEVEL={'level-up':.5, victory:.5, 'trap-spot':.5, 'magic-missile-hit':.5, 'pickup-mote':.5};   /* pickup-mote: 1.3.2 ruling 6, level with the essence pickup */
+function sfxGain(name,opts){return (opts&&opts.vol!==undefined?opts.vol:1)*(SFX_LEVEL[name]!==undefined?SFX_LEVEL[name]:1);}
+/* 2026-09-28 (Justin): "sound effects soften by distance: near (within 5 spaces), 70% between 5-8, 30% between 8-12,
+   and after that you don't hear it." A sound with a place in the world names it with opts.from: a tile {x,y} or a
+   creature, or a list of them (the nearest counts). Distance is spaces as movement counts them (a diagonal step is
+   one) from your tile to the source; walls and sight do not matter. No from (menus, your own actions, stairs,
+   level-up, stingers) plays at full volume. */
+var SFX_DISTANCE_BANDS=[{upTo:5,gain:1},{upTo:8,gain:.7},{upTo:12,gain:.3}];   /* farther than 12: not played */
+function sfxDistanceGain(from){
+  if(Array.isArray(from)) return from.length ? from.reduce(function(best,f){ return Math.max(best,sfxDistanceGain(f)); },0) : 1;
+  var p=typeof player!=='undefined' ? player : null;   /* no player yet (the title screen): full volume */
+  if(!from || !p || typeof from.x!=='number' || typeof from.y!=='number' || typeof p.x!=='number' || typeof p.y!=='number') return 1;
+  var d=Math.max(Math.abs(from.x-p.x),Math.abs(from.y-p.y));
+  for(var i=0;i<SFX_DISTANCE_BANDS.length;i++) if(d<=SFX_DISTANCE_BANDS[i].upTo) return SFX_DISTANCE_BANDS[i].gain;
+  return 0;
+}
 function sfx(name, opts){
   if(!AUDIO.ctx || AUDIO.muted || !name) return;
   var now=performance.now();
   opts=opts||{};
   if(opts.vol===0)return;
+  /* distance before de-duplication: a sound too far away to hear, or a softer copy, never swallows a nearer one */
+  var near=opts.from ? sfxDistanceGain(opts.from) : 1;
+  if(near<=0)return;
   /* game sounds follow the animation queue: a swing sounds when the swing plays, not when the key was pressed */
   var at = opts.at===undefined ? (name.indexOf('ui-')!==0 && typeof fxClock==='number' ? Math.max(now, fxClock) : now) : opts.at;
   var alert=/-alert$/.test(name), group=alert?'creature-alert':name;
-  if(SFX_LAST[group]!==undefined && Math.abs(at-SFX_LAST[group])<(alert?350:40))return;
-  SFX_LAST[group]=at;
+  if(SFX_LAST[group]!==undefined && Math.abs(at-SFX_LAST[group])<(alert?350:40) && SFX_LAST_GAIN[group]>=near)return;
+  SFX_LAST[group]=at; SFX_LAST_GAIN[group]=near;
   var file=name==='step-stone' ? ['step-stone','step-stone-1','step-stone-3','step-stone-2'][SFX_STEP++%4] : (SFX_ALIASES[name]||name);
   loadFile(file, function(buf){
     if(AUDIO.muted || performance.now()>at+500)return; // Never replay stale impacts after slow decoding.
@@ -89,15 +109,15 @@ function sfx(name, opts){
     if(buf){
       var s=c.createBufferSource(); s.buffer=buf; s.playbackRate.value=opts.rate||1;
       while(SFX_VOICES.length>=24){var old=SFX_VOICES.shift();try{old.stop();}catch(e){}}
-      var g=c.createGain(); g.gain.value=sfxGain(name,opts)*(alert?.55:1); s.connect(g); g.connect(AUDIO.sfxBus);
+      var g=c.createGain(); g.gain.value=sfxGain(name,opts)*(alert?.55:1)*near; s.connect(g); g.connect(AUDIO.sfxBus);
       if(/^(fire|ice|lightning|earth|light|shadow|magic|cast|shrine|pray|summon|heal|forge|wrath)/.test(name))g.connect(AUDIO.verb);
       SFX_VOICES.push(s);s.onended=function(){var i=SFX_VOICES.indexOf(s);if(i>=0)SFX_VOICES.splice(i,1);s.disconnect();g.disconnect();};s.start(t);
-    } else synth(name, t, opts);
+    } else { SFX_SYNTH_GAIN=near; try{ synth(name, t, opts); } finally{ SFX_SYNTH_GAIN=1; } }   /* the stand-in softens with distance too */
   });
 }
 
 /* ---- the synth ---- */
-function envGain(t, a, d, peak){ var g=AUDIO.ctx.createGain(); g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(peak||0.5,t+a); g.gain.exponentialRampToValueAtTime(0.0001,t+a+d); return g; }
+function envGain(t, a, d, peak){ var g=AUDIO.ctx.createGain(); g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime((peak||0.5)*SFX_SYNTH_GAIN,t+a); g.gain.exponentialRampToValueAtTime(0.0001,t+a+d); return g; }
 function tone(t, type, f1, f2, dur, vol, dest){
   var c=AUDIO.ctx, o=c.createOscillator(); o.type=type; o.frequency.setValueAtTime(f1,t); if(f2) o.frequency.exponentialRampToValueAtTime(Math.max(20,f2), t+dur);
   var g=envGain(t, Math.min(0.01,dur*0.2), dur, vol||0.3); o.connect(g); g.connect(dest||AUDIO.sfxBus); g.connect(AUDIO.verb); trackSynth(o,[g]); o.start(t); o.stop(t+dur+0.05);

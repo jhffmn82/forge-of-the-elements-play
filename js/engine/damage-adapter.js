@@ -154,7 +154,7 @@ function damageReceivedReactions(event){
   if(source&&source.base){var b=source.base;
     if(d>0&&b.poisons&&!player.st.poison&&rng()<b.poisons&&aff('earth')<6){applyStatus(player,'poison',4,Math.max(2,sDMG(2)));log('The arrow is grave-tipped: <b>you are poisoned</b>.','c-you');}
     if(d>0&&b.phases){var drained=Math.min(Math.floor(player.mp),4);if(drained>0){player.mp-=drained;floatText(player.x,player.y,'-'+drained+' mp','magic');}}
-    if(d>0&&b.rots)applyStatus(player,'rot',20);
+    if(d>0&&b.rots)applyStatus(player,'rot',30);   /* 2026-09-28 (Justin): rot lasts 30 turns (was 20) */
     if(b.snuffs){player.snuffed=5;log('The <b>Gloom Moth</b> smothers your light.','c-you');computeFOV();}
     if(b.lurks&&!source._struck)source._struck=true;
     if(b.kindles&&d>0&&player.hp>0){applyStatus(player,'burn',3,sDMG(3));if(!player._fwaLitMsg||player._fwaLitMsg<turn-8){player._fwaLitMsg=turn;log('The <b>Flame Dancer</b> sets you alight.','c-you');}}

@@ -40,8 +40,8 @@ function stepEnt(e,dx,dy){
   for(var i=0;i<choices.length;i++){
     var mx=choices[i][0],my=choices[i][1],x=e.x+mx,y=e.y+my;
     if(!actorCellAllowed(e,x,y,mx,my,{doors:true}))continue;
-    if(at(x,y)===DOOR){setT(x,y,OPEN);if(vis[idxOf(x,y)]){log('A door swings open.','c-info');sfx('door-open');}return true;}
-    if(e.ally&&mx)e.facingLeft=mx<0;e.x=x;e.y=y;
+    if(at(x,y)===DOOR){setT(x,y,OPEN);if(vis[idxOf(x,y)]){log('A door swings open.','c-info');sfx('door-open',{from:{x:x,y:y}});}return true;}
+    if(mx)e.facingLeft=mx<0;e.x=x;e.y=y;   /* 2026-09-28 (Justin: 'zombie sprites move backwards'): every creature faces the way it steps, not only allies */
     if(!e.base.flying){
       if(gAt(x,y)===G_GRASS)setG(x,y,G_SHORT);
       var trap=feats.find(function(f){return f.x===x&&f.y===y;});if(trap)triggerTrap(trap,e);
@@ -113,7 +113,7 @@ function actorPrepare(context){
   e.surprised=false;
   if(!MAPVIEW.on&&!FoteActors.blocked(e,gameEffects)&&canSeePlayer(e)&&e.state==='hunt'&&(e._lostFor||0)>=SURPRISE_LOST){
     e._lostFor=0;e.surprised=true;e.lastSeen={x:player.x,y:player.y};
-    log('The <b>'+e.name+'</b> spots you!','c-info');if(e.base.sfx)sfx(e.base.sfx+'-alert');return true;
+    log('The <b>'+e.name+'</b> spots you!','c-info');if(e.base.sfx)sfx(e.base.sfx+'-alert',{from:e});return true;
   }
   return false;
 }

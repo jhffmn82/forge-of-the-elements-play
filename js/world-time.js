@@ -37,7 +37,7 @@ function knockback(e,dx,dy,n){
   var blocked=false;
   for(var i=0;i<n;i++){var x=e.x+dx,y=e.y+dy;if(!walkable(x,y)||occupied(x,y)){blocked=true;break;}e.x=x;e.y=y;moved=true;}
   if(moved){e._lx=undefined;if(e===player){player.resolveUntil=player.t+200;computeFOV();}}
-  if(blocked&&typeof sfx==='function')sfx('knock-thud');   /* the push ended against a wall or a body (gap pass 2026-09-22) */
+  if(blocked&&typeof sfx==='function')sfx('knock-thud',{from:e});   /* the push ended against a wall or a body (gap pass 2026-09-22) */
   return moved;
 }
 function worldStatusPulse(e,clock){

@@ -289,7 +289,7 @@ function planeCreatureBehavior(e){
           sparkleFx(e.x, e.y, 'dark', 30); if(typeof ringFx==='function') ringFx(e.x, e.y, '#7A4FE0', 2);
           e.x=s2.x; e.y=s2.y; e._lx=undefined; e.tpCd=3;
           sparkleFx(s2.x, s2.y, 'dark', 30); if(typeof ringFx==='function') ringFx(s2.x, s2.y, '#B98CFF', 2);
-          if(typeof sfx==='function') sfx('vanish');
+          if(typeof sfx==='function') sfx('vanish',{from:e});
           log('The <b>'+e.name+'</b> steps through the shadows.','c-info');  return true;
         }
       }
@@ -310,7 +310,7 @@ function planeCreatureBehavior(e){
     if(e.state!=='hunt'){
       /* dormant until struck or stood next to: a boss that cannot chase you should not start the fight
          either, so you get to clear its crystal nodes and its escort first (2026-09-17) */
-      if(e._provoked || heartTouching(e)){ e.state='hunt'; log('<b>'+e.name+'</b> wakes with a rumble.','c-you'); sfx('heart-intro'); SHAKE=6; }
+      if(e._provoked || heartTouching(e)){ e.state='hunt'; log('<b>'+e.name+'</b> wakes with a rumble.','c-you'); sfx('heart-intro',{from:e}); SHAKE=6; }
        return true;
     }
     if(heartTouching(e)){ attack(e,player);  return true; }

@@ -447,7 +447,7 @@ function elementalPlaneBehavior(e){
   if(kind==='drowned' && e.state==='hunt' && d>=2 && d<=4 && see && waterPullReady && fwaSees(e)){
     e.waterPullReadyAt=worldNow()+500; setClip(e,'attack');
     var got=fwaPush(player, e.x-player.x, e.y-player.y, 1);
-    if(got){ player.waterPullRecoveryUntil=worldNow()+200;log('The <b>Drowned One</b> hauls you one tile toward it.','c-you'); sfx('trap-web'); }
+    if(got){ player.waterPullRecoveryUntil=worldNow()+200;log('The <b>Drowned One</b> hauls you one tile toward it.','c-you'); sfx('trap-web',{from:e}); }
      return true;
   }
   if(kind==='hawk' && canActorMove(e) && e.state==='hunt' && d>=3 && d<=5 && see && (e.swoopCd=(e.swoopCd||0)-1)<=0){

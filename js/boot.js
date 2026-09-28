@@ -68,7 +68,11 @@ function startGame(){
     bl.onclick=function(){ try{ localStorage.setItem('astra-temple-light', lightingOn()?'off':'on'); }catch(e){} bl.textContent='Lighting: '+(lightingOn()?'on':'off'); draw(); };
   }
 
+  /* 2026-09-28 (Justin): the run behind the title is not the player's. It used up the first-run tips (newRun in
+     create.js), so a real first run never showed them; they now wait for the first run the player begins. */
+  window.TIPS_SHOWN=true;
   newRun(Date.now()%1000000, CHOICE);
+  window.TIPS_SHOWN=false;
   setMotion(ANIM.mode);
   requestAnimationFrame(resize);
   requestAnimationFrame(fxTick);

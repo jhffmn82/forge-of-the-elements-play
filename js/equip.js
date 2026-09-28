@@ -28,6 +28,38 @@ var HELD = {
   tome:     {len:0.22, hand:'l', shield:true},
   holy:     {len:0.26, hand:'l', follow:0.3, tilt:0.25, grip:0.9}
 };
+/* 1.4 (Justin 2026-09-28: 'a per frame, for each animation, position and orientation mapping of the held weapons ... they
+   should match how the weapon is held during the animation'). Every look carries grips checked against its own frames
+   (art/sprites/grips, packed as ASSETS.cast[look].grips[clip][frame]): for each hand the fist a handle passes through, the
+   elbow, front (1) or behind (-1) the body, and an optional tip angle a (degrees). The item's angle comes from that
+   frame's forearm by the way it is held (tools/grip-tools.py draws the review overlays by the same rules):
+     blade   - (sword, dagger, mace, wand, knife) the tip carries on along the forearm, bent a little outward: down and
+               out from a hanging arm, up from a raised one, forward in a thrust;
+     upright - (holy symbol, staff, spear, bow at rest, and the two-handed longsword and axe, which hanging point-down
+               would reach past the feet) stands up out of a hanging fist, follows a raised or thrusting forearm;
+     placed  - a shield sits on the forearm, a tome in the hand, an orb over the palm, all upright. */
+var HELD_STYLE={sword:'blade', longsword:'upright', axe:'upright', mace:'blade', dagger:'blade', wand:'blade', censer:'blade',
+  spear:'upright', staff:'upright', bow:'upright', holy:'upright'};
+/* GRIP_PULL: the share of the way a hanging item is drawn toward straight down (a blade) or straight up (an upright item),
+   weighted by how far the forearm hangs, so nothing snaps as an arm rises. GRIP_BLADE_BEND: a hanging blade's outward cant. */
+var GRIP_PULL=0.5, GRIP_BLADE_BEND=6*Math.PI/180, GRIP_SHIELD_ON_FOREARM=0.30;
+function gripFor(m, row, col){
+  if(!m.grips) return null;
+  var clip=castClipAt(m,row), list=clip && m.grips[clip];
+  return (list && (list[col] || list[0])) || null;
+}
+/* side: 1 when the fist is on the image's left of the figure (outward is toward smaller x), -1 on its right */
+function heldTipAngle(style, hand, side){
+  var phi=Math.atan2(hand.f[1]-hand.e[1], hand.f[0]-hand.e[0]), s=Math.sin(phi);
+  if(style==='blade'){
+    if(hand.a!==undefined) return hand.a*Math.PI/180;
+    var w=Math.max(0,s);
+    return phi + w*(GRIP_PULL*angDiff(Math.PI/2,phi) + GRIP_BLADE_BEND*side);
+  }
+  /* upright: a hanging forearm's direction mirrored upward (continuous at the horizontal), then drawn toward vertical */
+  var t = s>0 ? -phi : phi, u=Math.max(0,-Math.sin(t));
+  return t + u*GRIP_PULL*angDiff(-Math.PI/2,t);
+}
 function heldKeyOf(it){
   if(!it || it.unarmed || it===EMPTY_OFF || it.joke) return null;
   var ic=(it.icon||'').replace(/^item-/,'');
@@ -92,8 +124,10 @@ function armorLook(a){
      figure. The torso tint could not follow each look's own clothes and read as a flat patch over them. Only an armor
      enchantment still shows, as a coloured rim around the whole figure. The material and tier tint code below is kept
      unused in case the owner wants it back for particular looks. */
-  if(!a || !a.enchant) return null;
-  return {weight:'cloth', cloth:null, tier:null, plus:0, cursed:false, enchant:a.enchant, id:'rim,'+a.enchant};
+  /* 2026-09-28 (Justin: 'the glow on the character sprite from armor is still there, it is way too much especially in a dark
+     area like biome 4'): the enchantment's rim is gone too, so body armor draws nothing on the figure; its enchantment shows
+     on the item's card. */
+  return null;
 }
 function tintedFrame(cs, row, col, look, pose){
   var m=cs.m, cell=m.cell;
@@ -205,12 +239,13 @@ function heldTierImage(o, key, tier, k){
 function heldTier(it){ return (it && typeof itemKey==='function' && itemKey(it) && typeof tierNum==='function') ? tierNum(it) : null; }
 /* handOv: draw this item in the other hand (an off-hand weapon), mirrored so its own art faces outward. cell: the sheet's
    cell size, for the short-forearm rule */
-function drawHeld(g, key, pose, rest, dx, dy, sc, drawH, enchant, now, tier, handOv, cell, aim){
+function drawHeld(g, key, pose, rest, dx, dy, sc, drawH, enchant, now, tier, handOv, cell, aim, grip){
   var H=HELD[key], o=objArt('held','held-'+key); if(!H || !o) return;
   /* aim: a bow being shot is held upright with its belly toward the target; the held art has its string on the
      outer side, so it is mirrored (2026-09-27, Justin: the bow was backwards in the new empty-handed shots) */
   var hk = handOv || H.hand, mirror = (!!handOv && handOv!==H.hand) !== !!aim;
-  var hand=pose[hk==='r'?'rh':'lh'], elbow=pose[hk==='r'?'re':'le'];
+  var gh = grip && grip[hk];
+  var hand=gh ? gh.f : pose && pose[hk==='r'?'rh':'lh'], elbow=gh ? gh.e : pose && pose[hk==='r'?'re':'le'];
   if(!hand) return;
   var hx=dx+hand[0]*sc, hy=dy+hand[1]*sc;
   var len=H.len*drawH, s=len/o.sh;
@@ -223,6 +258,29 @@ function drawHeld(g, key, pose, rest, dx, dy, sc, drawH, enchant, now, tier, han
   if(copy){ o={img:copy, sx:0, sy:0, sw:o.sw*k, sh:o.sh*k}; s/=k; }
   g.save();
   g.imageSmoothingEnabled=true; g.imageSmoothingQuality='high';
+  if(gh){
+    /* a grip: the item goes where this frame's fist is, turned the way it is held (heldTipAngle) */
+    if(H.shield){
+      var onArm = key==='tome' ? 0 : GRIP_SHIELD_ON_FOREARM;     /* a tome is held in the hand, a shield strapped to the forearm */
+      var sx=hand[0]+(elbow[0]-hand[0])*onArm, sy=hand[1]+(elbow[1]-hand[1])*onArm;
+      g.translate(dx+sx*sc, dy+sy*sc);
+      g.drawImage(o.img, o.sx,o.sy,o.sw,o.sh, -o.sw*s/2, -o.sh*s*(key==='tome'?0.45:0.5), o.sw*s, o.sh*s);
+    } else if(H.float){
+      g.translate(hx, hy);
+      var bob2=(ANIM.reduce?0:Math.sin(now/300))*drawH*0.02;
+      g.globalAlpha*=0.95; g.drawImage(o.img, o.sx,o.sy,o.sw,o.sh, -o.sw*s/2, -o.sh*s - drawH*0.05 + bob2, o.sw*s, o.sh*s);
+    } else {
+      g.translate(hx, hy);
+      var gside = hand[0] < cell/2 ? 1 : -1;
+      var tip = aim ? -Math.PI/2 : heldTipAngle(HELD_STYLE[key]||'blade', gh, gside);
+      g.rotate(tip + Math.PI/2);
+      if(mirror) g.scale(-1, 1);
+      if(enchant){ g.shadowColor=AFF_COL[enchant]||'#fff'; g.shadowBlur=Math.max(3, drawH*0.04)*dev; }
+      g.drawImage(o.img, o.sx,o.sy,o.sw,o.sh, -o.sw*s/2, -o.sh*s*H.grip, o.sw*s, o.sh*s);
+    }
+    g.restore();
+    return;
+  }
   g.translate(hx, hy);
   var side = hk === 'r' ? 1 : -1;     /* the right hand is on the image's left: lean outward = negative angle */
   if(H.shield){
@@ -277,8 +335,12 @@ function drawCastLayers(e, cs, fr, dx, dy, w, h, g){
       if(bow && !(who===player && who.god==='grom' && typeof equipmentForbidden==='function' && equipmentForbidden('ranged',Object.assign({},bow)))){ wpn=bow; mainKey='bow'; aimBow=true; }
     }
   }
-  var items=[];
-  if(pose){
+  var items=[], grip=gripFor(m,row,col);
+  if(grip){
+    /* the grips say for every frame whether each hand is in front of the body or behind it */
+    if(mainKey) items.push({key:mainKey, ench:wpn.enchant, tier:heldTier(wpn), aim:clip==='ranged' && aimBow, z:grip[HELD[mainKey].hand].z});
+    if(offKey) items.push({key:offKey, ench:off.enchant, tier:heldTier(off), hand:'l', z:grip.l.z});
+  } else if(pose){
     if(mainKey) items.push({key:mainKey, ench:wpn.enchant, tier:heldTier(wpn), aim:clip==='ranged' && aimBow, z:(pose[HELD[mainKey].hand==='r'?'rh':'lh']||[0,0,0])[2]});
     /* the off hand is the left one, whatever hand the item's own entry names (2026-09-20) */
     if(offKey) items.push({key:offKey, ench:off.enchant, tier:heldTier(off), hand:'l', z:(pose.lh||[0,0,0])[2]});
@@ -287,15 +349,15 @@ function drawCastLayers(e, cs, fr, dx, dy, w, h, g){
     items.forEach(function(it){ if((it.hand||HELD[it.key].hand)==='l' && clip!=='melee' && clip!=='death') it.z=Math.max(0, it.z); });
   }
   var drawH=m.stand*sc;
-  items.forEach(function(it){ if(it.z<0) drawHeld(g, it.key, pose, rest, dx, dy, sc, drawH, it.ench, now, it.tier, it.hand, cell, it.aim); });
+  items.forEach(function(it){ if(it.z<0) drawHeld(g, it.key, pose, rest, dx, dy, sc, drawH, it.ench, now, it.tier, it.hand, cell, it.aim, grip); });
   var look=armorLook(arm);
   if(look){ g.drawImage(tintedFrame(cs,row,col,look,pose), 0,0,cell,cell, dx,dy,w,h); }
   else g.drawImage(cs.img, fr.sx, fr.sy, cell, cell, dx, dy, w, h);
-  items.forEach(function(it){ if(it.z>=0) drawHeld(g, it.key, pose, rest, dx, dy, sc, drawH, it.ench, now, it.tier, it.hand, cell, it.aim); });
+  items.forEach(function(it){ if(it.z>=0) drawHeld(g, it.key, pose, rest, dx, dy, sc, drawH, it.ench, now, it.tier, it.hand, cell, it.aim, grip); });
   /* Fingers close over the grip rather than the handle covering the whole fist. */
   items.forEach(function(it){
     var held=HELD[it.key];if(it.z<0||held.shield||held.float)return;
-    var hand=pose[(it.hand||held.hand)==='r'?'rh':'lh'];if(!hand)return;
+    var hn=(it.hand||held.hand), hand=grip ? grip[hn].f : pose && pose[hn==='r'?'rh':'lh'];if(!hand)return;
     g.save();g.beginPath();g.arc(dx+hand[0]*sc,dy+hand[1]*sc,cell*.018*sc,0,Math.PI*2);g.clip();
     if(look)g.drawImage(tintedFrame(cs,row,col,look,pose),0,0,cell,cell,dx,dy,w,h);
     else g.drawImage(cs.img,fr.sx,fr.sy,cell,cell,dx,dy,w,h);

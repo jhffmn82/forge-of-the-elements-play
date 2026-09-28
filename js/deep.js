@@ -651,7 +651,7 @@ function turnDeepLavaEnemies(context){
 /* ---------------------------------------------------------------- web curtains: cut with one blow, burned by fire */
 
 function cutWebCurtain(p,src,type){
-  removeProp(p); sfx('step-grass',{vol:0.5});
+  removeProp(p); sfx('step-grass',{vol:0.5,from:p});
   if(typeof burst==='function') burst(p.x, p.y, 'ice', 12, 0.04);
   if(type==='fire') setG(p.x, p.y, G_ASH);
   log('You cut through the web.','c-info');

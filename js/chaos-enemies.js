@@ -59,7 +59,7 @@
     STATUS_INFO.chaosbrace={name:'Iron Brace',icon:'ic-arcane-ward',d:'Braced in place: takes 45% less damage for 2 turns.'};
   }
   var elements=['fire','ice','lightning'];
-  function sound(name,volume){if(typeof sfx==='function')sfx(name,{vol:volume===undefined?.7:volume});}
+  function sound(from,name,volume){if(typeof sfx==='function')sfx(name,{vol:volume===undefined?.7:volume,from:from});}
   function castSound(element){return element==='poison'?'status-poison':element==='web'?'trap-web':element+'-cast';}
   function active(){return !!(floorMeta&&floorMeta.chaosPreview);}
   function state(){return floorMeta.chaosCombat||(floorMeta.chaosCombat={version:1,damageVersion:2,hazards:[],nextHazard:1});}
@@ -138,7 +138,7 @@
     if(now()<(e.chaosBeamReadyAt||0)||dist(e,target)>6||!clearShot(e,target))return false;
     var tiles=line(e,target,6);if(!reaches(tiles,target))return false;
     var victim=projectileVictim(e,{tiles:tiles});if(!victim)return false;
-    e.chaosLensActive=true;e.chaosBeamReadyAt=now()+600;revealActor(e);setClip(e,'attack');sound('light-cast');boltFx(e.x,e.y,victim.x,victim.y,'light');
+    e.chaosLensActive=true;e.chaosBeamReadyAt=now()+600;revealActor(e);setClip(e,'attack');sound(e,'light-cast');boltFx(e.x,e.y,victim.x,victim.y,'light');
     if(spellLands(e,victim)){var damage=direct(e,victim,sDMG(24),'light',false);if(damage>0&&victim.hp>0)afflict(e,victim,'blind',2);}
     else floatText(victim.x,victim.y,'miss','miss');
     return true;
@@ -163,9 +163,9 @@
     revealActor(e);setClip(e,'attack');e.chaosCooldown=now()+500;
     // Physical specials already get their voice from attack(). Non-physical
     // releases need an audible cast even when their projectile misses.
-    if(w.kind==='chaos-ray'||w.kind==='chaos-web')sound(castSound(w.element));
-    else if(w.kind==='chaos-vent'||w.kind==='chaos-bile')sound('trap-gas');
-    else if(w.kind==='chaos-brood')sound('slime-split',.65);
+    if(w.kind==='chaos-ray'||w.kind==='chaos-web')sound(e,castSound(w.element));
+    else if(w.kind==='chaos-vent'||w.kind==='chaos-bile')sound(e,'trap-gas');
+    else if(w.kind==='chaos-brood')sound(e,'slime-split',.65);
     var victim;
     if(w.kind==='chaos-ray'||w.kind==='chaos-harpoon'||w.kind==='chaos-web'){
       victim=projectileVictim(e,w);var end=w.tiles[w.tiles.length-1];boltFx(e.x,e.y,end[0],end[1],w.element);
@@ -209,7 +209,7 @@
     }
     choices.sort(function(a,b){return Math.abs(dist(a,target)-2)-Math.abs(dist(b,target)-2)||b.n-a.n||a.y-b.y||a.x-b.x;});if(!choices.length)return false;
     var to=choices[0],concealed=actorConcealed(e);if(!concealed)sparkleFx(e.x,e.y,'light',10);e.x=to.x;e.y=to.y;e._lx=undefined;e._ly=undefined;if(typeof MOTION_STATE!=='undefined')MOTION_STATE.delete(e);if(!concealed)sparkleFx(e.x,e.y,'light',10);
-    sound('vanish',.5);e.chaosBlinkNeedsAttack=true;e.chaosCooldown=now()+500;return true;
+    sound(e,'vanish',.5);e.chaosBlinkNeedsAttack=true;e.chaosCooldown=now()+500;return true;
   }
   function immediate(e,kind,tiles,label,element,extra){
     if(!tiles.length)return false;
@@ -220,7 +220,7 @@
     var range=e.kind==='chaos-prism-seer'?6:5,tiles=line(e,target,range);
     if(!reaches(tiles,target))return false;
     var type=e.kind==='chaos-prism-seer'?e.chaosNextElement:'poison';
-    revealActor(e);setClip(e,'attack');sound(castSound(type));boltFx(e.x,e.y,target.x,target.y,type);
+    revealActor(e);setClip(e,'attack');sound(e,castSound(type));boltFx(e.x,e.y,target.x,target.y,type);
     if(spellLands(e,target)){
       var damage=direct(e,target,sDMG(e.kind==='chaos-prism-seer'?24:15),type,false);
       if(damage>0&&target.hp>0&&e.kind==='chaos-bile-spitter'&&now()>=(e.chaosDebuffReadyAt||0)){afflict(e,target,'blind',2);e.chaosDebuffReadyAt=now()+300;}
@@ -264,7 +264,7 @@
       case 'chaos-rift-skitter':if(d>=2&&d<=5)return blink(e,target);break;
       case 'chaos-lens-bearer':
         var ally=ents.filter(function(o){return o!==e&&o.foe&&o.hp>0&&o.kind!=='chaos-lens-bearer'&&sameRegion(e,o)&&dist(e,o)<=4&&!gameEffects.has(o,'chaoslens')&&clearShot(e,o);}).sort(function(a,b){return dist(a,target)-dist(b,target)||a.id-b.id;})[0];
-        if(ally){revealActor(e);gameEffects.apply(ally,'chaoslens',4,undefined,{durationModifiers:false,refresh:'replace',data:{n:sHP(35),sourceId:e.id}});if(!actorConcealed(ally))boltFx(e.x,e.y,ally.x,ally.y,'light');setClip(e,'attack');sound('light-cast',.55);e.chaosCooldown=now()+500;e.chaosLensActive=true;return true;}return lensBeam(e,target);
+        if(ally){revealActor(e);gameEffects.apply(ally,'chaoslens',4,undefined,{durationModifiers:false,refresh:'replace',data:{n:sHP(35),sourceId:e.id}});if(!actorConcealed(ally))boltFx(e.x,e.y,ally.x,ally.y,'light');setClip(e,'attack');sound(e,'light-cast',.55);e.chaosCooldown=now()+500;e.chaosLensActive=true;return true;}return lensBeam(e,target);
       case 'chaos-plague-bloat':if(d<=2)return immediate(e,'vent',area(e.x,e.y,1,region),'vents poison','poison');break;
       case 'chaos-brood-carrier':
         var canBrood=d<=6&&(e.chaosBorn||0)<4&&ents.filter(function(o){return o.hp>0&&o.chaosOwnerId===e.id;}).length<2;
@@ -274,7 +274,7 @@
       case 'chaos-horned-reaver':if(d<=1){var dx=Math.sign(target.x-e.x),dy=Math.sign(target.y-e.y);tiles=area(e.x,e.y,1,region).filter(function(t){return (t[0]-e.x)*dx+(t[1]-e.y)*dy>0;});return immediate(e,'cleave',tiles,'Frontal Cleave');}break;
       case 'chaos-gorehound':
         return leap(e,target);
-      case 'chaos-ironbound':if(d<=4){gameEffects.apply(e,'chaosbrace',2,undefined,{durationModifiers:false,refresh:'replace'});e.chaosCooldown=now()+700;setClip(e,'attack');sound('hit-armor',.55);floatText(e.x,e.y,'braced','phys');return true;}break;
+      case 'chaos-ironbound':if(d<=4){gameEffects.apply(e,'chaosbrace',2,undefined,{durationModifiers:false,refresh:'replace'});e.chaosCooldown=now()+700;setClip(e,'attack');sound(e,'hit-armor',.55);floatText(e.x,e.y,'braced','phys');return true;}break;
       case 'chaos-chain-reaver':if(d>=2){tiles=line(e,target,6);if(reaches(tiles,target))return immediate(e,'harpoon',tiles,'casts its hooked harpoon');}break;
       case 'chaos-lash-dancer':tiles=line(e,target,2);if(reaches(tiles,target))return immediate(e,'lash',tiles,'lashes with a barbed whip','blood');break;
       case 'chaos-silk-weaver':if(d>=2&&!gameEffects.hasTag(target,'root')&&!gameEffects.hasTag(target,'slow')){tiles=line(e,target,5);if(reaches(tiles,target))return immediate(e,'web',tiles,'casts a silver web','web');}break;

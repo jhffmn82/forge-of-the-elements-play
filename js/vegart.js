@@ -241,7 +241,7 @@ function drawBushProp(p, px, py, alpha){
 /* cutting one: a burst of leaves, and what it drops is mostly a heart (Zelda rules) */
 
 function cutBushProp(p,src,type){
-  removeProp(p); sfx('step-grass',{vol:0.5});   /* 2026-09-23 (Justin): cutting a bush at half volume; the walking rustle stays */
+  removeProp(p); sfx('step-grass',{vol:0.5,from:p});   /* 2026-09-23 (Justin): cutting a bush at half volume; the walking rustle stays */
   if(typeof burst==='function') burst(p.x, p.y, 'heal', 14, 0.05);
   (floorMeta.regrow=floorMeta.regrow||[]).push({x:p.x, y:p.y, at:turn+VEG_REGROW.bush});
   if(type==='fire'){ setG(p.x,p.y,G_ASH); return; }

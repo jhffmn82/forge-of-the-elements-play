@@ -185,7 +185,9 @@ function equipHTML(){
   var hr=hitRange(), h='<div class="gearwrap">';
   /* left: totals */
   h+='<div><div class="sec">Offense</div>'+kv([['Damage per hit',hr[0]+'-'+hr[1]],['Crit',Math.round(player.crit*100)+'%'],['Crit damage','&times;'+criticalMultiplier().toFixed(2)],['Accuracy',player.acc],['Range',player.range],['Attack speed',playerSpeedPercent('attack')],['Movement speed',playerSpeedPercent('move')],['Spell power','&times;'+spellPower({}).toFixed(2)],['Divine power','&times;'+divineStrength().toFixed(2)]]);
-  h+='<div class="sec">Defense</div>'+kv([['HP',Math.round(player.hp)+' / '+player.maxhp],['Shield',playerShield()],['Armor',player.armor],['Evasion',evaOf(player)],['Block',Math.round(player.block*100)+'%'],['Parry',Math.round(player.parry*100)+'%'],['Mana',Math.floor(player.mp)+' / '+player.maxmp]]);
+  h+='<div class="sec">Defense</div>'+kv([['HP',Math.round(player.hp)+' / '+player.maxhp],['Shield',playerShield()],['Armor',player.armor],['Evasion',evaOf(player)],['Block',Math.round(player.block*100)+'%'],['Parry',Math.round(player.parry*100)+'%'],['Mana',Math.floor(player.mp)+' / '+player.maxmp],['Stealth',Math.round(stealthScore()*100)+'%']]);
+  /* 1.3.2 ruling 5 (Justin 2026-09-28): show the stealth that already exists, and what moves it */
+  h+='<p class="c-info" style="font-size:11px;margin:2px 0 6px">Stealth is how easily monsters miss you. Standing still, tall grass and dark rooms raise it; chain and plate lower it; attacking or casting drops it to nothing.</p>';
   h+='<div class="sec">Attributes</div><div class="res">'+['mig','agi','vit','foc'].map(function(k){ return '<span>'+STAT_LABEL[k]+'<b>'+player.stats[k]+'</b></span>'; }).join('')+'</div>';
   h+='<div class="sec">Resistances</div>'+resHTML()+'</div>';
   /* middle: doll and slots */

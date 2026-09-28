@@ -93,7 +93,8 @@ function absorbCoreAtGate(nx, ny){
   claimCore(name,true); // Supports legacy carried cores before the load migration.
   player.core=null; floorMeta.exitOpen=true;
   log('You press the <b>'+name+'</b> into the gate. It drinks the light, and the gate grinds open.','c-kill');
-  sfx('victory'); if(typeof ringFx==='function') ringFx(nx,ny,'#9FD8FF',4); sparkleFx(nx,ny,'light',60);
+  sfx('victory',{vol:0.6});   /* 2026-09-28 (Justin): the gate opening after a boss at 30% (0.6 x the sting's own .5); the end-of-run fanfare keeps .5 */
+  if(typeof ringFx==='function') ringFx(nx,ny,'#9FD8FF',4); sparkleFx(nx,ny,'light',60);
   computeFOV(); updateUI(); draw(); return true;
 }
 

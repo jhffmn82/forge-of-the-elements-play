@@ -115,7 +115,7 @@ function drawFX(){
     var f=fx[i], p=(now-f.t0)/f.dur;
     if(p>=1){
       if(f.k==='p' && !f.hit){ f.hit=true; burst(f.bx,f.by, f.arrow?'phys':f.type, f.type==='phys'?6:18, 0.05);
-        if(!f.silentHit && typeof sfx==='function') sfx(f.sfxHit || hitSfxFor(f.type)); }
+        if(!f.silentHit && typeof sfx==='function') sfx(f.sfxHit || hitSfxFor(f.type), {from:{x:f.bx,y:f.by}}); }
       continue;
     }
     keep.push(f);
@@ -215,7 +215,7 @@ function drawFX(){
 function hitSfxFor(type){
   return {phys:'arrow-hit', fire:'fire-hit', ice:'ice-hit', lightning:'lightning-hit', poison:'earth-hit', earth:'earth-hit', light:'light-hit', dark:'shadow-hit', magic:'magic-missile-hit'}[type] || 'hit-flesh';
 }
-function ringFx(x,y,col,r,o){ fx.push({k:'ring', x:x, y:y, col:col||'#FFF', r:r||2, t0:performance.now(), dur:(o&&o.dur)||450, a:o&&o.a, w:o&&o.w}); }
+function ringFx(x,y,col,r,o){ fx.push({k:'ring', x:x, y:y, col:col||'#FFF', r:r||2, t0:(o&&o.at)||performance.now(), dur:(o&&o.dur)||450, a:o&&o.a, w:o&&o.w}); }   /* o.at: a later start (2026-09-28) */
 
 /* keep frames coming while particles live */
 function fxTick(t){

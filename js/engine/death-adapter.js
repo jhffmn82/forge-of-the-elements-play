@@ -38,7 +38,7 @@ function prepareCreatureDeath(event){
     if(vis[idxOf(e.x,e.y)])log('The <b>Shambler</b> collapses... and twitches. Finish it, or burn it.','c-info');
     event.deferred='shambler';return false;
   }
-  if(b.bursts){addCloud(e.x,e.y,1,5,sDMG(3+Math.floor(floorNo/3)),'bloat');if(vis[idxOf(e.x,e.y)])log('The <b>Grave Bloat</b> bursts in a cloud of rot!','c-you');sfx('trap-gas');}
+  if(b.bursts){addCloud(e.x,e.y,1,5,sDMG(3+Math.floor(floorNo/3)),'bloat');if(vis[idxOf(e.x,e.y)])log('The <b>Grave Bloat</b> bursts in a cloud of rot!','c-you');sfx('trap-gas',{from:e});}
   if(inCrypt()&&b.living!==false&&!b.object){floorMeta.deathSpots=floorMeta.deathSpots||[];floorMeta.deathSpots.push({x:e.x,y:e.y});if(floorMeta.deathSpots.length>12)floorMeta.deathSpots.shift();}
   if(e.kind==='morty'&&ents.some(function(other){return other.id===floorMeta.phylId&&other.hp>0;})){
     ents=ents.filter(function(other){return other!==e;});floorMeta.mortyReturn={at:turn+3,maxhp:e.maxhp};sparkleFx(e.x,e.y,'dark',60);
@@ -49,7 +49,7 @@ function prepareCreatureDeath(event){
 }
 function deathAnimation(e,persistent){
   var shade=!!(e.ally&&(e.shade||e.swarm)),flame=!!e.livingFlame;
-  var facing=e.ally&&typeof e.facingLeft==='boolean'?e.facingLeft:player.x<e.x;
+  var facing=typeof e.facingLeft==='boolean'?e.facingLeft:player.x<e.x;
   var visual={id:e.id,x:e.x,y:e.y,col:e.col,sprite:shade?'m-shade':e.base.sprite,art:shade?.9:(e.base.art||.9)*(e.big?1.25:1),flip:facing!==!!(!shade&&!flame&&e.base.artLeft)};
   if(shade)visual.shade=true;
   if(flame){visual.livingFlame=true;visual.flameShots=e.flameShots||0;}
@@ -68,13 +68,14 @@ function deathAnimation(e,persistent){
 function commitCreatureDeath(event){
   var e=event.entity,by=event.source;
   ents=ents.filter(function(other){return other!==e;});deathAnimation(e);
-  if(e.ally){sfx('ally-death',{at:fxClock});log(e.name+' falls.','c-info');return;}
-  if(e.base.sfx)sfx(e.base.sfx+'-death',{at:fxClock});log(e.name+' dies.','c-kill');
+  if(e.ally){sfx('ally-death',{at:fxClock,from:e});log(e.name+' falls.','c-info');return;}
+  /* 2026-09-28 (Justin): quietDeath, a trap kill out of sight (triggerTrap): heard, not named */
+  if(e.base.sfx)sfx(e.base.sfx+'-death',{at:fxClock,from:e});var seenDeath=revealAll||vis[idxOf(e.x,e.y)],ourKill=by===player||!!(by&&by.ally);if(!e.quietDeath&&(seenDeath||ourKill))log(e.name+' dies.','c-kill');   /* 1.3.2 ruling 2: an unseen death is quiet unless you or an ally made the kill */
   RUN.kills++;
   if(event.playerSide&&!e.noXp)gainXP(e.base.xp||10);
   godOnKill(e,by);
   if(e.keyholder){items.push({x:e.x,y:e.y,kind:'key',key:'iron'});log('It drops an <b>iron key</b>.','c-kill');}
-  if(e.base.drop==='mote'&&e.base.el){items.push({x:e.x,y:e.y,kind:'mote',el:e.base.el});log('It collapses into a <b>'+e.base.el+' mote</b>.','c-kill');sparkleFx(e.x,e.y,TRAIL_EL(e.base.el),26);}
+  if(e.base.drop==='mote'&&e.base.el){items.push({x:e.x,y:e.y,kind:'mote',el:e.base.el});log('It collapses into '+(/^[aeiou]/.test(e.base.el)?'an':'a')+' <b>'+e.base.el+' mote</b>.','c-kill');sparkleFx(e.x,e.y,TRAIL_EL(e.base.el),26);}
   else rollDrops(e,event.playerSide);
   if(e.st.corrupt&&event.playerSide&&!e.base.boss&&!e.elite)raiseShade(e);
   if(e.base.boss)bossDefeated(e);

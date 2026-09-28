@@ -108,7 +108,7 @@ function slimeSplit(e){
   var c=nearFree(e.x,e.y,1); if(!c) return;
   var half=Math.max(1,Math.floor(e.hp/2)); e.hp-=half;
   var s=spawn(e.kind==='caveslime'?'caveslime':'slime',c.x,c.y); s.hp=s.maxhp=half; s.split=true; s.state='hunt'; s.name=e.kind==='caveslime'?'Basalt Slimelet':'Slimelet'; s.small=true; s.noLoot=true;
-  log('The slime splits in two!','c-info'); sfx('slime-split');
+  log('The slime splits in two!','c-info'); sfx('slime-split',{from:e});
 }
 
 function hitSfx(att, def, crit, blocked){
@@ -237,21 +237,21 @@ function basicMonsterBehavior(e){
        the corridor and shoot him to death for free, since nothing outside the room could ever wake him
        (Justin, 2026-09-23). Anything that has actually hurt him ends the staging too. */
     var rm=roomAt(player.x,player.y);
-    if((see && d<=7 && rm && rm.role==='boss') || e.hp<e.maxhp){ e.state='hunt'; log('<b>'+e.name+'</b> rises from his throne with a roar!','c-you'); sfx('warchief-roar'); playMusic('boss');
+    if((see && d<=7 && rm && rm.role==='boss') || e.hp<e.maxhp){ e.state='hunt'; log('<b>'+e.name+'</b> rises from his throne with a roar!','c-you'); sfx('warchief-roar',{from:e}); playMusic('boss');
       ents.forEach(function(o){ if(o.guard) o.state='hunt'; }); SHAKE=8; }
      return true;
   }
   if(e.state==='asleep'){
     var notice = noticeChance(e, see, d, true);
-    if(rng()<notice){ e.state='hunt'; e.caughtOff=turn; log(e.name+' notices you.','c-info'); if(e.base.sfx) sfx(e.base.sfx+'-alert'); }
+    if(rng()<notice){ e.state='hunt'; e.caughtOff=turn; if(player.x!==e.x)e.facingLeft=player.x<e.x; log(e.name+' notices you.','c-info'); if(e.base.sfx) sfx(e.base.sfx+'-alert',{from:e}); }
      return true;
   }
-  if(see && (e.state==='hunt' || e.challenged || rng()<noticeChance(e, see, d, false))) { if(e.state!=='hunt'){ e.caughtOff=turn; if(e.base.sfx) sfx(e.base.sfx+'-alert'); } e.state='hunt'; e.lastSeen={x:player.x,y:player.y}; }
+  if(see && (e.state==='hunt' || e.challenged || rng()<noticeChance(e, see, d, false))) { if(e.state!=='hunt'){ e.caughtOff=turn; if(player.x!==e.x)e.facingLeft=player.x<e.x; if(e.base.sfx) sfx(e.base.sfx+'-alert',{from:e}); } e.state='hunt'; e.lastSeen={x:player.x,y:player.y}; }
   if(e.state==='hunt'){
     /* the boss */
     if(e.base.boss && bossTurn(e, see, d)){  return true; }
     if(e.base.rootSpit&&see&&d>1&&d<=5&&!(e.rootSpitReadyAt>worldNow())&&clearShot(e,player)){
-      e.rootSpitReadyAt=worldNow()+600;setClip(e,'attack');sfx('slime-attack');boltFx(e.x,e.y,player.x,player.y,'earth');
+      e.rootSpitReadyAt=worldNow()+600;setClip(e,'attack');sfx('slime-attack',{from:e});boltFx(e.x,e.y,player.x,player.y,'earth');
       var spitChance=hostileHitChance(hitChance(accOf(e),evaOf(player))*(e.st.blind?.6:1),true);
       if(!combatRoll(1-spitChance,true)){
         var spit=applyDamage(player,roll(e.dmg[0],e.dmg[1]),'phys',e,{tags:['single-target','projectile']});
@@ -264,7 +264,7 @@ function basicMonsterBehavior(e){
     if(e.base.caster && see && d<=e.base.castRange){
       e.castCd=(e.castCd||0)-1;
       if(e.castCd<=0 && clearShot(e,player)){   /* a shaman behind its own goblins holds the bolt */
-        e.castCd=e.base.castEvery; setClip(e,'attack'); sfx('shaman-cast');
+        e.castCd=e.base.castEvery; setClip(e,'attack'); sfx('shaman-cast',{from:e});
         boltFx(e.x,e.y,player.x,player.y,'fire');
         if(rng() < hostileHitChance(hitChance(e.base.acc+10, evaOf(player)),true)){
           var fd=applyDamage(player, roll(5,8)+floorNo, 'fire', e); floatText(player.x,player.y,String(fd),'fire'); var brn=rng()<0.5; if(brn) applyStatus(player,'burn',3,sDMG(2));
@@ -290,7 +290,8 @@ function basicMonsterBehavior(e){
     else if(e.lastSeen){ stepToward(e, e.lastSeen.x, e.lastSeen.y); if(e.x===e.lastSeen.x && e.y===e.lastSeen.y){ e.lastSeen=null; e.state='wander'; } }
     else chaseStep(e);
   } else {
-    if(!e.goal || (e.x===e.goal.x && e.y===e.goal.y) || rng()<0.04){
+    if(e.bellGoal && e.goal && e.x===e.goal.x && e.y===e.goal.y) e.bellGoal=false;   /* reached the bell: wander on as usual */
+    if(!e.goal || (e.x===e.goal.x && e.y===e.goal.y) || (!e.bellGoal && rng()<0.04)){
       var tries=0, gx, gy;
       do{ gx=ri(1,MW-2); gy=ri(1,MH-2); tries++; } while(!walkable(gx,gy) && tries<40);
       e.goal={x:gx,y:gy};
@@ -350,12 +351,12 @@ function bossTurn(e, see, d){
     var w=e.windup; e.windup=null;
     setClip(e,'attack');
     if(w.kind==='slam' || w.kind==='ring'){
-      sfx('warchief-slam'); SHAKE=w.kind==='slam'?14:10;
+      sfx('warchief-slam',{from:e}); SHAKE=w.kind==='slam'?14:10;
       hitTiles(e, w.tiles, w.kind==='slam'?[16,24]:[12,18], w.kind==='slam'?'Ground Slam':'The shockwave', function(v){ applyStatus(v,'stun',1); });
       log(w.kind==='slam' ? '<b>Grukk brings the axe down.</b> The floor cracks.' : 'A shockwave rolls outward.','c-you');
       if(w.kind==='slam' && e.phase>=2){ e.windup={kind:'ring', tiles:tilesWithin(e.x,e.y,3,4), due:2}; log('<b>The ground heaves.</b> A shockwave is building: get close to him.','c-you'); }
     } else if(w.kind==='charge'){
-      sfx('warchief-roar'); SHAKE=10;
+      sfx('warchief-roar',{from:e}); SHAKE=10;
       var path=w.tiles, stopAt=null, hit=false;
       for(var i=0;i<path.length;i++){
         var t=path[i];
@@ -370,7 +371,7 @@ function bossTurn(e, see, d){
     return true;
   }
   if((e.phase===0 && pct<0.66) || (e.phase===1 && pct<0.33)){
-    e.phase++; log('<b>Grukk</b> bellows for help!'+(e.phase===2?' He is enraged: every slam now sends out a shockwave.':''),'c-you'); sfx('warchief-roar'); SHAKE=10;
+    e.phase++; log('<b>Grukk</b> bellows for help!'+(e.phase===2?' He is enraged: every slam now sends out a shockwave.':''),'c-you'); sfx('warchief-roar',{from:e}); SHAKE=10;
     for(var j=0;j<2;j++){ var c=nearFree(e.x,e.y,3); if(c){ var g=spawn(j===0?'goblin':'archer',c.x,c.y); g.state='hunt'; g.noXp=false; sparkleFx(c.x,c.y,'earth',10); } }
     return true;
   }
@@ -380,7 +381,7 @@ function bossTurn(e, see, d){
   if(step==='slam' && d<=3){
     e.rot=(e.rot||0)+1;
     e.windup={kind:'slam', tiles:tilesWithin(e.x,e.y,0,2), due:2};
-    setClip(e,'attack'); sfx('warchief-roar');
+    setClip(e,'attack'); sfx('warchief-roar',{from:e});
     log('<b>Grukk raises his axe overhead!</b> Get out of the marked ground.','c-you');
     return true;
   }

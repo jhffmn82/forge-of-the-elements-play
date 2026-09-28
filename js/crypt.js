@@ -9,7 +9,7 @@
 (function(){
   var M=MONSTERS;
   M.shambler   = {name:'Shambler', sprite:'m-shambler', col:'#8FA37A', ch:'z', hp:40, dmg:[5,8], acc:60, eva:8, armor:1, speed:100, range:1, xp:22,
-                  band:[6,8], w:22, undead:true, rises:true, art:0.95, sfx:'zombie'};
+                  band:[6,8], w:22, undead:true, rises:true, rots:true, art:0.95, sfx:'zombie'};   /* rots: 2026-09-28 (Justin), its hits rot like a Grave Bloat's */
   M.gravebeetle= {name:'Grave Beetle', sprite:'m-grave-beetle', col:'#3E5A3A', ch:'b', hp:40, dmg:[5,8], acc:62, eva:12, armor:3, speed:100, range:1, xp:20,
                   band:[6,8], w:18, fumes:true, living:true, art:0.8, sfx:'slime'};
   M.skeleton.band=[6,10]; M.skeleton.w=18; M.skeleton.boneType=true; M.skeleton.sprite='m-crypt-skeleton';   /* Justin's Crypt sprite set, 2026-09-17 */
@@ -166,7 +166,7 @@ function cryptCreatureBehavior(e){
       e.sumCd=(e.sumCd||0)-1; e.wardCd=(e.wardCd||0)-1;
       var minion=ents.filter(function(o){ return o.id===e.minion && o.hp>0; })[0];
       if(!minion && e.sumCd<=0){
-        var c=nearFree(e.x,e.y,2); if(c){ var sk=spawnRaw('skeleton', c.x, c.y); sk.state='hunt'; sk.noLoot=true; e.minion=sk.id; e.sumCd=6; setClip(e,'attack'); sfx('shaman-cast'); sparkleFx(c.x,c.y,'dark',24); log('The <b>Necro-Acolyte</b> calls a Skeleton up out of the floor.','c-you');  return true; }
+        var c=nearFree(e.x,e.y,2); if(c){ var sk=spawnRaw('skeleton', c.x, c.y); sk.state='hunt'; sk.noLoot=true; e.minion=sk.id; e.sumCd=6; setClip(e,'attack'); sfx('shaman-cast',{from:e}); sparkleFx(c.x,c.y,'dark',24); log('The <b>Necro-Acolyte</b> calls a Skeleton up out of the floor.','c-you');  return true; }
       }
       if(e.wardCd<=0){
         var warded=0; ents.forEach(function(o){ if(o.foe && o.base.undead && dist(o,e)<=4 && !o.boneWard){ o.boneWard=true; warded++; } });
@@ -246,7 +246,7 @@ function mortyAct(e){
   var see=canSeePlayer(e), d=dist(e,player), hall=mortyHall(), rm=roomAt(player.x,player.y);
   if(e.state==='throne'){
     if(see && d<=8 && rm && rm===hall){
-      e.state='hunt'; e.turnN=0; log('<b>Morty the Mostly-Dead</b> adjusts his crown. "Ah! A visitor! Do stay. Forever, ideally."','c-you'); sfx('morty-intro'); playMusic('boss');
+      e.state='hunt'; e.turnN=0; log('<b>Morty the Mostly-Dead</b> adjusts his crown. "Ah! A visitor! Do stay. Forever, ideally."','c-you'); sfx('morty-intro',{from:e}); playMusic('boss');
       ents.forEach(function(o){ if(o.guard) o.state='hunt'; });
     }
      return;
@@ -257,7 +257,7 @@ function mortyAct(e){
     if(e.channelHp - e.hp >= 20){ e.channel=0; floorMeta.marks=[]; log('You break Morty\'s concentration! The Bone Nova fizzles.','c-good');  return; }
     if(--e.channel>0){ log('Morty\'s bones glow brighter...','c-you');  return; }
     floorMeta.marks=[];
-    ringFx(e.x,e.y,'#8CFF6A',8); SHAKE=10; sfx('shaman-cast');
+    ringFx(e.x,e.y,'#8CFF6A',8); SHAKE=10; sfx('shaman-cast',{from:e});
     var targets=ents.filter(function(o){ return o!==e && !o.foe && vis[idxOf(o.x,o.y)]; }).concat(see ? [player] : []);
     targets.forEach(function(t){ var raw=roll(10,16)+Math.floor(floorNo/2);
       if(t===player) raw=Math.min(raw, Math.round(player.maxhp*0.35));   /* never a one-shot */
@@ -282,7 +282,7 @@ function mortyAct(e){
     e.channel=2; e.channelHp=e.hp;
     var ring=[]; for(var y=e.y-6;y<=e.y+6;y++) for(var x=e.x-6;x<=e.x+6;x++) if(inb(x,y) && walkable(x,y) && vis[idxOf(x,y)] && Math.abs(x-e.x)+Math.abs(y-e.y)>=5 && Math.abs(x-e.x)+Math.abs(y-e.y)<=6) ring.push(idxOf(x,y));
     floorMeta.marks=[{cells:ring, col:'#8CFF6A', until:turn+3, kind:'nova'}];
-    setClip(e,'attack'); log('<b>Morty</b> raises his staff and begins a <b>Bone Nova</b>! Get out of his sight, or hit him hard.','c-you'); sfx('shaman-cast');
+    setClip(e,'attack'); log('<b>Morty</b> raises his staff and begins a <b>Bone Nova</b>! Get out of his sight, or hit him hard.','c-you'); sfx('shaman-cast',{from:e});
      return;
   }
   /* Grave Grasp every 4 turns */
@@ -297,7 +297,7 @@ function mortyAct(e){
   /* soul bolts at range, otherwise keep his distance. 2026-09-22 (Justin): the boss may cast over his skeletons - the
      clear-lane rule for shooters stops at the Necro-Acolyte */
   if(d>=2 && d<=7){
-    setClip(e,'attack'); boltFx(e.x,e.y,player.x,player.y,'dark'); sfx('shaman-cast');
+    setClip(e,'attack'); boltFx(e.x,e.y,player.x,player.y,'dark'); sfx('shaman-cast',{from:e});
     if(rng()<hostileHitChance(hitChance(e.base.acc, evaOf(player)),true)){ var sd=applyDamage(player, roll(6,10)+Math.floor(floorNo/2), 'dark', e); floatText(player.x,player.y,String(sd),'dark'); log('Morty\'s soul bolt hits you: '+sd+'.','c-you'); if(player.hp<=0) kill(player,e); }
     else log('Morty\'s soul bolt misses.','c-miss');
      return;

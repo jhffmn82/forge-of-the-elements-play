@@ -52,8 +52,11 @@ function performPlayerMove(dx,dy){
   }
   if(t===WALL && gAt(player.x,player.y)===G_TELL){ log('A draft whispers through the stones here. Something is behind this wall.','c-info'); }
   if(!walkable(nx,ny)) return;
+  /* 2026-09-28 (Justin): the step tramples tall grass before the monsters look, so its stealth never counted while
+     walking. The grass you just stepped into still hides you this turn (stealthScore); turnFinalizeAction clears it. */
+  if(gAt(nx,ny)===G_GRASS) player.grassStep={x:nx,y:ny};
   player.x=nx; player.y=ny; player.movedThisTurn=true;
-  if(gAt(nx,ny)===G_GRASS){ setG(nx,ny,G_SHORT); sfx('step-grass',{vol:0.5}); }   /* 2026-09-23 (Justin): half as loud, like cutting a bush */
+  if(gAt(nx,ny)===G_GRASS){ setG(nx,ny,G_SHORT); sfx('step-grass',{vol:0.25}); }   /* 2026-09-28 (Justin): a quarter; the rustle is 0.5 s against a 0.07 s stone click, so at half it still sounded bigger. Cutting a bush stays at half */
   else if(t===WATER) sfx('step-water',{vol:0.8}); else sfx('step-stone',{vol:0.8});
   stepOn(); endTurn();
 }
@@ -91,7 +94,7 @@ function entryItemsAndTerrain(){
   var here=items.filter(function(it){ return it.x===player.x && it.y===player.y; });
   here.forEach(function(it){
     if(it.kind==='essence'){ removeItem(it); gainEssence(it.n); floatText(player.x,player.y,'+'+it.n,'magic'); log('Picked up '+it.n+' essence.','c-good'); sfx('pickup-essence',{vol:0.5}); }
-    else if(it.kind==='mote'){ removeItem(it); player.motes[it.el]=(player.motes[it.el]||0)+1; log('Picked up '+(/^[aeiou]/.test(it.el)?'an':'a')+' <b>'+it.el+' mote</b>. Bring it to the Elemental Forge.','c-kill'); sfx('pickup-mote'); sparkleFx(player.x,player.y,TRAIL_EL(it.el),16); }
+    else if(it.kind==='mote'){ removeItem(it); player.motes[it.el]=(player.motes[it.el]||0)+1; log('Picked up '+(/^[aeiou]/.test(it.el)?'an':'a')+' <b>'+it.el+' mote</b>. Bring it to the Elemental Forge'+(RUN&&!RUN.moteTold?', found on the third or fourth floor of each biome.':'.'),'c-kill'); if(RUN)RUN.moteTold=true;   /* 1.3.2 ruling 4: the first mote of a run says where */ sfx('pickup-mote'); sparkleFx(player.x,player.y,TRAIL_EL(it.el),16); }
     else if(it.kind==='key'){ removeItem(it); player.keys[it.key]=(player.keys[it.key]||0)+1; log('Picked up the <b>'+it.key+' key</b>. It fits a door on this floor.','c-kill'); sfx('pickup-key'); }
     else log('You see <b>'+itemLabel(it)+'</b> here.'+((it.kind==='heart'||it.kind==='managlobe') ? ' <span class="roll">(it waits until you need it)</span>' : ' <span class="roll">(g to pick up)</span>'),'c-info');
   });
@@ -168,7 +171,7 @@ function pressPlateAt(x,y,e){
   if(!plates || plates.solved) return;
   var p=plates.cells.filter(function(c){ return c.x===x && c.y===y; })[0];
   if(!p || p.pressed) return;
-  sfx('plate-press');
+  sfx('plate-press',{from:{x:x,y:y}});
   if(plates.order[plates.progress]===p.symbol){
     p.pressed=true; plates.progress++;
     if(e===player) log('The '+p.symbol+' plate sinks with a click.','c-info');
@@ -215,7 +218,7 @@ function bumpProp(p){
     if(leverDetails(p).used) return true;
     p.used=true; p.name='lever-down'; sfx('lever');
     (p.bridge||[]).forEach(function(b){ setT(b.x,b.y,BRIDGE); });
-    log('You pull the lever. Somewhere, planks thud into place over a chasm.','c-kill'); sfx('bridge'); endTurn(); return true;
+    log('You pull the lever. Somewhere, planks thud into place over a chasm.','c-kill'); sfx('bridge',{from:p.bridge}); endTurn(); return true;
   }
   if(p.tablet){ log('The broken tablet reads: <b>first the '+plates.order[0]+', then the '+plates.order[1]+', last the '+plates.order[2]+'</b>.','c-kill'); return true; }
   if(p.altar){ return sacrifice(p); }
@@ -236,9 +239,9 @@ function damageProp(p, src, type){
   if(p&&p.curtain)return cutWebCurtain(p,src,type);
   if(p&&p.bush)return cutBushProp(p,src,type);
   if(p.ex){ explode(p.x,p.y,src); return; }
-  if(p.melt && (type==='fire')){ removeProp(p); log('The ice melts away.','c-info'); sfx('ice-melt'); return; }
+  if(p.melt && (type==='fire')){ removeProp(p); log('The ice melts away.','c-info'); sfx('ice-melt',{from:p}); return; }
   if(!p.br) return;
-  removeProp(p); sfx(p.sfx||'crate-break'); burst(p.x,p.y,'earth',12,0.05);
+  removeProp(p); sfx(p.sfx||'crate-break',{from:p}); burst(p.x,p.y,'earth',12,0.05);
   if(p.loot && rng()<p.loot){
     var roll2=rng(), it = roll2<0.74 ? {kind:'essence', n:ri(4,10)+floorNo} : roll2<0.78 ? {kind:'food', food:randomFood()} : roll2<0.84 ? {kind:'sigil', use:randomSigilUse()} : {kind:'mote', el:pick(ELEMENTS)};
     it.x=p.x; it.y=p.y; items.push(it); log('Something rolls out of the pieces.','c-good');
@@ -246,7 +249,7 @@ function damageProp(p, src, type){
 }
 function explode(x,y,src){
   var p=propAt(x,y); if(p) removeProp(p);
-  log('<b>BOOM!</b> The powder barrel explodes.','c-you'); sfx('explosion'); explosionFx(x,y);
+  log('<b>BOOM!</b> The powder barrel explodes.','c-you'); sfx('explosion',{from:{x:x,y:y}}); explosionFx(x,y);
   for(var dy=-1;dy<=1;dy++) for(var dx=-1;dx<=1;dx++){
     var tx=x+dx, ty=y+dy; if(!inb(tx,ty)) continue;
     ents.slice().forEach(function(e){ if(e.x===tx && e.y===ty){ var d=applyDamage(e, roll(8,14)+floorNo, 'fire', null); floatText(tx,ty,String(d),'fire'); applyStatus(e,'burn',3,sDMG(2));
@@ -285,7 +288,7 @@ function ignite(x,y,src){
   var g=gAt(x,y), p=propAt(x,y), t=at(x,y);
   if(t===WATER) return;
   if(g===G_GRASS || g===G_SHORT || g===G_WEB || (p && p.burn)){
-    if(!fireT[idxOf(x,y)]) { sfx('fire-ignite'); }
+    if(!fireT[idxOf(x,y)]) { sfx('fire-ignite',{from:{x:x,y:y}}); }
     fireT[idxOf(x,y)] = Math.max(fireT[idxOf(x,y)], g===G_GRASS?5:3);
     fireSrc[idxOf(x,y)] = src==='player'||src===player ? 1 : 0;
   }
@@ -296,12 +299,12 @@ function burnWorld(x,y){
   var puzzle=puzzleAtDoor(x,y);
   if(puzzle&&puzzle.puzzle.kind==='barricade'&&!puzzle.puzzle.solved)solvePuzzle(puzzle,'the timber burns away.');
   var t=at(x,y);
-  if(t===ICEDOOR){ setT(x,y,OPEN); log('The ice sealing the door melts away in a cloud of steam.','c-kill'); sfx('ice-melt'); burst(x,y,'ice',24,0.06); computeFOV(); }
-  if(t===THORNS){ setT(x,y,OPEN); fireT[idxOf(x,y)]=3; log('The thorns catch and burn away.','c-kill'); sfx('thorns-burn'); computeFOV(); }
+  if(t===ICEDOOR){ setT(x,y,OPEN); log('The ice sealing the door melts away in a cloud of steam.','c-kill'); sfx('ice-melt',{from:{x:x,y:y}}); burst(x,y,'ice',24,0.06); computeFOV(); }
+  if(t===THORNS){ setT(x,y,OPEN); fireT[idxOf(x,y)]=3; log('The thorns catch and burn away.','c-kill'); sfx('thorns-burn',{from:{x:x,y:y}}); computeFOV(); }
   var p=propAt(x,y);
   if(p && p.ex) setTimeout(function(){ if(propAt(x,y)===p){ explode(x,y,'player'); draw(); } }, 250);
   if(p && p.web){ removeProp(p); }
-  if(p && p.melt){ removeProp(p); sfx('ice-melt'); }
+  if(p && p.melt){ removeProp(p); sfx('ice-melt',{from:p}); }
 }
 function fireTick(){
   var next=[];
@@ -332,43 +335,72 @@ function fireTick(){
 function trapDmg(e, raw){ return (e===player) ? Math.max(2, Math.min(raw, Math.round(player.maxhp*0.25))) : raw; }
 /* ---------------------------------------------------------------- traps */
 function trapName(k){ return (TRAPS[k]||{name:k}).name; }
+/* 2026-09-28 (Justin): name what you hear but cannot see. A player review heard "a metal clang-y type of noise"
+   while walking, and an alarm on arriving at floor 2: monsters springing traps out of sight, logged by name as
+   if in view. A place out of sight but within earshot (the 12 spaces of the sound falloff in audio.js) is given
+   by compass direction from you, screen up being north; farther away it is not heard at all. */
+var COMPASS8=['east','northeast','north','northwest','west','southwest','south','southeast'];
+function compassDir(x,y){ var dx=x-player.x, dy=y-player.y; return (dx||dy) ? COMPASS8[(Math.round(Math.atan2(-dy,dx)/(Math.PI/4))+8)%8] : ''; }
+function heardFrom(x,y){   /* 'to the northeast', or null when it is too far away to hear */
+  if(!(sfxDistanceGain({x:x,y:y})>0)) return null;
+  var dir=compassDir(x,y); return dir ? 'to the '+dir : 'nearby';
+}
+/* a trap another creature springs: named when you can see the trap, placed by ear when you can only hear it */
+function trapNews(tr, seen, heard, cls){
+  if(revealAll || vis[idxOf(tr.x,tr.y)]){ log(seen, cls||'c-info'); return; }
+  var from=heardFrom(tr.x,tr.y); if(from) log((heard||'You hear a trap spring')+' '+from+'.','c-info');
+}
 function triggerTrap(tr,e){
+  var isP = e===player;
+  /* 2026-09-28 (Justin): a creature a trap kills out of sight dies unnamed too (commitCreatureDeath reads quietDeath),
+     or an unseen pit would say "You hear a trap spring to the east." and then "Goblin dies." */
+  function trapKill(){ var unseen=!(revealAll || vis[idxOf(tr.x,tr.y)]); if(unseen) e.quietDeath=true; kill(e,null); if(unseen) delete e.quietDeath; }
   if(tr.kind==='spikes'){
-    if(e===player && (player.levitate>0 || player.st.stone || aff('earth')>=3)){ return; }
+    if(isP && (player.levitate>0 || player.st.stone || aff('earth')>=3)){ return; }
     /* 2026-09-17: spikes go straight through armor and hit harder (armor had cut them to ~3) */
-    var d=applyDamage(e, roll(4,7)+floorNo, 'phys', SPIKES_SRC); floatText(e.x,e.y,String(d),'phys'); sfx('trap-dart');
-    if(e===player){ log('Spikes drive up through your boots: '+d+' damage.','c-you'); if(player.hp<=0){  if(player.hp<=0) death(); } }
-    else if(e.hp<=0) kill(e,null);
+    var d=applyDamage(e, roll(4,7)+floorNo, 'phys', SPIKES_SRC); floatText(e.x,e.y,String(d),'phys'); sfx('trap-dart',{from:tr});
+    if(isP){ log('Spikes drive up through your boots: '+d+' damage.','c-you'); if(player.hp<=0){  if(player.hp<=0) death(); } }
+    else { trapNews(tr, 'Spikes drive up into the '+e.name+': '+d+' damage.'); if(e.hp<=0) trapKill(); }
     return;
   }
 
   var info=TRAPS[tr.kind]||{};
-  var isP = e===player, who = isP ? 'You' : 'The '+e.name;
+  var who = isP ? 'You' : 'The '+e.name;
+  /* your own trap keeps its line and colour; another creature's goes through trapNews */
+  function tell(mine, theirs, mineCls){ if(isP) log(mine, mineCls||'c-you'); else trapNews(tr, theirs); }
   tr.found = true;
   var d;
   if(tr.kind==='dart'){ d=applyDamage(e, trapDmg(e, roll(4,8)+floorNo), 'phys', null); floatText(e.x,e.y,String(d),'phys'); if(rng()<0.5) applyStatus(e,'poison',4,2);
-    log(who+' trigger'+(isP?'':'s')+' a dart trap: '+d+' damage.', isP?'c-you':'c-info'); sfx('trap-dart'); }
+    tell('You trigger a dart trap: '+d+' damage.', who+' triggers a dart trap: '+d+' damage.'); sfx('trap-dart',{from:tr}); }
   else if(tr.kind==='fire'){ d=applyDamage(e, roll(4,7)+floorNo, 'fire', null); applyStatus(e,'burn',3,sDMG(2)); floatText(e.x,e.y,String(d),'fire'); ignite(e.x,e.y,null);
-    burst(e.x,e.y,'fire',24,0.05); log('A fire vent erupts: '+d+' fire damage and Burning.', isP?'c-you':'c-info'); sfx('trap-fire'); }
+    burst(e.x,e.y,'fire',24,0.05); tell('A fire vent erupts: '+d+' fire damage and Burning.', 'A fire vent erupts under the '+e.name+': '+d+' fire damage and Burning.'); sfx('trap-fire',{from:tr}); }
   else if(tr.kind==='frost'){ d=applyDamage(e, roll(3,6)+floorNo, 'ice', null); addChill(e); addChill(e); floatText(e.x,e.y,String(d),'ice'); burst(e.x,e.y,'ice',24,0.05);
-    log('A frost jet blasts '+(isP?'you':e.name)+': '+d+' frost damage and Chill.', isP?'c-you':'c-info'); sfx('trap-frost'); }
+    tell('A frost jet blasts you: '+d+' frost damage and Chill.', 'A frost jet blasts the '+e.name+': '+d+' frost damage and Chill.'); sfx('trap-frost',{from:tr}); }
   else if(tr.kind==='spark'){ d=applyDamage(e, trapDmg(e, roll(4,8)+floorNo), 'lightning', null); if(rng()<0.5) applyStatus(e,'stun',1); floatText(e.x,e.y,String(d),'lightning'); burst(e.x,e.y,'lightning',18,0.06);
-    log('A spark plate discharges: '+d+' lightning damage.', isP?'c-you':'c-info'); sfx('trap-spark'); }
+    tell('A spark plate discharges: '+d+' lightning damage.', 'A spark plate discharges into the '+e.name+': '+d+' lightning damage.'); sfx('trap-spark',{from:tr}); }
   else if(tr.kind==='gas'){ for(var gy=-1;gy<=1;gy++) for(var gx=-1;gx<=1;gx++) ents.forEach(function(o){ if(o.x===e.x+gx && o.y===e.y+gy) applyStatus(o,'poison',6,2); });
-    burst(e.x,e.y,'poison',40,0.05); log('Poison gas hisses from a vent.', isP?'c-you':'c-info'); sfx('trap-gas'); }
-  else if(tr.kind==='web'){ applyStatus(e,'root',3); log('Webs! '+(isP?'You are':'The '+e.name+' is')+' stuck.','c-info'); sfx('trap-web'); }
-  else if(tr.kind==='alarm'){ ents.forEach(function(o){ if(o.foe && dist(o,e)<=16){ o.state='hunt'; o.lastSeen={x:e.x,y:e.y}; } }); log('An alarm bell clangs! Everything nearby comes running.','c-you'); sfx('trap-alarm'); }
+    burst(e.x,e.y,'poison',40,0.05); tell('Poison gas hisses from a vent.', 'Poison gas hisses from a vent under the '+e.name+'.'); sfx('trap-gas',{from:tr}); }
+  else if(tr.kind==='web'){ applyStatus(e,'root',3); tell('Webs! You are stuck.', 'Webs! The '+e.name+' is stuck.', 'c-info'); sfx('trap-web',{from:tr}); }
+  /* 2026-09-28 (Justin): an alarm another creature sets off says so, in the danger colour when you can see it
+     (what it wakes comes to a spot in view) and as world news when you only hear it. What it wakes is unchanged. */
+  /* 1.3.2 ruling 1 (Justin 2026-09-28): the bell draws monsters to it, not to you. Everything within 16 wakes and walks to the
+     bell, noticing you on the way only by the normal rolls; a monster already hunting you keeps hunting you. */
+  else if(tr.kind==='alarm'){ ents.forEach(function(o){ if(o.foe && dist(o,e)<=16 && o.state!=='hunt'){ o.state='wander'; o.goal={x:tr.x,y:tr.y}; o.bellGoal=true; } });
+    if(isP) log('An alarm bell clangs! Everything nearby comes running.','c-you');
+    else trapNews(tr, 'The '+e.name+' sets off an alarm bell! Everything nearby comes running.', 'You hear an alarm bell ring', 'c-you');
+    sfx('trap-alarm',{from:tr}); }
   else if(tr.kind==='teleport'){ var o2=[]; for(var y=0;y<MH;y++) for(var x=0;x<MW;x++) if(walkable(x,y)&&!occupied(x,y)&&inRoom(x,y)&&!roomAt(x,y).special) o2.push({x:x,y:y});   /* 2026-09-22 (Justin): never into a vault, toll room or hidden pocket - a locked room was an instant game over */
+    sfx('trap-teleport',{from:tr});   /* before the move: measured from where you land, your own rune played softer or not at all */
     var s=pick(o2); if(s){ sparkleFx(e.x,e.y,'magic',20); e.x=s.x; e.y=s.y; if(isP){ e._lx=undefined; computeFOV(); } sparkleFx(s.x,s.y,'magic',20); }
-    log(who+(isP?' are':' is')+' whisked away by a teleport rune!', isP?'c-you':'c-info'); sfx('trap-teleport'); }
+    tell('You are whisked away by a teleport rune!', who+' is whisked away by a teleport rune!'); }
   else if(tr.kind==='pit'){
     if(isP){ log('The floor gives way!','c-you'); fallIntoChasm(); }
-    else { log('The '+e.name+' falls into a pit!','c-info'); kill(e,null); }
+    else { trapNews(tr, 'The '+e.name+' falls into a pit!'); trapKill(); }
   }
   if(info.once) feats=feats.filter(function(f){ return f!==tr; });
-  if(e.hp<=0){ if(isP){  if(player.hp<=0) death(); } else kill(e,null); }
+  if(e.hp<=0){ if(isP){  if(player.hp<=0) death(); } else trapKill(); }
 
-  if(tr.heavy && e.hp>0){ var hd=applyDamage(e, roll(3,6)+floorNo, 'phys', null); floatText(e.x,e.y,String(hd),'phys'); if(e===player){ log('The trap bites deep: '+hd+' more.','c-you'); if(player.hp<=0){  if(player.hp<=0) death(); } } else if(e.hp<=0) kill(e,null); }
+  if(tr.heavy && e.hp>0){ var hd=applyDamage(e, roll(3,6)+floorNo, 'phys', null); floatText(e.x,e.y,String(hd),'phys'); if(e===player){ log('The trap bites deep: '+hd+' more.','c-you'); if(player.hp<=0){  if(player.hp<=0) death(); } } else if(e.hp<=0) trapKill(); }
 }
 function spotTraps(){
   /* 2026-09-17: at most one trap a turn, and traps set on purpose (a trap room, a puzzle) hide far better,
@@ -377,7 +409,7 @@ function spotTraps(){
     var f=feats[i];
     if(f.found || !vis[idxOf(f.x,f.y)] || dist(player,f)>3) continue;
     var ch=Math.max(0,0.04 + 0.02*Math.max(0,player.stats.agi-10) + (isScoundrel()?0.12:0) + Math.min(0,ringVal('keeneyes'))) * ((f.room||f.puzzle) ? 0.2 : 1);
-    if(rng()<ch){ f.found=true; log('You spot '+(/^[AEIOU]/.test(trapName(f.kind))?'an':'a')+' <b>'+trapName(f.kind)+' trap</b>.','c-info'); sfx('trap-spot'); break; }
+    if(rng()<ch){ f.found=true; log('You spot '+(/^[AEIOU]/.test(trapName(f.kind))?'an':'a')+' <b>'+trapName(f.kind)+' trap</b>.','c-info'); sfx('trap-spot'); if(typeof trapSpotFx==='function') trapSpotFx(f); break; }
   }
   props.forEach(function(p){});
   /* hidden doors are found by searching (F), not in passing */
