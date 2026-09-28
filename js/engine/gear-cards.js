@@ -2,8 +2,8 @@
 function gearCardView(item){return item?tierNormalize(Object.assign({},item)):null;}
 function passiveNumber(value){return String(Number(gearPassiveValue(value).toFixed(2)));}
 function weaponPassiveNote(w){
-  if(w.executioner)return '+'+passiveNumber(w.executioner*100)+'% damage to wounded targets';
-  if(w.pierce)return 'Ignores '+passiveNumber(w.pierce)+' armor';
+  if(w.executioner)return '+'+passiveNumber(w.executioner*100)+'% damage to targets at half HP or less';
+  if(w.pierce)return 'ignores '+passiveNumber(w.pierce)+' armor';
   if(w.critBonus)return '+'+passiveNumber(w.critBonus*100)+'% crit chance';
   return w.note||'';
 }
@@ -16,7 +16,7 @@ function weaponCard(item,worn){
   }else{
     var plus=itemPlus(w);
     h='<div class="nm">'+gearName(w)+'</div>'+
-      '<div class="row"><span>Damage</span><b>'+(w.dmg[0]+plus)+'&ndash;'+(w.dmg[1]+plus)+'</b></div>'+
+      '<div class="row"><span>Damage</span><b>'+(w.dmg[0]+plus)+(w.dmg[0]+plus<0?' to ':'-')+(w.dmg[1]+plus)+'</b></div>'+
       '<div class="row"><span>Accuracy</span><b>'+(w.acc>=0?'+':'')+passiveNumber(w.acc)+'</b></div>'+
       '<div class="row"><span>Hands</span><b>'+(w.hands||1)+'</b></div>'+
       (w.range?'<div class="row"><span>Range</span><b>'+(w.range+(player.rangeBonus||0))+'</b></div>':'')+
@@ -43,12 +43,12 @@ function armorCard(item,worn){
 }
 function offhandCard(item){
   var d=gearCardView(item),h='';if(!d)return h;
-  if(!d.unid&&focusKey(d))h='<div class="nm">'+gearName(d)+'</div>'+focusRows(d)+(d.cursed?'<div class="hint" style="color:#D0605A">Cursed.</div>':'');
-  else if(d.unid||d.cursed)h='<div class="nm">'+gearName(d)+'</div><div class="hint">'+(d.unid?'':d.note||'')+'</div>'+unidHint(d)+(d.cursed&&!d.unid?'<div class="hint" style="color:#D0605A">Cursed.</div>':'');
-  else h=d.weapon?weaponCard(d)+'<div class="hint">Off-hand strike: 60% damage.</div>':'<div class="nm">'+gearName(d)+'</div><div class="hint">'+(d.note||'')+'</div>';
+  if(!d.unid&&focusKey(d))h='<div class="nm">'+gearName(d)+'</div>'+focusRows(d)+(d.cursed?'<div class="hint" style="color:#D0605A">Cursed: it will not leave your hand until the curse is broken.</div>':'');
+  else if(d.unid||d.cursed)h='<div class="nm">'+gearName(d)+'</div><div class="hint">'+(d.unid?'':d.note||'')+'</div>'+unidHint(d)+(d.cursed&&!d.unid?'<div class="hint" style="color:#D0605A">Cursed: it will not leave your hand until the curse is broken.</div>':'');
+  else h=d.weapon?weaponCard(d):'<div class="nm">'+gearName(d)+'</div><div class="hint">'+(d.note||'')+'</div>';
   if(d.enchant&&!d.unid){
     var key=itemKey(d),slot=key==='holy'?'holy':d.block>0?'shield':key;
-    if(ENCHANT_TEXT[slot])h+='<div class="row"><span>Infusion</span><b style="color:'+AFF_COL[d.enchant]+'">'+cap(d.enchant)+'</b></div><div class="hint">'+enchantLive(slot,d.enchant)+'</div>';
+    if(ENCHANT_TEXT[slot])h+='<div class="row"><span>Enchant</span><b style="color:'+AFF_COL[d.enchant]+'">'+cap(d.enchant)+'</b></div><div class="hint">'+enchantLive(slot,d.enchant)+'</div>';
   }
   h=tierTint(h,d);
   if(!d.unid){
@@ -56,7 +56,7 @@ function offhandCard(item){
     if(TIER_BLOCK[key])h+='<div class="row"><span>Block</span><b>'+Math.round((d.block+TIER_BLOCK.per*(d.plus||0))*100)+'%</b></div>';
     if(key==='tome')h+='<div class="row"><span>Max mana</span><b>+'+Math.round(d.manaPct*gearPassiveBonus()*100)+'%</b></div>';
     if(key==='holy')h+='<div class="row"><span>Invoke &amp; prayer strength</span><b>+'+Math.round(d.divine*gearPassiveBonus()*100)+'%</b></div><div class="row"><span>Buff duration</span><b>+'+Math.round(holyDurationPct(d)*100)+'%</b></div>';
-    if(d.kind==='off'&&d.weapon)h+='<div class="row"><span>Off-hand strike</span><b>60% damage, own procs</b></div>';
+    if(d.kind==='off'&&d.weapon)h+='<div class="row"><span>Off-hand strike</span><b>60% damage</b></div>';
   }
   return h+reqRow(d);
 }
@@ -72,9 +72,9 @@ function trinketCard(item){
   var state=FoteGear.amuletState(item,amuletKillsNeeded(item)),cap=amuletCap(item),knownAmulet=!item.unid||RUN.amuletKnown[item.amulet];
   return '<div class="nm">'+gearName(item)+'</div>'+(knownAmulet?'<div class="hint">'+amuletDescription(item)+'</div><div class="row"><span>Kills per charge</span><b>'+(item.unid?'?':amuletKillsNeeded(item))+'</b></div>':'')+
     '<div class="row"><span>Charges</span><b>'+state.charges+' / '+cap+'</b></div>'+
-    (state.charges<cap&&!item.unid?'<div class="row"><span>Next charge</span><b>'+(amuletKillsNeeded(item)-(state.progress||0))+' more kills</b></div>':'')+
-    (item.cursed&&!item.unid?'<div class="hint" style="color:#D0605A">Recharging requires 30% more kills. It will not come off until cleansed.</div>':'')+unidHint(item)+
-    '<div class="hint">Holds '+cap+' charge'+(cap>1?'s':'')+' at level '+state.level+'; using it often raises its level (up to 3). Kills build charges; elites and bosses count 3.</div>';
+    (state.charges<cap&&!item.unid?'<div class="row"><span>Next charge</span><b>'+(amuletKillsNeeded(item)-(state.progress||0))+' more kill'+(amuletKillsNeeded(item)-(state.progress||0)===1?'':'s')+'</b></div>':'')+
+    (item.cursed&&!item.unid?'<div class="hint" style="color:#D0605A">Cursed: it needs 30% more kills to recharge, and it will not come off until the curse is broken.</div>':'')+unidHint(item)+
+    '<div class="hint">Holds '+cap+' charge'+(cap>1?'s':'')+' at level '+state.level+'. Use it often to raise its level, up to 3. Kills build charges; elites and bosses count as 3.</div>';
 }
 function bagCard(entry){
   if(!entry)return '';
@@ -82,7 +82,7 @@ function bagCard(entry){
   if(entry.kind==='armor')return armorCard(entry.data);
   if(entry.kind==='off')return offhandCard(entry.data);
   if(entry.kind==='ring'||entry.kind==='amulet')return trinketCard(entry.data);
-  if(entry.kind==='sigil'){var known=sigilKnown[entry.data.use];return '<div class="nm">'+entry.name+'</div><div class="hint">'+(known?SIGILS[entry.data.use].desc:'Unidentified.')+'</div>';}
+  if(entry.kind==='sigil'){var known=sigilKnown[entry.data.use];return '<div class="nm">'+entry.name+'</div><div class="hint">'+(known?SIGILS[entry.data.use].desc:'Unidentified sigil.')+'</div>';}
   if(entry.kind==='food'){var f=FOODS[entry.data.food];return '<div class="nm">'+f.name+'</div><div class="hint">'+(f.desc?f.desc+' ':'')+'Restores '+f.nutrition+' hunger'+(f.heal?', heals '+Math.round(f.heal*100)+'%':'')+'.</div>';}
   return '<div class="nm">'+entry.name+'</div>';
 }

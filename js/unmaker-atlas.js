@@ -1,7 +1,7 @@
 /* Reviewed local Unmaker form sheets; exact-reference PixelLab clips. */
 globalThis.UNMAKER_ATLAS={
   "m-unmaker-tyrant": {
-    "file": "mob-m-unmaker-tyrant.png",
+    "file": "mob-m-unmaker-tyrant.webp",
     "cell": 192,
     "box": [
       44,
@@ -39,7 +39,7 @@ globalThis.UNMAKER_ATLAS={
     "artLeft": false
   },
   "m-unmaker-heart": {
-    "file": "mob-m-unmaker-heart.png",
+    "file": "mob-m-unmaker-heart.webp",
     "cell": 192,
     "box": [
       51,
@@ -77,7 +77,7 @@ globalThis.UNMAKER_ATLAS={
     "artLeft": false
   },
   "m-unmaker-unbound": {
-    "file": "mob-m-unmaker-unbound.png",
+    "file": "mob-m-unmaker-unbound.webp",
     "cell": 192,
     "box": [
       47,

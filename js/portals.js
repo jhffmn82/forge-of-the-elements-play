@@ -65,8 +65,8 @@ PROPS['stepping-stone']={flat:1};
 
 
 var PLANE_HAZARD_TEXT = {
-  light: 'Gold light pulses through the cave: when stones start to glow, get into the shade of a crystal or pillar before the flare.',
-  shadow:'Darkness presses in: you see only a short way here, and further in the violet glow of the crystals.',
+  light: 'Gold light pulses through the cave: when the stones around you start to glow, step off them before the flare.',
+  shadow:'Darkness presses in: you see only a short way here, and farther when you stand in the violet glow of the crystals.',
   earth: 'The cave groans: when dust starts to trickle, step off the marked stones before the rocks fall.'
 };
 function generatePlaneBase(el, seed){
@@ -302,7 +302,7 @@ function planeCreatureBehavior(e){
         else log('You broke the '+e.name+'\'s line of sight: the brand fades harmlessly.','c-good');
          return true;
       }
-      if(!e.brand && e.brandCd<=0 && see){ e.brand={at:turn+3, stored:0}; e.brandCd=7; setClip(e,'attack'); log('The <b>'+e.name+'</b> brands you with judgment. The next 3 turns of harm you deal it will return to you, unless you break its line of sight.','c-you');  return true; }
+      if(!e.brand && e.brandCd<=0 && see){ e.brand={at:turn+3, stored:0}; e.brandCd=7; setClip(e,'attack'); log('The <b>'+e.name+'</b> brands you with judgment. Whatever harm you deal it in the next 3 turns will come back to you, unless you break its line of sight.','c-you');  return true; }
     }
   }
   if(b.still){
@@ -325,7 +325,7 @@ function planeCreatureBehavior(e){
       if(typeof burst==='function') burst(player.x, player.y, 'earth', 20, 0.06);
       var sd=applyDamage(player, roll(7,11)+Math.floor(floorNo/2), 'phys', e);
       floatText(player.x, player.y, String(sd), 'phys');
-      log('<b>'+e.name+'</b> drives stone spikes up through the floor &mdash; <b>'+sd+'</b>.','c-you');
+      log('<b>'+e.name+'</b> drives stone spikes up through the floor: <b>'+sd+'</b>.','c-you');
       if(rng()<0.35) applyStatus(player,'root',2);
       if(player.hp<=0) kill(player, e);
        return true;
@@ -463,7 +463,7 @@ function entryPortalPrompt(){
   if(typeof FoteChaosPreview!=='undefined'&&FoteChaosPreview.active()){
     var linked=FoteChaosPreview.atPortal(player.x,player.y);if(!linked)return;
     stopTravel();
-    confirmBox(linked.label,'This portal leads to another island of '+FoteChaosPreview.active().name+' on this floor. The way back stays open.','Step through',function(){
+    confirmBox(linked.label,'This portal leads to another island on this floor. The way back stays open.','Step through',function(){
       if(gameTurns.busy()||!FoteChaosPreview.active())return;
       var trip=FoteChaosPreview.travelPortal(linked);
       if(trip){
@@ -475,9 +475,9 @@ function entryPortalPrompt(){
     return;
   }
   if(floorMeta.plane){
-    confirmBox('Leave '+PLANE_TITLE[floorMeta.plane], (floorMeta.eliteDead ? 'The way home shimmers.' : 'The guardian of this plane still lives.')+' Return to the Crypt? The portal closes behind you.', 'Return', function(){ leavePlane(); });
+    confirmBox('Leave '+PLANE_TITLE[floorMeta.plane], (floorMeta.eliteDead ? 'The way home shimmers.' : 'The guardian of this plane still lives.')+' Go back the way you came? The portal closes behind you.', 'Return', function(){ leavePlane(); });
   } else if(floorMeta.portal && !floorMeta.portalUsed){
-    confirmBox('Step through the portal', 'A cave of pure '+floorMeta.portal+' lies beyond: harder than the Crypt, guarded by an elite, with treasure at its end. You can come back through the portal you arrive at.', 'Step through', function(){ enterPlane(floorMeta.portal); });
+    confirmBox('Step through the portal', 'A cave of pure '+floorMeta.portal+' lies beyond. A guardian waits at its heart, and treasure at its far end. The portal you arrive by will bring you back.', 'Step through', function(){ enterPlane(floorMeta.portal); });
   } else if(floorMeta.portalUsed) log('The portal has gone dark.','c-info');
   return;
 }

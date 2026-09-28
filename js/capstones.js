@@ -23,7 +23,7 @@ upgradeCost = function(it){
 
 /* =====================================================================
    Hearts and mana globes: every kill has a 15% chance to drop each.
-   Stepping on one uses it (heart +10 HP, globe +20 mana). They fade after 40 turns.
+   Stepping on one uses it unless that bar is full (a heart heals 25% of max HP, a globe restores 25% of max mana). They fade after 40 turns.
    ===================================================================== */
 var GLOBE_CHANCE = 0.15, GLOBE_LIFE = 40;
 

@@ -22,7 +22,7 @@ function claimCore(name,announce){
   if(!RUN||CORE_NAMES.indexOf(name)<0)return false;
   var claims=coreClaims();if(claims.indexOf(name)>=0)return false;
   claims.push(name);RUN.cores=(RUN.cores||0)+1;
-  if(announce)log('<b>Your affinity cap rises to '+affinityCap()+'.</b> One more element can take root in you.','c-kill');
+  if(announce)log('<b>Your affinity cap rises to '+affinityCap()+'.</b> One more mote can take root in you.','c-kill');
   return true;
 }
 
@@ -101,9 +101,7 @@ function absorbCoreAtGate(nx, ny){
 /* picking it up */
 
 
-var _itemArtNameCore = itemArtName;
-itemArtName = function(it){ return it && it.kind==='core' ? (it.name==='Crypt Core' ? 'item-core-crypt' : 'item-core-dungeon') : _itemArtNameCore(it); };
-ITEM_FIT.core = 0.52;
+ITEM_FIT.core = 0.52;   /* a core's art name is in render.js itemArtName */
 
 /* the sealed gate takes the core */
 

@@ -19,10 +19,10 @@
     if(!loaded)return null;var item=meta.items[name.indexOf('veg-')===0?name:'veg-'+name];if(!item)return null;
     return {img:images[meta.file],sx:item.sx,sy:item.sy,sw:item.sw,sh:item.sh,res:item.res,nm:name,environmentVegetation:true};
   }
-  var originalArt=vegArt,originalDraw=vegDraw,originalCluster=sceneryClusterArt;
-  vegArt=function(name){return art(name)||originalArt.apply(this,arguments);};
-  vegDraw=function(o,cx,base,scale,shear,alpha,flip){
-    if(!o||!o.environmentVegetation)return originalDraw.apply(this,arguments);
+  // The only definitions (2026-09-27): the old map-veg.webp and prop-clusters.webp are archived.
+  root.vegArt=art;
+  root.vegDraw=function(o,cx,base,scale,shear,alpha,flip){
+    if(!o)return;
     var s=TS/64*scale/o.res,w=o.sw*s,h=o.sh*s,b=vegBaked(o);
     ctx.save();ctx.globalAlpha=alpha;ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='low';
     ctx.translate(cx,base);ctx.transform(1,0,-shear,1,0,0);if(flip)ctx.scale(-1,1);
@@ -30,12 +30,12 @@
     else ctx.drawImage(o.img,o.sx,o.sy,o.sw,o.sh,-w/2,-h,w,h);
     ctx.restore();
   };
-  sceneryClusterArt=function(family,variant){
+  root.sceneryClusterArt=function(family,variant){
     var row=loaded?meta.clusters.families.indexOf(family):-1;
-    if(row<0)return originalCluster.apply(this,arguments);
+    if(row<0)return null;
     var cell=meta.clusters.cell,col=((Math.floor(variant)||0)%5+5)%5;
     return {img:images[meta.clusters.file],sx:col*cell,sy:row*cell,sw:cell,sh:cell};
   };
   root.FoteEnvironmentVegetation=Object.freeze({ensureAssets:ensureAssets,ready:function(){return loaded;},art:art,metadata:function(){return meta;},error:function(){return failure;}});
-  ensureAssets().catch(function(){/* The existing sprites remain available. */});
+  ensureAssets().catch(function(){/* the loading screen's Retry fetches again */});
 })(globalThis);

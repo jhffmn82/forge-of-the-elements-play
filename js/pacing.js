@@ -1,6 +1,6 @@
 /* =====================================================================
    pacing.js - let animations resolve before the next move.
-   - Game input during attacks, projectiles, slides or deaths is discarded.
+   - Game input during attacks, projectiles, slides or deaths the player can see is discarded.
      Never replay an old key press or click after the enemy turn: the player
      must be able to stop without an extra action taking them into danger.
    - A creature's tile stays blocked to other monsters until its death
@@ -12,8 +12,8 @@
 var PACING = {pending:null, blockedClick:false};
 var PACED_KEYS = {'.':1,' ':1,g:1,x:1,'>':1,'<':1,r:1,f:1,F:1,C:1,'1':1,'2':1,'3':1,'4':1,'5':1,'6':1,'7':1,'8':1};
 /* Simulation work must settle even when motion is reduced or a visual timeout
-   releases an animation. */
-function turnSequenceBusy(){return typeof gameTurns!=='undefined' && typeof gameTurns.busy==='function' && gameTurns.busy();}
+   releases an animation. A floor still waiting for its art is not played either. */
+function turnSequenceBusy(){return typeof gameTurns!=='undefined' && typeof gameTurns.busy==='function' && gameTurns.busy() || typeof floorArtPending==='function' && floorArtPending();}
 function pacedActionKey(ev){return !!((typeof KEYS!=='undefined' && KEYS[ev.key]) || PACED_KEYS[ev.key]);}
 function pacedClickTarget(t){return t===cv || !!(t.closest && (t.closest('#dpad') || t.closest('#hotbar')));}
 function blockPendingInput(ev){PACING.pending=null;ev.preventDefault();ev.stopImmediatePropagation();}
@@ -28,10 +28,12 @@ function animBusy(move){
   var now=performance.now();
   if(typeof fxClock==='number' && fxClock > now+40) return true;              /* queued swings, bolts, hits */
   if(move ? slideFrac(player,now)<STEP_RELEASE : motionActive(player,now)) return true;   /* the hero still sliding */
-  for(var i=0;i<ents.length;i++){ var e=ents[i]; if(e.ally)continue; if(move ? slideFrac(e,now)<STEP_RELEASE : motionActive(e,now)) return true; }   /* pet movement never holds input */
+  /* 2026-09-27 (Justin: "even non visible monsters are slowing down performance"). Only what the player can see
+     holds input, by the turn's own rule (turn-presentation.js): pets, and creatures out of sight or off the screen, never do. */
+  for(var i=0;i<ents.length;i++){ var e=ents[i]; if(e.ally || !turnAnimationVisible(e))continue; if(move ? slideFrac(e,now)<STEP_RELEASE : motionActive(e,now)) return true; }
   for(var j=0;j<fx.length;j++){ var f=fx[j];
-    if(f.k==='d' && now < f.t0+f.dur*0.6) return true;                          /* someone is still falling */
-    if((f.k==='p' || f.k==='l') && now < f.t0+f.dur) return true;               /* projectile or lunge in flight */
+    if(f.k==='d' && turnAnimationOnscreen(f.e.x,f.e.y) && now < f.t0+f.dur*0.6) return true;        /* someone is still falling */
+    if((f.k==='p' || f.k==='l') && turnAnimationEffectVisible(f) && now < f.t0+f.dur) return true;  /* projectile or lunge in flight */
   }
   return false;
 }

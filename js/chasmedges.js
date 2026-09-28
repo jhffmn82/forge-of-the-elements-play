@@ -1,6 +1,8 @@
 /* Dungeon and Crypt chasms share the procedural Caverns raster, tinted to
    each biome's floor colour. The planes keep their own terrain. */
-var CHASM_FLOOR_TINT = { 0:[88,89,88], 1:[93,88,102] };   /* average colour of each biome's floor surface art */
+/* average colour of each biome's floor art: environment-terrain-{dungeon,crypt}-floor.webp (2026-09-27; it was still the
+   retired surface-floor.webp mean, so the Dungeon's lip was cold grey on the warm new stone) */
+var CHASM_FLOOR_TINT = { 0:[135,119,103], 1:[97,91,107] };
 function biomeChasmsOn(){
   return typeof map!=='undefined' && map && !(floorMeta && floorMeta.plane) && typeof inCaverns==='function' && !inCaverns()
       && CHASM_FLOOR_TINT[bidx()] !== undefined && typeof drawCaveChasms==='function';

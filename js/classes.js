@@ -10,15 +10,15 @@
 var FIGHTER_NO_BLOCK = true;   /* Shield Training is gone; tiers.js reads this */
 
 /* ---------------------------------------------------------------- tables */
-CLASSES.fighter.passive = 'Guard: a shield of overhealth (12% of your max HP) that refills out of combat.';
-CLASSES.cleric.passive  = 'Starts sworn to a god (rank 1, 20 piety). Gains piety 25% faster.';
+CLASSES.fighter.passive = 'Guard: a shield worth 12% of your max HP that refills out of combat.';
+CLASSES.cleric.passive  = 'Devout: starts sworn to a god (rank 1, 20 piety) and gains piety 25% faster.';
 CLASSES.mage.passive    = 'Deep Reserves: +30% max mana.';
-CLASSES.mage.blurb      = 'A staff and a robe. Magic Missile always hits, and can carry your elements’ effects.';
+CLASSES.mage.blurb      = 'A staff and a robe. Magic Missile always hits, grows with every affinity point and carries your weapon\'s enchantment.';
 CLASSES.mage.kit        = {main:'staff', alt:null, armor:'robe', off:null};
-CLASSES.scoundrel.passive = 'Sneaky: surprise attacks x2. Enemies notice you 2 tiles closer and half as often. Shadowstep hides you when no enemy is adjacent.';
+CLASSES.scoundrel.passive = 'Sneaky: double damage on surprise attacks. Enemies spot you half as often and from 2 tiles closer. Shadowstep hides you when no enemy is adjacent.';
 CLASSES.scoundrel.blurb = 'A dagger in each hand and a bow across the back. Sap knocks a target out; the hit that wakes it is a surprise critical.';
 CLASSES.tourist.passive = 'Well-Traveled: +1 stat point every 2 levels, +25% experience, and 1 free stat point to start.';
-RACES.human.blurb = 'Adaptable. +1 to every stat, +1 stat point every 3 levels, piety +25%.';
+RACES.human.blurb = 'Adaptable. +1 to every stat, +1 stat point every 3 levels and +25% piety gain.';
 RACES.fae.blurb   = RACES.fae.blurb + ' Takes 25% more damage from the element opposite its court.';
 
 /* 2026-09-20: Justin - "scoundrel shouldn't have two paths, the starting set should just be 2 daggers and a bow".

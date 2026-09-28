@@ -82,7 +82,7 @@ function finishAttackReactions(event){
   if(att!==player&&def===player&&att.foe&&dist(att,player)<=1&&player.hp<event.playerHPBefore&&player.hp>0&&combo('air','shadow')&&!(player.windCd>turn)){
     var best=null,bd=0;for(var dy=-1;dy<=1;dy++)for(var dx=-1;dx<=1;dx++){var nx=player.x+dx,ny=player.y+dy;if((dx||dy)&&walkable(nx,ny)&&!occupied(nx,ny)){var dd=dist({x:nx,y:ny},att);if(dd>bd){bd=dd;best={x:nx,y:ny};}}}
     if(best&&bd>1){player.x=best.x;player.y=best.y;player.windCd=turn+5;log('Windwalker: you slip away.','c-good');computeFOV();}}
-  if(att===player&&landed){stokeForgeHeat();if(hasGod('grom')&&event.view.weapon.unarmed&&def.foe&&event.hpBefore>0)gainPiety(1,'punch',{pietyOnly:true});}
+  if(att===player&&landed){stokeForgeHeat();if(hasGod('grom')&&event.view.weapon.unarmed&&def.foe&&event.hpBefore>0)gainPiety(0.3,'punch',{pietyOnly:true});}
   if(att===player&&def.surprised)def.surprised=false;
   if(att===player&&def.base&&def.base.fumes&&dist(att,def)<=1&&def.hp>0&&(def._fumeAt||-9)<turn-1){def._fumeAt=turn;addCloud(def.x,def.y,1,5,sDMG(2+Math.floor(floorNo/3)),'beetle');log('The <b>Grave Beetle</b> vents a cloud of noxious fumes!','c-you');sfx('trap-gas');}
   if(att.base&&att.base.reloads&&def===player&&dist(att,def)>1){att.reloading=true;if(landed){applyStatus(player,'root',1);log('An arrow pins you in place.','c-you');}}
@@ -311,7 +311,7 @@ function presentWeaponDamage(event,strike,damage){
   var elTxt = Object.keys(damage.bonuses||{}).map(function(type){return ' <span style="color:'+DMG_COL[type]+'">+'+damage.bonuses[type]+' '+FoteDamage.label(type)+'</span>';}).join('');
   floatText(def.x, def.y, String(total), bonus>0 && el ? elemToType(el) : att!==player&&att.base&&att.base.attackType||'phys', crit);
   log((label?label+': ':'')+who+' hit '+foe+' <span class="roll">('+Math.round(ch*100)+'%'
-      +(crit?', crit':'')+(surprise?', surprise':'')+(blocked?', blocked':'')+')</span> &mdash; <b>'+total+'</b>'+elTxt+note,
+      +(crit?', crit':'')+(surprise?', surprise':'')+(blocked?', blocked':'')+')</span> for <b>'+total+'</b>'+elTxt+note,
       att===player?'c-hit':'c-you');
   if(def!==player && def.state!=='hunt' && def.state!=='throne') def.state='hunt';
   if(def!==player) def.caughtOff=-1;   /* the surprise is spent: it knows now */

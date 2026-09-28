@@ -187,6 +187,6 @@
   }
   MONSTERS.shadowclone={name:'Shadow Clone',hp:1,dmg:[0,0],acc:0,eva:0,speed:100,armor:0,xp:0,band:[99,99],w:0,ch:'@',col:'#7962AA',living:true};
   DROPS.shadowclone={chance:0,table:{}};
-  ABILITIES.umbral.desc='Step to any seen tile that no enemy stands beside. Leave a shadow clone with your current combat stats; it casts Shadow Bolt and follows you between floors until killed or replaced by another Passage. Only one clone can exist. Arrive hidden for 2 turns.';
+  ABILITIES.umbral.desc='Step to any tile you have seen with no enemy beside it, arriving hidden for 2 turns. Your shadow stays behind to cast Shadow Bolt, following you between floors, until it falls or you cast this again.';
   root.FoteShadowClone=Object.freeze({isClone:isClone,snapshot:snapshot,create:create,act:act,cast:cast,defend:defend,block:block,pulse:pulse,cost:cost,resistance:resistance,arrive:arrive});
 })(globalThis);

@@ -16,7 +16,6 @@ function vegSet(){
   if(typeof cryptShrooms==='function' && cryptShrooms()) return 'crypt';   /* 2026-09-20: the Crypt's purple mushrooms */
   return bidx()===0 ? 'dungeon' : null;
 }
-function vegArt(name){ return objArt('veg', 'veg-'+name); }
 function vegPick(set, kind, n, x, y, salt){ return vegArt(set+'-'+kind+'-'+(1+Math.floor(hash2(x,y,salt)*n))); }
 /* the wind: a slow wave across the map plus a flutter; a body in the tile pushes the plant away */
 function vegSway(x, y, now, bend){
@@ -36,21 +35,11 @@ function vegBaked(o){
   if(!o.img.complete || !o.img.naturalWidth) return null;
   var c=document.createElement('canvas'); c.width=o.sw; c.height=o.sh; var g=c.getContext('2d');
   g.drawImage(o.img, o.sx, o.sy, o.sw, o.sh, 0, 0, o.sw, o.sh);
-  /* pull the colours toward grey first (a desaturating grey wash), then darken toward the set's shadow */
+  /* darken toward the set's shadow. 2026-09-27 (Justin, render plan Q8): the grey wash that went on first was
+     written for the old pack's greens; the new plants are painted in the game's palette and keep their colour. */
   g.globalCompositeOperation='source-atop';
-  g.globalAlpha=0.22; g.fillStyle='#6E6A60'; g.fillRect(0,0,o.sw,o.sh);
   g.globalAlpha=d[0]; g.fillStyle=d[1]; g.fillRect(0,0,o.sw,o.sh);
   return (VEG_BAKE[k]=c);
-}
-function vegDraw(o, cx, base, scale, shear, alpha, flip){
-  if(!o) return;
-  var s=TS/64*scale, w=o.sw*s, h=o.sh*s, b=vegBaked(o);
-  ctx.save(); ctx.globalAlpha=alpha; ctx.imageSmoothingEnabled=false;
-  ctx.translate(cx, base); ctx.transform(1, 0, -shear, 1, 0, 0);
-  if(flip) ctx.scale(-1,1);
-  if(b) ctx.drawImage(b, 0, 0, o.sw, o.sh, -w/2, -h, w, h);
-  else ctx.drawImage(o.img, o.sx, o.sy, o.sw, o.sh, -w/2, -h, w, h);
-  ctx.restore();
 }
 function vegBody(x, y){
   if(player && Math.round(renderPos(player).x)===x && Math.round(renderPos(player).y)===y) return player;
@@ -130,23 +119,60 @@ function vegIsGrass(x,y){ if(!inb(x,y) || isWallLike(at(x,y))) return false; var
   if(g===G_GRASS || g===G_SHORT) return true;
   var S=vegSpotMap(); return !!(S && S[i]); }
 function vegMossSig(x,y){ var s=''; for(var yy=y-1;yy<=y+1;yy++) for(var xx=x-1;xx<=x+1;xx++) s+=vegIsGrass(xx,yy)?'1':'0'; return s; }
+/* one axis of a moss raster: world position of each pixel centre, and its lattice cell and smoothed fraction at the
+   two noise scales (ptVal at 2.2 per tile, mossNoise at 16), computed exactly as those functions compute them */
+function vegMossAxis(o, R){
+  var w=new Float64Array(R), pi=new Int32Array(R), pf=new Float64Array(R), mi=new Int32Array(R), mf=new Float64Array(R);
+  for(var u=0; u<R; u++){
+    var s=o+(u+0.5)/R, a=s*2.2, i=Math.floor(a), t=a-i, b=s*16, j=Math.floor(b), r=b-j;
+    w[u]=s; pi[u]=i; pf[u]=t*t*(3-2*t); mi[u]=j; mf[u]=r*r*(3-2*r);
+  }
+  return {w:w, pi:pi, pf:pf, mi:mi, mf:mf};
+}
+/* hash2 at every lattice point the axes reach, and the next one on (the far corners) */
+function vegMossTable(xs, ys, salt){
+  var x0=xs[0], x1=xs[xs.length-1]+1, y0=ys[0], y1=ys[ys.length-1]+1, n=x1-x0+1, h=new Float64Array(n*(y1-y0+1));
+  for(var y=y0; y<=y1; y++) for(var x=x0; x<=x1; x++) h[(y-y0)*n+x-x0]=hash2(x,y,salt);
+  return {h:h, n:n, x:x0, y:y0};
+}
+/* 2026-09-27 (Justin, render plan Q11): built at 128px like the Crypt's bed (cryptset.js cryptMossRaster). It was a 32px
+   raster blown up with square 2px flecks; the grain and flecks are now continuous noise, the colours and cover unchanged. */
 function vegMossRaster(x, y){
-  var R=32, cells=[];
+  var R=128, cells=[];
   for(var yy=y-1;yy<=y+1;yy++) for(var xx=x-1;xx<=x+1;xx++) if(vegIsGrass(xx,yy)) cells.push([xx+0.5,yy+0.5]);
   if(!cells.length) return null;
   var c=document.createElement('canvas'); c.width=R; c.height=R;
   var g=c.getContext('2d'), im=g.createImageData(R,R), D=im.data, salt=surfSalt()+140, any=false;
-  for(var v=0; v<R; v++) for(var u=0; u<R; u++){
-    var wx=x+(u+0.5)/R, wy=y+(v+0.5)/R, f=0;
-    for(var k=0;k<cells.length;k++){ var dx=wx-cells[k][0], dy=wy-cells[k][1], d=Math.sqrt(dx*dx+dy*dy)/1.25; if(d<1) f+=(1-d)*(1-d); }
-    var val=f + (vegNoise(wx*2.2, wy*2.2, salt)-0.5)*0.35 + (hash2(Math.floor(wx*16), Math.floor(wy*16), salt+1)-0.5)*0.1;
-    if(val<0.28) continue;
-    var p=(v*R+u)*4, dense=Math.min(1,(val-0.28)*1.8), fleck=hash2(Math.floor(wx*16), Math.floor(wy*16), salt+2)<0.14;
-    var col = fleck ? [104,128,62] : [58+18*dense, 82+16*dense, 40];
-    D[p]=col[0]; D[p+1]=col[1]; D[p+2]=col[2]; D[p+3]=Math.round((fleck?70:34)+62*dense); any=true;   /* ~15-40% */
+  /* 2026-09-28 (frame cost: 733 ms of a Dungeon walk at 4x CPU, built while you walk): the same arithmetic on the same
+     values, not repeated per pixel. Each column's and row's position, lattice cell and smoothed fraction is worked out
+     once, the lattice corners (hash2 of whole lattice points) come from tables filled once per raster, and a pixel
+     whose seed field alone cannot reach the threshold (the two noise terms add at most 0.225) skips its noise. */
+  var cols=vegMossAxis(x,R), rows=vegMossAxis(y,R), smooth=typeof ptVal==='function';
+  var T0=vegMossTable(cols.pi,rows.pi,salt), T1=vegMossTable(cols.mi,rows.mi,salt+1), T2=vegMossTable(cols.mi,rows.mi,salt+2);
+  var n0=T0.n, n1=T1.n, near=[];
+  for(var v=0; v<R; v++){
+    /* the seeds this row can reach (a seed 1.25 tiles off in y adds nothing anywhere on it), in their original order */
+    var wy=rows.w[v]; near.length=0;
+    for(var k=0;k<cells.length;k++){ var ey=wy-cells[k][1]; if(ey*ey<1.5625) near.push(cells[k]); }
+    if(!near.length) continue;
+    for(var u=0; u<R; u++){
+      var wx=cols.w[u], f=0;
+      for(k=0;k<near.length;k++){ var dx=wx-near[k][0], dy=wy-near[k][1], d=Math.sqrt(dx*dx+dy*dy)/1.25; if(d<1) f+=(1-d)*(1-d); }
+      if(f<0.05) continue;
+      var q=(rows.pi[v]-T0.y)*n0+cols.pi[u]-T0.x, a=T0.h[q], b=T0.h[q+1], cc=T0.h[q+n0], dd=T0.h[q+n0+1], fx=cols.pf[u], fy=rows.pf[v];
+      var vn=smooth ? a+(b-a)*fx+(cc-a)*fy+(a-b-cc+dd)*fx*fy : a;                                  /* vegNoise(wx*2.2, wy*2.2, salt) */
+      q=(rows.mi[v]-T1.y)*n1+cols.mi[u]-T1.x; fx=cols.mf[u]; fy=rows.mf[v];
+      a=T1.h[q]; b=T1.h[q+1]; cc=T1.h[q+n1]; dd=T1.h[q+n1+1];
+      var val=f + (vn-0.5)*0.35 + ((a+(b-a)*fx)*(1-fy)+(cc+(dd-cc)*fx)*fy-0.5)*0.1;              /* mossNoise(wx*16, wy*16, salt+1) */
+      if(val<0.28) continue;
+      a=T2.h[q]; b=T2.h[q+1]; cc=T2.h[q+n1]; dd=T2.h[q+n1+1];
+      var p=(v*R+u)*4, dense=Math.min(1,(val-0.28)*1.8), fleck=mossEdge((a+(b-a)*fx)*(1-fy)+(cc+(dd-cc)*fx)*fy,.68,.08);
+      D[p]=58+18*dense+(46-18*dense)*fleck; D[p+1]=82+16*dense+(46-16*dense)*fleck; D[p+2]=40+22*fleck;
+      D[p+3]=Math.round((34+36*fleck+62*dense)*mossEdge(val,.28,.06)); any=true;   /* ~15-40% */
+    }
   }
   if(!any) return null;
-  g.putImageData(im,0,0); return c;
+  g.putImageData(im,0,0); c.environmentTerrain={pixels:D,nativeDetail:true}; return c;
 }
 function drawVegMoss(){
   if(vegSet()!=='dungeon') return;
@@ -155,9 +181,28 @@ function drawVegMoss(){
     var sig=vegMossSig(x,y); if(sig.indexOf('1')<0) continue;
     blitRaster(cachedRaster('vm'+sig+'@', x, y, vegMossRaster), (x-camX)*TS, (y-camY)*TS, (revealAll||vis[i])?1:memA(0.4));
   }
+  vegMossAhead();
 }
-
-function drawVegetationSurface(){ drawVegMoss(); drawVegSpots(performance.now()); return;
+/* 2026-09-28 (frame cost): a step used to build the moss rasters for a whole new row of cells inside one frame (14 of
+   them, 90 ms, at 4x CPU). The rasters within three cells of the view are built ahead in idle time; a frame still
+   builds any it needs that are not ready, so the pixels are the same either way. */
+var VEG_MOSS_AHEAD={job:null, done:''};
+function vegMossAhead(){
+  var want=camX+','+camY+','+viewW+','+viewH+','+surfSalt();
+  if(VEG_MOSS_AHEAD.job!==null || VEG_MOSS_AHEAD.done===want) return;
+  var idle=window.requestIdleCallback || function(fn){ return setTimeout(function(){ var end=Date.now()+4; fn({timeRemaining:function(){ return end-Date.now(); }}); }, 50); };
+  VEG_MOSS_AHEAD.job=idle(function(deadline){
+    VEG_MOSS_AHEAD.job=null;
+    if(!map || vegSet()!=='dungeon') return;
+    var cells=surfCache(), M=3, want=camX+','+camY+','+viewW+','+viewH+','+surfSalt();
+    for(var y=Math.max(0,camY-M); y<=Math.min(MH-1,camY+viewH+M); y++) for(var x=Math.max(0,camX-M); x<=Math.min(MW-1,camX+viewW+M); x++){
+      if(isWallLike(at(x,y))) continue;
+      var sig=vegMossSig(x,y); if(sig.indexOf('1')<0 || ('vm'+sig+'@'+x+','+y) in cells) continue;
+      if(deadline.timeRemaining()<3){ vegMossAhead(); return; }
+      cachedRaster('vm'+sig+'@', x, y, vegMossRaster);
+    }
+    VEG_MOSS_AHEAD.done=want;
+  });
 }
 
 /* the Earth plane's plants: its fern, root tangle and mushroom props wear the pack's art and sway */

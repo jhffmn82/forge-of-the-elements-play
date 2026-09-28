@@ -17,7 +17,7 @@ var PUZZLE_KINDS = {
   chasm:     {el:'air',    sigil:'levitate', name:'Chasm vault',      note:'A chasm splits a side room with treasure beyond. Floating would carry you over.'},
   drowned:   {el:'air',    sigil:'levitate', name:'Drowned cellar',   note:'A flooded cellar: swimming across is possible, but the cold water takes its toll.'},
   barricade: {el:'fire',   sigil:'firestorm',name:'Barricade',        note:'A doorway choked with dry thorns and timber. Fire would clear it; pushing through hurts.'},
-  hoard:     {el:'fire',   sigil:'firestorm',name:'Frozen hoard',     note:'Treasure sealed in blocks of ice. Weapons only glance off it; fire will melt it.'},
+  hoard:     {el:'fire',   sigil:'firestorm',name:'Frozen hoard',     note:'Treasure sealed in blocks of ice. Weapons only glance off them; fire will melt them.'},
   everburn:  {el:'water',  sigil:'identify', name:'Everburning door', note:'A doorway wreathed in flame that never dies. Water would put it out.'},
   baths:     {el:'water',  sigil:null, name:'Scalding baths',   note:'Steam rolls from a room of scalding stone. Something cold would let you cross.'},
   spikes:    {el:'earth',  sigil:'stoneskin',name:'Spike gauntlet',   note:'A room bristling with spikes. Skin of stone would shrug them off.'},
@@ -142,7 +142,7 @@ function buildCrystalVault(){
            : i===1 ? (rng()<0.5 && typeof makeRing==='function' ? {kind:'ring', it:makeRing(null,false)} : typeof makeAmulet==='function' ? {kind:'amulet', it:makeAmulet(null,false)} : {kind:'essence', n:60})
            : (rng()<0.5 ? {kind:'mote', el:pick(ELEMENTS)} : {kind:'essence', n:ri(60,90)+floorNo*10});
     it.x=p.x; it.y=p.y; it.crystal=true; items.push(it); set.push(it);
-    addProp(p.x,p.y, objArt('props','crystal-violet') ? 'crystal-violet' : 'mushrooms', {flat:1, light:'#9FE8FF', dim:1, keep:true});   /* a crystal marks each treasure */
+    addProp(p.x,p.y, 'crystal-violet', {flat:1, light:'#9FE8FF', dim:1, keep:true});   /* a crystal marks each treasure */
   });
   var c=mainRoomCell(); if(c) items.push({x:c.x, y:c.y, kind:'key', key:'crystal'});
   floorMeta.notes.push('<b>A crystal vault</b> glints somewhere on this floor. Its crystal key lies about; inside, you may take one treasure.');
@@ -208,7 +208,7 @@ function turnPuzzleHazards(context){  if(player.windCarry && at(player.x,player.
   if(k==='darktraps' && mastered(k)) solvePuzzle(room, 'your inner light shows every trap.');
   else if(k==='baths' && mastered(k)) solvePuzzle(room, 'the scalding stone cannot warm your cool blood.');   /* 2026-09-23 audit: mastery solves this room like the other ten (DESIGN 12, step 10) */
   else if(k==='baths' && !(room.cooledUntil>turn) && !(player.levitate>0)){
-    var d=applyDamage(player, roll(1,3)+floorNo, 'fire', null); floatText(player.x,player.y,String(d),'fire'); log('The scalding stone burns you: '+d+'.','c-you');
+    var d=applyDamage(player, roll(1,3)+floorNo, 'fire', null); floatText(player.x,player.y,String(d),'fire'); log('The scalding stone burns you: '+d+' damage.','c-you');
     if(player.hp<=0){  if(player.hp<=0) death(); }
   }
   else if(k==='sentries' && !(player.hidden>0) && aff('shadow')<3){
@@ -216,7 +216,7 @@ function turnPuzzleHazards(context){  if(player.windCarry && at(player.x,player.
       if(player.hp<=0) return;
       boltFx(p.x,p.y,player.x,player.y,'light');
       var d=applyDamage(player, roll(2,4)+floorNo, 'light', null); floatText(player.x,player.y,String(d),'light');
-      log('A sentry’s eyes flare: '+d+' damage.','c-you');
+      log('A sentry\'s eyes flare: '+d+' damage.','c-you');
     });
     if(player.hp<=0){  if(player.hp<=0) death(); }
   }
@@ -283,7 +283,7 @@ function searchAround(resting, quiet){
       if(tellHere || rng()<ch){ setT(x,y,DOOR); found++; log('You find a <b>hidden door</b>!','c-kill'); sfx('door-secret'); sparkleFx(x,y,'light',14); }
     }
   }
-  feats.forEach(function(f){ if(!f.found && Math.max(Math.abs(f.x-player.x),Math.abs(f.y-player.y))<=2 && rng()<ch){ f.found=true; found++; log('You find a <b>'+trapName(f.kind)+' trap</b>.','c-info'); sfx('trap-spot'); } });
+  feats.forEach(function(f){ if(!f.found && Math.max(Math.abs(f.x-player.x),Math.abs(f.y-player.y))<=2 && rng()<ch){ f.found=true; found++; log('You find '+(/^[AEIOU]/.test(trapName(f.kind))?'an':'a')+' <b>'+trapName(f.kind)+' trap</b>.','c-info'); sfx('trap-spot'); } });
   if(found) computeFOV();
   else if(!quiet) log('You search carefully'+(prev?' again':'')+' and find nothing.','c-info');
   endTurn();

@@ -44,7 +44,7 @@ function craftSigil(key){
   player.bag.forEach(function(b){if(b.kind==='sigil'&&b.data.use===key)b.name=recipe.name;});
   addBag('✦',recipe.name,{kind:'sigil',data:{use:key},uid:'sigil:'+key});secondHeat(before);
   log('You carve a <b>'+recipe.name+'</b>: '+recipe.desc,'c-kill');sfx('forge-craft');sparkleFx(player.x,player.y,'fire',24);
-  finishForge('Carved: <b>'+recipe.name+'</b> &mdash; '+recipe.desc);return true;
+  finishForge('Carved: <b>'+recipe.name+'</b>. '+recipe.desc);return true;
 }
 function upgradeItem(item){
   if(item&&item.unid){log('The Forge will not work metal you do not know. <b>Identify it first.</b>','c-info');sfx('ui-error');return false;}
@@ -63,7 +63,7 @@ function fuseCheck(el){
   if(forbiddenElement(el))return GODS[player.god].name+' forbids '+cap(el)+'.';
   var aff=player.aff, total=totalAffinity(), capv=affinityCap(), have=(player.motes[el]||0)>0;
   if(!have) return 'You have no '+el+' mote.';
-  if(total>=capv) return 'Affinity cap reached ('+capv+'). Defeat the biome boss to raise it.';
+  if(total>=capv) return 'Affinity cap reached ('+capv+'). Pick up a boss core to raise it.';
   var els=Object.keys(aff).filter(function(k){ return aff[k]>0; });
   if(!aff[el] && els.length>=2) return 'You already hold two elements.';
   for(var i=0;i<els.length;i++) if(OPPOSITE[els[i]]===el) return cap(el)+' is the opposite of your '+els[i]+'.';
@@ -82,7 +82,7 @@ function fuseMote(el){
   derive(player); player.iceArmor=player.iceArmorMax;
   log('The Forge burns the mote into you. <b>'+cap(el)+' '+player.aff[el]+'</b>: '+t1Text(el, player.aff[el])+'.','c-kill');
   sfx('forge-fuse'); sparkleFx(player.x,player.y,TRAIL_EL(el),50); ringFx(player.x,player.y,AFF_COL[el],3);
-  player.abilities.forEach(function(k){ if(before.indexOf(k)<0){ log('<b>New spell: '+ABILITIES[k].name+'</b> &mdash; '+(typeof liveDesc==='function' ? liveDesc(ABILITIES[k]) : ABILITIES[k].desc),'c-kill'); sfx('new-ability'); } });
+  player.abilities.forEach(function(k){ if(before.indexOf(k)<0){ log('<b>New spell: '+ABILITIES[k].name+'</b>. '+(typeof liveDesc==='function' ? liveDesc(ABILITIES[k]) : ABILITIES[k].desc),'c-kill'); sfx('new-ability'); } });
   player.hotbar=null; updateUI(); renderForge();
   forgeSay('The <b>'+cap(el)+'</b> mote takes root in you: affinity <b>'+player.aff[el]+'</b>.');return true;
 }

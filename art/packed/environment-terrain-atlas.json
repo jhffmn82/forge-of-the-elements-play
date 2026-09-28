@@ -3,15 +3,15 @@
   "pixelsPerCell": 128,
   "assets": {
     "dungeon-floor": {
-      "file": "environment-terrain-dungeon-floor.png",
-      "width": 2048,
-      "height": 1024,
-      "columns": 16,
-      "rows": 8,
+      "file": "environment-terrain-dungeon-floor.webp",
+      "width": 1792,
+      "height": 896,
+      "columns": 14,
+      "rows": 7,
       "dim": 0
     },
     "dungeon-face": {
-      "file": "environment-terrain-dungeon-face.png",
+      "file": "environment-terrain-dungeon-face.webp",
       "width": 768,
       "height": 128,
       "columns": 6,
@@ -19,21 +19,21 @@
       "dim": 0.4
     },
     "dungeon-rim-n": {
-      "file": "environment-terrain-dungeon-rim-n.png",
+      "file": "environment-terrain-dungeon-rim-n.webp",
       "width": 768,
       "height": 40,
       "columns": 6,
       "rows": 1
     },
     "dungeon-rim-v": {
-      "file": "environment-terrain-dungeon-rim-v.png",
+      "file": "environment-terrain-dungeon-rim-v.webp",
       "width": 40,
       "height": 768,
       "columns": 1,
       "rows": 6
     },
     "dungeon-top": {
-      "file": "environment-terrain-dungeon-top.png",
+      "file": "environment-terrain-dungeon-top.webp",
       "width": 1024,
       "height": 1024,
       "columns": 8,
@@ -41,7 +41,7 @@
       "dim": 0.28
     },
     "crypt-floor": {
-      "file": "environment-terrain-crypt-floor.png",
+      "file": "environment-terrain-crypt-floor.webp",
       "width": 2048,
       "height": 1024,
       "columns": 16,
@@ -49,7 +49,7 @@
       "dim": 0
     },
     "crypt-face": {
-      "file": "environment-terrain-crypt-face.png",
+      "file": "environment-terrain-crypt-face.webp",
       "width": 768,
       "height": 128,
       "columns": 6,
@@ -57,21 +57,21 @@
       "dim": 0
     },
     "crypt-rim-n": {
-      "file": "environment-terrain-crypt-rim-n.png",
+      "file": "environment-terrain-crypt-rim-n.webp",
       "width": 768,
       "height": 40,
       "columns": 6,
       "rows": 1
     },
     "crypt-rim-v": {
-      "file": "environment-terrain-crypt-rim-v.png",
+      "file": "environment-terrain-crypt-rim-v.webp",
       "width": 40,
       "height": 768,
       "columns": 1,
       "rows": 6
     },
     "crypt-top": {
-      "file": "environment-terrain-crypt-top.png",
+      "file": "environment-terrain-crypt-top.webp",
       "width": 1024,
       "height": 1024,
       "columns": 8,
@@ -79,7 +79,7 @@
       "dim": 0
     },
     "prism-floor": {
-      "file": "environment-terrain-prism-floor.png",
+      "file": "environment-terrain-prism-floor.webp",
       "width": 2048,
       "height": 1024,
       "columns": 16,
@@ -87,7 +87,7 @@
       "dim": 0
     },
     "prism-face": {
-      "file": "environment-terrain-prism-face.png",
+      "file": "environment-terrain-prism-face.webp",
       "width": 768,
       "height": 128,
       "columns": 6,
@@ -95,21 +95,21 @@
       "dim": 0
     },
     "prism-rim-n": {
-      "file": "environment-terrain-prism-rim-n.png",
+      "file": "environment-terrain-prism-rim-n.webp",
       "width": 768,
       "height": 40,
       "columns": 6,
       "rows": 1
     },
     "prism-rim-v": {
-      "file": "environment-terrain-prism-rim-v.png",
+      "file": "environment-terrain-prism-rim-v.webp",
       "width": 40,
       "height": 768,
       "columns": 1,
       "rows": 6
     },
     "prism-top": {
-      "file": "environment-terrain-prism-top.png",
+      "file": "environment-terrain-prism-top.webp",
       "width": 1024,
       "height": 1024,
       "columns": 8,
@@ -117,7 +117,7 @@
       "dim": 0
     },
     "cinder-floor": {
-      "file": "environment-terrain-cinder-floor.png",
+      "file": "environment-terrain-cinder-floor.webp",
       "width": 2048,
       "height": 1024,
       "columns": 16,
@@ -125,7 +125,7 @@
       "dim": 0
     },
     "cinder-face": {
-      "file": "environment-terrain-cinder-face.png",
+      "file": "environment-terrain-cinder-face.webp",
       "width": 768,
       "height": 128,
       "columns": 6,
@@ -133,21 +133,21 @@
       "dim": 0
     },
     "cinder-rim-n": {
-      "file": "environment-terrain-cinder-rim-n.png",
+      "file": "environment-terrain-cinder-rim-n.webp",
       "width": 768,
       "height": 40,
       "columns": 6,
       "rows": 1
     },
     "cinder-rim-v": {
-      "file": "environment-terrain-cinder-rim-v.png",
+      "file": "environment-terrain-cinder-rim-v.webp",
       "width": 40,
       "height": 768,
       "columns": 1,
       "rows": 6
     },
     "cinder-top": {
-      "file": "environment-terrain-cinder-top.png",
+      "file": "environment-terrain-cinder-top.webp",
       "width": 1024,
       "height": 1024,
       "columns": 8,
@@ -155,7 +155,7 @@
       "dim": 0
     },
     "temple-floor": {
-      "file": "environment-terrain-temple-floor.png",
+      "file": "environment-terrain-temple-floor.webp",
       "width": 1024,
       "height": 1024,
       "columns": 8,
@@ -167,7 +167,7 @@
       "logicalPeriodPreserved": false
     },
     "temple-face": {
-      "file": "environment-terrain-temple-face.png",
+      "file": "environment-terrain-temple-face.webp",
       "width": 1536,
       "height": 128,
       "columns": 12,
@@ -179,7 +179,7 @@
       "logicalPeriodPreserved": true
     },
     "temple-top": {
-      "file": "environment-terrain-temple-top.png",
+      "file": "environment-terrain-temple-top.webp",
       "width": 1536,
       "height": 1536,
       "columns": 12,
@@ -191,7 +191,7 @@
       "logicalPeriodPreserved": true
     },
     "temple-rim-n": {
-      "file": "environment-terrain-temple-rim-n.png",
+      "file": "environment-terrain-temple-rim-n.webp",
       "width": 1536,
       "height": 40,
       "columns": 12,
@@ -203,14 +203,14 @@
       "logicalPeriodPreserved": true
     },
     "temple-rim-v": {
-      "file": "environment-terrain-temple-rim-v.png",
+      "file": "environment-terrain-temple-rim-v.webp",
       "width": 40,
       "height": 1536,
       "columns": 1,
       "rows": 12
     },
     "underdark-floor": {
-      "file": "environment-terrain-underdark-floor.png",
+      "file": "environment-terrain-underdark-floor.webp",
       "width": 1024,
       "height": 1024,
       "columns": 8,
@@ -222,7 +222,7 @@
       "logicalPeriodPreserved": false
     },
     "underdark-face": {
-      "file": "environment-terrain-underdark-face.png",
+      "file": "environment-terrain-underdark-face.webp",
       "width": 1536,
       "height": 128,
       "columns": 12,
@@ -234,7 +234,7 @@
       "logicalPeriodPreserved": true
     },
     "underdark-top": {
-      "file": "environment-terrain-underdark-top.png",
+      "file": "environment-terrain-underdark-top.webp",
       "width": 1536,
       "height": 1536,
       "columns": 12,
@@ -246,7 +246,7 @@
       "logicalPeriodPreserved": true
     },
     "underdark-rim-n": {
-      "file": "environment-terrain-underdark-rim-n.png",
+      "file": "environment-terrain-underdark-rim-n.webp",
       "width": 1536,
       "height": 40,
       "columns": 12,
@@ -258,14 +258,14 @@
       "logicalPeriodPreserved": true
     },
     "underdark-rim-v": {
-      "file": "environment-terrain-underdark-rim-v.png",
+      "file": "environment-terrain-underdark-rim-v.webp",
       "width": 40,
       "height": 1536,
       "columns": 1,
       "rows": 12
     },
     "volcanic-floor": {
-      "file": "environment-terrain-volcanic-floor.png",
+      "file": "environment-terrain-volcanic-floor.webp",
       "width": 1920,
       "height": 1920,
       "columns": 15,
@@ -277,7 +277,7 @@
       "logicalPeriodPreserved": true
     },
     "volcanic-face": {
-      "file": "environment-terrain-volcanic-face.png",
+      "file": "environment-terrain-volcanic-face.webp",
       "width": 1536,
       "height": 128,
       "columns": 12,
@@ -289,7 +289,7 @@
       "logicalPeriodPreserved": true
     },
     "volcanic-top": {
-      "file": "environment-terrain-volcanic-top.png",
+      "file": "environment-terrain-volcanic-top.webp",
       "width": 1536,
       "height": 1536,
       "columns": 12,
@@ -301,7 +301,7 @@
       "logicalPeriodPreserved": true
     },
     "volcanic-rim-n": {
-      "file": "environment-terrain-volcanic-rim-n.png",
+      "file": "environment-terrain-volcanic-rim-n.webp",
       "width": 1536,
       "height": 40,
       "columns": 12,
@@ -313,14 +313,14 @@
       "logicalPeriodPreserved": true
     },
     "volcanic-rim-v": {
-      "file": "environment-terrain-volcanic-rim-v.png",
+      "file": "environment-terrain-volcanic-rim-v.webp",
       "width": 40,
       "height": 1536,
       "columns": 1,
       "rows": 12
     },
     "stone-detail": {
-      "file": "environment-terrain-stone-detail.png",
+      "file": "environment-terrain-stone-detail.webp",
       "width": 1024,
       "height": 1024,
       "columns": 8,
@@ -328,7 +328,7 @@
       "role": "master-derived high-frequency material; native contour mask remains unchanged"
     },
     "fluid-detail": {
-      "file": "environment-terrain-fluid-detail.png",
+      "file": "environment-terrain-fluid-detail.webp",
       "width": 1024,
       "height": 1024,
       "columns": 8,
@@ -336,7 +336,7 @@
       "role": "master-derived sheen only; no source islands or shore geometry copied"
     },
     "lava-flow": {
-      "file": "environment-terrain-lava-flow.png",
+      "file": "environment-terrain-lava-flow.webp",
       "width": 768,
       "height": 768,
       "columns": 6,
@@ -344,7 +344,7 @@
       "role": "painted lava master; native six-cell flow period, native hazard mask"
     },
     "cave-rock": {
-      "file": "environment-terrain-cave-rock.png",
+      "file": "environment-terrain-cave-rock.webp",
       "width": 1024,
       "height": 1024,
       "columns": 8,
@@ -354,7 +354,7 @@
   },
   "sources": [
     {
-      "file": "art/packed/dungeon-style-floor-v2.png",
+      "file": "archive/art/packed/dungeon-style-floor-v2.png",
       "size": [
         1254,
         1254
@@ -362,7 +362,7 @@
       "sha256": "628de98d291f69e08d6a8eec8f1afdf2e38c7c67a581387eaae7992d4184e61b"
     },
     {
-      "file": "art/packed/dungeon-style-wall-face-v3.png",
+      "file": "archive/art/packed/dungeon-style-wall-face-v3.png",
       "size": [
         2172,
         724
@@ -370,7 +370,7 @@
       "sha256": "c396f7e7d900995fdb9e9b6236b70046988ee0a38a9f934465bf97b75ca75a80"
     },
     {
-      "file": "art/packed/dungeon-style-wall-top-v3.png",
+      "file": "archive/art/packed/dungeon-style-wall-top-v3.png",
       "size": [
         1254,
         1254

@@ -1,7 +1,7 @@
 /* Explicit module installation order. Start a run only after installation completes. */
 var FOTE_RUNTIME = {
   development: false,
-  developmentOnly: ["js/sandbox-builds.js", "js/dungeon-style-art.js", "js/dungeon-style-preview.js"],
+  developmentOnly: ["js/sandbox-builds.js"],
   modules: [
   "js/engine/state.js",
   "js/engine/codec.js",
@@ -156,14 +156,11 @@ var FOTE_RUNTIME = {
   "js/chaos-current-render.js",
   "js/shadow-clone.js",
   "js/environment-terrain.js",
+  "js/terrain-workers.js",
   "art/packed/environment-deco-meta.js",
   "js/environment-deco.js",
   "js/environment-props.js",
   "art/packed/environment-vegetation-meta.js",
-  "js/environment-vegetation.js",
-  "js/shambler-art.js",
-  "js/goblin-family-art.js",
-  "js/dungeon-style-art.js",
-  "js/dungeon-style-preview.js"
+  "js/environment-vegetation.js"
 ]
 };

@@ -1,10 +1,10 @@
 /* Reconciled owner decisions from docs/recovered/grom-balance-discussion.md.
  * Helpers here are shared by previews, descriptions and runtime resolution. */
 function chillSlow(e){var r=e.st&&e.st.chill&&e.st.chill.waterRank||0;return Math.min(.50,.33+(r>=3?.03*r:0));}
-RANK_TEXT[3].water='Deep Chill: Chill slows movement and actions by 33%, plus 3% per Water rank from rank 3 (maximum 50%). Immune to Chill and Freeze.';
-RANK_TEXT[3].fire='Searing: +5% damage per Fire rank against Burning enemies. Immune to Burning.';
-RANK_TEXT[3].earth='Venom: Earth Root applies Poison for 1 / 2 / 3 turns at Earth ranks 3 / 4 / 5+. Poison deals 10% max HP per turn, or 5% to bosses.';
-RANK_TEXT[3].shadow='Fade: become Hidden after 10 / 8 / 6 / 4 consecutive unseen turns at Shadow ranks 3–6. Immune to Fear.';
+RANK_TEXT[3].water='Deep Chill: enemies you Chill are slowed by 33% plus 3% per Water point, up to 50%. Immune to Chill and Freeze.';
+RANK_TEXT[3].fire='Searing: +5% damage per Fire point against Burning enemies. Immune to Burning.';
+RANK_TEXT[3].earth='Venom: anything you Root is also Poisoned for 1 turn, rising to 3 at Earth 5. Poison takes 10% of max HP a turn, 5% for bosses. Immune to Root.';
+RANK_TEXT[3].shadow='Fade: after 10 quiet turns out of combat you become Hidden (only 4 at Shadow 6). Immune to Fear.';
 
 var ARCANE_LANCE={name:'Arcane Lance',kind:'bolt',type:'magic',range:6,base:[10,16],cost:0,prayerSpell:true,icon:'ic-magic-missile'};
 
@@ -12,7 +12,7 @@ var ARCANE_LANCE={name:'Arcane Lance',kind:'bolt',type:'magic',range:6,base:[10,
 function castArcaneLance(x,y){
  if(dist(player,{x:x,y:y})>6||!inb(x,y)||!vis[idxOf(x,y)]||!canPray('arcanelance'))return false;
  var path=boltPath(player.x,player.y,x,y),p=path[path.length-1],target=p&&foeAt(p.x,p.y);if(!target||target.tomb>0)return false;
- aiming=null;spendDivineSpell(5);player.castTurn=turn;setClip(player,'cast');sfx('magic-missile');boltFx(player.x,player.y,target.x,target.y,'magic');
+ aiming=null;spendDivineSpell(5);startPrayerCd('arcanelance');player.castTurn=turn;setClip(player,'cast');sfx('magic-missile');boltFx(player.x,player.y,target.x,target.y,'magic');
  if(combatRoll(hitChance(player.acc+10,evaOf(target)),true)){spellHit(target,ARCANE_LANCE,Math.round(roll(5*godRank(),5*godRank()+6)*divineStrength()),'magic');finishHit(target);}else floatText(target.x,target.y,'miss','miss');endTurn();return true;
 }
 
@@ -24,7 +24,7 @@ function combatRoll(chance,eligible){
 }
 function pRoll(chance){return combatRoll((chance||0)+luckBonus(),true);}
 
-if(typeof STATUS_INFO!=='undefined')STATUS_INFO.luckystreak={name:'Lucky Streak',icon:'ic-pray',d:'Reroll the first failed qualifying combat roll once per turn.'};
+if(typeof STATUS_INFO!=='undefined')STATUS_INFO.luckystreak={name:'Lucky Streak',icon:'ic-pray',d:'Once a turn, your first failed roll in combat is rolled again.'};
 
 
 function safeWobbleSpots(){
@@ -45,7 +45,7 @@ function lastLaugh(){
 }
 
 
-RACES.dwarf.blurb='Sturdy masters of the forge. Weapon damage counts as +1, heavy armor costs no evasion, innate Armor is +1, and Forge upgrades cost 25% less.';
+RACES.dwarf.blurb='Sturdy masters of the forge. Weapons and armor count as one upgrade higher, on top of their own upgrades. Heavy armor costs no evasion, and Forge upgrades cost 25% less.';
 
 
 // The servant's existing rank scaling is applied in castRaiseDead before it acts.
@@ -103,7 +103,7 @@ function drawSanctuarySurface(){
 function castArcaneNova(x,y){
  if(aiming&&aiming.prayer==='arcanenova'){
   if(!inRange(x,y)||!canPray('arcanenova'))return false;
-  var A=aiming.A;aiming=null;spendDivineSpell(20);player.castTurn=turn;setClip(player,'cast');sfx('cast-generic');
+  var A=aiming.A;aiming=null;spendDivineSpell(20);startPrayerCd('arcanenova');player.castTurn=turn;setClip(player,'cast');sfx('cast-generic');
   var prior=AOE_HIT;AOE_HIT=true;try{ents.slice().forEach(function(e){if(e.foe&&e.hp>0&&dist(e,{x:x,y:y})<=1){spellHit(e,A,Math.round(roll(5*godRank(),5*godRank()+8)*divineStrength()),'magic');finishHit(e);}});}finally{AOE_HIT=prior;}
   ringFx(x,y,'#7FA8FF',1.5);endTurn();return true;
  }

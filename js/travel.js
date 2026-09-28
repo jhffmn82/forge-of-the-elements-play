@@ -116,7 +116,7 @@ function startTravel(path, then){
   if(!path || !path.length){ if(then) then(); return; }
   if(path.length>1 && travelOneStep()){
     path=path.slice(0,1);
-    if(!window.STEP_HINT){ window.STEP_HINT=true; log('With an enemy in sight you take one step at a time &mdash; click again to keep going.','c-info'); }
+    if(!window.STEP_HINT){ window.STEP_HINT=true; log('With an enemy in sight, you take one step at a time. Click again to keep going.','c-info'); }
   }
   TRAVEL={path:path, then:then, hp:player.hp, foes:visibleFoeIds(), traps:feats.filter(function(f){ return f.found; }).length};
   travelStep();
@@ -231,7 +231,7 @@ setTimeout(function(){   /* registered after boot.js, so its door-closing click 
 var CLICK_SPELLS = ['missile','sap','firebolt','frostshard','spark','root','smite','shadowbolt'];
 function clickSpellable(key){ return CLICK_SPELLS.indexOf(key)>=0 && !!ABILITIES[key]; }
 function toggleClickSpell(key){
-  if(!clickSpellable(key)){ log('Only Magic Missile, Sap and the rank 2 bolts can be click spells.','c-info'); return; }
+  if(!clickSpellable(key)){ log('Only Magic Missile, Sap and the rank 2 element spells can be click spells.','c-info'); return; }
   player.clickSpell = player.clickSpell===key ? null : key;
   log(player.clickSpell ? 'Clicking an enemy now casts <b>'+ABILITIES[key].name+'</b>.' : 'Clicking an enemy no longer casts a spell.','c-info');
   sfx('ui-click'); abilityBar();

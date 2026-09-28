@@ -25,20 +25,20 @@ function isScoundrel(){ return player.cls==='scoundrel'; }
 /* stat passives (mechanics review 2026-09-16, DESIGN.md section 12) */
 var PASSIVES={
   mig:[{at:12,id:'heavyHands',name:'Heavy Hands',d:'+10% melee damage'},
-       {at:15,id:'crushing',  name:'Crushing Blows',d:'+25% damage to targets below half HP'},
-       {at:18,id:'spellWard', name:'Spell Ward',d:'block spells and abilities in addition to melee and ranged attacks. Without a shield (two-handers, dual wield) you block spells and abilities at 25% + 1% per Might above 10, up to 40%'},
+       {at:15,id:'crushing',  name:'Crushing Blows',d:'+25% weapon damage to targets below half HP'},
+       {at:18,id:'spellWard', name:'Spell Ward',d:'your block also works against spells and abilities. Without a shield you still block them 33% of the time, up to 40% with more Might'},
        {at:21,id:'cleaving',  name:'Cleaving Swings',d:'your attacks also hit one other adjacent enemy for half'},
-       {at:25,id:'unstoppable',name:'Unstoppable',d:'immune to stun, slow and knockback, +20% melee damage'}],
+       {at:25,id:'unstoppable',name:'Unstoppable',d:'immune to Stun, Root, Chill, Freeze, slows and knockback; +20% melee damage'}],
   agi:[{at:12,id:'lightFeet',name:'Light Feet',d:'+8 evasion'},
        {at:15,id:'deadeye',  name:'Deadeye',d:'+8% crit chance and +25% critical damage for all attacks and spells'},
        {at:18,id:'fleet',    name:'Fleet',d:'moving costs 15% less time'},
        {at:21,id:'keenAim',  name:'Keen Aim',d:'your attacks ignore 25% of the target\'s evasion; +25% additional critical damage for all attacks and spells'},
-       {at:25,id:'blur',     name:'Blur',d:'hostile direct attacks have 20% less chance to hit you (minimum 15%)'}],
+       {at:25,id:'blur',     name:'Blur',d:'enemy attacks are 20% less likely to hit you'}],
   vit:[{at:12,id:'tough',    name:'Tough',d:'+15% max HP'},
        {at:15,id:'resilient',name:'Resilient',d:'HP regeneration doubles below half HP'},
        {at:18,id:'ironConst',name:'Iron Constitution',d:'statuses on you last half as long'},
-       {at:21,id:'fortitude',name:'Fortitude',d:'halve damage that gets through your shields, once every 6 global turns; fully absorbed hits do not consume it'},
-       {at:25,id:'bulwark',  name:'Bulwark',d:'immune to critical hits; +5% resistance to non-physical damage'}],
+       {at:21,id:'fortitude',name:'Fortitude',d:'once every 6 turns, halve a hit that gets through your shields'},
+       {at:25,id:'bulwark',  name:'Bulwark',d:'immune to critical hits; +5% resistance to all but physical damage'}],
   foc:[{at:12,id:'arcaneStudy',name:'Arcane Study',d:'+10% spell damage'},
        {at:15,id:'meditation',name:'Meditation',d:'+25% mana regeneration'},
        {at:18,id:'tidalMind', name:'Tidal Mind',d:'mana regeneration doubles below half mana'},
@@ -56,7 +56,7 @@ function affinityCap(){
 }
 function enchantScale(el){return FoteEnchantments.scale(player.aff&&player.aff[el]||0,enchantContext());}
 function buff(name){ return player.buffs && player.buffs[name] > 0; }
-function itemPlus(it){ return (it && it.plus||0) + (it && it.tier==='Trusty' ? 1 : 0) + (player.race==='dwarf' && it && it.dmg && !it.unarmed ? 1 : 0); }
+function itemPlus(it){ return (it && it.plus||0) + (it && it.tier==='Trusty' ? 1 : 0) + (player.race==='dwarf' && it && (it.dmg && !it.unarmed || it.weight) ? 1 : 0); }
 
 
 /* ---------------------------------------------------------------- derived stats */
@@ -107,7 +107,7 @@ function slimeSplit(e){
   e.split=true;
   var c=nearFree(e.x,e.y,1); if(!c) return;
   var half=Math.max(1,Math.floor(e.hp/2)); e.hp-=half;
-  var s=spawn(e.kind==='caveslime'?'caveslime':'slime',c.x,c.y); s.hp=s.maxhp=half; s.split=true; s.state='hunt'; s.name=e.kind==='caveslime'?'Basalt Slimelet':'Slimelet'; s.small=true; s.noXp=true;
+  var s=spawn(e.kind==='caveslime'?'caveslime':'slime',c.x,c.y); s.hp=s.maxhp=half; s.split=true; s.state='hunt'; s.name=e.kind==='caveslime'?'Basalt Slimelet':'Slimelet'; s.small=true; s.noLoot=true;
   log('The slime splits in two!','c-info'); sfx('slime-split');
 }
 
@@ -268,7 +268,7 @@ function basicMonsterBehavior(e){
         boltFx(e.x,e.y,player.x,player.y,'fire');
         if(rng() < hostileHitChance(hitChance(e.base.acc+10, evaOf(player)),true)){
           var fd=applyDamage(player, roll(5,8)+floorNo, 'fire', e); floatText(player.x,player.y,String(fd),'fire'); var brn=rng()<0.5; if(brn) applyStatus(player,'burn',3,sDMG(2));
-          log(e.name+' hurls a firebolt &mdash; <b>'+fd+'</b> fire'+(brn?', burning':'')+'.','c-you');
+          log(e.name+' hurls a firebolt: <b>'+fd+'</b> fire'+(brn?'. You are burning':'')+'.','c-you');
           if(player.hp<=0) kill(player,e);
         } else { log(e.name+'\'s firebolt misses.','c-miss'); floatText(player.x,player.y,'miss','miss'); }
          return true;
@@ -353,7 +353,7 @@ function bossTurn(e, see, d){
       sfx('warchief-slam'); SHAKE=w.kind==='slam'?14:10;
       hitTiles(e, w.tiles, w.kind==='slam'?[16,24]:[12,18], w.kind==='slam'?'Ground Slam':'The shockwave', function(v){ applyStatus(v,'stun',1); });
       log(w.kind==='slam' ? '<b>Grukk brings the axe down.</b> The floor cracks.' : 'A shockwave rolls outward.','c-you');
-      if(w.kind==='slam' && e.phase>=2){ e.windup={kind:'ring', tiles:tilesWithin(e.x,e.y,3,4), due:2}; log('<b>The ground heaves.</b> A shockwave is building &mdash; get close to him.','c-you'); }
+      if(w.kind==='slam' && e.phase>=2){ e.windup={kind:'ring', tiles:tilesWithin(e.x,e.y,3,4), due:2}; log('<b>The ground heaves.</b> A shockwave is building: get close to him.','c-you'); }
     } else if(w.kind==='charge'){
       sfx('warchief-roar'); SHAKE=10;
       var path=w.tiles, stopAt=null, hit=false;
@@ -365,7 +365,7 @@ function bossTurn(e, see, d){
       }
       if(stopAt){ e.x=stopAt[0]; e.y=stopAt[1]; }
       if(hit){ var cd=applyDamage(player, roll(14,20), 'phys', e); floatText(player.x,player.y,String(cd),'phys',true); log('<b>Grukk\'s charge</b> slams into you for '+cd+'.','c-you'); if(player.hp<=0) kill(player,e); }
-      else { e.dazed=2; log('<b>Grukk thunders past and crashes into the wall!</b> He is dazed &mdash; strike now.','c-kill'); sparkleFx(e.x,e.y,'lightning',20); }
+      else { e.dazed=2; log('<b>Grukk thunders past and crashes into the wall!</b> He is dazed. Strike now.','c-kill'); sparkleFx(e.x,e.y,'lightning',20); }
     }
     return true;
   }
@@ -427,7 +427,7 @@ function basicAllyBehavior(e){
       if(typeof boltFx==='function') boltFx(e.x, e.y, target.x, target.y, 'shadow');
       var ld=applyDamage(target, roll(e.dmg[0], e.dmg[1]), 'dark', e);
       floatText(target.x, target.y, String(ld), 'dark');
-      log('Your '+e.name+' hurls a shadow bolt &mdash; <b>'+ld+'</b> shadow.','c-good');
+      log('Your '+e.name+' hurls a shadow bolt for <b>'+ld+'</b> shadow damage.','c-good');
       if(target.hp<=0) kill(target, e);
        return true;
     }
@@ -485,7 +485,7 @@ function castBoltTarget(x,y){
   var terrain = !f && (at(end.x,end.y)===ICEDOOR || at(end.x,end.y)===THORNS || propAt(end.x,end.y) || gAt(end.x,end.y)===G_GRASS);
   if(key==='challenge'){ if(!f){ log('Challenge whom?','c-info'); return false; } }
   if(!f && !(terrain && (A.type==='fire'||A.type==='phys'||A.type==='ice'||A.type==='lightning'))){ log(path.length && end.x!==x ? 'Something is in the way.' : 'Nothing to hit there.','c-info'); return false; }
-  aiming=null; spendSpellMana(A);
+  aiming=null; spendSpellMana(A); if(A.divine) startInvokeCd(key);   /* Challenge: an aimed invoke's cooldown starts on payment */
   if(!A.tech && !A.divine && typeof spellConduct==='function') spellConduct(A);
   setClip(player, A.tech && A.useWeaponRange && player.range<=1 ? 'melee' : 'cast');
   if(key==='challenge'){
@@ -526,7 +526,7 @@ function castBoltTarget(x,y){
   if(f.state==='asleep' && key!=='sap') f.state='hunt';
   if(key==='sap'&&f.hp>0&&f.st.stun&&!f.stunImmune){f.sapped=true;f.stunImmune=true;}
   if(d>0)playerHitRewards(f,true);
-  log(A.name+' hits '+f.name+' &mdash; <b>'+d+'</b> '+FoteDamage.label(dmgType)+(crit?' (crit)':'')+note,'c-hit');
+  log(A.name+' hits '+f.name+' for <b>'+d+'</b> '+FoteDamage.label(dmgType)+(crit?' (crit)':'')+note,'c-hit');
   if(f.hp<=0){
     kill(f,player);
   }

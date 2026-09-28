@@ -114,11 +114,11 @@ function gearName(item){
 }
 function itemLabel(item){
   if(item.kind==='core')return 'the '+item.name;
-  if(item.kind==='heart')return 'a heart (+25% HP)';
-  if(item.kind==='managlobe')return 'a mana globe (+25% mana)';
+  if(item.kind==='heart')return 'a heart (heals 25% of max HP)';
+  if(item.kind==='managlobe')return 'a mana globe (restores 25% of max mana)';
   if(item.kind==='essence')return Math.round(item.n*essenceMult())+' essence';
-  if(item.kind==='mote')return 'a '+item.el+' mote';
-  if(item.kind==='key')return 'an '+item.key+' key';
+  if(item.kind==='mote')return (/^[aeiou]/.test(item.el)?'an ':'a ')+item.el+' mote';
+  if(item.kind==='key')return (/^[aeiou]/.test(item.key)?'an ':'a ')+item.key+' key';
   if(item.kind==='food')return FOODS[item.food].name;
   if(item.kind==='sigil')return sigilName(item.use);
   return gearName(item.it);

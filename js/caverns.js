@@ -13,7 +13,7 @@
 
 function inCaverns(){ return typeof floorNo!=='undefined' && bidx()===2 && !(floorMeta && floorMeta.plane); }
 
-/* ---------------------------------------------------------------- the pieces (art in art/map/biome3, map-cave.png)
+/* ---------------------------------------------------------------- the pieces (art in art/map/biome3, map-cave.webp)
    w,h: footprint in tiles; b: blocks; flat: lies on the floor (walkable); light/dim: a light source */
 var CAVE_PIECES = {
   'stalagmite-tall-1':{b:1}, 'stalagmite-tall-2':{b:1}, 'stalagmite-tall-3':{b:1},

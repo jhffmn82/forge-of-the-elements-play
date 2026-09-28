@@ -20,12 +20,12 @@ var TURN_ANIMATION_BEFORE=null;
 function turnPrimeAnimations(){
   TURN_ANIMATION_BEFORE=null;
   if(turnAnimationImmediate())return;
-  /* Slides begin when renderPos observes a changed tile. Remember the old
-   * positions before AI mutates them, including potential knockback targets. */
+  /* Slides begin when renderPos observes a changed tile, so every visible
+   * figure is placed before AI moves it or knocks it back. */
   var actors=new Map();
   turnAnimationActors().forEach(function(e){
     renderPos(e);var clip=e._clip;
-    actors.set(e,{x:e.x,y:e.y,clip:clip,name:clip&&clip.name,t0:clip&&clip.t0});
+    actors.set(e,{clip:clip,name:clip&&clip.name,t0:clip&&clip.t0});
   });
   TURN_ANIMATION_BEFORE={actors:actors,effects:new Set(fx)};
 }
@@ -56,33 +56,37 @@ function turnAnimationEffectVisible(f){
   if(![f.ax,f.ay,f.bx,f.by].every(Number.isFinite))return false;
   return Math.max(f.ax,f.bx)>=camX-1&&Math.min(f.ax,f.bx)<=camX+viewW+1&&Math.max(f.ay,f.by)>=camY-1&&Math.min(f.ay,f.by)<=camY+viewH+1;
 }
+/* 2026-09-27 (Justin: "only make attacks pause the game to finish"). A step never holds a turn: each slide
+ * starts as its figure moves, so a crowded turn's slides play together. Swings, casts, shots, lunges and
+ * projectiles the player can see still play one after another, in turn order. */
 function turnFiniteAnimationWait(actor){
   if(turnAnimationImmediate())return 0;
-  var actors=turnAnimationActors(),playerAction=actor===player,visible=turnAnimationVisible(actor),before=playerAction?null:TURN_ANIMATION_BEFORE;
-  var sequential=visible&&!actor.ally;
-  var waitForMovement=!playerAction||ents.some(function(e){return e!==player&&e.foe&&e.hp>0&&e.t<player.t&&turnAnimationVisible(e);});
-  var now=performance.now(),end=now,changed=false;
-  actors.forEach(function(e){
-    var prior=before&&before.actors.get(e),oldMotion=MOTION_STATE.get(e),clip=e._clip;
-    var moved=prior?prior.x!==e.x||prior.y!==e.y:oldMotion&&oldMotion.floor===floorMeta&&(oldMotion.x!==e.x||oldMotion.y!==e.y);
+  var playerAction=actor===player,before=playerAction?null:TURN_ANIMATION_BEFORE;
+  var sequential=turnAnimationVisible(actor)&&!actor.ally;
+  var now=performance.now(),end=now;
+  turnAnimationActors().forEach(function(e){
+    var prior=before&&before.actors.get(e),clip=e._clip;
     var newClip=before&&(!prior||prior.clip!==clip||prior.name!==(clip&&clip.name)||prior.t0!==(clip&&clip.t0));
-    if(moved||newClip&&turnAnimationClipEnd(e,now)>now)changed=true;
     renderPos(e);
-    var motion=MOTION_STATE.get(e);
-    // Following pets slide alongside the player; only their attacks hold a turn.
-    if(!e.ally&&waitForMovement&&(playerAction||sequential||moved)&&motion&&motion.mt&&Number.isFinite(motion.mt)&&motion.floor===floorMeta)end=Math.max(end,motion.mt+(motion.dur||MOVE_MS));
     if(playerAction||sequential||e===actor||newClip)end=Math.max(end,turnAnimationClipEnd(e,now));
   });
   fx.forEach(function(f){
     if((playerAction||sequential||!before||!before.effects.has(f))&&turnAnimationEffectVisible(f)&&Number.isFinite(f.t0)&&Number.isFinite(f.dur)&&f.dur>0)end=Math.max(end,f.t0+f.dur);
   });
-  /* Unseen, idle actors have no presentation work. In particular they must
-   * not force a full terrain/light redraw on every scheduler decision. */
-  if((playerAction?waitForMovement:visible||changed)||end>now){
+  /* Only a pause is drawn here. Actors that do not pause run on in the same task, where a draw is never
+   * shown; the turn's last phase draws their slides. */
+  if(end>now){
     if(typeof updateTurnUI==='function')updateTurnUI();
-    draw();
+    draw();turnStartSlides();
   }
   return Math.max(0,end-performance.now());
+}
+/* 2026-09-28: the slides stamped while this task's AI ran start once its work is done: at a swing the player can
+ * see (render.js setClip), a pause, or the turn's end. A crowded floor's AI time never eats them (game.js motionStart). */
+function turnStartSlides(){
+  if(ANIM.reduce)return;
+  var now=performance.now();
+  motionStart(player,now);ents.forEach(function(e){motionStart(e,now);});
 }
 function turnActorAnimationWait(actor){return turnFiniteAnimationWait(actor);}
 function turnPlayerAnimationWait(){return turnFiniteAnimationWait(player);}

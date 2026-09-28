@@ -2,7 +2,7 @@
  * floor transition owns travel, saves, companions and destination selection. */
 (function(root){
   'use strict';
-  var gateFile='map-material-gateway.png',gateReady=false,gateLoading=null;
+  var gateFile='map-material-gateway.webp',gateReady=false,gateLoading=null;
   function materialGateAt(x,y){
     var entry=floorMeta&&floorMeta.chaosEntryPreview;
     if(entry&&entry.portal.x===x&&entry.portal.y===y)return true;

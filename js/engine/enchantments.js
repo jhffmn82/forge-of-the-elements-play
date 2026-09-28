@@ -72,10 +72,9 @@
   function percent(v){return Math.round(v*100)+'%';}
   function formulaField(slot,el,key,isPercent){
     var c=rules[slot][el][key],unit=isPercent?'%':'',factor=isPercent?100:1;
-    var text=c.base?number(c.base*factor)+unit:'';
-    if(c.per)text+=(text?' +':'')+number(c.per*factor)+unit+' per '+cap(el)+' mastery';
-    if(!text)text='0'+unit;
-    if(c.minimum!==undefined)text+=' (minimum '+number(c.minimum*factor)+unit+')';
+    var per=c.per?number(c.per*factor)+unit+' per '+cap(el)+' point':'';
+    var text=c.base?number(c.base*factor)+unit+(per?' (+'+per+')':''):per||'0'+unit;
+    if(c.minimum!==undefined)text+=' (at least '+number(c.minimum*factor)+unit+')';
     return text;
   }
   function describe(slot,el,mastery,context,formula){
@@ -87,15 +86,15 @@
     if(slot==='weapon'){
       if(el==='fire')return '+'+pct('extraDamage')+' of each hit as fire; '+pct('burnChance')+' chance to inflict Burning for '+v.burnDuration+' turns.';
       if(el==='water')return pct('chillChance')+' chance to Chill.';
-      if(el==='air')return pct('repeatChance')+' chance of an instant extra attack, or an eligible spell landing twice.';
+      if(el==='air')return pct('repeatChance')+' chance to strike twice.';
       if(el==='earth')return pct('rootChance')+' chance to Root for '+v.rootDuration+' turns.';
       if(el==='light')return '+'+pct('critChance')+' crit chance.';
-      if(el==='shadow')return pct('procChance')+' chance of +'+pct('extraDamage')+' shadow damage and Corrupt; +'+v.hollowDamage+' damage to Hollowed targets.';
+      if(el==='shadow')return pct('procChance')+' chance of +'+pct('extraDamage')+' shadow damage and Corrupt for '+v.corruptDuration+' turns; +'+v.hollowDamage+' damage to Hollowed targets.';
     }
     if(slot==='armor'){
       var prefix='+'+pct('resistance')+' '+damageTypes[el]+' resistance; ';
-      var bonus={fire:function(){return '+'+pct('maxhp')+' maximum HP.';},water:function(){return '+'+f('evasion')+' evasion.';},
-        air:function(){return pct('deflect')+' ranged projectile deflection (excludes area effects).';},earth:function(){return '+'+f('armor')+' armor.';},
+      var bonus={fire:function(){return '+'+pct('maxhp')+' max HP.';},water:function(){return '+'+f('evasion')+' evasion.';},
+        air:function(){return pct('deflect')+' chance to deflect ranged attacks.';},earth:function(){return '+'+f('armor')+' armor.';},
         light:function(){return '+'+pct('hpRegen')+' HP regeneration.';},shadow:function(){return '+'+pct('stealth')+' stealth.';}};
       return prefix+bonus[el]();
     }
@@ -103,32 +102,32 @@
       if(el==='fire')return 'Blocking burns the attacker for '+pct('fire')+' of the blow; '+pct('burn')+' chance to inflict Burning for '+v.burnDuration+' turns.';
       if(el==='water')return pct('water')+' chance to Chill a blocked attacker.';
       if(el==='air')return pct('air')+' chance to knock a blocked attacker back '+v.knockback+' tile and stun for '+v.stunDuration+' turn.';
-      if(el==='earth')return '+'+pct('block')+' block chance ('+percent(v.blockCap)+' total cap).';
+      if(el==='earth')return '+'+pct('block')+' block chance.';
       if(el==='light')return 'Each block mends '+f('light')+' HP.';
-      if(el==='shadow')return pct('shadow')+' chance to Corrupt a blocked attacker.';
+      if(el==='shadow')return pct('shadow')+' chance to Corrupt a blocked attacker for '+v.corruptDuration+' turns.';
     }
     if(slot==='orb'){
-      if(el==='fire')return 'Critical hits ignite the target tile and inflict Burning for '+v.burnDuration+' turns'+(!formula&&Number.isFinite(context.burnDamage)?' ('+context.burnDamage+' damage per turn)':' (damage scales with Fire mastery)')+'.';
-      if(el==='water')return 'Critical hits restore '+f('iceArmor')+' Ice Armor, up to your existing capacity.';
+      if(el==='fire')return 'Critical hits ignite the target tile and inflict Burning for '+v.burnDuration+' turns'+(!formula&&Number.isFinite(context.burnDamage)?' ('+context.burnDamage+' damage per turn)':' (damage grows with each Fire point)')+'.';
+      if(el==='water')return 'Critical hits restore '+f('iceArmor')+' Ice Armor, up to your maximum.';
       if(el==='air')return 'Critical hits stun for '+v.stunDuration+' turn.';
       if(el==='earth')return '+'+pct('critChance')+' crit chance against Rooted targets.';
       if(el==='light')return 'Critical hits restore '+f('mana')+' mana.';
-      if(el==='shadow')return '+'+pct('critMultiplier')+' crit damage multiplier.';
+      if(el==='shadow')return '+'+pct('critMultiplier')+' crit damage.';
     }
     if(slot==='tome'){
       if(el==='fire')return '+'+pct('spellPower')+' spell power.';
       if(el==='water')return '+'+f('evasion')+' evasion.';
       if(el==='air')return pct('castTimeReduction')+' less casting time.';
       if(el==='earth')return '+'+pct('resistance')+' all elemental resistances.';
-      if(el==='light')return pct('manaShield')+' of mana spent becomes a shield (up to '+(!formula&&Number.isFinite(context.maxhp)?Math.round(context.maxhp*v.shieldCap)+' HP':percent(v.shieldCap)+' of maximum HP')+').';
-      if(el==='shadow')return 'Spell kills heal '+pct('killHeal')+' of maximum HP.';
+      if(el==='light')return pct('manaShield')+' of mana spent becomes a shield (up to '+(!formula&&Number.isFinite(context.maxhp)?Math.round(context.maxhp*v.shieldCap)+' HP':percent(v.shieldCap)+' of max HP')+').';
+      if(el==='shadow')return 'Spell kills heal '+pct('killHeal')+' of max HP.';
     }
     if(slot==='holy'){
       if(el==='fire')return '+'+pct('damageBonus')+' damage while buffed.';
       if(el==='water')return '+'+pct('manaRegen')+' mana regeneration while buffed.';
-      if(el==='air')return pct('actionTimeReduction')+' less action time while buffed.';
-      if(el==='earth')return pct('damageReduction')+' less damage taken while buffed'+(formula?' (50% cap)':'')+'.';
-      if(el==='light')return 'Gaining a buff heals '+pct('buffHeal')+' of maximum HP.';
+      if(el==='air')return 'Actions other than moving take '+pct('actionTimeReduction')+' less time while buffed.';
+      if(el==='earth')return pct('damageReduction')+' less damage taken while buffed.';
+      if(el==='light')return 'Gaining a buff heals '+pct('buffHeal')+' of max HP.';
       if(el==='shadow')return '+'+pct('critChance')+' crit chance while buffed.';
     }
     return '';

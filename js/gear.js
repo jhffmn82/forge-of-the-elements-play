@@ -11,10 +11,10 @@ var RINGS = {
   protection: {name:'Ring of Protection', step:1,    unit:'armor',            desc:'Armor.'},
   evasion:    {name:'Ring of Evasion',    step:5,    unit:'evasion',          desc:'Evasion.'},
   accuracy:   {name:'Ring of Accuracy',   step:5,    unit:'accuracy',         desc:'Accuracy.'},
-  vitality:   {name:'Ring of Vitality',   step:0.08, unit:'% max HP',         pct:true, desc:'Maximum HP.'},
-  wizardry:   {name:'Ring of Wizardry',   step:0.08, unit:'% max mana, two thirds of that to spell damage', pct:true, desc:'Maximum mana and spell damage.'},
+  vitality:   {name:'Ring of Vitality',   step:0.08, unit:'% max HP',         pct:true, desc:'Max HP.'},
+  wizardry:   {name:'Ring of Wizardry',   step:0.08, unit:'% max mana', pct:true, desc:'Max mana and spell damage.'},
   striking:   {name:'Ring of Striking',   step:1,    unit:'weapon damage',    desc:'Weapon damage.'},
-  mending:    {name:'Ring of Mending',    step:1/3, unit:'% of max HP healed per global round',pct:true, desc:'Extra HP regeneration while fed and not poisoned.'},
+  mending:    {name:'Ring of Mending',    step:1/3, unit:'% of max HP healed a turn',pct:true, desc:'Extra HP regeneration while fed and not poisoned.'},
   sustenance: {name:'Ring of Sustenance', step:0.15, unit:'% less hunger',    pct:true, desc:'You get hungry more slowly.'},
   haste:      {name:'Ring of Haste',      step:0.05, unit:'% speed',          pct:true, desc:'Speed.'},
   warding:    {name:'Ring of Warding',    step:0.10, unit:'% elemental resistance', pct:true, desc:'Resistance to fire, frost, lightning, poison, light and shadow.'},
@@ -61,7 +61,7 @@ function focusRows(it){
 function unidHint(it){
   if(!it || !it.unid) return '';
   var how = it.kind==='ring' ? 'wear it for a while' : it.kind==='amulet' ? 'use it a few times' : (it.dmg ? 'fight with it' : it.armor!==undefined ? 'take hits in it' : 'carry it into a few fights');
-  return '<div class="hint" style="color:#C9A8FF">Unidentified: its bonus'+(it.kind==='ring'||it.kind==='amulet'?'':' and enchantment')+' are unknown, and it could be cursed. To learn it: '+how+', or read a Sigil of Knowing.</div>';
+  return '<div class="hint" style="color:#C9A8FF">Unidentified: its bonus'+(it.kind==='ring'||it.kind==='amulet'?' is':' and enchantment are')+' unknown, and it could be cursed. To learn it: '+how+', or read a Sigil of Knowledge.</div>';
 }
 /* Mending is stored in percentage points per 100 units of world time.
    One point of ring power grants exactly 1/300 max HP before gear bonuses. */
@@ -76,9 +76,10 @@ function drainCursedMending(actor,rate,scale){
 }
 function ringLine(r){
   var R=RINGS[r.ring], pw=ringPower(r), v=R.step*pw*gearPassiveBonus();
-  if(r.ring==='mending')return v<0?Number((-v).toFixed(2))+'% of max HP lost per global round':'+'+Number(v.toFixed(2))+R.unit;
-  if(r.ring==='sustenance'&&v<0)return Math.round(-v*100)+'% more hunger';
+  if(r.ring==='mending')return v<0?Number((-v).toFixed(2))+'% of max HP lost a turn':'+'+Number(v.toFixed(2))+R.unit;
+  if(r.ring==='sustenance')return v<0?Math.round(-v*100)+'% more hunger':Math.round(v*100)+'% less hunger';
   if(r.ring==='keeneyes'&&v<0)return Math.round(-v*100)+'% less chance to spot traps or find hidden doors';
+  if(r.ring==='wizardry'){var sd=Math.max(-50,v*200/3);return (v>=0?'+':'')+Math.round(v*100)+'% max mana, '+(sd>=0?'+':'')+Math.round(sd)+'% spell damage';}  /* spellPower() never lets the ring take more than 50% */
   return (v>=0?'+':'')+(R.pct?Math.round(v*100):Math.round(v*100)/100)+(R.pct?'':' ')+R.unit;
 }
 function ringDescription(r){
@@ -86,6 +87,7 @@ function ringDescription(r){
     if(r.ring==='mending')return 'Drains your life while worn.';
     if(r.ring==='sustenance')return 'You get hungry more quickly.';
     if(r.ring==='keeneyes')return 'Makes traps and hidden doors harder to discover.';
+    if(r.ring==='luck')return 'Enemies drop loot less often.';
   }
   return RINGS[r.ring].desc;
 }
@@ -106,7 +108,7 @@ function identifyGear(it, quiet){
   if(it.kind==='ring') RUN.ringKnown[it.ring]=true;
   if(it.kind==='amulet') RUN.amuletKnown[it.amulet]=true;
   refreshBagNames();
-  if(!quiet){ log('You now know your <b>'+gearName(it)+'</b>'+(it.cursed?' &mdash; <span class="c-you">it is cursed</span>':'')+'.','c-kill'); sfx('identify'); }
+  if(!quiet){ log('You now know your <b>'+gearName(it)+'</b>'+(it.cursed?': <span class="c-you">it is cursed</span>':'')+'.','c-kill'); sfx('identify'); }
   return true;
 }
 function refreshBagNames(){ player.bag.forEach(function(b){ if(b.data && (b.kind==='weapon'||b.kind==='armor'||b.kind==='off'||b.kind==='ring'||b.kind==='amulet')) b.name=gearName(b.data); }); }
@@ -133,7 +135,7 @@ function onPutOn(it){
   if(!it) return;fixNegativePlus(it);
   if(it.kind==='amulet'&&it.unid)return;
   if(it.cursed){ identifyGear(it, true); log('The <b>'+gearName(it)+'</b> tightens around you. <span class="c-you">It is cursed!</span>','c-you'); sfx('wrath'); }
-  else if(it.kind==='ring' && it.unid && !RUN.ringKnown[it.ring]){ RUN.ringKnown[it.ring]=true; refreshBagNames(); log('You recognise it: a <b>'+RINGS[it.ring].name+'</b>. How strong it is, time will tell.','c-info'); }
+  else if(it.kind==='ring' && it.unid && !RUN.ringKnown[it.ring]){ RUN.ringKnown[it.ring]=true; refreshBagNames(); log('You recognize it: a <b>'+RINGS[it.ring].name+'</b>. How strong it is, time will tell.','c-info'); }
 }
 function cursedBlock(it, what){
   if(FoteInventory.curseBinds(it)){ log('Your <b>'+gearName(it)+'</b> is cursed. It will not '+(what||'come off')+'.','c-you'); sfx('ui-error'); return true; }
@@ -183,7 +185,7 @@ if(SIGILS.identify) SIGILS.identify.desc='Identify every sigil you carry, and re
 
 /* ---------------------------------------------------------------- enemy loot */
 function rollDrops(e, byPlayerSide){
-  if(!byPlayerSide || e.noXp || e.shade) return;
+  if(!byPlayerSide || e.noXp || e.noLoot || e.shade) return;   /* noLoot: summoned foes give XP and kill effects, not loot */
   var D=DROPS[e.kind] || {chance:0.12, table:{essence:8, gear:1, sigil:1}};
   var chance=Math.min(0.95, D.chance*(1+(e.elite?1:0)) * Math.max(0, 1+ringVal('luck')));
   if(rng()>=chance) return;

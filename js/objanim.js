@@ -8,10 +8,9 @@
    new art gets the right placement without measuring each sprite by hand. Respects Options > Motion. */
 var OBJ_FX_RULES = [
   [/^table-candle$/,                           ['flicker']],            /* the art paints its own flame: flicker its light */
+  [/^(torch-stand|soul-brazier|candelabra)$/,  ['flames']],             /* painted flames too (2026-09-27, Q9): a halo flickers on each */
   [/^kobold-campfire$/,                        ['flicker', 'embers']],
   [/^plate-glow$/,                             ['glow']],
-  [/^trap-fire$/,                              ['flicker', 'embers']],
-  [/^trap-gas$/,                               ['mist']],
   [/^(elemental-lock|chest-crystal|chest-elemental)$/, ['twinkle']],
   [/^ice-block$/,                              ['twinkle']],
   [/^(giant-mushroom|mushroom-pair)/,          ['glow', 'spores']],
@@ -191,5 +190,3 @@ function drawCaveAnimation(o, cx, bottom, alpha, flipX){
 
 
 }
-/* the new candle-table art paints its own candle: the live flame finds the painted one instead of a fixed spot */
-if(typeof FLAME_AT!=='undefined') delete FLAME_AT['table-candle'];

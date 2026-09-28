@@ -55,8 +55,8 @@
     DROPS[kind]={chance:.22,table:{essence:12,gear:3,food:2}};
   });});
   if(typeof STATUS_INFO!=='undefined'){
-    STATUS_INFO.chaoslens={name:'Lens Shield',icon:'ic-arcane-ward',d:'A finite lens shield absorbs damage. It cannot stack and expires after four world turns.'};
-    STATUS_INFO.chaosbrace={name:'Iron Brace',icon:'ic-arcane-ward',d:'Stays in place and takes 45% less damage for two world turns. Still vulnerable.'};
+    STATUS_INFO.chaoslens={name:'Lens Shield',icon:'ic-arcane-ward',d:'A lens of light absorbs damage until it breaks or fades after 4 turns.'};
+    STATUS_INFO.chaosbrace={name:'Iron Brace',icon:'ic-arcane-ward',d:'Braced in place: takes 45% less damage for 2 turns.'};
   }
   var elements=['fire','ice','lightning'];
   function sound(name,volume){if(typeof sfx==='function')sfx(name,{vol:volume===undefined?.7:volume});}
@@ -76,7 +76,7 @@
     try{rng=mulberry32((floorMeta.chaosPreview.seed^x*73856093^y*19349663^nextId)>>>0);e=spawnRaw(kind,x,y);}finally{rng=previous;}
     e.state=options.state||'asleep';e.castCd=options.castCd===undefined?1:options.castCd;e.chaosRegionId=region;
     e.chaosCooldown=now()+100;e.chaosNextElement='fire';e.chaosBorn=0;e.beta11Balanced=true;
-    if(options.offspring){e.noXp=true;e.noReward=true;e.chaosOwnerId=options.ownerId;}
+    if(options.offspring){e.noLoot=true;e.chaosOwnerId=options.ownerId;}
     return e;
   }
   function land(x,y,region){return inb(x,y)&&regionAt(x,y)===region&&walkable(x,y)&&at(x,y)!==CHASM&&at(x,y)!==PORTAL;}

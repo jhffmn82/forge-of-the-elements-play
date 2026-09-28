@@ -31,7 +31,11 @@ function drawLightmap(now, prp){
     if (LM.c.width !== W || LM.c.height !== H) {
       LM.c.width = W; LM.c.height = H; LM.bloom.width = W; LM.bloom.height = H;
     }
-    var img = LM.x.createImageData(W, H), bl = LM.bx.createImageData(W, H), D = img.data, B = bl.data;
+    /* 2026-09-28 (frame cost): the image buffers and work arrays are kept from frame to frame (every value is written
+       again below), and what the passes ask about each tile (in bounds, known, visible, wall, its region's ambient, its
+       wall profile, each light's line of sight to it) is worked out once per tile rather than once per subcell. */
+    if (!LM.img || LM.img.width !== W || LM.img.height !== H) { LM.img = LM.x.createImageData(W, H); LM.bl = LM.bx.createImageData(W, H); }
+    var img = LM.img, bl = LM.bl, D = img.data, B = bl.data;
     var lights = gatherLights(now, prp);
   var room=roomAt(player.x,player.y), darkRoom = room && room.dark && !(player.aff.light>0) && !(player.aff.fire>0);
   /* how dark each biome is: the dungeon is a lived-in, torch-lit place; the crypt and caverns are not */
@@ -43,7 +47,28 @@ function drawLightmap(now, prp){
   if(PL) BL=PL;
   var AMB = darkRoom ? [0.08,0.08,0.12] : BL.amb, MEM=BL.mem.map(function(v){ return v*0.45; });   /* the tile fade moved in here (memA) */
 
-    var vals = new Float32Array(W * H * 3), isWall = new Uint8Array(W * H);
+    if (!LM.vals || LM.vals.length !== W * H * 3) { LM.vals = new Float32Array(W * H * 3); LM.isWall = new Uint8Array(W * H); LM.depth = new Float32Array(W * H); }
+    var vals = LM.vals, isWall = LM.isWall; vals.fill(0); isWall.fill(0);
+    /* the tiles under the lightmap, and one row more (a wall face looks at the tile below it) */
+    var TW = W / S, TH = H / S, NT = TW * (TH + 1), tIn = new Uint8Array(NT), tKnown = new Uint8Array(NT), tVis = new Uint8Array(NT), tWall = new Uint8Array(NT);
+    var tProf = new Array(NT), tAmb = new Float64Array(NT * 3), tAmbState = new Uint8Array(NT), losSeen = new Uint8Array(lights.length * NT);
+    var mapW = MW, V = vis, SN = seen, all = revealAll, falloff;
+    for (var tb = 0; tb <= TH; tb++) for (var ta = 0; ta < TW; ta++) {
+      var qx = ox + ta, qy = oy + tb, qt = tb * TW + ta, qi = qy * mapW + qx;
+      tWall[qt] = levelWallAt(qx, qy) ? 1 : 0;
+      if (inb(qx, qy)) { tIn[qt] = 1; tVis[qt] = (all || V[qi]) ? 1 : 0; tKnown[qt] = (all || V[qi] || SN[qi]) ? 1 : 0; }
+    }
+    /* deepAmbAt, once per tile: the offset of its three values in tAmb, plus one; 0 where it has none */
+    function ambAt(wx, wy) {
+      var qt = (wy - oy) * TW + (wx - ox), s = tAmbState[qt];
+      if (!s) { var r = typeof deepAmbAt==='function' ? deepAmbAt(wx, wy) : null; if (r) { tAmb[qt * 3] = r[0]; tAmb[qt * 3 + 1] = r[1]; tAmb[qt * 3 + 2] = r[2]; s = 2; } else s = 1; tAmbState[qt] = s; }
+      return s === 2 ? qt * 3 + 1 : 0;
+    }
+    function lightSees(k, L, x, y, qt) {
+      var m = k * NT + qt, s = losSeen[m];
+      if (!s) { s = lightLOS(L.tx, L.ty, x, y) ? 2 : 1; losSeen[m] = s; }
+      return s === 2;
+    }
     var scratch = [0, 0, 0];
     var tx, ty, k, j;
 
@@ -56,11 +81,10 @@ function drawLightmap(now, prp){
        Distance is measured over the SUBCELL grid (S per tile) by a two-pass chamfer from every
        open subcell, so the front is as irregular as the cave is, and it costs one sweep rather
        than a search per cell. */
-    var depth = new Float32Array(W * H);
+    var depth = LM.depth;
     for (ty = 0; ty < H; ty++) for (tx = 0; tx < W; tx++) {
-      var di = ty * W + tx;
-      var dwx = ox + Math.floor(tx / S), dwy = oy + Math.floor(ty / S);
-      depth[di] = (inb(dwx, dwy) && !levelWallAt(dwx, dwy)) ? 0 : 1e4;
+      var dt = Math.floor(ty / S) * TW + Math.floor(tx / S);
+      depth[ty * W + tx] = (tIn[dt] && !tWall[dt]) ? 0 : 1e4;
     }
     var D1 = 1, D2 = 1.41421356;
     for (ty = 0; ty < H; ty++) for (tx = 0; tx < W; tx++) {
@@ -90,10 +114,9 @@ function drawLightmap(now, prp){
        built temple wall and a spider-cavern wall on the same Underdark map light differently. */
     var mats = {at:levelMaterialAt};
     var defPen = t.n('wall_light_depth'), defFloor = t.n('wall_mass_floor');
-    var matCache = {};
     function profileAt(wx, wy) {
-      var key = wx + ',' + wy;
-      var p = matCache[key];
+      var key = (wy - oy) * TW + (wx - ox);
+      var p = tProf[key];
       if (p) return p;
       var m = mats ? mats.at(wx, wy) : null;
       if (!m || !m.depthLight) {
@@ -104,7 +127,7 @@ function drawLightmap(now, prp){
         p = { on: true, penSub: Math.max(0.35, pen * S),
               floor: m.massFloor === undefined ? defFloor : m.massFloor };
       }
-      matCache[key] = p;
+      tProf[key] = p;
       return p;
     }
     function reach(cell, wx, wy) {
@@ -119,29 +142,31 @@ function drawLightmap(now, prp){
     
 
     for (ty = 0; ty < H; ty++) for (tx = 0; tx < W; tx++) {
+      var ct = Math.floor(ty / S) * TW + Math.floor(tx / S);
       var x = ox + Math.floor(tx / S), y = oy + Math.floor(ty / S), o = (ty * W + tx) * 3, cell = ty * W + tx;
       var fx0 = ox + (tx + 0.5) / S - 0.5, fy0 = oy + (ty + 0.5) / S - 0.5;
-      if (!inb(x, y)) continue;
-      if (!levelKnown(x, y)) continue;
-      var wall = levelWallAt(x, y);
+      if (!tIn[ct]) continue;
+      if (!tKnown[ct]) continue;
+      var wall = !!tWall[ct];
       isWall[cell] = wall ? 1 : 0;
       var rr, gg, bb;
-      if (!levelVisible(x, y)) { rr = MEM[0]; gg = MEM[1]; bb = MEM[2]; }
+      if (!tVis[ct]) { rr = MEM[0]; gg = MEM[1]; bb = MEM[2]; }
       else {
-        var reg = (typeof deepAmbAt==='function' ? deepAmbAt(x,y) : null);
-        rr = reg ? reg[0] : AMB[0];
-        gg = reg ? reg[1] : AMB[1];
-        bb = reg ? reg[2] : AMB[2];
-        var face = wall && !levelWallAt(x, y + 1);
+        var reg = ambAt(x, y);
+        rr = reg ? tAmb[reg - 1] : AMB[0];
+        gg = reg ? tAmb[reg] : AMB[1];
+        bb = reg ? tAmb[reg + 1] : AMB[2];
+        var face = wall && !tWall[ct + TW];
         if (!wall || face) {
-          var sx = fx0, sy = face ? y + 1 : fy0, stx = x, sty = face ? y + 1 : y;
+          var sx = fx0, sy = face ? y + 1 : fy0, stx = x, sty = face ? y + 1 : y, st = face ? ct + TW : ct;
           for (k = 0; k < lights.length; k++) {
             var L = lights[k], ddx = L.x - sx, ddy = L.y - sy, d = Math.sqrt(ddx * ddx + ddy * ddy);
             if (d >= L.r) continue;
             if (face && L.y < y + 0.5) continue;
-            if (k === 0 ? !levelVisible(stx, sty) : !lightLOS(L.tx, L.ty, stx, sty)) continue;
+            if (k === 0 ? !tVis[st] : !lightSees(k, L, stx, sty, st)) continue;
             var fq = 1 - d / L.r;
-            fq = Math.pow(fq, t.n('light_falloff')) * L.s;
+            if (falloff === undefined) falloff = t.n('light_falloff');
+            fq = Math.pow(fq, falloff) * L.s;
             rr += L.c[0] * fq; gg += L.c[1] * fq; bb += L.c[2] * fq;
           }
           if (face) {
@@ -162,27 +187,27 @@ function drawLightmap(now, prp){
     /* wall tops: dark masses, faintly picking up the light of the open ground beside them */
     var bleedRock = t.n('wall_bleed_rock'), bleedBrick = t.n('wall_bleed');
     var wallFall = t.n('crystal_wall_falloff');
-    var wallLights = [];
+    var wallLights = [], NBX = [1, -1, 0, 0], NBY = [0, 0, 1, -1];
     for (k = 0; k < lights.length; k++) if (lights[k].wall) wallLights.push(lights[k]);
     for (ty = 0; ty < H; ty++) for (tx = 0; tx < W; tx++) {
       var o2 = (ty * W + tx) * 3;
       if (vals[o2] !== -1) continue;
       var sr = 0, sg = 0, sb = 0, cnt = 0;
       for (j = 0; j < 4; j++) {
-        var nx = tx + [1, -1, 0, 0][j], ny = ty + [0, 0, 1, -1][j];
+        var nx = tx + NBX[j], ny = ty + NBY[j];
         if (nx < 0 || ny < 0 || nx >= W || ny >= H) continue;
         var no = (ny * W + nx) * 3;
         if (isWall[ny * W + nx] || vals[no] < 0) continue;
         sr += vals[no]; sg += vals[no + 1]; sb += vals[no + 2]; cnt++;
       }
       var wx2 = ox + Math.floor(tx / S), wy2 = oy + Math.floor(ty / S);
-      var reg2 = (typeof deepAmbAt==='function' ? deepAmbAt(wx2,wy2) : null);
-      var A2 = reg2 || AMB, bleed = reg2 ? bleedRock : bleedBrick;
+      var reg2 = ambAt(wx2, wy2);
+      var a20 = reg2 ? tAmb[reg2 - 1] : AMB[0], a21 = reg2 ? tAmb[reg2] : AMB[1], a22 = reg2 ? tAmb[reg2 + 1] : AMB[2], bleed = reg2 ? bleedRock : bleedBrick;
       var wf2 = reach(ty * W + tx, wx2, wy2);
       var mf2 = profileAt(wx2, wy2).floor;
-      var cr2 = A2[0] * (mf2 + (0.7 - mf2) * wf2) + (cnt ? sr / cnt * bleed * wf2 : 0);
-      var cg2 = A2[1] * (mf2 + (0.7 - mf2) * wf2) + (cnt ? sg / cnt * bleed * wf2 : 0);
-      var cb2 = A2[2] * (mf2 + (0.7 - mf2) * wf2) + (cnt ? sb / cnt * bleed * wf2 : 0);
+      var cr2 = a20 * (mf2 + (0.7 - mf2) * wf2) + (cnt ? sr / cnt * bleed * wf2 : 0);
+      var cg2 = a21 * (mf2 + (0.7 - mf2) * wf2) + (cnt ? sg / cnt * bleed * wf2 : 0);
+      var cb2 = a22 * (mf2 + (0.7 - mf2) * wf2) + (cnt ? sb / cnt * bleed * wf2 : 0);
       /* A CRYSTAL LIGHTS THE ROCK IT GREW OUT OF, and only the rock near it. Distance from the
          crystal's own subcell, the same falloff curve the rest of the lighting uses, and a radius
          of about a tile and a half - so the decal is visibly responsible for the patch, and the

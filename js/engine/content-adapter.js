@@ -8,11 +8,11 @@ function propDeepTheme(c){
 function propCryptPack(c){
   if(!packCryptOn())return;
   var name=c.name,mapped=CRYPT_PROP[name]||name;
-  if((mapped==='grave-pillar'||(mapped==='coffin'&&rng()<.5))&&packArt(mapped)&&!(c.extra&&c.extra.cp)){c.extra=Object.assign({},c.extra||{},{cp:true});return;}
+  if((mapped==='grave-pillar'||(mapped==='coffin'&&rng()<.5))&&!(c.extra&&c.extra.cp)){c.extra=Object.assign({},c.extra||{},{cp:true});return;}
   c.after.push(function(p){
     if(!p||p.name!=='pedestal')return;
-    if(name==='grave-post'&&packArt('grave-post')){p.name='grave-post';p.set=true;p.w=1;p.h=1;p.b=1;}
-    else if((mapped==='sarcophagus'||mapped==='sarcophagus-open'||mapped==='coffin')&&packArt(mapped)){p.name=mapped;p.b=1;}
+    if(name==='grave-post'){p.name='grave-post';p.set=true;p.w=1;p.h=1;p.b=1;}
+    else if(mapped==='sarcophagus'||mapped==='sarcophagus-open'||mapped==='coffin'){p.name=mapped;p.b=1;}
   });
 }
 function propCavernTheme(c){if(inCaverns()&&CAVE_PROP[c.name]&&!(c.extra&&(c.extra.keep||c.extra.tablet||c.extra.lever||c.extra.prisoner)))c.name=pick(CAVE_PROP[c.name]);}
@@ -92,12 +92,12 @@ function propCryptMushrooms(c){
   if(inb(c.x,c.y)&&at(c.x,c.y)===FLOOR)blob(c.x,c.y,ri(4,9),function(x,y){if(at(x,y)===FLOOR&&!gAt(x,y)&&!propAt(x,y))setG(x,y,G_GRASS);});c.done=true;
 }
 function propWispPosts(c){
-  if(inCrypt()&&!(floorMeta&&floorMeta.plane)&&(c.name==='torch-stand'||c.name==='candelabra')&&!(c.extra&&c.extra.set)&&rng()<.35&&setArt('grave-post')){
+  if(inCrypt()&&!(floorMeta&&floorMeta.plane)&&(c.name==='torch-stand'||c.name==='candelabra')&&!(c.extra&&c.extra.set)&&rng()<.35){
     c.name='grave-post';c.extra=Object.assign({set:true,w:1,h:1,b:1,wisps:true,light:'#7CFFA0',dim:1},c.extra||{});
   }
 }
 function propCryptTheme(c){
-  if(inCrypt()&&CRYPT_PROP[c.name]&&objArt('props',CRYPT_PROP[c.name]))c.name=CRYPT_PROP[c.name];
+  if(inCrypt()&&CRYPT_PROP[c.name])c.name=CRYPT_PROP[c.name];
   var x=c.x,y=c.y,extra=c.extra;c.after.push(function(p){if(p&&p.name==='candelabra'&&inCrypt()&&!(extra&&extra.light)){p.violet=hash2(x,y,91)<.6;p.light=p.violet?'#B07CFF':'#7CFFA0';}});
 }
 var propCreation=FoteContent.props([

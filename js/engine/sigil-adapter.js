@@ -34,7 +34,7 @@ var spots=[]; for(var y=0;y<MH;y++) for(var x=0;x<MW;x++) if(walkable(x,y) && vi
 },
 "naturesbounty":function(context){var use=context.use,F=floorNo,bountySpots=context.spots;
 ['honeycake','skewer','moontart'].forEach(function(food,i){var spot=bountySpots[i];items.push({kind:'food',food:food,x:spot.x,y:spot.y});sparkleFx(spot.x,spot.y,'heal',12);});
-    log('Nature’s Bounty provides a Honeycake, Mushroom Skewer, and Moonberry Tart.','c-good');
+    log('A Honeycake, a Mushroom Skewer and a Moonberry Tart appear nearby.','c-good');
 },
 "firestorm2":function(context){var use=context.use,F=floorNo,bountySpots=context.spots;
 burst(player.x,player.y,'fire',90,0.14); visibleFoes(4).forEach(function(e){ hurt(e, 14+F, 'fire'); if(e.hp>0) applyStatus(e,'burn',4,sDMG(3)); });
@@ -110,7 +110,7 @@ function prepareSigil(use){
   if(!SIGILS[use]||!SIGIL_CASTS[use])return null;
   if(sigilConduct(use)===false)return null;
   var context={use:use,echo:!!player._echoing};
-  if(use==='naturesbounty'){context.spots=natureBountySpots();if(context.spots.length<3){log('Nature’s Bounty needs three empty spaces on nearby ground.','c-info');return null;}}
+  if(use==='naturesbounty'){context.spots=natureBountySpots();if(context.spots.length<3){log('Nature\'s Bounty needs 3 empty tiles nearby.','c-info');return null;}}
   if(use==='ascension'&&!allUpgradeTargets().some(function(o){return upgradeCost(o.it)!==null;})){log('Nothing you carry can be raised any higher.','c-info');return null;}
   if(use==='wisdom'&&player.level>=20){log('Your wisdom can no longer grow. This sigil would do nothing.','c-info');return null;}
   if(use==='rot'&&!wornGear().some(FoteInventory.curseBinds)){log('Nothing you wear has a known curse. The sigil stays quiet.','c-info');return null;}

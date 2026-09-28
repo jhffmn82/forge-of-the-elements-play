@@ -50,7 +50,6 @@ PROPS['skeleton-niche']  = {b:1};
 PROPS['bone-pile']       = {flat:1};
 PROPS['coffin']          = {b:1};
 PROPS['candelabra']      = {b:1, light:'#9CFFB8'};
-if(typeof FLAME_AT!=='undefined'){ FLAME_AT['soul-brazier']={ax:0.5, ay:0.28, size:0.46, wide:1.4, soul:1}; FLAME_AT['candelabra']={ax:0.5, ay:0.14, size:0.16, wide:0.7, soul:1}; }
 var CRYPT_PROP = {'brazier-lit':'soul-brazier', 'brazier-unlit':'soul-brazier', 'torch-stand':'candelabra', 'banner-stand':'grave-pillar',
   /* 2026-09-20: 'barrel-explosive' used to map to 'urn' here, swept in beside plain barrels, crates and
      pots when this table was written to re-skin the Crypt. But an explosive barrel carries ex:1 (js/data.js)
@@ -60,16 +59,6 @@ var CRYPT_PROP = {'brazier-lit':'soul-brazier', 'brazier-unlit':'soul-brazier', 
   'statue':'sarcophagus', 'statue-broken':'sarcophagus-open', 'barrel':'urn', 'crate':'urn', 'crate-supply':'urn', 'pot':'urn',
   'bookshelf':'coffin', 'weapon-rack':'coffin', 'cart':'sarcophagus-open', 'bed-straw':'bone-pile', 'alchemy-table':'sarcophagus', 'table-candle':'candelabra'};
 
-
-/* green soul fire */
-if(typeof drawPixelFlame==='function'){
-  var _propFlameCrypt = propFlame;
-  propFlame = function(p, o, px, py, alpha, now){
-    var F=FLAME_AT[p.name]; if(!F || !F.soul) return _propFlameCrypt(p, o, px, py, alpha, now);
-    SOUL_FIRE=p.violet ? 'violet' : true; try{ return _propFlameCrypt(p, o, px, py, alpha, now); } finally { SOUL_FIRE=false; }
-  };
-}
-var SOUL_FIRE=false;
 
 function addCryptLights(L, now, prp){
   if(inCrypt()){
@@ -177,7 +166,7 @@ function cryptCreatureBehavior(e){
       e.sumCd=(e.sumCd||0)-1; e.wardCd=(e.wardCd||0)-1;
       var minion=ents.filter(function(o){ return o.id===e.minion && o.hp>0; })[0];
       if(!minion && e.sumCd<=0){
-        var c=nearFree(e.x,e.y,2); if(c){ var sk=spawnRaw('skeleton', c.x, c.y); sk.state='hunt'; sk.noXp=true; e.minion=sk.id; e.sumCd=6; setClip(e,'attack'); sfx('shaman-cast'); sparkleFx(c.x,c.y,'dark',24); log('The <b>Necro-Acolyte</b> calls a Skeleton up out of the floor.','c-you');  return true; }
+        var c=nearFree(e.x,e.y,2); if(c){ var sk=spawnRaw('skeleton', c.x, c.y); sk.state='hunt'; sk.noLoot=true; e.minion=sk.id; e.sumCd=6; setClip(e,'attack'); sfx('shaman-cast'); sparkleFx(c.x,c.y,'dark',24); log('The <b>Necro-Acolyte</b> calls a Skeleton up out of the floor.','c-you');  return true; }
       }
       if(e.wardCd<=0){
         var warded=0; ents.forEach(function(o){ if(o.foe && o.base.undead && dist(o,e)<=4 && !o.boneWard){ o.boneWard=true; warded++; } });
@@ -273,7 +262,7 @@ function mortyAct(e){
     targets.forEach(function(t){ var raw=roll(10,16)+Math.floor(floorNo/2);
       if(t===player) raw=Math.min(raw, Math.round(player.maxhp*0.35));   /* never a one-shot */
       var nd=applyDamage(t, raw, 'dark', e); floatText(t.x,t.y,String(nd),'dark'); if(t===player){ log('The <b>Bone Nova</b> tears through you: '+nd+'!','c-you'); if(player.hp<=0) kill(player,e); } else if(t.hp<=0) kill(t,e); });
-    if(!see) log('The Bone Nova breaks harmlessly against the pillar.','c-good');
+    if(!see) log('The Bone Nova bursts, but it cannot find you.','c-good');
      return;
   }
   /* Grave Grasp erupts */
@@ -324,7 +313,7 @@ function phylacteryBreaks(ph){
   var spots=(floorMeta.deathSpots||[]).slice(-4);
   if(m || floorMeta.mortyReturn){
     log('"NO! Everyone up! EVERYONE!"','c-you');
-    spots.forEach(function(s){ var c=occupied(s.x,s.y) ? nearFree(s.x,s.y,2) : s; if(c){ var z=spawnRaw('shambler', c.x, c.y); z.state='hunt'; z.risen=true; z.noXp=true; } });
+    spots.forEach(function(s){ var c=occupied(s.x,s.y) ? nearFree(s.x,s.y,2) : s; if(c){ var z=spawnRaw('shambler', c.x, c.y); z.state='hunt'; z.risen=true; z.noLoot=true; } });
   }
 }
 
@@ -334,7 +323,7 @@ function turnMortyReturn(context){
   var pa=floorMeta.phylAt, c=pa ? (occupied(pa.x,pa.y+1) ? nearFree(pa.x,pa.y+1,3) : {x:pa.x,y:pa.y+1}) : null;
   if(!c) return;
   var m=spawnRaw('morty', c.x, c.y); m.state='hunt'; m.elite=true; m.hp=Math.round(R.maxhp*0.6); m.maxhp=R.maxhp; m.turnN=1; floorMeta.bossId=m.id;
-  for(var i=0;i<2;i++){ var s=nearFree(c.x,c.y,2); if(s){ var sk=spawnRaw('skeleton', s.x, s.y); sk.state='hunt'; sk.noXp=true; } }
+  for(var i=0;i<2;i++){ var s=nearFree(c.x,c.y,2); if(s){ var sk=spawnRaw('skeleton', s.x, s.y); sk.state='hunt'; sk.noLoot=true; } }
   sparkleFx(c.x,c.y,'dark',60); log('<b>Morty re-forms from the phylactery!</b> "Where were we?" Two Skeletons climb out beside him.','c-you');
 
 }
@@ -344,28 +333,24 @@ function turnMortyReturn(context){
    the tile looked empty - so there was nothing to see, walk onto or hit. The body now lies there (the last
    frame of its death clip, or its sprite on its side) until it is finished, burned or gets back up, and it
    twitches on the turn before it rises. */
-function drawLyingCorpse(c, now){
+function drawLyingCorpse(c, now, animating){
   var i=idxOf(c.x,c.y); if(!(revealAll || seen[i])) return;
   if(!spriteOn){drawCorpse({e:c,remains:c},1,(revealAll||vis[i])?1:memA(.45));return;}
-  var b=MONSTERS[c.kind] || {}, ms = spriteOn && b.sprite ? mobSheet(b.sprite) : null; if(!ms) return;
-  var px=(c.x-camX)*TS, py=(c.y-camY)*TS, lit=(revealAll||vis[i]) ? 1 : memA(0.45);
-  var m=ms.m, cell=m.cell, box=m.box||[0,0,cell,cell], s=TS*(b.art||0.9)/Math.max(box[3], box[2]*0.8);
-  var twitch = turn>=c.at-1 && !ANIM.reduce ? Math.sin(now/55)*TS*0.02 : 0;
-  ctx.save(); ctx.globalAlpha=0.92*lit; ctx.imageSmoothingEnabled=true;
-  if(m.clips.death){
-    var d=m.clips.death;
-    ctx.drawImage(ms.img, (d.frames-1)*cell, d.row*cell, cell, cell, px+TS/2-(box[0]+box[2]/2)*s+twitch, py+TS*0.97-(box[1]+box[3])*s, cell*s, cell*s);
-  } else {
-    var srow=m.static_row!==undefined ? m.static_row : (m.clips.idle ? m.clips.idle.row : 0), fx0=px+TS/2, fy0=py+TS*0.95;
-    ctx.translate(fx0+twitch, fy0); ctx.rotate(Math.PI*0.5); ctx.translate(-fx0, -fy0);
-    ctx.drawImage(ms.img, 0, srow*cell, cell, cell, px+TS/2-(box[0]+box[2]/2)*s, py+TS*0.97-(box[1]+box[3])*s, cell*s, cell*s);
-  }
-  ctx.restore();
+  /* 2026-09-27 (render plan B9): while its death clip plays the body is that clip alone; then it lies facing the way it fell */
+  if(animating.has(c.id)) return;
+  var b=MONSTERS[c.kind] || {}, twitch = turn>=c.at-1 && !ANIM.reduce ? Math.sin(now/55)*TS*0.02 : 0;
+  ctx.save(); ctx.translate(twitch, 0);
+  try{ drawCorpse({e:{x:c.x,y:c.y,sprite:b.sprite,art:b.art||0.9,flip:!!c.flip},remains:c,dust:true},1,0.92*((revealAll||vis[i]) ? 1 : memA(0.45))); }
+  finally{ ctx.restore(); }
 }
 
 function drawCorpseTelegraphs(now){
 
-  if(floorMeta && floorMeta.corpses && floorMeta.corpses.length){ var t=performance.now(); floorMeta.corpses.forEach(function(c){ drawLyingCorpse(c, t); }); }
+  if(floorMeta && floorMeta.corpses && floorMeta.corpses.length){
+    var t=performance.now(), animating=new Set();
+    fx.forEach(function(f){ if(f.k==='d' && t<f.t0+f.dur) animating.add(f.e.id); });
+    floorMeta.corpses.forEach(function(c){ drawLyingCorpse(c, t, animating); });
+  }
 
 }
 

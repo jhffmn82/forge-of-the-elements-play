@@ -17,35 +17,35 @@ var SIGIL_ORDER = {
 };
 (function(){
   var S=SIGILS, add={
-    firestorm2:{name:'Fire sigil+', motes:['fire','fire'], desc:'Flames burst out to 4 tiles: 14 + floor fire damage and Burning.'},
-    identify2: {name:'Water sigil+', motes:['water','water'], desc:'Identify every sigil and every piece of gear you carry or wear, learn the look of every sigil this run, and put out every fire within 5 tiles.'},
-    levitate2: {name:'Air sigil+', motes:['air','air'], desc:'Float for 60 turns. Movement, attacks and spellcasting are 30% faster for 10 global turns.'},
-    haste:     {name:'Sigil of Haste', motes:['air','air'], desc:'Movement, attacks and spellcasting are 30% faster for 20 global turns. Refreshes Haste instead of stacking it.'},
+    firestorm2:{name:'Fire sigil+', motes:['fire','fire'], desc:'A firestorm roars out: enemies you can see within 4 tiles take 14 fire damage plus the floor number and start Burning.'},
+    identify2: {name:'Water sigil+', motes:['water','water'], desc:'Learn every kind of sigil and identify all the gear you carry or wear. The water also puts out fires within 5 tiles.'},
+    levitate2: {name:'Air sigil+', motes:['air','air'], desc:'Float for 60 turns, and move, attack and cast 30% faster for the first 10.'},
+    haste:     {name:'Sigil of Haste', motes:['air','air'], desc:'Move, attack and cast 30% faster for 20 turns.'},
     stoneskin2:{name:'Earth sigil+', motes:['earth','earth'], desc:'Stone skin for 30 turns and a shield of 20% of your max HP.'},
-    heal2:     {name:'Light sigil+', motes:['light','light'], desc:'Heal to full and cleanse harmful conditions.'},
+    heal2:     {name:'Light sigil+', motes:['light','light'], desc:'Heal to full and cleanse harmful statuses.'},
     vanish2:   {name:'Shadow sigil+', motes:['shadow','shadow'], desc:'Vanish for 5 turns; enemies lose track of you.'},
-    cinder:    {name:'Sigil of Cinder Stride', motes:['fire','air'], desc:'Move 50% faster for 10 turns, leaving fire where you step.'},
-    magma:     {name:'Sigil of the Molten Ring', motes:['fire','earth'], desc:'The ground 2 tiles around you (not under you) burns for 5 turns. Your attacks and single-target spells also deal 5 additional fire damage for 5 global turns.'},
+    cinder:    {name:'Sigil of Cinder Stride', motes:['fire','air'], desc:'Move, attack and cast 50% faster for 10 turns, leaving fire where you step.'},
+    magma:     {name:'Sigil of the Molten Ring', motes:['fire','earth'], desc:'The ground within 2 tiles of you burns for 5 turns, and your attacks and single-target spells deal 5 extra fire damage for 5 turns.'},
     sunburst:  {name:'Sigil of Sunburst', motes:['fire','light'], desc:'Every enemy you can see takes light damage and is Blinded for 3 turns.'},
-    smoke:     {name:'Sigil of Smoke', motes:['fire','shadow'], desc:'Smoke fills the room (4 tiles around you in a corridor) for 12 turns. Nobody inside, you included, sees past 1 tile, so no one can shoot or cast across it. Enemies hunting you lose track, and one that lost you can be surprised.'},
-    storm:     {name:'Sigil of the Storm', motes:['water','air'], desc:'Lightning strikes up to 3 enemies you can see (more against the wet, may stun); rain soaks the rest.'},
-    mire:      {name:'Sigil of the Mire', motes:['water','earth'], desc:'Enemies within 3 are Rooted for 3 turns and soaked.'},
-    purify:    {name:'Sigil of Purity', motes:['water','light'], desc:'Cleanse your statuses, heal 20%, and break the curse on everything you wear.'},
-    rot:       {name:'Sigil of Rot', motes:['shadow','earth'], desc:'Choose a cursed item you wear: it rots away to nothing. The only way to shed a curse without Light or the Forge.'},
+    smoke:     {name:'Sigil of Smoke', motes:['fire','shadow'], desc:'Smoke fills the room for 12 turns. No one in it, you included, can see past 1 tile. Enemies hunting you lose track and can be caught by surprise.'},
+    storm:     {name:'Sigil of the Storm', motes:['water','air'], desc:'Lightning strikes the 3 nearest enemies you can see, harder if they are wet, and may leave them Stunned. Then rain soaks every enemy in sight.'},
+    mire:      {name:'Sigil of the Mire', motes:['water','earth'], desc:'Enemies within 3 tiles are Rooted for 3 turns and soaked.'},
+    purify:    {name:'Sigil of Purity', motes:['water','light'], desc:'Cleanse harmful statuses, heal 20% of max HP and break the curse on everything you wear.'},
+    rot:       {name:'Sigil of Rot', motes:['shadow','earth'], desc:'Choose a cursed item you wear. It rots away to nothing, curse and all.'},
     recall:    {name:'Sigil of Homeward Wind', motes:['air','light'], desc:'The wind carries you to this floor\'s stairs (or the open gate).'},
     aegis:     {name:'Sigil of the Aegis', motes:['earth','earth','light'], desc:'A shield of 50% of your max HP for 15 turns, and stone skin.'},
-    ascension: {name:'Sigil of Ascension', motes:['fire','water','air','earth','light','shadow'], desc:'Upgrade one piece of gear by +1 for free (up to +3). Breaks a curse.'},
-    naturesbounty: {name:"Nature's Bounty", cost:300, motes:['light','earth','water'], desc:'Creates a Honeycake, Mushroom Skewer, and Moonberry Tart on nearby open ground.'},
-    transmutation: {name:'Sigil of Transmutation', cost:1000, motes:['fire','water','air','earth','light','shadow'], desc:'Choose a carried or worn ring, amulet, weapon, off-hand item or armor. It becomes a random different item of the same category, keeping its quality, enhancement, infusion and curse. Amulets keep their level and stored charge progress. Crafted only at the Forge.'},
+    ascension: {name:'Sigil of Ascension', motes:['fire','water','air','earth','light','shadow'], desc:'Raise one piece of gear by +1, up to +3. A cursed item is cleansed instead.'},
+    naturesbounty: {name:"Nature's Bounty", cost:300, motes:['light','earth','water'], desc:'Conjure a Honeycake, a Mushroom Skewer and a Moonberry Tart on open ground nearby.'},
+    transmutation: {name:'Sigil of Transmutation', cost:1000, motes:['fire','water','air','earth','light','shadow'], desc:'Turn a ring, amulet, weapon, off-hand or armor you carry or wear into a random different one of the same kind. It keeps its quality, upgrades, enchantment and curse.'},
     wisdom:    {name:'Sigil of Wisdom', motes:['fire','water','air','earth','light','shadow'], desc:'Gain a level.'}
   };
   for(var k in add) S[k]=add[k];
   S.identify.name='Water sigil'; S.identify.motes=['water'];
   /* 2026-09-17: identifying the entire pack made every unknown drop pointless - the single sigil now reads
      what you are actually wearing (and your sigils); the + version is what identifies the whole bag. */
-  S.identify.desc='Identify every sigil you carry, read one piece of gear of your choice (worn or carried), and put out every fire within 3 tiles.';
+  S.identify.desc='Identify every sigil you carry and one piece of gear you choose. The water also puts out fires within 3 tiles.';
   S.mana.name='Sigil of the Deep Well'; S.mana.motes=['water','shadow'];
-  S.mana.desc='Restore 50% of your mana, and mana returns twice as fast for 20 turns.';
+  S.mana.desc='Restore 50% of your max mana, and mana returns twice as fast for 20 turns.';
   S.mapping.motes=['light','earth'];
   ['steam','soulfire','mist','sandstorm','mana2'].forEach(function(k){ delete S[k]; });
   /* rebuild in display order so the Forge lists singles, sigil+, pairs, then grand */
@@ -153,7 +153,7 @@ function transmutationPicker(context){
   var list=transmutationTargets(),eligible=list.filter(function(target){return transmutationReady(target,context);});
   if(!eligible.length){log(list.length?'Make room in your bag for an item that may no longer fit its worn slot.':'You have no equipment that can be transmuted.','c-info');return false;}
   var done=false,hero=player,run=RUN;
-  var html='<p class="c-info">Choose one item. Its new base type is random; quality, enhancement, infusion and curse stay the same. An item you can no longer wear goes into your bag.</p>'+list.map(function(target,i){
+  var html='<p class="c-info">Choose one item. It becomes a random item of the same kind and keeps its quality, upgrades, enchantment and curse. If you can no longer wear it, it goes into your bag.</p>'+list.map(function(target,i){
     return '<div class="frow"><div class="ftext"><b>'+gearName(target.it)+'</b> <span class="c-info">('+target.where+')</span></div><button data-transmute="'+i+'"'+(eligible.indexOf(target)>=0?'':' disabled title="Make room in your bag first"')+'>Transmute</button></div>';
   }).join('');
   openModal(SIGILS.transmutation.name,html,[{label:context.echo?'Cancel':'Keep the sigil',fn:function(){done=true;closeModal();updateUI();}}]);
@@ -276,7 +276,7 @@ function knowPicker(context){
   if(!list.length){ log('Nothing you carry or wear is a mystery.','c-info'); return; }
   if(list.length===1){ identifyGear(list[0].it); refreshBagNames(); updateUI(); refreshSheet && refreshSheet(); return; }
   var done=false,echo=!!(context&&context.echo);
-  var html='<p class="c-info">Clear water runs over one piece. Choose what to read - a curse shows before you put it on.</p>'+
+  var html='<p class="c-info">Clear water runs over one piece. Choose which to read; a curse shows itself before you put it on.</p>'+
     list.map(function(o,i){ return '<div class="frow"><div class="ftext"><b>'+gearName(o.it)+'</b> <span class="c-info">('+o.where+')</span></div>'+
       '<button data-know="'+i+'">Read it</button></div>'; }).join('');
   openModal(SIGILS.identify.name, html, [{label:echo?'Cancel':'Keep the sigil', fn:function(){

@@ -19,7 +19,7 @@ function applySpellWeaponEnchant(f,d,crit,A,context){
   if(ench==='air'&&pRoll(values.repeatChance)){
     var type=FoteDamage.type(context.type||A&&A.type||'magic');
     var repeat=applyDamage(f,raw,type,player,{tags:['proc','enchant'],actionId:context.actionId});
-    if(repeat>0){floatText(f.x,f.y,String(repeat),type,crit);log('<b>Gust.</b> The spell strikes twice &mdash; <b>'+repeat+'</b> more '+FoteDamage.label(type)+'.','c-good');}
+    if(repeat>0){floatText(f.x,f.y,String(repeat),type,crit);log('<b>Gust.</b> The spell strikes again for <b>'+repeat+'</b> '+FoteDamage.label(type)+' damage.','c-good');}
     if(f.hp<=0){kill(f,player);return;}
   }
   if(ench==='shadow'){

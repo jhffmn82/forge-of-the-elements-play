@@ -19,6 +19,11 @@ function prepareCreatureDeath(event){
     if(floorMeta.maw)floorMeta.maw.phase='dead';
     floorMeta.marks=(floorMeta.marks||[]).filter(function(mark){return mark.kind!=='maw';});
     if(ents.indexOf(e)<0)ents.push(e);
+    /* its Worm Tenders, and the Shroomlings they sprouted, sink back into the burrows (as the Unmaker's adds go),
+       and their spore clouds settle; the player's own shades stay */
+    var brood=floorMeta.maw&&floorMeta.maw.tenders||[];
+    ents=ents.filter(function(other){var mine=!other.ally&&(brood.indexOf(other.id)>=0||other.kind==='shroomling'&&brood.indexOf(other.owner)>=0);if(mine)burst(other.x,other.y,'earth',16,.05);return !mine;});
+    floorMeta.clouds=(floorMeta.clouds||[]).filter(function(cloud){return brood.indexOf(cloud.owner)<0;});
     SHAKE=12;burst(e.x+1,e.y+1,'earth',60,.1);
   }
   if(e.kind==='shockeel'||e.kind==='sparkjelly')floorMeta.marks=(floorMeta.marks||[]).filter(function(mark){return mark.kind!=='eel'+e.id;});
@@ -27,11 +32,11 @@ function prepareCreatureDeath(event){
     ents.forEach(function(other){if(other!==e&&dist(other,e)<=1&&(other===player||!other.foe)){var damage=applyDamage(other,6,'phys',null);floatText(other.x,other.y,String(damage),'phys');if(other===player)log('Crystal shards fly: '+damage+'.','c-you');}});burst(e.x,e.y,'earth',30,.08);
   }
   if(e.kind==='crystalnode'&&(floorMeta.heartNodes||[]).indexOf(e.id)>=0){var left=(floorMeta.heartNodes||[]).filter(function(id){return id!==e.id&&ents.some(function(other){return other.id===id&&other.hp>0;});}).length;log(left?'A crystal node shatters. '+left+' left.':'<b>The last crystal node shatters!</b> The Heart of the Mountain is exposed.','c-kill');}
-  if(e.elite&&floorMeta.plane&&e.id===floorMeta.eliteId){floorMeta.eliteDead=true;setTimeout(function(){log('The guardian of '+PLANE_TITLE[floorMeta.plane]+' falls. The treasure grotto lies open.','c-kill');},0);}
+  if(e.elite&&floorMeta.plane&&e.id===floorMeta.eliteId){floorMeta.eliteDead=true;setTimeout(function(){log('The guardian of '+PLANE_TITLE[floorMeta.plane]+' falls. Its treasure waits in the grotto.','c-kill');},0);}
   if(b.rises&&!e.risen&&e._lastType!=='fire'&&e._lastType!=='light'&&!(e.st&&e.st.burn)){
-    ents=ents.filter(function(other){return other!==e;});floorMeta.corpses=floorMeta.corpses||[];floorMeta.corpses.push({x:e.x,y:e.y,at:turn+3,kind:e.kind,maxhp:e.maxhp});
+    ents=ents.filter(function(other){return other!==e;});var fell=deathAnimation(e,false);floorMeta.corpses=floorMeta.corpses||[];floorMeta.corpses.push({x:e.x,y:e.y,at:turn+3,kind:e.kind,maxhp:e.maxhp,id:e.id,flip:fell.flip});
     if(vis[idxOf(e.x,e.y)])log('The <b>Shambler</b> collapses... and twitches. Finish it, or burn it.','c-info');
-    deathAnimation(e,false);event.deferred='shambler';return false;
+    event.deferred='shambler';return false;
   }
   if(b.bursts){addCloud(e.x,e.y,1,5,sDMG(3+Math.floor(floorNo/3)),'bloat');if(vis[idxOf(e.x,e.y)])log('The <b>Grave Bloat</b> bursts in a cloud of rot!','c-you');sfx('trap-gas');}
   if(inCrypt()&&b.living!==false&&!b.object){floorMeta.deathSpots=floorMeta.deathSpots||[];floorMeta.deathSpots.push({x:e.x,y:e.y});if(floorMeta.deathSpots.length>12)floorMeta.deathSpots.shift();}
@@ -56,8 +61,8 @@ function deathAnimation(e,persistent){
     remains={id:e.id,e:visual,bornAt:worldNow(),expiresAt:worldNow()+2000};
     floorMeta.deathRemains.push(remains);
   }
-  if(!(vis[idxOf(e.x,e.y)]||revealAll))return;
-  fx.push({k:'d',e:visual,remains:remains,t0:Math.max(performance.now(),fxClock)+60,dur:900});
+  if(vis[idxOf(e.x,e.y)]||revealAll)fx.push({k:'d',e:visual,remains:remains,t0:Math.max(performance.now(),fxClock)+60,dur:900});
+  return visual;
 }
 
 function commitCreatureDeath(event){
@@ -89,7 +94,7 @@ function rewardAmuletKill(event){
 function rewardCreatureDeath(event){
   var e=event.entity;
   rewardAmuletKill(event);
-  if(e.foe&&event.playerSide&&!e.noXp){
+  if(e.foe&&event.playerSide&&!e.noXp&&!e.noLoot){
     [['heart',GLOBE_CHANCE],['managlobe',GLOBE_CHANCE]].forEach(function(globe){if(rng()>=globe[1])return;var spot=!items.some(function(it){return it.x===e.x&&it.y===e.y;})&&walkable(e.x,e.y)?{x:e.x,y:e.y}:nearFree(e.x,e.y,1);if(spot)items.push({kind:globe[0],x:spot.x,y:spot.y,until:turn+GLOBE_LIFE});});
   }
   var burn=e.st&&e.st.burn,burnAffinity=burn&&burn.sourceAffinity;
@@ -102,8 +107,7 @@ function rewardCreatureDeath(event){
 function finishCreatureDeath(event){
   var e=event.entity,boss=e.base.boss||e.caveBoss;
   if(boss&&inCaverns()&&(floorNo===LAST_FLOOR||floorNo===15)&&!caveBossesLeft())caveBossDown();
-  if(e.kind==='deepmaw'){log('<b>The Deep Maw</b> shudders, groans, and goes still. The Caverns fall quiet.','c-kill');caveBossDown();}
-  if(e.deepBoss&&inDeep()&&floorMeta.boss&&!floorMeta.exitOpen){floorMeta.exitOpen=true;RUN.bossDead=true;log('<b>The Matron falls.</b> The gate in the south wall grinds open.','c-kill');}
+  if(e.kind==='deepmaw'){log('<b>The Deep Maw</b> shudders, groans and goes still. The Caverns fall quiet.','c-kill');caveBossDown();}
   if(e.kind==='matron'){log('<b>The Matron of the Web</b> curls her legs in and is still. Across the Underdark, the webs fall quiet.','c-kill');deepEnsureExit(e);}
   if(event.revive)floorMeta.pendingLich={entity:e,at:turn+1};
 }

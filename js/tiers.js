@@ -109,7 +109,7 @@ function tierNormalize(it){
   }
   if(TIER_BLOCK[k]){ it.block=TIER_BLOCK[k][t]; it.eva = k==='kite' ? -5 : 0; }
   if(TIER_OFF[k]){ var O=TIER_OFF[k]; it[O.field]=Math.max(0, O.base[t]+O.per*lvl); }
-  if(k==='holy'||k==='censer') it.note='Divine Focus: strengthens Invokes and prayers.';
+  if(k==='holy'||k==='censer') it.note='strengthens Invokes and prayers';
   return it;
 }
 function tierPer(w){
@@ -144,7 +144,7 @@ function meetsReq(it){
 }
 function reqText(it){
   var r=gearReq(it); if(!r) return '';
-  if(r.all) return r.all.map(function(p){ return STAT_NAME[p.stat]+' '+p.v; }).join(', ');
+  if(r.all) return r.all.map(function(p){ return STAT_NAME[p.stat]+' '+p.v; }).join(' and ');
   return r.any.map(function(s){ return STAT_NAME[s]; }).join(' or ')+' '+r.v;
 }
 function reqRow(it){
@@ -156,7 +156,7 @@ function reqBlock(it){
   if(!it || meetsReq(it)) return false;
   var r=gearReq(it), stats=r.all ? r.all.map(function(p){ return p.stat; }) : r.any;
   var why = stats.length===1 ? ({mig:'strong', agi:'nimble', vit:'hardy', foc:'focused'})[stats[0]] : null;
-  log((why ? 'You are not '+why+' enough to use the <b>' : 'You can&rsquo;t use the <b>')+gearName(it)+'</b> yet. It needs '+reqText(it)+'.','c-info'); sfx('ui-error');
+  log((why ? 'You are not '+why+' enough to use the <b>' : 'You can\'t use the <b>')+gearName(it)+'</b> yet. It needs '+reqText(it)+'.','c-info'); sfx('ui-error');
   return true;
 }
 
@@ -176,7 +176,7 @@ function tierTint(html, it){
 (function(){ var st=document.createElement('style'); st.textContent='.tierpip{display:inline-block;width:7px;height:7px;border-radius:2px;margin-right:6px;vertical-align:1px}'; document.head.appendChild(st); })();
 
 /* ---------------------------------------------------------------- derived numbers */
-function robeSpell(a){ return TIER_ROBE.spell[tierNum(a)] + TIER_ROBE.spellPer*Math.max(0,(a.plus||0)); }
+function robeSpell(a){ return TIER_ROBE.spell[tierNum(a)] + TIER_ROBE.spellPer*Math.max(0,(a.plus||0)+(typeof player!=='undefined' && player && player.race==='dwarf' ? 1 : 0)); }
 
 
 /* robe spell damage joins the gear pool */

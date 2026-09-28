@@ -1,10 +1,10 @@
 /* Run milestones produce state changes and their presentation directly. */
 function floorIntro(){
-  log('<b>Floor '+floorNo+'</b> of the '+biomeName()+'.'+(bfloor()===1 && floorNo>1 ? ' The air turns cold and still.' : ''),'c-kill');
+  log('<b>Floor '+floorNo+'</b> of the '+biomeName()+'.'+(bfloor()===1 && floorNo>1 ? ' Even the air feels different here.' : ''),'c-kill');
   if(floorMeta.forge) log('You feel heat in the stones. <b>The Elemental Forge</b> is on this floor.','c-kill');
   if(floorMeta.shrine) log('A distant hum of prayer: a <b>shrine to '+GODS[RUN.shrineGod].name+'</b> is on this floor.','c-kill');
   if(floorMeta.vault) log('Somewhere an iron vault is locked. Its key walks with one of the monsters.','c-info');
-  if(floorMeta.boss&&!inCaverns()&&!inDeep()&&!floorMeta.unmakerPreview) log('<b>The Warchief\'s hall.</b> Grukk waits on his throne. Kill him to open the way on.','c-you');
+  if(floorMeta.boss&&!inCaverns()&&!inDeep()&&!floorMeta.unmakerPreview) log(inCrypt() ? '<b>Morty\'s hall.</b> Soul fire burns green over the tombs. Break his phylactery, or Morty will not stay dead.' : '<b>The Warchief\'s hall.</b> Grukk waits on his throne. Bring his core to the gate to open the way on.','c-you');
   (floorMeta.notes||[]).forEach(function(n){ log(n,'c-info'); });
   playSceneMusic();
 
@@ -12,7 +12,7 @@ function floorIntro(){
  if(inDeep()){
   if(floorMeta.boss)log('<b>The Matron\'s hall.</b> Candles burn scarlet before the idol of the spider goddess. Ritual circles wait on the floor.','c-you');
   else if(bfloor()===1)log('Warm air rises from below, and somewhere silk rustles in the dark.','c-info');
-  if(deepMobsOn()&&floorMeta.boss)log('<b>The Matron\'s hall.</b> Ritual circles glow faintly in the dark. Break her rituals before they finish.','c-you');
+  if(deepMobsOn()&&floorMeta.boss)log('Break her rituals before they finish.','c-you');
  }
 }
 function bossDefeated(e){
@@ -26,7 +26,7 @@ function bossDefeated(e){
   explosionFx(e.x,e.y); playSceneMusic();
   ents.forEach(function(o){ if(o.foe && o.guard) applyStatus(o,'fear',6); });
 
- log('<b>'+e.base.name+' falls.</b> '+(e.kind==='matron'?'Her':'His')+' <b>'+coreName()+'</b> clatters to the floor, still burning with light. The exit gate will answer to it.','c-kill');
+ log('The <b>'+coreName()+'</b> clatters to the floor, still burning with light. The exit gate will answer to it.','c-kill');
  if(affinityCap()!==capBefore)log('Your affinity cap is now <b>'+affinityCap()+'</b>.','c-kill');
 }
 function caveExitSpot(x,y,radius){
@@ -55,7 +55,7 @@ function caveBossDown(){
     if(!spot)spot=caveExitSpot(player.x,player.y,4);
     if(!spot)spot=caveFallbackExitSpot();
     if(spot){ setT(spot.x, spot.y, EXIT); floorMeta.exitOpen=false; floorMeta.caveExit=spot; if(typeof sparkleFx==='function') sparkleFx(spot.x,spot.y,'earth',30); }
-    log(floorNo<LAST_FLOOR?'<b>The Deep Maw is dead.</b> Warm air rises through its burrow from the Underdark. Bring the Cavern Core to the opening to clear the way down.':'<b>The Deep Maw is dead.</b> Bring the Cavern Core to its burrow to clear the way out of the Caverns.','c-kill');
+    log(floorNo<LAST_FLOOR?'Warm air rises through the Maw\'s burrow from the Underdark. Bring the Cavern Core to the opening to clear the way down.':'Fresh air stirs in the Maw\'s burrow. Bring the Cavern Core to the opening to clear the way out of the Caverns.','c-kill');
     if(!spot)log('The burrow cannot open while every reachable floor tile is occupied.','c-info');
     if(typeof draw==='function') draw();
   }
@@ -65,7 +65,7 @@ function death(){
  var endedRun=RUN;RUN.over=true;setClip(player,'death');sfx('player-death');stopMusic();
  finishRunHistory(false);
  setTimeout(function(){if(RUN===endedRun&&RUN.over)showEnd(false);},1300);
- runId();if(deleteRunSaves())log('Death is final: this character&rsquo;s saves crumble to dust.','c-you');
+ runId();if(deleteRunSaves())log('Death is final: this character\'s saves crumble to dust.','c-you');
 }
 function renderEndSummary(won){
   var el=$('over'); if(!el) return;
@@ -76,10 +76,10 @@ function renderEndSummary(won){
   body.innerHTML='<div class="end-elements" aria-hidden="true">'+['#f57a40','#7ac9f4','#bcb2fa','#acb573','#ffe298','#b286ce'].map(function(col){return '<span style="--element:'+col+'"></span>';}).join('')+'</div>'+
     '<div class="end-name">'+esc(record.name)+'</div><div class="run-build">'+ui.build(record)+'</div>'+
     '<p class="end-story">'+(won?'You defeated the Unmaker and restored balance to the material plane. Fire, water, air, earth, light and shadow burn in harmony once more. Your work is done.':'Floor '+record.floor+' of the '+esc(record.biome)+' claimed another adventurer. Your journey is remembered.')+'</p>'+
-    '<b class="end-score">'+(record.scoreUnavailable?'—':n(record.score))+'<small>'+(record.earningsEstimated?'Estimated final score':'Final score')+(record.sandbox?' · sandbox':'')+'</small></b>'+
+    '<b class="end-score">'+(record.scoreUnavailable?'Unknown':n(record.score))+'<small>'+(record.earningsEstimated?'Estimated final score':'Final score')+(record.sandbox?' · sandbox':'')+'</small></b>'+
     '<div class="end-stats">'+[['Deepest floor',record.depth],['Level',record.level],['Bosses defeated',record.bosses],['Enemies defeated',n(record.kills)],['Turns',n(record.turns)],['Faith',record.faithRank?'Rank '+record.faithRank:'None']].map(function(pair){return '<span><small>'+pair[0]+'</small><b>'+pair[1]+'</b></span>';}).join('')+'</div>'+
     '<div class="end-affinities">'+esc(record.faith||'No patron')+'<br>'+record.affinities.map(function(a){return esc(cap(a.element))+' '+a.rank;}).join(' · ')+'</div>'+ui.breakdown(record)+
-    (record.sandbox?'<p class="run-note">Sandbox run — not added to Previous Runs.</p>':RUN.historySaved===false?'<p class="run-note">Local storage is unavailable. This result is kept for this session only.</p>':'');
+    (record.sandbox?'<p class="run-note">Sandbox run: not added to Previous Runs.</p>':RUN.historySaved===false?'<p class="run-note">Local storage is unavailable. This result is kept for this session only.</p>':'');
   el.style.display='flex';
 }
 function renderEndActions(won){

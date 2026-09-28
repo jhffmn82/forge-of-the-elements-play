@@ -40,12 +40,12 @@ function surfImg(name,x,y){
   }
   if(DEEP_AT>=0&&inDeep()){
     var region=DEEP_REGIONS[DEEP_AT];
-    if(AS.surface&&AS.surface[region+'-'+name]){var regionImage=atl('surface-'+region+'-'+name+'.png');return ['face','top','rim-n','rim-v'].indexOf(name)>=0?weatheredMasonry(regionImage):regionImage;}
+    if(AS.surface&&AS.surface[region+'-'+name]){var regionImage=atl('surface-'+region+'-'+name+'.webp');return ['face','top','rim-n','rim-v'].indexOf(name)>=0?weatheredMasonry(regionImage):regionImage;}
   }
   /* a biome or plane with its own stone uses it: surface-crypt-floor, surface-light-floor ... */
   var pre = (typeof floorMeta!=='undefined' && floorMeta && floorMeta.plane) ? floorMeta.plane : (typeof bidx==='function' && bidx()===1 ? 'crypt' : null);
   var key=pre && AS.surface && AS.surface[pre+'-'+name] ? pre+'-'+name : name;
-  var img=(AS.surface && AS.surface[key]) ? atl('surface-'+key+'.png') : null;
+  var img=(AS.surface && AS.surface[key]) ? atl('surface-'+key+'.webp') : null;
   return ['face','top','rim-n','rim-v'].indexOf(name)>=0 ? weatheredMasonry(img) : img;
 }
 function surfSalt(){ return ((typeof worldSeed==='number' ? worldSeed : 0) % 9973) + floorNo*31; }
@@ -58,6 +58,8 @@ function openGround(x,y){ if(!inb(x,y)) return false; var t=at(x,y); return !isW
 
 function masonryFloorTile(x, y){
   var t=at(x,y);
+  /* the painted material (environment-terrain.js): a doorway that is not a side door sits in the wall face */
+  var art=FoteEnvironmentTerrain.masonry((t===OPEN || isDoorTile(t)) && !sideDoor(x,y) ? 'face' : 'floor', x, y); if(art) return art;
   /* a closed door sits in masonry: the wall around the arch, not open floor */
   if(isDoorTile(t)){
     if(isWallLike(at(x-1,y)) || isWallLike(at(x+1,y))){ var fimg=surfImg('face',x,y); if(fimg) return {img:fimg, sx:smod(x+surfOff(2))*64, sy:0, sw:64, sh:64}; }
@@ -72,6 +74,7 @@ function wallFaces(x,y){ var south=at(x,y+1); return !(south===WALL || south===S
 
 function masonryWallTile(x, y){
   var faceBelow=wallFaces(x,y);
+  var art=FoteEnvironmentTerrain.masonry(faceBelow ? 'face' : 'top', x, y); if(art) return art;   /* the painted material */
   if(faceBelow){ var f=surfImg('face',x,y); if(f) return {img:f, sx:smod(x+surfOff(2))*64, sy:0, sw:64, sh:64}; }
   else { var t=surfImg('top',x,y); if(t) return {img:t, sx:smod(x+surfOff(3))*64, sy:smod(y+surfOff(4))*64, sw:64, sh:64}; }
   return atlasWallTile(x,y);
@@ -104,11 +107,8 @@ function drawMasonryWallEdges(x, y, t, px, py, a){
   var faceBelow = wallFaces(x,y);
   ctx.save(); ctx.globalAlpha=a; ctx.imageSmoothingEnabled=false;
   if(faceBelow){
-    /* a face that ends beside open ground shows its corner stones */
-    var e=Math.max(2, Math.round(TS*0.09));
-    if(openGround(x-1,y) && !isDoorTile(at(x-1,y))){ ctx.fillStyle='rgba(18,20,26,0.55)'; ctx.fillRect(px,py,e,TS); ctx.fillStyle='rgba(120,124,132,0.35)'; ctx.fillRect(px+e,py,1,TS); }
-    if(openGround(x+1,y) && !isDoorTile(at(x+1,y))){ ctx.fillStyle='rgba(18,20,26,0.55)'; ctx.fillRect(px+TS-e,py,e,TS); }
-    /* a secret wall keeps its tell: a straight seam through the courses */
+    /* (2026-09-27, render plan Q12: a face that ends beside open ground no longer gets painted dark and light end
+       strips; the painted face art shows its own end.) A secret wall keeps its tell: a straight seam through the courses */
     if(t===SECRET){ ctx.fillStyle='rgba(20,22,28,0.7)'; ctx.fillRect(px+Math.round(TS*0.47),py+Math.round(TS*0.12),Math.max(1,Math.round(TS*0.04)),Math.round(TS*0.76)); }
     else if(typeof wallTorchAt==='function' && wallTorchAt(x,y)) drawDeco(DECO.sconce, px, py, 1, {dy:-0.02});
     else {
@@ -232,10 +232,13 @@ function bonesRaster(x, y){
   }
   return c;
 }
+/* A raster that names a detail mode (water, ooze, trampled grass, chasm edges) is shown at 128px, built from it
+   once by environment-terrain.js. The others (moss, grime, bones) are drawn at their final detail already. */
 function cachedRaster(kind, x, y, fn){
   var cells=surfCache(), key=kind+x+','+y;
   if(!(key in cells)) cells[key]=fn(x,y);
-  return cells[key];
+  var c=cells[key], mode=c && c.environmentTerrain && c.environmentTerrain.detail;
+  return mode ? FoteEnvironmentTerrain.enhance(c, x, y, mode) : c;
 }
 function blitRaster(c, px, py, alpha){
   if(!c) return;
@@ -253,7 +256,6 @@ function drawStoneGroundDecal(gv, x, y, px, py, alpha, now){
 
 /* ---------------------------------------------------------------- the decoration pass (after terrain, before ground decals) */
 function drawStoneSurface(){
-  if(!surfImg('floor')) return;
   var salt=surfSalt();
   for(var y=camY; y<=camY+viewH; y++) for(var x=camX; x<=camX+viewW; x++){
     if(!inb(x,y)) continue; var i=idxOf(x,y); if(!(revealAll||seen[i])) continue;
@@ -276,7 +278,6 @@ function drawStoneSurface(){
 
 /* ---------------------------------------------------------------- flat props: bones and rubble lie in the floor */
 function drawStoneProp(p, px, py, alpha){
-  if(!surfImg('deco')) return false;
   if(p.name==='bones'){ blitRaster(cachedRaster('pb', p.x, p.y, bonesRaster), px, py, alpha); return true; }
   if(p.name==='bookshelf'){
     /* shelves fill the tile's width so a row of them stands nearly flush against the wall */
@@ -296,12 +297,13 @@ function drawStoneProp(p, px, py, alpha){
    leaf as a heavy plank across the passage. Open, the leaf stands swung back against the room side. */
 function sideDoor(x, y){ return isWallLike(at(x,y-1)) && isWallLike(at(x,y+1)) && !isWallLike(at(x-1,y)) && !isWallLike(at(x+1,y)); }
 function drawMasonryDoor(x, y, t, px, py, a){
-  if(!(isDoorTile(t) || t===OPEN) || !sideDoor(x,y) || !surfImg('deco',x,y)) return false;
+  if(!(isDoorTile(t) || t===OPEN) || !sideDoor(x,y)) return false;
   if(t===ICEDOOR || t===THORNS) return false;   /* ice and thorns fill the gap anyway */
   var deco=surfImg('deco',x,y), rw=Math.max(4, Math.round(TS*RIM/64));
   ctx.save(); ctx.globalAlpha=a; ctx.imageSmoothingEnabled=false;
-  var crystal = t===SEALED && floorMeta.crystalDoor && floorMeta.crystalDoor.x===x && floorMeta.crystalDoor.y===y;
-  var iron = t===LOCKED || (t===SEALED && !crystal) || (t===OPEN && floorMeta.ironDoors && floorMeta.ironDoors[idxOf(x,y)]);
+  var mat = t===OPEN ? openDoorMaterial(x,y) : null;   /* an opened door keeps its material (render.js) */
+  var crystal = mat==='crystal' || (t===SEALED && floorMeta.crystalDoor && floorMeta.crystalDoor.x===x && floorMeta.crystalDoor.y===y);
+  var iron = t===LOCKED || (t===SEALED && !crystal) || mat==='iron';
   var pal = crystal ? {leaf:'#6FC6DE', hi:'#C8F2FF', lo:'#2F6E86', band:'#E8FBFF'} : iron ? {leaf:'#5A5D66', hi:'#8E929C', lo:'#2B2D33', band:'#2B2D33'} : {leaf:'#6B4726', hi:'#8E6238', lo:'#3A2614', band:'#2E2A26'};
   if(typeof FoteChaosPreviewRenderer!=='undefined')pal=FoteChaosPreviewRenderer.doorPalette(pal,crystal,iron);
   var lw=Math.max(6, Math.round(TS*0.26)), cx=px+Math.round(TS/2);
@@ -326,7 +328,7 @@ function drawMasonryDoor(x, y, t, px, py, a){
     // swung flat against the north wall; the previous endpoint detached it
     // from the post by roughly half a tile.
     var roomE = !!roomAt(x+1,y), ox = roomE ? cx : cx-TS;
-    plankH(ox, py-Math.round(lw*0.55), TS, Math.max(4, Math.round(lw*0.55)));
+    if(mat!=='ice') plankH(ox, py-Math.round(lw*0.55), TS, Math.max(4, Math.round(lw*0.55)));   /* melted ice leaves no leaf */
   } else {
     /* the door fills the hall from post to post */
     plankV(cx-Math.round(lw/2), py, lw, TS);
@@ -376,7 +378,7 @@ function waterRaster(x, y){
     D[p]=col[0]; D[p+1]=col[1]; D[p+2]=col[2]; D[p+3]= rim ? 170 : Math.round(185+45*deep); any=true;
   }
   if(!any) return null;
-  g.putImageData(im,0,0); c.environmentTerrain={pixels:D}; return c;
+  g.putImageData(im,0,0); c.environmentTerrain={pixels:D, detail:'fluid'}; return c;
 }
 if(!AS.wang_water) AS.wang_water={cell:64, tiles:{}, procedural:true};   /* keeps render.js's square fallback off */
 
@@ -395,30 +397,11 @@ function drawSurfaceWater(key, tileType){
 
 }
 
-/* ---------------------------------------------------------------- tall grass: a ragged bed of shade under the blades
-   (the blades themselves, and grass's sight and fire rules, are unchanged) */
-function grassSig(x,y){ var s=''; for(var yy=y-1;yy<=y+1;yy++) for(var xx=x-1;xx<=x+1;xx++) s+=(inb(xx,yy)&&ground[idxOf(xx,yy)]===G_GRASS)?'1':'0'; return s; }
-function grassRaster(x, y){
-  var R=32, cells=[];
-  for(var yy=y-1;yy<=y+1;yy++) for(var xx=x-1;xx<=x+1;xx++) if(inb(xx,yy) && ground[idxOf(xx,yy)]===G_GRASS && !isWallLike(at(xx,yy))) cells.push([xx+0.5,yy+0.5]);
-  if(!cells.length) return null;
-  var c=document.createElement('canvas'); c.width=R; c.height=R;
-  var g=c.getContext('2d'), im=g.createImageData(R,R), D=im.data, salt=surfSalt(), any=false;
-  for(var v=0; v<R; v++) for(var u=0; u<R; u++){
-    var wx=x+(u+0.5)/R, wy=y+(v+0.5)/R, f=0;
-    for(var k=0;k<cells.length;k++){ var dx=wx-cells[k][0], dy=wy-cells[k][1], d=Math.sqrt(dx*dx+dy*dy)/1.15; if(d<1) f+=(1-d)*(1-d); }
-    var n=hash2(Math.floor(wx*8), Math.floor(wy*8), salt+95)-0.5, n2=hash2(Math.floor(wx*20), Math.floor(wy*20), salt+96)-0.5;
-    var val=f + n*0.25 + n2*0.08;
-    if(val<0.3) continue;
-    var p=(v*R+u)*4, dense=Math.min(1,(val-0.3)*2);
-    D[p]=24; D[p+1]=44; D[p+2]=18; D[p+3]=Math.round(40+70*dense); any=true;
-  }
-  if(!any) return null;
-  g.putImageData(im,0,0); c.environmentTerrain={pixels:D}; return c;
-}
-/* trampled grass (G_SHORT): the flattened mat the blades lie on. A flat fillRect over the tile read as a green
-   square on the stone, so this is the same ragged field as the tall-grass bed, at a smaller radius, and it leans
-   into neighbouring grass so a walked path blends with the patch it came from. */
+/* ---------------------------------------------------------------- trampled grass (G_SHORT): the flattened mat the blades lie on
+   A flat fillRect over the tile read as a green square on the stone, so this is a ragged field, and it leans into
+   neighbouring grass so a walked path blends with the patch it came from. (2026-09-27, Justin, render plan Q11: the
+   tall-grass shade bed of 2026-09-17 is gone; the Dungeon's one bed under its grass is the 2026-09-19 moss bed,
+   vegart.js drawVegMoss.) */
 function tramSig(x,y){
   var s='';
   for(var yy=y-1;yy<=y+1;yy++) for(var xx=x-1;xx<=x+1;xx++){
@@ -452,18 +435,8 @@ function tramRaster(x, y){
     D[p]=dark?22:32; D[p+1]=dark?38:54; D[p+2]=dark?16:24; D[p+3]=Math.round(26+44*dense); any=true;
   }
   if(!any) return null;
-  g2.putImageData(im,0,0); c.environmentTerrain={pixels:D}; return c;
+  g2.putImageData(im,0,0); c.environmentTerrain={pixels:D, detail:'vegetation'}; return c;
 }
-function drawGrassBed(){
-  for(var y=camY; y<=camY+viewH; y++) for(var x=camX; x<=camX+viewW; x++){
-    if(!inb(x,y)) continue; var i=idxOf(x,y); if(!(revealAll||seen[i]) || isWallLike(map[i])) continue;
-    var near=false; for(var dy=-1;dy<=1 && !near;dy++) for(var dx=-1;dx<=1;dx++){ var xx=x+dx, yy=y+dy; if(inb(xx,yy) && ground[idxOf(xx,yy)]===G_GRASS){ near=true; break; } }
-    if(!near) continue;
-    blitRaster(cachedRaster('g'+grassSig(x,y)+'@', x, y, grassRaster), (x-camX)*TS, (y-camY)*TS, (revealAll||vis[i])?1:memA(0.4));
-  }
-}
-
-
 /* ---------------------------------------------------------------- props sit on the stone: a soft contact shadow */
 var PROP_SHADOW = {chest:0.34, crate:0.36, barrel:0.3, 'barrel-explosive':0.3, pot:0.28, 'brazier-lit':0.32, 'brazier-unlit':0.32, 'torch-stand':0.16,
   'table-candle':0.3, bookshelf:0.42, 'weapon-rack':0.36, cart:0.42, statue:0.34, 'statue-broken':0.34, 'banner-stand':0.3, 'alchemy-table':0.38,
@@ -471,9 +444,11 @@ var PROP_SHADOW = {chest:0.34, crate:0.36, barrel:0.3, 'barrel-explosive':0.3, p
 /* PR #4: scenery sits flush with the floor. Only actors cast contact shadows. */
 function propShadow(){}
 
-/* ---------------------------------------------------------------- animated pixel flames on braziers, torch stands and candles
-   anchor: where the flame's base sits in the trimmed sprite (measured from the art); size: flame height in tiles */
-var FLAME_AT = {'brazier-lit':{ax:0.49, ay:0.26, size:0.46, wide:1.5}, 'torch-stand':{ax:0.53, ay:0.2, size:0.26, wide:0.9}, 'table-candle':{ax:0.5, ay:0.12, size:0.14, wide:0.7}};
+/* ---------------------------------------------------------------- the animated pixel flame on a lit brazier
+   anchor: where the flame's base sits in the trimmed sprite (measured from the art); size: flame height in tiles.
+   2026-09-27 (Justin, render plan Q9): torch stands, candle tables, soul braziers and candelabras paint their own
+   flames, so only the brazier, whose art has coals and no flame, keeps a procedural one. */
+var FLAME_AT = {'brazier-lit':{ax:0.49, ay:0.26, size:0.46, wide:1.5}};
 function propFlame(p, o, px, py, alpha, now){
   var F=FLAME_AT[p.name]; if(!F || !o || !spriteOn) return;
   /* the same box drawObj used for this prop */
@@ -486,7 +461,7 @@ function drawPixelFlame(bx, by, H, wide, alpha, now, seed){
      so at a close zoom the flame was a handful of fat blocks. Finer pixels, so it has the detail the rest has. */
   var u=Math.max(1, Math.round(TS/64));                 /* one art pixel */
   var t=ANIM.reduce ? 0 : now/1000;
-  var cols=(typeof SOUL_FIRE!=='undefined' && SOUL_FIRE==='violet') ? ['#3A1A6A','#7A3CD8','#B884FF','#F0DCFF'] : (typeof SOUL_FIRE!=='undefined' && SOUL_FIRE) ? ['#1E5A2A','#3FB85A','#8CF07A','#E0FFC0'] : ['#8E2A12','#E2622B','#FFA040','#FFE08A'];   /* the Crypt burns green */
+  var cols=['#8E2A12','#E2622B','#FFA040','#FFE08A'];
   ctx.save(); ctx.globalAlpha=alpha; ctx.imageSmoothingEnabled=false;
   var rows=Math.max(4, Math.round(H/u)), half=Math.max(2, Math.round(H*0.28*wide/u));
   for(var r=0; r<rows; r++){

@@ -185,7 +185,7 @@ function throwDarkness(e){
   floorMeta.dark=deepDarkActive().concat([{cells:cells, until:turn+GLOBE.turns}]);
   setClip(e,'attack'); boltFx(e.x,e.y,player.x,player.y,'dark'); sfx('shaman-cast');
   burst(player.x, player.y, 'dark', 40, 0.08);
-  log('The <b>Drow Blade</b> flings a <b>globe of darkness</b> over you. You can barely see past your own hands - but the drow can.','c-you');
+  log('The <b>Drow Blade</b> flings a <b>globe of darkness</b> over you. You can barely see past your own hands, but the drow can.','c-you');
   computeFOV();
 }
 function inDeepDark(x,y){ var i=idxOf(x,y); return deepDarkActive().some(function(g){ return g.cells.indexOf(i)>=0; }); }
@@ -256,7 +256,7 @@ var DEEP_AI = {
       if(mine<PRIEST.capEach && all<PRIEST.capFloor){
         if(e.hp<=0)return true;e.callCd=PRIEST.callCd; setClip(e,'attack'); sfx('shaman-cast');
         var n=Math.min(ri(PRIEST.callN[0],PRIEST.callN[1]), PRIEST.capEach-mine), got=0;
-        for(var k=0;k<n;k++){ var c=nearFree(e.x,e.y,1) || nearFree(e.x,e.y,2); if(!c || deepLava(c.x,c.y)) break; var s=deepSpawnRaw('spiderling', c.x, c.y); s.state='hunt'; s.noXp=true; s.owner=e.id; s.t=e.t; sparkleFx(c.x,c.y,'web',14); got++; }
+        for(var k=0;k<n;k++){ var c=nearFree(e.x,e.y,1) || nearFree(e.x,e.y,2); if(!c || deepLava(c.x,c.y)) break; var s=deepSpawnRaw('spiderling', c.x, c.y); s.state='hunt'; s.noLoot=true; s.owner=e.id; s.t=e.t; sparkleFx(c.x,c.y,'web',14); got++; }
         if(got && deepVis(e.x,e.y)) log('The <b>Drow Priestess</b> hisses a prayer and '+(got>1 ? got+' <b>Spiderlings</b> scuttle' : 'a <b>Spiderling</b> scuttles')+' out of the dark to her.','c-info');
          return true;
       }
@@ -475,13 +475,13 @@ function matronBrood(e, driders, spiders, why){
   var dAlive=ents.filter(function(o){ return o.kind==='drider'; }).length;
   for(var i=0;i<driders && dAlive<MATRON.broodDriders;i++,dAlive++){
     var c=nearFree(e.x,e.y,2) || nearFree(e.x,e.y,3); if(!c || deepLava(c.x,c.y)) break;
-    var d=deepSpawnRaw('drider', c.x, c.y); d.state='hunt'; d.noXp=true; d.t=player.t; sparkleFx(c.x,c.y,'web',24); got.push('a <b>Drider</b>');
+    var d=deepSpawnRaw('drider', c.x, c.y); d.state='hunt'; d.noLoot=true; d.t=player.t; sparkleFx(c.x,c.y,'web',24); got.push('a <b>Drider</b>');
   }
   var n=0;
   for(var k=0;k<spiders;k++){
     if(ents.filter(function(o){ return o.kind==='spiderling'; }).length>=PRIEST.capFloor) break;
     var s=nearFree(e.x,e.y,2); if(!s || deepLava(s.x,s.y)) break;
-    var sp=deepSpawnRaw('spiderling', s.x, s.y); sp.state='hunt'; sp.noXp=true; sp.t=player.t; sparkleFx(s.x,s.y,'web',12); n++;
+    var sp=deepSpawnRaw('spiderling', s.x, s.y); sp.state='hunt'; sp.noLoot=true; sp.t=player.t; sparkleFx(s.x,s.y,'web',12); n++;
   }
   if(n) got.push((n>1 ? n : 'a')+' <b>Spiderling'+(n>1?'s':'')+'</b>');
   var who=got.join(' and ');
@@ -495,7 +495,7 @@ function matronFinish(e, M){
     boltFx(player.x, player.y, e.x, e.y, 'blood'); burst(player.x, player.y, 'blood', 40, 0.08);
     var d=deepHurt(player, raw, 'dark', e, 'The <b>Blood Tithe</b> tears the blood out of you');
     if(player.hp>0) inflictBleed(player, e, 3);
-    var h=Math.min(e.maxhp-e.hp, d*MATRON.titheHeal); if(h>0){ e.hp+=h; floatText(e.x, e.y, '+'+h, 'heal'); log('The Matron drinks it: <b>+'+h+'</b> health.','c-you'); }
+    var h=Math.min(e.maxhp-e.hp, d*MATRON.titheHeal); if(h>0){ e.hp+=h; floatText(e.x, e.y, '+'+h, 'heal'); log('The Matron drinks it: <b>+'+h+'</b> HP.','c-you'); }
   } else {
     matronBrood(e, 1, ri(MATRON.broodSpiderlings[0], MATRON.broodSpiderlings[1]), 'The <b>Brood Call</b> is answered.');
   }
@@ -565,7 +565,7 @@ bossBar = function(){
   var M=matronState(), e=M && matronEnt(), el=$('bossbar');
   if(!M || !M.rit || !e || !el || el.style.display==='none') return;
   var nm=M.rit.kind==='tithe' ? 'BLOOD TITHE' : 'BROOD CALL', left=Math.max(0, M.rit.at-turn);
-  el.innerHTML=el.innerHTML.replace('<div class="bb">', ' &mdash; <span style="color:#FF5A6A">'+nm+' in '+left+' &middot; break it '+Math.max(0,M.rit.hp0-e.hp)+'/'+M.rit.need+'</span><div class="bb">');
+  el.innerHTML=el.innerHTML.replace('<div class="bb">', ' &middot; <span style="color:#FF5A6A">'+nm+' in '+left+' &middot; break it '+Math.max(0,M.rit.hp0-e.hp)+'/'+M.rit.need+'</span><div class="bb">');
 };
 /* her death: the circles go dark, her brood scatters, and the hall's exit is there to take her core to */
 function deepEnsureExit(e){
@@ -575,7 +575,7 @@ function deepEnsureExit(e){
   var M=floorMeta.matron, th=(M && M.throne) || {x:e.x, y:e.y}, c=nearFree(th.x, th.y, 2) || nearFree(e.x, e.y, 3);
   if(!c) return;
   setT(c.x, c.y, EXIT); floorMeta.exitAt={x:c.x, y:c.y};
-  log('Behind the throne, the webs part over a stair leading up and out of the Underdark.','c-kill');
+  log('Behind the throne, the webs fall away from a hidden gate.','c-kill');
 }
 
 

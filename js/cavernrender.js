@@ -4,7 +4,7 @@
    - chasms: black void, the delivered lip / corner art laid round every edge a quarter tile at a time, and
      floating debris drifting in the dark;
    - rope bridges use cached 128px sections of the recovered painted wood-and-rope master;
-   - the cave pieces (map-cave.png) at their natural size: 64 px of art = one tile, standing on their footprint,
+   - the cave pieces (map-cave.webp) at their natural size: 64 px of art = one tile, standing on their footprint,
      tall art rising above it; clusters and decals flat on the floor; stalactites, glowworms, fossils and the
      waterfall hung on cliff faces.
    Light: the dark biome ambient (render.js), the hero's torch, and the glowing pieces, crystals and pools.
@@ -28,8 +28,9 @@ PT_MAT.cavern = {
 
 /* ---------------------------------------------------------------- the sheet */
 function packedCaveArt(name){
+  var fresh=FoteEnvironmentProps.art('cave',name); if(fresh) return fresh;
   var g=AS.map && AS.map.cave; if(!g || !g.items[name]) return null;
-  var img=atl('map-cave.png'); if(!img) return null;
+  var img=atl('map-cave.webp'); if(!img) return null;
   var b=g.items[name];
   return {img:img, sx:b[0]+b[2], sy:b[1]+b[3], sw:Math.max(1,b[4]), sh:Math.max(1,b[5]), ox:b[2], oy:b[3], fullW:b[6], fullH:b[7]};
 }
@@ -80,13 +81,7 @@ var CAVE_BRIDGE_ART={image:null,frames:null};
 function caveBridgeFrames(){
   var art=CAVE_BRIDGE_ART;
   if(art.frames)return art.frames;
-  if(!art.image){
-    var image=new Image();art.image=image;
-    image.onload=function(){
-      if(player&&map&&map.length&&vis&&seen&&vis.length===map.length&&seen.length===map.length)draw();
-    };
-    image.src='art/packed/cave-bridge-master.png'+(typeof ASSETS!=='undefined'&&ASSETS.build?'?v='+ASSETS.build:'');
-  }
+  atl('cave-bridge-master.webp');art.image=ATL['cave-bridge-master.webp']; /* loaded behind the loading screen (boot.js) */
   if(!art.image.complete||!art.image.naturalWidth)return null;
   // The unchanged master is a long continuous bridge. Quarter sections keep
   // its plank proportions instead of squeezing the whole span into each tile.

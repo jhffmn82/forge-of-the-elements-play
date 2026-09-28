@@ -52,10 +52,14 @@ function stepEnt(e,dx,dy){
   return false;
 }
 function actorFootprintField(e,target,options){
-  var field=new Int32Array(MW*MH).fill(-1),queue=[],n=entitySize(e);
+  var field=new Int32Array(MW*MH).fill(-1),judged=new Int8Array(MW*MH),queue=[],n=entitySize(e),neighbors=FoteActors.neighbors;
   options=Object.assign({terrainOnly:true,doors:true},options||{});
+  /* 2026-09-27 (Justin: "even non visible monsters are slowing down performance"). A search judges each cell
+   * once; a wall used to be judged again by every neighbour, for every wanderer, every turn. Nothing changes
+   * during one search, so the field and every step taken from it are the same. */
+  function allowed(x,y){var i=idxOf(x,y);if(!judged[i])judged[i]=actorFootprintAllowed(e,x,y,options)?1:2;return judged[i]===1;}
   for(var y=target.y-n;y<=target.y+entitySize(target);y++)for(var x=target.x-n;x<=target.x+entitySize(target);x++){
-    if(!inb(x,y)||dist({x:x,y:y,base:e.base},target)!==1||!actorFootprintAllowed(e,x,y,options))continue;
+    if(!inb(x,y)||dist({x:x,y:y,base:e.base},target)!==1||!allowed(x,y))continue;
     field[idxOf(x,y)]=0;queue.push({x:x,y:y});
   }
   for(var head=0;head<queue.length;head++){
@@ -63,12 +67,12 @@ function actorFootprintField(e,target,options){
     // A per-actor route only needs the gradient back to this actor. The shared
     // player field has no origin coordinates and still covers the whole floor.
     if(p.x===e.x&&p.y===e.y)break;
-    FoteActors.neighbors.forEach(function(offset){
-      var x=p.x+offset[0],y=p.y+offset[1];
-      if(!inb(x,y)||field[idxOf(x,y)]>=0||!actorFootprintAllowed(e,x,y,options))return;
-      if(offset[0]&&offset[1]&&!actorFootprintAllowed(e,x,p.y,options)&&!actorFootprintAllowed(e,p.x,y,options))return;
-      field[idxOf(x,y)]=field[idxOf(p.x,p.y)]+1;queue.push({x:x,y:y});
-    });
+    for(var k=0;k<neighbors.length;k++){
+      var dx=neighbors[k][0],dy=neighbors[k][1],nx=p.x+dx,ny=p.y+dy;
+      if(!inb(nx,ny)||field[idxOf(nx,ny)]>=0||!allowed(nx,ny))continue;
+      if(dx&&dy&&!allowed(nx,p.y)&&!allowed(p.x,ny))continue;
+      field[idxOf(nx,ny)]=field[idxOf(p.x,p.y)]+1;queue.push({x:nx,y:ny});
+    }
   }
   return field;
 }

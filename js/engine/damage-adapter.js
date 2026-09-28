@@ -10,7 +10,14 @@ function damageCreatureRules(event){
   if(target.syllaResist>0&&event.amount>0)event.amount*=1-target.syllaResist;
   if(b&&target!==player&&inFwa()){
     if(b.fwa==='leviathan'&&target.submerged){if(source===player)log('The water closes over <b>the Leviathan Eel</b>. Wait for it to come up.','c-info');return rejectDamage(event,'submerged');}
-    if(b.shellGuard&&target._shellTurn!==turn&&event.amount>0){target._shellTurn=turn;floatText(target.x,target.y,'shell','miss');if(vis[idxOf(target.x,target.y)])log('The <b>Tide Crab</b> takes it on the shell.','c-info');return rejectDamage(event,'shell');}
+    /* the shell turns the first blow of each turn; after 3 blows it cracks for good (Justin 2026-09-28: with one attack a
+       turn the crab could never be hurt) */
+    if(b.shellGuard&&!target.shellCracked&&target._shellTurn!==turn&&event.amount>0){
+      target._shellTurn=turn;target.shellBlocks=(target.shellBlocks||0)+1;var seen=vis[idxOf(target.x,target.y)];
+      if(target.shellBlocks>=3){target.shellCracked=true;floatText(target.x,target.y,'cracked','miss');if(seen)log('The <b>Tide Crab</b> takes it on the shell, and the shell <b>cracks</b>. Every blow lands now.','c-good');}
+      else{floatText(target.x,target.y,'shell','miss');if(seen)log('The <b>Tide Crab</b> takes it on the shell.','c-info');}
+      return rejectDamage(event,'shell');
+    }
   }
   if(target!==player&&target.st&&target.st.wardshield&&event.amount>0){
     var ward=target.st.wardshield,absorbed=Math.min(ward.n,event.amount);ward.n-=absorbed;event.amount-=absorbed;

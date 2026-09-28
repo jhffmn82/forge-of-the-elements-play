@@ -24,16 +24,16 @@ var AIM_KINDS = {blast:1, cone:1, chain:1, beam:1, swarm:1, lflame:1, tomb:1, up
 var RANK_TEXT = {
   3:{fire:'Searing: Burning enemies take 15% more damage from you. Immune to Burning.',
      water:'Shatter: Frozen enemies take a further +50% physical damage. Immune to Chill and Freeze.',
-     air:'Arc: 5% per Air point that any hit or spell arcs to a nearby enemy for 50%. Immune to Stun.',
+     air:'Arc: a 5% chance per Air point that any hit or spell arcs to a nearby enemy for half damage. Immune to Stun.',
      earth:'Venom: anything you Root is poisoned as it is pinned (10% of max HP a turn; half on bosses). Immune to Root.',
      light:'Radiance: heal 1 HP per Light point whenever you deal light damage. Immune to Blind.',
      shadow:'Fade: after 50 turns out of combat you are fully hidden. Immune to Fear.'},
-  6:{fire:'Wildfire: when a Burning enemy dies its fire leaps to the nearest enemy within 3. Fire spells leave flames for 3 turns. Immune to fire.',
-     water:'Deep Freeze: three Chills freeze. Water spells leave icy ground that Chills for 3 turns. Immune to frost.',
+  6:{fire:'Wildfire: when a Burning enemy dies, its fire leaps to the nearest enemy within 3 tiles. Fire spells leave flames for 3 turns. Immune to fire.',
+     water:'Deep Freeze: three Chills freeze an enemy instead of four. Water spells leave icy ground that Chills for 3 turns. Immune to frost.',
      air:'Lightning Reflexes: 15% of your attacks and spells take no time; lightning damage has a 15% stun chance. Immune to lightning.',
      earth:'Petrify: rooting a rooted enemy turns it to stone for 2 turns. Earth spells leave grasping roots for 3 turns. Immune to poison.',
-     light:'Holy Ground: Light spells and Smite leave Holy Ground for 3 world turns, scaled by Spell Power. It heals allies for 2% max HP per turn, increases other healing by 25%, grants 15% nonphysical resistance, and burns enemies (undead and shadow double). Overlapping Holy Ground does not stack. Immune to light.',
-     shadow:'Hollowing: your shadow damage stacks Hollow (max 5, 5 turns): +5% damage taken and -1 armor per stack. Immune to shadow.'}
+     light:'Holy Ground: your light spells and Smites bless the ground for 3 turns. On it, you and your allies heal 2% of max HP a turn and resist all but physical damage; enemies take light damage, undead most of all. Immune to light.',
+     shadow:'Hollowing: your shadow damage Hollows enemies for 5 turns, up to 5 stacks. Each stack makes them take 5% more damage and lose 1 armor. Immune to shadow.'}
 };
 var IMMUNE_TYPE = {fire:'fire', water:'ice', air:'lightning', earth:'poison', light:'light', shadow:'dark'};
 function aff(el){ return (player && player.aff && player.aff[el]) || 0; }

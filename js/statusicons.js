@@ -9,34 +9,34 @@ var STATUS_INFO = {
   burn:   {name:'Burning', icon:'st-burn', bad:1, d:'Takes fire damage every turn.'},
   chill:  {name:'Chilled', icon:'st-chill', bad:1, d:'Acts more slowly; takes more frost damage.'},
   slow:   {name:'Slowed', icon:'st-slow', bad:1, d:'Acts more slowly.'},
-  frozen: {name:'Frozen', icon:'st-frozen', bad:1, d:'Can\'t act. Evasion is 0. A physical hit shatters the ice for double damage.'},
+  frozen: {name:'Frozen', icon:'st-frozen', bad:1, d:'Can\'t act. Evasion is 0. Any damage breaks the ice; a physical hit shatters it for double damage.'},
   root:   {name:'Rooted', icon:'ic-earth-root', bad:1, d:'Can\'t move, but can still attack. Evasion is 0.'},
   stun:   {name:'Stunned', icon:'st-stun', bad:1, d:'Can\'t act. Evasion is 0.'},
-  fear:   {name:'Afraid', icon:'st-fear', bad:1, d:'Forces retreat instead of fighting. If escape is blocked, you cower in place.'},
+  fear:   {name:'Afraid', icon:'st-fear', bad:1, d:'Flees instead of fighting, and cowers in place when there is nowhere to run.'},
   blind:  {name:'Blind', icon:'st-blind', bad:1, d:'Attacks miss far more often.'},
   poison: {name:'Poisoned', icon:'st-poison', bad:1, d:'Takes damage every turn and doesn\'t regenerate.'},
-  wet:    {name:'Wet', icon:'ic-tidal-surge', bad:1, d:'Takes more lightning damage; fire goes out.'},
-  corrupt:{name:'Corrupted', icon:'ic-shadow-swarm', bad:1, d:'Takes extra shadow damage.'},
-  hollow: {name:'Hollowed', icon:'ic-shadow-bolt', bad:1, d:'Shadow damage finds its weak spots.'},
+  wet:    {name:'Wet', icon:'ic-tidal-surge', bad:1, d:'Takes more lightning damage and less fire damage.'},
+  corrupt:{name:'Corrupted', icon:'ic-shadow-swarm', bad:1, d:'Takes 25% more shadow damage. If you kill it, its shade may rise to serve you.'},
+  hollow: {name:'Hollowed', icon:'ic-shadow-bolt', bad:1, d:'Takes more damage from every source and has less armor, more with each stack.'},
   stone:  {name:'Stone skin', icon:'st-stone', d:'Physical hits deal 3 less damage.'},
   aura:   {name:'Unholy Aura', icon:'pr-unholyaura', d:'Enemies within 2 tiles take shadow damage each turn, healing you for each enemy hit.'},
   /* 2026-09-23 (Justin): the Challenge and Coward's Mark show on the foe as debuffs */
-  challenged:{name:'Challenged', icon:'st-challenged', bad:1, d:'Called out: it must come to you and fight. A follower of Sir Reginald deals it +25% and, from rank 3, takes 15 / 20 / 25% less from it.'},
-  coward:    {name:"Coward's Mark", icon:'st-coward', bad:1, d:'It struck from afar and Sir Reginald marked it: it must come to you, deals 15 / 20 / 25% less to you and takes +25% from you.'},
+  challenged:{name:'Challenged', icon:'st-challenged', bad:1, d:'Called out: it must come to you and fight. You deal it 25% more damage and, from rank 3, take less from it.'},
+  coward:    {name:"Coward's Mark", icon:'st-coward', bad:1, d:'It struck from afar, so Sir Reginald marked it. It must come to you, deals you less damage and takes 25% more from you.'},
   /* buffs (player.buffs) */
-  rampage:   {name:'Rampage', icon:'pr-rampage', d:'More melee damage and faster melee attacks, scaled by Divine Power.'},
-  ironhide:  {name:'Iron Hide', icon:'pr-ironhide', d:'Armor and a shield, scaled by Divine Power.'},
-  ironbody:  {name:'Iron Body', icon:'ic-iron-body', d:'Armor and a chance for unarmed hits to stun, scaled by Divine Power.'},
-  laststand: {name:'Last Stand', icon:'pr-laststand', d:'Take half damage.'},
+  rampage:   {name:'Rampage', icon:'pr-rampage', d:'More melee damage and faster melee attacks.'},
+  ironhide:  {name:'Iron Hide', icon:'pr-ironhide', d:'Extra armor and a shield.'},
+  ironbody:  {name:'Iron Body', icon:'ic-iron-body', d:'Extra armor, and your unarmed hits may Stun.'},
+  laststand: {name:'Last Stand', icon:'pr-laststand', d:'You take half damage.'},
   rally:     {name:'Rally', icon:'pr-rally', d:'+10% damage and spell power.'},
-  temper:    {name:'Temper', icon:'ic-temper', d:'Increases weapon damage, scaled by Divine Power.'},
+  temper:    {name:'Temper', icon:'ic-temper', d:'Your weapon hits harder and your armor is thicker.'},
   arcaneward:{name:'Ward', icon:'ic-arcane-ward', d:'A ward absorbs damage.'},
   haste:     {name:'Haste', icon:'ic-flame-step', d:'Movement, attacks and spellcasting are 30% faster.'},
   moltenring:{name:'Molten Ring', icon:'ic-firebolt', d:'Attacks and single-target spells deal 5 additional fire damage.'},
   cinder:    {name:'Cinder Stride', icon:'ic-flame-step', d:'Faster, leaving fire where you step.'},
   manaflow:  {name:'Mana Flow', icon:'pr-manatide', d:'Mana returns twice as fast.'},
-  afterglow: {name:'Afterglow', icon:'ic-heal', d:'Light lingers: you heal 5% of your maximum HP each turn.'},
-  thorns:    {name:'Thorns', icon:'ic-earth-root', d:'Attackers take damage back.'},
+  afterglow: {name:'Afterglow', icon:'ic-heal', d:'Light lingers: you heal 5% of your max HP each turn.'},
+  thorns:    {name:'Thorns', icon:'ic-earth-root', d:'Enemies that hit you in melee take half the damage back.'},
   /* other timers on the player */
   hidden:    {name:'Hidden', icon:'st-hidden', d:'Enemies can\'t see you; your next hit is a surprise attack.'},
   levitate:  {name:'Floating', icon:'ic-storm-form', d:'Cross chasms and water; floor traps don\'t trigger.'}
@@ -68,7 +68,7 @@ function statusList(e){
   return out.map(function(o){
     var I=STATUS_INFO[o.k] || {name:cap(o.k), icon:'', d:''};
     /* Sylla's web starts as Root, then becomes Slow. Show silk in both phases. */
-    if(o.k==='root'&&e.syllaWeb>0) I={name:'Webbed',icon:'st-web',bad:1,d:'Pinned in silk with 0 Evasion. When released, moves and acts at half speed.'};
+    if(o.k==='root'&&e.syllaWeb>0) I={name:'Webbed',icon:'st-web',bad:1,d:'Pinned in silk: can\'t move, and evasion is 0. Once free, moves and acts at half speed.'};
     if(o.k==='stone'&&e!==player) I={name:'Petrified',icon:'st-stone',bad:1,d:'Can\'t move or act. Evasion is 0.'};
     if(o.k==='livingmountain') I=Object.assign({},I,{name:I.name+' ×'+(e.st.livingmountain.n||0)});
     return {k:o.k, t:o.t, stacks:o.k==='livingmountain'?Math.min(10,e.st.livingmountain.n||0):0, name:I.name, icon:I.icon, d:I.d, bad:!!I.bad};

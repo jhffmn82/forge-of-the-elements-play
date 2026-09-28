@@ -18,14 +18,14 @@ var COMBOS = {
   'air/shadow':  {name:'Windwalker',    d:'When an enemy hits you in melee, you step 1 tile away at once (every 5 turns).'},
   'air/water':   {name:'Riptide',       d:'Your attacks and single-target spell hits push enemies 1 tile; slammed into a wall or creature, they are Chilled.'},
   'air/light':   {name:'Glint',         d:'Your critical hits Blind the target for 1 turn.'},
-  'earth/fire':  {name:'Forge Heat',    d:'Every attack or single-target spell hit stokes the heat: +2 attack damage and +2 armor per stack, up to 5. The heat fades after three turns without a hit.'},
+  'earth/fire':  {name:'Forge Heat',    d:'Every attack or single-target spell hit stokes the heat: +2 attack damage and +2 armor per stack, up to 5. The heat fades after 3 turns without a hit.'},
   'earth/light': {name:'Radiant Roots', d:'Rooted enemies are also Blinded.'},
   'earth/shadow':{name:'Blight',        d:'Poisoned enemies deal 20% less damage.'},
   'earth/water': {name:'Silt Shield',   d:'Max Ice Armor +3 per Earth point, refilling twice as fast out of combat.'},
-  'light/fire':  {name:'Searing Light', d:'Smite procs set the target Burning.'},
+  'light/fire':  {name:'Searing Light', d:'Your Smites set the target Burning.'},
   'light/water': {name:'Holy Water',    d:'Healing beyond your max HP becomes Ice Armor (up to its max).'},
-  'light/air':   {name:'Swift Judgment',d:'Smite procs strike twice.'},
-  'light/earth': {name:'Beacon Root',   d:'A Smite proc against an enemy with a ranged attack Roots it for 1 turn.'},
+  'light/air':   {name:'Swift Judgment',d:'Your Smites strike twice.'},
+  'light/earth': {name:'Beacon Root',   d:'Your Smites Root ranged attackers for 1 turn.'},
   'shadow/fire': {name:'Smolder',       d:'Killing a Burning enemy hides you for 2 turns.'},
   'shadow/water':{name:'Frostshade',    d:'Surprise attacks Freeze the target at once (bosses: 2 Chill stacks).'},
   'shadow/air':  {name:'Shadow Gust',   d:'After a surprise attack, your next step takes no time.'},
@@ -94,7 +94,7 @@ function stokeForgeHeat(){
   if(player.forgeHeat.n !== was){
     derive(player);
     if(player.forgeHeat.n === FORGE_HEAT_MAX && was === FORGE_HEAT_MAX-1)
-      log('<b>The forge heat is white-hot.</b> +'+(2*FORGE_HEAT_MAX)+' damage and armour.','c-good');
+      log('<b>The forge heat is white-hot.</b> +'+(2*FORGE_HEAT_MAX)+' damage and armor.','c-good');
   }
 }
 

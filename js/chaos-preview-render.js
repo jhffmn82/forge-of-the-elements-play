@@ -76,7 +76,7 @@
   function polygon(g,points,fill){g.fillStyle=fill;g.beginPath();points.forEach(function(p,i){if(i)g.lineTo(p[0],p[1]);else g.moveTo(p[0],p[1]);});g.closePath();g.fill();}
   function surface(name,x,y){
     var d=dataAt(x,y);if(!d||rot(d)||violet(d)||!AS.surface||!AS.surface['light-'+name])return null;
-    var img=atl('surface-light-'+name+'.png');if(!img||!img.complete||!img.naturalWidth)return null;
+    var img=atl('surface-light-'+name+'.webp');if(!img||!img.complete||!img.naturalWidth)return null;
     var key=d.biome+':'+name,entry=surfaces.get(key);if(entry&&entry.source===img)return entry.canvas;
     var c=document.createElement('canvas');c.width=img.naturalWidth;c.height=img.naturalHeight;var g=c.getContext('2d');g.drawImage(img,0,0);
     /* A palette map changes the material, rather than darkening yellow stone

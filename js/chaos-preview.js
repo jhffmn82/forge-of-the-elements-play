@@ -53,7 +53,7 @@
       spawn:{x:definition.spawn.x,y:definition.spawn.y},currentRegion:definition.regionId,visits:{}};
     preview.visits[definition.regionId]=1;
     floorMeta={floor:floorNo,biome:4,boss:false,forge:false,shrine:false,portal:'light',portalUsed:false,impassableVoid:true,
-      exitOpen:false,keyHolder:false,notes:[definition.name+': '+(definition.islandCount===5?'five':'three')+' islands linked by paired portals.','The void is impassable. Paired gateways take you between islands.'],puzzles:[],searched:{},planeLights:[],chaosPreview:preview};
+      exitOpen:false,keyHolder:false,notes:[definition.name+': '+(definition.islandCount===5?'five':'three')+' islands linked by paired portals.','The void cannot be crossed.'],puzzles:[],searched:{},planeLights:[],chaosPreview:preview};
     return preview;
   }
   function finish(preview){

@@ -26,6 +26,10 @@
                      band:[11,15], w:16, spores:true, sporeproof:true, el:'earth', living:true, spellcaster:true, art:0.95, sfx:'shaman'};
   M.shroomling    = {name:'Shroomling', sprite:'m-myconid', col:'#9FC0B0', ch:'f', hp:18, dmg:[4,6], acc:58, eva:12, armor:0, speed:100, range:1, xp:6,
                      band:[0,0], w:0, sporeproof:true, living:true, art:0.5, sfx:'slime'};
+  /* 2026-09-28 (Justin): the Deep Maw's brood. A Myconid in every way but its name and its colours (the Maw's own
+     earth-brown and bruised pink); only the Maw calls it up, see mawCallTender */
+  M.wormtender    = Object.assign({}, M.myconid, {name:'Worm Tender', sprite:'m-worm-tender', col:'#A8705A', band:[0,0], w:0,
+                     hint:'The Deep Maw calls one up beside a burrow mound whenever it erupts. Its spore clouds poison you, and slow you while you stand in them.'});
   M.crystalcrawler= {name:'Crystal Crawler', sprite:'m-crystal-crawler', col:'#8A6AD0', ch:'c', hp:50, dmg:[6,9], acc:68, eva:20, armor:3, speed:130, range:1, xp:38,
                      band:[13,15], w:9, shatters:true, el:'earth', art:0.95, artLeft:true, sfx:'spider'};   /* the Caverns' one fast creature */
   /* Biome-three versions of the Dungeon vermin; the originals stay on floors 1-5. */
@@ -35,7 +39,8 @@
   delete M.caverat.biome; delete M.cavebat.biome; delete M.caveslime.biome;
   /* The Deep Maw: tuned by hand for floor 15, so no floor curve (fixed, like the plane elites) */
   M.deepmaw       = {name:'The Deep Maw', sprite:'m-deep-maw', col:'#B07A4A', ch:'W', hp:720, dmg:[24,34], acc:70, eva:0, armor:4, speed:100, range:1, xp:600,
-                     band:[15,15], w:0, boss:true, elite:true, big:2, fixed:true, heavy:true, living:true, art:2.0, bigScale:1.5, artLeft:true, sfx:'maw'};
+                     band:[15,15], w:0, boss:true, elite:true, big:2, fixed:true, heavy:true, living:true, art:2.0, bigScale:1.5, artLeft:true, sfx:'maw',
+                     hint:'Each time it erupts it calls up a Worm Tender, a spore-lobbing myconid of its brood, beside one of its burrow mounds. Only one is alive at a time.'};
   M.mawlimb       = {name:'The Deep Maw', sprite:'m-deep-maw', col:'#B07A4A', ch:'W', hp:9999, dmg:[0,0], acc:0, eva:0, armor:4, speed:100, range:0, xp:0,
                      band:[0,0], w:0, object:true, fixed:true, art:0.1};
   DROPS.stormbeetle   = {chance:0.20, table:{essence:10, gear:3, sigil:1}};
@@ -43,6 +48,7 @@
   DROPS.shockeel      = {chance:0.30, table:{essence:10, food:3, sigil:1}};
   DROPS.myconid       = {chance:0.30, table:{essence:8, food:3, sigil:3}};
   DROPS.shroomling    = {chance:0, table:{essence:1}};
+  DROPS.wormtender    = {chance:0, table:{essence:1}};
   DROPS.crystalcrawler= {chance:0.25, table:{essence:14, gear:3}};
   DROPS.caverat       = DROPS.rat;
   DROPS.cavebat       = DROPS.bat;
@@ -52,7 +58,7 @@
 })();
 
 /* Recovered tier-two art is copied byte-for-byte; rare spawn frequency is unchanged. */
-var CAVE_ELEMENT_TIERS = [{"old":"emberling","kind":"cinderling","name":"Cinderling","sprite":"m-cinderling","file":"mob-m-cinderling.png","cell":1312,"box":[81,21,1213,1178]},{"old":"tideling","kind":"rippleling","name":"Rippleling","sprite":"m-rippleling","file":"mob-m-rippleling.png","cell":1263,"box":[25,33,1182,1214]},{"old":"galeling","kind":"gustling","name":"Gustling","sprite":"m-gustling","file":"mob-m-gustling.png","cell":1305,"box":[0,8,1291,1197]},{"old":"stoneling","kind":"mossling","name":"Mossling","sprite":"m-mossling","file":"mob-m-mossling.png","cell":1254,"box":[0,47,1220,1207]},{"old":"wisp","kind":"duskling","name":"Duskling","sprite":"m-duskling","file":"mob-m-duskling.png","cell":1269,"box":[0,15,1218,1230]},{"old":"lumenling","kind":"gleamling","name":"Gleamling","sprite":"m-gleamling","file":"mob-m-gleamling.png","cell":1324,"box":[0,33,1176,1291]}];
+var CAVE_ELEMENT_TIERS = [{"old":"emberling","kind":"cinderling","name":"Cinderling","sprite":"m-cinderling","file":"mob-m-cinderling.webp","cell":1312,"box":[81,21,1213,1178]},{"old":"tideling","kind":"rippleling","name":"Rippleling","sprite":"m-rippleling","file":"mob-m-rippleling.webp","cell":1263,"box":[25,33,1182,1214]},{"old":"galeling","kind":"gustling","name":"Gustling","sprite":"m-gustling","file":"mob-m-gustling.webp","cell":1305,"box":[0,8,1291,1197]},{"old":"stoneling","kind":"mossling","name":"Mossling","sprite":"m-mossling","file":"mob-m-mossling.webp","cell":1254,"box":[0,47,1220,1207]},{"old":"wisp","kind":"duskling","name":"Duskling","sprite":"m-duskling","file":"mob-m-duskling.webp","cell":1269,"box":[0,15,1218,1230]},{"old":"lumenling","kind":"gleamling","name":"Gleamling","sprite":"m-gleamling","file":"mob-m-gleamling.webp","cell":1324,"box":[0,33,1176,1291]}];
 CAVE_ELEMENT_TIERS.forEach(function(r){
   var old=MONSTERS[r.old];
   MONSTERS[r.kind]=Object.assign({},old,{name:r.name,sprite:r.sprite,hp:r.old==='stoneling'?70:48,dmg:[7,10],acc:old.acc+5,armor:(old.armor||0)+2,xp:55,art:.95,elementTier:2,band:[0,0],w:0});
@@ -232,7 +238,8 @@ function myconidAct(e){
     if(e.hp<=0)return true;e.sporeCd=4; setClip(e,'attack'); sfx('trap-gas');
     boltFx(e.x,e.y,player.x,player.y,'poison');
     addCloud(player.x, player.y, 1, 5, sDMG(2+Math.floor(floorNo/4)), 'spores');
-    log('The <b>Myconid</b> puffs a cloud of spores over you. Get out of it!','c-you');
+    floorMeta.clouds[floorMeta.clouds.length-1].owner=e.id;   /* so the Deep Maw's death can settle its Worm Tenders' clouds */
+    log('The <b>'+e.base.name+'</b> puffs a cloud of spores over you. Get out of it!','c-you');
      return true;
   }
   if(e.sproutCd<=0 && d>1){
@@ -241,9 +248,9 @@ function myconidAct(e){
     var c=nearFree(player.x,player.y,1);
     if(mine<SHROOM_CAP_EACH && all<SHROOM_CAP_FLOOR && c){
       if(e.hp<=0)return true;e.sproutCd=6;
-      var s=spawn('shroomling', c.x, c.y); s.state='hunt'; s.noXp=true; s.owner=e.id; s.t=e.t;
+      var s=spawn('shroomling', c.x, c.y); s.state='hunt'; s.noLoot=true; s.owner=e.id; s.t=e.t;
       setClip(e,'attack'); sparkleFx(c.x,c.y,'poison',16);
-      if(caveVis(e.x,e.y)) log('The <b>Myconid</b> shakes its cap and a <b>Shroomling</b> pops up out of the moss.','c-info');
+      if(caveVis(e.x,e.y)) log('The <b>'+e.base.name+'</b> shakes its cap and a <b>Shroomling</b> pops up out of the moss.','c-info');
        return true;
     }
   }
@@ -385,8 +392,9 @@ function prepareMawActor(job){
      warn    - two turns later it erupts through the marked tiles and bites everything on them
      up      - it stays out for 3 turns (2 below half health): the window to hit it. It bites anything
                touching it. Then it dives, and the loop starts again.
-   Below half health each eruption on you also marks the ring around the nearest mound (flying rubble). */
-var MAW = {bite:[48,64], biteCap:0.40, rubble:[20,28], warnTurns:2, upTurns:3, upTurnsHurt:2};
+   Below half health each eruption on you also marks the ring around the nearest mound (flying rubble).
+   Each eruption also calls up a Worm Tender beside a burrow mound while fewer than MAW.tenderMax are alive. */
+var MAW = {bite:[48,64], biteCap:0.40, rubble:[20,28], warnTurns:2, upTurns:3, upTurnsHurt:2, tenderMax:1};
 function spawnDeepMaw(arena){
   if(!arena || !floorMeta) return null;
   var mounds=(arena.mounds||[]).filter(function(m){ return m && inb(m.x,m.y); });
@@ -475,6 +483,25 @@ function mawErupt(M){
   ringFx(s.x+1, s.y+1, '#C08A50', 3);
   M.phase='up'; M.at=turn+(hurt ? MAW.upTurnsHurt : MAW.upTurns); M.n++;
   log('<b>The Deep Maw</b> bursts out of the ground! Hit it before it dives again.','c-you'); sfx('maw-intro');
+  mawCallTender(M);
+}
+/* 2026-09-28 (Justin): a Worm Tender climbs out beside a burrow mound (the mound itself is solid) from a random
+   mound with a free tile around it. XP and kill effects but no loot (noLoot, like the other summoned adds; Justin 2026-09-28); M.tenders keeps their ids
+   so the Maw's death can take them and their Shroomlings with it (death-adapter.js). */
+function mawCallTender(M){
+  /* only its own brood counts: a Shade of Worm Tender raised by a corrupt kill is the player's, with a new id */
+  var brood=M.tenders||[];
+  if(ents.filter(function(o){ return brood.indexOf(o.id)>=0 && o.hp>0 && !o.ally; }).length>=MAW.tenderMax) return;
+  var free=function(i){ return !occupied(i%MW, (i/MW)|0); }, o=Math.floor(rng()*M.mounds.length);
+  for(var k=0;k<M.mounds.length;k++){
+    var spots=mawRing(M.mounds[(o+k)%M.mounds.length]).filter(free);
+    if(!spots.length) continue;
+    var i=spots[Math.floor(rng()*spots.length)], t=spawnRaw('wormtender', i%MW, (i/MW)|0);
+    t.state='hunt'; t.noLoot=true; (M.tenders||(M.tenders=[])).push(t.id);
+    burst(t.x, t.y, 'earth', 20, 0.06);
+    log('A <b>Worm Tender</b> claws its way up beside a burrow mound!','c-you');
+    return;
+  }
 }
 function mawDive(M){
   var e=M.ent;

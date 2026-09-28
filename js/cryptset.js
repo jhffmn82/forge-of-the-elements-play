@@ -8,9 +8,10 @@
    ===================================================================== */
 
 function packedSetArt(name){
+  var fresh=FoteEnvironmentProps.art('set',name); if(fresh) return fresh;
   var g=AS.map && AS.map.set;
   if(!g || !g.items[name]){ var po=objArt('props', name); return po ? {img:po.img, sx:po.sx, sy:po.sy, sw:po.sw, sh:po.sh} : null; }   /* props can be set pieces too */
-  var img=atl('map-set.png'); if(!img) return null;
+  var img=atl('map-set.webp'); if(!img) return null;
   var b=g.items[name];
   return {img:img, sx:b[0]+b[2], sy:b[1]+b[3], sw:Math.max(1,b[4]), sh:Math.max(1,b[5]), fullW:b[6], fullH:b[7], ox:b[2], oy:b[3]};
 }
@@ -76,7 +77,7 @@ function oozeRaster(x, y){
     D[p]=col[0]; D[p+1]=col[1]; D[p+2]=col[2]; D[p+3]=a; any=true;
   }
   if(!any) return null;
-  g.putImageData(im,0,0); c.environmentTerrain={pixels:D}; return c;
+  g.putImageData(im,0,0); c.environmentTerrain={pixels:D, detail:'fluid'}; return c;
 }
 function drawOoze(now){
   if(!floorMeta || !floorMeta.ooze) return;
@@ -143,19 +144,6 @@ function grimeRaster(x, y){
   if(!any) return null;
   g.putImageData(im,0,0); c.environmentTerrain={pixels:D,nativeDetail:true}; return c;
 }
-/* how much of a joint lies under this spot of floor (0..1), read from the floor texture itself */
-var GRIME_FLOOR = {img:null, data:null, W:0};
-function grimeJoint(wx, wy){
-  var img=typeof surfImg==='function' ? surfImg('floor') : null; if(!img || !img.naturalWidth) return 0;
-  if(GRIME_FLOOR.img!==img){ try{ var c=document.createElement('canvas'); c.width=img.naturalWidth; c.height=img.naturalHeight; var g=c.getContext('2d'); g.drawImage(img,0,0); GRIME_FLOOR={img:img, data:g.getImageData(0,0,c.width,c.height).data, W:c.width, H:c.height}; }catch(e){ GRIME_FLOOR={img:img, data:null}; } }
-  var F=GRIME_FLOOR; if(!F.data) return 0;
-  var per=Math.round(F.W/64), cx=Math.floor(wx), cy=Math.floor(wy);
-  var tx=(((cx+surfOff(0))%per+per)%per)*64 + Math.floor((wx-cx)*64), ty=(((cy+surfOff(1))%per+per)%per)*64 + Math.floor((wy-cy)*64);
-  var best=255;
-  for(var o=-3;o<=3;o+=3){ var sx=(tx+o+F.W)%F.W, sy=(ty+F.H)%F.H, p=(sy*F.W+sx)*4, l=(F.data[p]+F.data[p+1]+F.data[p+2])/3; if(l<best) best=l;
-                            sx=(tx+F.W)%F.W; sy=(ty+o+F.H)%F.H; p=(sy*F.W+sx)*4; l=(F.data[p]+F.data[p+1]+F.data[p+2])/3; if(l<best) best=l; }
-  return Math.max(0, Math.min(1, (70-best)/30));
-}
 function ptValG(wx, wy, s){ var x0=Math.floor(wx), y0=Math.floor(wy), fx=wx-x0, fy=wy-y0; fx=fx*fx*(3-2*fx); fy=fy*fy*(3-2*fy);
   var a=hash2(x0,y0,s), b=hash2(x0+1,y0,s), c=hash2(x0,y0+1,s), d=hash2(x0+1,y0+1,s); return a+(b-a)*fx+(c-a)*fy+(a-b-c+d)*fx*fy; }
 function drawGrime(){
@@ -163,7 +151,7 @@ function drawGrime(){
   for(var y=camY; y<=camY+viewH; y++) for(var x=camX; x<=camX+viewW; x++){
     if(!inb(x,y)) continue; var i=idxOf(x,y); if(!(revealAll||seen[i]) || isWallLike(map[i])) continue;
     var sig='gr2';
-    blitRaster(cachedRaster(sig+'@', x, y, grimeRaster), (x-camX)*TS, (y-camY)*TS, (revealAll||vis[i])?1:0.5);
+    blitRaster(cachedRaster(sig+'@', x, y, grimeRaster), (x-camX)*TS, (y-camY)*TS, (revealAll||vis[i])?1:memA(0.4));
   }
   ctx.globalAlpha=1;
 }
@@ -182,8 +170,6 @@ function drawSoulSmoke(p, now){
 
 /* ---------------------------------------------------------------- hooking the renderer */
 
-function drawCryptFloorStains(now){ drawGrime(); drawOoze(now);
-}
 
 function drawSetProp(p, px, py, alpha){
   function finish(drawn){if(drawn&&p.wisps)drawSoulWisps(p,performance.now());return drawn;}
@@ -340,7 +326,7 @@ PROPS['grave-post'] = PROPS['grave-post'] || {b:1};
 var CRUMBLED = [['tomb-crumbled-v',1,2], ['tomb-crumbled-h',2,1], ['tomb-open-h',2,1]];
 function scatterCrumbledTomb(r){
   var kind=pick(CRUMBLED), w=kind[1], h=kind[2];
-  if(!setArt(kind[0]) || r.w<w+2 || r.h<h+2) return false;
+  if(r.w<w+2 || r.h<h+2) return false;
   for(var tries=0; tries<12; tries++){
     var x=r.x+1+ri(0, r.w-w-2), y=r.y+1+ri(0, r.h-h-2), ok=true;
     for(var yy=y; yy<y+h && ok; yy++) for(var xx=x; xx<x+w && ok; xx++) if(!freeCell(xx,yy) || nearDoor(xx,yy) || (xx===r.cx && yy===r.cy)) ok=false;
@@ -498,7 +484,7 @@ function cryptWallFaces(){
   return out;
 }
 function cryptGrowWallVeg(){
-  if(!cryptShrooms() || typeof vegArt!=='function' || !vegArt('crypt-shelf-fungus-1')) return;
+  if(!cryptShrooms()) return;
   var spots=shuffled(cryptWallFaces()), used={}, put=0, want=ri(2,4);
   for(var i=0;i<spots.length && put<want;i++){
     var s=spots[i];

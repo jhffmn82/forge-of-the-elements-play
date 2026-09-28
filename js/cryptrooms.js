@@ -20,8 +20,7 @@ PROPS['urn-shattered'] = {flat:1};
 function cryptUrn(kindRoll){
   /* a family, weighted so plain and ornate pieces punctuate the common ones */
   var fam = ['urn-tall','urn-squat','urn','urn-squat','urn-tall','urn-ornate','urn-shattered'];
-  var have = fam.filter(function(n){ return n==='urn' || (typeof setArt==='function' && setArt(n)); });
-  return have.length ? have[Math.floor(kindRoll*have.length)] : 'urn';
+  return fam[Math.floor(kindRoll*fam.length)];
 }
 function placeUrnChamber(r){
   /* clear what the generic storage room put down (keep chests and anything placed on purpose) */
@@ -63,7 +62,7 @@ function placeUrnChamber(r){
     for(var oi=0; oi<opts.length; oi++){
       var q=opts[oi], ok=true;
       for(var yy=q.y; yy<q.y+q.h && ok; yy++) for(var xx=q.x; xx<q.x+q.w; xx++) if(!freeCell(xx,yy) || nearDoor(xx,yy)){ ok=false; break; }
-      if(!ok || !setArt(q.n)) continue;
+      if(!ok) continue;
       addSetPiece(q.x, q.y, q.n, q.w, q.h);
       var tp=props[props.length-1], ring=[];
       for(var ry=q.y-1; ry<=q.y+q.h; ry++) for(var rx=q.x-1; rx<=q.x+q.w; rx++){ if(rx>=q.x && rx<q.x+q.w && ry>=q.y && ry<q.y+q.h) continue; if(freeCell(rx,ry) && !nearDoor(rx,ry)) ring.push({x:rx,y:ry}); }
@@ -203,23 +202,6 @@ function drawCryptBorders(){
   });
   ctx.restore();
 }
-/* a worn stone sill on the floor beside each door */
-function drawThresholds(){
-  var u=TS/32;
-  ctx.save();
-  for(var y=Math.max(0,camY-1); y<=Math.min(MH-1,camY+viewH+1); y++) for(var x=Math.max(0,camX-1); x<=Math.min(MW-1,camX+viewW+1); x++){
-    var t=at(x,y); if(!(t===DOOR || t===OPEN || t===LOCKED)) continue;
-    [[0,1],[0,-1],[1,0],[-1,0]].forEach(function(o){
-      var nx=x+o[0], ny=y+o[1]; if(!inb(nx,ny) || at(nx,ny)!==FLOOR || !(revealAll||seen[idxOf(nx,ny)])) return;
-      if(isWallLike(at(x-o[1], y-o[0])) === false && isWallLike(at(x+o[1], y+o[0])) === false) return;   /* only doors set in a wall */
-      var a=(revealAll||vis[idxOf(nx,ny)])?1:0.45, px=(nx-camX)*TS, py=(ny-camY)*TS;
-      ctx.globalAlpha=a;
-      if(o[1]!==0){ var sy=o[1]>0 ? py : py+TS-7*u; crRect(px+u, sy, TS-2*u, 7*u, '#4E4960'); crRect(px+u, sy+(o[1]>0?0:6*u), TS-2*u, u, '#6E6884'); crRect(px+TS*0.45, sy+u, u, 5*u, '#3A3548'); }
-      else { var sx=o[0]>0 ? px : px+TS-7*u; crRect(sx, py+u, 7*u, TS-2*u, '#4E4960'); crRect(sx+(o[0]>0?0:6*u), py+u, u, TS-2*u, '#6E6884'); crRect(sx+u, py+TS*0.5, 5*u, u, '#3A3548'); }
-    });
-  }
-  ctx.restore();
-}
 function cryptRoomsOn(){ return typeof inCrypt==='function' && inCrypt() && !(floorMeta && floorMeta.plane); }
 
 
@@ -278,13 +260,9 @@ function gradeCryptSet(o, name){
 
 /* Fixed cluster sprites: one draw owns the whole group, so no member can
  * disappear behind another independently cached or depth-sorted sprite.
- * The atlas is authored by tools/pack-prop-clusters.py from the existing art. */
+ * The cluster atlas and sceneryClusterArt are environment-vegetation.js's; crates, pots and barrels draw
+ * one painted prop each. */
 var SCENERY_CLUSTER_FAMILIES=['crate','barrel','pot','urn','mushroom-teal','mushroom-violet','mushroom-amber','mushroom-crypt'];
-function sceneryClusterArt(family,variant){
-  var row=SCENERY_CLUSTER_FAMILIES.indexOf(family),img=atl('prop-clusters.png');
-  if(row<0||!img)return null;
-  return {img:img,sx:((Math.floor(variant)||0)%5+5)%5*128,sy:row*128,sw:128,sh:128};
-}
 function drawSceneryCluster(family,variant,px,py,alpha,flip,shear){
   // Crates, pots and barrels use one readable object at each existing placement.
   // Saved group data still owns collision, breaking, loot and seeded layout.

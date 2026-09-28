@@ -12,8 +12,8 @@ var GROUND_ART = {1:'grass-tall',2:'grass-short',3:'ash',4:'puddle',5:'blood',6:
 var ground, fireT, props=[], propGrid, chestKind={}, floorMeta={}, levers=[], plates=null, altars={};
 var RUN = null;   /* run-wide state: forge floor, shrine floor and god, mote plan, heroic resolve, victory */
 
-function inb(x,y){ return x>=0 && y>=0 && x<MW && y<MH; }
-function idxOf(x,y){ return y*MW+x; }
+function inb(x,y){ if(FRAME_MAP) return x>=0 && y>=0 && x<FRAME_MW && y<FRAME_MH; return x>=0 && y>=0 && x<MW && y<MH; }   /* FRAME_*: game.js at() */
+function idxOf(x,y){ return y*(FRAME_MAP ? FRAME_MW : MW)+x; }
 function gAt(x,y){ return inb(x,y) ? ground[idxOf(x,y)] : 0; }
 function setG(x,y,v){ if(inb(x,y)) ground[idxOf(x,y)]=v; }
 function propAt(x,y){ if(!inb(x,y)) return null; var i=propGrid[idxOf(x,y)]; return i>=0 ? props[i] : null; }
@@ -583,7 +583,7 @@ function buildDefaultSpecial(kind, r){
     for(var yy=r.y-1;yy<=r.y+r.h;yy++) for(var xx=r.x-1;xx<=r.x+r.w;xx++){
       if(isDoorish(at(xx,yy))){ var nb=[[1,0],[-1,0],[0,1],[0,-1]]; for(var k2=0;k2<4;k2++){ var ox=xx+nb[k2][0], oy=yy+nb[k2][1]; if(at(ox,oy)===FLOOR && !roomAt(ox,oy)) setG(ox,oy,G_BONES); } }
     }
-    floorMeta.notes.push('Bones and claw marks litter one doorway. Something big sleeps behind it.');
+    floorMeta.notes.push('Bones and claw marks litter one doorway. A crowd of monsters sleeps behind it.');
   } else if(kind==='sacrifice'){
     addProp(r.cx,r.cy,'altar-spikes',{keep:true});
     altars[idxOf(r.cx,r.cy)]={passes:0};
@@ -616,7 +616,7 @@ function buildDefaultSpecial(kind, r){
     r.dark=true;
     var dc=inner.pop(); if(dc){ setT(dc.x,dc.y,CHEST); chestKind[idxOf(dc.x,dc.y)]='chest-crystal'; }
     put({kind:'essence',n:ri(15,25)});
-    floorMeta.notes.push('One room swallows light. Only a lantern, fire or Light affinity cuts through it.');
+    floorMeta.notes.push('One room swallows light. Only Light or Fire affinity cuts through it.');
   }
 }
 function nearFreeRoomCell(r, p){

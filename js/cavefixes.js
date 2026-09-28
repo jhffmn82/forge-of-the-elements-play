@@ -17,7 +17,7 @@
 
 
 /* ---------------------------------------------------------------- 3. weak clips */
-var CAVE_TOPPLE = {'m-storm-beetle':1, 'm-crystal-crawler':1, 'm-shock-eel':1, 'm-myconid':1};
+var CAVE_TOPPLE = {'m-storm-beetle':1, 'm-crystal-crawler':1, 'm-shock-eel':1, 'm-myconid':1, 'm-worm-tender':1};
 var CAVE_ATTACK_TRIM = {'m-storm-beetle':6, 'm-spark-jelly':6, 'm-crystal-crawler':6};
 (function trimClips(){
   if(!(typeof AS!=='undefined' && AS && AS.mobs)){ setTimeout(trimClips, 200); return; }

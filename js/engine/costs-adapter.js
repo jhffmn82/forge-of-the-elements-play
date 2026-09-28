@@ -28,7 +28,7 @@ function playerSpeedPercent(kind){
 function playerShield(){return FoteCosts.shields(player).reduce(function(sum,pool){return sum+pool.amount;},0);}
 function shieldParts(){
   return FoteCosts.shields(player).filter(function(pool){return pool.amount>0;}).map(function(pool){
-    if(pool.key==='guard')return 'Guard '+pool.amount+' of '+(player.guardMax||pool.amount)+', the Fighter footing that rebuilds out of combat';
+    if(pool.key==='guard')return 'Guard '+pool.amount+' of '+(player.guardMax||pool.amount)+', refills out of combat';
     if(pool.key==='iceArmor')return 'Ice Armor '+pool.amount+' from Water affinity';
     return pool.name+' '+pool.amount;
   });

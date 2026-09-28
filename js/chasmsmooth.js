@@ -13,12 +13,17 @@ function chsTint(){ return (typeof PT_MAT!=='undefined' && PT_MAT.cavern && PT_M
 function chsRaster(x, y){
   var R=CHS_R, c=document.createElement('canvas'); c.width=R; c.height=R;
   var g=c.getContext('2d'), im=g.createImageData(R,R), D=im.data, T=chsTint(), salt=(typeof ptSalt==='function' ? ptSalt() : 7)+600;
-  var own=chsVoidCell(x,y), any=false;
+  var own=chsVoidCell(x,y), any=false, near=new Uint8Array(25);
+  /* the 5x5 cells every pixel weighs, read once (2026-09-28: the map fields are getters) */
+  for(var ny0=-2;ny0<=2;ny0++) for(var nx0=-2;nx0<=2;nx0++) near[(ny0+2)*5+nx0+2]=chsVoidCell(x+nx0,y+ny0)?1:0;
   for(var v=0; v<R; v++) for(var u=0; u<R; u++){
-    var wx=x+(u+0.5)/R, wy=y+(v+0.5)/R, sum=0, wsum=0;
-    for(var oy=-2;oy<=2;oy++) for(var ox=-2;ox<=2;ox++){
+    var wx=x+(u+0.5)/R, wy=y+(v+0.5)/R, sum=0, wsum=0, sub=R===32&&typeof ptFieldTables==='function'?v*32+u:-1;
+    if(sub>=0){   /* the same weights, from planeterrain.js's table of them */
+      var FT=ptFieldTables(), FW=FT.solid, k=0; wsum=FT.solidSum[sub];
+      for(k=0;k<25;k++){ var w3=FW[sub*25+k]; if(w3 && near[k]) sum+=w3; }
+    } else for(var oy=-2;oy<=2;oy++) for(var ox=-2;ox<=2;ox++){
       var nx=x+ox, ny=y+oy, dx=wx-(nx+0.5), dy=wy-(ny+0.5), d=Math.sqrt(dx*dx+dy*dy), w=Math.max(0, 1-d/1.35);
-      if(!w) continue; w*=w; wsum+=w; if(chsVoidCell(nx,ny)) sum+=w;
+      if(!w) continue; w*=w; wsum+=w; if(near[(oy+2)*5+ox+2]) sum+=w;
     }
     var f=wsum ? sum/wsum : 0;
     /* the edge sits between 0.3 and 0.5 of the field: never inside a chasm cell, up to a third of a tile out */
@@ -38,7 +43,7 @@ function chsRaster(x, y){
     any=true; D[p]=col[0]; D[p+1]=col[1]; D[p+2]=col[2]; D[p+3]=a;
   }
   if(!any) return null;
-  g.putImageData(im,0,0);c.environmentTerrain={pixels:D};
+  g.putImageData(im,0,0);c.environmentTerrain={pixels:D,detail:'chasm'};
   return c;
 }
 function chsNear(x, y){ for(var oy=-1;oy<=1;oy++) for(var ox=-1;ox<=1;ox++) if(chsVoidCell(x+ox,y+oy)) return true; return false; }

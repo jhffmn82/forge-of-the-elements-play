@@ -15,8 +15,9 @@
   }
   function itemKey(item){return item&&item.key||null;}
   function tierOf(item){return item&&typeof item.tier==='number'?Math.max(0,Math.min(3,item.tier)):1;}
+  /* Dwarf (DESIGN races table): worn weapons and armor count as one upgrade level higher, on top of their own upgrades */
   function upgradeValue(item,actor){
-    return (item&&item.plus||0)+(item&&item.tier==='Trusty'?1:0)+(actor.race==='dwarf'&&item&&item.dmg&&!item.unarmed?1:0);
+    return (item&&item.plus||0)+(item&&item.tier==='Trusty'?1:0)+(actor.race==='dwarf'&&item&&(item.dmg&&!item.unarmed||item.weight)?1:0);
   }
   function ringBonuses(actor,content,multiplier){
     var result={};
@@ -63,7 +64,8 @@
     if(actor.cls==='mage')mana=Math.ceil(mana*1.3);
     if(p.archmage)mana=Math.ceil(mana*1.2);
     if(o&&o.manaPct)mana=Math.ceil(mana*(1+o.manaPct*c.gearBonus));
-    var evaPenalty=content.enchantments.amplifyBonus(a.eva,c.gearBonus);if(evaPenalty<0&&actor.race==='dwarf')evaPenalty=0;
+    var armorEva=a.eva;if(actor.race==='dwarf'&&itemKey(a)==='leather')armorEva=(armorEva||0)+2;   /* leather: +2 evasion per upgrade level */
+    var evaPenalty=content.enchantments.amplifyBonus(armorEva,c.gearBonus);if(evaPenalty<0&&actor.race==='dwarf')evaPenalty=0;
     var orb=o&&(o.icon||'').replace(/^item-/,'')==='orb'&&!o.cursed;
     var orbCrit=orb?((content.orbCrit.base[tierOf(o)]||0)+content.orbCrit.per*(o.plus||0))*c.gearBonus:0;
     var plus=upgradeValue(w,actor)+(actor.god==='anvil'?c.rank:0)+(c.buffs.temper>0?Math.round(2*c.divine):0)+(w.unarmed&&actor.god==='grom'?c.rank:0);
@@ -126,7 +128,6 @@
     if(out.luck){out.crit+=out.luck;if(out.parry)out.parry+=out.luck;if(out.block)out.block=Math.min(.75,out.block+out.luck);}
     if(c.buffs.might>0)out.dmg=out.dmg.map(function(n){return Math.round(n*1.2);});
     if(c.buffs.temper>0)out.armor+=Math.round(4*c.divine);
-    if(actor.race==='dwarf')out.armor++;
     out.affLevel=out.element?c.aff[out.element]:0;
     out.range=out.weapon.range?out.weapon.range+out.rangeBonus:1;
   }

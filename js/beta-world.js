@@ -86,8 +86,8 @@ function betaEnemyBalance(e){
 
 
 function restorePuzzleState(){ents.forEach(betaEnemyBalance);(floorMeta.puzzles||[]).forEach(function(room){if(['sentinels','sentries'].includes(room.puzzle.kind))addPuzzleSwitch(room);if(room.puzzle.kind==='barricade'&&!room.puzzle.solved)setT(room.puzzle.door.x,room.puzzle.door.y,SEALED);});}
-PUZZLE_KINDS.barricade.note='A timber barricade seals the doorway.';
-PUZZLE_KINDS.spikes.note='Spikes cover the floor. Stone skin can withstand them; levitation can carry you above.';
+PUZZLE_KINDS.barricade.note='A timber barricade seals the doorway. Fire would clear it.';
+PUZZLE_KINDS.spikes.note='Spikes cover the floor. Stone skin would shrug them off; floating would carry you over.';
 ['sentinels','sentries','darktraps','library'].forEach(function(k){PUZZLE_KINDS[k].note='';});
 
 /* Named floor-generation stages; ordered by generation-adapter.js. */

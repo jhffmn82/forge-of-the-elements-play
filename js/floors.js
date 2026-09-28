@@ -62,4 +62,4 @@ function addUpstairsLights(L, now, prp){
 }
 
 /* Named travel and entry stages; ordered by transition-adapter.js. */
-function entryUpstairsHint(){ if(at(player.x,player.y)===UPSTAIRS&&!(typeof FoteChaosCampaign!=='undefined'&&FoteChaosCampaign.entryHint())) log('Stairs up to floor '+(floorNo-1)+'. '+(document.body.classList.contains('touch') ? 'Tap them to climb.' : 'Press <b>&lt;</b> to climb.'),'c-kill');  }
+function entryUpstairsHint(){ if(at(player.x,player.y)===UPSTAIRS&&!(typeof FoteChaosCampaign!=='undefined'&&FoteChaosCampaign.entryHint())) log('Stairs up to floor '+(floorNo-1)+'. '+(document.body.classList.contains('touch') ? 'Tap them to climb.' : 'Press <b>&lt;</b> or click them to climb.'),'c-kill');  }

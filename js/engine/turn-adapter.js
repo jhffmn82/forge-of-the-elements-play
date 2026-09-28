@@ -117,7 +117,7 @@ var gameTurns=FoteTurns.create({
     turnPhase('plane-hazards',planeTick,true),turnPhase('plane-creatures',planeCreaturesTick,true),turnPhase('shock-clouds',turnShockClouds,true),turnPhase('cave-spores',turnCaveSpores,true),turnPhase('eel-placement',eelPlacement,true),turnPhase('maw',mawTick,true),
     turnPhase('vegetation',vegRegrowTick,true),turnPhase('food-regeneration',turnFoodRecovery,true),turnPhase('lava-at-enemies',turnDeepLavaEnemies,true),turnPhase('cocoon-hatching',deepHatchTick,true),turnPhase('matron-venom',matronVenomTick,true),turnPhase('elemental-plane-weather',fwaTick,true),turnPhase('lich-return',turnLichReturn,true)
   ],
-  finalize:[turnPhase('finalize-action',turnFinalizeAction)]
+  finalize:[turnPhase('finalize-action',turnFinalizeAction),turnPhase('start-slides',turnStartSlides)]
 });
 function endTurn(){
   // Reflection and other action-time damage can kill before scheduling starts.

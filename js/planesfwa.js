@@ -22,7 +22,7 @@
    ART IS A STAND-IN. Packet 04 (art/reference/packets/04-planes-fire-water-air.md) has been requested and has
    not landed: nothing here was generated, every creature borrows an existing sprite and every piece of scenery
    is drawn from the plane's own terrain palette in code. FWA_ART below is the swap list - each creature names
-   the file it is waiting for (m-cinder-imp.png and so on) and the sprite it wears until then, and it picks the
+   the file it is waiting for (m-cinder-imp.webp and so on) and the sprite it wears until then, and it picks the
    real one automatically the moment the pack carries it. The rune stones, the lava, the deep water and the
    updraft vents are code-drawn here and give way to rune-stone-fire / the hazard tiles when those arrive.
 
@@ -116,7 +116,8 @@ function fwaSprite(kind){
                        fwa:'emberlord', elite:true, el:'fire', art:1.5, sfx:'emberlord'});
   /* --- Water ------------------------------------------------------------------------------------ */
   M.tidecrab     = mk({name:'Tide Crab', sprite:fwaSprite('tidecrab'), col:'#5CC8D8', ch:'C', hp:130, dmg:[11,15], acc:70, eva:8, armor:10, xp:105,
-                       fwa:'crab', shellGuard:true, living:true, art:1.0, sfx:'spider'});
+                       fwa:'crab', shellGuard:true, living:true, art:1.0, sfx:'spider',
+                       hint:'Its shell takes the first blow of each turn. After three blows it cracks, and every hit lands.'});
   /* 2026-09-23: the five were re-animated from their masters the same day (PixelLab animate-with-text-v3 at the
      sheet size, drift held to the first frame, idle looped on it, seeds scored against the still). A creature
      whose rows drift again can hold its still with base.stillPose (render.js clipFrame). */
@@ -275,8 +276,10 @@ function fwaDress(el, seed){
     }
     floorMeta.fwaVents=vents;
   }
-  /* the terrain rasters were built before any of this: throw them away so the pool field is read again */
+  /* the terrain rasters were built before any of this: throw them away so the pool field is read again,
+     and let the next draw rebuild every visible cell at once (render-adapter.js), not 14 a frame over flat squares */
   if(typeof PT_CACHE!=='undefined') PT_CACHE.key=null;
+  if(typeof renderPreviousMap!=='undefined') renderPreviousMap=null;
   computeFOV(); resize(); draw();
 }
 
@@ -428,7 +431,7 @@ function elementalPlaneBehavior(e){
     /* it will not stand and trade: a step aside, then it comes back in */
     var side=[[1,1],[1,-1],[-1,1],[-1,-1],[1,0],[-1,0],[0,1],[0,-1]].filter(function(o){ return walkable(e.x+o[0],e.y+o[1]) && !occupied(e.x+o[0],e.y+o[1]) && dist({x:e.x+o[0],y:e.y+o[1]}, player)<=2; });
     if(side.length){ var o2=side[Math.floor(rng()*side.length)]; e.x+=o2[0]; e.y+=o2[1]; e._lx=undefined;
-      if(vis[idxOf(e.x,e.y)]) log('The <b>Flame Dancer</b> spins out of reach.','c-info');
+      if(vis[idxOf(e.x,e.y)]) log('The <b>Flame Dancer</b> spins aside.','c-info');
        return true; }
   }
   // Water creatures share a brief recovery window: a group cannot chain forced moves.
@@ -485,7 +488,7 @@ function elementalPlaneBehavior(e){
       if(ec.length){
         e.erupt={cells:ec, at:turn+2}; e.eruptCd=6; setClip(e,'attack');
         floorMeta.marks=(floorMeta.marks||[]).concat([{cells:ec, col:'#FF5A10', until:turn+2, kind:'erupt'}]);
-        log('<b>The Emberlord</b> drives a fist into the basalt. The ground under you splits.','c-you');
+        log('<b>The Emberlord</b> drives a fist into the basalt. The ground around you cracks and glows. Step off the marked stones!','c-you');
          return true;
       }
     }
@@ -521,7 +524,7 @@ function elementalPlaneBehavior(e){
       e.cycloneCd=6; setClip(e,'attack');
       var pulled=fwaPush(player, e.x-player.x, e.y-player.y, 3);
       applyStatus(player,'stun',1); burst(player.x, player.y, 'lightning', 24, 0.06); SHAKE=6;
-      log('<b>The Tempest Djinn</b> opens the whirlwind and drags you '+pulled+' tile'+(pulled===1?'':'s')+' in. You cannot keep your feet.','c-you');
+      log('<b>The Tempest Djinn</b> opens the whirlwind'+(pulled?' and drags you '+pulled+' tile'+(pulled===1?'':'s')+' in':'')+'. You cannot keep your feet.','c-you');
        return true;
     }
     if(d>=2 && see && e.boltCd<=0 && fwaSees(e)){
@@ -744,7 +747,7 @@ function repairGeneratedDeepPortal(seed){
 /* Named travel and entry stages; ordered by transition-adapter.js. */
 function dressPlaneClusters(el,seed){
   try{
-    var list=FWA_CLUSTERS[el]; if(!list || !list.length || typeof setArt!=='function' || !setArt(list[0])) return;
+    var list=FWA_CLUSTERS[el]; if(!list) return;
     var spots=[];
     for(var y=1;y<MH-1;y++) for(var x=1;x<MW-1;x++){
       if(at(x,y)!==FLOOR || propAt(x,y) || (typeof LAVA!=='undefined' && at(x,y)===LAVA)) continue;

@@ -203,9 +203,11 @@
     if(on && !was) shortenTop();
     applyZoom();
   }
-  window.addEventListener('resize', function(){ setTimeout(sync, 0); });
-  window.addEventListener('orientationchange', function(){ setTimeout(sync, 120); });
-  if(window.visualViewport) visualViewport.addEventListener('resize', function(){ setTimeout(sync, 0); });
+  /* icons are painted at their slot's exact size, so a layout change during a run repaints them (CSS would stretch the old ones) */
+  function relayout(){ sync(); if(typeof abilityBar==='function' && typeof RUN!=='undefined' && RUN && !document.getElementById('loadVeil')) abilityBar(); }
+  window.addEventListener('resize', function(){ setTimeout(relayout, 0); });
+  window.addEventListener('orientationchange', function(){ setTimeout(relayout, 120); });
+  if(window.visualViewport) visualViewport.addEventListener('resize', function(){ setTimeout(relayout, 0); });
 
   if(DEVICE){
     /* First tap applies landscape by default, or the player's saved choice. */
@@ -238,7 +240,10 @@
       /* worn slots in two columns on the left, the bag filling the rest to the right */
       '.tgear .tg-top{display:grid;grid-template-columns:auto minmax(0,1fr);gap:12px;align-items:start}',
       '.tgear .tg-slots{display:grid;grid-template-columns:repeat(2,84px);gap:8px}',
-      '.tgear .tg-mid{display:grid;grid-template-columns:108px minmax(0,1fr);gap:12px;align-items:start}',
+      /* 2026-09-27 (Justin, D1): the character had a 108px column (84px on a narrow phone) for a 275px figure, so the
+         main-hand weapon was cut away and the shield halved. It gets a column wide enough for the whole figure beside
+         the totals, or a row of its own when the screen is too narrow for both. */
+      '.tgear .tg-mid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));gap:12px;align-items:start}',
       '.tgear .gslot{position:relative;width:auto!important;height:auto!important;min-height:84px;display:flex;',
       '  flex-direction:column;align-items:center;justify-content:flex-start;gap:3px;padding:7px 5px 6px;',
       '  border:1px solid var(--edge);border-radius:8px;background:#161210;cursor:pointer;overflow:hidden}',
@@ -261,7 +266,7 @@
       '.tgear .tg-tot .kv{font-size:12px;gap:2px 10px}',
       '.tgear .pouch{gap:7px}',
       '.tgear .mote{font-size:11.5px;padding:3px 10px 3px 7px}',
-      '@media (max-width:420px){ .tgear .tg-slots{grid-template-columns:repeat(2,72px)} .tgear .tg-mid{grid-template-columns:84px minmax(0,1fr)} }'
+      '@media (max-width:420px){ .tgear .tg-slots{grid-template-columns:repeat(2,72px)} }'
     ].join('\n');
     document.head.appendChild(st);
 
@@ -291,14 +296,14 @@
         '<div><p class="tg-sec">Worn</p><div class="tg-slots">'+
           SLOTS.map(function(s){ return tile(s[0], s[1], s[2]); }).join('')+'</div></div>'+
         '<div><p class="tg-sec">Bag &middot; '+player.bag.length+' / '+BAG_MAX+'</p><div class="tg-cells">'+cells.join('')+'</div>'+
-          '<p class="tg-hint">Tap an item to read it; its card has Equip and Drop. Drag an item onto a worn slot to equip it, or onto the hotbar to keep it there. Swipe empty bag space to scroll.</p></div>'+
+          '<p class="tg-hint">Tap an item to read it; its card lets you use, equip or drop it. Drag an item onto a worn slot to equip it, or onto the hotbar to keep it there. Swipe empty bag space to scroll.</p></div>'+
       '</div>';
 
       /* below, scrolled to when wanted: the character and the totals */
       h+='<div class="tg-mid"><div class="tg-portrait" id="dollArt"></div><div class="tg-tot">'+
-         '<div><p class="tg-sec">Offence</p>'+kv([['Damage per hit',hr[0]+'&ndash;'+hr[1]],['Crit',Math.round(player.crit*100)+'%'],['Crit damage','&times;'+criticalMultiplier().toFixed(2)],
+         '<div><p class="tg-sec">Offense</p>'+kv([['Damage per hit',hr[0]+'-'+hr[1]],['Crit',Math.round(player.crit*100)+'%'],['Crit damage','&times;'+criticalMultiplier().toFixed(2)],
             ['Accuracy',player.acc],['Range',player.range],['Attack speed',playerSpeedPercent('attack')],['Movement speed',playerSpeedPercent('move')],['Spell power','&times;'+spellPower({}).toFixed(2)],['Divine power','&times;'+divineStrength().toFixed(2)]])+'</div>'+
-         '<div><p class="tg-sec">Defence</p>'+kv([['HP',Math.round(player.hp)+' / '+player.maxhp],['Shield',playerShield()],
+         '<div><p class="tg-sec">Defense</p>'+kv([['HP',Math.round(player.hp)+' / '+player.maxhp],['Shield',playerShield()],
             ['Armor',player.armor],['Evasion',evaOf(player)],['Block',Math.round(player.block*100)+'%'],['Mana',Math.floor(player.mp)+' / '+player.maxmp]])+'</div>'+
          '</div></div>';
 

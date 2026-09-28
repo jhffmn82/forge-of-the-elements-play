@@ -45,10 +45,18 @@ function mapviewGo(reroll){
   function mount(){
     var rv=$('bReveal'); if(!rv || $('bMapMode')) return !!rv;
     var field=rv.closest('.field');
-    var opts=''; for(var f=1; f<=(typeof LAST_FLOOR!=='undefined'?LAST_FLOOR:10); f++){ var b=Math.floor((f-1)/5); opts+='<option value="'+f+'">Floor '+f+' &middot; '+(BIOME_NAMES[b]||'')+'</option>'; }
-    ['light','shadow','earth','fire','water','air'].forEach(function(el){ opts+='<option value="plane:'+el+'">Plane of '+el.charAt(0).toUpperCase()+el.slice(1)+'</option>'; });
     field.insertAdjacentHTML('afterend', '<div class="field"><label>Map mode</label><button id="bMapMode">Map mode: off</button></div>'+
-      '<div class="field"><label for="mvDepth">Depth</label><select id="mvDepth">'+opts+'</select> <button id="bMvGo">Go</button> <button id="bMvReroll">Reroll</button></div>');
+      '<div class="field"><label for="mvDepth">Depth</label><select id="mvDepth"></select> <button id="bMvGo">Go</button> <button id="bMvReroll">Reroll</button></div>');
+    /* 2026-09-28 (Justin: the list stopped at 15): the floors are listed when the menu opens, not when the panel is first
+       built, because the Underdark and Chaos modules raise LAST_FLOOR (15 -> 25) after this panel can mount. */
+    function fillDepth(){
+      var sel=$('mvDepth'), last=typeof LAST_FLOOR!=='undefined'?LAST_FLOOR:10;
+      if(sel.dataset.last===String(last)) return;
+      var keep=sel.value, opts=''; for(var f=1; f<=last; f++){ var b=Math.floor((f-1)/5); opts+='<option value="'+f+'">Floor '+f+' &middot; '+(BIOME_NAMES[b]||'')+'</option>'; }
+      ['light','shadow','earth','fire','water','air'].forEach(function(el){ opts+='<option value="plane:'+el+'">Plane of '+el.charAt(0).toUpperCase()+el.slice(1)+'</option>'; });
+      sel.innerHTML=opts; sel.dataset.last=String(last); if(keep) sel.value=keep;
+    }
+    fillDepth(); $('mvDepth').addEventListener('pointerdown',fillDepth); $('mvDepth').addEventListener('focus',fillDepth);
     $('bMapMode').onclick=function(){ mapviewSetOn(!MAPVIEW.on); };
     $('bMvGo').onclick=function(){ mapviewGo(false); };
     $('bMvReroll').onclick=function(){ mapviewGo(true); };

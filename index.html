@@ -11,8 +11,9 @@
 <link rel="apple-touch-icon" sizes="167x167" href="art/icons/apple-touch-icon-167.png">
 <link rel="apple-touch-icon" sizes="152x152" href="art/icons/apple-touch-icon-152.png">
 <meta name="theme-color" content="#0F0D0C">
-<meta name="fote-build" content="2026-09-27 15:35:32 UTC">
+<meta name="fote-build" content="2026-09-28 15:10:50 UTC">
 <link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="192x192" href="art/icons/icon-192.png">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Grenze+Gotisch:wght@500;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
 <style>
   :root{
@@ -338,7 +339,7 @@
                   <span>f</span><b>search for hidden doors and traps</b>
                   <span>Click a tile</span><b>step that way</b></div></div>
               <div><p class="sub">Abilities</p>
-                <div class="kv"><span>1 &ndash; 8</span><b>use that slot</b>
+                <div class="kv"><span>1 to 8</span><b>use that slot</b>
                   <span>Hover a monster</span><b>odds and stats</b>
                   <span>g</span><b>pick up an item</b>
                   <span>Click a monster</span><b>shoot it (bow out)</b>
@@ -348,7 +349,7 @@
                 <div class="kv"><span>Dim tiles</span><b>remembered</b>
                   <span>z</span><b>asleep: surprise it</b>
                   <span>Red triangle</span><b>known trap</b>
-                  <span>Blue dot</span><b>essence</b>
+                  <span>Violet dot</span><b>essence</b>
                   <span>Diamond</span><b>mote</b>
                   <span>&#9874;</span><b>Elemental Forge</b></div></div>
             </div>
@@ -366,7 +367,7 @@
       <div id="bars">
         <div class="bar hp"><i id="hpFill"></i><i id="shFill"></i><span><b class="l">HP</b><b id="hpTxt">66/66</b></span></div>
         <div class="bar mp"><i id="mpFill"></i><span><b class="l">MP</b><b id="mpTxt">27/27</b></span></div>
-        <div class="bar xp"><i id="xpFill"></i><span><b class="l" id="lvTxt">LV 4</b><b id="xpTxt">0/80</b></span></div>
+        <div class="bar xp" id="xpBar"><i id="xpFill"></i><span><b class="l" id="lvTxt">LV 4</b></span></div>
       </div>
       <div id="hotbar"></div>
     </div>

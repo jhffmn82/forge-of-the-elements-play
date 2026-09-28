@@ -46,7 +46,6 @@ function performPlayerMove(dx,dy){
   if(t===SECRET){ return bumpSecret(nx,ny); }
   if(t===FORGE){ if(typeof openForge==='function') openForge(); return; }
   if(t===SHRINE){ if(typeof openShrine==='function') openShrine(); return; }
-  if(t===EXIT && !floorMeta.exitOpen){ log('The gate is sealed. It opens when '+bossNameForFloor()+' falls.','c-info'); sfx('door-locked'); return; }
   if(t===CHASM){
     if(player.levitate>0){ player.x=nx; player.y=ny; player.movedThisTurn=true; stepOn(); endTurn(); return; }
     log('A sheer drop into darkness. You would need to float to cross.','c-info'); return;
@@ -92,8 +91,8 @@ function entryItemsAndTerrain(){
   var here=items.filter(function(it){ return it.x===player.x && it.y===player.y; });
   here.forEach(function(it){
     if(it.kind==='essence'){ removeItem(it); gainEssence(it.n); floatText(player.x,player.y,'+'+it.n,'magic'); log('Picked up '+it.n+' essence.','c-good'); sfx('pickup-essence',{vol:0.5}); }
-    else if(it.kind==='mote'){ removeItem(it); player.motes[it.el]=(player.motes[it.el]||0)+1; log('Picked up a <b>'+it.el+' mote</b>. Bring it to the Elemental Forge.','c-kill'); sfx('pickup-mote'); sparkleFx(player.x,player.y,TRAIL_EL(it.el),16); }
-    else if(it.kind==='key'){ removeItem(it); player.keys[it.key]=(player.keys[it.key]||0)+1; log('Picked up an <b>'+it.key+' key</b>. It fits a door on this floor.','c-kill'); sfx('pickup-key'); }
+    else if(it.kind==='mote'){ removeItem(it); player.motes[it.el]=(player.motes[it.el]||0)+1; log('Picked up '+(/^[aeiou]/.test(it.el)?'an':'a')+' <b>'+it.el+' mote</b>. Bring it to the Elemental Forge.','c-kill'); sfx('pickup-mote'); sparkleFx(player.x,player.y,TRAIL_EL(it.el),16); }
+    else if(it.kind==='key'){ removeItem(it); player.keys[it.key]=(player.keys[it.key]||0)+1; log('Picked up the <b>'+it.key+' key</b>. It fits a door on this floor.','c-kill'); sfx('pickup-key'); }
     else log('You see <b>'+itemLabel(it)+'</b> here.'+((it.kind==='heart'||it.kind==='managlobe') ? ' <span class="roll">(it waits until you need it)</span>' : ' <span class="roll">(g to pick up)</span>'),'c-info');
   });
   if(!(player.levitate>0)){
@@ -102,7 +101,7 @@ function entryItemsAndTerrain(){
   }
   if(plates) pressPlateAt(player.x,player.y,player);
   var t=at(player.x,player.y);
-  if(t===STAIRS&&!(typeof FoteChaosCampaign!=='undefined'&&FoteChaosCampaign.entryHint())) log('Stairs down to floor '+(floorNo+1)+'. '+(document.body.classList.contains('touch') ? 'Tap them to descend.' : 'Press <b>&gt;</b> or click <b>Stairs</b> to descend.'),'c-kill');
+  if(t===STAIRS&&!(typeof FoteChaosCampaign!=='undefined'&&FoteChaosCampaign.entryHint())) log('Stairs down to floor '+(floorNo+1)+'. '+(document.body.classList.contains('touch') ? 'Tap them to descend.' : 'Press <b>&gt;</b> or click them to descend.'),'c-kill');
   if(t===EXIT && floorMeta.exitOpen){ if(floorNo<LAST_FLOOR) descend(); else victory(); }
   if(t===CHASM && !(player.levitate>0)) fallIntoChasm();
 }
@@ -117,7 +116,7 @@ function fallIntoChasm(){
 /* ---------------------------------------------------------------- doors, puzzles */
 function bumpLocked(x,y){
   if(player.keys.iron>0){ player.keys.iron--; setT(x,y,OPEN); floorMeta.ironDoors=floorMeta.ironDoors||{}; floorMeta.ironDoors[idxOf(x,y)]=1; log('The iron key turns. The vault opens.','c-kill'); sfx('door-unlock'); computeFOV(); endTurn(); return; }
-  log('Locked. An iron key would open it '+(floorMeta.keyHolder?'&mdash; a key holder prowls this floor.':'.'),'c-info'); sfx('door-locked');
+  log('Locked. An iron key would open it.'+(floorMeta.keyHolder?' One is somewhere on this floor.':''),'c-info'); sfx('door-locked');
 }
 function bumpToll(x,y){
   var cost=Math.max(1, Math.floor(player.hp*0.5));
@@ -146,7 +145,7 @@ function bumpSealed(x,y){
   var room=puzzleAtDoor(x,y);
   if(room&&room.puzzle.kind==='barricade'&&!room.puzzle.solved){
     if(aff('fire')>=3){solvePuzzle(room,'the timber burns away.');endTurn();}
-    else{sfx('door-locked');log('The barricade blocks the doorway.','c-info');}
+    else{sfx('door-locked');log('The barricade blocks the doorway. Fire would clear it.','c-info');}
     return;
   }
 
@@ -157,7 +156,7 @@ function bumpSealed(x,y){
   }
 
   var lock=props.filter(function(p){ return p.name==='elemental-lock' && p.door && p.door.x===x && p.door.y===y; })[0];
-  if(lock){ log('Sealed by elemental magic. The pedestal nearby wants a <b>'+lock.element+' mote</b>.','c-info'); return; }
+  if(lock){ log('Sealed by elemental magic. The pedestal nearby wants one <b>'+lock.element+' mote</b>.','c-info'); return; }
   if(plates && plates.door.x===x && plates.door.y===y){ log('Sealed. Three plates in this room hum faintly; a broken tablet names their order.','c-info'); return; }
   log('Sealed.','c-info');
 }
@@ -176,7 +175,7 @@ function pressPlateAt(x,y,e){
     if(plates.progress>=3){ plates.solved=true; setT(plates.door.x,plates.door.y,OPEN); log('<b>A sealed door grinds open.</b>','c-kill'); sfx('puzzle-solved'); computeFOV(); }
   } else {
     plates.progress=0; plates.cells.forEach(function(c){ c.pressed=false; });
-    if(e===player){ var d=applyDamage(player, roll(3,6)+floorNo, 'phys', null); floatText(player.x,player.y,String(d),'phys'); log('Wrong order! Darts hiss from the walls &mdash; '+d+' damage. The plates reset.','c-you'); sfx('trap-dart'); if(player.hp<=0) kill(player,null); }
+    if(e===player){ var d=applyDamage(player, roll(3,6)+floorNo, 'phys', null); floatText(player.x,player.y,String(d),'phys'); log('Wrong order! Darts hiss from the walls: '+d+' damage. The plates reset.','c-you'); sfx('trap-dart'); if(player.hp<=0) kill(player,null); }
   }
 }
 
@@ -202,13 +201,13 @@ function bumpProp(p){
   if(p.puzzleSwitch)return activatePuzzleSwitch(p);
   if(p.name==='elemental-lock' && !p.opened){
     if(player.motes[p.element]>0){
-      confirmBox('Elemental lock', 'Offer a <b>'+p.element+' mote</b> to the lock?', 'Offer the mote', function(){
+      confirmBox('Elemental lock', 'Offer the lock one <b>'+p.element+' mote</b>?', 'Offer the mote', function(){
         player.motes[p.element]--; if(player.motes[p.element]<=0) delete player.motes[p.element];
         p.opened=true; setT(p.door.x,p.door.y,OPEN); log('The lock drinks the mote. The seal dissolves.','c-kill'); sfx('puzzle-solved'); sparkleFx(p.x,p.y,TRAIL_EL(p.element),30); computeFOV(); endTurn();
       }); return true;
     }
     var fee=50+floorNo*5;
-    confirmBox('Elemental lock', 'The lock wants a <b>'+p.element+' mote</b>. It will also accept <b>'+fee+' essence</b> (you have '+player.essence+').', player.essence>=fee?'Pay '+fee+' essence':null, function(){
+    confirmBox('Elemental lock', 'The lock wants one <b>'+p.element+' mote</b>. It will also accept <b>'+fee+' essence</b> (you have '+player.essence+').', player.essence>=fee?'Pay '+fee+' essence':null, function(){
       spendEssence(fee); p.opened=true; setT(p.door.x,p.door.y,OPEN); log('The lock grudgingly accepts the essence.','c-kill'); sfx('puzzle-solved'); computeFOV(); endTurn();
     }); return true;
   }
@@ -230,7 +229,7 @@ function bumpProp(p){
   }
   if(p.drink){ var h=Math.round(player.maxhp*0.1); healPlayer(h); p.drink=false; log('You drink from the fountain. +'+h+' HP.','c-good'); floatText(player.x,player.y,'+'+h,'heal'); sfx('step-water'); endTurn(); return true; }
   if(p.br){ setClip(player,'melee'); lungeFx(player,p.x,p.y); damageProp(p, player, 'phys'); endTurn(); return true; }
-  if(p.b){ log('The '+p.name.replace(/-/g,' ')+' is in the way.','c-info'); return true; }
+  if(p.b){ log('Something is in the way.','c-info'); return true; }
   return false;
 }
 function damageProp(p, src, type){
@@ -242,7 +241,7 @@ function damageProp(p, src, type){
   removeProp(p); sfx(p.sfx||'crate-break'); burst(p.x,p.y,'earth',12,0.05);
   if(p.loot && rng()<p.loot){
     var roll2=rng(), it = roll2<0.74 ? {kind:'essence', n:ri(4,10)+floorNo} : roll2<0.78 ? {kind:'food', food:randomFood()} : roll2<0.84 ? {kind:'sigil', use:randomSigilUse()} : {kind:'mote', el:pick(ELEMENTS)};
-    it.x=p.x; it.y=p.y; items.push(it); log('Something rolls out of the '+p.name+'.','c-good');
+    it.x=p.x; it.y=p.y; items.push(it); log('Something rolls out of the pieces.','c-good');
   }
 }
 function explode(x,y,src){
@@ -348,13 +347,13 @@ function triggerTrap(tr,e){
   tr.found = true;
   var d;
   if(tr.kind==='dart'){ d=applyDamage(e, trapDmg(e, roll(4,8)+floorNo), 'phys', null); floatText(e.x,e.y,String(d),'phys'); if(rng()<0.5) applyStatus(e,'poison',4,2);
-    log(who+' trigger'+(isP?'':'s')+' a dart trap &mdash; '+d+' damage.', isP?'c-you':'c-info'); sfx('trap-dart'); }
+    log(who+' trigger'+(isP?'':'s')+' a dart trap: '+d+' damage.', isP?'c-you':'c-info'); sfx('trap-dart'); }
   else if(tr.kind==='fire'){ d=applyDamage(e, roll(4,7)+floorNo, 'fire', null); applyStatus(e,'burn',3,sDMG(2)); floatText(e.x,e.y,String(d),'fire'); ignite(e.x,e.y,null);
-    burst(e.x,e.y,'fire',24,0.05); log('A fire vent erupts &mdash; '+d+' fire, burning.', isP?'c-you':'c-info'); sfx('trap-fire'); }
+    burst(e.x,e.y,'fire',24,0.05); log('A fire vent erupts: '+d+' fire damage and Burning.', isP?'c-you':'c-info'); sfx('trap-fire'); }
   else if(tr.kind==='frost'){ d=applyDamage(e, roll(3,6)+floorNo, 'ice', null); addChill(e); addChill(e); floatText(e.x,e.y,String(d),'ice'); burst(e.x,e.y,'ice',24,0.05);
-    log('A frost jet blasts '+(isP?'you':e.name)+' &mdash; '+d+' frost, chilled.', isP?'c-you':'c-info'); sfx('trap-frost'); }
+    log('A frost jet blasts '+(isP?'you':e.name)+': '+d+' frost damage and Chill.', isP?'c-you':'c-info'); sfx('trap-frost'); }
   else if(tr.kind==='spark'){ d=applyDamage(e, trapDmg(e, roll(4,8)+floorNo), 'lightning', null); if(rng()<0.5) applyStatus(e,'stun',1); floatText(e.x,e.y,String(d),'lightning'); burst(e.x,e.y,'lightning',18,0.06);
-    log('A spark plate discharges &mdash; '+d+' lightning.', isP?'c-you':'c-info'); sfx('trap-spark'); }
+    log('A spark plate discharges: '+d+' lightning damage.', isP?'c-you':'c-info'); sfx('trap-spark'); }
   else if(tr.kind==='gas'){ for(var gy=-1;gy<=1;gy++) for(var gx=-1;gx<=1;gx++) ents.forEach(function(o){ if(o.x===e.x+gx && o.y===e.y+gy) applyStatus(o,'poison',6,2); });
     burst(e.x,e.y,'poison',40,0.05); log('Poison gas hisses from a vent.', isP?'c-you':'c-info'); sfx('trap-gas'); }
   else if(tr.kind==='web'){ applyStatus(e,'root',3); log('Webs! '+(isP?'You are':'The '+e.name+' is')+' stuck.','c-info'); sfx('trap-web'); }

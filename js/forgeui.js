@@ -38,7 +38,7 @@ function enchantPanelHTML(){
   var have=ELEMENTS.filter(function(el){ return (player.motes[el]||0)>0&&!forbiddenElement(el); });
   if(forgeMote && (!(player.motes[forgeMote]>0)||forbiddenElement(forgeMote))) forgeMote=null;
   if(!forgeMote && have.length) forgeMote=have[0];
-  var h='<p class="c-info">Choose a mote, then click the gear to set it into. Each enchantment shows how its bonuses grow with elemental mastery.</p>';
+  var h='<p class="c-info">Choose a mote, then the gear to set it into. Most enchantments grow stronger with your affinity in their element.</p>';
   h+='<div class="moterow">'+ELEMENTS.map(function(el){
     var n=player.motes[el]||0;
     var blocked=forbiddenElement(el);
@@ -50,12 +50,12 @@ function enchantPanelHTML(){
     /* 2026-09-18: an unidentified piece may already hold an enchantment you cannot see, and setting a mote
        would quietly destroy it. The Forge refuses it the same way it refuses to upgrade one. */
     var can=!!t.text && !t.it.unarmed && !t.it.unid && !forbiddenElement(el), cur=t.it.enchant && !t.it.unid ? t.it.enchant : null;
-    var now = cur ? '<div class="now">Now: <span style="color:'+AFF_COL[cur]+'">'+cap(cur)+'</span> &mdash; '+(t.text ? t.text[cur] : '')+'</div>'
+    var now = cur ? '<div class="now">Now <span style="color:'+AFF_COL[cur]+'">'+cap(cur)+'</span>: '+(t.text ? t.text[cur] : '')+'</div>'
                   : '<div class="now">'+(t.it.unid ? 'Unidentified' : 'Not enchanted')+'</div>';
     var why = forbiddenElement(el) ? GODS[player.god].name+' forbids this enchantment.' : t.it.unid ? 'The Forge will not work metal you do not know. Identify it first.'
             : t.slot==='off' ? 'A weapon, shield, orb, tome or holy symbol takes an enchantment here. This does not.'
             : 'Cannot be enchanted.';
-    var nu = can ? '<div class="new">'+(cur===el ? 'Already '+el : 'With '+el+': '+t.text[el])+'</div>' : '<div class="now c-info">'+why+'</div>';
+    var nu = can ? '<div class="new">'+(cur===el ? 'Already carries '+el : 'With '+el+': '+t.text[el])+'</div>' : '<div class="now c-info">'+why+'</div>';
     return '<div class="enchcard'+(can && cur!==el ? '' : ' off')+'" data-etarget="'+i+'"><span class="ic" data-eicon="'+(t.it.icon||'')+'"></span>'+
       '<div><div class="s">'+t.label+'</div><div class="t">'+gearName(t.it)+'</div>'+now+nu+'</div></div>';
   }).join('')+'</div>';
@@ -113,7 +113,7 @@ function wireRecyclePanel(panel){
     var n=player.bag.filter(function(b){ return recycleValue(b)>0; }).length, tot=player.bag.reduce(function(a,b){ return a+recycleValue(b); },0);
     forgeConfirm('Recycle all', 'Melt down <b>'+n+'</b> piece'+(n>1?'s':'')+' of gear from your bag for <b>'+tot+' essence</b>?', 'Recycle', function(){
       for(var i=player.bag.length-1;i>=0;i--) if(recycleValue(player.bag[i])>0){ var b=player.bag[i]; gainEssence(recycleValue(b)); player.bag.splice(i,1); }
-      log('The Forge melts down '+n+' pieces of gear: +'+tot+' essence.','c-good'); sfx('forge-craft');
+      log('The Forge melts down '+n+' piece'+(n>1?'s':'')+' of gear: +'+tot+' essence.','c-good'); sfx('forge-craft');
       updateUI();
     });
   };

@@ -36,6 +36,7 @@
     'body.touch #hotbar .slot .ico canvas{width:100%!important;height:100%!important;display:block}',
     'body.touch #hotbar .slot .k{display:none}',                         /* number keys mean nothing without a keyboard */
     'body.touch #hotbar .slot.empty .n{display:none}',
+    'body.touch #hotbar .slot .cdn.cdbig{font-size:clamp(16px,3.8vw,24px)!important;right:0!important;bottom:auto!important}',
     'body.touch #hotbar .slot .cdn{font-size:clamp(12px,2.6vw,17px)!important;right:5px!important;bottom:3px!important;',
     '  background:rgba(10,9,8,.7);border-radius:6px;padding:0 4px}',
 
@@ -76,9 +77,10 @@
     'body.touch .tgear .tg-sec{font-size:11px!important}',
     'body.touch #bAmHot{margin-top:10px;min-height:44px;width:100%;max-width:100%;padding:4px;font-size:12px;white-space:normal}',
 
-    /* Keep every title action reachable even on a short phone screen. */
+    /* Keep every title action reachable even on a short phone screen. 2026-09-28: the menu sits at the bottom, under
+       the logo painted into the title art (it ends about 31% down), instead of stretching over it. */
     '@media (max-height:560px){',
-    ' body.touch #title .menu{top:12px;bottom:12px;overflow-y:auto;justify-content:safe center;gap:6px}',
+    ' body.touch #title .menu{top:auto;bottom:max(12px,env(safe-area-inset-bottom,0px));overflow-y:auto;justify-content:flex-end;gap:6px}',
     ' body.touch #title .menu button{font-size:20px;min-height:44px;padding:6px 14px;flex-shrink:0}',
     '}',
     /* Landscape: vitals and controls | map and hotbar | menus and combat log.
@@ -245,14 +247,7 @@
   window.addEventListener('resize', function(){ setTimeout(topH, 50); });
   setTimeout(topH, 300);
 
-  /* gear icons: drawn at 72 on touch and scaled into the square tiles by CSS */
-  if(typeof iconCanvas==='function'){
-    var _iconCanvasTouch = iconCanvas;
-    iconCanvas = function(name, size, fb){
-      if(touch() && typeof openSheet!=='undefined' && openSheet==='Equip' && (size||0)<72) size=72;
-      return _iconCanvasTouch(name, size, fb);
-    };
-  }
+  /* gear icons are painted at the size their tile shows them (ui.js paintIconArt), not at 72 and shrunk by CSS (2026-09-27) */
 
   /* ---------------- Gear: "Add amulet to hotbar" when the worn amulet has no slot (it was removed) */
   function amuletOnBar(){ return player && player.hotbar && player.hotbar.some(function(h){ return h && h.type==='amulet'; }); }
@@ -286,7 +281,7 @@
     closeHM(); var s=player && player.hotbar && player.hotbar[i]; if(!s) return;
     var btns=[];
     if(s.type==='ability' && typeof clickSpellable==='function' && clickSpellable(s.key))
-      btns.push(player.clickSpell===s.key ? ['tap','Stop casting this on tap','on'] : ['tap','Cast this when I tap an enemy','']);
+      btns.push(player.clickSpell===s.key ? ['tap','Stop casting this on tap','on'] : ['tap','Cast this when you tap an enemy','']);
     if(s.type==='item' || s.type==='amulet' || s.type==='ranged') btns.push(['rm','Remove from hotbar','']);
     btns.push(['x','Close','']);
     hm=document.createElement('div'); hm.id='hmenu';
@@ -365,6 +360,8 @@
         var j=+L.over.getAttribute('data-i'), t=player.hotbar[j];
         player.hotbar[j]=player.hotbar[L.i]; player.hotbar[L.i]=t;
         endLift(); sfx('ui-click'); abilityBar();
+      } else if(n==='pointerup' && L.moved && releasedOutside('#hotbar', L.x, L.y, ev.clientX, ev.clientY)){
+        endLift(); sfx('ui-click'); hotbarRemove(L.i);          /* 2026-09-27: let go off the bar, it comes off */
       } else if(n==='pointerup' && !L.moved){ endLift(); openHM(L.i); }
       else endLift();
     }
@@ -472,6 +469,10 @@
       var bi=player.bag.indexOf(B.entry.ref);
       endBL(); hideCards(); useBagItem(bi); sfx('ui-click');
       if(typeof updateUI==='function') updateUI(); if(typeof refreshSheet==='function') refreshSheet();
+    } else if(n==='pointerup' && B.moved && B.entry.type==='item' && player.bag.indexOf(B.entry.ref)>=0 && releasedOutside('.sheet, #hotbar', B.x, B.y, B.lx, B.ly)){
+      /* 2026-09-27: let go outside the Gear window, the item is dropped: the card's Drop, by finger */
+      var dbi=player.bag.indexOf(B.entry.ref);
+      endBL(); hideCards(); dropFromBag(dbi); sfx('ui-click');
     } else endBL();
   }, true); });
   window.addEventListener('blur',function(){clearTimeout(blTimer);blTimer=null;endBL();blSwallow=false;});

@@ -124,7 +124,8 @@ function ensureRuneLooks(){
   Object.keys(SIGILS).forEach(function(k){ sigilLook[k]=runeTitle(RUN.sigilLooks[k]); if(sigilKnown[k]===undefined) sigilKnown[k]=false; });
   (player.bag||[]).forEach(function(b){ if(b.kind==='sigil' && b.data) b.name=sigilName(b.data.use); });
 }
-sigilArtName = function(use){ var look=RUN && RUN.sigilLooks && RUN.sigilLooks[use]; return look && RUNES[look] ? 'rune-'+look : 'item-sigil'; };
+/* a sigil wears its run's rune (its only definition; render.js itemArtName and ui.js ask it) */
+function sigilArtName(use){ var look=RUN && RUN.sigilLooks && RUN.sigilLooks[use]; return look && RUNES[look] ? 'rune-'+look : 'item-sigil'; }
 
 /* soft blue light around a rune stone lying on the floor */
 

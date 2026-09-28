@@ -56,7 +56,7 @@ function gainPiety(amount,why,options){
     if(after>before){
       log('<b>'+god.name+' is pleased.</b> Piety rank '+after+'.','c-kill');sfx('piety-rank');ringFx(player.x,player.y,god.color,3);
       var index=godBoonRanks(god).indexOf(after),boon=index>=0?god.boons[index]:null;if(boon)log('Boon: '+boon,'c-good');
-      (god.prayers||[]).forEach(function(key){var prayer=PRAYERS[key];if(prayer.rank===after)log('New prayer: <b>'+prayer.name+'</b> &mdash; '+prayer.desc+' (Faith tab or P)','c-kill');});
+      (god.prayers||[]).forEach(function(key){var prayer=PRAYERS[key];if(prayer.rank===after)log('New prayer: <b>'+prayer.name+'</b>. '+prayer.desc+' Find it in the Faith tab (P).','c-kill');});
     }
   }
   var lightChanged=syncGlimmerLight({deferStats:true});
@@ -121,11 +121,11 @@ function castRaiseDead(x,y,ability,options){
 }
 function prayRaiseDead(){
   if(floorMeta.pendingLich){log('Your Lich is returning.','c-info');return false;}
-  if(!canPray('raisedead')){log('You cannot offer that prayer right now.','c-info');sfx('ui-error');return false;}
+  if(!canPray('raisedead')){prayerRefused('raisedead');return false;}
   if(ents.some(function(entity){return entity.ally&&entity.undeadServant;})){log('Your servant still stands.','c-info');return false;}
   var cell=nearFree(player.x,player.y,1)||nearFree(player.x,player.y,2);
   if(!cell||!walkable(cell.x,cell.y)||occupied(cell.x,cell.y)){log('There is no room for the dead to rise.','c-info');return false;}
-  player.favor-=PRAYERS.raisedead.favor;sfx('pray');ringFx(player.x,player.y,GODS.murk.color,2.5);
+  player.favor-=PRAYERS.raisedead.favor;startPrayerCd('raisedead');sfx('pray');ringFx(player.x,player.y,GODS.murk.color,2.5);
   var result=castRaiseDead(cell.x,cell.y,ABILITIES.raisedead,{noMana:true});
   ents.forEach(function(entity){if(entity.ally&&entity.undeadServant&&entity.t<player.t-200)entity.t=player.t;});
   return result;

@@ -21,7 +21,7 @@ function stackLivingMountain(){
   derive(player);
 }
 
-if(typeof STATUS_INFO!=='undefined')STATUS_INFO.livingmountain={name:'Living Mountain',icon:'ic-iron-body',d:'Each stack grants +2% critical-hit chance, +2% Accuracy, and +2 flat attack damage before Might scaling. Up to 10 stacks; each unarmed attack refreshes all stacks for 6 × Divine Power global turns.'};
+if(typeof STATUS_INFO!=='undefined')STATUS_INFO.livingmountain={name:'Living Mountain',icon:'ic-iron-body',d:'Each stack gives +2% crit chance, +2% accuracy and +2 attack damage, up to 10 stacks. Every unarmed swing, hit or miss, adds a stack and renews them all.'};
 
 /* Anvil's Toll: a weapon attack on everything within two tiles, each thrown back and stunned (2026-09-23) */
 
@@ -54,15 +54,15 @@ function castReginaldLance(x,y){
     /* Reginald's Lance (2026-09-23): a weapon attack on every enemy along a straight line to any tile within 5 */
     if(!canPray('lance') || !inb(x,y) || dist(player,{x:x,y:y})>5 || !(revealAll||vis[idxOf(x,y)]) || (x===player.x && y===player.y))return false;
     var lpath=spearPath(player.x,player.y,x,y).slice(0,5);if(!lpath.length)return false;
-    player.favor-=PRAYERS.lance.favor;aiming=null;setClip(player,'melee');sfx('swing');
+    player.favor-=PRAYERS.lance.favor;startPrayerCd('lance');aiming=null;setClip(player,'melee');sfx('swing');
     var lend=lpath[lpath.length-1];boltFx(player.x,player.y,lend.x,lend.y,'phys');
     var struck=0,hit=new Set();lpath.forEach(function(p){ents.slice().forEach(function(e){if(e.foe&&e.hp>0&&!hit.has(e)&&entityOccupies(e,p.x,p.y)){hit.add(e);attack(player,e,divineStrength(),'Lance');struck++;}});});
-    log('<b>Lance.</b> '+(struck?'Your weapon runs through '+struck+(struck===1?' foe.':' foes.'):'Nothing stood in the line.'),'c-good');
+    log('<b>Lance.</b> '+(struck?'Your weapon runs through '+struck+(struck===1?' foe.':' foes.'):'Nothing stands in the line.'),'c-good');
     player.hidden=0;endTurn();return true;
   }
 function castBoneSpear(x,y){  if(!canPray('bonespear') || !inb(x,y) || dist(player,{x:x,y:y})>6 || !(revealAll||vis[idxOf(x,y)]))return false;
   var path=spearPath(player.x,player.y,x,y);if(!path.length)return false;
-  spendDivineSpell(5);aiming=null;setClip(player,'cast');sfx('shadow-cast');
+  spendDivineSpell(5);startPrayerCd('bonespear');aiming=null;setClip(player,'cast');sfx('shadow-cast');
   var end=path[path.length-1];boltFx(player.x,player.y,end.x,end.y,'dark');
   var hit=new Set();path.forEach(function(p){ents.slice().forEach(function(e){if(!e.foe||e.hp<=0||hit.has(e)||!entityOccupies(e,p.x,p.y))return;hit.add(e);if(combatRoll(hitChance(player.acc+10,evaOf(e)),true)){spellHit(e,BONE_SPEAR,Math.round(roll(5*godRank(),5*godRank()+6)*divineStrength()),'dark');finishHit(e);}});});
   endTurn();return true;

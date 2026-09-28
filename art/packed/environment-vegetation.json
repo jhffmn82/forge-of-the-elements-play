@@ -2,10 +2,10 @@
   "version": 1,
   "cell": 128,
   "res": 2,
-  "file": "environment-vegetation.png",
+  "file": "environment-vegetation.webp",
   "files": [
-    "environment-vegetation.png",
-    "environment-vegetation-clusters.png"
+    "environment-vegetation.webp",
+    "environment-vegetation-clusters.webp"
   ],
   "items": {
     "veg-caverns-grass-back-1": {
@@ -1258,7 +1258,7 @@
     }
   },
   "clusters": {
-    "file": "environment-vegetation-clusters.png",
+    "file": "environment-vegetation-clusters.webp",
     "cell": 128,
     "families": [
       "mushroom-teal",
@@ -1710,8 +1710,8 @@
     }
   },
   "sha256": {
-    "environment-vegetation.png": "4d1606d4dd3b3ba65d88352524af39e47c65e37fd72f7f6790c37fee8fc29276",
-    "environment-vegetation-clusters.png": "eb3c915c8bfdc3ce07464aa6e76d8bc76715501b29e402bab2c728bf687e0689"
+    "environment-vegetation.webp": "4d1606d4dd3b3ba65d88352524af39e47c65e37fd72f7f6790c37fee8fc29276",
+    "environment-vegetation-clusters.webp": "eb3c915c8bfdc3ce07464aa6e76d8bc76715501b29e402bab2c728bf687e0689"
   },
   "note": "SourceKind distinguishes new generated artwork, archived masters and known coarse pixel-art masters. PNG dimensions alone do not imply fine detail. All 69 old trimmed logical bounds retained. The 25 mushroom/urn clusters keep their original arrangements; urn pieces use recovered or newly generated prop masters. Crates, pots and barrels draw one high-resolution prop per logical placement and need no cluster rows."
 }

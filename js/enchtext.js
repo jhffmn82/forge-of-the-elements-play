@@ -24,12 +24,12 @@ function lvRank(){ return typeof godRank==='function' ? godRank() : 0; }
 function lvDiv(){ return (typeof divineStrength==='function' ? divineStrength() : 1); }
 var RANK_LIVE = {
   3: {
-    fire:   function(n){ return 'Searing: +'+(5*n)+'% damage (5% per Fire rank) against Burning enemies. Immune to Burning.'; },
-    water:  function(n){ return 'Deep Chill: Chill slows movement and actions by '+Math.round(Math.min(50, 33+3*n))+'% (33% plus 3 points per Water rank, maximum 50%). Immune to Chill and Freeze.'; },
-    air:    function(n){ return 'Arc: '+(5*n)+'% chance (5% per Air point) that any hit or spell arcs to a nearby enemy for 50%. Immune to Stun.'; },
-    earth:  function(n){ var t=Math.min(3, Math.max(1, n-2)); return 'Venom: Earth Root applies Poison for '+t+' turn'+(t===1?'':'s')+' (1 / 2 / 3 at Earth ranks 3 / 4 / 5+): 10% max HP per turn, or 5% to bosses. Immune to Root.'; },
+    fire:   function(n){ return 'Searing: +'+(5*n)+'% damage (5% per Fire point) against Burning enemies. Immune to Burning.'; },
+    water:  function(n){ return 'Deep Chill: enemies you Chill are slowed by '+Math.round(Math.min(50, 33+3*n))+'% (33% plus 3% per Water point, up to 50%). Immune to Chill and Freeze.'; },
+    air:    function(n){ return 'Arc: a '+(5*n)+'% chance (5% per Air point) that any hit or spell arcs to a nearby enemy for half damage. Immune to Stun.'; },
+    earth:  function(n){ var t=Math.min(3, Math.max(1, n-2)); return 'Venom: anything you Root is also Poisoned for '+t+' turn'+(t===1?'':'s')+' (up to 3 at Earth 5). Poison takes 10% of max HP a turn, 5% for bosses. Immune to Root.'; },
     light:  function(n){ return 'Radiance: heal '+n+' HP (1 per Light point) whenever you deal light damage. Immune to Blind.'; },
-    shadow: function(n){ return 'Fade: become Hidden after '+Math.max(4, 16-2*n)+' consecutive unseen turns (10 / 8 / 6 / 4 at Shadow ranks 3-6). Immune to Fear.'; }
+    shadow: function(n){ return 'Fade: after '+Math.max(4, 16-2*n)+' quiet turns out of combat you become Hidden (2 fewer per Shadow point, down to 4). Immune to Fear.'; }
   }
 };
 function rankLive(r, e){
@@ -38,23 +38,23 @@ function rankLive(r, e){
   return (typeof RANK_TEXT!=='undefined' && RANK_TEXT[r] && RANK_TEXT[r][e]) || '';
 }
 var ABILITY_LIVE = {
-  shadowswarm: function(A){var stats=shadowSwarmStats(A);return 'Summon up to nine Shades in a 3×3 area: '+stats.hp+' HP, '+stats.damage+' base Shadow damage and '+stats.duration+' world turns each (base 10 HP, 10 damage and 5 turns, multiplied by Spell Power at casting). Benefits from Murk’s Grave Strength. Replaces your previous swarm.';},
-  missile:     function(A){ var t=typeof totalAffinity==='function' ? totalAffinity() : 0; return 'Always hits; magic damage nothing resists. +'+t+' base damage (1 per affinity point).'; },
-  spark:       function(A){ return 'Lightning damage with a '+(5*ePts('air'))+'% chance (5% per Air point) to stun. +50% against targets standing in water.'; },
+  shadowswarm: function(A){var stats=shadowSwarmStats(A);return 'Summon up to nine Shades in a 3x3 area for '+stats.duration+' turns. Each has '+stats.hp+' HP and hits for '+stats.damage+' shadow damage. A new swarm replaces the old one.';},
+  missile:     function(A){ var t=typeof totalAffinity==='function' ? totalAffinity() : 0; return 'Always hits, and nothing resists its magic damage. +'+t+' damage (1 per affinity point).'; },
+  spark:       function(A){ return 'Lightning damage with a '+(5*ePts('air'))+'% chance (5% per Air point) to Stun. +50% against targets that are Wet or standing in water.'; },
   smite:       function(A){ return 'Light damage with a '+(10*ePts('light'))+'% chance (10% per Light point) to Blind. +50% against undead and shadow creatures.'; },
   radiantbeam: function(A){ return 'A beam 3 tiles wide along a row, column or diagonal: light damage (+50% to undead and shadow), '+(5*ePts('light'))+'% Blind (5% per Light point).'; },
   heal:        function(){var r=godRank(),bonus=inSanctuary(player)?1+.25*holyGroundStrength(player):1;return 'Restore up to '+Math.min(Math.round(player.maxhp*.4),Math.round(player.maxhp*(.10+.02*r)*divineStrength()*(1+.10*r)*bonus))+' HP.';},
-  dawn:        function(A){return 'Strike every visible enemy for '+Math.round(sDMG(A.base[0])*spellPower(A))+'–'+Math.round(sDMG(A.base[1])*spellPower(A))+' Light damage, Blind survivors for 3 turns, and reveal all enemies on this floor for 20 turns.';},
-  glacialtomb: function(A){return 'Entomb the center enemy of a 3×3 blast for 10 turns (6 for elites, 2 for bosses). Other enemies in the area take '+spellBaseDamage(A,A.base[0])+'–'+spellBaseDamage(A,A.base[1])+' Frost damage; the entombed target cannot act or be hurt. Target yourself instead for 3 protected turns, then restore 25% HP and mana.';},
-  upheaval: function(A){return 'Raise stone walls up to 7 tiles toward the target for 20 turns. Enemies and your summons within 2 tiles of a rising wall take '+spellBaseDamage(A,A.base[0])+'–'+spellBaseDamage(A,A.base[1])+' Physical damage once; damaged survivors are Rooted for 2 turns (1 for bosses). The caster is spared.';},
-  arcaneward:  function(){return '8 mana: shield '+Math.round((8+2*godRank())*divineStrength())+' HP and Communion for '+fullDivineDuration(8)+' turns. Damaging attacks earn '+(godRank()*divineStrength()).toFixed(2)+' Favor once per action; the buff survives the shield breaking.';},
-  livingflame: function(A){var sp=spellPower(A);return '100 mana: summon a Living Flame for 30 world turns. '+Math.round(28*sp)+' HP, '+Math.round(5*sp)+'–'+Math.round(9*sp)+' Fire damage. Every third ranged attack splashes nearby enemies for half damage. Shared two-summon limit.';}
+  dawn:        function(A){return 'Strike every enemy in sight for '+Math.round(sDMG(A.base[0])*spellPower(A))+'-'+Math.round(sDMG(A.base[1])*spellPower(A))+' light damage and Blind the survivors for 3 turns. For 20 turns, every enemy on the floor is revealed.';},
+  glacialtomb: function(A){return 'Seal an enemy in ice for 10 turns (6 for elites, 2 for bosses); it can neither act nor be hurt. Enemies beside it take '+spellBaseDamage(A,A.base[0])+'-'+spellBaseDamage(A,A.base[1])+' frost damage. On yourself: 3 safe turns, then 25% of max HP and mana back.';},
+  upheaval: function(A){return 'Raise a line of stone walls up to 7 tiles long for 20 turns. Enemies and your summons within 2 tiles of a wall take '+spellBaseDamage(A,A.base[0])+'-'+spellBaseDamage(A,A.base[1])+' physical damage and are Rooted for 2 turns. You are spared.';},
+  arcaneward:  function(){return 'Gain a shield of '+Math.round((8+2*godRank())*divineStrength())+' HP and Communion for '+fullDivineDuration(8)+' turns: each action that deals damage earns '+(godRank()*divineStrength()).toFixed(2)+' Favor.';},
+  livingflame: function(A){var sp=spellPower(A);return 'Call a Living Flame onto an empty tile for 30 turns: '+Math.round(28*sp)+' HP, hurling '+Math.round(5*sp)+'-'+Math.round(9*sp)+' fire damage at range 6. Every third shot splashes nearby enemies for half. Counts toward your two summons.';}
 };
 var PRAYER_LIVE = {
-  ironhide: function(){return 'Instant (no turn): +'+Math.round(5*divineStrength())+' armor and '+Math.round((5+2*godRank())*divineStrength())+' shield HP for '+fullDivineDuration(12)+' turns. Refreshes without stacking.';}
+  ironhide: function(){return '+'+Math.round(5*divineStrength())+' armor and a shield of '+Math.round((5+2*godRank())*divineStrength())+' HP for '+fullDivineDuration(12)+' turns. Takes no turn.';}
 ,
-bonespear:function(){return 'Piercing Shadow damage '+Math.round(5*godRank()*divineStrength())+'–'+Math.round((5*godRank()+6)*divineStrength())+', range 6. Costs 5 Favor.';},
-arcanelance:function(){return 'Magic damage '+Math.round(5*godRank()*divineStrength())+'–'+Math.round((5*godRank()+6)*divineStrength())+', range 6. Costs 5 Favor; no cooldown.';}};
+bonespear:function(){return 'Deal '+Math.round(5*godRank()*divineStrength())+'-'+Math.round((5*godRank()+6)*divineStrength())+' shadow damage to every enemy in a line up to 6 tiles long.';},
+arcanelance:function(){return 'Deal '+Math.round(5*godRank()*divineStrength())+'-'+Math.round((5*godRank()+6)*divineStrength())+' magic damage to one enemy within 6 tiles.';}};
 function abilityKeyOf(A){ if(typeof ABILITIES==='undefined') return null; for(var k in ABILITIES) if(ABILITIES[k]===A) return k; return null; }
 function liveDesc(A){
   if(!A) return '';

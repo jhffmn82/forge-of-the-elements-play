@@ -7,7 +7,7 @@
   function active(){return !!(typeof floorMeta!=='undefined'&&floorMeta&&floorMeta.chaosPreview&&/^(chaos-mixed|unmaker-crucible)$/.test(floorMeta.chaosPreview.biome));}
   function definitions(){return Object.assign({},root.CHAOS_ENEMY_ATLAS||{},root.UNMAKER_ATLAS||{});}
   function valid(spec){
-    return spec&&typeof spec.file==='string'&&/^mob-m-(?:chaos|unmaker)-[a-z-]+\.png$/.test(spec.file)&&Number.isInteger(spec.cell)&&spec.cell>0&&
+    return spec&&typeof spec.file==='string'&&/^mob-m-(?:chaos|unmaker)-[a-z-]+\.webp$/.test(spec.file)&&Number.isInteger(spec.cell)&&spec.cell>0&&
       Number.isInteger(spec.static_row)&&spec.static_row>=0&&Array.isArray(spec.box)&&spec.box.length===4&&spec.box.every(Number.isFinite)&&
       spec.box[0]>=0&&spec.box[1]>=0&&spec.box[2]>0&&spec.box[3]>0&&spec.box[0]+spec.box[2]<=spec.cell&&spec.box[1]+spec.box[3]<=spec.cell&&
       spec.clips&&['idle','attack'].every(function(key){var clip=spec.clips[key];return clip&&Number.isInteger(clip.row)&&clip.row>=0&&Number.isInteger(clip.frames)&&clip.frames>1;});

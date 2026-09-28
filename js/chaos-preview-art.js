@@ -3,44 +3,44 @@
 (function(root){
   'use strict';
   var definitions={
-    'prism-lens':{file:'map-prism-lens.png',sx:126,sy:17,sw:1000,sh:1217},
-    'prism-bookcase':{file:'map-prism-bookcase.png',sx:157,sy:54,sw:710,sh:1400},
-    'prism-portal':{file:'map-prism-portal.png',sx:47,sy:10,sw:1160,sh:1212},
-    'prism-astrolabe':{file:'map-prism-astrolabe.png',sx:47,sy:15,sw:1172,sh:1209},
-    'prism-lectern':{file:'map-prism-lectern.png',sx:33,sy:31,sw:1189,sh:1185},
-    'prism-tree':{file:'map-prism-tree.png',sx:74,sy:33,sw:1107,sh:1190},
-    'rot-portal':{file:'map-rot-portal.png',sx:42,sy:54,sw:1179,sh:1153},
-    'rot-canopy':{file:'map-rot-canopy.png',sx:87,sy:54,sw:1101,sh:1152},
-    'rot-puffballs':{file:'map-rot-puffballs.png',sx:30,sy:71,sw:1192,sh:1141},
-    'rot-pool':{file:'map-rot-pool.png',sx:52,sy:163,sw:1426,sh:708},
-    'cinder-portal':{file:'map-cinder-portal.png',sx:39,sy:62,sw:1140,sh:1170},
-    'cinder-furnace':{file:'map-cinder-furnace.png',sx:60,sy:80,sw:1134,sh:1088},
-    'final-forge':{file:'map-final-forge.png',sx:0,sy:6,sw:1236,sh:1233},
-    'cinder-anvil':{file:'map-cinder-anvil.png',sx:161,sy:122,sw:1178,sh:810},
-    'cinder-shields':{file:'map-cinder-shields.png',sx:34,sy:41,sw:1186,sh:1144},
-    'violet-portal':{file:'map-violet-portal.png',sx:51,sy:17,sw:1154,sh:1203},
-    'violet-pavilion':{file:'map-violet-pavilion.png',sx:35,sy:16,sw:1184,sh:1227},
-    'violet-eggs':{file:'map-violet-eggs.png',sx:67,sy:148,sw:1148,sh:1029},
-    'violet-loom':{file:'map-violet-loom.png',sx:25,sy:78,sw:1487,sh:857}
+    'prism-lens':{file:'map-prism-lens.webp',sx:126,sy:17,sw:1000,sh:1217},
+    'prism-bookcase':{file:'map-prism-bookcase.webp',sx:157,sy:54,sw:710,sh:1400},
+    'prism-portal':{file:'map-prism-portal.webp',sx:47,sy:10,sw:1160,sh:1212},
+    'prism-astrolabe':{file:'map-prism-astrolabe.webp',sx:47,sy:15,sw:1172,sh:1209},
+    'prism-lectern':{file:'map-prism-lectern.webp',sx:33,sy:31,sw:1189,sh:1185},
+    'prism-tree':{file:'map-prism-tree.webp',sx:74,sy:33,sw:1107,sh:1190},
+    'rot-portal':{file:'map-rot-portal.webp',sx:42,sy:54,sw:1179,sh:1153},
+    'rot-canopy':{file:'map-rot-canopy.webp',sx:87,sy:54,sw:1101,sh:1152},
+    'rot-puffballs':{file:'map-rot-puffballs.webp',sx:30,sy:71,sw:1192,sh:1141},
+    'rot-pool':{file:'map-rot-pool.webp',sx:52,sy:163,sw:1426,sh:708},
+    'cinder-portal':{file:'map-cinder-portal.webp',sx:39,sy:62,sw:1140,sh:1170},
+    'cinder-furnace':{file:'map-cinder-furnace.webp',sx:60,sy:80,sw:1134,sh:1088},
+    'final-forge':{file:'map-final-forge.webp',sx:0,sy:6,sw:1236,sh:1233},
+    'cinder-anvil':{file:'map-cinder-anvil.webp',sx:161,sy:122,sw:1178,sh:810},
+    'cinder-shields':{file:'map-cinder-shields.webp',sx:34,sy:41,sw:1186,sh:1144},
+    'violet-portal':{file:'map-violet-portal.webp',sx:51,sy:17,sw:1154,sh:1203},
+    'violet-pavilion':{file:'map-violet-pavilion.webp',sx:35,sy:16,sw:1184,sh:1227},
+    'violet-eggs':{file:'map-violet-eggs.webp',sx:67,sy:148,sw:1148,sh:1029},
+    'violet-loom':{file:'map-violet-loom.webp',sx:25,sy:78,sw:1487,sh:857}
   },pending=Object.create(null),decoded=Object.create(null);
   var themePrefixes={'prism-archives':'prism-','rot-hollows':'rot-','cinder-bastion':'cinder-','violet-warrens':'violet-','unmaker-forge':'final-'};
   var themeGroups={'chaos-mixed':['prism-archives','rot-hollows','cinder-bastion','violet-warrens'],'unmaker-crucible':['cinder-bastion','prism-archives','unmaker-forge']};
   // Activate only completed local strips. Each crop is the same union bounds
   // within every cell, so playback never changes a set piece's size or feet.
-  // {file:'map-prism-lens-idle.png',cell:192,frames:8,fps:8,sx:0,sy:0,sw:192,sh:192}
+  // {file:'map-prism-lens-idle.webp',cell:192,frames:8,fps:8,sx:0,sy:0,sw:192,sh:192}
   var animations={
-  "final-forge": {"file":"map-final-forge-idle.png","cell":192,"frames":9,"fps":5.5,"sx":12,"sy":8,"sw":171,"sh":176},
-  "violet-portal": {"file":"map-violet-portal-idle.png","cell":192,"frames":9,"fps":4,"sx":11,"sy":8,"sw":169,"sh":176},
-  "violet-pavilion": {"file":"map-violet-pavilion-idle.png","cell":192,"frames":9,"fps":4.5,"sx":11,"sy":8,"sw":170,"sh":176},
-  "violet-eggs": {"file":"map-violet-eggs-idle.png","cell":192,"frames":9,"fps":4.5,"sx":8,"sy":23,"sw":176,"sh":161},
-  "violet-loom": {"file":"map-violet-loom-idle.png","cell":192,"frames":9,"fps":5.5,"sx":8,"sy":81,"sw":176,"sh":103},
-  "cinder-portal": {"file":"map-cinder-portal-idle.png","cell":192,"frames":9,"fps":5.5,"sx":10,"sy":8,"sw":171,"sh":176},
-  "cinder-furnace": {"file":"map-cinder-furnace-idle.png","cell":192,"frames":9,"fps":5.5,"sx":8,"sy":15,"sw":176,"sh":169},
-  "cinder-shields": {"file":"map-cinder-shields-idle.png","cell":192,"frames":9,"fps":5.5,"sx":8,"sy":9,"sw":176,"sh":175},
-  "rot-puffballs": {"file":"map-rot-puffballs-idle.png","cell":192,"frames":9,"fps":5.5,"sx":8,"sy":15,"sw":176,"sh":169},
-  "rot-pool": {"file":"map-rot-pool-idle.png","cell":192,"frames":9,"fps":5.5,"sx":8,"sy":93,"sw":176,"sh":91},
+  "final-forge": {"file":"map-final-forge-idle.webp","cell":192,"frames":9,"fps":5.5,"sx":12,"sy":8,"sw":171,"sh":176},
+  "violet-portal": {"file":"map-violet-portal-idle.webp","cell":192,"frames":9,"fps":4,"sx":11,"sy":8,"sw":169,"sh":176},
+  "violet-pavilion": {"file":"map-violet-pavilion-idle.webp","cell":192,"frames":9,"fps":4.5,"sx":11,"sy":8,"sw":170,"sh":176},
+  "violet-eggs": {"file":"map-violet-eggs-idle.webp","cell":192,"frames":9,"fps":4.5,"sx":8,"sy":23,"sw":176,"sh":161},
+  "violet-loom": {"file":"map-violet-loom-idle.webp","cell":192,"frames":9,"fps":5.5,"sx":8,"sy":81,"sw":176,"sh":103},
+  "cinder-portal": {"file":"map-cinder-portal-idle.webp","cell":192,"frames":9,"fps":5.5,"sx":10,"sy":8,"sw":171,"sh":176},
+  "cinder-furnace": {"file":"map-cinder-furnace-idle.webp","cell":192,"frames":9,"fps":5.5,"sx":8,"sy":15,"sw":176,"sh":169},
+  "cinder-shields": {"file":"map-cinder-shields-idle.webp","cell":192,"frames":9,"fps":5.5,"sx":8,"sy":9,"sw":176,"sh":175},
+  "rot-puffballs": {"file":"map-rot-puffballs-idle.webp","cell":192,"frames":9,"fps":5.5,"sx":8,"sy":15,"sw":176,"sh":169},
+  "rot-pool": {"file":"map-rot-pool-idle.webp","cell":192,"frames":9,"fps":5.5,"sx":8,"sy":93,"sw":176,"sh":91},
   "prism-portal": {
-    "file": "map-prism-portal-idle.png",
+    "file": "map-prism-portal-idle.webp",
     "cell": 192,
     "frames": 9,
     "fps": 5.5,
@@ -50,7 +50,7 @@
     "sh": 175
   },
   "prism-lens": {
-    "file": "map-prism-lens-idle.png",
+    "file": "map-prism-lens-idle.webp",
     "cell": 192,
     "frames": 9,
     "fps": 5.5,
@@ -60,7 +60,7 @@
     "sh": 176
   },
   "prism-astrolabe": {
-    "file": "map-prism-astrolabe-idle.png",
+    "file": "map-prism-astrolabe-idle.webp",
     "cell": 192,
     "frames": 9,
     "fps": 5.5,
@@ -70,7 +70,7 @@
     "sh": 176
   },
   "prism-lectern": {
-    "file": "map-prism-lectern-idle.png",
+    "file": "map-prism-lectern-idle.webp",
     "cell": 192,
     "frames": 9,
     "fps": 5.5,
@@ -80,7 +80,7 @@
     "sh": 175
   },
   "prism-tree": {
-    "file": "map-prism-tree-idle.png",
+    "file": "map-prism-tree-idle.webp",
     "cell": 192,
     "frames": 9,
     "fps": 5.5,
@@ -90,7 +90,7 @@
     "sh": 179
   },
   "rot-portal": {
-    "file": "map-rot-portal-idle.png",
+    "file": "map-rot-portal-idle.webp",
     "cell": 192,
     "frames": 9,
     "fps": 5.5,
@@ -100,7 +100,7 @@
     "sh": 172
   },
   "rot-canopy": {
-    "file": "map-rot-canopy-idle.png",
+    "file": "map-rot-canopy-idle.webp",
     "cell": 192,
     "frames": 9,
     "fps": 5.5,

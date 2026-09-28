@@ -48,16 +48,16 @@ function wobblesIntervention(big){
     if(foes.length>=2) opts.push('escape');
     var o=pick(opts);
     if(o==='heal'){ player.hp=player.maxhp; floatText(player.x,player.y,'full heal','heal'); sparkleFx(player.x,player.y,'heal',40); log('<b>Wobbles giggles.</b> You are fully healed!','c-kill'); }
-    else if(o==='mote'){ var el=pick(ELEMENTS); player.motes[el]=(player.motes[el]||0)+1; log('<b>Wobbles giggles.</b> A '+el+' mote appears in your pouch!','c-kill'); }
+    else if(o==='mote'){ var el=pick(ELEMENTS); player.motes[el]=(player.motes[el]||0)+1; log('<b>Wobbles giggles.</b> A mote of '+el+' appears in your pouch!','c-kill'); }
     else if(o==='rampage'){ player.buffs.rampage=10; derive(player); log('<b>Wobbles giggles.</b> You feel ridiculously strong!','c-kill'); }
-    else if(o==='sheep' && foes.length){ var t=pick(foes.filter(function(f){ return !f.base.boss; })); if(t){ var x=t.x,y=t.y; ents=ents.filter(function(e){ return e!==t; }); var r=spawn('rat',x,y); r.name='Very Confused Rat'; r.state='wander'; r.noXp=true; log('<b>Wobbles giggles.</b> '+t.name+' turns into a rat!','c-kill'); sparkleFx(x,y,'magic',30); } }
+    else if(o==='sheep' && foes.length){ var t=pick(foes.filter(function(f){ return !f.base.boss; })); if(t){ var x=t.x,y=t.y; ents=ents.filter(function(e){ return e!==t; }); var r=spawn('rat',x,y); r.name='Very Confused Rat'; r.state='wander'; r.noLoot=true; log('<b>Wobbles giggles.</b> '+t.name+' turns into a rat!','c-kill'); sparkleFx(x,y,'magic',30); } }
     else if(o==='escape'){ var o2=[]; for(var yy=0;yy<MH;yy++) for(var xx=0;xx<MW;xx++) if(walkable(xx,yy)&&!occupied(xx,yy)&&inRoom(xx,yy)&&dist({x:xx,y:yy},player)>15) o2.push({x:xx,y:yy});
       var s=pick(o2); if(s){ player.x=s.x; player.y=s.y; player._lx=undefined; log('<b>Wobbles giggles.</b> You are somewhere else, and safe.','c-kill'); } }
     else { var n=ri(20,40); gainEssence(n); log('<b>Wobbles giggles.</b> '+n+' essence rains from nowhere.','c-kill'); }
   } else {
     var bad=pick(['status','rats','teleport','butterfingers']);
     if(bad==='status'){ applyStatus(player, pick(['blind','chill','root']), 3); log('<b>Wobbles snickers.</b> Oops.','c-you'); }
-    else if(bad==='rats'){ for(var i=0;i<2;i++){ var c=nearFree(player.x,player.y,2); if(c){ var m=spawn('rat',c.x,c.y); m.state='hunt'; m.noXp=true; } } log('<b>Wobbles snickers.</b> Rats!','c-you'); }
+    else if(bad==='rats'){ for(var i=0;i<2;i++){ var c=nearFree(player.x,player.y,2); if(c){ var m=spawn('rat',c.x,c.y); m.state='hunt'; m.noLoot=true; } } log('<b>Wobbles snickers.</b> Rats!','c-you'); }
     else if(bad==='teleport'){ var o3=[]; for(var y2=0;y2<MH;y2++) for(var x2=0;x2<MW;x2++) if(walkable(x2,y2)&&!occupied(x2,y2)&&inRoom(x2,y2)) o3.push({x:x2,y:y2});
       var s3=pick(o3); if(s3){ player.x=s3.x; player.y=s3.y; player._lx=undefined; log('<b>Wobbles snickers.</b> Where are you?','c-you'); } }
     else { player.mp=Math.floor(player.mp/2); log('<b>Wobbles snickers.</b> Half your mana slips away.','c-you'); }
@@ -91,7 +91,7 @@ function openShrine(){
   var html = '<div class="shrine">'+art+'<div><h3 style="color:'+g.color+'">'+g.name+'</h3><div class="who">'+cap(g.title)+'</div>'+
     '<p><b>Rule.</b> '+g.rule+'</p><p><b>Piety comes from:</b> '+g.gain+' Piety earned deeper is worth more: x1.3 per biome below the first. Favor is not multiplied.</p>'+
     shrineGifts(id, g, mine)+
-    '<p><b>Invoke</b> (Clerics only): <b>'+ABILITIES[g.invoke].name+'</b> &mdash; '+ABILITIES[g.invoke].desc.replace(/^Invoke \([^)]*\): /,'')+'</p></div></div>';
+    '<p><b>Invoke</b> (Clerics only): <b>'+ABILITIES[g.invoke].name+'</b>. '+ABILITIES[g.invoke].desc.replace(/^Invoke \([^)]*\): /,'')+'</p></div></div>';
   var buttons=[];
   var startPiety = 20;   /* flat in every biome: converting late never skips ranks */
   if(refused) html+='<p class="c-you"><b>'+(typeof godRefuses==='function' ? refusalText(id) : g.name+' will not accept a '+RACES[player.race].name+'.')+'</b></p>';
@@ -107,7 +107,7 @@ function openShrine(){
   }
   if(!mine && !floorMeta.shrineTithed) buttons.push({label:'Tithe 20 essence for a blessing', disabled:player.essence<20, fn:function(){
     spendEssence(20); floorMeta.shrineTithed=true; player.blessed=120; player.buffs.rally=40; derive(player);
-    log('The shrine blesses you: +10% damage for a while.','c-good'); sfx('pray'); closeModal(); updateUI(); }});
+    log('The shrine blesses you: +10% damage for 40 turns.','c-good'); sfx('pray'); closeModal(); updateUI(); }});
   buttons.push({label:'Leave', fn:closeModal});
   openModal('Shrine', html, buttons);
   var holder=document.querySelector('.shrine-art'); if(holder) paintArt(holder, 'structures', g.sprite, 120);
@@ -139,9 +139,9 @@ function faithHTML(){
   h+='<p><b>Rule.</b> '+g.rule+'</p><p><b>Piety from:</b> '+g.gain+'</p><p><b>Depth.</b> Piety earned here is worth x'+deepMul.toFixed(2)+' (x1.3 per biome below the first). Favor is not multiplied.</p><p><b>Boons</b></p><ol class="boons">'+g.boons.map(function(b,i){ var br=BRf[i]||i+1; return br<=r ? '<li><b>Rank '+br+'.</b> '+b+'</li>' : ''; }).join('')+'</ol>'+
      (g.boons.some(function(b,i){ return (BRf[i]||i+1)>r; }) ? '<p class="c-info" style="font-size:11px">Grow in piety to learn what else '+g.name.split(',')[0]+' grants.</p>' : '')+'<p><b>Prayers</b></p>';
   var shown=0;
-  g.prayers.forEach(function(pid){ var P=PRAYERS[pid], ok=canPray(pid); if(godRank()<P.rank) return; shown++;
+  g.prayers.forEach(function(pid){ var P=PRAYERS[pid], ok=canPray(pid), wait=cdLeft(prayerCdKey(pid)); if(godRank()<P.rank) return; shown++;
     h+='<div class="abrow" data-pr="'+pid+'"><span class="pico"></span><span class="k">'+P.rank+'</span><span><span style="color:var(--ink)">'+P.name+'</span><div class="d">'+P.desc+(godRank()>=P.rank?' <span style="opacity:.6">(drag to hotbar)</span>':'')+'</div></span>'+
-       '<button class="prayer" data-p="'+pid+'" '+(ok?'':'disabled')+'>'+(P.favor?P.favor+' favor':P.essence?P.essence+' essence':P.amusement?P.amusement+' amusement':'pray')+'</button></div>'; });
+       '<button class="prayer" data-p="'+pid+'" '+(ok?'':'disabled')+'>'+(wait?'ready in '+wait:P.favor?P.favor+' Favor':P.essence?P.essence+' essence':P.amusement?P.amusement+' Amusement':'pray')+'</button></div>'; });
   if(!shown) h+='<p class="c-info" style="font-size:11px">No prayers yet. Your god will teach you as your piety grows.</p>';
   return h+'</div>';
 }
@@ -159,7 +159,7 @@ function equipmentForbidden(slot,it){
  return false;
 }
 
-function refuseDivine(){log(GODS[player.god].name+' prohibits that action.','c-info');sfx('ui-error');return false;}
+function refuseDivine(){log(GODS[player.god].name+' will not allow that.','c-info');sfx('ui-error');return false;}
 
 function enforceDivineEquipment(p){
  if(!p.god||!p.bag||!p.sets)return;
@@ -192,6 +192,7 @@ function canPray(id){
   if(!P || !player.god || prayerList().indexOf(id)<0 || godRank()<P.rank)return false;
   if(id==='fieldsmelt' && recoveryInCombat())return false;
   if(id==='laststand' && (player.hp>player.maxhp*.5 || buff('laststand')))return false;
+  if(cdLeft(prayerCdKey(id))>0)return false;
   return !(P.favor && (player.favor||0)<P.favor || P.essence && player.essence<P.essence || P.amusement && (player.amusement||0)<P.amusement);
 }
 function spendPrayer(id){
@@ -199,7 +200,16 @@ function spendPrayer(id){
   if(P.favor)player.favor-=P.favor;
   if(P.essence)spendEssence(P.essence);
   if(P.amusement)player.amusement-=P.amusement;
+  startPrayerCd(id);
 }
+/* Prayer and invoke cooldowns (DIVINE_COOLDOWNS in data.js; all 0 until Justin sets them). The wait starts when
+   the cost is paid and is kept in player.cds beside Shadowstep and Charge. A prayer's is kept as 'pray:<id>',
+   because Raise Dead is a prayer and an ability of the same name. canPray and useAbility refuse while it runs. */
+function prayerCdKey(id){return 'pray:'+prayerId(id);}
+function startDivineCd(key,turns){if(turns>0){player.cds=player.cds||{};player.cds[key]=turn+turns;}}
+function startPrayerCd(id){startDivineCd(prayerCdKey(id),DIVINE_COOLDOWNS.prayers[prayerId(id)]);}
+function startInvokeCd(key){startDivineCd(key,DIVINE_COOLDOWNS.invokes[key]);}
+function prayerRefused(id){var n=cdLeft(prayerCdKey(id));log(n>0?PRAYERS[prayerId(id)].name+' is not ready ('+n+' turns).':'You cannot offer that prayer right now.','c-info');sfx('ui-error');}
 function usePrayer(id){
   if(gameTurns.busy())return false;
   if(playerFearAction())return false;
@@ -215,7 +225,7 @@ function usePrayer(id){
   }
 }
 function performPrayer(id){
-  if(!canPray(id)){log('You cannot offer that prayer right now.','c-info');sfx('ui-error');return false;}
+  if(!canPray(id)){prayerRefused(id);return false;}
   var aim={bonespear:BONE_SPEAR,lance:LANCE,arcanelance:ARCANE_LANCE,arcanenova:ARCANE_NOVA}[id];
   if(aim){aiming={A:aim,prayer:id};if(openSheet)showSheet(openSheet);log(aim.name+': choose a target within '+aim.range+' tiles.','c-info');draw();return true;}
   if(id==='fieldsmelt')return prayFieldSmelt();
@@ -273,7 +283,8 @@ function godDamageResolved(target,d,type,source,event){
  if(d>0&&target===player&&source&&source.foe&&player.god==='wobbles')combatAmusement('in');
  if(d>0&&target.foe&&source&&source.ally){target.state='hunt';target.lastSeen={x:source.x,y:source.y};target.petAggressor=source.id;}
 
- if(d>0&&target&&target.foe&&source&&source.ally&&hasGod('murk')&&godRank()>=3&&!(event&&event.tags.has('murk-inherited'))){
+ // Grave Strength rides a summon's own hit once; that hit's procs (an elemental rider) never repeat it.
+ if(d>0&&target&&target.foe&&source&&source.ally&&hasGod('murk')&&godRank()>=3&&!(event&&(event.tags.has('murk-inherited')||event.tags.has('proc')))){
    var inherited={tags:['proc','murk-inherited']};
    var el=player.weapon&&player.weapon.enchant,values=enchantValues('weapon',el),bonus=godRank();
    if(target.hp>0)applyDamage(target,bonus,'dark',source,inherited);

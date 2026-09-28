@@ -6,12 +6,12 @@
    ===================================================================== */
 
 var AMULETS = {
-  hook:     {name:'Amulet of the Hook',   kills:10, aim:true, range:5, desc:'Aim at an enemy within 5 to drag it next to you, or at a wall or closed door to haul yourself to it (over chasms and water too).'},
-  swap:     {name:'Amulet of Exchange',   kills:8, aim:true, range:8, desc:'Trade places with any creature you can see.'},
+  hook:     {name:'Amulet of the Hook',   kills:10, aim:true, range:5, desc:'Pull an enemy within 5 tiles to your side, or hook a wall or closed door and haul yourself to it, even over chasms and water.'},
+  swap:     {name:'Amulet of Exchange',   kills:8, aim:true, range:8, desc:'Trade places with a creature you can see within 8 tiles.'},
   tide:     {name:'Amulet of the Tide',   kills:8, aim:true, range:6, desc:'Flood a 3x3 area with water for 20 turns. The wave sets off every trap in that room.'},
   seeking:  {name:'Amulet of Seeking',    kills:10,                    desc:'Reveal the floor within 16 tiles, with every trap and hidden door in it.'},
   pillar:   {name:'Amulet of the Pillar', kills:6, aim:true, range:5, desc:'Raise a stone pillar on an empty tile for 15 turns. It blocks movement and sight.'},
-  stillness:{name:'Amulet of Stillness',  kills:15,                    desc:'Freeze time for 3 turns. Moving is free; attacking or any other action breaks the stillness.'},
+  stillness:{name:'Amulet of Stillness',  kills:15,                    desc:'Stop time for up to 3 steps. Moving is free; attacking or any other action breaks the stillness.'},
   echo:     {name:'Amulet of Echoes',     kills:10,                    desc:'Read the last sigil you used again, without using one up.'},
   thorns:   {name:'Amulet of Thorns',     kills:8,                    desc:'Root yourself for 5 turns: a shield of 35% of your max HP, and melee attackers take half of their damage back.'},
   plenty:   {name:'Amulet of Plenty',     kills:20,                   desc:'Conjure a ration at your feet.'}
@@ -62,7 +62,7 @@ useAmulet = function(){
   if(A.aim){
     if(aiming && aiming.amulet){ cancelAim(); return; }
     aiming={amulet:true, A:{name:A.name, range:A.range, kind:'amulet'}};
-    log('<b>'+(a.unid && !RUN.amuletKnown[a.amulet] ? 'The amulet' : A.name)+'</b> &mdash; click a target within '+A.range+' tiles, or press Esc.','c-info');
+    log('<b>'+(a.unid && !RUN.amuletKnown[a.amulet] ? 'The amulet' : A.name)+'</b>: click a target within '+A.range+' tiles, or press Esc.','c-info');
     abilityBar(); draw(); return;
   }
   var k=a.amulet;

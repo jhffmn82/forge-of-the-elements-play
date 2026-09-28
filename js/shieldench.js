@@ -20,7 +20,7 @@ function onShieldBlock(att, def, raw){
     var fd=applyDamage(att, burn, 'fire', player);
     floatText(att.x, att.y, String(fd), 'fire');
     if(pRoll(values.burn) && att.hp>0) applyStatus(att,'burn',values.burnDuration,typeof burnDmg==='function'?burnDmg():2);
-    log('Your shield throws the blow back as fire &mdash; <b>'+fd+'</b>.','c-good');
+    log('Your shield throws the blow back as <b>'+fd+'</b> fire damage.','c-good');
     if(att.hp<=0) kill(att, player);
   }
   else if(el==='water' && pRoll(values.water)){ addChill(att); log('The blocked attacker is chilled.','c-good'); }

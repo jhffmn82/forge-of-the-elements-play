@@ -43,4 +43,4 @@ function knockback(e,dx,dy,n){
 function worldStatusPulse(e,clock){
   return gameEffects.pulse(e,clock);
 }
-STATUS_INFO.resolve={name:'Resolve',icon:'st-stone',d:'Temporary protection against repeated hard control and forced movement.'};
+STATUS_INFO.resolve={name:'Resolve',icon:'st-stone',d:'Just held fast or knocked back: can\'t be Stunned, Rooted, Frozen or knocked back again for a short while.'};

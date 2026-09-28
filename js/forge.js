@@ -8,7 +8,7 @@ var T1_TEXT = {
   air:'+10% movement speed per point',
   earth:'Stone Skin: -1 physical damage per hit, per point',
   light:'10% chance per point that your hits Smite: 3-6 light damage, +1 per Light point',
-  shadow:'+5% crit chance per point against enemies that can\'t see you'
+  shadow:'+5% crit chance per point on surprise attacks'
 };
 /* 2026-09-23 (Justin): the sheet's element lines show the live total at the current affinity, not only the rate */
 var T1_LIVE = {
@@ -17,7 +17,7 @@ var T1_LIVE = {
   air:    function(n){ return '+'+(10*n)+'% movement speed (10% per point)'; },
   earth:  function(n){ return 'Stone Skin: -'+n+' physical damage per hit (1 per point)'; },
   light:  function(n){ return (10*n)+'% chance that your hits Smite: '+(3+n)+'-'+(6+n)+' light damage (10% and +1 per point)'; },
-  shadow: function(n){ return '+'+(5*n)+'% crit chance against enemies that can\'t see you (5% per point)'; }
+  shadow: function(n){ return '+'+(5*n)+'% crit chance on surprise attacks (5% per point)'; }
 };
 function t1Text(e, n){ return (T1_LIVE[e] && n>0) ? T1_LIVE[e](n) : (T1_TEXT[e]||''); }
 var ENCHANT_TEXT = FoteEnchantments.formulaTable();
@@ -41,10 +41,10 @@ function renderForge(){
         '<div>Essence: <b style="color:var(--gold);font-size:15px">'+player.essence+'</b></div></div></div>'+
         '<div class="ftabs">'+['fuse','enchant','upgrade','craft'].map(function(t){ return '<button data-ft="'+t+'" class="'+(forgeTab===t?'on':'')+'">'+{fuse:'Fuse',enchant:'Enchant',upgrade:'Upgrade',craft:'Craft sigils'}[t]+'</button>'; }).join('')+'</div><div class="fpanel">';
   if(forgeTab==='fuse'){
-    h+='<p class="c-info">Burn a mote into yourself for a point of affinity. Two elements at most, never opposites, and the second can never outgrow the first. Permanent.</p>';
+    h+='<p class="c-info">Burn a mote into yourself for a point of affinity. It is permanent. You can hold two elements at most, never opposites; the second can never outgrow the first.</p>';
     ELEMENTS.forEach(function(el){
       var why=fuseCheck(el), cur=player.aff[el]||0, nextT=cur+1;
-      var unlock = nextT===1 ? t1Text(el, 1) : nextT===2 ? 'Tier 2 spell: '+ABILITIES[ELEMENT_ABILS[el][2]].name+' &mdash; '+ABILITIES[ELEMENT_ABILS[el][2]].desc : 'Tier '+nextT+' (a later biome)';
+      var ab=ELEMENT_ABILS[el][nextT], unlock = ab ? 'New spell: '+ABILITIES[ab].name+'. '+ABILITIES[ab].desc : (RANK_TEXT[nextT]&&RANK_TEXT[nextT][el]) || t1Text(el, nextT);
       h+='<div class="frow"><span class="dot" style="background:'+AFF_COL[el]+'"></span><div class="ftext"><b>'+cap(el)+' '+cur+' &rarr; '+nextT+'</b><div class="d">'+unlock+'</div>'+
          (why?'<div class="d c-you">'+why+'</div>':'')+'</div><button data-fuse="'+el+'" '+(why?'disabled':'')+'>Fuse</button></div>';
     });

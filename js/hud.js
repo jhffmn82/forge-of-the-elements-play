@@ -27,7 +27,13 @@
     '#hud2 .motechip .dot{margin-right:1px}',
     '#hud2 .faithchip .meter.sm{display:none}',
     '#hotbar{grid-template-columns:repeat(8,52px)!important;grid-template-rows:52px!important;min-height:0!important;gap:5px;flex:0 0 auto}',
-    '#hotbar .slot{padding:0;align-items:center;justify-content:center;width:52px;height:52px;border-width:2px;background:rgba(25,21,18,.25)}',
+    /* 2026-09-28 (Justin picked style D): a dark well, the ability's colour as a soft inner glow instead of a coloured border,
+       and a shadow under each icon so it stands off the well */
+    '#hotbar .slot{padding:0;align-items:center;justify-content:center;width:52px;height:52px;border:0;border-radius:8px;background:#141110;box-shadow:inset 0 0 0 1px #3a322b,inset 0 0 12px -2px var(--c,transparent),0 2px 3px rgba(0,0,0,.6)}',
+    '#hotbar .slot .ico canvas{filter:drop-shadow(0 0 1px #000) drop-shadow(0 2px 2px rgba(0,0,0,.8))}',
+    '#hotbar .slot .k{color:#cbbba1;font-weight:600;text-shadow:0 1px 1px #000}',
+    '#hotbar .slot.armed,#hotbar .slot.over{box-shadow:inset 0 0 0 2px var(--gold),inset 0 0 12px -2px var(--c,transparent),0 2px 3px rgba(0,0,0,.6)}',
+    '#hotbar .slot:hover:not(:disabled){box-shadow:inset 0 0 0 1px var(--ember),inset 0 0 12px -2px var(--c,transparent),0 2px 3px rgba(0,0,0,.6)}',
     '#hotbar .slot .n,#hotbar .slot .c{display:none}',
     /* 2026-09-20: Justin - the icons sat small and off to one side. The art was painted at 28px into a 38px box
        that was never centred on its contents, so every slot looked lop-sided. The box is centred, fills most of
@@ -36,6 +42,12 @@
     '#hotbar .slot .ico canvas{width:100%!important;height:100%!important;display:block}',
     '#hotbar .slot .k{top:2px;left:4px;right:auto;font-size:9px}',
     '#hotbar .slot .cdn{position:absolute;right:3px;bottom:2px;font-size:9px;color:var(--gold);text-shadow:0 1px 2px #000}',
+    '#hotbar .slot.oncd .ico canvas{filter:grayscale(1) brightness(.45) drop-shadow(0 0 1px #000)}',
+    '#hotbar .slot.oncd::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:conic-gradient(rgba(0,0,0,.62) calc(var(--cdp,0) * 1%),rgba(0,0,0,0) 0)}',
+    '#hotbar .slot .cdn.cdbig{left:0;right:0;top:50%;bottom:auto;transform:translateY(-50%);text-align:center;font-size:20px;font-weight:700;color:#fff;text-shadow:0 0 3px #000,0 1px 2px #000;z-index:2}',
+    '#hotbar .slot.cdready{animation:cdready .7s ease-out}',
+    '@keyframes cdready{0%{box-shadow:inset 0 0 0 2px #ffe08a,0 0 12px 2px rgba(255,210,110,.85)}100%{box-shadow:inset 0 0 0 1px #3a322b,inset 0 0 12px -2px var(--c,transparent),0 2px 3px rgba(0,0,0,.6)}}',
+    '@media (prefers-reduced-motion:reduce){#hotbar .slot.cdready{animation:none}}',
     '#ctl{display:grid!important;grid-template-columns:auto auto;grid-template-rows:auto 1fr;gap:5px 8px;align-items:center;align-content:center}',
     '#ctl #fx{grid-column:1/-1;max-width:none;justify-content:flex-start}',
     /* narrower windows keep 8 in a row with smaller slots; the chips drop their labels */
@@ -58,18 +70,20 @@ function buildHotbarCard(i){
   if(s.type==='ability'){
     var A=ABILITIES[s.key]; if(!A) return '';
     var cost = A.cd ? (typeof cdLeft==='function' && cdLeft(s.key) ? 'ready in '+cdLeft(s.key)+' turns' : A.cd+'-turn cooldown') : A.favor ? A.favor+' Favor' : costOf(A)+' mana';
-    return '<div class="nm">'+A.name+'</div><div class="row"><span>Cost</span><b>'+cost+'</b></div>'+(A.range?'<div class="row"><span>Range</span><b>'+spellRange(A)+'</b></div>':'')+'<div class="hint">'+(A.kind==='swarm' && typeof liveDesc==='function' ? liveDesc(A) : A.desc)+'</div><div class="hint">Key '+(i+1)+'</div>';
+    var wait = !A.cd && cdLeft(s.key) ? '<div class="row"><span>Cooldown</span><b>ready in '+cdLeft(s.key)+' turns</b></div>' : '';   /* an invoke's (DIVINE_COOLDOWNS) */
+    return '<div class="nm">'+A.name+'</div><div class="row"><span>Cost</span><b>'+cost+'</b></div>'+wait+(A.range?'<div class="row"><span>Range</span><b>'+spellRange(A)+'</b></div>':'')+'<div class="hint">'+(A.kind==='swarm' && typeof liveDesc==='function' ? liveDesc(A) : A.desc)+'</div><div class="hint">Key '+(i+1)+'</div>';
   }
   if(s.type==='prayer'){
     var P=PRAYERS[s.key]; if(!P) return '';
-    return '<div class="nm">'+P.name+'</div><div class="row"><span>Cost</span><b>'+prayerCost(s.key)+'</b></div><div class="row"><span>Needs</span><b>rank '+P.rank+'</b></div><div class="hint">'+P.desc+'</div><div class="hint">Key '+(i+1)+'</div>';
+    var pl=cdLeft(prayerCdKey(s.key));
+    return '<div class="nm">'+P.name+'</div><div class="row"><span>Cost</span><b>'+prayerCost(s.key)+'</b></div>'+(pl ? '<div class="row"><span>Cooldown</span><b>ready in '+pl+' turns</b></div>' : '')+'<div class="row"><span>Needs</span><b>rank '+P.rank+'</b></div><div class="hint">'+P.desc+'</div><div class="hint">Key '+(i+1)+'</div>';
   }
   if(s.type==='amulet') return player.amulet && typeof trinketCard==='function' ? trinketCard(player.amulet) : '<div class="nm">Amulet</div>';
   if(s.type==='ranged'){
     var rw=player.ranged;
     if(!rw) return '<div class="nm">Ranged</div><div class="hint">Your ranged slot is empty. Sling a bow and this slot shoots it.</div>';
     return '<div class="nm">'+gearName(rw)+'</div><div class="row"><span>Range</span><b>'+player.range+'</b></div>'+
-           (player.rangedDmg ? '<div class="row"><span>Damage</span><b>'+player.rangedDmg[0]+'&ndash;'+player.rangedDmg[1]+'</b></div>' : '')+
+           (player.rangedDmg ? '<div class="row"><span>Damage</span><b>'+player.rangedDmg[0]+'-'+player.rangedDmg[1]+'</b></div>' : '')+
            '<div class="hint">Press to draw on the nearest enemy in reach; press again to loose.</div><div class="hint">Key '+(i+1)+'</div>';
   }
   if(s.type==='swap'){ return '<div class="nm">Nothing here</div><div class="hint">Weapon swapping is gone: a bow in your ranged slot fires by itself at anything out of reach.</div>'; }
@@ -133,8 +147,9 @@ function iconChipFor(el, name){
   var slot=el && el.closest ? el.closest('.slot, .gslot, .hbslot') : null;
   if(!slot) return;
   if(!bg){ setTimeout(function(){ if(el.isConnected) iconChipFor(el, name); }, 400); return; }
-  /* Subtle hotbar color; keep equipment chips at their existing contrast. */
-  slot.style.background=hexA(bg[0], slot.closest('#hotbar') ? 0.25 : 0.5);
+  /* The hotbar draws style D from its stylesheet and only needs the colour; equipment chips keep their tinted fill */
+  if(slot.closest('#hotbar')){ slot.style.setProperty('--c', bg[1]); slot.style.background=''; slot.style.borderColor=''; slot.style.boxShadow=''; return; }
+  slot.style.background=hexA(bg[0], 0.5);
   slot.style.borderColor=bg[1];
   slot.style.boxShadow='inset 0 0 0 1px rgba(0,0,0,0.35)';
 }

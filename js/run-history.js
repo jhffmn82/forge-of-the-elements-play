@@ -103,24 +103,24 @@
   function breakdown(record){
     var p=record.scoreParts;
     if(record.scoreUnavailable)return '<p class="run-note">This older record has no saved score or earnings totals.</p>';
-    if(!p)return '<p class="run-note">Score recorded under an earlier scoring version.</p>';
+    if(!p)return '<p class="run-note">No breakdown was saved for this score.</p>';
     if(record.scoreVersion===FoteRunHistory.scoreVersion){
-      var rows=[['Total XP earned',p.xp],['Total essence earned',p.essence],['Turns (minimum 1)',p.turns],['Deepest floor reached',p.depth],['Character level',p.level],['God rank',p.faithRank],['Victory multiplier','×'+p.multiplier]];
-      return '<details class="run-breakdown"><summary>How this score was earned</summary><dl>'+rows.map(function(pair){return '<dt>'+pair[0]+'</dt><dd>'+(typeof pair[1]==='string'?escaped(pair[1]):number(pair[1]))+'</dd>';}).join('')+'</dl><p>((XP earned + essence earned) ÷ turns × deepest floor + character level + god rank) × victory multiplier. A win doubles the whole result. Rounded once at the end; spending essence does not reduce earned essence.</p>'+(record.earningsEstimated?'<p>This run began before earnings tracking. Earlier XP is estimated from saved progress; earlier essence includes only the remaining pouch. Past spending and some XP were not recorded.</p>':'')+'</details>';
+      var rows=[['Total XP earned',p.xp],['Total essence earned',p.essence],['Turns',p.turns],['Deepest floor reached',p.depth],['Character level',p.level],['God rank',p.faithRank],['Victory multiplier','×'+p.multiplier]];
+      return '<details class="run-breakdown"><summary>How this score was earned</summary><dl>'+rows.map(function(pair){return '<dt>'+pair[0]+'</dt><dd>'+(typeof pair[1]==='string'?escaped(pair[1]):number(pair[1]))+'</dd>';}).join('')+'</dl><p>Add the XP and essence you earned, divide by turns, multiply by the deepest floor, then add your level and god rank. A win doubles the total. Spending essence never lowers your score.</p>'+(record.earningsEstimated?'<p>This run started before the game kept track of earnings, so its early XP is an estimate and its early essence counts only what was left in the pouch.</p>':'')+'</details>';
     }
     if(record.scoreVersion!==1)return '<p class="run-note">Score recorded under different scoring rules.</p>';
     return '<details class="run-breakdown"><summary>How this score was earned</summary><dl>'+[['Depth reached',p.depth],['Character level',p.level],['Campaign bosses',p.bosses],['Enemies defeated',p.kills],['Victory',p.victory]].map(function(pair){return '<dt>'+pair[0]+'</dt><dd>'+number(pair[1])+'</dd>';}).join('')+'</dl><p>1,000 per floor reached · 100 per level · 2,500 per campaign boss · 5 per kill (first 500) · 25,000 for victory. Time does not affect your score.</p></details>';
   }
   function build(record){return escaped(record.who||[cap(record.race),cap(record.cls)].filter(Boolean).join(' '));}
   function openHistory(origin){
-    var rows=store.read(),html='<p class="run-note">Victories lead the list. Scores are ranked within the same rules, with current scores before earlier scores. Finished runs are kept in this browser; sandbox runs are excluded.</p>';
+    var rows=store.read(),html='<p class="run-note">Victories lead the list. Runs scored under older rules come after current ones. Finished runs are kept in this browser; sandbox runs are left out.</p>';
     if(!rows.length)html+='<div class="run-empty"><b>Your story starts here.</b><p>Finish a run to earn a place in these records.</p></div>';
     else {
       var previousGroup=null,rank=0;
       rows.forEach(function(r){
         var current=r.scoreVersion===FoteRunHistory.scoreVersion,group=String(r.won)+'-'+r.scoreVersion,date=new Date(r.finishedAt),when=isNaN(date.getTime())?'':date.toLocaleDateString();
         if(group!==previousGroup){if(previousGroup!==null)html+='</ol>';rank=0;html+='<h3 class="run-group">'+(r.won?'Victories':'Other runs')+(current?'':' · earlier scoring')+'</h3><ol class="run-history">';previousGroup=group;}
-        html+='<li class="run-entry'+(r.won?' winner':'')+'"><div class="run-entry-heading"><span class="run-rank">'+(++rank)+'</span><div><span class="run-outcome">'+(r.won?'Victory':'Fallen')+'</span><strong>'+escaped(r.name)+'</strong><span class="run-build">'+build(r)+'</span></div><b class="run-points">'+(r.scoreUnavailable?'—':number(r.score))+'<small>'+(current?(r.earningsEstimated?'estimated score':'score'):'earlier score')+'</small></b></div><p>Level '+r.level+' · deepest floor '+r.depth+' · '+number(r.kills)+' kills · '+number(r.turns)+' turns</p><p>'+escaped(r.faith||'No patron')+(r.faithRank?' · rank '+r.faithRank:'')+(when?' · '+escaped(when):'')+'</p>'+breakdown(r)+'</li>';
+        html+='<li class="run-entry'+(r.won?' winner':'')+'"><div class="run-entry-heading"><span class="run-rank">'+(++rank)+'</span><div><span class="run-outcome">'+(r.won?'Victory':'Fallen')+'</span><strong>'+escaped(r.name)+'</strong><span class="run-build">'+build(r)+'</span></div><b class="run-points">'+(r.scoreUnavailable?'Unknown':number(r.score))+'<small>'+(current?(r.earningsEstimated?'estimated score':'score'):'earlier score')+'</small></b></div><p>Level '+r.level+' · deepest floor '+r.depth+' · '+number(r.kills)+' kills · '+number(r.turns)+' turns</p><p>'+escaped(r.faith||'No patron')+(r.faithRank?' · rank '+r.faithRank:'')+(when?' · '+escaped(when):'')+'</p>'+breakdown(r)+'</li>';
       });html+='</ol>';
     }
     openModal('Previous Runs',html,[{label:origin==='end'?'Back to summary':'Back to title',fn:closeModal}],'run-history-modal');

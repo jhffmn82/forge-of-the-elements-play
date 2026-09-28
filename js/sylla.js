@@ -55,7 +55,7 @@ function broodStats(r){ return {hp:5+5*r, dmg:[2+2*r, 10+2*r], armor:2+2*r, resi
 
 /* the web icon covers both halves of it; Bleed finally has the icon it was waiting for (deepmobs.js) */
 if(typeof STATUS_INFO!=='undefined'){
-  STATUS_INFO.slow = {name:'Webbed', icon:'st-web', bad:1, d:'Tangled in silk: moves and acts at half speed.'};
+  STATUS_INFO.slow = {name:'Webbed', icon:'st-web', bad:1, d:'Moves and acts more slowly (half speed when tangled in silk).'};
   if(STATUS_INFO.bleed) STATUS_INFO.bleed.icon='st-bleed';
 }
 if(typeof DMG_COL!=='undefined' && !DMG_COL.web) DMG_COL.web='#F2F0E8';
@@ -123,7 +123,7 @@ function broodBite(def){
 
 /* ---------------------------------------------------------------- the prayers */
 function prayTheBrood(){
-  if(!canPray('the-brood')){ log('You cannot offer that prayer right now.','c-info'); sfx('ui-error'); return; }
+  if(!canPray('the-brood')){ prayerRefused('the-brood'); return; }
   var old=ents.filter(function(e){return e.broodling;});
   var previous=ents;
   ents=ents.filter(function(e){return !e.broodling;});
@@ -142,13 +142,13 @@ function prayTheBrood(){
     got++;
   }
   if(!got){ents=previous;log('There is no room for the brood.','c-info');return;}
-  player.favor -= PRAYERS['the-brood'].favor;
+  player.favor -= PRAYERS['the-brood'].favor; startPrayerCd('the-brood');
   sfx('pray'); setClip(player,'cast'); ringFx(player.x, player.y, GODS.sylla.color, 2.5); sfx('summon');
-  log('<b>The Brood.</b> '+got+' spiderling'+(got>1?'s':'')+' scuttle out of the dark for '+SYLLA.broodLife+' turns: '+S.hp+' HP, '+S.dmg[0]+'-'+S.dmg[1]+', armour '+S.armor+', '+Math.round(S.resist*100)+'% resistance.','c-good');
+  log('<b>The Brood.</b> '+(got>1?got+' spiderlings scuttle':'A spiderling scuttles')+' out of the dark.','c-good');
   endTurn();
 }
 function prayVenomBurst(){
-  if(!canPray('venom-burst'))return;player.favor-=25;sfx('pray');setClip(player,'cast');ringFx(player.x,player.y,'#91B856',3);sparkleFx(player.x,player.y,'poison',40);
+  if(!canPray('venom-burst'))return;player.favor-=25;startPrayerCd('venom-burst');sfx('pray');setClip(player,'cast');ringFx(player.x,player.y,'#91B856',3);sparkleFx(player.x,player.y,'poison',40);
   ents.slice().forEach(function(e){if(e.foe&&e.hp>0&&dist(e,player)<=3){spellHit(e,VENOM_BURST,Math.round(roll(5*godRank(),5*godRank()+6)*divineStrength()),'poison');if(e.hp>0){syllaPoison(e,3,godRank());applyStatus(e,'blind',3);}finishHit(e);}});endTurn();
 }
 

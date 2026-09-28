@@ -82,10 +82,10 @@ function charHTML(){
     var n=player.aff[e], dots=''; for(var i=0;i<6;i++) dots+='<span class="pip" style="'+(i<n?'background:'+AFF_COL[e]+';border-color:'+AFF_COL[e]:'')+(i===5?';opacity:.5':'')+'"></span>';
     return '<div class="aff"><span class="nm">'+cap(e)+'</span><span class="pips">'+dots+'</span><span style="color:var(--dim)">'+n+'</span></div>';
   }).join('');
-  h+='<div class="sec">Affinity ('+totalAffinity()+' / '+affinityCap()+')</div>'+(pips || '<div class="c-info" style="font-size:11.5px">None yet. Carry a mote to the Elemental Forge (floor '+RUN.forgeFloor+').</div>');
+  h+='<div class="sec">Affinity ('+totalAffinity()+' / '+affinityCap()+')</div>'+(pips || '<div class="c-info" style="font-size:11.5px">None yet. Carry a mote to the Elemental Forge.</div>');
   var hr=hitRange();
   h+='<div class="sec">Derived</div>'+kv([['HP',Math.round(player.hp)+' / '+player.maxhp+(playerShield()?' <span style="color:#9FD8FF">+'+playerShield()+'</span>':'')],['Mana',Math.floor(player.mp)+' / '+player.maxmp],
-    ['Damage per hit',hr[0]+'&ndash;'+hr[1]],['Crit',Math.round(player.crit*100)+'%'],['Crit damage','&times;'+criticalMultiplier().toFixed(2)],['Accuracy',player.acc],['Evasion',evaOf(player)],['Armor',player.armor],
+    ['Damage per hit',hr[0]+'-'+hr[1]],['Crit',Math.round(player.crit*100)+'%'],['Crit damage','&times;'+criticalMultiplier().toFixed(2)],['Accuracy',player.acc],['Evasion',evaOf(player)],['Armor',player.armor],
     ['Block',Math.round(player.block*100)+'%'],['Parry',Math.round(player.parry*100)+'%'],['Spell power','&times;'+spellPower({}).toFixed(2)],['Divine power','&times;'+divineStrength().toFixed(2)],['Range',player.range],
     ['Attack speed',playerSpeedPercent('attack')],['Movement speed',playerSpeedPercent('move')],['XP',player.xp+' / '+player.xpNext]]);
   h+='<div class="sec">Resistances</div>'+resHTML()+'</div>';
@@ -95,7 +95,7 @@ function charHTML(){
   if(!player.abilities.length) h+='<div class="c-info" style="font-size:11.5px">No active abilities yet.</div>';
   player.abilities.forEach(function(k){
     var A=ABILITIES[k]; if(!A) return;
-    var cost = A.cd ? (typeof cdLeft==='function' && cdLeft(k) ? cdLeft(k)+' turns' : A.cd+'-turn cooldown') : (A.favor ? A.favor+' Favor' : costOf(A)+' mana');
+    var cost = A.cd ? (typeof cdLeft==='function' && cdLeft(k) ? 'ready in '+cdLeft(k)+' turns' : A.cd+'-turn cooldown') : (A.favor ? A.favor+' Favor' : costOf(A)+' mana');
     h+='<div class="arow" data-ab="'+k+'" draggable="true"><span class="ic" data-icon="'+(A.icon||'')+'"></span><span><span class="n">'+A.name+'</span><div class="d">'+(typeof liveDesc==='function' ? liveDesc(A) : A.desc)+'</div></span><span class="c" style="color:var(--ice)">'+cost+'</span></div>';
   });
   if(player.god){
@@ -108,7 +108,7 @@ function charHTML(){
   }
   if(player.amulet && typeof AMULETS!=='undefined' && AMULETS[player.amulet.amulet]){
     var a=player.amulet, known=!a.unid || (RUN.amuletKnown||{})[a.amulet];
-    h+='<div class="sec">Amulet</div><div class="arow"><span class="ic" data-icon="'+a.icon+'"></span><span><span class="n">'+gearName(a)+'</span><div class="d">'+(known?amuletDescription(a):'Use it to learn what it does.')+'</div></span><span class="c" style="color:var(--gold)">'+(a.charges!==undefined?a.charges+' ch.':'')+'</span></div>';
+    h+='<div class="sec">Amulet</div><div class="arow"><span class="ic" data-icon="'+a.icon+'"></span><span><span class="n">'+gearName(a)+'</span><div class="d">'+(known?amuletDescription(a):'Use it to learn what it does.')+'</div></span><span class="c" style="color:var(--gold)">'+(a.charges!==undefined?a.charges+' charges':'')+'</span></div>';
   }
   h+='</div>';
 
@@ -184,7 +184,7 @@ function equipHTML(){
   var w=player.weapon, off=player.twoHanded?null:player.off, ar=player.armorItem, r=player.rings||[null,null], stow=player.ranged;
   var hr=hitRange(), h='<div class="gearwrap">';
   /* left: totals */
-  h+='<div><div class="sec">Offense</div>'+kv([['Damage per hit',hr[0]+'&ndash;'+hr[1]],['Crit',Math.round(player.crit*100)+'%'],['Crit damage','&times;'+criticalMultiplier().toFixed(2)],['Accuracy',player.acc],['Range',player.range],['Attack speed',playerSpeedPercent('attack')],['Movement speed',playerSpeedPercent('move')],['Spell power','&times;'+spellPower({}).toFixed(2)],['Divine power','&times;'+divineStrength().toFixed(2)]]);
+  h+='<div><div class="sec">Offense</div>'+kv([['Damage per hit',hr[0]+'-'+hr[1]],['Crit',Math.round(player.crit*100)+'%'],['Crit damage','&times;'+criticalMultiplier().toFixed(2)],['Accuracy',player.acc],['Range',player.range],['Attack speed',playerSpeedPercent('attack')],['Movement speed',playerSpeedPercent('move')],['Spell power','&times;'+spellPower({}).toFixed(2)],['Divine power','&times;'+divineStrength().toFixed(2)]]);
   h+='<div class="sec">Defense</div>'+kv([['HP',Math.round(player.hp)+' / '+player.maxhp],['Shield',playerShield()],['Armor',player.armor],['Evasion',evaOf(player)],['Block',Math.round(player.block*100)+'%'],['Parry',Math.round(player.parry*100)+'%'],['Mana',Math.floor(player.mp)+' / '+player.maxmp]]);
   h+='<div class="sec">Attributes</div><div class="res">'+['mig','agi','vit','foc'].map(function(k){ return '<span>'+STAT_LABEL[k]+'<b>'+player.stats[k]+'</b></span>'; }).join('')+'</div>';
   h+='<div class="sec">Resistances</div>'+resHTML()+'</div>';
@@ -193,7 +193,7 @@ function equipHTML(){
      slotHTML('main','Main hand', w && !w.unarmed ? w : null, '&#9876;')+'<div class="art" id="dollArt"></div>'+slotHTML('off', player.twoHanded?'Both hands':'Off hand', off, '&#9960;')+
      slotHTML('armor','Armor', ar, '&#9960;')+slotHTML('amulet','Amulet', player.amulet, '&#9765;')+
      slotHTML('ring0','Ring', r[0], '&#9675;')+slotHTML('ring1','Ring', r[1], '&#9675;')+'</div>'+
-     '<div class="stowrow">'+slotHTML('stow','Ranged', stow, '&#127993;')+'<span class="c-info" style="font-size:11px">'+(stow?'Fires by itself at anything more than a tile away.':'A bow here fires without swapping.')+'</span></div></div>';
+     '<div class="stowrow">'+slotHTML('stow','Ranged', stow, '&#127993;')+'<span class="c-info" style="font-size:11px">'+(stow?'Fires by itself at anything more than a tile away.':'A bow here fires by itself at anything more than a tile away.')+'</span></div></div>';
   /* right: bag and pouch */
   var cells=player.bag.map(function(it,idx){ return '<div class="cell" data-b="'+idx+'" draggable="true">'+(it.n>1?'<b>'+it.n+'</b>':'')+'</div>'; });
   while(cells.length<BAG_MAX) cells.push('<div class="cell empty"></div>');
@@ -218,7 +218,7 @@ function slotItem(key){
 }
 function slotCard(key){
   var it=slotItem(key);
-  var empty={main:'Main hand: drag a weapon here.', off:'Off hand: a shield, focus, or light weapon.', armor:'Armor.', amulet:'Amulet: activated from the hotbar; kills build charges.', ring0:'Ring: works passively while worn.', ring1:'Ring: works passively while worn.', stow:'Ranged: a bow here shoots anything out of reach, with no swapping.'};
+  var empty={main:'Main hand: drag a weapon here.', off:'Off hand: a shield, focus or light weapon.', armor:'Armor: drag body armor here.', amulet:'Amulet: activated from the hotbar; kills build charges.', ring0:'Ring: works passively while worn.', ring1:'Ring: works passively while worn.', stow:'Ranged: a bow here shoots anything out of reach.'};
   if(!it) return '<div class="nm">'+(key==='off' && player.twoHanded ? 'Both hands on the '+player.weapon.name : 'Empty')+'</div><div class="hint">'+empty[key]+'</div>';
   if(key==='main' || key==='stow') return weaponCard(it, key==='main');
   if(key==='armor') return armorCard(it, true);
@@ -247,6 +247,8 @@ function wireEquip(root){
     /* 2026-09-20: Justin - an equipped bow could not be put on the hotbar. The ranged slot is a drag source now,
        and the hotbar takes 'ranged' (js/rangedslot.js), where pressing it shoots instead of equipping. */
     if(key==='stow' && slotItem('stow')) dragSource(el, 'ranged');
+    /* 2026-09-27: the worn amulet drags onto any hotbar slot (the hotbar already takes 'amulet'; touchui.js does the same by finger) */
+    if(key==='amulet' && slotItem('amulet')) dragSource(el, 'amulet');
     dropTarget(el, function(tag){ var bi=bagIndexFromTag(tag); if(bi<0) return; hideCard();
       equipFromBag(bi, key==='stow' ? 'ranged' : key); updateUI(); refreshSheet(); });
   });
@@ -267,11 +269,13 @@ function wireEquip(root){
     if(c){ cel.style.borderColor=c; }
     if(c && typeof meetsReq==='function' && !meetsReq(it.data)) cel.style.opacity='0.55';
     cel.onclick=function(){ hideCard(); useBagItem(bi); refreshSheet(); };
-    cel.oncontextmenu=function(ev){ ev.preventDefault(); hideCard(); dropBagItem(bi); updateUI(); refreshSheet(); };
+    cel.oncontextmenu=function(ev){ ev.preventDefault(); dropFromBag(bi); };
     hoverCard(cel, function(){ return bagCard(player.bag[bi]); });
     dragSource(cel, 'bag:'+bi);
   });
 }
+/* the bag's Drop: right-click, or a drag let go outside the window (game.js, touchui.js) */
+function dropFromBag(bi){ hideCard(); dropBagItem(bi); updateUI(); refreshSheet(); }
 
 /* ---------------------------------------------------------------- take over the two panes */
 

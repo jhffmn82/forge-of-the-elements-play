@@ -24,7 +24,7 @@ function refusalText(id){
   if(id==='reginald' && (player.aff.shadow||0)>0) return 'Sir Reginald wants nothing to do with shadow.';
 
   if(id==='glimmer' && (player.aff.shadow||0)>0) return 'Saint Glimmer will not touch shadow.';
-  if(id==='glimmer' && !canHoldLight()) return 'Saint Glimmer’s light needs room: Light must be able to be one of your two elements.';
+  if(id==='glimmer' && !canHoldLight()) return 'Saint Glimmer\'s light needs room: you already hold two elements, and neither is Light.';
   return g.name+' refuses you.';
 }
 function canHoldLight(){
@@ -65,7 +65,7 @@ function takeGlimmerLight(){
   player.aff.light=Math.max(0,(player.aff.light||0)-1);
   if(!player.aff.light) delete player.aff.light;
   if(player.primary==='light' && !player.aff.light) player.primary=Object.keys(player.aff)[0]||null;
-  log('<b>Saint Glimmer</b> takes back the light he gave you.','c-you');
+  log('<b>Saint Glimmer</b> takes back the light she gave you.','c-you');
 }
 
 
@@ -110,7 +110,7 @@ function greaterPrayer(){
     else {drop(rng()<.5?{kind:'ring',it:makeRing(null,false)}:{kind:'amulet',it:makeAmulet(null,false)});log('<b>Tempt Fate:</b> jewelry.','c-good');}
   }else if(roll<.35){
     var pool=ents.filter(function(e){return e.foe&&e.hp>0&&!(e.base&&e.base.boss)&&!e.elite;});
-    for(var i=0;i<3;i++){var s=nearFree(player.x,player.y,3);if(s){var model=pool.length?pick(pool):null;var m=spawn(model?model.kind:'rat',s.x,s.y);m.state='hunt';m.noXp=true;m.noReward=true;}}
+    for(var i=0;i<3;i++){var s=nearFree(player.x,player.y,3);if(s){var model=pool.length?pick(pool):null;var m=spawn(model?model.kind:'rat',s.x,s.y);m.state='hunt';m.noLoot=true;}}
     log('<b>Tempt Fate:</b> an unrewarding ambush!','c-you');
   }else if(roll<.70){player.hp=Math.max(1,Math.ceil(player.hp/2));applyStatus(player,'blind',4);log('<b>Tempt Fate:</b> blood and sight.','c-you');}
   else if(roll<.95){var spots=safeWobbleSpots();if(spots.length){var s=pick(spots);player.x=s.x;player.y=s.y;player._lx=undefined;}log('<b>Tempt Fate:</b> displacement.','c-you');}
@@ -126,10 +126,10 @@ var GOD_BLURB = {
   grom:     'A bare-knuckled god of the old sort, who thinks a weapon is an apology for weak arms. His shrines are worn smooth where fists have struck them.',
   grumbok:  'He hates wizards. That is the whole of his theology, and he pursues it with the patience of a man sharpening a very large axe.',
   glimmer:  'A saint, not a god: a healer who walked into the dark once too often and never quite came back. Her light mends what it touches and burns what should not be.',
-  murk:     'Mother of the quiet dead. She does not raise her voice, and she does not think dying should end anyone\'s usefulness.',
+  murk:     'Mother Murk keeps the dead close. She never raises her voice, and she does not think dying should end anyone\'s usefulness.',
   reginald: 'An adventurer who died of an ambush and took it personally. He asks only that you let them see you coming, and hit them anyway.',
-  anvil:    'The smith below, who never sleeps and never asks what you did. Bring essence, and he will make your gear worthy of a better owner.',
-  vellum:   'A book that reads itself, endlessly. Vellum remembers every spell ever spoken and wants nothing more than to hear them all again.',
+  anvil:    'He never sleeps, and he never asks what you did. Bring him essence, and he will make your gear worthy of a better owner.',
+  vellum:   'A book that reads itself, endlessly. Vellum has heard every spell there is and wants nothing more than to hear them all again.',
   wobbles:  'Nobody knows what Wobbles is. He finds that funny. Amuse him and he is generous; bore him and he gets creative.',
   sylla:    'A drider carved in white stone, waiting with her legs folded beneath her. Sylla teaches that the fight is decided before it starts: web it, let it bleed, and be somewhere else when it dies.'
 };

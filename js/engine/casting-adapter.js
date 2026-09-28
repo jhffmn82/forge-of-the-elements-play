@@ -14,7 +14,7 @@ var SELF_CASTS={
     log('Saint Glimmer mends you. +'+hh+' HP.','c-good');
   },
 "arcaneward":function(A,r,div){ player.buffs.communion=8; player.buffs.arcaneward=8; player.ward=Math.round((8+2*r)*div); sfx('cast-generic'); ringFx(player.x,player.y,'#7FA8FF',2); },
-"temper":function(A,r,div){ player.buffs.temper=fullDivineDuration(12);player._buffSeen=player._buffSeen||{};player._buffSeen['b:temper']=player.buffs.temper; derive(player); log('Old Anvil tempers your '+player.weapon.name+': +2 for 12 turns.','c-good'); sfx('forge-enchant'); sparkleFx(player.x,player.y,'fire',20); },
+"temper":function(A,r,div){ player.buffs.temper=fullDivineDuration(12);player._buffSeen=player._buffSeen||{};player._buffSeen['b:temper']=player.buffs.temper; derive(player); log('Old Anvil tempers your '+player.weapon.name+'.','c-good'); sfx('forge-enchant'); sparkleFx(player.x,player.y,'fire',20); },
 "rolldice":function(A,r,div){WOBBLE_BONUS=0;try{ sfx('wobbles-giggle'); wobblesIntervention(false); }finally{WOBBLE_BONUS=0;}},
 "unholyaura":function(A,r,div){
 
@@ -38,7 +38,7 @@ var SELF_CASTS={
 };
 function castSelf(key,A){
   var action=SELF_CASTS[key];if(!action)return false;
-  if(A.divine){spendSpellMana(A);setClip(player,key==='bellow'?'melee':'cast');}
+  if(A.divine){spendSpellMana(A);startInvokeCd(key);setClip(player,key==='bellow'?'melee':'cast');}
   return action(A,godRank(),divineStrength())!==false;
 }
 function castElementSelf(A){
@@ -89,13 +89,14 @@ function useAbility(i){
     if(cdLeft(key)>0){log('Charge is not ready ('+cdLeft(key)+' turns).','c-info');sfx('ui-error');return;}
     if(effectHasTag(player,'root')||gameEffects.has(player,'frozen')){log('You cannot charge while held fast.','c-info');sfx('ui-error');return;}
   }
+  if(A.divine&&cdLeft(key)>0){log(A.name+' is not ready ('+cdLeft(key)+' turns).','c-info');sfx('ui-error');return;}   /* an invoke's cooldown (DIVINE_COOLDOWNS) */
   if(A.kind!=='charge'&&player.mp<costOf(A)){log('Not enough mana for '+A.name+' ('+costOf(A)+').','c-info');sfx('no-mana');return;}
   if(A.kind==='summon'&&ents.some(function(e){return e.ally&&e.undeadServant;})){log('Your servant still stands.','c-info');return;}
   if(A.kind==='charge'||AIM_KINDS[A.kind]||['bolt','dash','summon'].includes(A.kind)){
     if(aiming&&aiming.i===i){cancelAim();return;}
     aiming={i:i,A:A};
-    if(key==='charge')log('<b>Charge</b> &mdash; click an enemy, or open ground, within 5 tiles in a straight line; Esc cancels.','c-info');
-    else log('<b>'+A.name+'</b> &mdash; '+(A.kind==='umbral'?'click any tile you have seen':A.kind==='tomb'?'click an enemy, or yourself':'click a target within '+spellRange(A)+' tiles')+', or press Esc.','c-info');
+    if(key==='charge')log('<b>Charge:</b> click an enemy, or open ground, within 5 tiles in a straight line. Esc cancels.','c-info');
+    else log('<b>'+A.name+':</b> '+(A.kind==='umbral'?'click any tile you have seen':A.kind==='tomb'?'click an enemy, or yourself':'click a target within '+spellRange(A)+' tiles')+', or press Esc.','c-info');
     abilityBar();draw();if(AUTO_AIM_KINDS[A.kind])autoAimPick();return;
   }
   if(['quake','storm','dawn'].includes(A.kind))return castElementSelf(A);

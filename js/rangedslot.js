@@ -17,9 +17,10 @@ function isRangedWeapon(it){ return !!(it && it.kind!=='off' && (it.range||0) > 
 
 
 /* ---------------------------------------------------------------- shooting: the bow answers for the shot
-   The whole attack pipeline reads player.weapon, so the bow steps into that slot for the duration of a
-   ranged attack and steps out again - the same trick the off-hand swing uses. That means a bow's tier,
-   upgrades and enchantment all apply to the shot, for free. */
+   A shot is resolved from a copy of the player whose weapon is the bow (attackView, engine/actions-adapter.js),
+   so the bow's tier, upgrades and enchantment apply to it; player.weapon itself never changes. On screen the
+   bow-shot clip has the bow painted in, and equip.js puts the melee weapon and off-hand item away while it plays
+   (2026-09-27). */
 
 
 /* ---------------------------------------------------------------- equipping goes to the right slot */
@@ -64,7 +65,7 @@ function bowSlotPress(){
   var live=bowLive();
   if(live){ BOWAIM=null; shootAt(live); return; }
   var e=bowNextTarget();
-  if(!e){ BOWAIM=null; log('Nothing in sight is within the <b>'+gearName(player.ranged)+'</b>’s reach.','c-info'); return; }
+  if(!e){ BOWAIM=null; log('Nothing in sight is within the <b>'+gearName(player.ranged)+'</b>\'s reach.','c-info'); return; }
   BOWAIM=e;
   log('You draw the <b>'+gearName(player.ranged)+'</b> on the <b>'+e.name+'</b>. Press again to loose.','c-info');
   if(typeof draw==='function') draw();

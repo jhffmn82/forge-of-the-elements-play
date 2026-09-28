@@ -5,9 +5,9 @@
   var unsubscribe=null;
   var retirementTimer=null,retirementQueued=null,retirementPrompt=null,retirementOnClose=null;
   var forms=[
-    {kind:'unmaker-tyrant',name:'The Unmaker — Crowned Tyrant',dmg:[42,62],armor:10,speed:100,col:'#DFAC75'},
-    {kind:'unmaker-unbound',name:'The Unmaker — The Unbound',dmg:[32,48],armor:7,speed:110,col:'#BFA0F0'},
-    {kind:'unmaker-heart',name:'The Unmaker — Heart of Discord',dmg:[44,62],armor:5,speed:110,col:'#F4D5FF'}
+    {kind:'unmaker-tyrant',name:'The Unmaker, Crowned Tyrant',dmg:[42,62],armor:10,speed:100,col:'#DFAC75'},
+    {kind:'unmaker-unbound',name:'The Unmaker, the Unbound',dmg:[32,48],armor:7,speed:110,col:'#BFA0F0'},
+    {kind:'unmaker-heart',name:'The Unmaker, Heart of Discord',dmg:[44,62],armor:5,speed:110,col:'#F4D5FF'}
   ];
   var elements=['fire','ice','lightning','light','dark'];
   var summonKinds=['chaos-horned-reaver','chaos-prism-seer','chaos-gorehound','chaos-lash-dancer','chaos-rotling'];
@@ -15,16 +15,15 @@
     {x:54,y:34,art:'crystal-violet',color:'#D2AEFF',label:'II'},
     {x:48,y:43,art:'crystal-gold',color:'#FFE193',label:'III'}];
   var hints=[
-    'Calls Chaos demons throughout every form, keeping at most three alive. Closes up to four clear tiles with Shoulder Rush. Great Cleave marks a forward arc two tiles deep; circle his flank. Immune to Fear and Stun. Blind, Root and Slow remain effective.',
-    'Three floating crystal pylons independently mark and fire Prism Lances. Their charge bars shrink over two world turns; the beams stay where first aimed. The Unbound alternates Rupture circles and Inversion Pulse while demons keep arriving. Step out of marked tiles or behind cover; floating pylons do not block movement. Immune to Fear and Stun.',
-    'Calls Chaos demons throughout every form, keeping at most three alive. Discord Pulse hits the red tiles first, then the violet tiles; both beats give a response action. Immune to Fear and Stun.'
+    'Keeps up to 3 Chaos demons at its side in every form. Shoulder Rush carries it up to 4 tiles toward you. Great Cleave marks the ground up to 2 tiles in front of it: circle its flank. It shrugs off Fear and Stun, but Blind, Root and Slow still work.',
+    'Three floating Prism Pylons each mark a line and fire down it 2 turns later; the beam does not follow you. The Unbound takes turns casting Rupture and Inversion Pulse, and demons keep coming. Step off the marked tiles or behind cover. The pylons float, so they never block your way. It shrugs off Fear and Stun.',
+    'Keeps up to 3 Chaos demons at its side in every form. Discord Pulse strikes the red tiles first and the violet tiles next, and you get a turn to move before each. It shrugs off Fear and Stun.'
   ];
   forms.forEach(function(form,index){
     MONSTERS[form.kind]=Object.assign({hp:4500,acc:85,eva:24,range:1,xp:1500,band:[99,99],w:0,
       sprite:'m-'+form.kind,ch:'U',boss:true,living:true,encounterId:'unmaker',unmakerPhase:index+1,
-      statusImmunities:['fear','stun'],footprint:2,big:2,art:1.8,artLeft:false},form);
+      statusImmunities:['fear','stun'],footprint:2,big:2,art:1.8,artLeft:false,hint:hints[index]},form);
     DROPS[form.kind]={chance:0,table:{}};
-    if(typeof DEEP_HINT!=='undefined')DEEP_HINT[form.kind]=hints[index];
   });
   function state(){return floorMeta&&floorMeta.unmakerEncounter||null;}
   function boss(){var s=state();return s&&ents.find(function(e){return e.id===s.bossId&&e.hp>0;})||null;}
@@ -81,7 +80,7 @@
       s.warning=null;e.windup=null;s.majorReadyAt=clock()+200;s.summonReadyAt=clock();
       ensurePylons(s);
       if(!quiet){animation(e,'transition','cast');burst(e.x,e.y,phase===2?'magic':'light',38,.08);
-        log(phase===2?'The armor breaks apart. <b>The Unbound</b> unfurls its crystal wings. <b>Three Prism Pylons awaken</b> — their beams charge independently!':'The body shatters. The <b>Heart of Discord</b> calls demons through the breach.','c-kill');}
+        log(phase===2?'The armor breaks apart. <b>The Unbound</b> unfurls its crystal wings. <b>Three Prism Pylons awaken</b>, and each charges its own beam!':'The body shatters. The <b>Heart of Discord</b> calls demons through the breach.','c-kill');}
     }
     return changed;
   }
@@ -126,7 +125,7 @@
   }
   function direct(e,target,amount,type){
     var damage=applyDamage(target,sDMG(amount),type,e,{tags:['area','unmaker']});floatText(target.x,target.y,String(damage),type,true);
-    if(target===player&&damage>0)log(e.name+' deals '+damage+' '+FoteDamage.label(type)+' damage.','c-you');if(target.hp<=0)kill(target,e);return damage;
+    if(target===player&&damage>0)log('The Unmaker deals '+damage+' '+FoteDamage.label(type)+' damage.','c-you');if(target.hp<=0)kill(target,e);return damage;
   }
   function spell(e,target){
     var s=state(),type=elements[s.elementIndex++%elements.length],chance=hitChance(accOf(e),evaOf(target));
@@ -178,7 +177,7 @@
     else {var pulse=planPulse(e);tiles=pulse.tiles;outer=pulse.outer;}
     if(!tiles.length)return false;
     var w={unmaker:true,kind:kind,tiles:tiles,outer:outer,origin:origin,armedTurn:turn,beat:1,due:1};s.warning=w;e.windup=w;
-    animation(e,kind==='pulse'?'pulse-inner':kind,'cast');log('<b>'+({cleave:'Great Cleave — circle his flank!',rupture:'Rupture — leave the marked circle!',ring:'Inversion Pulse — advance into the inner gap!',pulse:'Discord Pulse — red first, violet second. Step out, then return!'})[kind]+'</b>','c-info');return true;
+    animation(e,kind==='pulse'?'pulse-inner':kind,'cast');log('<b>'+({cleave:'Great Cleave: circle its flank!',rupture:'Rupture: leave the marked ground!',ring:'Inversion Pulse: get in close!',pulse:'Discord Pulse: red first, then violet. Step out, then back in!'})[kind]+'</b>','c-info');return true;
   }
   function release(e){
     var s=state(),w=s.warning;if(!w||turn<=w.armedTurn)return true;
@@ -224,7 +223,7 @@
       var tiles=safePattern(beamTiles(p,target),e,pendingTiles());
       if(!tiles.length){p.readyAt=now+100;return;}
       p.warning={kind:'pylon-beam',tiles:tiles,origin:{x:p.x,y:p.y},armedTurn:turn,fireAt:now+200};
-      log('<b>Prism Pylon '+pylonSites[p.id].label+'</b> charges a beam — two world turns.','c-info');
+      log('<b>Prism Pylon '+pylonSites[p.id].label+'</b> charges a beam. It fires in 2 turns.','c-info');
     });
   }
   function rush(e,target){
@@ -271,7 +270,7 @@
     if(floorMeta.chaosCombat)floorMeta.chaosCombat.hazards=(floorMeta.chaosCombat.hazards||[]).filter(function(h){return !removed.has(h.sourceId);});
     floorMeta.marks=(floorMeta.marks||[]).filter(function(m){return !m.unmaker&&!removed.has(m.sourceId);});
     floorMeta.bossRewarded=true;RUN.bossDead=true;animation(e,'death','death');burst(e.x,e.y,'light',70,.1);
-    FoteUnmakerPreview.completeEncounter();playSceneMusic();log('<b>The Unmaker falls.</b> The way to the Forge of the Elements is open. Use the Forge when you are ready to restore balance.','c-kill');
+    FoteUnmakerPreview.completeEncounter();playSceneMusic();log('<b>The Unmaker falls.</b> Use the Forge of the Elements when you are ready to restore balance.','c-kill');
     s.retirementPending=false;return true;
   }
   function cancelRetirementPrompt(){
@@ -324,7 +323,7 @@
     if(!f||x<f.x||y<f.y||x>=f.x+f.w||y>=f.y+f.h)return null;
     var near=!!player&&Math.max(Math.max(f.x-player.x,0,player.x-(f.x+f.w-1)),Math.max(f.y-player.y,0,player.y-(f.y+f.h-1)))<=1;
     return {name:'Forge of the Elements',x:f.x,y:f.y,w:f.w,h:f.h,near:near,ready:!!(s&&s.status==='defeated'),
-      hint:s&&s.status==='defeated'?'Click or tap the Forge from beside it to restore balance and choose whether to retire.':'The restoration Forge awaits the Unmaker\'s defeat.'};
+      hint:s&&s.status==='defeated'?'Stand beside the Forge and click or tap it. You can restore balance and retire, or keep exploring.':'It will not wake until the Unmaker falls.'};
   }
   function interactForge(x,y){
     var f=forgeInfo(x,y),s=state();if(!f||!f.near||!f.ready||!s||player.hp<=0||RUN.over||RUN.victory||modalOpen)return false;

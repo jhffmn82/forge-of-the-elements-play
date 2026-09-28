@@ -49,7 +49,9 @@ function boltFx(ax,ay,bx,by,type,opts){
   /* an arrow is loosed, not lobbed: about a third of the flight time of a spell bolt (2026-09-18) */
   var dur=(opts && opts.arrow) ? 45+18*d : 110+55*d;
   var el = type==='phys' && opts && opts.arrow ? 'arrow' : type;
-  fx.push({k:'p', ax:ax, ay:ay, bx:bx, by:by, type:type, arrow: !!(opts&&opts.arrow), t0:fxAt(dur, dur*0.85), dur:dur, hit:false, sfxHit: opts&&opts.sfxHit, silentHit:!!(opts&&opts.silentHit)});
+  var bolt={k:'p', ax:ax, ay:ay, bx:bx, by:by, type:type, arrow: !!(opts&&opts.arrow), dur:dur, hit:false, sfxHit: opts&&opts.sfxHit, silentHit:!!(opts&&opts.silentHit)};
+  bolt.t0=fxAt(dur, dur*0.85, !turnAnimationEffectVisible(bolt));   /* one flying off the screen queues nothing */
+  fx.push(bolt);
 }
 
 function drawCorpse(f, p, opacity){
@@ -93,15 +95,17 @@ function turnDeathRemains(clock){
   if(floorMeta&&floorMeta.deathRemains)floorMeta.deathRemains=floorMeta.deathRemains.filter(function(c){return clock<c.expiresAt;});
 }
 function drawDeathRemains(){
-  if(!floorMeta||!floorMeta.deathRemains)return;
-  var now=performance.now(),animating=new Set();
-  fx.forEach(function(f){if(f.k==='d'&&f.remains&&now<f.t0+f.dur)animating.add(f.remains);});
-  floorMeta.deathRemains.forEach(function(c){
+  var now=performance.now(),dying=fx.filter(function(f){return f.k==='d'&&now<f.t0+f.dur;}),animating=new Set();
+  dying.forEach(function(f){if(f.remains)animating.add(f.remains);});
+  if(floorMeta&&floorMeta.deathRemains)floorMeta.deathRemains.forEach(function(c){
     var e=c.e,i=idxOf(e.x,e.y);
     if(worldNow()>=c.expiresAt||!(revealAll||seen[i]))return;
     if(animating.has(c))return;
     drawCorpse({e:e,remains:c,dust:true},1,(revealAll||vis[i])?1:memA(.45));
   });
+  /* 2026-09-27 (render plan C8): the death clip plays here, lit and under whoever stands nearby, like the remains it
+     becomes. Drawn with the effects, over the lighting, the body was about twice as bright until the clip ended. */
+  dying.forEach(function(f){drawCorpse(f,Math.max(0,(now-f.t0)/f.dur));});
 }
 
 function drawFX(){
@@ -115,7 +119,7 @@ function drawFX(){
       continue;
     }
     keep.push(f);
-    if(f.k==='d'){ drawCorpse(f, Math.max(0,p)); continue; }
+    if(f.k==='d') continue;   /* death clips play in the lit floor pass (drawDeathRemains) */
     if(p<0) continue;
     if(f.k==='l') continue;
     if(f.k==='t'){
@@ -219,7 +223,7 @@ function fxTick(t){
   /* 2026-09-22: 60 fps while the hero slides - a 170 ms step drawn at 30 fps was five positions, a visible
      stutter (Justin) - and 30 fps the rest of the time, for the phones' sake */
   var cap = (typeof motionActive==='function' && typeof player!=='undefined' && player && motionActive(player, t||performance.now())) ? 15 : 33;
-  if(live){ if(!t || t-lastFrame>=cap){ lastFrame=t||0; draw(); } fxIdleFrames=3; }
+  if(live){ if(!t || t-lastFrame>=cap){ lastFrame=t||0; draw(); MOTION_SHOWN=performance.now(); } fxIdleFrames=3; }
   else if(fxIdleFrames>0){ fxIdleFrames--; draw(); }
   requestAnimationFrame(fxTick);
 }

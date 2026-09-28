@@ -6,7 +6,7 @@ function inventorySlotPolicy(){return {capacity:BAG_MAX,empty:EMPTY_OFF,ranged:i
 function inventoryFailure(plan){
   var messages={missing:'That item is no longer in your bag.',full:'Your bag is full.',slot:'That item does not fit there.',
     'main-slot':'That is not a weapon.','armor-slot':'That is not armor.','ring-slot':'That is not a ring.','amulet-slot':'That is not an amulet.',
-    'ranged-slot':'Only a bow or another weapon with reach goes there.','bow-offhand':'A bow needs both hands. It goes in your ranged slot.',
+    'ranged-slot':'Only a bow goes there.','bow-offhand':'A bow needs both hands. It goes in your ranged slot.',
     'off-slot':'Only a light weapon, shield or focus fits your off hand.','both-hands':'Both hands are on the '+player.weapon.name+'.'};
   if(plan.error==='forbidden')return refuseDivine();
   if(plan.error==='cursed'){cursedBlock(plan.item);return false;}
@@ -56,7 +56,7 @@ function commitEquipment(plan){
     plan.slot==='amulet'?'You fasten the <b>'+gearName(item)+'</b>. Use it from the hotbar.':
     plan.slot==='armor'?'You put on the <b>'+gearName(item)+'</b>.':'You take up the <b>'+gearName(item)+'</b>.';
   log(text,'c-good');sfx(['main','off','ranged'].indexOf(plan.slot)>=0?'equip-weapon':'equip-armor');
-  if(plan.stowOff)log('Both hands are on the '+item.name+' &mdash; the '+plan.displaced[plan.displaced.length-1].item.name+' goes into your bag.','c-info');
+  if(plan.stowOff)log('Both hands are on the '+item.name+', so the '+plan.displaced[plan.displaced.length-1].item.name+' goes into your bag.','c-info');
   endTurn();return true;
 }
 function equipFromBag(index,slot){if(gameTurns.busy())return false;var plan=FoteInventory.planEquip(player,index,slot,inventorySlotPolicy());return plan.error?inventoryFailure(plan):commitEquipment(plan);}

@@ -5,15 +5,16 @@ function renderAmuletHotbar(){
   for(var i=0;i<btns.length;i++){
     var idx=+btns[i].getAttribute('data-i'), s=player.hotbar[idx];
     if(!s || s.type!=='amulet' || !player.amulet) continue;
-    var a=player.amulet, ready=!(a.charge>0);
+    var a=player.amulet, ready=(a.charges||0)>0;   /* the charge line itself is written by renderAmuletCharges */
     var b=document.createElement('button');
     b.className='slot hasico'; b.setAttribute('data-i', idx); b.title=AMULETS[a.amulet] ? gearName(a) : 'Amulet';
     if(!ready) b.disabled=true;
-    b.innerHTML='<span class="ico"></span><span class="k">'+(idx+1)+'</span><span class="n">'+gearName(a)+'</span><span class="c">'+(ready?'ready':a.charge+' turns')+'</span>';
+    b.innerHTML='<span class="ico"></span><span class="k">'+(idx+1)+'</span><span class="n">'+gearName(a)+'</span><span class="c">'+(ready?'ready':'no charges')+'</span>';
     btns[i].replaceWith(b);
     (function(bb, ii){ bb.onclick=function(){ sfx('ui-click'); pressSlotIndex(ii); };
       bb.oncontextmenu=function(ev){ ev.preventDefault(); player.hotbar[ii]=null; abilityBar(); };
       dragSource(bb, 'hot:'+ii);
+      dropTarget(bb, function(tag){ hotbarDrop(ii, tag); });   /* the replaced slot still takes a drop */
       var ico=bb.querySelector('.ico'); if(ico && (objArt('items',a.icon))) paintArt(ico,'items',a.icon,28); })(b, idx);
   }
 }
@@ -32,12 +33,23 @@ function renderAmuletCharges(){
   }
 }
 
+/* 2026-09-28 (Justin: a better sign of skills on cooldown): a slot on cooldown greys its icon, shows a dark clock sweep for
+   the part still to run and a big turn count, and flashes once when it is ready again. CD_SPAN remembers each cooldown's
+   longest remaining time as its length, so the sweep works for abilities, prayers and invokes alike. */
+var CD_SPAN={};
 function renderHotbarCooldowns(){
 
   if(!player || !player.hotbar || !$('hotbar')) return;
   $('hotbar').querySelectorAll('.slot[data-i]').forEach(function(b){
-    var s=player.hotbar[+b.getAttribute('data-i')];
-    if(s && s.type==='ability' && ABILITIES[s.key] && ABILITIES[s.key].cd){ var c=b.querySelector('.c'), left=cdLeft(s.key); if(c) c.textContent = left ? left+' turns' : 'ready'; if(left) b.style.opacity='0.6'; }
+    var s=player.hotbar[+b.getAttribute('data-i')], key=null, left=0, c=b.querySelector('.c');
+    if(s && s.type==='ability' && ABILITIES[s.key] && ABILITIES[s.key].cd){ key=s.key; left=cdLeft(key); if(c) c.textContent = left ? left+' turns' : 'ready'; }
+    /* prayers and invokes on a cooldown (DIVINE_COOLDOWNS): the same "N turns" badge */
+    else if(s && (s.type==='prayer' || s.type==='ability')){ key=s.type==='prayer' ? prayerCdKey(s.key) : s.key; left=cdLeft(key); if(left && c) c.textContent=left+' turns'; }
+    if(!key) return;
+    var was=CD_SPAN[key];
+    if(left){ var span=Math.max(was||0, left, s.type==='ability' && ABILITIES[s.key] && ABILITIES[s.key].cd || 0); CD_SPAN[key]=span;
+      b.classList.add('oncd'); b.style.setProperty('--cdp', Math.round(left/span*100)); }
+    else if(was){ delete CD_SPAN[key]; b.classList.add('cdready'); setTimeout(function(){ b.classList.remove('cdready'); }, 700); }
   });
 }
 
@@ -53,7 +65,7 @@ function bindHotbarCards(){
     if(s && (/turns/.test(txt) || s.type==='amulet')){
       var m=txt.match(/(\d+)\s*turns/), a=s.type==='amulet' && player.amulet;
       var count=a ? (a.charges||0)+'/'+(typeof amuletCap==='function' ? amuletCap(a) : AMULET_MAX_CHARGES) : m && m[1];
-      if(count!==null && count!==false){ var d=document.createElement('span'); d.className='cdn'; d.textContent=count; b.appendChild(d); }
+      if(count!==null && count!==false){ var d=document.createElement('span'); d.className='cdn'+(a ? '' : ' cdbig'); d.textContent=count; b.appendChild(d); }
     }
   });
 }
@@ -95,9 +107,12 @@ function syncHotbar(){
     if(s.type==='item' && player.bag.indexOf(s.ref)<0) player.hotbar[i]=null;
   }
   if(!player.hotKnown) player.hotKnown={};
-  /* every ability and prayer you know keeps a slot: one that is missing goes back into the first empty slot */
+  /* every ability and prayer you know keeps a slot: one that is missing goes back into the first empty slot,
+     unless the player dragged it off the bar (hotbarRemove marks it 'off' until it is dragged back on) */
   function offer(type, key){
-    player.hotKnown[type.charAt(0)+':'+key]=true;
+    var known=type.charAt(0)+':'+key;
+    if(player.hotKnown[known]==='off') return;
+    player.hotKnown[known]=true;
     for(var j=0;j<8;j++){ var h=player.hotbar[j]; if(h && h.type===type && h.key===key) return; }
     for(var j2=0;j2<8;j2++) if(!player.hotbar[j2]){ player.hotbar[j2]={type:type, key:key}; return; }
   }
@@ -165,7 +180,7 @@ function updateUI(){renderPlayerUI();compactHUDChips();renderStatusBar();}
 function updateTurnUI(){bars();compactHUDChips();renderStatusBar();}
 
 function paintArt(el,group,name,size){
- if(el&&el.closest&&el.closest('#hotbar'))size=Math.max(size||32,document.body.classList.contains('touch')?72:64);
+ /* hotbar icons are repainted at the size the slot shows them (ui.js paintIconArt), no 64/72 over-paint (2026-09-27) */
  var result=paintArtCanvas(el,group,name,size);
  if(el&&el.classList&&el.classList.contains('ico')&&group!=='cast')iconChipFor(el,name);
  return result;
@@ -174,7 +189,7 @@ function paintArt(el,group,name,size){
 function hotbarCard(i){
   var h=buildHotbarCard(i),s=player.hotbar&&player.hotbar[i];
   if(s && s.type==='ability' && clickSpellable(s.key))
-    h+='<div class="hint">'+(player.clickSpell===s.key ? 'Your click spell. Right-click or long-press to unset.' : 'Right-click or long-press: click enemies to cast this.')+'</div>';
+    h+='<div class="hint">'+(player.clickSpell===s.key ? 'Your click spell. Right-click or long-press to turn it off.' : 'Right-click or long-press to cast this whenever you click an enemy.')+'</div>';
   return h;
 }
 

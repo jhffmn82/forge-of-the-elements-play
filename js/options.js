@@ -16,7 +16,7 @@ function applyAnimSpeed(){
 }
 applyAnimSpeed();
 var _fxAtOpt = fxAt;
-fxAt = function(dur, hold){ return _fxAtOpt(dur/ANIM_SPEED, hold===undefined ? undefined : hold/ANIM_SPEED); };
+fxAt = function(dur, hold, unseen){ return _fxAtOpt(dur/ANIM_SPEED, hold===undefined ? undefined : hold/ANIM_SPEED, unseen); };
 /* effects carry their own duration: shorten each one as it is queued */
 function speedFxList(){
   if(!fx || fx._sp) return;
@@ -81,7 +81,7 @@ function settingsHTML(){
      '<div class="sec">Display</div>'+
      (window.MOBILE && window.FoteMobileOrientation ? '<div class="optrow"><span>Orientation</span>'+segHTML('orientation', [['portrait','Portrait'],['landscape','Landscape']], FoteMobileOrientation.getPreference())+'</div><p id="orientationStatus" role="status" style="font-size:12px;color:var(--ash);line-height:1.4">'+FoteMobileOrientation.getStatus()+'</p>' : '')+
      '<div class="optrow"><span>Map zoom</span>'+segHTML('mapzoom', [['far','Far'],['normal','Normal'],['close','Close'],['closest','Closest']], MAP_ZOOM)+'</div>'+
-     '<div class="optrow"><span>Block Art</span>'+segHTML('mapart', [['block','On'],['sprite','Off']], spriteOn?'sprite':'block')+'</div>'+
+     '<div class="optrow"><span>Block art</span>'+segHTML('mapart', [['block','On'],['sprite','Off']], spriteOn?'sprite':'block')+'</div>'+
      '<div class="optrow"><span>Dynamic lighting</span>'+segHTML('light', [['on','On'],['off','Off']], lightOn?'on':'off')+'</div>'+
      '<div class="optrow"><span>Motion (sway, flicker, bob)</span>'+segHTML('motion', [['auto','Auto'],['on','On'],['off','Off']], ANIM.mode)+'</div>'+
      '<div class="optrow"><span>Animation speed</span>'+segHTML('speed', [[1,'1&times;'],[1.5,'1.5&times;'],[2,'2&times;'],[3,'3&times;']], ANIM_SPEED)+'</div>'+

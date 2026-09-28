@@ -2,12 +2,12 @@
  * Authored layouts, actors, floor snapshots and action timing keep their owners. */
 (function(root){
   'use strict';
-  var pending=null;
+  var pending=null,prepared=false;
   function handles(n){return Number.isInteger(n)&&n>=21&&n<=25;}
   function entry(){return floorMeta&&floorMeta.chaosEntryPreview||null;}
   function prepare(){
     var names=Object.keys(root.CHAOS_ENEMY_ATLAS||{}).concat(['m-unmaker-tyrant','m-unmaker-unbound','m-unmaker-heart']);
-    return Promise.all([root.FoteChaosPreviewRenderer.ensureAssets(),root.FoteChaosPreviewArt.ensureAssets('chaos-mixed'),root.FoteChaosEnemyArt.ensureAssets(names),root.FoteChaosCurrentRenderer.ensureAssets()]);
+    return Promise.all([root.FoteChaosPreviewRenderer.ensureAssets(),root.FoteChaosPreviewArt.ensureAssets('chaos-mixed'),root.FoteChaosPreviewArt.ensureAssets('unmaker-forge'),root.FoteChaosEnemyArt.ensureAssets(names),root.FoteChaosCurrentRenderer.ensureAssets(),root.FoteUnmakerPylonArt.ensureAssets()]).then(function(art){prepared=true;return art;});
   }
   function currentAt(x,y){
     var meta=floorMeta&&floorMeta.chaosCampaign;if(!meta)return null;
@@ -17,7 +17,7 @@
     var destination=floorNo+(direction==='up'?-1:1),name=destination===20?'the treasure room':'floor '+destination;
     var point=direction==='up'?meta.upAt:meta.downAt;
     return {x:x,y:y,direction:direction,destinationFloor:destination,targetFloor:destination,dx:Number.isFinite(point.dx)?point.dx:0,dy:Number.isFinite(point.dy)?point.dy:-1,label:'Current to '+name,
-      hint:'A magical current carries you through the void to '+name+'. Ride it when you are ready.'};
+      hint:'A magical current will carry you through the void to '+name+'.'};
   }
   function materialPortalInfo(x,y){
     var meta=floorMeta&&floorMeta.chaosCampaign;
@@ -82,7 +82,7 @@
     floorMeta.chaosCampaign={version:1,upAt:up,downAt:down,materialGate:n===21};
     floorMeta.shrine=false;delete floorMeta.shrineGod;
     if(n<25){
-      floorMeta.notes=['Five islands drift in the void. Paired portals link their regions; a magical current on the final island carries you deeper.','There are no god shrines in the Realm of Chaos.'];
+      floorMeta.notes=['Five islands drift in the void, linked by paired portals. A magical current on the last island carries you deeper.','There are no god shrines in the Realm of Chaos.'];
       if(options.encounters!==false)root.FoteChaosEncounters.populate(preview,{seed:seed});
     }
     player.t=clock;ents.forEach(function(e){e.t=clock;});
@@ -145,7 +145,7 @@
         FoteTransitions.restore(gameState,saved,20);player.x=old.x;player.y=old.y;player.keys=old.keys;player.piety=old.piety;nextId=old.id;ents=old.ents;
         rng=old.random===null?old.rng:mulberry32(old.random);delete RUN.chaosEntryStash;throw error;
       }
-      closeModal();refresh();log('You enter <b>floor 21: the Realm of Chaos</b>. There are no god shrines beyond this point.','c-kill');
+      closeModal();refresh();log('You step through the portal into <b>the Realm of Chaos</b>.','c-kill');
       writeSlot('auto','floor 21');return true;
     }).catch(function(error){
       if(RUN===run&&floorMeta===from)openModal('The portal could not open','Your character and the treasure room are unchanged. Please try again.',[{label:'Close',fn:closeModal}]);
@@ -153,5 +153,5 @@
     }).finally(function(){pending=null;});
     return pending;
   }
-  root.FoteChaosCampaign=Object.freeze({handles:handles,prepare:prepare,build:build,currentAt:currentAt,currentInfo:currentAt,materialPortalInfo:materialPortalInfo,materialPortalPrompt:materialPortalPrompt,entryHint:entryHint,stashEntry:stashEntry,restore:restore,descend:descend,ascend:ascend,enterRealm:enterRealm});
+  root.FoteChaosCampaign=Object.freeze({handles:handles,prepare:prepare,prepared:function(){return prepared;},build:build,currentAt:currentAt,currentInfo:currentAt,materialPortalInfo:materialPortalInfo,materialPortalPrompt:materialPortalPrompt,entryHint:entryHint,stashEntry:stashEntry,restore:restore,descend:descend,ascend:ascend,enterRealm:enterRealm});
 })(globalThis);

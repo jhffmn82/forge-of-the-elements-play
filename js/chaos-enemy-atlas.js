@@ -1,7 +1,7 @@
 /* Reviewed local Chaos creature sheets; excluded from the public build. */
 globalThis.CHAOS_ENEMY_ATLAS={
   "m-chaos-prism-seer": {
-    "file": "mob-m-chaos-prism-seer.png",
+    "file": "mob-m-chaos-prism-seer.webp",
     "cell": 192,
     "box": [
       43,
@@ -23,7 +23,7 @@ globalThis.CHAOS_ENEMY_ATLAS={
     "artLeft": false
   },
   "m-chaos-folded-horror": {
-    "file": "mob-m-chaos-folded-horror.png",
+    "file": "mob-m-chaos-folded-horror.webp",
     "cell": 192,
     "box": [
       16,
@@ -45,7 +45,7 @@ globalThis.CHAOS_ENEMY_ATLAS={
     "artLeft": false
   },
   "m-chaos-lens-bearer": {
-    "file": "mob-m-chaos-lens-bearer.png",
+    "file": "mob-m-chaos-lens-bearer.webp",
     "cell": 192,
     "box": [
       25,
@@ -67,7 +67,7 @@ globalThis.CHAOS_ENEMY_ATLAS={
     "artLeft": false
   },
   "m-chaos-bile-spitter": {
-    "file": "mob-m-chaos-bile-spitter.png",
+    "file": "mob-m-chaos-bile-spitter.webp",
     "cell": 192,
     "box": [
       16,
@@ -89,7 +89,7 @@ globalThis.CHAOS_ENEMY_ATLAS={
     "artLeft": false
   },
   "m-chaos-brood-carrier": {
-    "file": "mob-m-chaos-brood-carrier.png",
+    "file": "mob-m-chaos-brood-carrier.webp",
     "cell": 192,
     "box": [
       18,
@@ -111,7 +111,7 @@ globalThis.CHAOS_ENEMY_ATLAS={
     "artLeft": false
   },
   "m-chaos-rift-skitter": {
-    "file": "mob-m-chaos-rift-skitter.png",
+    "file": "mob-m-chaos-rift-skitter.webp",
     "cell": 192,
     "box": [
       16,
@@ -133,7 +133,7 @@ globalThis.CHAOS_ENEMY_ATLAS={
     "artLeft": false
   },
   "m-chaos-rotling": {
-    "file": "mob-m-chaos-rotling.png",
+    "file": "mob-m-chaos-rotling.webp",
     "cell": 192,
     "box": [
       16,
@@ -155,7 +155,7 @@ globalThis.CHAOS_ENEMY_ATLAS={
     "artLeft": false
   },
   "m-chaos-plague-bloat": {
-    "file": "mob-m-chaos-plague-bloat.png",
+    "file": "mob-m-chaos-plague-bloat.webp",
     "cell": 192,
     "box": [
       16,
@@ -177,7 +177,7 @@ globalThis.CHAOS_ENEMY_ATLAS={
     "artLeft": false
   },
   "m-chaos-horned-reaver": {
-    "file": "mob-m-chaos-horned-reaver.png",
+    "file": "mob-m-chaos-horned-reaver.webp",
     "cell": 192,
     "box": [
       32,
@@ -199,7 +199,7 @@ globalThis.CHAOS_ENEMY_ATLAS={
     "artLeft": false
   },
   "m-chaos-gorehound": {
-    "file": "mob-m-chaos-gorehound.png",
+    "file": "mob-m-chaos-gorehound.webp",
     "cell": 192,
     "box": [
       16,
@@ -221,7 +221,7 @@ globalThis.CHAOS_ENEMY_ATLAS={
     "artLeft": false
   },
   "m-chaos-chain-reaver": {
-    "file": "mob-m-chaos-chain-reaver.png",
+    "file": "mob-m-chaos-chain-reaver.webp",
     "cell": 192,
     "box": [
       24,
@@ -243,7 +243,7 @@ globalThis.CHAOS_ENEMY_ATLAS={
     "artLeft": false
   },
   "m-chaos-ironbound": {
-    "file": "mob-m-chaos-ironbound.png",
+    "file": "mob-m-chaos-ironbound.webp",
     "cell": 192,
     "box": [
       20,
@@ -265,7 +265,7 @@ globalThis.CHAOS_ENEMY_ATLAS={
     "artLeft": false
   },
   "m-chaos-lash-dancer": {
-    "file": "mob-m-chaos-lash-dancer.png",
+    "file": "mob-m-chaos-lash-dancer.webp",
     "cell": 192,
     "box": [
       38,
@@ -287,7 +287,7 @@ globalThis.CHAOS_ENEMY_ATLAS={
     "artLeft": false
   },
   "m-chaos-razor-dancer": {
-    "file": "mob-m-chaos-razor-dancer.png",
+    "file": "mob-m-chaos-razor-dancer.webp",
     "cell": 192,
     "box": [
       16,
@@ -309,7 +309,7 @@ globalThis.CHAOS_ENEMY_ATLAS={
     "artLeft": false
   },
   "m-chaos-hookfang": {
-    "file": "mob-m-chaos-hookfang.png",
+    "file": "mob-m-chaos-hookfang.webp",
     "cell": 192,
     "box": [
       16,
@@ -331,7 +331,7 @@ globalThis.CHAOS_ENEMY_ATLAS={
     "artLeft": false
   },
   "m-chaos-silk-weaver": {
-    "file": "mob-m-chaos-silk-weaver.png",
+    "file": "mob-m-chaos-silk-weaver.webp",
     "cell": 192,
     "box": [
       16,

@@ -11,19 +11,15 @@
      little rubble lies at the seam.
    - Lava: the 'lava' surface scrolled slowly and pulsing, cut to a rounded metaball edge with a basalt crust, and its
      own orange light.
-   - The pieces (map-deep.png) at natural size: standing pieces set down by their solid bottom over a contact shadow,
+   - The pieces (environment-props-deep.webp) at natural size: standing pieces set down by their solid bottom over a contact shadow,
      flat pieces lying in the floor with none, wall pieces hung from the top of a wall face, web curtains scaled to
      fill their tunnel tile, the drow stairway over the stairs.
    - Vegetation: the violet cave grass and fungus in the spider caves, ashweed on the volcanic rock (vegart.js).
    ===================================================================== */
 
 /* ---------------------------------------------------------------- the sheet */
-function deepArt(name){
-  var g=AS.map && AS.map.deep; if(!g || !g.items[name]) return null;
-  var img=atl('map-deep.png'); if(!img) return null;
-  var b=g.items[name];
-  return {img:img, sx:b[0]+b[2], sy:b[1]+b[3], sw:Math.max(1,b[4]), sh:Math.max(1,b[5]), ox:b[2], oy:b[3], fullW:b[6], fullH:b[7], nm:name};
-}
+/* every piece is in environment-props-deep.webp; the old map-deep.webp is archived (2026-09-27) */
+function deepArt(name){ return FoteEnvironmentProps.art('deep',name); }
 
 
 /* ---------------------------------------------------------------- the region of the cell being drawn */
@@ -38,7 +34,7 @@ function deepCellReg(x, y){ return deepRegionAt(Math.max(0,Math.min(MW-1,x)), Ma
 
 /* ---------------------------------------------------------------- per-floor cache */
 var DC = {key:null, map:null, cells:{}, built:0, rmix:null, lock:null, tex:{}};
-var DEEP_BUDGET = 18;       /* rasters baked a frame (about 1.5 ms each on a desktop; fewer on touch devices, below) */
+var DEEP_BUDGET = 1e9;      /* 2026-09-28: no per-frame cap; a cell is built in full the first time it is drawn (see PT_BUDGET) */
 function deepCache(){
   var key=(typeof worldSeed==='number'?worldSeed:0)+':'+floorNo;
   if(DC.key!==key || DC.map!==map){
@@ -76,7 +72,7 @@ function deepNeedsRaster(x, y, sig){
 /* ---------------------------------------------------------------- texture pixels */
 function deepTex(reg, name){
   var k=reg+':'+name; if(DC.tex[k]) return DC.tex[k];
-  var img=atl('surface-'+DEEP_REGIONS[reg]+'-'+name+'.png'); if(!img) return null;
+  var img=atl('surface-'+DEEP_REGIONS[reg]+'-'+name+'.webp'); if(!img) return null;
   if(name==='top'||name==='face')img=weatheredMasonry(img);
   try{
     var c=document.createElement('canvas'); c.width=img.naturalWidth||img.width; c.height=img.naturalHeight||img.height;
@@ -87,26 +83,36 @@ function deepTex(reg, name){
 function deepTexel(T, X, Y){ X=((X%T.w)+T.w)%T.w; Y=((Y%T.h)+T.h)%T.h; var p=(Y*T.w+X)*4; return p; }
 
 /* ---------------------------------------------------------------- the solid rock, per pixel */
-function deepWallCell(x, y){ return !inb(x,y) || isWallLike(at(x,y)); }
-function deepPixReg(wx, wy, salt){
-  var cx=Math.floor(wx), cy=Math.floor(wy), R=floorMeta.deepRegion;
-  if(!inb(cx,cy)) return deepCellReg(cx,cy);
-  var i=idxOf(cx,cy); if(DC.lock[i] || !DC.rmix[i]) return R[i];
+/* 2026-09-28: one raster's view of the floor, read once (the run state's fields are getters): wall bits, regions and
+   the region locks. Same values as at()/inb()/floorMeta, so the same pixels. */
+function deepContext(){
+  var C=deepCache(), W=MW, H=MH, m=map, bits=new Uint8Array(W*H);
+  for(var i=0;i<bits.length;i++) bits[i]=isWallLike(m[i])?1:0;
+  return {W:W, H:H, wall:bits, region:floorMeta.deepRegion, lock:C.lock, rmix:C.rmix};
+}
+function deepWallCell(x, y, c){ return x<0||y<0||x>=c.W||y>=c.H||c.wall[y*c.W+x]===1; }
+function deepPixReg(wx, wy, salt, c){
+  var cx=Math.floor(wx), cy=Math.floor(wy), R=c.region, W=c.W;
+  if(cx<0||cy<0||cx>=W||cy>=c.H) return deepCellReg(cx,cy);
+  var i=cy*W+cx; if(c.lock[i] || !c.rmix[i]) return R[i];
   var jx=(ptVal(wx*0.75, wy*0.75, salt+1)-0.5)*2.6 + (ptVal(wx*2.6, wy*2.6, salt+2)-0.5)*0.9 + (hash2(Math.floor(wx*16), Math.floor(wy*16), salt+5)-0.5)*0.35;
   var jy=(ptVal(wx*0.75+9, wy*0.75, salt+3)-0.5)*2.6 + (ptVal(wx*2.6+4, wy*2.6, salt+4)-0.5)*0.9 + (hash2(Math.floor(wx*16), Math.floor(wy*16), salt+6)-0.5)*0.35;
   var sx=Math.floor(wx+jx), sy=Math.floor(wy+jy);
-  return inb(sx,sy) ? R[idxOf(sx,sy)] : R[i];
+  return sx>=0&&sy>=0&&sx<W&&sy<c.H ? R[sy*W+sx] : R[i];
 }
-function deepSolid(wx, wy, style, salt){
-  var cx=Math.floor(wx), cy=Math.floor(wy), own=deepWallCell(cx,cy);
+function deepSolid(wx, wy, style, salt, c){
+  var cx=Math.floor(wx), cy=Math.floor(wy), own=deepWallCell(cx,cy,c);
   if(style==='rect') return own;
   var same=true;
-  for(var oy=-1;oy<=1 && same;oy++) for(var ox=-1;ox<=1;ox++) if(deepWallCell(cx+ox,cy+oy)!==own){ same=false; break; }
+  for(var oy=-1;oy<=1 && same;oy++) for(var ox=-1;ox<=1;ox++) if(deepWallCell(cx+ox,cy+oy,c)!==own){ same=false; break; }
   if(same) return own;
-  var sum=0, wsum=0;
-  for(var oy2=-2;oy2<=2;oy2++) for(var ox2=-2;ox2<=2;ox2++){
+  var sum=0, wsum=0, sub=ptSub(wx,wy);
+  if(sub>=0){   /* the same weights as ptSolid's, from its table (planeterrain.js ptFieldTables) */
+    var T=ptFieldTables(), W=T.solid, at0=sub*25, k=0; wsum=T.solidSum[sub];
+    for(var oy3=-2;oy3<=2;oy3++) for(var ox3=-2;ox3<=2;ox3++,k++){ var w3=W[at0+k]; if(w3 && deepWallCell(cx+ox3,cy+oy3,c)) sum+=w3; }
+  } else for(var oy2=-2;oy2<=2;oy2++) for(var ox2=-2;ox2<=2;ox2++){
     var nx=cx+ox2, ny=cy+oy2, dx=wx-(nx+0.5), dy=wy-(ny+0.5), d=Math.sqrt(dx*dx+dy*dy), w=Math.max(0, 1-d/1.35);
-    if(!w) continue; w*=w; wsum+=w; if(deepWallCell(nx,ny)) sum+=w;
+    if(!w) continue; w*=w; wsum+=w; if(deepWallCell(nx,ny,c)) sum+=w;
   }
   var f=wsum ? sum/wsum : (own?1:0), thr;
   if(style==='smooth') thr = 0.5 + (ptVal(wx*0.7, wy*0.7, salt+3)-0.5)*0.3;
@@ -164,13 +170,13 @@ function deepCellRaster(x, y){
   var salt=(typeof ptSalt==='function' ? ptSalt() : 7)+1301, RF=DEEP_RF, step=1/RF, FACE=RF;
   var regs=[0,1,2], TX={};
   for(var ri2=0; ri2<3; ri2++){ var fl=deepTex(ri2,'floor'), tp=deepTex(ri2,'top'), fc=deepTex(ri2,'face'); TX[ri2]={floor:fl, top:tp, face:fc}; }
-  var present=floorMeta.deepPresent || (floorMeta.deepPresent=(function(){ var s={}; for(var i=0;i<floorMeta.deepRegion.length;i++) s[floorMeta.deepRegion[i]]=1; return s; })());
+  var present=deepPresent();
   for(var k in present) if(!TX[k].floor || !TX[k].top || !TX[k].face) return undefined;   /* textures still loading: try again later */
   /* kinds (1 rock, 0 open) and regions over the cell and a tile below it (for the cliff faces) */
-  var W=RF+2, H=RF+FACE+2, kind=new Uint8Array(W*H), reg=new Uint8Array(W*H);
+  var W=RF+2, H=RF+FACE+2, kind=new Uint8Array(W*H), reg=new Uint8Array(W*H), ctx0=deepContext();
   for(var v=-1; v<H-1; v++) for(var u=-1; u<W-1; u++){
-    var wx=x+(u+0.5)*step, wy=y+(v+0.5)*step, rg=deepPixReg(wx, wy, salt), j=(v+1)*W+(u+1);
-    reg[j]=rg; kind[j]=deepSolid(wx, wy, DEEP_STYLE[rg], salt) ? 1 : 0;
+    var wx=x+(u+0.5)*step, wy=y+(v+0.5)*step, rg=deepPixReg(wx, wy, salt, ctx0), j=(v+1)*W+(u+1);
+    reg[j]=rg; kind[j]=deepSolid(wx, wy, DEEP_STYLE[rg], salt, ctx0) ? 1 : 0;
   }
   function K(u,v){ return kind[(v+1)*W+(u+1)]; }
   /* distance down to open ground, per mask pixel of the cell */
@@ -230,6 +236,12 @@ function deepCellRaster(x, y){
   c.environmentTerrain={mask:terrainMask,regions:terrainRegions,shade:terrainShade,faceY:terrainFaceY,pixels:D,wallDepth:wallDepth};
   return c;
 }
+/* The regions a floor has, kept on the floor the first time a cave raster is built or drawn (it has been saved
+   with the floor since 2026-09-19). A terrain worker builds rasters with its own copy, so the page notes it when it
+   draws one (deepRasterTile) or holds a view that has one (render-adapter.js holdTerrain), as it always did. */
+function deepPresent(){
+  return floorMeta.deepPresent || (floorMeta.deepPresent=(function(){ var s={}; for(var i=0;i<floorMeta.deepRegion.length;i++) s[floorMeta.deepRegion[i]]=1; return s; })());
+}
 function deepRasterTile(x, y){
   var C=deepCache(), sig=deepSig(x,y);
   if(!deepNeedsRaster(x,y,sig)) return null;
@@ -241,7 +253,8 @@ function deepRasterTile(x, y){
     if(r===undefined) return null;
     C.cells[key]=r;
   }
-  var img=C.cells[key];if(img&&typeof FoteEnvironmentTerrain!=='undefined')img=FoteEnvironmentTerrain.enhance(img,x,y,'deep');
+  var img=C.cells[key];if(img&&!floorMeta.deepPresent)deepPresent();
+  if(img&&typeof FoteEnvironmentTerrain!=='undefined')img=FoteEnvironmentTerrain.enhance(img,x,y,'deep',C.cells,key);
   return img ? {img:img, sx:0, sy:0, sw:img.width, sh:img.height, crisp:img.width===64} : null;
 }
 function deepIsRaster(x, y){ if(!inDeep() || !floorMeta.deepRegion) return false; return deepNeedsRaster(x, y, deepSig(x,y)); }
@@ -302,7 +315,7 @@ var DEEP_LB = null, DEEP_LM = null;
 function drawDeepLava(now){
   if(!floorMeta.lava) return;
   /* a plane with lava of its own (packet 04's Fire plane) uses its art; everything else uses the Underdark's */
-  var lava=(floorMeta.plane && AS.surface && AS.surface[floorMeta.plane+'-lava'] && atl('surface-'+floorMeta.plane+'-lava.png')) || atl('surface-lava.png');
+  var lava=(floorMeta.plane && AS.surface && AS.surface[floorMeta.plane+'-lava'] && atl('surface-'+floorMeta.plane+'-lava.webp')) || atl('surface-lava.webp');
   var painted=typeof FoteEnvironmentTerrain!=='undefined'&&FoteEnvironmentTerrain.lavaFlow();if(painted)lava=painted;
   if(!lava) return;
   // Field generation remains32px and cached. Only texture compositing follows

@@ -52,8 +52,17 @@ function sDMG(v){ return Math.max(1, Math.round(v*NUM*LETH)); }
 var player={ id:0, ch:'@', x:2, y:2, t:0, st:{}, foe:false, build:'dwarf',
              essence:0, motes:{}, bag:[], hidden:0, level:1, xp:0, xpNext:90, points:0, blurCd:0, fortCd:0 };
 
-function at(x,y){ return (x<0||y<0||x>=MW||y>=MH) ? WALL : map[y*MW+x]; }
-function setT(x,y,v){ if(x>=0&&y>=0&&x<MW&&y<MH) map[y*MW+x]=v; }
+/* 2026-09-28 (frame cost): map, MW and MH are run-state getters (js/engine/state.js), and one frame reads them tens of
+   thousands of times through at(), inb() and idxOf(). While a frame draws they are held here in plain variables
+   (render.js holdFrameState); drawing changes none of them. Outside a frame these stay unset and the getters answer. */
+var FRAME_MAP=null, FRAME_MW=0, FRAME_MH=0;
+function at(x,y){ if(FRAME_MAP) return (x<0||y<0||x>=FRAME_MW||y>=FRAME_MH) ? WALL : FRAME_MAP[y*FRAME_MW+x]; return (x<0||y<0||x>=MW||y>=MH) ? WALL : map[y*MW+x]; }
+function setT(x,y,v){
+  if(!(x>=0&&y>=0&&x<MW&&y<MH)) return;
+  /* a door that opens keeps its material for the renderer (render.js doorMaterial; Justin, 2026-09-27) */
+  if(v===OPEN && floorMeta && typeof doorMaterial==='function'){ var m=doorMaterial(x,y); if(m) (floorMeta.doorMaterials=floorMeta.doorMaterials||{})[y*MW+x]=m; }
+  map[y*MW+x]=v;
+}
 function biome(){ return BIOMES[Math.min(BIOMES.length-1, Math.floor((floorNo-1)/5))]; }
 
 /* ============ generation ============ */
@@ -86,19 +95,21 @@ var fx=[];
 var DMG_COL={phys:'#F2E8DC', fire:'#E2622B', ice:'#62A8D8', lightning:'#E8B44A',
              poison:'#7FA05A', dark:'#8A6FB0', light:'#FFF1CC', magic:'#C9A8FF', heal:'#7FA05A', miss:'#6E635B'};
 var fxClock=0;
-function fxAt(dur, hold){          /* each effect starts after the one before it */
+function fxAt(dur, hold, unseen){          /* each effect starts after the one before it */
   var now=performance.now();
   var t=Math.max(now, fxClock);
-  fxClock = t + (hold===undefined ? dur*0.55 : hold);
+  /* 2026-09-27: one the player cannot see holds nothing back (a wanderer on a trap across the floor held the next move) */
+  if(!unseen) fxClock = t + (hold===undefined ? dur*0.55 : hold);
   return t;
 }
 function floatText(x,y,text,type,big){
+  var seen=inb(x,y) && (revealAll || vis[idxOf(x,y)]) && turnAnimationOnscreen(x,y);
   fx.push({k:'t', x:x, y:y, text:text, col:DMG_COL[type]||DMG_COL.phys,
-           big:!!big, t0:fxAt(760,120), dur:760, jitter:(rng()-0.5)*0.4});
+           big:!!big, t0:fxAt(760,120,!seen), dur:760, jitter:(rng()-0.5)*0.4});
 }
 function lungeFx(e, tx, ty){
   var dur=230;
-  fx.push({k:'l', e:e, dx:Math.sign(tx-e.x), dy:Math.sign(ty-e.y), t0:fxAt(dur, dur*0.55), dur:dur});
+  fx.push({k:'l', e:e, dx:Math.sign(tx-e.x), dy:Math.sign(ty-e.y), t0:fxAt(dur, dur*0.55, !turnAnimationVisible(e)), dur:dur});
 }
 function entOffset(e){
   var now=performance.now(), ox=0, oy=0;
@@ -124,7 +135,7 @@ function cancelAim(){ if(!aiming) return; aiming=null; abilityBar(); draw(); }
 /* ============ sprites ============ =======================================
    Every creature and character draws from the packed sheets (art/packed, via assets.js). The sandbox's
    "Block art" button turns that off to show the old coloured blocks.
-   2026-09-22: the first PixelLab cut-outs (art/sprites/*.png) were still requested here on every launch
+   2026-09-22: the first PixelLab cut-outs (art/sprites/*.webp) were still requested here on every launch
    although nothing had drawn them since the sheets arrived - 17 files the published build does not ship,
    so 17 404s a launch. */
 var spriteOn=true;
@@ -152,22 +163,36 @@ function motionState(e){
   if(!s || s.floor!==floorMeta){s={x:e.x,y:e.y,fx:e.x,fy:e.y,mt:0,floor:floorMeta};MOTION_STATE.set(e,s);}
   return s;
 }
+/* 2026-09-28: a slide starts when the screen can first show it. A turn's monster moves run in one task before
+   anything is painted, and on a phone that task can outlast a slide, so a slide stamped since the last painted
+   frame (MOTION_SHOWN, fx.js fxTick) is started once the task's work is done (turn-presentation.js), never
+   partway through or already over. A pounce's leap keeps its own timing. */
+var MOTION_SHOWN=0;
+function motionStart(e,now){
+  var s=MOTION_STATE.get(e);
+  if(!s || !(s.st>MOTION_SHOWN)) return s;
+  s.st=0;
+  if(s.mt && s.mt<now && !(s.hopHeight>1)){ s.mt=now; lastFrame=0; }   /* and paint it on the next frame */
+  return s;
+}
 function motionActive(e,now){var s=MOTION_STATE.get(e);return !!(s && s.mt && now-s.mt<(s.dur||MOVE_MS));}
 /* how far through its slide a figure is: 1 when it is standing still, below 0 while a slide waits to start */
 function slideFrac(e,now){var s=MOTION_STATE.get(e);return (s && s.mt) ? (now-s.mt)/(s.dur||MOVE_MS) : 1;}
 function renderPos(e){
   var now=performance.now(),s=motionState(e);
+  /* a slide no frame has shown yet stays at its start until it is started (motionStart) */
+  var at=s.mt && s.st>MOTION_SHOWN ? Math.min(now,s.mt) : now;
   if(e.x!==s.x || e.y!==s.y){
-    var cur=slideAt(e,now),jump=Math.max(Math.abs(e.x-cur.x),Math.abs(e.y-cur.y));
+    var cur=slideAt(e,at),jump=Math.max(Math.abs(e.x-cur.x),Math.abs(e.y-cur.y));
     /* 2026-09-22 (Justin: walking stuttered). A step taken while the last slide is still running continues from
        where the figure is drawn, at a steady pace: the slide lasts in proportion to the distance left and runs
        linear instead of easing to a stop at every tile. A step from rest keeps its ease in and out. */
-    var chained=!!(s.mt && now-s.mt<(s.dur||MOVE_MS) && jump<=3);
+    var chained=!!(s.mt && at-s.mt<(s.dur||MOVE_MS) && jump<=3);
     s.fx=cur.x;s.fy=cur.y;s.x=e.x;s.y=e.y;s.lin=chained;s.hopHeight=1;
     s.dur=chained?Math.round(MOVE_MS*Math.max(0.5,jump)):MOVE_MS;
-    s.mt=(ANIM.reduce || jump>3)?0:(e!==player && typeof fxClock==='number'?Math.max(now,fxClock):now);
+    s.mt=(ANIM.reduce || jump>3)?0:(e!==player && typeof fxClock==='number'?Math.max(now,fxClock):now);s.st=at=now;
   }
-  return slideAt(e,now);
+  return slideAt(e,at);
 }
 function slideAt(e,now){
   var s=motionState(e);
@@ -206,11 +231,12 @@ function resize(){
   var tileCount=document.body.classList.contains('touch') && innerWidth>innerHeight ? Math.ceil : Math.floor;
   viewW = clamp(tileCount(W/TS), 8, MW);
   viewH = clamp(tileCount(H/TS), 6, MH);
-  var dpr=window.devicePixelRatio||1;
-  cv.width=viewW*TS*dpr; cv.height=viewH*TS*dpr;
+  var dpr=window.devicePixelRatio||1, width=Math.floor(viewW*TS*dpr), height=Math.floor(viewH*TS*dpr);
+  /* Resizing clears the canvas; an unchanged size keeps the last frame up while a new floor's art loads */
+  if(cv.width!==width || cv.height!==height){ cv.width=width; cv.height=height; }
   cv.style.width=(viewW*TS)+'px'; cv.style.height=(viewH*TS)+'px';
   ctx.setTransform(dpr,0,0,dpr,0,0); ctx.imageSmoothingEnabled=false;
-  if(typeof draw==="function") draw();   /* the resize observer can fire before render.js has loaded */
+  if(typeof draw==="function" && map) draw();   /* the resize observer can fire before render.js has loaded or before the first floor exists */
 }
 var camOX=0, camOY=0;
 function atTile(mx,my,fn){
@@ -266,10 +292,33 @@ function log(html, cls){
    Anything draggable writes a short tag into the payload:
      bag:N     an inventory cell        abil:KEY  an ability off the sheet
      hot:N     a hotbar slot            weapons   the weapon pair          */
+var dragFrom=null;   /* {tag, x, y}: the drag in the air, for a release that lands on nothing */
 function dragSource(el, tag){
   el.setAttribute('draggable','true');
-  el.ondragstart=function(ev){ ev.dataTransfer.setData('text/plain', tag); ev.dataTransfer.effectAllowed='move'; };
+  el.ondragstart=function(ev){ ev.dataTransfer.setData('text/plain', tag); ev.dataTransfer.effectAllowed='move'; dragFrom={tag:tag, x:ev.clientX, y:ev.clientY}; };
+  el.ondragend=function(){ dragFrom=null; };
 }
+/* 2026-09-27: a drag let go on nothing. A hotbar slot let go off the bar comes off it; a bag item let go outside
+   the inventory window (and off the hotbar) is dropped, the same Drop as the bag's right-click. A drag shorter
+   than 8 px, or one let go back inside, does nothing. touchui.js asks the same question for a finger. */
+function releasedOutside(inside, x0, y0, x, y){
+  if(Math.abs(x-x0)<8 && Math.abs(y-y0)<8) return false;
+  var el=document.elementFromPoint(x, y);
+  return !!(el && el.closest && !el.closest(inside));
+}
+function dragLandsOnNothing(d, x, y){
+  return !!d && /^(hot|bag):/.test(d.tag) && releasedOutside(d.tag.indexOf('hot:')===0 ? '#hotbar' : '.sheet, #hotbar', d.x, d.y, x, y);
+}
+/* the cursor only offers a drop where letting go would do something */
+document.addEventListener('dragover', function(ev){ if(dragLandsOnNothing(dragFrom, ev.clientX, ev.clientY)) ev.preventDefault(); });
+document.addEventListener('drop', function(ev){
+  var d=dragFrom; dragFrom=null;
+  if(!dragLandsOnNothing(d, ev.clientX, ev.clientY) || ev.dataTransfer.getData('text/plain')!==d.tag) return;
+  ev.preventDefault();
+  var n=+d.tag.slice(4);
+  if(d.tag.indexOf('hot:')===0) hotbarRemove(n);
+  else if(player.bag[n]) dropFromBag(n);
+});
 function dropTarget(el, take){
   el.ondragover=function(ev){ ev.preventDefault(); ev.dataTransfer.dropEffect='move'; el.classList.add('over'); };
   el.ondragleave=function(){ el.classList.remove('over'); };
@@ -288,7 +337,16 @@ function hotbarPut(i, entry){
   for(var j=0;j<8;j++) if(j!==i && player.hotbar[j] && entry &&
       player.hotbar[j].type===entry.type &&
       player.hotbar[j].key===entry.key && player.hotbar[j].ref===entry.ref) player.hotbar[j]=null;
+  if(entry && entry.key && player.hotKnown) player.hotKnown[entry.type.charAt(0)+':'+entry.key]=true;
   player.hotbar[i]=entry;
+  abilityBar();
+}
+/* 2026-09-27: a slot dragged off the bar is cleared. Nothing is unequipped or dropped. An ability or prayer
+   taken off stays off (syncHotbar would put it straight back) until it is dragged onto the bar again. */
+function hotbarRemove(i){
+  var s=player.hotbar[i]; if(!s) return;
+  if(s.key){ player.hotKnown=player.hotKnown||{}; player.hotKnown[s.type.charAt(0)+':'+s.key]='off'; }
+  player.hotbar[i]=null;
   abilityBar();
 }
 function kv(pairs){ return '<div class="kv">'+pairs.map(function(p){ return '<span>'+p[0]+'</span><b>'+p[1]+'</b>'; }).join('')+'</div>'; }

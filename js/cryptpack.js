@@ -27,7 +27,7 @@ var PACK_PLANE = {};
  'glow-mushrooms'].forEach(function(n){ PACK_PLANE[n]=1; });
 /* 2026-09-23 (Justin: the central pedestals had animated high-quality sprites made on 09-22, yet the fire plane still
    showed the small one): the three centrepieces are plane-pack pieces too, so packNameFor routes them into packDraw
-   and the 256px frames on map-planeset-anim.png show. Until now nothing sent them there and the map drew their
+   and the 256px frames on map-planeset-anim.webp show. Until now nothing sent them there and the map drew their
    62px props-grid cells. */
 ['lava-fountain','signature-water','signature-air'].forEach(function(n){ PACK_PLANE[n]=1; });
 /* 2026-09-23 (Justin: "you missed this one too", the fire rune stone): the packet-04 fire, water and air pieces are
@@ -47,7 +47,7 @@ function packCryptOn(){ return typeof inCrypt==='function' && inCrypt() && !(flo
 function packPlaneOn(){ return !!(floorMeta && floorMeta.plane) && typeof ptMat==='function' && !!ptMat(); }
 
 /* ---------------------------------------------------------------- the animated centrepieces (2026-09-22, Justin)
-   The lava fountain, the giant clam and the wind shrine draw from map-planeset-anim.png: 256px pieces cut from the
+   The lava fountain, the giant clam and the wind shrine draw from map-planeset-anim.webp: 256px pieces cut from the
    masters with four PixelLab frames each after the source frame (tools/pack.py pack_plane_anim). Two sheet pixels
    per art unit (res), so packDraw's placement is unchanged; the frame advances on the clock, one every 180 ms, and
    holds on the source frame when motion is off. */
@@ -61,13 +61,17 @@ function planeAnimFrame(name, n){
 function packArt(name){
   var A=AS.map && AS.map.planeanim, an=A && A.items && A.items[name];
   if(an){
-    var aimg=atl('map-planeset-anim.png');
+    var aimg=atl('map-planeset-anim.webp');
     if(aimg) return {img:aimg, sx:planeAnimFrame(name, an.frames||A.frames)*A.cell, sy:an.row*A.cell, sw:A.cell, sh:A.cell, fullW:A.cell/A.res, fullH:A.cell/A.res, ox:0, oy:0, nm:name, res:A.res};
   }
-  var g=AS.map && AS.map.set, sheet='map-set.png', b=g && g.items[name];
-  if(!b || PACK_PLANE[name]){ g=AS.map && AS.map.planeset; sheet='map-planeset.png'; b=g && g.items[name]; }
+  else {   /* the environment-props atlases first; PixelLab centerpieces keep their animated sheet above */
+    var fresh=FoteEnvironmentProps.art(AS.map && AS.map.set && AS.map.set.items[name] && !PACK_PLANE[name] ? 'set' : 'planeset', name) || (PACK_CRYPT[name] ? FoteEnvironmentProps.art('props', name) : null);
+    if(fresh) return fresh;
+  }
+  var g=AS.map && AS.map.set, sheet='map-set.webp', b=g && g.items[name];
+  if(!b || PACK_PLANE[name]){ g=AS.map && AS.map.planeset; sheet='map-planeset.webp'; b=g && g.items[name]; }
   if(!b && PACK_CRYPT[name] && AS.map && AS.map.props && AS.map.props.items[name]){   /* a 64x64 Crypt prop lives in the props grid */
-    var c=AS.map.props.items[name], cell=AS.map.props.cell||64, img0=atl('map-props.png'); if(!img0) return null;
+    var c=AS.map.props.items[name], cell=AS.map.props.cell||64, img0=atl('map-props.webp'); if(!img0) return null;
     return {img:img0, sx:c[0]+c[2], sy:c[1]+c[3], sw:Math.max(1,c[4]), sh:Math.max(1,c[5]), fullW:cell, fullH:cell, ox:c[2], oy:c[3], nm:name};
   }
   if(!b) return null;
@@ -76,9 +80,6 @@ function packArt(name){
 }
 /* the pack's pieces come straight from the sheet (no regrade), and the plane sheet answers setArt too */
 
-
-/* the plane stones are painted in each plane's palette now: no retint */
-if(typeof PT_STONE_PROPS!=='undefined') for(var _k in PT_STONE_PROPS) delete PT_STONE_PROPS[_k];
 
 /* empty canvas rows under the solid art (canvas px), read once per piece, as caveBottomPad does */
 var PACK_PAD = {};
@@ -338,7 +339,7 @@ function packDecorateRoom(r){
 var _decoratePlainPack = decoratePlain;
 decoratePlain = function(r){
   _decoratePlainPack(r);
-  if(packCryptOn() && !r.hall && packArt('candles-1')) packDecorateRoom(r);
+  if(packCryptOn() && !r.hall) packDecorateRoom(r);
 };
 /* the urn chamber: candles either side of the grave slab under the niche */
 
@@ -347,7 +348,6 @@ if(typeof stampCryptHall==='function'){
   var _stampCryptHallPack = stampCryptHall;
   stampCryptHall = function(ox, oy, mode){
     var hall=_stampCryptHallPack(ox, oy, mode);
-    if(!packArt('candles-1')) return hall;
     function P(x,y){ return {x:ox+x, y:oy+y}; }
     function put(x,y,name,extra){ var c=P(x,y); if(!inb(c.x,c.y) || propAt(c.x,c.y)) return null; return addProp(c.x, c.y, name, Object.assign({keep:true}, extra||{})); }
     [[10,3],[16,3]].forEach(function(q, i){ var c=put(q[0], q[1], 'candles-'+(i?4:2)); if(c && mode!=='boss') packLight(c.x, c.y+0.2, '#FFC878', 2.2, 0.32); });
@@ -461,7 +461,7 @@ function clearBuiltPlaneProps(el,seed){
 
 /* Named floor-content helpers; selected by content-adapter.js. */
 function decorateUrnChamber(r){
-    if(!packCryptOn() || !packArt('candles-1')) return;
+    if(!packCryptOn()) return;
     var rec=props.filter(function(p){ return p.name==='crypt-recess' && p.x>=r.x && p.x<r.x+r.w && p.y===r.y-1; })[0];
     if(rec) [-1,1].forEach(function(d){ if(packFloorFree(rec.x+d, r.y) && rng()<0.75) addProp(rec.x+d, r.y, 'candles-'+(1+Math.floor(rng()*4)), {keep:false}); });
 }

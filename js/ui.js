@@ -122,21 +122,59 @@ function confirmBox(title, text, yesLabel, onYes){
 }
 
 /* ---------------------------------------------------------------- art helpers */
+/* 2026-09-27 (Justin, equip plan step 8, D14): icons were fitted to their trimmed box through a smoothing filter (a ring
+   blown up x4.6) and on phones painted at 72 and shrunk again by CSS, so slots, bag and hotbar were soft. An icon is now
+   painted at the size it is shown. Ring and amulet icons in the slots, bag and hotbar fit their atlas cell, so a ring
+   keeps its true size beside a sword (D14); every other icon fits its painted box, as before. A whole-number scale (or
+   one within a tenth of it) draws nearest neighbour; any other enlargement goes through a whole-number nearest copy
+   first, so the one filtered step only shrinks, at 'high' quality. keep: the page sets the canvas's CSS size, so only
+   the backing store follows it. */
+var ICON_UP=new WeakMap(), ICON_SHOWN={};
+function paintIconArt(c, o, w, h, trinket, keep){
+  var d=window.devicePixelRatio||1, W=Math.max(1,Math.round(w*d)), H=Math.max(1,Math.round(h*d));
+  c.width=W; c.height=H; if(!keep){ c.style.width=(W/d)+'px'; c.style.height=(H/d)+'px'; }
+  var f=trinket && o.cell ? Math.min(W,H)/o.cell : Math.min(W/o.sw, H/o.sh)*0.92, n=Math.floor(f+1e-6), src=o;
+  if(n>=1 && f-n<n/10) f=n;
+  else if(f>1){
+    var k=Math.ceil(f), memo=ICON_UP.get(o.img); if(!memo) ICON_UP.set(o.img, memo={});
+    var id=o.sx+','+o.sy+','+o.sw+','+o.sh+'x'+k, u=memo[id];
+    if(!u){ u=memo[id]=document.createElement('canvas'); u.width=o.sw*k; u.height=o.sh*k; var q=u.getContext('2d'); q.imageSmoothingEnabled=false; q.drawImage(o.img,o.sx,o.sy,o.sw,o.sh,0,0,u.width,u.height); }
+    src={img:u, sx:0, sy:0, sw:u.width, sh:u.height}; f/=k;
+  }
+  var x=c.getContext('2d'), dw=src.sw*f, dh=src.sh*f;
+  x.imageSmoothingEnabled=f<1; x.imageSmoothingQuality='high';
+  x.drawImage(src.img, src.sx,src.sy,src.sw,src.sh, Math.round((W-dw)/2), Math.round((H-dh)/2), dw, dh);
+}
 function paintArtCanvas(el, group, name, size){
   var o = group==='cast' ? null : (objArt(group,name) || anyObj(name));
   var c=document.createElement('canvas'), d=window.devicePixelRatio||1, S=size||32;
+  if(o){
+    var trinket=group==='items' && /^item-(ring|amulet)(-|$)/.test(name) && !!((el.classList && el.classList.contains('gear')) || (el.closest && el.closest('#hotbar')));
+    /* a canvas the page stretches to its box (touch Gear tiles, the hotbar) is repainted at the size it is shown. For a
+       box already on the page that size is remembered per kind of box and window size, so the hotbar's repaint every
+       turn forces no layout; a detached one is measured on the next frame, once it has been placed. */
+    var key=el.isConnected && el.parentNode ? el.className+'<'+String(el.parentNode.className).split(' ')[0]+'@'+innerWidth+'x'+innerHeight+'x'+d+(document.body.classList.contains('touch')?'t':'') : null, known=key ? ICON_SHOWN[key] : undefined;
+    paintIconArt(c, o, known ? known[0] : S, known ? known[1] : S, trinket, !!known);
+    el.innerHTML=''; el.appendChild(c);
+    var shown=function(){ var st=getComputedStyle(c), w=/px$/.test(st.width) && parseFloat(st.width), h=/px$/.test(st.height) && parseFloat(st.height);
+      if(!(w>0 && h>0)) return;
+      var stretched=Math.abs(w-S)*d>0.5 || Math.abs(h-S)*d>0.5;
+      if(key) ICON_SHOWN[key]=stretched && [w,h];
+      if(stretched) paintIconArt(c, o, w, h, trinket, true); };
+    if(known===undefined){ if(key) shown(); else if(window.requestAnimationFrame) requestAnimationFrame(shown); }
+    return;
+  }
   c.width=S*d; c.height=S*d; c.style.width=S+'px'; c.style.height=S+'px';
   var x=c.getContext('2d'); x.setTransform(d,0,0,d,0,0); x.imageSmoothingEnabled=true;
   if(group==='cast'){
-    /* 2026-09-22 (Justin): character selection draws the 256px doll cut-out (cast-<look>-doll.png, the paper doll's
-       sheet) instead of the 128px portrait, feet on the box's floor; the portrait stays the fallback while it loads. */
-    var base=name.replace(/-unclad$/,''), dm=AS.cast && AS.cast[name] && AS.cast[name].doll, di=dm && atl('cast-'+name+'-doll.png');
+    /* 2026-09-22 (Justin): character selection draws the 256px doll cut-out (cast-<look>-doll.webp, the paper doll's
+       sheet), feet on the box's floor. The old portraits.webp is archived (2026-09-27): while a doll is unavailable the
+       look's own map-sheet still stands in (the character never disappears) and the doll retries. */
+    var cm=AS.cast && AS.cast[name], dm=cm && cm.doll, di=dm && atl('cast-'+name+'-doll.webp');
     if(di){ var ds=S*0.98/dm.stand, dw=dm.cell*ds; x.drawImage(di,0,0,dm.cell,dm.cell,(S-dw)/2,S-(dm.cell-(dm.foot||0))*ds+S*0.02,dw,dw); el.innerHTML=''; el.appendChild(c); return; }
-    var pt=AS.portraits && (AS.portraits.items[name]||AS.portraits.items[base]), pimg=pt && atl('portraits.png');
-    if(pimg){ var pc=AS.portraits.cell, sc=S/pc*1.1; x.drawImage(pimg,pt[0],pt[1],pc,pc,(S-pc*sc)/2,S-pc*sc+S*0.02,pc*sc,pc*sc); if(dm) setTimeout(function(){ if(el.isConnected) paintArt(el,group,name,size); }, 300); }
-    else if(pt){ setTimeout(function(){ if(el.isConnected) paintArt(el,group,name,size); }, 300); return; }
-  } else if(o){
-    var s=Math.min(S/o.sw, S/o.sh)*0.92; x.drawImage(o.img,o.sx,o.sy,o.sw,o.sh,(S-o.sw*s)/2,(S-o.sh*s)/2,o.sw*s,o.sh*s);
+    var si=cm && cm.static_row!=null && atl('cast-'+name+'.webp');
+    if(si){ var ss=S*0.98/cm.stand, sw=cm.cell*ss; x.drawImage(si,0,cm.static_row*cm.cell,cm.cell,cm.cell,(S-sw)/2,S-(cm.cell-(cm.foot||0))*ss+S*0.02,sw,sw); }
+    if(dm){ setTimeout(function(){ if(el.isConnected) paintArt(el,group,name,size); }, 300); if(!si) return; }
   } else if(AS.map){ setTimeout(function(){ if(el.isConnected && !el.querySelector('canvas')){ paintArt(el,group,name,size); } }, 500); return; }
   el.innerHTML=''; el.appendChild(c);
 }
@@ -192,8 +230,8 @@ function bossBar(){
   if(!b){ if(el) el.style.display='none'; return; }
   if(!el){ el=document.createElement('div'); el.id='bossbar'; el.className='bossbar'; $('map').appendChild(el); }
   el.style.display='block';
-  var warning=b.windup&&(b.windup.unmaker?{cleave:'GREAT CLEAVE',beam:'PRISM LANCE',ring:'INVERSION PULSE',pulse:'DISCORD PULSE '+b.windup.beat+'/2'}[b.windup.kind]:{slam:'GROUND SLAM in '+b.windup.due,ring:'SHOCKWAVE in '+b.windup.due,charge:'CHARGE!'}[b.windup.kind]);
-  var intent = b.dazed>0 ? ' &mdash; <span style="color:#E8D27A">DAZED</span>' : warning ? ' &mdash; <span style="color:#FF7A5A">'+warning+'</span>' : '';
+  var warning=b.windup&&(b.windup.unmaker?{cleave:'GREAT CLEAVE',rupture:'RUPTURE',beam:'PRISM LANCE',ring:'INVERSION PULSE',pulse:'DISCORD PULSE '+b.windup.beat+'/2'}[b.windup.kind]:{slam:'GROUND SLAM in '+b.windup.due,ring:'SHOCKWAVE in '+b.windup.due,charge:'CHARGE!'}[b.windup.kind]);
+  var intent = b.dazed>0 ? ' &middot; <span style="color:#E8D27A">DAZED</span>' : warning ? ' &middot; <span style="color:#FF7A5A">'+warning+'</span>' : '';
   el.innerHTML=b.name+intent+'<div class="bb"><i style="width:'+Math.max(0,Math.round(b.hp/b.maxhp*100))+'%"></i></div>';
 }
 function bars(){
@@ -208,7 +246,9 @@ function bars(){
   $('mpFill').style.width=(clamp(player.mp/player.maxmp,0,1)*100)+'%';
   $('mpTxt').textContent=Math.floor(player.mp)+'/'+player.maxmp;
   $('xpFill').style.width=(clamp(player.xp/player.xpNext,0,1)*100)+'%';
-  $('xpTxt').textContent=player.xp+'/'+player.xpNext;
+  /* 2026-09-28 (Justin): the bar shows only the level; '777/1500' crushed it onto two rows on small screens. The
+     fill still shows progress, and the exact numbers are on hover. */
+  $('xpBar').title=player.xp+' / '+player.xpNext+' XP';
   $('lvTxt').textContent='LV '+player.level;
   var tags=[];
   var labels={burn:'burning',chill:'chilled',frozen:'frozen',root:'rooted',stun:'stunned',fear:'afraid',blind:'blind',poison:'poisoned',stone:'stone skin',wet:'wet',aura:'unholy aura',corrupt:'corrupt'};
@@ -252,7 +292,7 @@ function trinketSlots(){
 /* ---------------------------------------------------------------- faith in the HUD */
 function faithChipHTML(){
   var g=GODS[player.god], r=godRank();
-  var h='<span class="chip faithchip" title="'+g.name+' \u2014 open with P" style="color:'+g.color+'" onclick="showSheet(\'Faith\')">'+
+  var h='<span class="chip faithchip" title="'+g.name+': open with P" style="color:'+g.color+'" onclick="showSheet(\'Faith\')">'+
         '<span class="gdot"></span>';   /* 2026-09-22 (Justin): no name on the chip - it is the hover title, and the row needs the room */
   if(g.chaos){
     var am=Math.round(player.amusement||0);
@@ -290,7 +330,7 @@ var PRAYER_ICONS={
   "arcanenova": "pr-arcanenova"
 };
 function prayerIcon(pid){pid=prayerId(pid);return PRAYER_ICONS[pid]||'pr-'+pid;}
-function prayerCost(pid){ var P=PRAYERS[pid]; return P.favor ? P.favor+' favor' : P.essence ? P.essence+' essence' : P.amusement ? P.amusement+' amusement' : 'prayer'; }
+function prayerCost(pid){ var P=PRAYERS[pid]; return P.favor ? P.favor+' Favor' : P.essence ? P.essence+' essence' : P.amusement ? P.amusement+' Amusement' : 'prayer'; }
 
 /* every ability or prayer you gain drops into the first empty hotbar slot once; clearing a slot keeps it cleared */
 
@@ -319,12 +359,13 @@ function renderHotbarSlots(){
             '<span class="k">'+(i+1)+'</span><span class="n">'+rn+'</span><span class="c">shoot</span></button>';
     } else if(s.type==='swap'){
       var stow=player.sets[1-player.activeSet];
-      html+='<button class="slot hasico" data-i="'+i+'" data-ico="ic-swap" title="Draw the stowed weapon (costs a turn)"><span class="ico"></span>'+
+      html+='<button class="slot hasico" data-i="'+i+'" data-ico="ic-swap" title="Weapon swapping is gone; this slot does nothing."><span class="ico"></span>'+
             '<span class="k">'+(i+1)+'</span><span class="n">'+(stow?stow.name:'nothing stowed')+'</span><span class="c">weapon swap</span></button>';
     } else {
       var it=s.ref, n=it.n>1 ? ' &times;'+it.n : '';
+      /* 2026-09-27: a stack shows its count in the corner badge the cooldowns use (items never have one) */
       html+='<button class="slot hasico" data-i="'+i+'" data-bagico="1" title="'+it.name+'"><span class="ico"></span>'+
-            '<span class="k">'+(i+1)+'</span><span class="n">'+it.name+n+'</span><span class="c">'+it.kind+'</span></button>';
+            '<span class="k">'+(i+1)+'</span><span class="n">'+it.name+n+'</span><span class="c">'+it.kind+'</span>'+(it.n>1 ? '<span class="cdn">'+it.n+'</span>' : '')+'</button>';
     }
   }
   $('hotbar').innerHTML=html;
@@ -338,18 +379,19 @@ function renderHotbarSlots(){
       /* right-click clears items and amulets; abilities and prayers always keep a slot (drag to rearrange) */
       b.oncontextmenu=function(ev){ ev.preventDefault(); var hs=player.hotbar[idx]; if(hs && hs.type!=='ability' && hs.type!=='prayer'){ player.hotbar[idx]=null; abilityBar(); } };
       if(player.hotbar[idx]) dragSource(b, 'hot:'+idx);
-      dropTarget(b, function(tag){
-        var bi=bagIndexFromTag(tag);
-        if(bi>=0 && player.bag[bi]) hotbarPut(idx, {type:'item', ref:player.bag[bi]});
-        else if(tag==='ranged') hotbarPut(idx, {type:'ranged'});
-        else if(tag==='weapons') hotbarPut(idx, {type:'swap'});
-        else if(tag==='amulet') hotbarPut(idx, {type:'amulet'});
-        else if(tag.indexOf('abil:')===0) hotbarPut(idx, {type:'ability', key:tag.slice(5)});
-        else if(tag.indexOf('pray:')===0) hotbarPut(idx, {type:'prayer', key:tag.slice(5)});
-        else if(tag.indexOf('hot:')===0){ var from=+tag.slice(4); if(from!==idx){ var t=player.hotbar[idx]; player.hotbar[idx]=player.hotbar[from]; player.hotbar[from]=t; abilityBar(); } }
-      });
+      dropTarget(b, function(tag){ hotbarDrop(idx, tag); });
     })(btns[i]);
   }
+}
+function hotbarDrop(idx, tag){
+  var bi=bagIndexFromTag(tag);
+  if(bi>=0 && player.bag[bi]) hotbarPut(idx, {type:'item', ref:player.bag[bi]});
+  else if(tag==='ranged') hotbarPut(idx, {type:'ranged'});
+  else if(tag==='weapons') hotbarPut(idx, {type:'swap'});
+  else if(tag==='amulet') hotbarPut(idx, {type:'amulet'});
+  else if(tag.indexOf('abil:')===0) hotbarPut(idx, {type:'ability', key:tag.slice(5)});
+  else if(tag.indexOf('pray:')===0) hotbarPut(idx, {type:'prayer', key:tag.slice(5)});
+  else if(tag.indexOf('hot:')===0){ var from=+tag.slice(4); if(from!==idx){ var t=player.hotbar[idx]; player.hotbar[idx]=player.hotbar[from]; player.hotbar[from]=t; abilityBar(); } }
 }
 
 /* ---------------------------------------------------------------- sheets */
@@ -378,7 +420,7 @@ function spendPoint(key){
   var fresh=recomputePassives();
   derive(player);
   log('You train '+{mig:'Might',agi:'Agility',vit:'Vitality',foc:'Focus'}[key]+'.','c-good'); sfx('stat-point');
-  fresh.forEach(function(id){ for(var k in PASSIVES) PASSIVES[k].forEach(function(p){ if(p.id===id){ log('<b>New passive: '+p.name+'</b> &mdash; '+p.d,'c-kill'); sfx('new-ability'); } }); });
+  fresh.forEach(function(id){ for(var k in PASSIVES) PASSIVES[k].forEach(function(p){ if(p.id===id){ log('<b>New passive: '+p.name+'</b> ('+p.d+')','c-kill'); sfx('new-ability'); } }); });
   updateUI(); refreshSheet();
 }
 
@@ -387,10 +429,10 @@ function spendPoint(key){
 var TILE_NAMES = {0:'Wall',1:'Floor',2:'Closed door',3:'Stairs down',4:'Chest',5:'Elemental Forge',6:'Rubble',7:'Open door',8:'Chasm',9:'Locked iron door',
   10:'Shrine',11:'Ice-sealed door',12:'Thorn-choked doorway',13:'The gate onward',14:'Spiked door',15:'Wall',16:'Shallow water',17:'Bridge',18:'Sealed door',
   19:'Stairs up',20:'Portal'};
-var TILE_HINTS = {5:'Bump it to fuse motes, enchant gear or craft sigils.',9:'Needs this floor\'s iron key.',10:'Bump it to learn about the god.',11:'Fire melts it. Blows crack it slowly.',
+var TILE_HINTS = {5:'Bump it to fuse motes, craft sigils or enchant and upgrade gear.',9:'Needs this floor\'s iron key.',10:'Bump it to learn about the god, swear to them or pray.',11:'Fire melts it. Blows crack it slowly.',
   12:'Fire clears it; pushing through hurts.',14:'Costs half your current HP to pass. Real treasure behind.',16:'Slows you. Puts out fire. Lightning hurts more here.',
-  8:'A sheer drop. Float across or find a bridge.',18:'Opened by a mechanism nearby.',3:'Step on it to descend.',13:'Opens when the floor boss falls.',
-  19:'Step on it to climb back to the floor above.',20:'Step in to cross into the plane beyond. Its guardian holds a treasure grotto.'};
+  8:'A sheer drop. Float across or find a bridge.',18:'Something on this floor opens it. Bump it for a clue.',3:'Leads down to the next floor.',13:'Opens when the floor boss falls.',
+  19:'Leads back up to the floor above.',20:'A doorway between worlds. Step in to cross over.'};
 function inspectHTML(mx,my){
   if(!inb(mx,my) || !(revealAll||seen[idxOf(mx,my)])) return '';
   var e=ents.find(function(o){return entityOccupies(o,mx,my)&&o!==player&&!actorConcealed(o);});
@@ -405,10 +447,11 @@ function inspectHTML(mx,my){
       '<div class="row"><span>HP</span><b>'+Math.max(0,e.hp)+' / '+e.maxhp+'</b></div>'+
       '<div class="row"><span>Armor &middot; Evasion</span><b>'+armorOf(e)+' &middot; '+evaOf(e)+'</b></div>'+
       (e.base.el?'<div class="row"><span>Element</span><b style="color:'+AFF_COL[e.base.el]+'">'+cap(e.base.el)+'</b></div>':'')+
-      '<div class="row"><span>State</span><b>'+(e.st.stun?'knocked out':e.st.frozen?'frozen':e.state==='throne'?'on his throne':e.state)+'</b></div>'+
+      '<div class="row"><span>State</span><b>'+(e.st.stun?'stunned':e.st.frozen?'frozen':e.state==='throne'?'on his throne':({hunt:'hunting',wander:'wandering'}[e.state]||e.state))+'</b></div>'+
       (e.keyholder?'<div class="row"><span>Carries</span><b>an iron key</b></div>':'')+
       (st?'<div style="margin-top:4px">'+st+'</div>':'')+
-      '<div class="odds">You hit <em>'+ch+'%</em> for '+lo+'&ndash;'+hi+'. It hits you <em>'+back+'%</em>.</div>';
+      (e.base.hint?'<div class="hint">'+e.base.hint+'</div>':'')+
+      '<div class="odds">You hit <em>'+ch+'%</em> for '+lo+'-'+hi+'. It hits you <em>'+back+'%</em>.</div>';
   }
   var it=items.filter(function(i){ return i.x===mx && i.y===my; })[0];
   if(it){
@@ -423,7 +466,7 @@ function inspectHTML(mx,my){
   if(p){
     if(p.previewPortal&&typeof FoteChaosPreview!=='undefined'){
       var gateway=FoteChaosPreview.atPortal(mx,my);
-      if(gateway)return '<div class="nm">'+gateway.label+'</div><div class="hint">A two-way passage to another '+FoteChaosPreview.active().name+' island. Step into the gateway to travel.</div>';
+      if(gateway)return '<div class="nm">'+gateway.label+'</div><div class="hint">A two-way portal to another island on this floor. Step onto it to travel.</div>';
     }
     var lever=leverDetails(p);
     if(lever){
@@ -432,9 +475,9 @@ function inspectHTML(mx,my){
         (lever.used?'Already pulled':'Ready to pull')+'</b></div><div class="hint">'+
         (lever.used?lever.result:action+' or bump this lever to '+lever.effect+'.')+'</div>';
     }
-    var pn=({'urn-group':'urns','stack-group':p.kinds && p.kinds.indexOf('pot')>=0 && p.kinds.indexOf('crate')<0 ? 'pots' : 'crates and barrels','urn-shattered':'broken urn','urn-tall':'urn','urn-squat':'urn','urn-ornate':'urn'})[p.name] || p.name.replace(/-/g,' ');
+    var pn=({'urn-group':'urns','stack-group':p.kinds && p.kinds.indexOf('pot')>=0 && p.kinds.indexOf('crate')<0 ? 'pots' : 'crates and barrels','urn-shattered':'broken urn','urn-tall':'urn','urn-squat':'urn','urn-ornate':'urn','barrel-explosive':'powder barrel','altar-spikes':'sacrifice altar','drow-altar-blood':'sacrifice altar'})[p.name] || p.name.replace(/-/g,' ');
     var hint = p.ex ? 'Explodes when broken or burned.' : p.br ? 'Breakable. Might hold something.' : p.tablet ? 'A broken tablet. Read it.' :
-      p.altar ? 'A sacrifice altar. Offer blood for rewards.' : p.prisoner ? 'Something is locked inside.' : p.name==='elemental-lock' ? 'Wants a '+p.element+' mote.' : p.drink ? 'Drink from it.' :
+      p.altar ? 'Offer blood for rewards.' : p.prisoner ? 'Someone is locked inside. Let them out and hope they are grateful.' : p.name==='elemental-lock' ? 'Wants one '+p.element+' mote.' : p.drink ? 'Drink from it.' :
       p.bush ? 'Cut it down. Sometimes a heart is tucked underneath.' : '';
     /* 2026-09-19: Justin - scenery you cannot do anything with gets no card at all */
     if(!hint) return '';
@@ -448,13 +491,13 @@ function inspectHTML(mx,my){
   var label=TILE_NAMES[t]||'Floor';
   if(t===SHRINE) label='Shrine to '+GODS[RUN.shrineGod].name;
   if(typeof PORTAL!=='undefined' && t===PORTAL && floorMeta.portal && typeof PLANE_TITLE!=='undefined') label='Portal to '+PLANE_TITLE[floorMeta.portal];
-  var tileHint=t===EXIT ? 'Opens when '+bossNameForFloor()+' falls.' : TILE_HINTS[t];
+  var tileHint=t===EXIT ? (floorMeta.exitOpen ? 'Open. Step through to go on.' : 'Sealed. Bring '+bossNameForFloor().replace(/^The /,'the ')+'\'s '+coreName()+' here to open it.') : TILE_HINTS[t];
   var chaosCurrent=typeof FoteChaosCampaign!=='undefined'&&FoteChaosCampaign.currentInfo(mx,my);
   if(chaosCurrent){label=chaosCurrent.label;tileHint=chaosCurrent.hint;}
   var crucibleGate=typeof FoteUnmakerPreview!=='undefined'&&FoteUnmakerPreview.gateInfo(mx,my);
   if(crucibleGate){label=crucibleGate.name;tileHint=crucibleGate.hint;}
   if(t===PORTAL&&typeof FoteChaosPreview!=='undefined'&&FoteChaosPreview.active()){
-    var linked=FoteChaosPreview.atPortal(mx,my);if(linked){label=linked.label;tileHint='A two-way passage to another '+FoteChaosPreview.active().name+' island. Step onto it to travel.';}
+    var linked=FoteChaosPreview.atPortal(mx,my);if(linked){label=linked.label;tileHint='A two-way portal to another island on this floor. Step onto it to travel.';}
   }
   var chaosEntryPortal=typeof FoteChaosEntryPreview!=='undefined'&&FoteChaosEntryPreview.portalInfo(mx,my);
   if(chaosEntryPortal){label=chaosEntryPortal.name;tileHint=chaosEntryPortal.hint;}

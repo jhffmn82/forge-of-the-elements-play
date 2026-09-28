@@ -45,7 +45,7 @@ var DEEP_STYLE = ['rect', 'smooth', 'jag'];
 function inDeep(){ return typeof floorNo!=='undefined' && bidx()===3 && !(floorMeta && floorMeta.plane); }
 function deepLavaAdjacent(x, y){ return at(x-1,y)===LAVA || at(x+1,y)===LAVA || at(x,y-1)===LAVA || at(x,y+1)===LAVA; }
 
-/* ---------------------------------------------------------------- the pieces (art in art/map/biome4, map-deep.png)
+/* ---------------------------------------------------------------- the pieces (art in art/map/biome4, drawn from environment-props-deep.webp)
    w,h: footprint in tiles; b: blocks; flat: lies on the floor (no shadow); light/dim: a light source; tall: rises above
    its footprint (redrawn over whoever stands behind it) */
 var DEEP_PIECES = {
@@ -687,9 +687,6 @@ function buildDeepHall(r){
   floorMeta.bossArena={x:x0, y:y0, w:w, h:h, throne:throne, circles:circles};
   for(var i=0;i<6;i++){ var c2=pick(interiorCells(r)); if(c2 && !propAt(c2.x,c2.y)) setG(c2.x,c2.y,G_BLOOD); }
 }
-
-
-/* the stand-in is not base.boss: its death opens the gate the way a boss's does */
 
 
 /* floor 15's burrow now leads down into the Underdark, not out of the world */

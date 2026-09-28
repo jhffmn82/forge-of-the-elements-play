@@ -9,12 +9,12 @@ var FOOD_BUFFS = ['regeneration','manaflow','haste','might','poisonward','shadew
 Object.assign(FOODS, {
   ration:     {name:'Ration', nutrition:700, icon:'item-ration'},
   /* anywhere */
-  honeycake:  {name:'Honeycake', nutrition:400, icon:'item-honeycake', buff:'regeneration', turns:60, desc:'Regeneration: 1% of your HP a turn for 60 turns.'},
+  honeycake:  {name:'Honeycake', nutrition:400, icon:'item-honeycake', buff:'regeneration', turns:60, desc:'You heal 1% of your max HP a turn for 60 turns.'},
   moontart:   {name:'Moonberry Tart', nutrition:400, icon:'item-moontart', buff:'manaflow', turns:60, desc:'Mana returns twice as fast for 60 turns.'},
-  figs:       {name:'Sugared Figs', nutrition:300, icon:'item-figs', buff:'haste', turns:20, desc:'Haste: you move 30% faster for 20 turns.'},
-  meat:       {name:'Roast Meat', nutrition:550, icon:'item-meat', buff:'might', turns:30, desc:'Might: +20% weapon damage for 30 turns.'},
+  figs:       {name:'Sugared Figs', nutrition:300, icon:'item-figs', buff:'haste', turns:20, desc:'You move, attack and cast 30% faster for 20 turns.'},
+  meat:       {name:'Roast Meat', nutrition:550, icon:'item-meat', buff:'might', turns:30, desc:'+20% weapon damage for 30 turns.'},
   /* one per biome, found only there */
-  skewer:     {name:'Mushroom Skewer', nutrition:400, icon:'item-skewer', biome:0, buff:'poisonward', turns:60, desc:'Poison damage is prevented for 60 turns.'},
+  skewer:     {name:'Mushroom Skewer', nutrition:400, icon:'item-skewer', biome:0, buff:'poisonward', turns:60, desc:'Poison cannot hurt you for 60 turns.'},
   graveplum:  {name:'Grave Plum', nutrition:300, icon:'item-graveplum', biome:1, buff:'shadeward', turns:60, desc:'Shadow hurts you half as much for 60 turns.'},
   glowstew:   {name:'Glowcap Stew', nutrition:500, icon:'item-glowstew', biome:2, buff:'stormward', turns:60, desc:'Your light reaches further, and lightning hurts you half as much, for 60 turns.'},
   emberpepper:{name:'Ember Pepper', nutrition:250, icon:'item-emberpepper', biome:3, buff:'fireward', turns:60, desc:'Fire hurts you half as much for 60 turns.'},
@@ -53,9 +53,9 @@ function addStormwardLight(L, now, prp){
 }
 /* the food buffs in the status bar (stand-in icons until the food art arrives) */
 if(typeof STATUS_INFO!=='undefined') Object.assign(STATUS_INFO, {
-  regeneration:{name:'Regeneration', icon:'ic-heal', d:'You heal 1% of your HP each turn.'},
+  regeneration:{name:'Regeneration', icon:'ic-heal', d:'You heal 1% of your max HP each turn.'},
   might:       {name:'Might', icon:'pr-rampage', d:'+20% weapon damage.'},
-  poisonward:  {name:'Poison Ward', icon:'st-poison', d:'Poison damage is prevented.'},
+  poisonward:  {name:'Poison Ward', icon:'st-poison', d:'Poison cannot hurt you.'},
   shadeward:   {name:'Shade Ward', icon:'ic-shadow-bolt', d:'Shadow hurts you half as much.'},
   stormward:   {name:'Glowcap', icon:'ic-chain-lightning', d:'Your light reaches further; lightning hurts you half as much.'},
   fireward:    {name:'Fire Ward', icon:'ic-firebolt', d:'Fire hurts you half as much.'},

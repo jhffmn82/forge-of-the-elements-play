@@ -1,42 +1,22 @@
-/* Service worker (2026-09-17).
+/* Service worker (2026-09-17, revised 2026-09-27 for Beta 1.3.1).
 
    Two jobs:
-   1. OFFLINE: on install, pull down every file the build contains (dist/precache.json, written by
-      tools/deploy.py - about 22 MB, 300 files) so the game runs with no network at all. Caching only what
-      had been fetched meant an offline launch was missing whichever monster sheets, atlases and sounds you
-      had not happened to meet yet.
+   1. OFFLINE: every file the network delivers is kept in the cache, so whatever a player has already loaded
+      reloads with no signal. Installing no longer downloads the whole build: the 705 files dist/precache.json
+      lists (written by tools/deploy.py) come to about 122 MB at Beta 1.3.1, and every browser tab that
+      registered this worker used to pull all of them on its first visit. Only an installed copy (home-screen
+      app, the Android APK) stores the full list; js/offline.js does that from the page, a few files at a time.
    2. UPDATES: network first. Whenever the device can reach the server it takes the fresh copy, so a patch
       arrives on the next launch with no reinstall; the cache answers only when the network does not.
 
    demo.html loads every script with a fresh ?v= tag, so cache keys drop the query - otherwise each load
    would store another copy and nothing would ever match offline.
 */
-var CACHE = 'astra-temple-v1';   /* 2026-09-19: v4 fetches the page itself by URL, never from any cache */
+var CACHE = 'astra-temple-v2';   /* 1.3.1: art became .webp, so every stored v1 file is stale; activate deletes v1 (~176 MB on installed phones) and an installed copy re-stores the ~122 MB build */
 
 function key(url){ var u = new URL(url, location.href); u.search = ''; return u.toString(); }
 
-self.addEventListener('install', function(ev){
-  self.skipWaiting();
-  ev.waitUntil((async function(){
-    var cache = await caches.open(CACHE);
-    var list = [];
-    try {
-      var res = await fetch('precache.json', {cache:'no-store'});
-      if(res.ok) list = await res.json();
-    } catch(e){}
-    if(!list.length) list = ['', 'index.html', 'demo.html', 'game.js', 'manifest.json'];
-    /* in batches: 300 parallel requests on a phone is a good way to have several of them fail */
-    for(var i=0; i<list.length; i+=12){
-      await Promise.all(list.slice(i, i+12).map(async function(path){
-        try {
-          var r = await fetch(path, {cache:'no-store'});
-          if(r && r.status===200) await cache.put(key(path), r.clone());
-        } catch(e){}                                   /* a missing file must not fail the install */
-      }));
-    }
-    try { var root = await fetch('./', {cache:'no-store'}); if(root.ok) await cache.put(key('./'), root.clone()); } catch(e){}
-  })());
-});
+self.addEventListener('install', function(){ self.skipWaiting(); });
 
 self.addEventListener('activate', function(ev){
   ev.waitUntil(caches.keys().then(function(ks){

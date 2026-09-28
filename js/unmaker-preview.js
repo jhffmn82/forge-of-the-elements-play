@@ -85,10 +85,10 @@
       log('The rear gate is sealed until the Unmaker is defeated.'+(d.layoutOnly?' Combat is disabled in this environment review; Sandbox has a gate walkthrough control.':''),'c-info');
       sfx('door-locked');return true;
     }
-    if(d.gates.phase==='active'){log('The entrance gate is sealed for the Unmaker encounter.','c-info');sfx('door-locked');return true;}
+    if(d.gates.phase==='active'){log('The entrance gate stays sealed until the Unmaker falls.','c-info');sfx('door-locked');return true;}
     if(encounterStarter){
-      if(!startEncounter()){log('The encounter is not ready. The gate remains closed.','c-info');return true;}
-      log('You pass the entrance gate, which seals behind your party. The Unmaker awakens.','c-kill');
+      if(!startEncounter()){log('The gate will not open yet.','c-info');return true;}
+      log('You pass through the entrance gate, and it seals behind you. The Unmaker awakens.','c-kill');
     }else{
       d.gates.phase='preview';syncGates();refresh();
       log('The entrance gate rises. Combat is disabled in this environment walkthrough.','c-info');
@@ -108,9 +108,9 @@
     return {name:rear?'Gate of the Elements':'The Unmaker\'s entrance gate',hint:
       state.walkthrough?'Raised for the sandbox layout walkthrough; no victory has been recorded.':
       rear?(gate.open?'The Unmaker is defeated. The way to the Forge of the Elements is open.':'Sealed until the Unmaker is defeated.'):
-      state.phase==='active'?'Sealed during the Unmaker encounter.':
+      state.phase==='active'?'Sealed until the Unmaker falls.':
       gate.open?(state.phase==='preview'?'Open for the environment walkthrough. Combat is disabled.':'The entrance gate is raised.'):
-      'Open this gate to begin the Unmaker encounter.'+(d.layoutOnly?' This environment preview opens the gate only; boss combat comes next.':'')};
+      'Open this gate to face the Unmaker. It seals behind you.'+(d.layoutOnly?' This environment preview opens the gate only; boss combat comes next.':'')};
   }
   function drawGate(x,y,px,py,alpha){
     var gate=gateAt(x,y);if(!gate)return false;
@@ -154,8 +154,8 @@
     try{
       floorNo=25;floorMeta.floor=25;floorMeta.forge=true;floorMeta.forgeAt={x:50,y:60};
       floorMeta.portal=null;
-      floorMeta.notes=["The Unmaker's Crucible: a fixed final floor with a safe preparation forge, an irregular arena, and the Forge of the Elements.",
-        encounterStarter?'Open the entrance gate when you are ready. Your party enters and the gate seals for the fight. Defeat all three forms of the Unmaker to open the way to the Forge of the Elements.':
+      floorMeta.notes=["The Unmaker's Crucible, the last floor. You are safe here by the forge until you open the gate.",
+        encounterStarter?'Open the entrance gate when you are ready; it seals behind you for the fight. Defeat all three forms of the Unmaker to reach the Forge of the Elements.':
         'Combat is disabled in this environment review. Open the entrance gate to explore; Sandbox can raise both gates for a walkthrough.','The void is impassable.'];
       preview.cosmeticPools=[];preview.chains=[];
       var arenaOutline=[[43,24],[50,23],[56,24],[60,24],[64,27],[65,31],[62,34],[66,38],[64,43],
@@ -277,7 +277,7 @@
       prop(60,42,'rubble','Crucible rim fragments');
       preview.chains.push({x:31,y:38,toX:26,toY:43,regionId:'crucible',variant:0},
         {x:64,y:38,toX:70,toY:42,regionId:'crucible',variant:1});
-      landmark('central-court','arena','The Unmaker — central combat court','crucible',43,31,11,10);
+      landmark('central-court','arena','The Unmaker: central combat court','crucible',43,31,11,10);
       landmark('western-wing','wing','Broken western wing','crucible',30,34,10,9);
       landmark('eastern-wing','wing','Eastern crucible wing','crucible',57,33,8,10);
       inlay('broken-ring','crucible',{x:48,y:35,r:9.1,color:'#EDD3A2',opacity:.82,lineWidth:2.2,arcs:[[.1,.85],[1.1,2.1],[2.45,3.05],[3.5,4.5],[4.95,5.85]]});
@@ -290,7 +290,7 @@
       prop(45,19,'crystal-gold-small','Rear seal gold crystal');
       prop(51,19,'crystal-water-small','Rear seal blue crystal');
       light(45,19,'#FFCF78',3.4,.72);light(51,19,'#78CBFF',3.4,.72);
-      landmark('rear-seal','threshold','Gate of the Elements — opens after the Unmaker falls','true-forge',46,22,5,1);
+      landmark('rear-seal','threshold','Gate of the Elements: opens after the Unmaker falls','true-forge',46,22,5,1);
       inlay('threshold','true-forge',{x:46,y:22,w:5,h:1,color:'#BCEAFF'});
       focal(46,12,'final-forge','Forge of the Elements',3,3);
       focal(46,9,'prism-lens','Elemental convergence lens',2,2);
@@ -303,7 +303,7 @@
         light(anchor[0],anchor[1],anchor[3],3.5,.74);
       });
       light(47,13,'#FFE2A6',5.5,.9);light(47,10,'#96DFFF',4.6,.68);
-      landmark('true-forge','destination','Forge of the Elements — final destination','true-forge',46,12,3,3);
+      landmark('true-forge','destination','Forge of the Elements: final destination','true-forge',46,12,3,3);
       landmark('forge-dais','dais','The restoration dais','true-forge',46,15,3,3);
       inlay('broken-ring','true-forge',{x:47.5,y:14,r:5.1,color:'#D6B978',arcs:[[0,6.283185307179586]]});
       inlay('disc','true-forge',{x:47.5,y:16.5,r:1.35,color:'#DAF4FF'});

@@ -48,9 +48,10 @@ function saveApply(data){
   log('<b>Game loaded.</b> '+player.name+', level '+player.level+', floor '+floorNo+'.','c-kill');
   if(recoveredInterruptedDeath)log('This save was interrupted by an old damage bug. Your character has been recovered at 1 HP.','c-info');
   var ov=$('over'); if(ov) ov.style.display='none';
-  closeTitle(); if($('create')) $('create').classList.remove('on');
   if(openSheet) showSheet(openSheet);
   resize(); if(typeof abilityBar==='function') abilityBar(); updateUI(); draw();
+  /* the title stays up until the loaded floor is drawn: its art may still be loading */
+  whenFloorDrawn(function(){ closeTitle(); if($('create')) $('create').classList.remove('on'); });
   if(player.hp<=0)death();else playSceneMusic();
 }
 function repairInterruptedPlayerDeath(){
@@ -193,7 +194,7 @@ function importSave(){
     '#title .menu button:hover:not(:disabled),#title .menu button:focus-visible{border-color:#E8B44A;color:#FFE7B0;background:rgba(42,30,20,.9);outline:none}',
     '#title .menu button:disabled{opacity:.4;cursor:default}',
     '#title .menu .sub{font-family:var(--mono);font-size:11px;color:var(--ash);display:block;letter-spacing:0}',
-    '@media(max-height:560px){body.touch #title.on .menu{gap:4px}body.touch #title.on .menu>button{font-size:18px;line-height:1.1;padding:4px 12px;min-height:44px}body.touch #title.on .menu .sub{font-size:10px;line-height:1.1}}',
+    '@media(max-height:560px){body.touch #title.on .menu{gap:4px}body.touch #title.on .menu>button{font-size:18px;line-height:1.1;padding:4px 12px;min-height:clamp(34px,9.2vh,44px)}body.touch #title.on .menu .sub{font-size:10px;line-height:1.1}}',
     '#title .panel{position:absolute;z-index:2;left:50%;top:50%;transform:translate(-50%,-50%);width:min(560px,calc(100vw - 32px));max-height:calc(100vh - 40px);overflow-y:auto;',
     '  background:rgba(18,14,11,.96);border:1px solid #5A4630;border-radius:8px;padding:18px 20px;box-shadow:0 10px 40px rgba(0,0,0,.7)}',
     '#title .panel h2{font-family:var(--display);color:var(--gold);font-size:26px;margin:0 0 10px}',
@@ -284,10 +285,10 @@ function renderLoadPanel(){
 function renderAbout(){
   var el=$('title');
   el.innerHTML='<div class="panel"><h2>About</h2>'+
-    '<p><b>Forge of the Elements</b> is a turn-based roguelike. Pick a race and a class and descend twenty-five floors through the Dungeon, the Crypt, the Caverns, the Underdark and the Realm of Chaos. Defeat the biome lords and explore the six elemental planes along the way. Fuse elemental motes at forges to shape your gear and your magic, follow a god, and cross the floating islands of Chaos on your quest to reach the Forge of the Elements.</p>'+
+    '<p><b>Forge of the Elements</b> is a turn-based roguelike. Pick a race and a class and descend twenty-five floors through the Dungeon, the Crypt, the Caverns, the Underdark and the Realm of Chaos. Defeat the biome lords and step through portals into the elemental planes along the way. Fuse elemental motes at forges to shape your gear and your magic, follow a god and cross the floating islands of Chaos on your quest to reach the Forge of the Elements.</p>'+
     '<p>Everything happens in turns: you act, then the dungeon answers. Hover anything for details. Tab opens your character, I your gear, P your faith, Esc closes windows. Key bindings, sound, lighting and animation speed live in the Options tab, along with saving.</p>'+
     '<h3>Credits</h3>'+
-    '<p>Created by <b>Justin Hoffman</b>: design, story, world, balance, and the direction of every creature, map and sound in it. The end-credits song, <i>To Bind the Flame</i>, is written by Justin.</p>'+
+    '<p>Created by <b>Justin Hoffman</b>: design, story, world, balance and the direction of every creature, map and sound in it. The end-credits song, <i>To Bind the Flame</i>, is written by Justin.</p>'+
     '<p>Creature and map art painted to his direction with ChatGPT image generation and brought to life with PixelLab; score with Google Lyria and original procedural ambient compositions; sound effects with ElevenLabs; code written with Claude and OpenAI Codex. Storybook in spirit, hand-picked throughout.</p>'+
     '<div class="panelfoot"><span></span><button id="tBack">Back</button></div></div>';
   $('tBack').onclick=renderTitleMenu;

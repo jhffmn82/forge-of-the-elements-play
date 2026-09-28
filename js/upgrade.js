@@ -37,11 +37,11 @@ var AMULET_LEVEL_USES = [0, 10, 30];
 
 function turnRevealKeenEyes(context){  if(!player || player.hp<=0 || !(ringVal('keeneyes')>0)) return;
   var ch=ringVal('keeneyes');
-  feats.forEach(function(f){ if(!f.found && vis[idxOf(f.x,f.y)] && rng()<ch){ f.found=true; log('Your ring tingles: a <b>'+trapName(f.kind)+' trap</b>.','c-info'); } });
+  feats.forEach(function(f){ if(!f.found && vis[idxOf(f.x,f.y)] && rng()<ch){ f.found=true; log('Your ring tingles: '+(/^[AEIOU]/.test(trapName(f.kind))?'an':'a')+' <b>'+trapName(f.kind)+' trap</b>.','c-info'); } });
   for(var y=0;y<MH;y++) for(var x=0;x<MW;x++){ if(at(x,y)===SECRET && vis[idxOf(x,y)] && rng()<ch*0.5){ setT(x,y,DOOR); log('Your ring tingles: a <b>hidden door</b>.','c-kill'); sfx('door-secret'); computeFOV(); } }
 
 }
-RINGS.keeneyes.desc='Spot traps anywhere you can see, and find hidden doors more often when you search.';   /* 2026-09-23 audit: doors are found by searching, not in passing */
+RINGS.keeneyes.desc='Spot traps and hidden doors anywhere in sight, and find more of them when you search.';   /* 2026-09-23 audit: doors are found by searching, not in passing */
 RINGS.keeneyes.unit='% chance a turn to spot traps you can see';
 
 /* ---------------------------------------------------------------- upgrades at the Forge */
@@ -62,7 +62,7 @@ function upgradeable(it){ return it && (it.kind==='ring' || it.kind==='weapon' |
 function allUpgradeTargets(){
   var out=[];
   function add(it, where){ if(upgradeable(it) && out.every(function(o){ return o.it!==it; })) out.push({it:it, where:where}); }
-  add(player.sets[player.activeSet], 'main hand'); add(player.ranged, 'bow / ranged'); add(player.armorItem, 'armor');
+  add(player.sets[player.activeSet], 'main hand'); add(player.ranged, 'ranged'); add(player.armorItem, 'armor');
   if(player.off && player.off!==EMPTY_OFF) add(player.off, 'off hand');
   (player.rings||[]).forEach(function(r,i){ add(r, 'ring '+(i+1)); });
   player.bag.forEach(function(b){ if(b.data && (b.kind==='weapon'||b.kind==='armor'||b.kind==='off'||b.kind==='ring')) add(b.data, 'bag'); });
@@ -71,13 +71,13 @@ function allUpgradeTargets(){
 
 function upgradePanelHTML(){
   var list=allUpgradeTargets();
-  var h='<p class="c-info">Spend essence to strengthen gear, up to +3. Worn or carried, it all counts. '+
-        'Rings cost '+RING_RANK_COST.join(' / ')+' to reach +1 / +2 / +3. Fine gear costs 2x, Masterwork 4x. Upgrading a cursed item breaks the curse. Deeper biomes yield more essence.'+
+  var h='<p class="c-info">Spend essence to strengthen gear you wear or carry, up to +3. '+
+        'Fine gear costs twice as much to upgrade, and Masterwork four times as much. Upgrading a cursed item breaks the curse. Deeper biomes give more essence.'+
         (player.race==='dwarf'?' <b>Dwarven smithing: 25% cheaper.</b>':'')+'</p>';
   if(!list.length) return h+'<p class="c-info">Nothing to upgrade.</p>';
   list.forEach(function(o, i){
     var it=o.it, cost=upgradeCost(it), plus=it.cursed ? 'cursed' : '+'+(it.plus||0);
-    var what = it.kind==='ring' ? (it.unid && !RUN.ringKnown[it.ring] ? 'unknown ring' : ringLine(it)) : it.dmg ? it.dmg[0]+'&ndash;'+it.dmg[1]+' dmg' : it.armor!==undefined ? it.armor+' armor' : (it.note||'');
+    var what = it.kind==='ring' ? (it.unid && !RUN.ringKnown[it.ring] ? 'unknown ring' : ringLine(it)) : it.dmg ? it.dmg[0]+'-'+it.dmg[1]+' damage' : it.armor!==undefined ? it.armor+' armor' : (it.note||'');
     h+='<div class="frow"><div class="ftext"><b>'+gearName(it)+'</b> <span class="c-info">('+o.where+')</span><div class="d">'+what+' &middot; now '+plus+'</div></div>'+
        '<button data-up="'+i+'" '+(cost===null||player.essence<cost?'disabled':'')+'>'+(cost===null?'max':(it.cursed?'Cleanse ':'Upgrade ')+cost)+'</button></div>';
   });

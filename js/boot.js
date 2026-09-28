@@ -40,7 +40,7 @@ function startGame(){
   var help=$('mHelp');
   if(help) help.innerHTML='<div class="cols">'+
     '<div><p class="sub">Moving</p><div class="kv"><span>Arrows / WASD</span><b>step or attack</b><span>Q E Z C</span><b>diagonals</b><span>Click a tile</span><b>step that way</b><span>. or space</span><b>wait a turn</b><span>r</span><b>rest until healed (searches a little)</b><span>f</span><b>search for hidden doors and traps</b><span>&gt; / &lt;</span><b>stairs down / up</b><span>Shift+C / click the door</span><b>close a door</b></div></div>'+
-    '<div><p class="sub">Acting</p><div class="kv"><span>1 &ndash; 8</span><b>hotbar slot</b><span>g</span><b>pick up</b><span>Click a monster</span><b>shoot it (bow out)</b><span>Bump a door, chest, lever</span><b>use it</b><span>Bump the Forge / a shrine</span><b>open it</b></div></div>'+
+    '<div><p class="sub">Acting</p><div class="kv"><span>1 to 8</span><b>hotbar slot</b><span>g</span><b>pick up</b><span>Click a monster</span><b>shoot it (bow out)</b><span>Bump a door, chest, lever</span><b>use it</b><span>Bump the Forge / a shrine</span><b>open it</b></div></div>'+
     '<div><p class="sub">Windows</p><div class="kv"><span>Tab</span><b>character</b><span>i</span><b>bag and gear</b><span>p</span><b>faith and prayers</b><span>m / n</span><b>sound / music</b><span>esc</span><b>close</b><span>Right-click bag item</span><b>drop it</b></div></div>'+
     '<div><p class="sub">Reading the map</p><div class="kv"><span>Dim tiles</span><b>remembered</b><span>z</span><b>asleep: surprise it</b><span>Key over a head</span><b>key holder</b><span>Bones at a door</span><b>a zoo behind it</b><span>Uneven stones</span><b>a hidden door near</b><span>Tall grass</span><b>blocks sight, burns</b></div></div></div>';
 
@@ -80,9 +80,10 @@ function startGame(){
 
 /* A failed or undecoded required atlas must never reveal an incomplete scene. */
 function preloadArt(done){
-  /* New faith variants keep their small dolls ready, but decode their large
-   * animation sheet only when that appearance is actually selected. */
-  var files=((window.ASSETS && ASSETS.files)||[]).filter(function(file){return !/^cast-.*-unclad\.png$/.test(file);});
+  /* Everything loads here (Justin 2026-09-27), the Chad underwear sheets included (2.7 MB): a follower never shows a
+   * stand-in figure while their sheet arrives. */
+  var files=((window.ASSETS && ASSETS.files)||[]).slice();
+  if(files.length) files.push('cave-bridge-master.webp'); /* the Caverns rope bridge (cavernrender.js) */
   var veil=document.createElement('div'); veil.id='loadVeil';
   veil.style.cssText='position:fixed;inset:0;z-index:99;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;background:#0B0A09;color:#A79C93;font:14px sans-serif';
   var title=document.createElement('h1'); title.textContent='Forge of the Elements'; veil.appendChild(title);
@@ -118,7 +119,11 @@ function preloadArt(done){
     },function(){failed.push(file);});})).then(function(){
       if(failed.length){status.textContent='Could not load '+failed.length+' artwork file(s). Check your connection and retry.';retry.hidden=false;return;}
       return scriptsReady.then(function(){
-        if(typeof FoteChaosCampaign!=='undefined'){status.textContent='Preparing the Realm of Chaos…';return FoteChaosCampaign.prepare();}
+        /* All the new art loads here, every biome's terrain and the Realm of Chaos included, so nothing shows
+           the old art first and nothing downloads during play. The goblin and Shambler sheets are ASSETS.files. */
+        var art=[FoteEnvironmentProps.ensureAssets(),FoteEnvironmentDeco.ensureAssets(),FoteEnvironmentVegetation.ensureAssets(),FoteEnvironmentTerrain.ensureAssets('all')];
+        if(typeof FoteChaosCampaign!=='undefined'){status.textContent='Preparing the Realm of Chaos…';art.push(FoteChaosCampaign.prepare());}
+        return Promise.all(art);
       }).then(function(){return document.fonts?document.fonts.ready:undefined;}).then(function(){
         return new Promise(function(resolve){requestAnimationFrame(function(){resize();draw();requestAnimationFrame(resolve);});});
       }).then(function(){done();veil.remove();});
