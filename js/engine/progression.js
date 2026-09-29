@@ -16,7 +16,7 @@
     else if(c.god==='murk'){
       if(c.allyKill&&c.servant)out.piety=4+bonus;
       else if((c.playerKill||c.allyKill)&&!c.undead)out.piety=2+bonus;
-      if((c.playerKill||c.allyKill&&c.servant)&&c.foe&&!c.undead&&c.rank>0)out.healingRanks=c.rank;
+      /* 2026-09-29 (Justin): Life Drain no longer heals on a kill; it is a 10% chance on a hit (murkLifeDrain in gods.js) */
     }
     else if(c.god==='reginald'){if(c.playerKill&&c.awake)out.piety=2+bonus;}
     else if(c.god==='vellum'){if(c.playerKill&&c.castThisTurn)out.piety=2+bonus;}

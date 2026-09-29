@@ -21,6 +21,7 @@ function refusalText(id){
   var g=GODS[id];
   if(g.refuses && player.race===g.refuses) return g.name+' will not accept a '+RACES[player.race].name+'.';
   if(id==='reginald' && isScoundrel()) return 'Sir Reginald will not take a sneak-thief into his service.';
+  if(classRefusesGod(player.cls, id)) return g.name.split(',')[0]+' will not take a '+CLASSES[player.cls].name+'.';
   if(id==='reginald' && (player.aff.shadow||0)>0) return 'Sir Reginald wants nothing to do with shadow.';
 
   if(id==='glimmer' && (player.aff.shadow||0)>0) return 'Saint Glimmer will not touch shadow.';
@@ -37,7 +38,8 @@ function godRefuses(id){
   if(clericGodLocked(id)) return true;
   var g=GODS[id];
   if(g.refuses && player.race===g.refuses) return true;
-  if(id==='reginald' && (isScoundrel() || (player.aff.shadow||0)>0)) return true;
+  if(classRefusesGod(player.cls, id)) return true;   /* 2026-09-29 (Justin): the class table in create.js */
+  if(id==='reginald' && (player.aff.shadow||0)>0) return true;
 
   if(id==='glimmer' && ((player.aff.shadow||0)>0 || !canHoldLight())) return true;
   return false;

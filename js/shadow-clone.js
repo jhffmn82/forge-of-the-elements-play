@@ -73,6 +73,7 @@
     if(s.statModel&&s.statModel.st.livingmountain)e.st.livingmountain=copy(s.statModel.st.livingmountain);
     e.base=Object.assign({},MONSTERS.shadowclone,{acc:s.acc,eva:s.eva,armor:s.armor,speed:s.speed,statusImmunities:s.immunities.slice()});
     Object.assign(e,copy(s.appearance));s.pools.forEach(function(pool){e[pool.key]=pool.amount;});
+    if(typeof murkSummonHp==='function')murkSummonHp(e);
     RUN.shadowClone=e;sparkleFx(x,y,'dark',24);return e;
   }
   function damage(e,target,amount,type,extra){

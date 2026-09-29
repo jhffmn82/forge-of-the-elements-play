@@ -56,7 +56,7 @@ function performPlayerMove(dx,dy){
      walking. The grass you just stepped into still hides you this turn (stealthScore); turnFinalizeAction clears it. */
   if(gAt(nx,ny)===G_GRASS) player.grassStep={x:nx,y:ny};
   player.x=nx; player.y=ny; player.movedThisTurn=true;
-  if(gAt(nx,ny)===G_GRASS){ setG(nx,ny,G_SHORT); sfx('step-grass',{vol:0.25}); }   /* 2026-09-28 (Justin): a quarter; the rustle is 0.5 s against a 0.07 s stone click, so at half it still sounded bigger. Cutting a bush stays at half */
+  if(gAt(nx,ny)===G_GRASS){ setG(nx,ny,G_SHORT); sfx('step-grass',{vol:0.15}); }   /* 2026-09-28 (Justin): a quarter; the rustle is 0.5 s against a 0.07 s stone click, so at half it still sounded bigger. Cutting a bush stays at half. 2026-09-29 (Justin): lower again, 0.15 (on top of step-grass in SFX_LEVEL) */
   else if(t===WATER) sfx('step-water',{vol:0.8}); else sfx('step-stone',{vol:0.8});
   stepOn(); endTurn();
 }
@@ -404,11 +404,12 @@ function triggerTrap(tr,e){
 }
 function spotTraps(){
   /* 2026-09-17: at most one trap a turn, and traps set on purpose (a trap room, a puzzle) hide far better,
-     so a trap room isn't laid bare the moment you look into it; searching still finds them */
+     so a trap room isn't laid bare the moment you look into it; searching still finds them.
+     2026-09-29 (Justin): passive spotting was too low; doubled to 8% + 3% per Agility over 10 (Scoundrel +12% unchanged) */
   for(var i=0;i<feats.length;i++){
     var f=feats[i];
     if(f.found || !vis[idxOf(f.x,f.y)] || dist(player,f)>3) continue;
-    var ch=Math.max(0,0.04 + 0.02*Math.max(0,player.stats.agi-10) + (isScoundrel()?0.12:0) + Math.min(0,ringVal('keeneyes'))) * ((f.room||f.puzzle) ? 0.2 : 1);
+    var ch=Math.max(0,0.08 + 0.03*Math.max(0,player.stats.agi-10) + (isScoundrel()?0.12:0) + Math.min(0,ringVal('keeneyes'))) * ((f.room||f.puzzle) ? 0.2 : 1);
     if(rng()<ch){ f.found=true; log('You spot '+(/^[AEIOU]/.test(trapName(f.kind))?'an':'a')+' <b>'+trapName(f.kind)+' trap</b>.','c-info'); sfx('trap-spot'); if(typeof trapSpotFx==='function') trapSpotFx(f); break; }
   }
   props.forEach(function(p){});

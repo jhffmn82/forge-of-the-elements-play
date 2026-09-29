@@ -150,10 +150,15 @@ function turnClassRecovery(context){
 /* ---------------------------------------------------------------- stealth: everyone has a stealth score */
 
 /* chance per turn that an unaware enemy notices you; hunting enemies are unaffected */
+/* 2026-09-29 (Justin: 'I fight trains of enemies even in the first biome'): noticing by sight falls off with distance like
+   sound does: the full chance within 3 tiles, 70% of it at 4-5, 30% at 6-7, nothing farther. An awake wanderer used to
+   notice you at its full 70% from 9 tiles, a sleeper at its full 55% from 7. Hearing a sleeper's neighbour stays 20% at 3. */
+var NOTICE_BANDS=[{upTo:3,f:1},{upTo:5,f:.7},{upTo:7,f:.3}];
+function noticeBand(d, cut){ for(var i=0;i<NOTICE_BANDS.length;i++) if(d<=Math.max(1,NOTICE_BANDS[i].upTo-cut)) return NOTICE_BANDS[i].f; return 0; }
 function noticeChance(e, see, d, asleep){
   var cut = isScoundrel() ? 2 : 0, ch=0;
-  if(asleep) ch = see && d<=Math.max(1,7-cut) ? 0.55 : d<=Math.max(1,3-cut) ? 0.2 : 0;
-  else ch = see && d<=Math.max(1,9-cut) ? 0.7 : 0;
+  if(asleep) ch = see ? 0.55*noticeBand(d,cut) : d<=Math.max(1,3-cut) ? 0.2 : 0;
+  else ch = see ? 0.7*noticeBand(d,cut) : 0;
   if(isScoundrel()) ch*=0.5;
   return ch*(1-stealthScore());
 }

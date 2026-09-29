@@ -134,7 +134,9 @@ function actorFinish(context){
 }
 function actorBehavior(name,when,run){return {name:name,when:when,run:run};}
 var gameActors=FoteActors.create({
-  present:function(e){return ents.includes(e);},cost:function(e){return actCost(e);},before:actorPrepare,after:actorFinish,
+  present:function(e){return ents.includes(e);},
+  /* 2026-09-29 (Justin): a step (the actor ended its turn somewhere else) is where Mother Murk's rank-3 summon speed applies */
+  cost:function(e,c){var cost=actCost(e);return c&&(e.x!==c.x||e.y!==c.y)&&typeof murkStride==='function'?murkStride(e,cost):cost;},before:actorPrepare,after:actorFinish,
   blocked:function(e){return MAPVIEW.on&&e.foe?'map-view':FoteActors.blocked(e,gameEffects);},
   behaviors:[
     actorBehavior('fear',function(e){return gameEffects.hasTag(e,'fear');},function(e){fleeStep(e);return true;}),

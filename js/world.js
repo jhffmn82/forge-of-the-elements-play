@@ -91,17 +91,25 @@ function biomePlan(b){
    2026-09-18: each biome used to draw its god at random from everyone but the first shrine's, independently,
    so 39% of runs repeated one - you could walk past a god you did not want and be offered the same god again
    two biomes later, and the odds of finding the one you wanted never improved as the run went on. One
-   shuffle, four cards off the top. Old saves rebuild the same deal from their own seed. */
-function godDeal(){
+   shuffle, four cards off the top. Old saves rebuild the same deal from their own seed.
+   2026-09-29 (Justin): a new run deals 4 of the 9 ordered by eligibility: the same shuffle, with every god the new
+   character could swear to (class, race and court, creationRefuses) moved ahead of the ones who would refuse it.
+   Every class and race has at least five gods who take it, so all four shrines offer one you can accept and a
+   mage no longer rerolls for a god. Only newRunState passes the choice; a save without a deal rebuilds the old one. */
+function godDeal(choice){
   if(RUN.godDeal) return RUN.godDeal;
   var r = mulberry32(((RUN.seed||0) ^ 0x6f5a1c3d)>>>0), ids = Object.keys(GODS);
   for(var i=ids.length-1;i>0;i--){ var j=Math.floor(r()*(i+1)); var t=ids[i]; ids[i]=ids[j]; ids[j]=t; }
+  if(choice && typeof creationRefuses==='function'){
+    var ok=ids.filter(function(id){ return !creationRefuses(choice, id); });
+    ids=ok.concat(ids.filter(function(id){ return ok.indexOf(id)<0; }));
+  }
   RUN.godDeal = ids.slice(0, 4);
   return RUN.godDeal;
 }
 
 /* ---- run state ---- */
-function newRunState(seed){
+function newRunState(seed, choice){
   var r = mulberry32((seed ^ 0x5bd1e995)>>>0);
   var godIds=Object.keys(GODS);
   var els=ELEMENTS.slice();
@@ -116,7 +124,7 @@ function newRunState(seed){
     cores: 0, coreClaims: [],
     resolveUsed: false, victory: false, bossDead: false, turns: 0, kills: 0
   };
-  RUN.shrineGod = godDeal()[0];                    /* the first card of the four-god deal */
+  RUN.shrineGod = godDeal(choice)[0];              /* the first card of the four-god deal */
   if(RUN.shrineFloor===RUN.forgeFloor && r()<0.5) RUN.shrineFloor = RUN.forgeFloor===3 ? 2 : 1;
   return RUN;
 }

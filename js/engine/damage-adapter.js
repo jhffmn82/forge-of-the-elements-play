@@ -74,6 +74,7 @@ function damageOutgoingRules(event){
   if(target===player&&type==='poison'&&buff('poisonward'))return rejectDamage(event,'poison-ward');
   if(target===player){for(var el in IMMUNE_TYPE)if(IMMUNE_TYPE[el]===type&&aff(el)>=6){floatText(player.x,player.y,'immune','miss');return rejectDamage(event,'element-immunity');}}
   if(target!==player){
+    if(target.foe&&!event.tags.has('proc')&&typeof murkSummonDamage==='function')event.amount*=murkSummonDamage(source);   /* 2026-09-29 (Justin): Mother Murk, +5% summon damage per rank */
     if((source===player||source==='player')&&aff('fire')>=3&&target.st&&target.st.burn)event.amount*=1+.05*aff('fire');
     if(target.st&&target.st.hollow)event.amount*=1+.05*target.st.hollow.n;
   }

@@ -105,9 +105,10 @@ function openShrine(){
     if(!floorMeta.shrinePrayed){ buttons.push({label:'Pray at your god\'s shrine', cls:'primary', fn:function(){ floorMeta.shrinePrayed=true; player.favor=100; gainPiety(player.cls==='cleric'?25:10); log('You pray at the shrine of your god. Favor restored.','c-kill'); sfx('shrine-convert'); closeModal(); updateUI(); }}); }
     else html+='<p class="c-info">You have already prayed here.</p>';
   }
+  /* 2026-09-29 (Justin): the tithe blessing lasts 250 turns (was 40); the fade message (blessed) runs on the same clock */
   if(!mine && !floorMeta.shrineTithed) buttons.push({label:'Tithe 20 essence for a blessing', disabled:player.essence<20, fn:function(){
-    spendEssence(20); floorMeta.shrineTithed=true; player.blessed=120; player.buffs.rally=40; derive(player);
-    log('The shrine blesses you: +10% damage for 40 turns.','c-good'); sfx('pray'); closeModal(); updateUI(); }});
+    spendEssence(20); floorMeta.shrineTithed=true; player.blessed=250; player.buffs.rally=250; derive(player);
+    log('The shrine blesses you: +10% damage for 250 turns.','c-good'); sfx('pray'); closeModal(); updateUI(); }});
   buttons.push({label:'Leave', fn:closeModal});
   openModal('Shrine', html, buttons);
   var holder=document.querySelector('.shrine-art'); if(holder) paintArt(holder, 'structures', g.sprite, 120);
@@ -273,7 +274,27 @@ function prayFieldSmelt(){
   }};}));return true;
 }
 
+/* 2026-09-29 (Justin): Mother Murk's summons. Everything you call to fight for you (Raise Dead, Shades, Shadow Swarm,
+   Living Flame, your Shadow) has +5% HP and +5% damage per rank, and from rank 3 moves 10% faster. Freed prisoners
+   are allies, not summons. Life Drain is a 10% chance on each hit you or a summon lands to heal 1 HP per rank
+   (Divine Power scales it, as the old heal on a kill did); damage over time and procs do not roll it. */
+function murkSummon(e){return !!(e&&e.ally&&(e.undeadServant||e.shade||e.swarm||e.livingFlame||e.shadowClone||e.broodling));}
+function murkRank(){return hasGod('murk')?godRank():0;}
+function murkSummonHp(e){
+  var r=murkRank();if(!r||!murkSummon(e))return e;
+  var m=1+.05*r;e.maxhp=Math.round(e.maxhp*m);e.hp=Math.min(e.maxhp,Math.round(e.hp*m));return e;
+}
+function murkSummonDamage(source){return murkSummon(source)?1+.05*murkRank():1;}
+function murkStride(e,cost){return murkRank()>=3&&murkSummon(e)?Math.max(1,Math.round(cost/1.1)):cost;}
+function murkLifeDrain(target,d,source,event){
+  var r=murkRank();
+  if(!r||!(d>0)||!target||!target.foe||!(source===player||murkSummon(source)))return;
+  if(event&&(event.tags.has('proc')||event.tags.has('periodic')))return;
+  if(rng()<.10)healPlayer(Math.round(r*divineStrength()));
+}
+
 function godDamageResolved(target,d,type,source,event){
+ murkLifeDrain(target,d,source,event);
 
 
  if(d>0&&source===player&&target.foe){

@@ -71,10 +71,29 @@ var SFX_ALIASES={
   'heart-alert':'heart-intro','heart-attack':'golem-attack'
 };
 var SFX_LAST={},SFX_LAST_GAIN={},SFX_VOICES=[],SFX_STEP=0,SFX_SYNTH_GAIN=1;
-/* per-sound level, on top of a call's own vol. 2026-09-28 (Justin): spotting a trap and the magic missile hit (every
-   magic-type impact) were too loud, halved like the level-up and victory stings */
-var SFX_LEVEL={'level-up':.5, victory:.5, 'trap-spot':.5, 'magic-missile-hit':.5, 'pickup-mote':.5};   /* pickup-mote: 1.3.2 ruling 6, level with the essence pickup */
-function sfxGain(name,opts){return (opts&&opts.vol!==undefined?opts.vol:1)*(SFX_LEVEL[name]!==undefined?SFX_LEVEL[name]:1);}
+/* ---- per-sound levels: one table, on top of a call's own vol ----
+   2026-09-29 (Justin): "sound effects overall are too loud." An algorithmic pass over docs/sfx-pass-measurements.json
+   (after.rms_dbfs, the level of each shipped file). The reference is the median of the weapon combat sounds (swing,
+   miss, hit-flesh, hit-crit, hit-armor, parry, block, bow-shot, arrow-hit, double-strike): -24.51 dBFS. Every other
+   effect louder than that is brought down to it: gain = 10^((-24.51 - level)/20), never above 1, times the level it
+   already had here (2026-09-28: level-up, victory, trap-spot and magic-missile-hit at half; pickup-mote at half,
+   1.3.2 ruling 6). Left alone: every combat sound, the crate/barrel and pot breaks, the bag pickup, and anything
+   at or below the reference; music and ambience are not effects and have their own levels.
+   Extra halvings on top of the normalized value (Justin): goblin-death, magic-missile (the cast), pickup-essence
+   (the gain chime), level-up and identify ("you now know your X"). Trampling grass is cut at its call instead
+   (js/systems.js, vol 0.15). A name played through SFX_ALIASES takes its file's level unless it has its own. */
+var SFX_LEVEL={
+  /* creatures */ 'bat-attack':.56, 'bat-death':.36, 'brute-attack':.47, 'brute-death':.4, 'goblin-alert':.31, 'goblin-death':.17, 'rat-attack':.7, 'rat-death':.58, 'slime-death':.52, 'warchief-death':.35, 'warchief-roar':.29,
+  /* traps */ 'trap-alarm':.4, 'trap-frost':.49, 'trap-gas':.64, 'trap-pit':.28, 'trap-spark':.44, 'trap-spot':.5, 'trap-teleport':.63,
+  /* status */ 'status-burn':.88, 'status-fear':.28, 'status-poison':.54,
+  /* spells */ 'cast-generic':.63, 'explosion':.97, 'fire-hit':.97, 'ice-hit':.94, 'light-cast':.42, 'light-hit':.18, 'lightning-hit':.61, 'magic-missile':.28, 'magic-missile-hit':.36, 'shadow-cast':.45, 'vanish':.74,
+  /* divine */ 'forge-enchant':.79, 'forge-fuse':.6, 'heal':.87, 'piety-rank':.39, 'pray':.26, 'shrine-convert':.69, 'shrine-open':.46, 'summon':.59, 'wobbles-giggle':.45, 'wrath':.38,
+  /* cues */ 'elementaling-appear':.83, 'identify':.32, 'level-up':.14, 'new-ability':.94, 'pickup-essence':.37, 'pickup-mote':.42, 'puzzle-solved':.93, 'stat-point':.94, 'status-stun':.89, 'victory':.26,
+  /* interface */ 'inventory-full':.47, 'no-mana':.77, 'ui-error':.67,
+  /* inventory */ 'eat':.79, 'pickup-key':.59,
+  /* movement */ 'step-grass':.64, 'step-stone':.66
+};
+function sfxGain(name,opts,file){var level=SFX_LEVEL[name]!==undefined?SFX_LEVEL[name]:file&&SFX_LEVEL[file]!==undefined?SFX_LEVEL[file]:1;return (opts&&opts.vol!==undefined?opts.vol:1)*level;}
 /* 2026-09-28 (Justin): "sound effects soften by distance: near (within 5 spaces), 70% between 5-8, 30% between 8-12,
    and after that you don't hear it." A sound with a place in the world names it with opts.from: a tile {x,y} or a
    creature, or a list of them (the nearest counts). Distance is spaces as movement counts them (a diagonal step is
@@ -109,7 +128,7 @@ function sfx(name, opts){
     if(buf){
       var s=c.createBufferSource(); s.buffer=buf; s.playbackRate.value=opts.rate||1;
       while(SFX_VOICES.length>=24){var old=SFX_VOICES.shift();try{old.stop();}catch(e){}}
-      var g=c.createGain(); g.gain.value=sfxGain(name,opts)*(alert?.55:1)*near; s.connect(g); g.connect(AUDIO.sfxBus);
+      var g=c.createGain(); g.gain.value=sfxGain(name,opts,file)*(alert?.55:1)*near; s.connect(g); g.connect(AUDIO.sfxBus);
       if(/^(fire|ice|lightning|earth|light|shadow|magic|cast|shrine|pray|summon|heal|forge|wrath)/.test(name))g.connect(AUDIO.verb);
       SFX_VOICES.push(s);s.onended=function(){var i=SFX_VOICES.indexOf(s);if(i>=0)SFX_VOICES.splice(i,1);s.disconnect();g.disconnect();};s.start(t);
     } else { SFX_SYNTH_GAIN=near; try{ synth(name, t, opts); } finally{ SFX_SYNTH_GAIN=1; } }   /* the stand-in softens with distance too */

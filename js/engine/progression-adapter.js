@@ -116,6 +116,7 @@ function castRaiseDead(x,y,ability,options){
   servant.dmg=[Math.round((form.dmg[0]+Math.floor(player.level/3))*boost),Math.round((form.dmg[1]+Math.floor(player.level/3))*boost)];
   servant.life=undefined;servant.taunt=!!form.taunt;servant.lifesteal=!!form.lifesteal;servant.big=form.taunt;servant.castSpell=form.caster||null;servant.castCd=0;
   if(form.sprite)servant.base=Object.assign({},servant.base,{sprite:form.sprite,name:form.name,art:form.art||servant.base.art});
+  murkSummonHp(servant);
   log('Mother Murk answers. A <b>'+form.name+'</b> claws its way up out of the floor.','c-good');sfx('summon',{from:{x:x,y:y}});sparkleFx(x,y,'dark',24);
   endTurn();return true;
 }

@@ -78,12 +78,19 @@ function offHandWeapon(d){
 function creationRefuses(c, g){
   var G=GODS[g]; if(!G) return true;
   if(G.refuses && G.refuses===c.race) return true;
-  if(g==='reginald' && (c.cls==='scoundrel' || c.race==='gloomling')) return true;
+  if(classRefusesGod(c.cls, g)) return true;
+  if(g==='reginald' && c.race==='gloomling') return true;
   if(g==='glimmer' && c.race==='gloomling') return true;
 
   if(g==='sylla' && c.race==='fae' && c.court==='fire') return true;
   return false;
 }
+/* 2026-09-29 (Justin): which classes a god refuses, in one table (a god not listed for a class takes it). Mages may
+   follow Vellum, Murk, Wobbles, Sylla, Glimmer and Old Anvil, but not Chad, Grumbok or Sir Reginald; Scoundrels not
+   Sir Reginald or Vellum; Fighters not Vellum or Sylla. Clerics choose their god at creation and Tourists go
+   anywhere, so neither is barred. The shrine (godRefuses) and the run's god deal (godDeal) read the same table. */
+var GOD_CLASS_BARS={mage:['grom','grumbok','reginald'], scoundrel:['reginald','vellum'], fighter:['vellum','sylla']};
+function classRefusesGod(cls, g){ return (GOD_CLASS_BARS[cls]||[]).indexOf(g)>=0; }
 function rollName(c){
   var list=(NAMES[c.race]||{})[c.sex] || (NAMES[c.race]||{}).m || ['Adventurer'];
   var other=list.filter(function(n){ return n!==c.name; });
@@ -197,7 +204,7 @@ function newRun(seed,choice){
   LAST_CHOICE=JSON.parse(JSON.stringify(choice));
   if(typeof SANDBOX!=='undefined')SANDBOX.normalTitle=false;
   if(typeof MAPVIEW!=='undefined')MAPVIEW.on=false;
-  worldSeed=seed>>>0;rng=mulberry32(worldSeed);newRunState(worldSeed);
+  worldSeed=seed>>>0;rng=mulberry32(worldSeed);newRunState(worldSeed,choice);
   RUN.xpCurveVersion=XP_CURVE_VERSION;
   RUN.earnings={version:1,xp:0,essence:0,legacyBaseline:null};
   floorNo=1;turn=0;revealAll=false;aiming=null;PARTS.length=0;fx=[];speedFxList();

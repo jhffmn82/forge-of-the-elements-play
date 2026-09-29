@@ -157,7 +157,7 @@ function raiseShade(e){
   if(shades.length>=2){ shades.sort(function(a,b){ return a.hp-b.hp; }); ents=ents.filter(function(o){ return o!==shades[0]; }); }
   var s=spawn(e.kind, e.x, e.y);
   s.foe=false; s.ally=true; s.shade=true; s.state='ally'; s.name='Shade of '+e.base.name; s.col='#8A6FB0';
-  s.maxhp=s.hp=Math.max(1,Math.round(e.maxhp/2)); s.dmg=[Math.max(1,Math.round(e.dmg[0]/2)), Math.max(1,Math.round(e.dmg[1]/2))];
+  s.maxhp=s.hp=Math.max(1,Math.round(e.maxhp/2)); s.dmg=[Math.max(1,Math.round(e.dmg[0]/2)), Math.max(1,Math.round(e.dmg[1]/2))]; murkSummonHp(s);
   log('Its shade rises and serves you.','c-good'); sparkleFx(e.x,e.y,'dark',20);
 }
 
@@ -243,7 +243,9 @@ function basicMonsterBehavior(e){
   }
   if(e.state==='asleep'){
     var notice = noticeChance(e, see, d, true);
-    if(rng()<notice){ e.state='hunt'; e.caughtOff=turn; if(player.x!==e.x)e.facingLeft=player.x<e.x; log(e.name+' notices you.','c-info'); if(e.base.sfx) sfx(e.base.sfx+'-alert',{from:e}); }
+    /* 2026-09-29: it goes to where it noticed you. With no lastSeen, a hunter that cannot see you took chaseStep, which paths
+       to your exact tile anywhere on the floor: a sleeper that heard you through a wall tracked you forever */
+    if(rng()<notice){ e.state='hunt'; e.caughtOff=turn; e.lastSeen={x:player.x,y:player.y}; if(player.x!==e.x)e.facingLeft=player.x<e.x; log(e.name+' notices you.','c-info'); if(e.base.sfx) sfx(e.base.sfx+'-alert',{from:e}); }
      return true;
   }
   if(see && (e.state==='hunt' || e.challenged || rng()<noticeChance(e, see, d, false))) { if(e.state!=='hunt'){ e.caughtOff=turn; if(player.x!==e.x)e.facingLeft=player.x<e.x; if(e.base.sfx) sfx(e.base.sfx+'-alert',{from:e}); } e.state='hunt'; e.lastSeen={x:player.x,y:player.y}; }

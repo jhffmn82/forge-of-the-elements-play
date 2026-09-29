@@ -34,7 +34,7 @@
         return context.handled;
       }finally{
         /* Only this boundary spends actor time; content handlers describe an action. */
-        actor.t=context.from+Math.max(1,ports.cost(actor)||1);
+        actor.t=context.from+Math.max(1,ports.cost(actor,context)||1);
         if(ports.after)ports.after(context);
       }
     }

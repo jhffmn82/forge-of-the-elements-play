@@ -237,7 +237,7 @@ function castElementTarget(x,y){
     beginCast(A);
     ents=ents.filter(function(e){return !e.swarm;});
     var swarmStats=shadowSwarmStats(A);
-    spots.forEach(function(s){ var m=spawn('wisp',s[0],s[1]); m.foe=false; m.ally=true; m.state='ally'; m.name='Shade'; m.base=Object.assign({},m.base,{name:'Shade',sprite:'m-shade',art:.8,dmg:[swarmStats.damage,swarmStats.damage],el:'shadow'});m.maxhp=m.hp=swarmStats.hp; m.dmg=[swarmStats.damage,swarmStats.damage]; m.life=swarmStats.duration; m.noXp=true; m.swarm=true; m.t=player.t+100; sparkleFx(s[0],s[1],'dark',8); });
+    spots.forEach(function(s){ var m=spawn('wisp',s[0],s[1]); m.foe=false; m.ally=true; m.state='ally'; m.name='Shade'; m.base=Object.assign({},m.base,{name:'Shade',sprite:'m-shade',art:.8,dmg:[swarmStats.damage,swarmStats.damage],el:'shadow'});m.maxhp=m.hp=swarmStats.hp; m.dmg=[swarmStats.damage,swarmStats.damage]; m.life=swarmStats.duration; m.noXp=true; m.swarm=true; murkSummonHp(m); m.t=player.t+100; sparkleFx(s[0],s[1],'dark',8); });
     log('<b>Shadow Swarm.</b> '+spots.length+' shadows rise.','c-good');
   }
   else if(A.kind==='lflame'){
@@ -246,7 +246,7 @@ function castElementTarget(x,y){
     beginCast(A);
     var sp=spellPower(A), m2=spawn('emberling',x,y);
     m2.kind='emberling'; m2.base=MONSTERS.emberling; m2.foe=false; m2.ally=true; m2.state='ally'; m2.name='Living Flame'; m2.livingFlame=true; m2.rangedAlly=6; m2.noXp=true; m2.t=player.t;
-    m2.maxhp=m2.hp=Math.round(28*sp); m2.dmg=[Math.round(5*sp), Math.round(9*sp)]; m2.life=30;
+    m2.maxhp=m2.hp=Math.round(28*sp); m2.dmg=[Math.round(5*sp), Math.round(9*sp)]; m2.life=30; murkSummonHp(m2);
     explosionFx(x,y);
     var land=spellRoll(A);
     ents.slice().forEach(function(e){ if(e.foe && dist(e,m2)<=1){ spellHit(e,A,land,'fire'); finishHit(e); } });

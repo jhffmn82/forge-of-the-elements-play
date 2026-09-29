@@ -167,8 +167,8 @@ var GODS = {
       "bonespear"
     ],
     "boons": [
-      "Life Drain: when you or your servant kill a living enemy, you heal 1 HP per rank. Your servant grows with rank and Divine Power.",
-      "Grave Strength: your servant and other summons deal +1 shadow damage per rank and carry your weapon's enchantment.",
+      "Life Drain: each hit you or your summons land has a 10% chance to heal you 1 HP per rank. Your summons have +5% HP and +5% damage per rank, and your servant grows with rank and Divine Power.",
+      "Grave Strength: your servant and other summons deal +1 shadow damage per rank, carry your weapon's enchantment and move 10% faster.",
       "Lich: your servant rises as a Lich. The first time it is destroyed, it returns a turn later at half health."
     ],
     "gain": "Kills of the living, extra for kills by your undead."
