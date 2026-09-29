@@ -8,6 +8,7 @@ Changes since Beta 1.3.3.
 
 ## Gameplay and balance
 
+- A Shadow weapon enchant now has a 10% chance to strike with shadow even without Shadow affinity, plus 5% per Shadow point (it was 5% per point with a 5% floor).
 - Monsters notice you less from afar. Within 3 tiles the chance is as before; at 4-5 tiles it is 70% of that, at 6-7 tiles 30%, and beyond 7 they do not notice you by sight at all (a wandering monster used to spot you at full chance from 9 tiles).
 - A monster that wakes goes to where it noticed you and looks around, instead of knowing where you are from then on. One that heard you through a wall used to follow you across the whole floor, which is where the long trains of monsters came from.
 - You spot traps in passing twice as often: 8% plus 3% per Agility above 10 (was 4% plus 2%). The Scoundrel's bonus is unchanged.

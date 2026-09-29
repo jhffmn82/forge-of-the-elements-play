@@ -15,7 +15,7 @@
       air:{repeatChance:curve(0,.05,{minimum:.05})},
       earth:{rootChance:curve(.15,.045),rootDuration:fixed(2)},
       light:{critChance:curve(.05,.01)},
-      shadow:{procChance:curve(0,.05,{minimum:.05}),extraDamage:curve(.25),hollowDamage:fixed(1),corruptDuration:fixed(3)}
+      shadow:{procChance:curve(.10,.05),extraDamage:curve(.25),hollowDamage:fixed(1),corruptDuration:fixed(3)}
     },
     armor:{
       fire:{maxhp:curve(.05,.03)},water:{evasion:curve(8,2.4,{round:true})},
