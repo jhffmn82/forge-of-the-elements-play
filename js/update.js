@@ -13,8 +13,7 @@ var FOTE_PATCHES = [
     "Trollblood now heals 20% of max HP plus 5% per rank (45% at rank 5).",
     "Sap now has an 8-turn cooldown, on top of its mana cost.",
     "An Air weapon enchant now has a 10% chance to strike twice even without Air affinity, plus 5% per Air point (it was 5% per point with a 5% floor).",
-    "A Light weapon enchant is now Hallowed Edge: each hit with the weapon, and each spell it carries, heals you 1 HP per Light point (at least 1). It replaces the enchant's crit chance bonus. Light enchants on other gear are unchanged.",
-    "Enchants no longer add up across gear of the same element: when your off-hand (shield, orb, tome or holy symbol) carries the same element as your armor, only the armor's enchant counts, and the Character sheet marks the off-hand one as dormant. Each weapon's enchant affects only the hits made with that weapon."
+    "A Light weapon enchant is now Hallowed Edge: each hit with the weapon, and each spell it carries, heals you 1 HP per Light point (at least 1). It replaces the enchant's crit chance bonus. Light enchants on other gear are unchanged."
   ]},
   {version:'Beta 1.3.4', notes:[
     "A Shadow weapon enchant now has a 10% chance to strike with shadow even without Shadow affinity, plus 5% per Shadow point (it was 5% per point with a 5% floor).",

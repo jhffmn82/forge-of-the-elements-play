@@ -157,7 +157,7 @@ function charHTML(){
   var ar=player.armorItem;
   if(ar && ar.enchant && !ar.unid) gear.push([gearName(ar), enchantLive('armor',ar.enchant)]);
   var of=player.off;
-  if(of && of!==EMPTY_OFF && of.enchant && typeof offKind==='function' && offKind() && ENCHANT_TEXT[offKind()]) gear.push([gearName(of), (typeof enchantLive==='function' ? enchantLive(offKind(), of.enchant) : ENCHANT_TEXT[offKind()][of.enchant])+(offEnchantDormant(of,ar)?' <span class="c-info">Dormant: your armor carries the same element, and only the stronger enchant counts.</span>':'')]);
+  if(of && of!==EMPTY_OFF && of.enchant && typeof offKind==='function' && offKind() && ENCHANT_TEXT[offKind()]) gear.push([gearName(of), (typeof enchantLive==='function' ? enchantLive(offKind(), of.enchant) : ENCHANT_TEXT[offKind()][of.enchant])]);
   if(gear.length){
     h+='<div class="sec">Gear</div>';
     gear.forEach(function(g){ h+='<div class="prow"><span class="k">&#9679;</span><span><span class="n">'+g[0]+'</span><div class="d">'+g[1]+'</div></span><span></span></div>'; });

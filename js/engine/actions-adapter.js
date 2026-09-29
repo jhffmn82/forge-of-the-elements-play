@@ -3,7 +3,7 @@
 var gameActions=FoteActions.create();
 function actionInfusion(kind,view){
   view=view||player;var o=view.twoHanded?null:view.off;
-  return o&&(o.icon||'').replace(/^item-/,'')===kind&&!offEnchantDormant(o,bodyArmor(view))?o.enchant||null:null;
+  return o&&(o.icon||'').replace(/^item-/,'')===kind?o.enchant||null:null;
 }
 function actionDivine(view){var w=view.weapon||{},o=view.twoHanded?{}:view.off||{};return 1+((w.cursed?0:w.divine||0)+(o.cursed?0:o.divine||0))*gearPassiveBonus();}
 function actionCritBonus(view){return actionInfusion('holy',view)==='shadow'&&isBuffed()?enchantValues('holy','shadow').critChance:0;}

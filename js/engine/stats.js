@@ -49,7 +49,6 @@
     var off=weapon.hands===2?null:actor.off;
     return {rank:rank,gearBonus:gearBonus,enchantBonus:enchantBonus,mountain:mountain,
       weapon:weapon,off:off,armor:actor.armorItem||{},
-      offEnchant:off&&off.enchant&&off.enchant!==(actor.armorItem||{}).enchant?off.enchant:null,   /* 2026-09-29 (Justin): the armor's enchant outranks an off-hand one of its element (infusions.js) */
       divine:1+((weapon.cursed?0:weapon.divine||0)+(off&&!off.cursed?off.divine||0:0))*gearBonus,
       passives:passivesFor(actor.stats,content.passives),aff:actor.aff||{},buffs:actor.buffs||{},
       enchant:function(slot,el){return content.enchantments.values(slot,el,(actor.aff||{})[el]||0,options);}};
@@ -99,9 +98,9 @@
     if(itemKey(a)==='robe')out.maxmp=Math.round(out.maxmp*(1+content.robe.mana[tierOf(a)]*c.gearBonus));
     if(o&&o.block>0){
       out.block=Math.min(.75,o.block+content.blockPer*(o.plus||0)+.02*Math.max(0,actor.stats.mig-10));
-      if(c.offEnchant==='earth'&&out.block){var shield=c.enchant('shield','earth');out.block=Math.min(shield.blockCap,out.block+shield.block);}
+      if(o.enchant==='earth'&&out.block){var shield=c.enchant('shield','earth');out.block=Math.min(shield.blockCap,out.block+shield.block);}
     }
-    if(o&&(o.icon||'').replace(/^item-/,'')==='tome'&&c.offEnchant==='water')out.eva+=Math.round(c.enchant('tome','water').evasion);
+    if(o&&(o.icon||'').replace(/^item-/,'')==='tome'&&o.enchant==='water')out.eva+=Math.round(c.enchant('tome','water').evasion);
   }
   function conditionalStats(out,actor,content,c){
     if(c.buffs.cinder>0)out.speed=Math.round(out.speed*1.5);else if(c.buffs.haste>0)out.speed=Math.round(out.speed*1.3);

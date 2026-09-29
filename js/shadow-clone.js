@@ -25,7 +25,7 @@
     var p=player,perks=copy(p.passives||{}),rank=godRank(),hpRate=(.20+.02*Math.max(0,p.stats.vit-10))/100;
     if(bodyArmor(p).enchant==='light')hpRate*=1+enchantValues('armor','light').hpRegen;
     if(hasGod('grumbok'))hpRate*=1+.20*rank;if(hasGod('glimmer'))hpRate*=1+.10*rank;
-    var off=p.twoHanded?null:p.off,offEl=off&&!offEnchantDormant(off,bodyArmor(p))?off.enchant:null,orb=off&&focusKey(off)==='orb'?offEl:null,weapon=p.weapon||{},focus=['staff','wand'].includes(itemKey(weapon))||weapon.spell;
+    var off=p.twoHanded?null:p.off,orb=off&&focusKey(off)==='orb'?off.enchant:null,weapon=p.weapon||{},focus=['staff','wand'].includes(itemKey(weapon))||weapon.spell;
     var resist={},contexts={},arm=bodyArmor(p);
     types.forEach(function(type){
       resist[type]=resistMult(p,type);
@@ -52,10 +52,10 @@
       magicBarrier:!!perks.magicBarrier,fortitude:!!perks.fortitude,fortUntil:p.fortUntil||0,earth:p.aff.earth||0,
       hpRate:hpRate,mending:mendingRate(ringVal('mending')),fed:p.hunger>0,foodRegen:buff('regeneration')?.01:0,sanctuaryBonus:.25*divineStrength(),
       mpRate:(.60+.05*Math.max(0,p.stats.foc-10))/100*(perks.meditation?1.25:1),manaflow:buff('manaflow')?.009:0,
-      shield:off&&off.block>0?{element:offEl,values:copy(enchantValues('shield',offEl))}:null,
+      shield:off&&off.block>0?{element:off.enchant,values:copy(enchantValues('shield',off.enchant))}:null,
       orb:orb?{element:orb,values:copy(enchantValues('orb',orb))}:null,
       weapon:focus&&weapon.enchant?{element:weapon.enchant,values:copy(enchantValues('weapon',weapon.enchant))}:null,
-      tomeHeal:off&&focusKey(off)==='tome'&&offEl==='shadow'?enchantValues('tome','shadow').killHeal:0,
+      tomeHeal:off&&focusKey(off)==='tome'&&off.enchant==='shadow'?enchantValues('tome','shadow').killHeal:0,
       burn:burnDmg(),syllaDuration:syllaOn()&&rank>=5?1:0,
       pools:FoteCosts.shields(p).map(function(pool){return {key:pool.key,amount:pool.amount};}),iceArmorMax:p.iceArmorMax||0,guardMax:p.guardMax||0,
       look:playerCastLook(),race:p.race,gender:p.gender,face:p.face,appearance:{weapon:copy(p.weapon),off:copy(p.off),armorItem:copy(p.armorItem),twoHanded:p.twoHanded}};

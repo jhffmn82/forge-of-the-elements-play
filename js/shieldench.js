@@ -12,7 +12,7 @@ function shieldEnchantValues(el){return enchantValues('shield',el);}
 function onShieldBlock(att, def, raw){
   if(def.shadowClone&&typeof FoteShadowClone!=='undefined'){FoteShadowClone.block(def,att,raw);return;}
   if(def!==player || !att || att===player) return;
-  var sh=player.off, el=sh && !offEnchantDormant(sh,bodyArmor(player)) && sh.enchant;
+  var sh=player.off, el=sh && sh.enchant;
   if(!el || !(sh.block>0)) return;
   var values=shieldEnchantValues(el);
   if(el==='fire'){
