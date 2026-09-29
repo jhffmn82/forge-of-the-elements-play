@@ -239,7 +239,7 @@ function heldTierImage(o, key, tier, k){
 function heldTier(it){ return (it && typeof itemKey==='function' && itemKey(it) && typeof tierNum==='function') ? tierNum(it) : null; }
 /* handOv: draw this item in the other hand (an off-hand weapon), mirrored so its own art faces outward. cell: the sheet's
    cell size, for the short-forearm rule */
-function drawHeld(g, key, pose, rest, dx, dy, sc, drawH, enchant, now, tier, handOv, cell, aim, grip){
+function drawHeld(g, key, pose, rest, dx, dy, sc, drawH, enchant, now, tier, handOv, cell, aim, grip, strike){
   var H=HELD[key], o=objArt('held','held-'+key); if(!H || !o) return;
   /* aim: a bow being shot is held upright with its belly toward the target; the held art has its string on the
      outer side, so it is mirrored (2026-09-27, Justin: the bow was backwards in the new empty-handed shots) */
@@ -273,6 +273,8 @@ function drawHeld(g, key, pose, rest, dx, dy, sc, drawH, enchant, now, tier, han
       g.translate(hx, hy);
       var gside = hand[0] < cell/2 ? 1 : -1;
       var tip = aim ? -Math.PI/2 : heldTipAngle(HELD_STYLE[key]||'blade', gh, gside);
+      /* 2026-09-28 (Justin): in the attack the main-hand weapon points right, toward the target (the sprite is mirrored to face left) */
+      if(strike && Math.cos(tip)<0) tip = Math.PI - tip;
       g.rotate(tip + Math.PI/2);
       if(mirror) g.scale(-1, 1);
       if(enchant){ g.shadowColor=AFF_COL[enchant]||'#fff'; g.shadowBlur=Math.max(3, drawH*0.04)*dev; }
@@ -338,7 +340,7 @@ function drawCastLayers(e, cs, fr, dx, dy, w, h, g){
   var items=[], grip=gripFor(m,row,col);
   if(grip){
     /* the grips say for every frame whether each hand is in front of the body or behind it */
-    if(mainKey) items.push({key:mainKey, ench:wpn.enchant, tier:heldTier(wpn), aim:clip==='ranged' && aimBow, z:grip[HELD[mainKey].hand].z});
+    if(mainKey) items.push({key:mainKey, ench:wpn.enchant, tier:heldTier(wpn), aim:clip==='ranged' && aimBow, strike:clip==='melee', z:grip[HELD[mainKey].hand].z});
     if(offKey) items.push({key:offKey, ench:off.enchant, tier:heldTier(off), hand:'l', z:grip.l.z});
   } else if(pose){
     if(mainKey) items.push({key:mainKey, ench:wpn.enchant, tier:heldTier(wpn), aim:clip==='ranged' && aimBow, z:(pose[HELD[mainKey].hand==='r'?'rh':'lh']||[0,0,0])[2]});
@@ -349,11 +351,11 @@ function drawCastLayers(e, cs, fr, dx, dy, w, h, g){
     items.forEach(function(it){ if((it.hand||HELD[it.key].hand)==='l' && clip!=='melee' && clip!=='death') it.z=Math.max(0, it.z); });
   }
   var drawH=m.stand*sc;
-  items.forEach(function(it){ if(it.z<0) drawHeld(g, it.key, pose, rest, dx, dy, sc, drawH, it.ench, now, it.tier, it.hand, cell, it.aim, grip); });
+  items.forEach(function(it){ if(it.z<0) drawHeld(g, it.key, pose, rest, dx, dy, sc, drawH, it.ench, now, it.tier, it.hand, cell, it.aim, grip, it.strike); });
   var look=armorLook(arm);
   if(look){ g.drawImage(tintedFrame(cs,row,col,look,pose), 0,0,cell,cell, dx,dy,w,h); }
   else g.drawImage(cs.img, fr.sx, fr.sy, cell, cell, dx, dy, w, h);
-  items.forEach(function(it){ if(it.z>=0) drawHeld(g, it.key, pose, rest, dx, dy, sc, drawH, it.ench, now, it.tier, it.hand, cell, it.aim, grip); });
+  items.forEach(function(it){ if(it.z>=0) drawHeld(g, it.key, pose, rest, dx, dy, sc, drawH, it.ench, now, it.tier, it.hand, cell, it.aim, grip, it.strike); });
   /* Fingers close over the grip rather than the handle covering the whole fist. */
   items.forEach(function(it){
     var held=HELD[it.key];if(it.z<0||held.shield||held.float)return;
@@ -385,9 +387,11 @@ function paintDoll(el, size, who){
      box narrower than the figure crops its sides, centred, as before. The doll is still: its dead repaint timer is gone
      (D13). */
   var S=size||150, d=window.devicePixelRatio||1;
-  var sc=(S*1.1)/m.stand, w=m.cell*sc, c=document.createElement('canvas');
-  c.width=Math.round(w*d); c.height=Math.round(S*1.25*d); c.style.width=(c.width/d)+'px'; c.style.height=(c.height/d)+'px';
+  /* 1.4 (grips): a sword hanging from a short figure's hand reaches past its feet, so the doll keeps a strip of room below
+     the figure (pad); the figure itself sits where it always did */
+  var sc=(S*1.1)/m.stand, w=m.cell*sc, pad=S*0.06, c=document.createElement('canvas');
+  c.width=Math.round(w*d); c.height=Math.round((S*1.25+pad)*d); c.style.width=(c.width/d)+'px'; c.style.height=(c.height/d)+'px';
   var g=c.getContext('2d'); g.setTransform(d,0,0,d,0,0); g.imageSmoothingEnabled=hi;
-  drawCastLayers(who, cs, {sx:0, sy:row*m.cell}, (c.width/d-w)/2, c.height/d-w+S*.02, w, w, g);
+  drawCastLayers(who, cs, {sx:0, sy:row*m.cell}, (c.width/d-w)/2, c.height/d-pad-w+S*.02, w, w, g);
   el.innerHTML=''; el.appendChild(c);
 }

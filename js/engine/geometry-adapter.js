@@ -44,7 +44,7 @@ function actorVisible(e,allowDawn){
 function revealActor(e){if(e&&e.base&&e.base.spawnInvisible)e.visibilityRevealed=true;}
 function stealthScore(){
   if(!player)return 0;var room=roomAt(player.x,player.y),step=player.grassStep;
-  /* 2026-09-28: tall grass you stepped into this turn counts though the step trampled it (performPlayerMove) */
+  /* 2026-09-28 (Justin): tall grass you stepped into this turn counts though the step trampled it (performPlayerMove) */
   return FoteGeometry.stealth({noisy:player.noisy,unsneaky:hasGod('reginald'),agility:player.stats.agi,scoundrel:isScoundrel(),moved:player.movedLast,
     grass:gAt(player.x,player.y)===G_GRASS||!!(step&&step.x===player.x&&step.y===player.y),darkRoom:room&&room.dark,weight:(player.armorItem||{}).weight,extra:stealthExtra()});
 }

@@ -1,7 +1,14 @@
 /* Release history and title-screen freshness checks. Saves are never cleared. */
-var FOTE_VERSION = 'Beta 1.3.2';
+var FOTE_VERSION = 'Beta 1.3.3';
 /* Keep newest first; describe only changes already present in this build. */
 var FOTE_PATCHES = [
+  {version:'Beta 1.3.3', notes:[
+    "Weapons and items now sit in your character's hands in every frame of every animation, for every race, court and outfit, on the map and on the Equipment doll. Each frame's fist and forearm were checked by hand, so nothing floats beside the hand or over the chest any more.",
+    "Held gear follows how it would really be held: swords, daggers, maces and wands hang near straight down at rest and follow the arm when you raise it or thrust; holy symbols, staves, spears, bows and the two-handed longsword and axe stand up out of the fist; shields ride on the forearm and tomes sit in the hand.",
+    "When you attack, your main-hand weapon points toward the enemy.",
+    "The Equipment doll keeps a little room below the figure, so a sword hanging from a short character's hand is no longer cut off.",
+    "A dart trap's sound no longer clicks at its very start either: the 1.3.2 fix removed the offset overall but left a small step in the first milliseconds."
+  ]},
   {version:'Beta 1.3.2', notes:[
     "Monsters face the way they walk. They used to turn toward you whatever they were doing, so a Shambler or goblin wandering away from you walked backwards. They still turn to face you when they notice you or attack.",
     "Enchanted body armor no longer wraps your character in a coloured glow, which drowned the figure in dark places like the Underdark. The enchantment still shows on the armor's card.",
