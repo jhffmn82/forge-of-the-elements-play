@@ -36,6 +36,7 @@ var STATUS_INFO = {
   cinder:    {name:'Cinder Stride', icon:'ic-flame-step', d:'Faster, leaving fire where you step.'},
   manaflow:  {name:'Mana Flow', icon:'pr-manatide', d:'Mana returns twice as fast.'},
   afterglow: {name:'Afterglow', icon:'ic-heal', d:'Light lingers: you heal 5% of your max HP each turn.'},
+  discipline:{name:"Warrior's Discipline", icon:'ic-charge', d:'+2 damage per stack, up to one stack per rank. Every ability you use adds a stack and renews them all.'},   /* 2026-09-29 (Justin): Grumbok rank 5; Charge's icon, no new art */
   thorns:    {name:'Thorns', icon:'ic-earth-root', d:'Enemies that hit you in melee take half the damage back.'},
   /* other timers on the player */
   hidden:    {name:'Hidden', icon:'st-hidden', d:'Enemies can\'t see you; your next hit is a surprise attack.'},
@@ -70,8 +71,8 @@ function statusList(e){
     /* Sylla's web starts as Root, then becomes Slow. Show silk in both phases. */
     if(o.k==='root'&&e.syllaWeb>0) I={name:'Webbed',icon:'st-web',bad:1,d:'Pinned in silk: can\'t move, and evasion is 0. Once free, moves and acts at half speed.'};
     if(o.k==='stone'&&e!==player) I={name:'Petrified',icon:'st-stone',bad:1,d:'Can\'t move or act. Evasion is 0.'};
-    if(o.k==='livingmountain') I=Object.assign({},I,{name:I.name+' ×'+(e.st.livingmountain.n||0)});
-    return {k:o.k, t:o.t, stacks:o.k==='livingmountain'?Math.min(10,e.st.livingmountain.n||0):0, name:I.name, icon:I.icon, d:I.d, bad:!!I.bad};
+    if(o.k==='livingmountain'||o.k==='discipline') I=Object.assign({},I,{name:I.name+' ×'+(e.st[o.k].n||0)});
+    return {k:o.k, t:o.t, stacks:o.k==='livingmountain'?Math.min(10,e.st.livingmountain.n||0):o.k==='discipline'?(e.st.discipline.n||0):0, name:I.name, icon:I.icon, d:I.d, bad:!!I.bad};
   });
 }
 

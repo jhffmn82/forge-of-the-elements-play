@@ -60,7 +60,7 @@ function resHTML(){
 /* what one weapon hit does before the target's armor: weapon dice with Might, melee passives and fire affinity */
 function hitRange(){
   var melee = !(player.range>1);
-  var mult = 1 + 0.04*(player.stats.mig-10) + (melee && hasP('heavyHands')?0.10:0) + (melee && hasP('unstoppable')?0.20:0) + (melee && buff('rampage')?0.40:0);
+  var mult = 1 + 0.04*(player.stats.mig-10) + (melee && hasP('heavyHands')?0.10:0) + (melee && hasP('unstoppable')?0.20:0) + (melee && buff('rampage')?.20+.04*godRank():0);
   mult = Math.max(0.1, mult);
   var fire = (player.aff && player.aff.fire) || 0;
   return [Math.max(1,Math.round(player.dmg[0]*mult))+fire, Math.max(1,Math.round(player.dmg[1]*mult))+fire];
@@ -95,12 +95,12 @@ function charHTML(){
   if(!player.abilities.length) h+='<div class="c-info" style="font-size:11.5px">No active abilities yet.</div>';
   player.abilities.forEach(function(k){
     var A=ABILITIES[k]; if(!A) return;
-    var cost = A.cd ? (typeof cdLeft==='function' && cdLeft(k) ? 'ready in '+cdLeft(k)+' turns' : A.cd+'-turn cooldown') : (A.favor ? A.favor+' Favor' : costOf(A)+' mana');
+    var cost = A.cd ? (A.cost ? costOf(A)+' mana, ' : '')+(typeof cdLeft==='function' && cdLeft(k) ? 'ready in '+cdLeft(k)+' turns' : cooldownTurns(A.cd)+'-turn cooldown') : (A.favor ? A.favor+' Favor' : costOf(A)+' mana');
     h+='<div class="arow" data-ab="'+k+'" draggable="true"><span class="ic" data-icon="'+(A.icon||'')+'"></span><span><span class="n">'+A.name+'</span><div class="d">'+(typeof liveDesc==='function' ? liveDesc(A) : A.desc)+'</div></span><span class="c" style="color:var(--ice)">'+cost+'</span></div>';
   });
   if(player.god){
     var g=GODS[player.god];
-    h+='<div class="sec">Prayers &middot; <span style="color:'+g.color+';text-transform:none;letter-spacing:0">'+g.name+'</span></div>';
+    h+='<div class="sec">Abilities &middot; <span style="color:'+g.color+';text-transform:none;letter-spacing:0">'+g.name+'</span></div>';
     (g.prayers||[]).forEach(function(pid){
       var P=PRAYERS[pid]; if(!P) return; var ok=godRank()>=P.rank; if(!ok) return;
       h+='<div class="arow'+(ok?'':' locked')+'" data-pr="'+pid+'"'+(ok?' draggable="true"':'')+'><span class="ic" data-icon="'+prayerIcon(pid)+'"></span><span><span class="n">'+P.name+'</span><div class="d">'+(typeof prayerLive==='function' ? prayerLive(P) : P.desc)+'</div></span><span class="c" style="color:var(--gold)">'+(ok?prayerCost(pid):'rank '+P.rank)+'</span></div>';
@@ -157,7 +157,7 @@ function charHTML(){
   var ar=player.armorItem;
   if(ar && ar.enchant && !ar.unid) gear.push([gearName(ar), enchantLive('armor',ar.enchant)]);
   var of=player.off;
-  if(of && of!==EMPTY_OFF && of.enchant && typeof offKind==='function' && offKind() && ENCHANT_TEXT[offKind()]) gear.push([gearName(of), (typeof enchantLive==='function' ? enchantLive(offKind(), of.enchant) : ENCHANT_TEXT[offKind()][of.enchant])]);
+  if(of && of!==EMPTY_OFF && of.enchant && typeof offKind==='function' && offKind() && ENCHANT_TEXT[offKind()]) gear.push([gearName(of), (typeof enchantLive==='function' ? enchantLive(offKind(), of.enchant) : ENCHANT_TEXT[offKind()][of.enchant])+(offEnchantDormant(of,ar)?' <span class="c-info">Dormant: your armor carries the same element, and only the stronger enchant counts.</span>':'')]);
   if(gear.length){
     h+='<div class="sec">Gear</div>';
     gear.forEach(function(g){ h+='<div class="prow"><span class="k">&#9679;</span><span><span class="n">'+g[0]+'</span><div class="d">'+g[1]+'</div></span><span></span></div>'; });

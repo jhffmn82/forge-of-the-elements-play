@@ -104,7 +104,6 @@ function damageDefenses(event){
     if(hasGod('reginald')&&godRank()>=3&&foe&&source.challenged)d*=Math.max(0,1-.05*godRank()*divineStrength());
     if(hasGod('reginald')&&godRank()>=5&&foe)d*=1-.10*Math.min(3,Math.max(0,adjacentFoes()-1));
     if(hasGod('reginald')&&godRank()>=3&&foe&&source.hp>0&&!source.challenged&&dist(source,player)>1){source.challenged=true;source.challengeUntil=worldNow()+500;source.state='hunt';source.cowardMark=true;log('<b>'+(source.name||'It')+'</b> strikes from afar. Sir Reginald marks the coward: it must face you.','c-good');}
-    if(capstone('grumbok')&&type!=='phys'&&foe)d*=.5;
     d=d>0&&barrier>0?Math.max(1,d-barrier):Math.max(0,d);
     // A landed physical hit survives rounding; actual shields can still absorb it.
     if(type==='phys'&&d>0)d=Math.max(1,d);
@@ -160,7 +159,7 @@ function damageReceivedReactions(event){
     if(b.lurks&&!source._struck)source._struck=true;
     if(b.kindles&&d>0&&player.hp>0){applyStatus(player,'burn',3,sDMG(3));if(!player._fwaLitMsg||player._fwaLitMsg<turn-8){player._fwaLitMsg=turn;log('The <b>Flame Dancer</b> sets you alight.','c-you');}}
   }
-  if(d>0){player.lastDamageTime=player.t;if(hasGod('grumbok')&&godRank()>=3&&type!=='phys')player.wizardHunterUntil=player.t+300;if(capstone('grumbok')&&type!=='phys'&&source&&source.foe)player.spellbreakUntil=player.t+1000;}
+  if(d>0){player.lastDamageTime=player.t;if(hasGod('grumbok')&&godRank()>=3&&(type!=='phys'||event.tags.has('ranged')))player.wizardHunterUntil=player.t+300;}   /* 2026-09-29 (Justin): Wizard Hunter wakes to ranged attacks too; Spellbreaker is retired */
   if(player.hp<=0)lastLaugh();
 }
 function damageAttackReactions(event){
@@ -187,6 +186,7 @@ function dealDirectDamage(target,amount,type,source,options){
 }
 function healPlayer(amount,natural,options){
   if(!player||!(amount>0))return 0;
+  amount=rotHealing(amount,options&&options.regen);if(!(amount>0))return 0;
   if(hasGod('glimmer'))amount*=1+.10*godRank();
   if(!(options&&options.holyGround)&&inSanctuary(player))amount*=1+.25*(typeof holyGroundStrength==='function'?holyGroundStrength(player):divineStrength());
   var result=FoteDamage.heal(player.hp,player.maxhp,amount);player.hp=result.hp;
@@ -195,3 +195,8 @@ function healPlayer(amount,natural,options){
   gameDamage.emit('healingApplied',{target:player,amount:amount,restored:result.restored,overflow:result.overflow,natural:!!natural});
   return result.overflow;
 }
+/* 2026-09-29 (Justin): Rot is the one rule for every HP gain. While you rot, regeneration stops outright (base
+   regeneration and everything that multiplies it, such as a Light armor enchant or Grumbok's Thick Hide, plus a
+   Ring of Mending and the Regeneration food buff); every other heal is halved. healPlayer() asks it, and so do the
+   two heals that write HP themselves (a heart off the floor, a Light shield block). */
+function rotHealing(amount,regen){return player&&gameEffects.has(player,'rot')?(regen?0:amount*.5):amount;}

@@ -49,6 +49,7 @@
     var off=weapon.hands===2?null:actor.off;
     return {rank:rank,gearBonus:gearBonus,enchantBonus:enchantBonus,mountain:mountain,
       weapon:weapon,off:off,armor:actor.armorItem||{},
+      offEnchant:off&&off.enchant&&off.enchant!==(actor.armorItem||{}).enchant?off.enchant:null,   /* 2026-09-29 (Justin): the armor's enchant outranks an off-hand one of its element (infusions.js) */
       divine:1+((weapon.cursed?0:weapon.divine||0)+(off&&!off.cursed?off.divine||0:0))*gearBonus,
       passives:passivesFor(actor.stats,content.passives),aff:actor.aff||{},buffs:actor.buffs||{},
       enchant:function(slot,el){return content.enchantments.values(slot,el,(actor.aff||{})[el]||0,options);}};
@@ -75,7 +76,7 @@
       eva:10+2*s.agi+evaPenalty+content.enchantments.amplifyBonus(o&&o.eva,c.gearBonus)+(p.lightFeet?8:0)+(a.enchant==='water'?Math.round(c.enchant('armor','water').evasion):0),
       armor:(a.armor||0)+(a.armor>0?upgradeValue(a,actor):0)+(a.enchant==='earth'?Math.round(c.enchant('armor','earth').armor):0)+(actor.god==='grom'?c.rank:0)+(c.buffs.ironbody>0?Math.round(4*c.divine):0)+(c.buffs.ironhide>0?Math.round(5*c.divine):0),
       block:0,parry:o&&o.weapon?.08+s.agi/300:0,rangeBonus:actor.race==='elf'?1:0,
-      crit:.06+.02*(s.agi-10)+(p.deadeye?.08:0)+(w.critBonus||0)*c.gearBonus+orbCrit+(p.archmage?.05:0)+(w.enchant==='light'?c.enchant('weapon','light').critChance:0),
+      crit:.06+.02*(s.agi-10)+(p.deadeye?.08:0)+(w.critBonus||0)*c.gearBonus+orbCrit+(p.archmage?.05:0),
       dmg:[damage(w.dmg[0])+plus,damage(w.dmg[1])+plus],
       element:actor.primary||Object.keys(c.aff)[0]||null,
       iceArmorMax:(c.aff.water||0)*3+((c.aff.earth||0)>=3&&(c.aff.water||0)>=2?3*(c.aff.earth||0):0)};
@@ -98,9 +99,9 @@
     if(itemKey(a)==='robe')out.maxmp=Math.round(out.maxmp*(1+content.robe.mana[tierOf(a)]*c.gearBonus));
     if(o&&o.block>0){
       out.block=Math.min(.75,o.block+content.blockPer*(o.plus||0)+.02*Math.max(0,actor.stats.mig-10));
-      if(o.enchant==='earth'&&out.block){var shield=c.enchant('shield','earth');out.block=Math.min(shield.blockCap,out.block+shield.block);}
+      if(c.offEnchant==='earth'&&out.block){var shield=c.enchant('shield','earth');out.block=Math.min(shield.blockCap,out.block+shield.block);}
     }
-    if(o&&(o.icon||'').replace(/^item-/,'')==='tome'&&o.enchant==='water')out.eva+=Math.round(c.enchant('tome','water').evasion);
+    if(o&&(o.icon||'').replace(/^item-/,'')==='tome'&&c.offEnchant==='water')out.eva+=Math.round(c.enchant('tome','water').evasion);
   }
   function conditionalStats(out,actor,content,c){
     if(c.buffs.cinder>0)out.speed=Math.round(out.speed*1.5);else if(c.buffs.haste>0)out.speed=Math.round(out.speed*1.3);
@@ -122,6 +123,10 @@
         out.crit+=.02*stacks;
         out.dmg=out.dmg.map(function(n){return n+2*stacks;});
       }
+    }
+    if(actor.god==='grumbok'&&c.rank>=5){   /* 2026-09-29 (Justin): Warrior's Discipline, +2 damage per stack (gods.js) */
+      var discipline=actor.st&&actor.st.discipline,drill=discipline&&discipline.t>0?Math.max(0,Math.min(c.rank,discipline.n||0)):0;
+      if(drill)out.dmg=out.dmg.map(function(n){return n+2*drill;});
     }
     if(actor.god==='reginald')out.crit+=.02*c.rank;
     out.luck=actor.god==='wobbles'?.03*c.rank:0;

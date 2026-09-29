@@ -39,7 +39,7 @@ function entryCollectGlobes(){
   /* a full bar leaves the globe where it lies for later */
   items.filter(function(it){ return it.x===player.x && it.y===player.y && ((it.kind==='heart' && player.hp<player.maxhp) || (it.kind==='managlobe' && player.mp<player.maxmp)); }).forEach(function(it){
     items=items.filter(function(o){ return o!==it; });
-    if(it.kind==='heart'){ var h=Math.min(Math.max(4, Math.round(player.maxhp*0.25)), player.maxhp-player.hp); player.hp+=h; floatText(player.x,player.y,'+'+Math.round(h),'heal'); sparkleFx(player.x,player.y,'heal',12); sfx('heal',{vol:0.5}); }
+    if(it.kind==='heart'){ var h=Math.min(Math.round(rotHealing(Math.max(4, Math.round(player.maxhp*0.25)))), player.maxhp-player.hp); player.hp+=h; floatText(player.x,player.y,'+'+Math.round(h),'heal'); sparkleFx(player.x,player.y,'heal',12); sfx('heal',{vol:0.5}); }
     else { if(player.god==='vellum')gainPiety(5,'mana globe',{pietyOnly:true}); var m=Math.min(Math.max(5, Math.round(player.maxmp*0.25)), player.maxmp-player.mp); player.mp+=m; floatText(player.x,player.y,'+'+Math.round(m)+' mp','ice'); sparkleFx(player.x,player.y,'ice',12); sfx('pickup-essence',{vol:0.6}); }
   });
 }

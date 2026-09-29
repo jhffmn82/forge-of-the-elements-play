@@ -46,7 +46,7 @@ var WEAPONS = {
   bow:      W('Short Bow',[3,8],5,2,{range:6, note:'range 6; up close, your main weapon swings instead', icon:'item-bow'}),
   staff:    W('Oak Staff',[3,6],0,2,{note:'the most spell damage and +1 spell range', spell:0.20, icon:'item-staff'}),
   spear:    W('Spear',[5,9],5,2,{note:'reach: attacks 2 tiles away in a line', reach:2, icon:'item-spear'}),
-  censer:   W('Ceremonial Knife',[3,6],0,1,{note:'strengthens Invokes and prayers', light:true, divine:0.15, icon:'item-censer'})
+  censer:   W('Ceremonial Knife',[3,6],0,1,{note:'strengthens your god\'s abilities', light:true, divine:0.15, icon:'item-censer'})
 };
 var ARMORS = {
   robe:    {name:'Cloth Robe', armor:0, eva:5,  weight:'cloth',  note:'no penalty', icon:'item-robe', kind:'armor'},
@@ -60,7 +60,7 @@ var OFFHANDS = {
   kite:    {name:'Kite Shield', block:0.20, eva:-5, note:'heavy shield; -5 evasion', icon:'item-kite', kind:'off'},
   orb:     {name:'Orb', block:0, spell:0.10, note:'raises crit chance', icon:'item-orb', kind:'off'},
   tome:    {name:'Tome', block:0, manaPct:0.15, note:'raises max mana', icon:'item-tome', kind:'off'},
-  holy:    {name:'Holy Symbol', block:0, divine:0.15, note:'strengthens Invokes and prayers', icon:'item-holy', kind:'off'},
+  holy:    {name:'Holy Symbol', block:0, divine:0.15, note:'strengthens your god\'s abilities', icon:'item-holy', kind:'off'},
   /* 2026-09-17: there is no separate off-hand dagger any more. Any light one-handed weapon goes in the off
      hand (see equipFromBag in systems.js), so a plain Dagger from WEAPONS is what the kits hand out and
      what drops. Old saves holding the retired item still work: itemKey resolves it to 'dagger' by name. */
@@ -75,7 +75,7 @@ var CLASSES = {
              kit:{main:'sword', alt:'longsword', armor:'chain', off:'kite'}},
   cleric:   {name:'Cleric', mods:{foc:2,vit:2}, ability:'invoke', icon:'cls-cleric',
              passive:'Starts sworn to a god of your choice (rank 1, 20 piety).',
-             blurb:'Chooses a god at the start. Invoke is that god\'s everyday miracle.',
+             blurb:'Chooses a god at the start. Its first ability is that god\'s everyday miracle.',
              kit:{main:'mace', alt:'staff', armor:'leather', off:'holy'}},
   mage:     {name:'Mage', mods:{foc:3,vit:1}, ability:'missile', icon:'cls-mage',
              passive:'Deep Reserves: +30% max mana.',
@@ -117,16 +117,16 @@ var GODS = {
     "title": "god of honest violence",
     "sprite": "shrine-grumbok",
     "color": "#B8453A",
-    "rule": "No spells, wands or sigils. Techniques are fine.",
+    "rule": "No spells, wands or sigils. Your other abilities are fine.",
     "invoke": "bellow",
     "prayers": [
       "rampage",
       "trollblood"
     ],
     "boons": [
-      "Thick Hide: +8% resistance to magic and elemental damage and +20% HP regeneration per rank.",
-      "Wizard Hunter: when magic or elemental damage hurts you, you move and attack 5% faster per rank for 3 turns.",
-      "Spellbreaker: enemy magic and elemental damage to you is halved. After it hits you, your next melee hit within 10 turns deals +50% damage."
+      "Thick Hide: +4% resistance to magic and elemental damage and +20% HP regeneration per rank.",
+      "Wizard Hunter: when magic or elemental damage or a ranged attack hurts you, you move and attack 5% faster per rank for 3 turns.",
+      "Warrior's Discipline: your abilities recharge 1 turn faster per rank (never under 1 turn), and each ability you use grants +2 damage for 6 turns, stacking once per rank."
     ],
     "gain": "Kills, extra for spellcasters and elemental creatures."
   },
@@ -308,6 +308,7 @@ var ABILITIES = {
   "sap": {
     "name": "Sap",
     "cost": 7,
+    "cd": 8,
     "tech": true,
     "kind": "bolt",
     "range": 2,
@@ -692,13 +693,13 @@ var PRAYERS = {
     "name": "Rampage",
     "favor": 10,
     "rank": 2,
-    "desc": "+40% melee damage and +20% melee attack speed for 10 turns. Grows with Divine Power. Takes no turn."
+    "desc": "+20% melee damage and +10% melee attack speed, plus 4% and 2% per rank, for 10 turns. Grows with Divine Power. Takes no turn."
   },
   "trollblood": {
     "name": "Trollblood",
     "favor": 25,
     "rank": 4,
-    "desc": "Heal 40% of max HP and cleanse yourself. Grows with Divine Power."
+    "desc": "Heal 20% of max HP plus 5% per rank, and cleanse yourself. Grows with Divine Power."
   },
   "consecrate": {
     "name": "Consecrate",

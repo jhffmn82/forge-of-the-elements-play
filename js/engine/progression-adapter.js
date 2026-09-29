@@ -56,7 +56,7 @@ function gainPiety(amount,why,options){
     if(after>before){
       log('<b>'+god.name+' is pleased.</b> Piety rank '+after+'.','c-kill');sfx('piety-rank');ringFx(player.x,player.y,god.color,3);
       var index=godBoonRanks(god).indexOf(after),boon=index>=0?god.boons[index]:null;if(boon)log('Boon: '+boon,'c-good');
-      (god.prayers||[]).forEach(function(key){var prayer=PRAYERS[key];if(prayer.rank===after)log('New prayer: <b>'+prayer.name+'</b>. '+prayer.desc+' Find it in the Faith tab (P).','c-kill');});
+      (god.prayers||[]).forEach(function(key){var prayer=PRAYERS[key];if(prayer.rank===after)log('New ability: <b>'+prayer.name+'</b>. '+prayer.desc+' Find it in the Faith tab (P).','c-kill');});
     }
   }
   var lightChanged=syncGlimmerLight({deferStats:true});

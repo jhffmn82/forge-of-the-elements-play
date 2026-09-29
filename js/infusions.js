@@ -2,7 +2,12 @@
    canonical enchantment registry; this module applies their game effects. */
 
 
-function infusion(kind){ var o=player.off; return offKind()===kind && o.enchant ? o.enchant : null; }
+/* 2026-09-29 (Justin): among armor, shield, orb, tome and holy symbol only the strongest enchant of each element
+   counts. You wear one body armor and one off-hand, so the only overlap is an off-hand enchant of the armor's element,
+   and the armor's is the stronger (a resistance plus its bonus): that off-hand enchant lies dormant. Weapons stand
+   apart: each weapon's enchant rides only the hits made with it (attackView), never another weapon's. */
+function offEnchantDormant(o,armor){ return !!(o && o.enchant && armor && armor.enchant===o.enchant); }
+function infusion(kind){ var o=player.off; return offKind()===kind && o.enchant && !offEnchantDormant(o,bodyArmor(player)) ? o.enchant : null; }
 function affPts(el){ return (player.aff && player.aff[el]) || 0; }
 
 /* ---------------------------------------------------------------- the Forge: the off-hand can be enchanted when it is an orb or tome */

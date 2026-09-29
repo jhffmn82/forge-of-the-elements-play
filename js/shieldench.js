@@ -12,7 +12,7 @@ function shieldEnchantValues(el){return enchantValues('shield',el);}
 function onShieldBlock(att, def, raw){
   if(def.shadowClone&&typeof FoteShadowClone!=='undefined'){FoteShadowClone.block(def,att,raw);return;}
   if(def!==player || !att || att===player) return;
-  var sh=player.off, el=sh && sh.enchant;
+  var sh=player.off, el=sh && !offEnchantDormant(sh,bodyArmor(player)) && sh.enchant;
   if(!el || !(sh.block>0)) return;
   var values=shieldEnchantValues(el);
   if(el==='fire'){
@@ -30,7 +30,7 @@ function onShieldBlock(att, def, raw){
     log('A thunderclap off your shield staggers it.','c-good');
   }
   else if(el==='light'){
-    var h=Math.min(player.maxhp-player.hp, values.light);
+    var h=Math.min(player.maxhp-player.hp, Math.round(rotHealing(values.light)));
     if(h>0){ player.hp+=h; floatText(player.x, player.y, '+'+h, 'heal'); }
   }
   else if(el==='shadow' && pRoll(values.shadow)){ applyStatus(att,'corrupt',values.corruptDuration); log('The blocked attacker is corrupted.','c-good'); }

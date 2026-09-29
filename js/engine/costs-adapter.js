@@ -41,6 +41,7 @@ function spendSpellMana(A){
   player.mp-=cost;player._actualSpellCost=cost;
   SPELL_PAYMENTS.set(player,{ability:A,cost:cost,eligible:!A.tech&&!A.divine,conducted:false});
   if(!A.tech)player.castingSpell=true;
+  if(typeof stackDiscipline==='function')stackDiscipline();
   return cost;
 }
 function spellConduct(A){

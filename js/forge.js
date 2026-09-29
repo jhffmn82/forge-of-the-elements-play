@@ -44,7 +44,7 @@ function renderForge(){
     h+='<p class="c-info">Burn a mote into yourself for a point of affinity. It is permanent. You can hold two elements at most, never opposites; the second can never outgrow the first.</p>';
     ELEMENTS.forEach(function(el){
       var why=fuseCheck(el), cur=player.aff[el]||0, nextT=cur+1;
-      var ab=ELEMENT_ABILS[el][nextT], unlock = ab ? 'New spell: '+ABILITIES[ab].name+'. '+ABILITIES[ab].desc : (RANK_TEXT[nextT]&&RANK_TEXT[nextT][el]) || t1Text(el, nextT);
+      var ab=ELEMENT_ABILS[el][nextT], unlock = ab ? 'New ability: '+ABILITIES[ab].name+'. '+ABILITIES[ab].desc : (RANK_TEXT[nextT]&&RANK_TEXT[nextT][el]) || t1Text(el, nextT);
       h+='<div class="frow"><span class="dot" style="background:'+AFF_COL[el]+'"></span><div class="ftext"><b>'+cap(el)+' '+cur+' &rarr; '+nextT+'</b><div class="d">'+unlock+'</div>'+
          (why?'<div class="d c-you">'+why+'</div>':'')+'</div><button data-fuse="'+el+'" '+(why?'disabled':'')+'>Fuse</button></div>';
     });

@@ -488,7 +488,7 @@ function castBoltTarget(x,y){
   var terrain = !f && (at(end.x,end.y)===ICEDOOR || at(end.x,end.y)===THORNS || propAt(end.x,end.y) || gAt(end.x,end.y)===G_GRASS);
   if(key==='challenge'){ if(!f){ log('Challenge whom?','c-info'); return false; } }
   if(!f && !(terrain && (A.type==='fire'||A.type==='phys'||A.type==='ice'||A.type==='lightning'))){ log(path.length && end.x!==x ? 'Something is in the way.' : 'Nothing to hit there.','c-info'); return false; }
-  aiming=null; spendSpellMana(A); if(A.divine) startInvokeCd(key);   /* Challenge: an aimed invoke's cooldown starts on payment */
+  aiming=null; spendSpellMana(A); if(A.divine) startInvokeCd(key); else if(A.cd) startDivineCd(key,A.cd);   /* Challenge: an aimed invoke's cooldown starts on payment; 2026-09-29 (Justin): so does Sap's 8 turns */
   if(!A.tech && !A.divine && typeof spellConduct==='function') spellConduct(A);
   setClip(player, A.tech && A.useWeaponRange && player.range<=1 ? 'melee' : 'cast');
   if(key==='challenge'){

@@ -73,7 +73,7 @@ function resolveElementSelf(A){  beginCast(A);
 function useShadowstep(){
   if(cdLeft('shadowstep')>0){log('Shadowstep is not ready ('+cdLeft('shadowstep')+' turns).','c-info');sfx('ui-error');return;}
   if(ents.some(function(e){return e.foe&&dist(e,player)<=1;})){log('Not with an enemy right next to you.','c-info');sfx('ui-error');return;}
-  player.cds=player.cds||{};player.cds.shadowstep=turn+ABILITIES.shadowstep.cd;player.hidden=4;
+  startDivineCd('shadowstep',ABILITIES.shadowstep.cd);stackDiscipline();player.hidden=4;
   ents.forEach(function(e){if(e.foe&&e.state==='hunt'){e.state='wander';e.lastSeen=null;e.goal=null;}});
   setClip(player,'cast');sfx('vanish');sparkleFx(player.x,player.y,'dark',18);log('You <b>Shadowstep</b> into hiding.','c-good');endTurn();
 }
@@ -89,7 +89,7 @@ function useAbility(i){
     if(cdLeft(key)>0){log('Charge is not ready ('+cdLeft(key)+' turns).','c-info');sfx('ui-error');return;}
     if(effectHasTag(player,'root')||gameEffects.has(player,'frozen')){log('You cannot charge while held fast.','c-info');sfx('ui-error');return;}
   }
-  if(A.divine&&cdLeft(key)>0){log(A.name+' is not ready ('+cdLeft(key)+' turns).','c-info');sfx('ui-error');return;}   /* an invoke's cooldown (DIVINE_COOLDOWNS) */
+  if((A.divine||A.cd)&&cdLeft(key)>0){log(A.name+' is not ready ('+cdLeft(key)+' turns).','c-info');sfx('ui-error');return;}   /* an invoke's cooldown (DIVINE_COOLDOWNS), or Sap's own */
   if(A.kind!=='charge'&&player.mp<costOf(A)){log('Not enough mana for '+A.name+' ('+costOf(A)+').','c-info');sfx('no-mana');return;}
   if(A.kind==='summon'&&ents.some(function(e){return e.ally&&e.undeadServant;})){log('Your servant still stands.','c-info');return;}
   if(A.kind==='charge'||AIM_KINDS[A.kind]||['bolt','dash','summon'].includes(A.kind)){

@@ -3,7 +3,7 @@
 var gameActions=FoteActions.create();
 function actionInfusion(kind,view){
   view=view||player;var o=view.twoHanded?null:view.off;
-  return o&&(o.icon||'').replace(/^item-/,'')===kind?o.enchant||null:null;
+  return o&&(o.icon||'').replace(/^item-/,'')===kind&&!offEnchantDormant(o,bodyArmor(view))?o.enchant||null:null;
 }
 function actionDivine(view){var w=view.weapon||{},o=view.twoHanded?{}:view.off||{};return 1+((w.cursed?0:w.divine||0)+(o.cursed?0:o.divine||0))*gearPassiveBonus();}
 function actionCritBonus(view){return actionInfusion('holy',view)==='shadow'&&isBuffed()?enchantValues('holy','shadow').critChance:0;}
@@ -29,7 +29,7 @@ function resistMult(target,type){
   return FoteActions.resistance(type,{player:own,
     armorResistance:own&&arm.enchant&&elemToType(arm.enchant)===type?enchantValues('armor',arm.enchant).resistance:0,
     tomeResistance:own&&infusion('tome')==='earth'?enchantValues('tome','earth').resistance:0,
-    godResistance:own&&hasGod('grumbok')?Math.min(.4,.08*godRank()):0,
+    godResistance:own&&hasGod('grumbok')?.04*godRank():0,   /* 2026-09-29 (Justin): Thick Hide, 4% per rank (was 8%) */
     water:own?aff('water'):0,vitality:own?player.stats.vit:10,bulwark:own&&hasP('bulwark'),
     lightVulnerable:own&&player.race==='gloomling',courtOpposite:own&&player.race==='fae'&&player.court?elemToType(OPPOSITE[player.court]):null,
     element:b.el?elemToType(b.el):null,opposite:b.el?elemToType(OPPOSITE[b.el]):null,undead:b.undead||b.shadowy,
@@ -216,12 +216,11 @@ function rollWeaponDamage(event,strike){
     if(view.weapon.executioner && def.hp <= def.maxhp/2) gearPool += gearPassiveValue(view.weapon.executioner);
     if(melee && hasP('heavyHands')) statPool += 0.10;
     if(melee && hasP('unstoppable')) statPool += 0.20;
-    if(melee && buff('rampage')) statPool += 0.40*actionDivine(view);
+    if(melee && buff('rampage')) statPool += (.20+.04*godRank())*actionDivine(view);   /* 2026-09-29 (Justin): 20% +4% per rank (was 40%) */
     if(hasP('crushing') && def.hp < def.maxhp/2) statPool += 0.25;
     if(def.challenged && hasGod('reginald')) statPool += 0.25*actionDivine(view);
     if(hasGod('reginald') && godRank()>=5) statPool += 0.10*Math.min(3, Math.max(0, adjacentFoes()-1));   /* Wall of One */
     if(buff('rally')) statPool += 0.10;
-    if(melee && capstone('grumbok') && player.spellbreakUntil>player.t){base*=1+.5*actionDivine(view);player.spellbreakUntil=0;log('<b>Spellbreaker!</b>','c-good');}
     if(hasGod('glimmer') && (def.base.undead||def.base.shadowy)) statPool += 0.10*godRank();
     if(hasGod('reginald') && (def.elite||def.base.elite||def.base.boss)) statPool += 0.10*godRank();
     base *= Math.max(0.1, 1+gearPool) * Math.max(0.1, 1+statPool);
@@ -266,7 +265,7 @@ function resolveWeaponDamage(event,strike){
       if(ench==='fire'){ addRaw('fire',Math.round(base*values.extraDamage)); if(roll1(values.burnChance)){ applyStatus(def,'burn',values.burnDuration,burnDmg()); note=' <span class="c-fire">burning</span>'; } }
       if(ench==='water' && roll1(values.chillChance)){ addChill(def); note=' chilled'; }
       if(ench==='earth' && roll1(values.rootChance)){ applyStatus(def,'root',values.rootDuration); note=' rooted'; }
-      if(ench==='shadow'){ if(def.st.hollow) addRaw('dark',values.hollowDamage);
+      if(ench==='shadow'){ if(def.st.corrupt) addRaw('dark',values.corruptDamage);   /* 2026-09-29 (Justin): +2 against Corrupted, was +1 against Hollowed */
         if(roll1(values.procChance)){
           addRaw('dark',Math.round(base*values.extraDamage)); applyStatus(def,'corrupt',values.corruptDuration); note=' <span style="color:#B58BFF">corrupted</span>';
           /* the enchant's bite IS this build's dark damage, so at Shadow 6 it is what stacks Hollow.
@@ -274,6 +273,7 @@ function resolveWeaponDamage(event,strike){
           if(typeof aff==='function' && aff('shadow')>=6) addHollow(def, 1);
         } }
       if(ench==='air' && roll1(values.repeatChance) && !label && def.hp>0){ note=' (gust: extra attack)'; event.pendingExtra=def; }
+      if(ench==='light' && phys>0) hallowedEdge(values);   /* 2026-09-29 (Justin): Hallowed Edge (spellench.js) */
     }
     event.primaryDamage=phys;
     var hitBonus=applyPlayerHitBonuses(event);note+=hitBonus.note;

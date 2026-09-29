@@ -1,6 +1,13 @@
 /* The held weapon's enchant carries into single-target spells. Spell focuses
  * also retain their existing area-spell procs. Secondary packets never call
  * the hit hooks again, and use the original spell type and pre-defense damage. */
+/* 2026-09-29 (Justin): Hallowed Edge. A Light weapon heals you 1 HP per Light point (at least 1) for every hit it
+   makes, and for every spell it carries (above). It is an ordinary heal, so Rot halves it (rotHealing). */
+function hallowedEdge(values){
+  if(!player||player.hp<=0||player.hp>=player.maxhp||!(values.healPerHit>0))return;
+  var before=player.hp;healPlayer(values.healPerHit);var h=Math.round(player.hp-before);
+  if(h>0)floatText(player.x,player.y,'+'+h,'heal');
+}
 function applySpellWeaponEnchant(f,d,crit,A,context){
   var w=player.weapon,ench=w&&w.enchant;
   if(!ench||!f||f.hp<=0||!(d>0))return;
@@ -22,8 +29,9 @@ function applySpellWeaponEnchant(f,d,crit,A,context){
     if(repeat>0){floatText(f.x,f.y,String(repeat),type,crit);log('<b>Gust.</b> The spell strikes again for <b>'+repeat+'</b> '+FoteDamage.label(type)+' damage.','c-good');}
     if(f.hp<=0){kill(f,player);return;}
   }
+  if(ench==='light')hallowedEdge(values);
   if(ench==='shadow'){
-    if(f.st.hollow)extra+=values.hollowDamage;
+    if(f.st.corrupt)extra+=values.corruptDamage;   /* 2026-09-29 (Justin): Corrupted, was Hollowed */
     if(pRoll(values.procChance)){extra+=Math.round(raw*values.extraDamage);applyStatus(f,'corrupt',values.corruptDuration);note=' corrupted';}
   }
   if(extra>0){

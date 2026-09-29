@@ -75,7 +75,7 @@ var gameEffects=FoteEffects.create({
     if(e.hp<=0){kill(e,e===player||key==='poison'?null:e.lastHitBy||null);return false;}
     return true;
   },
-  onExpired:function(event){if(event.entity===player&&event.key==='livingmountain')derive(player);}
+  onExpired:function(event){if(event.entity===player&&(event.key==='livingmountain'||event.key==='discipline'))derive(player);}
 });
 
 function applyStatus(e,key,turns,extra){return gameEffects.apply(e,key,turns,extra);}

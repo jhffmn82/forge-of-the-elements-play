@@ -21,7 +21,7 @@ function weaponCard(item,worn){
       '<div class="row"><span>Hands</span><b>'+(w.hands||1)+'</b></div>'+
       (w.range?'<div class="row"><span>Range</span><b>'+(w.range+(player.rangeBonus||0))+'</b></div>':'')+
       (w.enchant?'<div class="row"><span>Enchant</span><b style="color:'+AFF_COL[w.enchant]+'">'+cap(w.enchant)+'</b></div><div class="hint">'+enchantLive('weapon',w.enchant)+'</div>':'')+
-      (w.divine?'<div class="row"><span>Invoke &amp; prayer strength</span><b>+'+Math.round(w.divine*gearPassiveBonus()*100)+'%</b></div>':'')+
+      (w.divine?'<div class="row"><span>God ability strength</span><b>+'+Math.round(w.divine*gearPassiveBonus()*100)+'%</b></div>':'')+
       (w.note?'<div class="hint">'+weaponPassiveNote(w)+'</div>':'')+focusRows(w)+
       (w.cursed?'<div class="hint" style="color:#D0605A">Cursed: it will not leave your hand until the curse is broken.</div>':'');
   }
@@ -55,7 +55,7 @@ function offhandCard(item){
     var key=itemKey(d);
     if(TIER_BLOCK[key])h+='<div class="row"><span>Block</span><b>'+Math.round((d.block+TIER_BLOCK.per*(d.plus||0))*100)+'%</b></div>';
     if(key==='tome')h+='<div class="row"><span>Max mana</span><b>+'+Math.round(d.manaPct*gearPassiveBonus()*100)+'%</b></div>';
-    if(key==='holy')h+='<div class="row"><span>Invoke &amp; prayer strength</span><b>+'+Math.round(d.divine*gearPassiveBonus()*100)+'%</b></div><div class="row"><span>Buff duration</span><b>+'+Math.round(holyDurationPct(d)*100)+'%</b></div>';
+    if(key==='holy')h+='<div class="row"><span>God ability strength</span><b>+'+Math.round(d.divine*gearPassiveBonus()*100)+'%</b></div><div class="row"><span>Buff duration</span><b>+'+Math.round(holyDurationPct(d)*100)+'%</b></div>';
     if(d.kind==='off'&&d.weapon)h+='<div class="row"><span>Off-hand strike</span><b>60% damage</b></div>';
   }
   return h+reqRow(d);

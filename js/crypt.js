@@ -145,7 +145,7 @@ function drawCryptTelegraphs(now){
   ctx.restore();
 
 }
-if(typeof STATUS_INFO!=='undefined') STATUS_INFO.rot = {name:'Rot', icon:'st-poison', bad:1, d:'Your wounds won\'t close: no HP regeneration.'};
+if(typeof STATUS_INFO!=='undefined') STATUS_INFO.rot = {name:'Rot', icon:'st-poison', bad:1, d:'Your wounds fester: no HP regeneration, and all healing is halved.'};   /* 2026-09-29 (Justin): heals are halved too (rotHealing, damage-adapter.js) */
 
 /* ---------------------------------------------------------------- damage rules */
 

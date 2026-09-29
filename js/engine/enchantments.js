@@ -12,10 +12,10 @@
     weapon:{
       fire:{extraDamage:curve(.10,.03),burnChance:curve(0,.05),burnDuration:fixed(3)},
       water:{chillChance:curve(.15,.05)},
-      air:{repeatChance:curve(0,.05,{minimum:.05})},
+      air:{repeatChance:curve(.10,.05)},   /* 2026-09-29 (Justin): 10% with no Air, +5% per point (was 5% per point, 5% floor) */
       earth:{rootChance:curve(.15,.045),rootDuration:fixed(2)},
-      light:{critChance:curve(.05,.01)},
-      shadow:{procChance:curve(.10,.05),extraDamage:curve(.25),hollowDamage:fixed(1),corruptDuration:fixed(3)}
+      light:{healPerHit:curve(0,1,{minimum:1,round:true})},   /* 2026-09-29 (Justin): Hallowed Edge, 1 HP per Light point (at least 1) each hit; replaces +crit */
+      shadow:{procChance:curve(.10,.05),extraDamage:curve(.25),corruptDamage:fixed(2),corruptDuration:fixed(3)}
     },
     armor:{
       fire:{maxhp:curve(.05,.03)},water:{evasion:curve(8,2.4,{round:true})},
@@ -88,8 +88,8 @@
       if(el==='water')return pct('chillChance')+' chance to Chill.';
       if(el==='air')return pct('repeatChance')+' chance to strike twice.';
       if(el==='earth')return pct('rootChance')+' chance to Root for '+v.rootDuration+' turns.';
-      if(el==='light')return '+'+pct('critChance')+' crit chance.';
-      if(el==='shadow')return pct('procChance')+' chance of +'+pct('extraDamage')+' shadow damage and Corrupt for '+v.corruptDuration+' turns; +'+v.hollowDamage+' damage to Hollowed targets.';
+      if(el==='light')return 'Hallowed Edge: each hit with this weapon heals you '+(formula?'1 HP per Light point (at least 1)':v.healPerHit+' HP')+'.';
+      if(el==='shadow')return pct('procChance')+' chance of +'+pct('extraDamage')+' shadow damage and Corrupt for '+v.corruptDuration+' turns; +'+v.corruptDamage+' damage to Corrupted targets.';
     }
     if(slot==='armor'){
       var prefix='+'+pct('resistance')+' '+damageTypes[el]+' resistance; ';

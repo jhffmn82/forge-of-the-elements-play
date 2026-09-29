@@ -134,7 +134,7 @@ function renderCreate(){
   }
   h+='<div class="step">2 &middot; Class</div><div class="cards">';
   Object.keys(CLASSES).forEach(function(k){
-    var C=CLASSES[k], ab=C.ability ? (C.ability==='invoke' ? 'Invoke (by god)' : ABILITIES[C.ability].name) : 'no ability';
+    var C=CLASSES[k], ab=C.ability ? (C.ability==='invoke' ? 'Chosen by your god' : ABILITIES[C.ability].name) : 'no ability';
     /* each class has its own card art (cls-*); the ability's icon is the fallback if it is missing */
     var ic = C.icon && objArt('icons', C.icon) ? C.icon
            : C.ability && C.ability!=='invoke' ? ABILITIES[C.ability].icon
@@ -146,7 +146,7 @@ function renderCreate(){
     h+='<div class="step">Your god</div><div class="cards">';
     Object.keys(GODS).forEach(function(g){
       var G=GODS[g], bad=creationRefuses(c, g);
-      h+='<button class="card'+(c.god===g?' on':'')+'" data-god="'+g+'" '+(bad?'disabled style="opacity:.4"':'')+'><div class="port" data-shrine="'+G.sprite+'"></div><b style="color:'+G.color+'">'+G.name+'</b><span><b style="font-family:inherit;font-size:11px;color:var(--ink)">Rule:</b> '+G.rule+'</span><span>Invoke: '+ABILITIES[G.invoke].name+'</span>'+(bad?'<span class="c-you">Refuses you.</span>':'')+(G.loves===c.race?'<span class="c-good">Loves your kind: +25% piety gain.</span>':'')+'</button>';
+      h+='<button class="card'+(c.god===g?' on':'')+'" data-god="'+g+'" '+(bad?'disabled style="opacity:.4"':'')+'><div class="port" data-shrine="'+G.sprite+'"></div><b style="color:'+G.color+'">'+G.name+'</b><span><b style="font-family:inherit;font-size:11px;color:var(--ink)">Rule:</b> '+G.rule+'</span><span>Ability: '+ABILITIES[G.invoke].name+'</span>'+(bad?'<span class="c-you">Refuses you.</span>':'')+(G.loves===c.race?'<span class="c-good">Loves your kind: +25% piety gain.</span>':'')+'</button>';
     });
     h+='</div>';
   }

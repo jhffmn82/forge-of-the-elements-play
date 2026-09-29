@@ -41,7 +41,7 @@ function eatFoodBuff(fd){
 
 function turnFoodRecovery(context){
   if(player && player.buffs && player.buffs.regeneration>0 && player.hp>0 && player.hp<player.maxhp){
-    var h=Math.max(1, Math.round(player.maxhp*0.01)); healPlayer(h*context.cost/100);
+    var h=Math.max(1, Math.round(player.maxhp*0.01)); healPlayer(h*context.cost/100,false,{regen:true});
   }
 
 }

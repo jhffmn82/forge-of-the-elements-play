@@ -66,10 +66,10 @@
 /* hover details for hotbar slots */
 function buildHotbarCard(i){
   var s=player.hotbar && player.hotbar[i];
-  if(!s) return '<div class="nm">Empty slot '+(i+1)+'</div><div class="hint">Drag an ability, prayer or bag item here.</div>';
+  if(!s) return '<div class="nm">Empty slot '+(i+1)+'</div><div class="hint">Drag an ability or bag item here.</div>';
   if(s.type==='ability'){
     var A=ABILITIES[s.key]; if(!A) return '';
-    var cost = A.cd ? (typeof cdLeft==='function' && cdLeft(s.key) ? 'ready in '+cdLeft(s.key)+' turns' : A.cd+'-turn cooldown') : A.favor ? A.favor+' Favor' : costOf(A)+' mana';
+    var cost = A.cd ? (A.cost ? costOf(A)+' mana, ' : '')+(typeof cdLeft==='function' && cdLeft(s.key) ? 'ready in '+cdLeft(s.key)+' turns' : cooldownTurns(A.cd)+'-turn cooldown') : A.favor ? A.favor+' Favor' : costOf(A)+' mana';
     var wait = !A.cd && cdLeft(s.key) ? '<div class="row"><span>Cooldown</span><b>ready in '+cdLeft(s.key)+' turns</b></div>' : '';   /* an invoke's (DIVINE_COOLDOWNS) */
     return '<div class="nm">'+A.name+'</div><div class="row"><span>Cost</span><b>'+cost+'</b></div>'+wait+(A.range?'<div class="row"><span>Range</span><b>'+spellRange(A)+'</b></div>':'')+'<div class="hint">'+(A.kind==='swarm' && typeof liveDesc==='function' ? liveDesc(A) : A.desc)+'</div><div class="hint">Key '+(i+1)+'</div>';
   }

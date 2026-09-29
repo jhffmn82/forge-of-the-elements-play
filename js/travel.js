@@ -231,9 +231,9 @@ setTimeout(function(){   /* registered after boot.js, so its door-closing click 
 var CLICK_SPELLS = ['missile','sap','firebolt','frostshard','spark','root','smite','shadowbolt'];
 function clickSpellable(key){ return CLICK_SPELLS.indexOf(key)>=0 && !!ABILITIES[key]; }
 function toggleClickSpell(key){
-  if(!clickSpellable(key)){ log('Only Magic Missile, Sap and the rank 2 element spells can be click spells.','c-info'); return; }
+  if(!clickSpellable(key)){ log('Only Magic Missile, Sap and the rank 2 element abilities can be click abilities.','c-info'); return; }
   player.clickSpell = player.clickSpell===key ? null : key;
-  log(player.clickSpell ? 'Clicking an enemy now casts <b>'+ABILITIES[key].name+'</b>.' : 'Clicking an enemy no longer casts a spell.','c-info');
+  log(player.clickSpell ? 'Clicking an enemy now casts <b>'+ABILITIES[key].name+'</b>.' : 'Clicking an enemy no longer uses an ability.','c-info');
   sfx('ui-click'); abilityBar();
 }
 

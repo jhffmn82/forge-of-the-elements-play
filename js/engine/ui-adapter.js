@@ -47,7 +47,7 @@ function renderHotbarCooldowns(){
     else if(s && (s.type==='prayer' || s.type==='ability')){ key=s.type==='prayer' ? prayerCdKey(s.key) : s.key; left=cdLeft(key); if(left && c) c.textContent=left+' turns'; }
     if(!key) return;
     var was=CD_SPAN[key];
-    if(left){ var span=Math.max(was||0, left, s.type==='ability' && ABILITIES[s.key] && ABILITIES[s.key].cd || 0); CD_SPAN[key]=span;
+    if(left){ var span=Math.max(was||0, left, s.type==='ability' && ABILITIES[s.key] && cooldownTurns(ABILITIES[s.key].cd||0) || 0); CD_SPAN[key]=span;
       b.classList.add('oncd'); b.style.setProperty('--cdp', Math.round(left/span*100)); }
     else if(was){ delete CD_SPAN[key]; b.classList.add('cdready'); setTimeout(function(){ b.classList.remove('cdready'); }, 700); }
   });
@@ -81,7 +81,7 @@ function bindHotbarClickSpells(){
     b.addEventListener('touchstart', function(){ timer=setTimeout(function(){ timer=null; b._longPress=true; toggleClickSpell(s.key); }, 550); }, {passive:true});
     b.addEventListener('click', function(ev){ if(b._longPress){ b._longPress=false; ev.stopImmediatePropagation(); ev.preventDefault(); } }, true);
     b.addEventListener('touchend', function(){ if(timer){ clearTimeout(timer); timer=null; } });
-    if(player.clickSpell===s.key){ var m=document.createElement('span'); m.className='clickmark'; m.textContent='◎'; m.title='Your click spell'; b.appendChild(m); }
+    if(player.clickSpell===s.key){ var m=document.createElement('span'); m.className='clickmark'; m.textContent='◎'; m.title='Your click ability'; b.appendChild(m); }
   });
 }
 
@@ -189,7 +189,7 @@ function paintArt(el,group,name,size){
 function hotbarCard(i){
   var h=buildHotbarCard(i),s=player.hotbar&&player.hotbar[i];
   if(s && s.type==='ability' && clickSpellable(s.key))
-    h+='<div class="hint">'+(player.clickSpell===s.key ? 'Your click spell. Right-click or long-press to turn it off.' : 'Right-click or long-press to cast this whenever you click an enemy.')+'</div>';
+    h+='<div class="hint">'+(player.clickSpell===s.key ? 'Your click ability. Right-click or long-press to turn it off.' : 'Right-click or long-press to cast this whenever you click an enemy.')+'</div>';
   return h;
 }
 

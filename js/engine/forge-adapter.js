@@ -82,7 +82,7 @@ function fuseMote(el){
   derive(player); player.iceArmor=player.iceArmorMax;
   log('The Forge burns the mote into you. <b>'+cap(el)+' '+player.aff[el]+'</b>: '+t1Text(el, player.aff[el])+'.','c-kill');
   sfx('forge-fuse'); sparkleFx(player.x,player.y,TRAIL_EL(el),50); ringFx(player.x,player.y,AFF_COL[el],3);
-  player.abilities.forEach(function(k){ if(before.indexOf(k)<0){ log('<b>New spell: '+ABILITIES[k].name+'</b>. '+(typeof liveDesc==='function' ? liveDesc(ABILITIES[k]) : ABILITIES[k].desc),'c-kill'); sfx('new-ability'); } });
+  player.abilities.forEach(function(k){ if(before.indexOf(k)<0){ log('<b>New ability: '+ABILITIES[k].name+'</b>. '+(typeof liveDesc==='function' ? liveDesc(ABILITIES[k]) : ABILITIES[k].desc),'c-kill'); sfx('new-ability'); } });
   player.hotbar=null; updateUI(); renderForge();
   forgeSay('The <b>'+cap(el)+'</b> mote takes root in you: affinity <b>'+player.aff[el]+'</b>.');return true;
 }

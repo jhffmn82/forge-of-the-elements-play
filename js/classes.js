@@ -170,7 +170,7 @@ function castChargeTarget(x,y){
   if(!f && dist(player,{x:x,y:y})>ABILITIES.charge.range-1){ log('Too far to charge.','c-info'); sfx('ui-error'); return false; }
   var run=chargeLane(f||{x:x,y:y}, !f);
   if(!run){ log(f ? 'No clear straight run at the '+f.name+'.' : 'No clear straight run to that tile.','c-info'); sfx('ui-error'); return false; }
-  aiming=null; player.cds=player.cds||{}; player.cds.charge=turn+ABILITIES.charge.cd;
+  aiming=null; startDivineCd('charge',ABILITIES.charge.cd); stackDiscipline();
   var from={x:player.x,y:player.y};
   if(run.length){ var stop=run[run.length-1]; player.x=stop.x; player.y=stop.y; if(typeof computeFOV==='function') computeFOV(); }
   if(typeof faceOf==='function'){ var cf=faceOf(x-from.x, y-from.y); if(cf) player.face=cf; }

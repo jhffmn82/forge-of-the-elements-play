@@ -51,6 +51,8 @@ var ABILITY_LIVE = {
   livingflame: function(A){var sp=spellPower(A);return 'Call a Living Flame onto an empty tile for 30 turns: '+Math.round(28*sp)+' HP, hurling '+Math.round(5*sp)+'-'+Math.round(9*sp)+' fire damage at range 6. Every third shot splashes nearby enemies for half. Counts toward your two summons.';}
 };
 var PRAYER_LIVE = {
+  rampage: function(){var r=godRank(),d=divineStrength();return '+'+Math.round((.20+.04*r)*d*100)+'% melee damage and +'+Math.round((.10+.02*r)*d*100)+'% melee attack speed for 10 turns (20% and 10%, plus 4% and 2% per rank; grows with Divine Power). Takes no turn.';},
+  trollblood: function(){var r=godRank();return 'Heal '+Math.round(player.maxhp*(.20+.05*r)*divineStrength())+' HP (20% of max HP plus 5% per rank; grows with Divine Power) and cleanse yourself.';},
   ironhide: function(){return '+'+Math.round(5*divineStrength())+' armor and a shield of '+Math.round((5+2*godRank())*divineStrength())+' HP for '+fullDivineDuration(12)+' turns. Takes no turn.';}
 ,
 bonespear:function(){return 'Deal '+Math.round(5*godRank()*divineStrength())+'-'+Math.round((5*godRank()+6)*divineStrength())+' shadow damage to every enemy in a line up to 6 tiles long.';},

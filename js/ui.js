@@ -305,7 +305,7 @@ function faithChipHTML(){
   var next=PIETY_RANKS[r]||null, prev=PIETY_RANKS[r-1]||0, pct=next ? clamp(((player.piety||0)-prev)/(next-prev),0,1) : 1, fav=Math.round(player.favor||0);
   return h+'<span class="rk">R'+r+'</span>'+
     '<span class="meter" title="Piety '+Math.round(player.piety||0)+(next?' / '+next+' for rank '+(r+1):' (max rank)')+'"><i style="width:'+Math.round(pct*100)+'%;background:linear-gradient(90deg,'+hexA(g.color,0.55)+','+g.color+')"></i></span>'+
-    '<span class="rk" title="Favor, spent on prayers">\u2726 '+fav+'</span>'+
+    '<span class="rk" title="Favor, spent on your god\'s abilities">\u2726 '+fav+'</span>'+
     '<span class="meter sm" title="Favor '+fav+' / 100"><i style="width:'+fav+'%;background:linear-gradient(90deg,#6B5A22,#E8D27A)"></i></span></span>';
 }
 var PRAYER_ICONS={

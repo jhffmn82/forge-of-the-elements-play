@@ -10,7 +10,7 @@
         if(c.unarmed)cost*=.80;
         else if(c.dagger)cost*=.90;
         if(c.grom&&c.unarmed&&c.rank>=3)cost/=1+.10*c.rank;
-        if(c.rampage)cost/=1+.20*c.divine;
+        if(c.rampage)cost/=1+(.10+.02*c.rank)*c.divine;   /* 2026-09-29 (Justin): 10% +2% per rank (was 20%) */
         if(c.hunter)cost/=1+.05*c.rank*c.divine;
       }
       if(c.casting)cost*=1-(c.tomeReduction||0);

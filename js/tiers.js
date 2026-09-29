@@ -109,7 +109,7 @@ function tierNormalize(it){
   }
   if(TIER_BLOCK[k]){ it.block=TIER_BLOCK[k][t]; it.eva = k==='kite' ? -5 : 0; }
   if(TIER_OFF[k]){ var O=TIER_OFF[k]; it[O.field]=Math.max(0, O.base[t]+O.per*lvl); }
-  if(k==='holy'||k==='censer') it.note='strengthens Invokes and prayers';
+  if(k==='holy'||k==='censer') it.note='strengthens your god\'s abilities';
   return it;
 }
 function tierPer(w){

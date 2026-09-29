@@ -79,7 +79,7 @@ function shrineGifts(id, g, mine){
   var boons = g.boons.filter(function(b, i){ return (BR[i]||i+1)<=r; });
   var prayers = mine ? (g.prayers||[]).filter(function(p){ return PRAYERS[p] && r>=PRAYERS[p].rank; }) : [];
   var h='<p><b>'+(mine?'Your boons:':'First boon:')+'</b></p><ol class="boons">'+boons.map(function(b){ return '<li>'+b+'</li>'; }).join('')+'</ol>';
-  if(prayers.length) h+='<p><b>Your prayers:</b> '+prayers.map(function(p){ var P=PRAYERS[p]; return '<b>'+P.name+'</b> ('+prayerCost(p)+'): '+P.desc; }).join(' &middot; ')+'</p>';
+  if(prayers.length) h+='<p><b>Your abilities:</b> '+prayers.map(function(p){ var P=PRAYERS[p]; return '<b>'+P.name+'</b> ('+prayerCost(p)+'): '+P.desc; }).join(' &middot; ')+'</p>';
   if(boons.length<g.boons.length || prayers.length<(g.prayers||[]).length) h+='<p class="c-info" style="font-size:11px">'+(mine?'Grow in piety to learn what else '+g.name.split(',')[0]+' grants.':'Swear yourself and grow in piety to learn what else '+g.name.split(',')[0]+' grants.')+'</p>';
   return h;
 }
@@ -91,7 +91,7 @@ function openShrine(){
   var html = '<div class="shrine">'+art+'<div><h3 style="color:'+g.color+'">'+g.name+'</h3><div class="who">'+cap(g.title)+'</div>'+
     '<p><b>Rule.</b> '+g.rule+'</p><p><b>Piety comes from:</b> '+g.gain+' Piety earned deeper is worth more: x1.3 per biome below the first. Favor is not multiplied.</p>'+
     shrineGifts(id, g, mine)+
-    '<p><b>Invoke</b> (Clerics only): <b>'+ABILITIES[g.invoke].name+'</b>. '+ABILITIES[g.invoke].desc.replace(/^Invoke \([^)]*\): /,'')+'</p></div></div>';
+    '<p><b>Cleric ability</b>: <b>'+ABILITIES[g.invoke].name+'</b>. '+ABILITIES[g.invoke].desc.replace(/^Invoke \([^)]*\): /,'')+'</p></div></div>';
   var buttons=[];
   var startPiety = 20;   /* flat in every biome: converting late never skips ranks */
   if(refused) html+='<p class="c-you"><b>'+(typeof godRefuses==='function' ? refusalText(id) : g.name+' will not accept a '+RACES[player.race].name+'.')+'</b></p>';
@@ -138,12 +138,12 @@ function faithHTML(){
   var BRf=godBoonRanks(g);
   var deepMul = typeof bidx==='function' ? Math.pow(1.3, Math.max(0, bidx())) : 1;   /* 2026-09-23 (Justin): the Faith tab says what piety is worth here */
   h+='<p><b>Rule.</b> '+g.rule+'</p><p><b>Piety from:</b> '+g.gain+'</p><p><b>Depth.</b> Piety earned here is worth x'+deepMul.toFixed(2)+' (x1.3 per biome below the first). Favor is not multiplied.</p><p><b>Boons</b></p><ol class="boons">'+g.boons.map(function(b,i){ var br=BRf[i]||i+1; return br<=r ? '<li><b>Rank '+br+'.</b> '+b+'</li>' : ''; }).join('')+'</ol>'+
-     (g.boons.some(function(b,i){ return (BRf[i]||i+1)>r; }) ? '<p class="c-info" style="font-size:11px">Grow in piety to learn what else '+g.name.split(',')[0]+' grants.</p>' : '')+'<p><b>Prayers</b></p>';
+     (g.boons.some(function(b,i){ return (BRf[i]||i+1)>r; }) ? '<p class="c-info" style="font-size:11px">Grow in piety to learn what else '+g.name.split(',')[0]+' grants.</p>' : '')+'<p><b>Abilities</b></p>';
   var shown=0;
   g.prayers.forEach(function(pid){ var P=PRAYERS[pid], ok=canPray(pid), wait=cdLeft(prayerCdKey(pid)); if(godRank()<P.rank) return; shown++;
     h+='<div class="abrow" data-pr="'+pid+'"><span class="pico"></span><span class="k">'+P.rank+'</span><span><span style="color:var(--ink)">'+P.name+'</span><div class="d">'+P.desc+(godRank()>=P.rank?' <span style="opacity:.6">(drag to hotbar)</span>':'')+'</div></span>'+
-       '<button class="prayer" data-p="'+pid+'" '+(ok?'':'disabled')+'>'+(wait?'ready in '+wait:P.favor?P.favor+' Favor':P.essence?P.essence+' essence':P.amusement?P.amusement+' Amusement':'pray')+'</button></div>'; });
-  if(!shown) h+='<p class="c-info" style="font-size:11px">No prayers yet. Your god will teach you as your piety grows.</p>';
+       '<button class="prayer" data-p="'+pid+'" '+(ok?'':'disabled')+'>'+(wait?'ready in '+wait:P.favor?P.favor+' Favor':P.essence?P.essence+' essence':P.amusement?P.amusement+' Amusement':'use')+'</button></div>'; });
+  if(!shown) h+='<p class="c-info" style="font-size:11px">No abilities yet. Your god will teach you as your piety grows.</p>';
   return h+'</div>';
 }
 
@@ -207,10 +207,21 @@ function spendPrayer(id){
    the cost is paid and is kept in player.cds beside Shadowstep and Charge. A prayer's is kept as 'pray:<id>',
    because Raise Dead is a prayer and an ability of the same name. canPray and useAbility refuse while it runs. */
 function prayerCdKey(id){return 'pray:'+prayerId(id);}
-function startDivineCd(key,turns){if(turns>0){player.cds=player.cds||{};player.cds[key]=turn+turns;}}
-function startPrayerCd(id){startDivineCd(prayerCdKey(id),DIVINE_COOLDOWNS.prayers[prayerId(id)]);}
+function startDivineCd(key,turns){turns=cooldownTurns(turns);if(turns>0){player.cds=player.cds||{};player.cds[key]=turn+turns;}}
+/* 2026-09-29 (Justin): Warrior's Discipline, Grumbok's rank-5 boon. Every ability cooldown (Charge, Shadowstep, Sap,
+   prayers, invokes) runs on startDivineCd and is 1 turn shorter per rank, never under 1. Every ability you use, paid
+   in mana (spendSpellMana), in Favor (startPrayerCd) or free (Charge, Shadowstep), adds a +2 damage stack, up to one
+   per rank, and renews them all to 6 turns. Basic attacks never do. */
+function cooldownTurns(turns){return turns>0&&capstone('grumbok')?Math.max(1,turns-godRank()):turns;}
+function disciplineStacks(p){var s=p&&p.st&&p.st.discipline;return p&&p.god==='grumbok'&&pietyRank(p.piety||0)>=5&&s&&s.t>0?Math.max(0,Math.min(pietyRank(p.piety||0),s.n||0)):0;}
+function stackDiscipline(){
+  if(!player||player.hp<=0||!capstone('grumbok'))return;
+  gameEffects.apply(player,'discipline',6,undefined,{data:{n:Math.min(godRank(),disciplineStacks(player)+1)},durationModifiers:false,refresh:'replace',bornAt:worldNow()-100});
+  derive(player);
+}
+function startPrayerCd(id){startDivineCd(prayerCdKey(id),DIVINE_COOLDOWNS.prayers[prayerId(id)]);stackDiscipline();}
 function startInvokeCd(key){startDivineCd(key,DIVINE_COOLDOWNS.invokes[key]);}
-function prayerRefused(id){var n=cdLeft(prayerCdKey(id));log(n>0?PRAYERS[prayerId(id)].name+' is not ready ('+n+' turns).':'You cannot offer that prayer right now.','c-info');sfx('ui-error');}
+function prayerRefused(id){var n=cdLeft(prayerCdKey(id));log(n>0?PRAYERS[prayerId(id)].name+' is not ready ('+n+' turns).':'You cannot use that ability right now.','c-info');sfx('ui-error');}
 function usePrayer(id){
   if(gameTurns.busy())return false;
   if(playerFearAction())return false;
@@ -244,7 +255,7 @@ function performPrayer(id){
     sparkleFx(player.x,player.y,'light',40);updateUI();return true;
   }
   else if(id==='sanctuary'){var duration=100*fullDivineDuration(10);floorMeta.sanctuary={x:player.x,y:player.y,power:div,damage:Math.max(1,Math.round(sDMG(3+aff('light'))*div)),duration:duration,until:player.t+duration};ents.forEach(function(e){if(e.foe&&dist(e,player)<=3)applyStatus(e,'fear',4);});ringFx(player.x,player.y,'#FFE4A0',3);}
-  else if(id==='trollblood'){healPlayer(player.maxhp*.4*div);clearBad();}
+  else if(id==='trollblood'){healPlayer(player.maxhp*(.20+.05*godRank())*div);clearBad();}   /* 2026-09-29 (Justin): 20% +5% per rank (was 40%) */
   else if(id==='rally'){
     healPlayer(player.maxhp*.25*div);clearBad();player.buffs.rally=10;
     ents.forEach(function(e){if(e.ally&&e.hp>0&&vis[idxOf(e.x,e.y)]){
