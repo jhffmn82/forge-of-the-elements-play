@@ -104,7 +104,7 @@ function syncHotbar(){
     s=player.hotbar[i]; if(!s) continue;
     if(s.type==='ability' && player.abilities.indexOf(s.key)<0) player.hotbar[i]=null;
     if(s.type==='prayer' && prayers.indexOf(s.key)<0) player.hotbar[i]=null;
-    if(s.type==='item' && player.bag.indexOf(s.ref)<0) player.hotbar[i]=null;
+    if(s.type==='item' && player.bag.indexOf(s.ref)<0) player.hotbar[i]=s.ref&&s.ref.data===player.ranged&&isRangedWeapon(player.ranged)?{type:'ranged'}:null;
   }
   if(!player.hotKnown) player.hotKnown={};
   /* every ability and prayer you know keeps a slot: one that is missing goes back into the first empty slot,
@@ -143,6 +143,11 @@ function syncHotbar(){
       player.hotKnown[id]=true;
       if(!player.hotbar.some(function(s){ return s && s.type==='amulet'; })){ for(var j=0;j<8;j++) if(!player.hotbar[j]){ player.hotbar[j]={type:'amulet'}; break; } }
     }
+  }
+  if(isRangedWeapon(player.ranged)&&(player._rangedHotbarPending||!player.hotKnown['r:equipped'])){
+    var rangedIndex=player.hotbar.findIndex(function(h){return h&&h.type==='ranged';});
+    if(rangedIndex<0){rangedIndex=player.hotbar.indexOf(null);if(rangedIndex>=0)player.hotbar[rangedIndex]={type:'ranged'};}
+    if(rangedIndex>=0){player.hotKnown['r:equipped']=true;player._rangedHotbarPending=false;}
   }
   player._hotPrev = player.hotbar.slice();
 }

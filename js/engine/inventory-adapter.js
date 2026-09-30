@@ -45,6 +45,7 @@ function commitEquipment(plan){
   else if(plan.slot==='armor')player.armorItem=item;
   else if(plan.slot.indexOf('ring')===0){if(!player.rings)player.rings=[null,null];player.rings[+plan.slot.slice(-1)]=item;}
   else player[plan.slot]=item;
+  if(plan.slot==='ranged')player._rangedHotbarPending=true;
   if(plan.stowOff)player.off=EMPTY_OFF;
   plan.displaced.forEach(function(o){addBag(gearBagIcon(o.kind),gearName(o.item),{kind:o.kind,data:o.item});});
   if(plan.slot==='amulet'&&player.hotbar&&!player.hotbar.some(function(h){return h&&h.type==='amulet';})){

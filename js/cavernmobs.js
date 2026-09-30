@@ -215,17 +215,40 @@ function turnShockClouds(context){
 }
 
 function drawShockCloudTelegraphs(now){
-   if(!floorMeta)return;
-  ctx.save();
+  if(!floorMeta)return;
+  ctx.save();ctx.lineJoin='miter';
+  var phase=ANIM.reduce?0:Math.floor((now||0)/140),pulse=ANIM.reduce?.75:.65+.2*Math.sin((now||0)/180);
+  // The warning follows the charge direction, not a row of filled tile boxes.
+  (floorMeta.marks||[]).forEach(function(m){
+    if(!/^storm\d+$/.test(m.kind)||turn>=m.until)return;
+    var source=ents.find(function(e){return 'storm'+e.id===m.kind;}),prev=source;
+    m.cells.forEach(function(i){
+      var tile={x:i%MW,y:Math.floor(i/MW)};
+      if(vis[i]&&prev){
+        var x=(tile.x-camX+.5)*TS,y=(tile.y-camY+.62)*TS,dx=tile.x-prev.x,dy=tile.y-prev.y,len=Math.hypot(dx,dy)||1;
+        dx/=len;dy/=len;
+        ctx.strokeStyle='rgba(96,183,211,'+pulse*.6+')';ctx.lineWidth=Math.max(2,TS*.055);
+        ctx.beginPath();ctx.moveTo(x-dx*TS*.45,y-dy*TS*.45);ctx.lineTo(x+dx*TS*.28,y+dy*TS*.28);ctx.stroke();
+        ctx.strokeStyle='rgba(200,236,231,'+pulse+')';ctx.lineWidth=Math.max(1,TS*.025);
+        ctx.beginPath();ctx.moveTo(x-dx*TS*.1-dy*TS*.15,y-dy*TS*.1+dx*TS*.15);ctx.lineTo(x+dx*TS*.16,y+dy*TS*.16);ctx.lineTo(x-dx*TS*.1+dy*TS*.15,y-dy*TS*.1-dx*TS*.15);ctx.stroke();
+      }
+      prev=tile;
+    });
+  });
   (floorMeta.shockClouds||[]).forEach(function(c){if(turn>=c.until)return;c.cells.forEach(function(i){
-    if(!(revealAll||vis[i]))return;
+    if(!vis[i])return;
     var x=(i%MW-camX)*TS,y=(Math.floor(i/MW)-camY)*TS;
-    ctx.fillStyle='rgba(100,170,230,.18)';ctx.beginPath();ctx.ellipse(x+TS/2,y+TS/2,TS*.48,TS*.4,0,0,Math.PI*2);ctx.fill();
-    ctx.strokeStyle='rgba(170,225,255,.65)';ctx.lineWidth=Math.max(1,TS/40);
-    var f=ANIM.reduce?0:Math.floor((now||0)/130)%3;
-    ctx.beginPath();ctx.moveTo(x+TS*.2,y+TS*(.3+f*.08));ctx.lineTo(x+TS*.55,y+TS*.45);ctx.lineTo(x+TS*.4,y+TS*.6);ctx.lineTo(x+TS*.8,y+TS*.7);ctx.stroke();
+    var glow=ctx.createRadialGradient(x+TS*.5,y+TS*.64,0,x+TS*.5,y+TS*.64,TS*.62);
+    glow.addColorStop(0,'rgba(79,155,195,.20)');glow.addColorStop(1,'rgba(79,155,195,0)');
+    ctx.fillStyle=glow;ctx.fillRect(x-TS*.15,y,TS*1.3,TS*1.25);
+    for(var n=0;n<3;n++){
+      var a=hash2(i,n,phase+31)*Math.PI*2,cx=x+TS*(.25+hash2(i,n,15)*.5),cy=y+TS*(.38+hash2(i,n,19)*.4);
+      var dx=Math.cos(a)*TS*.42,dy=Math.sin(a)*TS*.25;
+      ctx.beginPath();ctx.moveTo(cx-dx*.5,cy-dy*.5);ctx.lineTo(cx-dx*.12+dy*.3,cy-dy*.12-dx*.12);ctx.lineTo(cx+dx*.14-dy*.2,cy+dy*.14+dx*.12);ctx.lineTo(cx+dx*.5,cy+dy*.5);
+      ctx.strokeStyle='rgba(102,181,217,.36)';ctx.lineWidth=Math.max(3,TS*.07);ctx.stroke();
+      ctx.strokeStyle=n===phase%3?'#e2f1dc':'#9ac8d8';ctx.lineWidth=Math.max(1,TS*.02);ctx.stroke();
+    }
   });});ctx.restore();
-
 }
 
 /* Myconid: lobs a spore cloud onto you every few turns (poison, and it slows you while you stand in it),
@@ -295,12 +318,12 @@ function eelAct(e){
   }
   var onLand=!eelWater(e.x,e.y);
   if(e.state==='hunt'){
-    if(d<=1 && !e.st.fear){ attack(e,player);  return; }
+    if(see && d<=1 && !e.st.fear){ attack(e,player);  return; }
     e.zapCd=(e.zapCd===undefined ? 2 : e.zapCd)-1;
     if(!onLand && e.zapCd<=0 && d<=6){
       var cells=eelField(e, 4);
-      var playerIn=cells.indexOf(idxOf(player.x,player.y))>=0;
-      var allyIn=ents.some(function(o){ return o.ally && cells.indexOf(idxOf(o.x,o.y))>=0; });
+      var playerIn=see&&cells.indexOf(idxOf(player.x,player.y))>=0;
+      var allyIn=ents.some(function(o){ return o.ally && cells.indexOf(idxOf(o.x,o.y))>=0&&FoteEnemyTeamwork.openLine(e,o); });
       if(playerIn || allyIn){
         e.zapCd=5; e.zap={cells:cells, at:turn+1}; e._surfT=turn;
         floorMeta.marks=(floorMeta.marks||[]).concat([{cells:cells, col:'#7FD8FF', until:turn+1, kind:'eel'+e.id}]);
@@ -313,7 +336,7 @@ function eelAct(e){
   /* move: only through water; stranded on land, it flops back to the nearest water */
   if(canActorMove(e)){
     var nb=[[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]], best=null, bd=1e9;
-    var goal = e.state==='hunt' ? player : (e.goal || null);
+    var goal = e.state==='hunt' ? (see?player:e.lastSeen) : (e.goal || null);
     if(!goal || (e.goal && e.x===e.goal.x && e.y===e.goal.y) || (e.state!=='hunt' && rng()<0.1)){
       var opts=eelField(e, 5); if(opts.length){ var gi=opts[Math.floor(rng()*opts.length)]; e.goal={x:gi%MW, y:(gi/MW)|0}; goal=e.goal; }
     }
@@ -419,30 +442,31 @@ function mawBodyFits(x,y,M){
 function mawNearestMound(M, p){ var best=null, bd=1e9; M.mounds.forEach(function(m){ var d=Math.max(Math.abs(m.x+0.5-p.x), Math.abs(m.y+0.5-p.y)); if(d<bd){ bd=d; best=m; } }); return best; }
 function mawPlan(M){
   var e=M.ent, hurt=e.hp<e.maxhp/2, pick3 = M.mounds.length && (M.n===0 || (!hurt && M.n%3===2));
+  var target=e.lastSeen&&e.teamSearchUntil>worldNow()?e.lastSeen:null;
   M.rubble=[]; M.site=null;
-  if(!pick3){
-    /* on you: a 3x3 on your tile; the body comes up inside it */
-    var cx=player.x, cy=player.y, spots=[];
+  if(!pick3&&target){
+    /* A 3x3 on the last sighting or footfall; the marked attack never retargets. */
+    var cx=target.x, cy=target.y, spots=[];
     [[-1,-1],[0,-1],[-1,0],[0,0]].forEach(function(o){ if(mawBodyFits(cx+o[0], cy+o[1], M)) spots.push({x:cx+o[0], y:cy+o[1]}); });
     if(spots.length){
       var s=spots[Math.floor(rng()*spots.length)], cells=[];
       for(var y=cy-1;y<=cy+1;y++) for(var x=cx-1;x<=cx+1;x++) if(inb(x,y) && walkable(x,y)) cells.push(idxOf(x,y));
       M.site={x:s.x, y:s.y, mound:null}; M.cells=cells;
-      if(hurt && M.mounds.length){ var nm=mawNearestMound(M, player); if(nm) M.rubble=mawRing(nm).filter(function(i){ return cells.indexOf(i)<0; }); }
+      if(hurt && M.mounds.length){ var nm=mawNearestMound(M, target); if(nm) M.rubble=mawRing(nm).filter(function(i){ return cells.indexOf(i)<0; }); }
     }
   }
   if(!M.site){
     if(!M.mounds.length){ M.cells=[]; return false; }
-    var m=M.n===0 ? mawNearestMound(M, player) : M.mounds[Math.floor(rng()*M.mounds.length)];
+    var m=M.n===0&&target ? mawNearestMound(M, target) : M.mounds[Math.floor(rng()*M.mounds.length)];
     M.site={x:m.x, y:m.y, mound:m}; M.cells=mawRing(m);
   }
   floorMeta.marks=(floorMeta.marks||[]).filter(function(k){ return k.kind!=='maw'; })
     .concat([{cells:M.cells.concat(M.rubble), col:'#FF3A2A', until:turn+MAW.warnTurns, kind:'maw'}]);
   M.phase='warn'; M.at=turn+MAW.warnTurns;
   SHAKE=Math.max(SHAKE||0, 4); sfx('trap-gas',{from:M.site});
-  var sc=M.site.mound ? {x:M.site.x+0.5, y:M.site.y+0.5} : {x:player.x, y:player.y};
+  var sc=M.site.mound ? {x:M.site.x+0.5, y:M.site.y+0.5} : target;
   burst(Math.round(sc.x), Math.round(sc.y), 'earth', 26, 0.07);
-  log(M.site.mound ? 'The ground heaves around a burrow mound. <b>Stay off the red!</b>' : 'The floor bulges and cracks <b>under your feet</b>. Move off the red!','c-you');
+  log(M.site.mound ? 'The ground heaves around a burrow mound. <b>Stay off the red!</b>' : 'The floor bulges and cracks. <b>Move off the red!</b>','c-you');
   return true;
 }
 function mawErupt(M){
@@ -537,7 +561,7 @@ function mawTouching(e, o){ return o.x>=e.x-1 && o.x<=e.x+2 && o.y>=e.y-1 && o.y
 function mawAct(e){
   if(e.hp<=0)return;var M=mawState();
   if(e.st.stun || e.st.frozen || !M || M.phase!=='up'){  return; }
-  var tgt = mawTouching(e, player) ? player : ents.filter(function(o){ return o.ally && o.hp>0 && mawTouching(e,o); })[0];
+  var tgt = canSeePlayer(e)&&mawTouching(e, player) ? player : ents.filter(function(o){ return o.ally && o.hp>0 && mawTouching(e,o); })[0];
   if(tgt){ setClip(e,'attack'); attack(e, tgt); }
 
 }

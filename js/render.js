@@ -514,6 +514,9 @@ function castSheet(look){
    carry their own dark edge, so the pale foe halo is for the older sheets only. A new atlas says which way its art faces,
    or is Chaos art. */
 function paintedSheet(sheet){ return !!(sheet && sheet.m && (sheet.m.facing || sheet.m.chaos)); }
+/* Sampling belongs to the authored sheet, shared by living actors and corpses.
+ * Small native pixel sheets can opt out of a second softening pass at map scale. */
+function spriteSheetSmoothing(sheet){ return !(sheet && sheet.m && sheet.m.sampling==='nearest'); }
 function mobSheet(name){ var preview=typeof FoteChaosEnemyArt!=='undefined'&&FoteChaosEnemyArt.sheet(name);if(preview)return preview;var m=AS.mobs && AS.mobs[name]; if(!m) return null; var img=atl('mob-'+name+'.webp'); return img ? {img:img, m:m} : null; }
 /* Share artwork without granting temporary swarms the raised-shade gameplay tag. */
 function isShadeSummon(e){return !!(e && e.ally && (e.shade || e.swarm));}
@@ -593,7 +596,7 @@ function drawCharacterSprite(e, px, py, opts){
     }
     var rect2=placementRect(dx2,dy2,w2,h2);dx2=rect2.x;dy2=rect2.y;w2=rect2.w;h2=rect2.h;
     var actorAlpha=(opts.alpha===undefined?1:opts.alpha)*(isShade ? .62 : 1);
-    ctx.save(); ctx.globalAlpha=actorAlpha; ctx.imageSmoothingEnabled=true;
+    ctx.save(); ctx.globalAlpha=actorAlpha; ctx.imageSmoothingEnabled=spriteSheetSmoothing(ms);
     if(opts.flip){ ctx.translate(px+TS/2,0); ctx.scale(-1,1); ctx.translate(-(px+TS/2),0); }
     if(opts.outline && !paintedSheet(ms)){
       var cut2=whiteCut(ms.img,f2.sx,f2.sy,c2,c2),edge2=Math.max(1,Math.round(TS/40));

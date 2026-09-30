@@ -1,7 +1,7 @@
 /* One timing owner for scheduled actors, actions, movement and character sheets. */
 function actorTiming(actor){
   var isPlayer=actor===player,slow=actor.st&&actor.st.slow;
-  return {player:isPlayer,speed:isPlayer?actor.speed:actor.base.speed,
+  return {player:isPlayer,speed:isPlayer?actor.speed:actor.base.speed*(actor.st&&actor.st.goblinrage&&actor.st.goblinrage.t>0?1.3:1),
     chill:actor.st&&actor.st.chill?chillSlow(actor):0,slow:slow?(slow.mult||SYLLA.slowMult):0};
 }
 function playerTiming(){

@@ -15,7 +15,7 @@
     '@media (max-width:640px){.cols3{grid-template-columns:1fr}}',
     '.sec{margin:14px 0 6px;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);border-bottom:1px solid var(--edge);padding-bottom:3px}',
     '.sec:first-child{margin-top:0}',
-    '.prow{display:grid;grid-template-columns:22px 1fr auto;gap:8px;align-items:baseline;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:12px}',
+    '.prow{display:grid;grid-template-columns:22px minmax(0,1fr);gap:8px;align-items:baseline;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:12px}',
     '.prow .n{color:var(--ink)} .prow .d{color:var(--dim);font-size:11px;line-height:1.35} .prow .s{font-size:10.5px;white-space:nowrap}',
     '.prow.off .n{color:var(--ash)} .prow.off{opacity:.55}',
     '.prow .k{color:var(--gold);font-variant-numeric:tabular-nums;font-size:11px}',
@@ -30,7 +30,8 @@
     '.gearwrap .kv{font-size:11px;gap:1px 8px} .gearwrap .res{grid-template-columns:1fr 1fr;gap:1px 10px;font-size:11px}',
     '.gearwrap .sec{margin:9px 0 4px}',
     '.keychip{display:inline-flex;align-items:center;gap:5px} .keychip .kart{width:18px;height:18px;display:inline-block}',
-    '.gearwrap .invgrid{grid-template-columns:repeat(5,minmax(0,1fr));gap:7px}',
+    '.gearwrap .invgrid{grid-template-columns:repeat(5,minmax(0,1fr));gap:0}',
+    '.gearwrap .invgrid .cell{border-radius:0}',
     '.gearwrap .invgrid .cell{max-width:104px;justify-self:stretch}',
     '.gdoll{display:grid;grid-template-columns:72px minmax(110px,1fr) 72px;grid-template-rows:repeat(3,72px);gap:12px 16px;align-items:center;justify-items:center}',
     '.gdoll .art{grid-column:2;grid-row:1/4;align-self:stretch;justify-self:stretch;border:1px dashed var(--edge);border-radius:8px;background:radial-gradient(#2A221C,#141110);display:flex;align-items:flex-end;justify-content:center;overflow:hidden;min-height:250px}',
@@ -86,7 +87,7 @@ function charHTML(){
   var hr=hitRange();
   h+='<div class="sec">Derived</div>'+kv([['HP',Math.round(player.hp)+' / '+player.maxhp+(playerShield()?' <span style="color:#9FD8FF">+'+playerShield()+'</span>':'')],['Mana',Math.floor(player.mp)+' / '+player.maxmp],
     ['Damage per hit',hr[0]+'-'+hr[1]],['Crit',Math.round(player.crit*100)+'%'],['Crit damage','&times;'+criticalMultiplier().toFixed(2)],['Accuracy',player.acc],['Evasion',evaOf(player)],['Armor',player.armor],
-    ['Block',Math.round(player.block*100)+'%'],['Parry',Math.round(player.parry*100)+'%'],['Spell power','&times;'+spellPower({}).toFixed(2)],['Divine power','&times;'+divineStrength().toFixed(2)],['Range',player.range],
+    ['Block',Math.round(player.block*100)+'%'],['Parry',Math.round(player.parry*100)+'%'],['Spell power','&times;'+spellPower({}).toFixed(2)],['Divine Power','&times;'+divineStrength().toFixed(2)],['Range',player.range],
     ['Attack speed',playerSpeedPercent('attack')],['Movement speed',playerSpeedPercent('move')],['XP',player.xp+' / '+player.xpNext]]);
   h+='<div class="sec">Resistances</div>'+resHTML()+'</div>';
 
@@ -115,14 +116,14 @@ function charHTML(){
   /* right: every passive, by source */
   h+='<div>';
   h+='<div class="sec">Class &amp; race</div>';
-  h+='<div class="prow"><span class="k">&#9670;</span><span><span class="n">'+CLASSES[player.cls].name+'</span><div class="d">'+CLASSES[player.cls].passive+'</div></span><span></span></div>';
-  h+='<div class="prow"><span class="k">&#9670;</span><span><span class="n">'+RACES[player.race].name+'</span><div class="d">'+RACES[player.race].blurb+'</div></span><span></span></div>';
+  h+='<div class="prow"><span class="k">&#9670;</span><span><span class="n">'+CLASSES[player.cls].name+'</span><div class="d">'+CLASSES[player.cls].passive+'</div></span></div>';
+  h+='<div class="prow"><span class="k">&#9670;</span><span><span class="n">'+RACES[player.race].name+'</span><div class="d">'+RACES[player.race].blurb+'</div></span></div>';
   var earned=[]; for(var sk0 in PASSIVES) PASSIVES[sk0].forEach(function(p){ if(player.stats[sk0]>=p.at) earned.push(p); });
   if(earned.length) h+='<div class="sec">Attributes</div>';
   for(var sk in PASSIVES){
     PASSIVES[sk].forEach(function(p){
       var on=player.stats[sk]>=p.at; if(!on) return;
-      h+='<div class="prow'+(on?'':' off')+'"><span class="k">'+p.at+'</span><span><span class="n">'+p.name+'</span><div class="d">'+p.d+(on?'':' &middot; needs '+STAT_LABEL[sk]+' '+p.at)+'</div></span><span class="s" style="color:'+(on?'var(--moss)':'var(--dim)')+'">'+(on?'on':(p.at-player.stats[sk])+' to go')+'</span></div>';
+      h+='<div class="prow"><span class="k">'+p.at+'</span><span><span class="n">'+p.name+'</span><div class="d">'+p.d+'</div></span></div>';
     });
   }
   var els=Object.keys(player.aff).filter(function(e){ return player.aff[e]>0; });
@@ -130,16 +131,16 @@ function charHTML(){
     h+='<div class="sec">Elements</div>';
     els.forEach(function(e){
       var n=player.aff[e];
-      h+='<div class="prow"><span class="k" style="color:'+AFF_COL[e]+'">'+n+'</span><span><span class="n">'+cap(e)+' '+n+'</span><div class="d">'+(typeof t1Text==='function' ? t1Text(e,n) : (T1_TEXT[e]||''))+'</div></span><span class="s" style="color:var(--moss)">on</span></div>';   /* 2026-09-23 (Justin): the live total at this affinity */
+      h+='<div class="prow"><span class="k" style="color:'+AFF_COL[e]+'">'+n+'</span><span><span class="n">'+cap(e)+' '+n+'</span><div class="d">'+(typeof t1Text==='function' ? t1Text(e,n) : (T1_TEXT[e]||''))+'</div></span></div>';   /* 2026-09-23 (Justin): the live total at this affinity */
       [3,6].forEach(function(r){
         if(typeof RANK_TEXT==='undefined' || !RANK_TEXT[r][e]) return;
         var on=n>=r; if(!on) return;
-        h+='<div class="prow'+(on?'':' off')+'"><span class="k" style="color:'+AFF_COL[e]+'">'+r+'</span><span><span class="n">'+cap(e)+' '+r+' mastery</span><div class="d">'+(typeof rankLive==='function' ? rankLive(r,e) : RANK_TEXT[r][e])+'</div></span><span class="s" style="color:'+(on?'var(--moss)':'var(--dim)')+'">'+(on?'on':'rank '+r)+'</span></div>';
+        h+='<div class="prow"><span class="k" style="color:'+AFF_COL[e]+'">'+r+'</span><span><span class="n">'+cap(e)+' '+r+' mastery</span><div class="d">'+(typeof rankLive==='function' ? rankLive(r,e) : RANK_TEXT[r][e])+'</div></span></div>';
       });
     });
     if(typeof COMBOS!=='undefined') combosHeld().forEach(function(k){
       var C=COMBOS[k], pr=k.split('/');
-      h+='<div class="prow"><span class="k" style="color:'+AFF_COL[pr[0]]+'">&#10022;</span><span><span class="n">'+C.name+'</span><div class="d">'+C.d+' ('+cap(pr[0])+' 3 / '+cap(pr[1])+' 2)</div></span><span class="s" style="color:var(--moss)">on</span></div>';
+      h+='<div class="prow"><span class="k" style="color:'+AFF_COL[pr[0]]+'">&#10022;</span><span><span class="n">'+C.name+'</span><div class="d">'+C.d+' ('+cap(pr[0])+' 3 / '+cap(pr[1])+' 2)</div></span></div>';
     });
   }
   if(player.god){
@@ -147,7 +148,7 @@ function charHTML(){
     h+='<div class="sec">Faith &middot; rank '+rk+'</div>';
     G.boons.forEach(function(b, i){
       var at=BOON_RANKS[i]||i+1, on=rk>=at, parts=b.split(': '), nm=parts.length>1?parts.shift():'Boon'; if(!on) return;
-      h+='<div class="prow'+(on?'':' off')+'"><span class="k" style="color:'+G.color+'">'+at+'</span><span><span class="n">'+nm+'</span><div class="d">'+parts.join(': ')+'</div></span><span class="s" style="color:'+(on?'var(--moss)':'var(--dim)')+'">'+(on?'on':'rank '+at)+'</span></div>';
+      h+='<div class="prow"><span class="k" style="color:'+G.color+'">'+at+'</span><span><span class="n">'+nm+'</span><div class="d">'+parts.join(': ')+'</div></span></div>';
     });
   }
   var gear=[];
@@ -160,7 +161,7 @@ function charHTML(){
   if(of && of!==EMPTY_OFF && of.enchant && typeof offKind==='function' && offKind() && ENCHANT_TEXT[offKind()]) gear.push([gearName(of), (typeof enchantLive==='function' ? enchantLive(offKind(), of.enchant) : ENCHANT_TEXT[offKind()][of.enchant])]);
   if(gear.length){
     h+='<div class="sec">Gear</div>';
-    gear.forEach(function(g){ h+='<div class="prow"><span class="k">&#9679;</span><span><span class="n">'+g[0]+'</span><div class="d">'+g[1]+'</div></span><span></span></div>'; });
+    gear.forEach(function(g){ h+='<div class="prow"><span class="k">&#9679;</span><span><span class="n">'+g[0]+'</span><div class="d">'+g[1]+'</div></span></div>'; });
   }
   h+='<div class="c-info" style="font-size:11px;margin-top:10px;color:var(--dim)">Training attributes, attuning to elements and serving a god reveal more.</div>'
   h+='</div></div>';
@@ -184,10 +185,8 @@ function equipHTML(){
   var w=player.weapon, off=player.twoHanded?null:player.off, ar=player.armorItem, r=player.rings||[null,null], stow=player.ranged;
   var hr=hitRange(), h='<div class="gearwrap">';
   /* left: totals */
-  h+='<div><div class="sec">Offense</div>'+kv([['Damage per hit',hr[0]+'-'+hr[1]],['Crit',Math.round(player.crit*100)+'%'],['Crit damage','&times;'+criticalMultiplier().toFixed(2)],['Accuracy',player.acc],['Range',player.range],['Attack speed',playerSpeedPercent('attack')],['Movement speed',playerSpeedPercent('move')],['Spell power','&times;'+spellPower({}).toFixed(2)],['Divine power','&times;'+divineStrength().toFixed(2)]]);
+  h+='<div><div class="sec">Offense</div>'+kv([['Damage per hit',hr[0]+'-'+hr[1]],['Crit',Math.round(player.crit*100)+'%'],['Crit damage','&times;'+criticalMultiplier().toFixed(2)],['Accuracy',player.acc],['Range',player.range],['Attack speed',playerSpeedPercent('attack')],['Movement speed',playerSpeedPercent('move')],['Spell power','&times;'+spellPower({}).toFixed(2)],['Divine Power','&times;'+divineStrength().toFixed(2)]]);
   h+='<div class="sec">Defense</div>'+kv([['HP',Math.round(player.hp)+' / '+player.maxhp],['Shield',playerShield()],['Armor',player.armor],['Evasion',evaOf(player)],['Block',Math.round(player.block*100)+'%'],['Parry',Math.round(player.parry*100)+'%'],['Mana',Math.floor(player.mp)+' / '+player.maxmp],['Stealth',Math.round(stealthScore()*100)+'%']]);
-  /* 1.3.2 ruling 5 (Justin 2026-09-28): show the stealth that already exists, and what moves it */
-  h+='<p class="c-info" style="font-size:11px;margin:2px 0 6px">Stealth is how easily monsters miss you. Standing still, tall grass and dark rooms raise it; chain and plate lower it; attacking or casting drops it to nothing.</p>';
   h+='<div class="sec">Attributes</div><div class="res">'+['mig','agi','vit','foc'].map(function(k){ return '<span>'+STAT_LABEL[k]+'<b>'+player.stats[k]+'</b></span>'; }).join('')+'</div>';
   h+='<div class="sec">Resistances</div>'+resHTML()+'</div>';
   /* middle: doll and slots */
@@ -251,6 +250,7 @@ function wireEquip(root){
     if(key==='stow' && slotItem('stow')) dragSource(el, 'ranged');
     /* 2026-09-27: the worn amulet drags onto any hotbar slot (the hotbar already takes 'amulet'; touchui.js does the same by finger) */
     if(key==='amulet' && slotItem('amulet')) dragSource(el, 'amulet');
+    if(slotItem(key) && ['main','stow','amulet'].indexOf(key)<0) dragSource(el, 'worn:'+key);
     dropTarget(el, function(tag){ var bi=bagIndexFromTag(tag); if(bi<0) return; hideCard();
       equipFromBag(bi, key==='stow' ? 'ranged' : key); updateUI(); refreshSheet(); });
   });
@@ -258,6 +258,11 @@ function wireEquip(root){
      dragging onto the equipped item slot". A drop anywhere on the doll - the figure, the gaps between the slots -
      equips the dragged bag item into its natural slot. The slots themselves still take their own drop and stop it
      here, so dropping a light weapon on the off hand still means the off hand. */
+  var bag=root.querySelector('.invgrid, .tg-cells');
+  if(bag) dropTarget(bag, function(tag){
+    var key=tag==='weapons'?'main':tag==='ranged'?'stow':tag==='amulet'?'amulet':tag.indexOf('worn:')===0?tag.slice(5):null;
+    if(key) takeOffSlot(key);
+  });
   var doll=root.querySelector('.gdoll');
   if(doll) dropTarget(doll, function(tag){
     var bi=bagIndexFromTag(tag); if(bi<0 || !player.bag[bi]) return;
@@ -278,6 +283,13 @@ function wireEquip(root){
 }
 /* the bag's Drop: right-click, or a drag let go outside the window (game.js, touchui.js) */
 function dropFromBag(bi){ hideCard(); dropBagItem(bi); updateUI(); refreshSheet(); }
+function takeOffSlot(key){
+  hideCard();
+  var slot=key==='stow'?'ranged':key;
+  if(['main','off','armor','amulet','ring0','ring1','ranged'].indexOf(slot)<0) return false;
+  var result=removeEquipment(slot,slot!=='ranged');
+  updateUI();refreshSheet();return result;
+}
 
 /* ---------------------------------------------------------------- take over the two panes */
 

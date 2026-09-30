@@ -13,15 +13,16 @@ var SIGIL_ORDER = {
   plus:    ['firestorm2','identify2','levitate2','haste','stoneskin2','heal2','vanish2'],
   pairs:   ['cinder','magma','sunburst','smoke','storm','mire','purify','mana','recall','blink','mapping','rot'],
   triple:  ['aegis'],
-  grand:   ['ascension','wisdom']
+  quadruple: ['naturesbounty'],
+  grand:   ['ascension','transmutation','wisdom']
 };
 (function(){
   var S=SIGILS, add={
     firestorm2:{name:'Fire sigil+', motes:['fire','fire'], desc:'A firestorm roars out: enemies you can see within 4 tiles take 14 fire damage plus the floor number and start Burning.'},
     identify2: {name:'Water sigil+', motes:['water','water'], desc:'Learn every kind of sigil and identify all the gear you carry or wear. The water also puts out fires within 5 tiles.'},
-    levitate2: {name:'Air sigil+', motes:['air','air'], desc:'Float for 60 turns, and move, attack and cast 30% faster for the first 10.'},
+    levitate2: {name:'Air sigil+', motes:['air','air'], desc:'Break free of roots and webs, then float for 60 turns above roots, webs, floor traps and ground hazards. Move, attack and cast 30% faster for the first 10.'},
     haste:     {name:'Sigil of Haste', motes:['air','air'], desc:'Move, attack and cast 30% faster for 20 turns.'},
-    stoneskin2:{name:'Earth sigil+', motes:['earth','earth'], desc:'Stone skin for 30 turns and a shield of 20% of your max HP.'},
+    stoneskin2:{name:'Earth sigil+', motes:['earth','earth'], desc:'Purge poison and stun. For 30 turns, become immune to poison damage, Poison and Stun, take 3 less physical damage per hit, and gain a shield of 20% of your max HP.'},
     heal2:     {name:'Light sigil+', motes:['light','light'], desc:'Heal to full and cleanse harmful statuses.'},
     vanish2:   {name:'Shadow sigil+', motes:['shadow','shadow'], desc:'Vanish for 5 turns; enemies lose track of you.'},
     cinder:    {name:'Sigil of Cinder Stride', motes:['fire','air'], desc:'Move, attack and cast 50% faster for 10 turns, leaving fire where you step.'},
@@ -35,7 +36,7 @@ var SIGIL_ORDER = {
     recall:    {name:'Sigil of Homeward Wind', motes:['air','light'], desc:'The wind carries you to this floor\'s stairs (or the open gate).'},
     aegis:     {name:'Sigil of the Aegis', motes:['earth','earth','light'], desc:'A shield of 50% of your max HP for 15 turns, and stone skin.'},
     ascension: {name:'Sigil of Ascension', motes:['fire','water','air','earth','light','shadow'], desc:'Raise one piece of gear by +1, up to +3. A cursed item is cleansed instead.'},
-    naturesbounty: {name:"Nature's Bounty", cost:300, motes:['light','earth','water'], desc:'Conjure a Honeycake, a Mushroom Skewer and a Moonberry Tart on open ground nearby.'},
+    naturesbounty: {name:"Nature's Bounty", cost:300, motes:['fire','water','air','earth'], desc:'Conjure a Honeycake, a Mushroom Skewer and a Moonberry Tart on open ground nearby.'},
     transmutation: {name:'Sigil of Transmutation', cost:1000, motes:['fire','water','air','earth','light','shadow'], desc:'Turn a ring, amulet, weapon, off-hand or armor you carry or wear into a random different one of the same kind. It keeps its quality, upgrades, enchantment and curse.'},
     wisdom:    {name:'Sigil of Wisdom', motes:['fire','water','air','earth','light','shadow'], desc:'Gain a level.'}
   };
@@ -48,9 +49,9 @@ var SIGIL_ORDER = {
   S.mana.desc='Restore 50% of your max mana, and mana returns twice as fast for 20 turns.';
   S.mapping.motes=['light','earth'];
   ['steam','soulfire','mist','sandstorm','mana2'].forEach(function(k){ delete S[k]; });
-  /* rebuild in display order so the Forge lists singles, sigil+, pairs, then grand */
+  /* Forge order: singles, doubles, pairs, three/four motes, then grand sigils. */
   var ordered={};
-  ['singles','plus','pairs','triple','grand'].forEach(function(g){ SIGIL_ORDER[g].forEach(function(k){ if(S[k]) ordered[k]=S[k]; }); });
+  ['singles','plus','pairs','triple','quadruple','grand'].forEach(function(g){ SIGIL_ORDER[g].forEach(function(k){ if(S[k]) ordered[k]=S[k]; }); });
   for(var k2 in S) if(!ordered[k2]) ordered[k2]=S[k2];
   SIGILS=ordered;
 })();

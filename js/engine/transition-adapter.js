@@ -7,7 +7,9 @@ function stashFloor(){
 function restoreFloor(n,arrival){
   var saved=RUN&&RUN.floorStash&&RUN.floorStash[n];if(!saved)return false;
   FoteTransitions.restore(gameState,saved,n);delete RUN.floorStash[n];
+  removeBossFloorForges();
   if(typeof FoteChaosCampaign!=='undefined')FoteChaosCampaign.restore();
+  if(typeof FoteEnemyFields!=='undefined')FoteEnemyFields.restore();
   presentRestoredFloor(arrival);return true;
 }
 function descend(fell){
@@ -64,6 +66,8 @@ var planeGeneration=FoteTransitions.stages([
 function buildPlaneFloor(element,seed){resetMapDimensions();planeGeneration.run({element:element,seed:seed});if(typeof FoteShadowClone!=='undefined')FoteShadowClone.arrive();}
 
 var tileEntry=FoteTransitions.stages([
+  {name:'persistent-webs',run:function(){if(typeof FoteEnemyFields!=='undefined')FoteEnemyFields.enter(player);}},
+  {name:'trample-spore-mushrooms',run:function(){if(typeof FoteSporecaller!=='undefined')FoteSporecaller.trample(player);return player.hp<=0;}},
   {name:'collect-core',run:entryCollectCores},
   {name:'collect-globes',run:entryCollectGlobes},
   {name:'scale-essence',run:entryScaleEssence},

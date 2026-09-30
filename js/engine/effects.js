@@ -26,6 +26,8 @@
     wardshield:{tags:['beneficial','shield']},
     livingmountain:{tags:['beneficial','stacking']},
     discipline:{tags:['beneficial','stacking']},
+    goblinrage:{tags:['beneficial','haste']},
+    sporecoat:{tags:['beneficial','shield']},
     challenged:{tags:['harmful','challenge']},
     coward:{tags:['harmful','challenge']}
   };
@@ -54,12 +56,17 @@
     function alive(e){return !!e&&!(e.hp<=0);}
     function has(e,key){var s=e&&e.st&&e.st[canonical(key)];return !!s&&(s.t===undefined||s.t>0);}
     function hasTag(e,tag){return Object.keys(e&&e.st||{}).some(function(key){return has(e,key)&&tags(key,e.st[key]).indexOf(tag)>=0;});}
+    function airborne(e){return !!(e&&(e.base&&e.base.flying||player(e)&&(e.levitate>0||e.windCarry)));}
     function blocked(e,key,options){
       if(!alive(e))return 'dead';
       if(options&&options.ignoreImmunity)return null;
       if(key==='knockback'&&boss(e))return 'boss';
       var d=definition(key),t=d.tags;
+      var web=key==='web'||key==='webbed'||options&&options.data&&options.data.effect==='web';
+      if(web&&e.base&&e.base.spider)return 'spider';
+      if((web||d.key==='root')&&airborne(e))return 'airborne';
       if(player(e)){
+        if(has(e,'stone')&&(d.key==='poison'||d.key==='stun'))return 'stone-skin';
         if(perk(e,'unstoppable')&&t.some(function(tag){return ['slow','root','stun','knockback'].indexOf(tag)>=0;}))return 'unstoppable';
         if(t.indexOf('hard-control')>=0&&e.resolveUntil>now())return 'resolve';
         if(d.element&&affinity(d.element)>=(d.immuneRank||3))return 'element';
@@ -71,7 +78,7 @@
         if(e.stunImmune&&t.indexOf('stun')>=0)return 'sap-immunity';
         if(has(e,'imm_'+canonical(key)))return 'temporary-immunity';
       }
-      if(canonical(key)==='burn'&&hooks.inWater&&hooks.inWater(e))return 'water';
+      if(canonical(key)==='burn'&&!airborne(e)&&hooks.inWater&&hooks.inWater(e))return 'water';
       return null;
     }
     function emit(hook,event){if(hooks[hook])return hooks[hook](event,service);}
@@ -90,7 +97,7 @@
       options=options||{};var requested=key;key=canonical(key);
       if(!Number.isFinite(turns))return {applied:false,reason:'invalid-duration',key:key};
       if(turns<=0)return {applied:false,removed:remove(e,key,'zero-duration'),reason:'zero-duration',key:key};
-      var reason=blocked(e,key,options),event={entity:e,key:key,requested:requested,turns:turns,reason:reason};
+      var reason=blocked(e,requested,options),event={entity:e,key:key,requested:requested,turns:turns,reason:reason};
       if(reason){emit('onBlocked',event);return {applied:false,reason:reason,key:key};}
       e.st=e.st||{};var previous=e.st[key],d=definition(key);
       if(options.durationModifiers!==false){
@@ -106,6 +113,7 @@
       if(key==='burn'&&!status.d)status.d=hooks.defaultBurnDamage?hooks.defaultBurnDamage():2;
       if(requested==='web'||requested==='webbed')status.effect='web';
       e.st[key]=status;
+      if(player(e)&&key==='stone'){remove(e,'poison','stone-skin');remove(e,'stun','stone-skin');}
       if(player(e)&&d.tags.indexOf('hard-control')>=0)e.resolveUntil=now()+status.t*unit+2*unit;
       event.status=status;event.previous=previous;event.fresh=!previous;event.turns=turns;event.reason=null;
       event.options=options;emit('onApplied',event);
@@ -163,7 +171,7 @@
     function clear(e,tag){
       Object.keys(e&&e.st||{}).forEach(function(key){if(!tag||tags(key,e.st[key]).indexOf(tag)>=0)remove(e,key,'cleansed');});
     }
-    var service={apply:apply,remove:remove,has:has,hasTag:hasTag,blocked:blocked,addChill:addChill,applyWeb:applyWeb,pulse:pulse,eligible:eligible,repairClock:repairClock,clear:clear,definition:definition,tags:tags,canonical:canonical};
+    var service={apply:apply,remove:remove,has:has,hasTag:hasTag,airborne:airborne,blocked:blocked,addChill:addChill,applyWeb:applyWeb,pulse:pulse,eligible:eligible,repairClock:repairClock,clear:clear,definition:definition,tags:tags,canonical:canonical};
     return Object.freeze(service);
   }
   return Object.freeze({create:create,registry:definitions,canonical:canonical,definition:definition,tags:tags});

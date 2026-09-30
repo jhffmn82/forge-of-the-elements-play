@@ -146,9 +146,8 @@ function generateOnce(seed){
   ground=new Uint8Array(MW*MH); fireT=new Uint8Array(MW*MH); propGrid=new Int16Array(MW*MH).fill(-1);
   feats=[]; items=[]; ents=[]; props=[]; chestKind={}; levers=[]; plates=null; altars={};
   var BP=biomePlan();
-  /* 2026-09-17: every boss floor carries a Forge as well as the biome's own. Without one you have to climb
-     back up to spend a mote or an upgrade before descending, every single biome. */
-  floorMeta={ floor:floorNo, biome:bidx(), boss:bfloor()===5, forge:RUN && (BP.forge===floorNo || bfloor()===5), shrine:RUN && BP.shrine===floorNo && floorNo<=20, portal:RUN && BP.portal===floorNo ? BP.plane : null,   /* shrines only in biomes 1-4: four in a run */
+  /* Ordinary crafting forges stay on the biome's planned non-boss floor. */
+  floorMeta={ floor:floorNo, biome:bidx(), boss:bfloor()===5, forge:RUN && BP.forge===floorNo && bfloor()!==5, shrine:RUN && BP.shrine===floorNo && floorNo<=20, portal:RUN && BP.portal===floorNo ? BP.plane : null,   /* shrines only in biomes 1-4: four in a run */
               exitOpen:false, keyHolder:false, notes:[] };
   if(RUN){ if(BP.god && floorMeta.shrine) RUN.shrineGod=BP.god; floorMeta.shrineGod=RUN.shrineGod; }
   var i, j, x, y;
@@ -682,5 +681,6 @@ function spawnRaw(kind,x,y){
          dmg:[sDMG(b.dmg[0]), sDMG(b.dmg[1])], castCd:ri(1,3)};
   /* Health tuning waits until callers finish assigning ally/elite roles. */
   if(typeof applyEarlyFloorEnemyTuning==='function')applyEarlyFloorEnemyTuning(e,true);
+  if(b.ghoul&&typeof FoteGhoul!=='undefined')return FoteGhoul.bury(e);
   ents.push(e); return e;
 }

@@ -80,7 +80,7 @@ function applyEarlyFloorEnemyTuning(e,deferHealth){
 function betaEnemyBalance(e){
  applyEarlyFloorEnemyTuning(e);
  if(!e.foe||e.ally||e.beta11Balanced||floorMeta.plane)return;e.beta11Balanced=true;
- var b=Math.floor((floorNo-1)/5),extra=[1,2,0,3,0][b]||0;e.dmg=(e.dmg||e.base.dmg).map(function(v){return v+extra;});
+ var b=Math.floor((floorNo-1)/5),extra=e.kind==='greenslime'?0:([1,2,0,3,0][b]||0);e.dmg=(e.dmg||e.base.dmg).map(function(v){return v+extra;});
  if(b===3){var max=e.maxhp;e.maxhp=Math.round(max*1.2);e.hp=e.hp>0?Math.max(1,e.hp+e.maxhp-max):0;}
 }
 

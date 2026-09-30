@@ -33,12 +33,13 @@ var HELD = {
    (art/sprites/grips, packed as ASSETS.cast[look].grips[clip][frame]): for each hand the fist a handle passes through, the
    elbow, front (1) or behind (-1) the body, and an optional tip angle a (degrees). The item's angle comes from that
    frame's forearm by the way it is held (tools/grip-tools.py draws the review overlays by the same rules):
-     blade   - (sword, dagger, mace, wand, knife) the tip carries on along the forearm, bent a little outward: down and
+     blade   - (mace, wand) the tip carries on along the forearm, bent a little outward: down and
                out from a hanging arm, up from a raised one, forward in a thrust;
      upright - (holy symbol, staff, spear, bow at rest, and the two-handed longsword and axe, which hanging point-down
                would reach past the feet) stands up out of a hanging fist, follows a raised or thrusting forearm;
+     guard   - one-handed swords and knives rest raised toward the face's direction, across the body from the rear hand;
      placed  - a shield sits on the forearm, a tome in the hand, an orb over the palm, all upright. */
-var HELD_STYLE={sword:'blade', longsword:'upright', axe:'upright', mace:'blade', dagger:'blade', wand:'blade', censer:'blade',
+var HELD_STYLE={sword:'guard', longsword:'upright', axe:'upright', mace:'blade', dagger:'guard', wand:'blade', censer:'guard',
   spear:'upright', staff:'upright', bow:'upright', holy:'upright'};
 /* GRIP_PULL: the share of the way a hanging item is drawn toward straight down (a blade) or straight up (an upright item),
    weighted by how far the forearm hangs, so nothing snaps as an arm rises. GRIP_BLADE_BEND: a hanging blade's outward cant. */
@@ -51,6 +52,7 @@ function gripFor(m, row, col){
 /* side: 1 when the fist is on the image's left of the figure (outward is toward smaller x), -1 on its right */
 function heldTipAngle(style, hand, side){
   var phi=Math.atan2(hand.f[1]-hand.e[1], hand.f[0]-hand.e[0]), s=Math.sin(phi);
+  if(style==='guard'&&hand.a!==undefined)return hand.a*Math.PI/180;
   if(style==='blade'){
     if(hand.a!==undefined) return hand.a*Math.PI/180;
     var w=Math.max(0,s);
@@ -58,7 +60,9 @@ function heldTipAngle(style, hand, side){
   }
   /* upright: a hanging forearm's direction mirrored upward (continuous at the horizontal), then drawn toward vertical */
   var t = s>0 ? -phi : phi, u=Math.max(0,-Math.sin(t));
-  return t + u*GRIP_PULL*angDiff(-Math.PI/2,t);
+  var tip=t + u*GRIP_PULL*angDiff(-Math.PI/2,t) - (style==='guard'?u*side*.45:0);
+  /* Cast art faces right; the world renderer mirrors body and gear together when facing left. */
+  return style==='guard'&&Math.cos(tip)<0 ? Math.PI-tip : tip;
 }
 function heldKeyOf(it){
   if(!it || it.unarmed || it===EMPTY_OFF || it.joke) return null;

@@ -349,6 +349,22 @@ function refreshEncounterTuning(){
   }
   ents.forEach(function(e){
     if(!e.base || e.hp<=0)return;
+    if(e.kind==='drowblade'&&!e.base.spawnInvisible){e.base=Object.assign({},e.base,{spawnInvisible:true});if(e.state==='hunt')e.visibilityRevealed=true;}
+    if(e.kind==='slime'||e.kind==='greenslime'){
+      var slimeBase=MONSTERS[e.kind];
+      if(e.base.hp>0&&e.base.hp!==slimeBase.hp){
+        var slimeHealth=e.hp/e.maxhp;e.maxhp=Math.max(1,Math.round(e.maxhp*slimeBase.hp/e.base.hp));
+        e.hp=Math.max(1,Math.min(e.maxhp,Math.round(e.maxhp*slimeHealth)));
+      }
+      e.base=Object.assign({},e.base,{hp:slimeBase.hp,xp:slimeBase.xp,sprite:slimeBase.sprite,hint:slimeBase.hint,artLeft:slimeBase.artLeft});
+      if(e.slimeDescendant||e.small||e.slimeOffspring||e.greenOffspring||e.noLoot){e.noXp=true;e.slimeDescendant=true;}
+      if(e.small||e.slimeOffspring||e.greenOffspring){
+        e.name=slimeBase.name;e.base=Object.assign({},slimeBase);e.maxhp=Math.max(e.hp,sHP(slimeBase.hp));
+        e.dmg=slimeBase.dmg.map(function(n){return sDMG(n);});e.beta11Balanced=false;
+        delete e.small;delete e.slimeOffspring;delete e.greenOffspring;
+      }
+      delete e.split;delete e.greenSplit;
+    }
     if(typeof applyEarlyFloorEnemyTuning==='function')applyEarlyFloorEnemyTuning(e);
     if(['bat','slime','caveslime','shade','stalker','gloommoth','dawnsentinel','halowisp','prismscarab','radiantwarden','chaos-rift-skitter','chaos-lens-bearer','chaos-lash-dancer','chaos-razor-dancer'].indexOf(e.kind)>=0){
       var tuned=MONSTERS[e.kind];if(tuned){e.base=Object.assign({},e.base);['eva','el','rootSpit','attackType','chillTouch'].forEach(function(key){if(tuned[key]!==undefined)e.base[key]=tuned[key];});}

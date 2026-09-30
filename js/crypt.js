@@ -132,6 +132,7 @@ function drawCryptTelegraphs(now){
     ctx.globalAlpha=1;
   });
   (floorMeta.marks||[]).forEach(function(m){
+    if(/^storm\d+$/.test(m.kind))return; // The beetle owns its directional warning.
     if(turn>=m.until) return;
     /* warning glow: a soft pulsing pool per cell with a bright core, no hard squares */
     var rgb=hexRGB(m.col), col='rgb('+Math.round(rgb[0]*255)+','+Math.round(rgb[1]*255)+','+Math.round(rgb[2]*255)+')';
@@ -145,7 +146,6 @@ function drawCryptTelegraphs(now){
   ctx.restore();
 
 }
-if(typeof STATUS_INFO!=='undefined') STATUS_INFO.rot = {name:'Rot', icon:'st-poison', bad:1, d:'Your wounds fester: no HP regeneration, and all healing is halved.'};   /* 2026-09-29 (Justin): heals are halved too (rotHealing, damage-adapter.js) */
 
 /* ---------------------------------------------------------------- damage rules */
 
@@ -155,43 +155,46 @@ if(typeof STATUS_INFO!=='undefined') STATUS_INFO.rot = {name:'Rot', icon:'st-poi
 
 /* ---------------------------------------------------------------- monster turns */
 
-function cryptCreatureBehavior(e){
+function cryptCreatureBehavior(e,target){
+  target=target||player;
   var b=e.base||{};
   if(e.state==='hunt'){
     /* Bone Archer: a turn to nock */
     if(b.reloads && e.reloading){ e.reloading=false; if(vis[idxOf(e.x,e.y)]) log('The <b>Bone Archer</b> nocks an arrow.','c-info');  return true; }
     /* Necro-Acolyte: keep away, summon, ward, curse */
-    if(b.summoner && canSeePlayer(e)){
-      var d=dist(e,player);
-      e.sumCd=(e.sumCd||0)-1; e.wardCd=(e.wardCd||0)-1;
+    if(b.summoner && (target!==player||canSeePlayer(e))){
+      var d=dist(e,target);
+      e.sumCd=(e.sumCd||0)-1; e.wardCd=(e.wardCd||0)-1;e.boltCd=(e.boltCd||0)-1;
+      if(typeof FoteEnemyTeamwork!=='undefined'&&FoteEnemyTeamwork.retreat(e,target))return true;
       var minion=ents.filter(function(o){ return o.id===e.minion && o.hp>0; })[0];
       if(!minion && e.sumCd<=0){
         var c=nearFree(e.x,e.y,2); if(c){ var sk=spawnRaw('skeleton', c.x, c.y); sk.state='hunt'; sk.noLoot=true; e.minion=sk.id; e.sumCd=6; setClip(e,'attack'); sfx('shaman-cast',{from:e}); sparkleFx(c.x,c.y,'dark',24); log('The <b>Necro-Acolyte</b> calls a Skeleton up out of the floor.','c-you');  return true; }
       }
-      if(e.wardCd<=0){
-        var warded=0; ents.forEach(function(o){ if(o.foe && o.base.undead && dist(o,e)<=4 && !o.boneWard){ o.boneWard=true; warded++; } });
-        e.wardCd=5; if(warded){ setClip(e,'attack'); if(vis[idxOf(e.x,e.y)]) log('The <b>Necro-Acolyte</b> wraps the dead in bone wards.','c-info');  return true; }
-      }
-      if(d<=3 && fleeStep(e)){  return true; }
-      e.boltCd=(e.boltCd||0)-1;
-      if(d<=5 && e.boltCd<=0 && clearShot(e,player)){   /* 2026-09-22: no grave bolt through its own skeletons */
-        e.boltCd=3; setClip(e,'attack'); boltFx(e.x,e.y,player.x,player.y,'dark');
-        if(rng()<hostileHitChance(hitChance(b.acc+8, evaOf(player)),true)){ var gd=applyDamage(player, roll(3,6)+Math.floor(floorNo/2), 'dark', e); floatText(player.x,player.y,String(gd),'dark'); log('The <b>Necro-Acolyte</b>\'s grave bolt hits you: '+gd+'.','c-you'); if(player.hp<=0) kill(player,e); }
+      if(FoteEnemyTeamwork.boneWard(e))return true;
+      if(typeof FoteEnemyTeamwork==='undefined'&&d<=3 && fleeStep(e)){return true;}
+      if(d<=5 && e.boltCd<=0 && clearShot(e,target)){   /* 2026-09-22: no grave bolt through its own skeletons */
+        e.boltCd=3; setClip(e,'attack'); boltFx(e.x,e.y,target.x,target.y,'dark');
+        var graveChance=hitChance(b.acc+8,evaOf(target));if(target===player)graveChance=hostileHitChance(graveChance,true);
+        if(rng()<graveChance){ var gd=applyDamage(target, roll(3,6)+Math.floor(floorNo/2), 'dark', e); floatText(target.x,target.y,String(gd),'dark'); log('The <b>Necro-Acolyte</b>\'s grave bolt hits '+(target===player?'you':target.name)+': '+gd+'.','c-you'); if(target.hp<=0) kill(target,e); }
         else log('A grave bolt misses.','c-miss');
          return true;
       }
+      if(FoteEnemyTeamwork.position(e,target,5))return true;
+      FoteEnemyTeamwork.boneWard(e,true);return true;
     }
     /* Shade: drifts through doors and thin walls */
     if(b.phases && canActorMove(e)){
-      var d2=dist(e,player);
-      if(d2<=1){ attack(e,player);  return true; }
+      var seesPlayer=canSeePlayer(e),pursuit=seesPlayer?player:e.searchGoal||e.lastSeen;
+      if(!pursuit)return false;
+      var d2=dist(e,pursuit);
+      if(seesPlayer&&d2<=1){ attack(e,player);  return true; }
       var best=null, bd=d2;
       [[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]].forEach(function(o){
         var nx=e.x+o[0], ny=e.y+o[1]; if(!inb(nx,ny) || nx<1||ny<1||nx>=MW-1||ny>=MH-1 || occupied(nx,ny) || at(nx,ny)===CHASM) return true;
         var t=at(nx,ny), thin = walkable(nx,ny) || t===DOOR || (t===WALL && [[1,0],[-1,0],[0,1],[0,-1]].some(function(q){ return walkable(nx+q[0],ny+q[1]); }));
-        if(!thin) return true; var dd=dist({x:nx,y:ny}, player); if(dd<bd){ bd=dd; best={x:nx,y:ny}; }
+        if(!thin) return true; var dd=dist({x:nx,y:ny}, pursuit); if(dd<bd){ bd=dd; best={x:nx,y:ny}; }
       });
-      if(best && (canSeePlayer(e) || d2<=10)){ e.x=best.x; e.y=best.y;  return true; }
+      if(best){ e.x=best.x; e.y=best.y;  return true; }
     }
   }
   return false;
@@ -272,7 +275,7 @@ function mortyAct(e){
   }
   /* blink away from melee, or every few turns */
   e.blinkCd=(e.blinkCd||0)-1;
-  if(canActorMove(e)&&((d<=1 && e.blinkCd<=0) || e.turnN%6===0)){
+  if(see&&canActorMove(e)&&((d<=1 && e.blinkCd<=0) || e.turnN%6===0)){
     var spots=hall ? interiorCells(hall).filter(function(p){ return walkable(p.x,p.y) && !occupied(p.x,p.y) && dist(p,player)>=4; }) : [];
     if(spots.length){ var s=pick(spots); sparkleFx(e.x,e.y,'dark',30); e.x=s.x; e.y=s.y; e._lx=undefined; sparkleFx(e.x,e.y,'dark',30); e.blinkCd=4; if(vis[idxOf(e.x,e.y)]||true) log('Morty vanishes in a puff of grave dust and reappears across the hall.','c-info');  return; }
   }

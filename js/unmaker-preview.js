@@ -152,9 +152,9 @@
     // composition must never advance the live combat and loot stream.
     root.rng=mulberry32(preview.seed^0x556e6d61);
     try{
-      floorNo=25;floorMeta.floor=25;floorMeta.forge=true;floorMeta.forgeAt={x:50,y:60};
+      floorNo=25;floorMeta.floor=25;floorMeta.forge=false;
       floorMeta.portal=null;
-      floorMeta.notes=["The Unmaker's Crucible, the last floor. You are safe here by the forge until you open the gate.",
+      floorMeta.notes=["The Unmaker's Crucible, the last floor. You are safe here until you open the gate.",
         encounterStarter?'Open the entrance gate when you are ready; it seals behind you for the fight. Defeat all three forms of the Unmaker to reach the Forge of the Elements.':
         'Combat is disabled in this environment review. Open the entrance gate to explore; Sandbox can raise both gates for a walkthrough.','The void is impassable.'];
       preview.cosmeticPools=[];preview.chains=[];
@@ -164,7 +164,7 @@
       var preparationOutline=[[44,56],[51,56],[55,60],[53,65],[43,66],[40,62],[41,59]];
       var forgeOutline=[[43,9],[51,9],[55,13],[53,18],[49,20],[44,19],[40,15],[40,12]];
       var cover=[{x:37,y:31,w:3,h:2},{x:55,y:29,w:2,h:3},{x:40,y:39,w:2,h:3},{x:54,y:38,w:3,h:2}];
-      var details={version:2,layoutOnly:!encounterStarter,encounterImplemented:!!encounterStarter,arrival:{x:46,y:62},ordinaryForge:{x:50,y:60},
+      var details={version:2,layoutOnly:!encounterStarter,encounterImplemented:!!encounterStarter,arrival:{x:46,y:62},
         bossStart:{x:48,y:35},arena:{outline:arenaOutline,bounds:{x:29,y:23,w:38,h:27}},cover:cover,
         entryGate:{x:45,y:52,w:5,h:1,open:false},rearSeal:{x:46,y:22,w:5,h:1,open:false},gates:{phase:'ready',walkthrough:false},
         trueForge:{x:46,y:12,w:3,h:3,center:{x:47,y:13},arrival:{x:47,y:16},artName:'final-forge'},floorInlays:[]};
@@ -230,9 +230,7 @@
       });}
       function inlay(kind,regionId,values){details.floorInlays.push(Object.assign({kind:kind,regionId:regionId},values));}
 
-      // A quiet forge corner leaves the entrance, threshold and five-wide
-      // approach unobstructed. Its actual tile keeps existing craft services.
-      map[idxOf(50,60)]=FORGE;
+      // The preparation area stays safe until the entrance gate opens.
       prop(42,61,'weapon-rack','Last Hearth tool rack',{b:1,flat:0});
       prop(51,63,'table-candle','Last Hearth workbench',{b:1,flat:0,light:'#FFCB83'});
       prop(43,64,'rubble','Old forge fragments');
@@ -240,7 +238,6 @@
       prop(42,60,'brazier-lit','Last Hearth brazier',{flat:0,light:'#FFD09A'});
       light(48,60,'#FFD5A0',4.3,.72);
       landmark('arrival','arrival','Arrival from the Realm of Chaos','preparation',46,62);
-      landmark('preparation-forge','forge','Last Hearth crafting forge','preparation',50,60);
       inlay('disc','preparation',{x:46.5,y:62.5,r:1.35,color:'#D4B984'});
 
       // Stone gate cheeks frame a linked five-tile iron gate.

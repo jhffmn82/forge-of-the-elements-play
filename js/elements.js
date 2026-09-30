@@ -47,6 +47,16 @@ function shadowSwarmStats(A){
 /* ---------------------------------------------------------------- ground effects (rank 6) */
 var iceG=null, rootG=null, holyG=null;
 function groundReset(){ var n=MW*MH; iceG=new Uint8Array(n); rootG=new Uint8Array(n); holyG=new Uint8Array(n); }
+/* Water clears the tile; each content module owns removal of its own fields. */
+function washGround(x,y){
+  if(!inb(x,y))return;
+  if(typeof FoteEnemyFields!=='undefined')FoteEnemyFields.wash(x,y);
+  if(typeof FoteGreenSlime!=='undefined')FoteGreenSlime.wash(x,y);
+  if(typeof FoteSporecaller!=='undefined')FoteSporecaller.wash(x,y);
+  if(typeof FoteChaosEnemies!=='undefined')FoteChaosEnemies.wash(x,y);
+  var i=idxOf(x,y);fireT[i]=0;fireSrc[i]=0;if(rootG)rootG[i]=0;if(iceG)iceG[i]=0;
+  if(gAt(x,y)===G_WEB)setG(x,y,G_NONE);
+}
 function markGround(tiles, A){
   if(!iceG) groundReset();
   tiles.forEach(function(t){
@@ -106,7 +116,7 @@ function groundTick(){
   if(!iceG || iceG.length!==MW*MH) return;
   ents.slice().forEach(function(e){
     if(!e.foe || e.hp<=0) return; var i=idxOf(e.x,e.y);
-    if(iceG[i]) addChill(e);
+    if(iceG[i]&&!gameEffects.airborne(e)) addChill(e);
   });
   for(var k=0;k<iceG.length;k++){ if(iceG[k]) iceG[k]--; if(rootG[k]) rootG[k]--; if(holyG[k]){holyG[k]--;if(!holyG[k]&&floorMeta.holyGround)delete floorMeta.holyGround[k];} }
 }

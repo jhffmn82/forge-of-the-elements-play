@@ -25,10 +25,10 @@ var forgeMote = null;
   document.head.appendChild(st);
 })();
 
-/* a confirmation that returns to the same Forge tab afterwards (either answer) */
+/* Return to the originating infusion offer or Forge tab after either answer. */
 function forgeConfirm(title, text, yesLabel, onYes){
-  var tab=forgeTab;
-  function back(){ openForge(); forgeTab=tab; renderForge(); }
+  var tab=forgeTab,body=$('forgeBody'),corePickup=body&&body.hasAttribute('data-core-infusion');
+  function back(){ if(corePickup){openCoreInfusion();return;} openForge(); forgeTab=tab; renderForge(); }
   openModal(title, '<p>'+text+'</p>', [{label:'Cancel', fn:function(){ back(); }}, {label:yesLabel, cls:'primary', fn:function(){ onYes(); back(); }}]);
 }
 

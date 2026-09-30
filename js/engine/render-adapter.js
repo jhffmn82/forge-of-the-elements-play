@@ -18,6 +18,9 @@ var SURFACE_PASSES=[
   renderPass('pool-bubbles',ptPoolBubbles,function(){return !inCaverns();}),
   renderPass('caverns',drawCavernSurface),renderPass('chasm-edges',drawBiomeChasmSurface),renderPass('maw-skirts',drawMawSkirts),
   renderPass('vegetation-moss',function(){drawVegMoss();}),renderPass('vegetation-plants',function(){drawVegSpots(performance.now());}),
+  renderPass('sporecaller-mushrooms',function(){FoteSporecaller.ground(performance.now());}),
+  renderPass('green-slime-trail',function(){FoteGreenSlime.draw(performance.now());}),
+  renderPass('enemy-webs',function(){FoteEnemyFields.draw(performance.now());}),
   renderPass('underdark',drawUnderdarkSurface),renderPass('elemental-plane',drawElementPlaneSurface),
   renderPass('sanctuary',drawSanctuarySurface),renderPass('last-cast',drawLastCastSurface)
 ];
@@ -39,7 +42,8 @@ var renderTelegraphs=FoteRendering.sequence([
   renderPass('boss-windups',drawBossTelegraphs),renderPass('smoke',drawSmokeTelegraphs),
   renderPass('element-ground',drawElementGroundTelegraphs),renderPass('crypt-clouds-and-marks',drawCryptTelegraphs),renderPass('corpses',drawCorpseTelegraphs),renderPass('fallen-creatures',drawDeathRemains),
   renderPass('portal',drawPortalTelegraphs),renderPass('vein-glints',drawVeinGlints),renderPass('crystal-face-glints',drawCrystalFaceGlints),
-  renderPass('shock-clouds',drawShockCloudTelegraphs),renderPass('darkness',drawDarknessTelegraphs)
+  renderPass('shock-clouds',drawShockCloudTelegraphs),renderPass('darkness',drawDarknessTelegraphs),
+  renderPass('sporecaller-fields',function(now){FoteSporecaller.draw(now);})
 ]);
 var renderLightSources=FoteRendering.sequence([
   renderPass('chaos-currents',function(lights,now){if(typeof FoteChaosCurrentRenderer!=='undefined')FoteChaosCurrentRenderer.addLights(lights,now);}),

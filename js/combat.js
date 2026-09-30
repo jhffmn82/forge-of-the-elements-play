@@ -228,6 +228,30 @@ function offGuard(e){
   if(e.state==='throne') return false;
   return e.state!=='hunt' || e.caughtOff===turn;
 }
+function clearPebbleSlam(e){
+  e.pebbleSlam=null;
+  floorMeta.marks=(floorMeta.marks||[]).filter(function(mark){return mark.kind!=='pebble'+e.id;});
+}
+/* A young slime commits to a tile, leaving a full player decision to step away. */
+function pebbleSlimeBehavior(e,see,target){
+  target=target||player;
+  var pending=e.pebbleSlam;
+  if(pending){
+    if(e.x!==pending.fromX||e.y!==pending.fromY){clearPebbleSlam(e);return true;}
+    if(turn<=pending.turn||worldNow()<pending.at)return true;
+    clearPebbleSlam(e);
+    var victim=[player].concat(ents).find(function(other){return other.hp>0&&(other===player||other.ally)&&entityOccupies(other,pending.x,pending.y);});
+    if(victim&&dist(e,victim)<=1)attack(e,victim);
+    else {setClip(e,'attack');sfx('slime-attack',{from:e});if(see)log('The Pebble Slime lands on the empty tile.','c-info');}
+    return true;
+  }
+  if(!see||dist(e,target)>1||!clearShot(e,target))return false;
+  e.pebbleSlam={x:target.x,y:target.y,fromX:e.x,fromY:e.y,turn:turn,at:worldNow()+100};
+  floorMeta.marks=(floorMeta.marks||[]).concat([{cells:[idxOf(target.x,target.y)],col:'#D2AA6E',until:Number.MAX_SAFE_INTEGER,kind:'pebble'+e.id}]);
+  setClip(e,'attack');floatText(e.x,e.y,'!', 'earth');
+  if(canSeePlayer(e))log('The <b>Pebble Slime</b> crouches. Step off the marked tile!','c-info');
+  return true;
+}
 function basicMonsterBehavior(e){
   if(e.hp<=0)return true;
 
@@ -241,17 +265,13 @@ function basicMonsterBehavior(e){
       ents.forEach(function(o){ if(o.guard) o.state='hunt'; }); SHAKE=8; }
      return true;
   }
-  if(e.state==='asleep'){
-    var notice = noticeChance(e, see, d, true);
-    /* 2026-09-29: it goes to where it noticed you. With no lastSeen, a hunter that cannot see you took chaseStep, which paths
-       to your exact tile anywhere on the floor: a sleeper that heard you through a wall tracked you forever */
-    if(rng()<notice){ e.state='hunt'; e.caughtOff=turn; e.lastSeen={x:player.x,y:player.y}; if(player.x!==e.x)e.facingLeft=player.x<e.x; log(e.name+' notices you.','c-info'); if(e.base.sfx) sfx(e.base.sfx+'-alert',{from:e}); }
-     return true;
-  }
-  if(see && (e.state==='hunt' || e.challenged || rng()<noticeChance(e, see, d, false))) { if(e.state!=='hunt'){ e.caughtOff=turn; if(player.x!==e.x)e.facingLeft=player.x<e.x; if(e.base.sfx) sfx(e.base.sfx+'-alert',{from:e}); } e.state='hunt'; e.lastSeen={x:player.x,y:player.y}; }
+  // The actor perception stage checks sight before content chooses an action.
+  if(e.state==='asleep')return true;
   if(e.state==='hunt'){
+    if(typeof FoteEnemyTeamwork!=='undefined'&&FoteEnemyTeamwork.alert(e))return true;
     /* the boss */
     if(e.base.boss && bossTurn(e, see, d)){  return true; }
+    if(e.base.pebbleSlam&&pebbleSlimeBehavior(e,see))return true;
     if(e.base.rootSpit&&see&&d>1&&d<=5&&!(e.rootSpitReadyAt>worldNow())&&clearShot(e,player)){
       e.rootSpitReadyAt=worldNow()+600;setClip(e,'attack');sfx('slime-attack',{from:e});boltFx(e.x,e.y,player.x,player.y,'earth');
       var spitChance=hostileHitChance(hitChance(accOf(e),evaOf(player))*(e.st.blind?.6:1),true);
@@ -263,6 +283,7 @@ function basicMonsterBehavior(e){
       return true;
     }
     /* casters */
+    if(e.kind==='shaman'&&see&&typeof FoteEnemyTeamwork!=='undefined')return FoteEnemyTeamwork.shaman(e,player);
     if(e.base.caster && see && d<=e.base.castRange){
       e.castCd=(e.castCd||0)-1;
       if(e.castCd<=0 && clearShot(e,player)){   /* a shaman behind its own goblins holds the bolt */
@@ -278,19 +299,21 @@ function basicMonsterBehavior(e){
       if(d<=2&&fleeStep(e))return true;
     }
     /* archers keep their distance */
-    if(e.base.kiter && d<=1 && rng()<0.5 && fleeStep(e)){  return true; }
+    if(see&&typeof FoteSkeletonCharge!=='undefined'&&FoteSkeletonCharge.act(e,player))return true;
+    if(e.base.kiter && see && d<=1 && rng()<0.5 && fleeStep(e)){  return true; }
     if(e.base.range>1 && d<=e.base.range && see && d>1){
       var path=boltPath(e.x,e.y,player.x,player.y), end=path[path.length-1];
       if(end && end.x===player.x && end.y===player.y){ attack(e,player);  return true; }
     }
-    if(d<=1){ attack(e,player);  return true; }
+    if(see&&d<=1){ attack(e,player);  return true; }
     var guard=ents.filter(function(o){ return o.ally && dist(o,e)<=1; })[0];
     if(guard && (guard.taunt || rng()<0.6)){ attack(e,guard);  return true; }
     if(!canActorMove(e)){  return true; }
     if(e.base.erratic && rng()<0.35){ stepEnt(e, ri(-1,1), ri(-1,1));  return true; }
-    if(see || e.challenged) chaseStep(e);
+    if(see) chaseStep(e);
+    else if(typeof FoteEnemyPerception!=='undefined')FoteEnemyPerception.investigate(e);
     else if(e.lastSeen){ stepToward(e, e.lastSeen.x, e.lastSeen.y); if(e.x===e.lastSeen.x && e.y===e.lastSeen.y){ e.lastSeen=null; e.state='wander'; } }
-    else chaseStep(e);
+    else {e.state='wander';e.goal=null;}
   } else {
     if(e.bellGoal && e.goal && e.x===e.goal.x && e.y===e.goal.y) e.bellGoal=false;   /* reached the bell: wander on as usual */
     if(!e.goal || (e.x===e.goal.x && e.y===e.goal.y) || (!e.bellGoal && rng()<0.04)){
@@ -421,6 +444,7 @@ function basicAllyBehavior(e){
   var target=null, best=99;
   ents.forEach(function(o){ if(!o.foe || !actorVisible(o)) return true; var d=dist(e,o); if(d<best && d<=8){ best=d; target=o; } });
   if(target && target.x!==e.x) e.facingLeft=target.x<e.x;
+  if(target&&typeof FoteSkeletonCharge!=='undefined'&&FoteSkeletonCharge.act(e,target))return true;
   /* a raised Lich is a caster, not a brawler: it throws shadow bolts from range and backs away when
      something closes on it (2026-09-17 - the form's caster field was never wired up before) */
   if(target && e.castSpell && best>=2 && best<=6){
@@ -469,7 +493,20 @@ function petRetaliationBehavior(e){
   if(!e.petAggressor || canSeePlayer(e))return false;
   var pet=ents.find(function(o){return o.id===e.petAggressor && o.ally && o.hp>0;});
   if(!pet){delete e.petAggressor;return false;}
+  if(typeof FoteEnemyPerception!=='undefined'){
+    if(!FoteEnemyPerception.sees(e,pet))return FoteEnemyPerception.investigate(e);
+    FoteEnemyPerception.remember(e,pet,'sight');
+  }else if(typeof FoteEnemyTeamwork!=='undefined'&&!FoteEnemyTeamwork.openLine(e,pet))return e.lastSeen?stepToward(e,e.lastSeen.x,e.lastSeen.y):false;
   e.state='hunt';e.lastSeen={x:pet.x,y:pet.y};
+  if(typeof FoteSkeletonCharge!=='undefined'&&FoteSkeletonCharge.act(e,pet))return true;
+  if(e.base.sporecaller)return FoteSporecaller.act(e,FoteEnemyTeamwork.openLine(e,pet)?pet:null);
+  if(e.base.pebbleSlam&&pebbleSlimeBehavior(e,clearShot(e,pet),pet))return true;
+    if(typeof FoteEnemyTeamwork!=='undefined'&&FoteEnemyTeamwork.openLine(e,pet)){
+    if(e.kind==='shaman')return FoteEnemyTeamwork.shaman(e,pet);
+      if(e.kind==='acolyte')return cryptCreatureBehavior(e,pet);
+      if(e.kind==='drowpriestess')return DEEP_AI.priestess(e,dist(e,pet),pet);
+    }
+    if(e.kind==='drowpriestess'){if(canActorMove(e))stepToward(e,pet.x,pet.y);return true;}
   var d=dist(e,pet);
   if(d<=1 || e.base.range>1 && d<=e.base.range && clearShot(e,pet))attack(e,pet);
   else if(canActorMove(e))stepToward(e,pet.x,pet.y);

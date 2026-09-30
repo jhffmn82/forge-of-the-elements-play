@@ -212,9 +212,43 @@ function itemIcon(name, size){ return iconCanvas(null, size, '\u2726'); }
   }
 })();
 SHEETS.Faith='Faith';
+function hudResourceCard(kind){
+  function number(n){return Math.round(n||0).toLocaleString('en-US');}
+  function escape(s){return String(s).replace(/[&<>"']/g,function(ch){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch];});}
+  function row(label,value){return '<div class="row"><span>'+label+'</span><b>'+value+'</b></div>';}
+  if(kind==='hp')return '<div class="nm">Health</div>'+row('HP',number(player.hp)+' / '+number(player.maxhp))+(playerShield()>0?row('Shield',number(playerShield()))+'<div class="hint">'+escape(shieldParts().join(', '))+'. Shields absorb damage before HP.</div>':'');
+  if(kind==='mp')return '<div class="nm">Mana</div>'+row('MP',number(Math.floor(player.mp))+' / '+number(player.maxmp))+'<div class="hint">Used to cast spells and abilities that cost mana.</div>';
+  if(kind==='xp')return '<div class="nm">Experience</div>'+row('Level',player.level)+row('XP',number(player.xp)+' / '+number(player.xpNext))+'<div class="hint">'+(player.level>=20?'Maximum level reached. Further XP still counts toward your run total.':number(Math.max(0,player.xpNext-player.xp))+' XP to the next level.')+'</div>';
+  if(kind==='stock')return '<div class="nm">Essence &amp; keys</div>'+row('Essence',number(player.essence))+row('Iron keys',number(player.keys&&player.keys.iron))+row('Crystal keys',number(player.keys&&player.keys.crystal))+'<div class="hint">Essence pays for crafting, upgrades and enchantments at a forge. Keys open locked doors on the floor where you find them.</div>';
+  if(kind==='motes')return '<div class="nm">Elemental motes</div>'+['fire','water','earth','air','light','shadow'].map(function(k){return row(cap(k),number(player.motes[k]));}).join('')+'<div class="hint">Infuse carried motes when claiming a boss core or at a forge. Open Gear to see your pouch.</div>';
+  if(kind==='amusement'){
+    var mood=Math.max(0,Math.min(100,player.amusement||0)),odds=wobblesMoodOdds(mood);
+    return '<div class="nm">Amusement '+number(mood)+'%</div>'+row('Prank chance / turn',(odds.prank*100).toFixed(3)+'%')+row('Reward chance / turn',(odds.reward*100).toFixed(3)+'%')+'<div class="hint">Combat raises Amusement; quiet drains it. Pranks raise it by 50; rewards spend 50, within 0 to 100. These chances use Amusement, not Favor.</div>';
+  }
+  if(kind==='hunger'){
+    var state=player.hunger<=0?'Starving':player.hunger<300?'Hungry':'Fed';
+    return '<div class="nm">Hunger: '+state+'</div><div class="row"><span>Hunger</span><b>'+number(player.hunger)+' / '+number(HUNGER_MAX)+'</b></div><div class="hint">Eat food from your bag to restore hunger.</div>';
+  }
+  if(!player.god)return '<div class="nm">No god followed</div>';
+  var god=GODS[player.god],rank=godRank(),next=PIETY_RANKS[rank];
+  if(kind==='piety')return '<div class="nm">Piety</div><div class="hint">'+escape(god.name)+'</div><div class="row"><span>God rank</span><b>'+rank+' / 5</b></div><div class="row"><span>Piety</span><b>'+number(player.piety)+(next?' / '+number(next):'')+'</b></div><div class="hint">'+(next?number(Math.max(0,next-player.piety))+' more piety to reach rank '+(rank+1)+'.':'Maximum god rank reached.')+'</div>';
+  return '<div class="nm">Favor</div><div class="row"><span>Favor</span><b>'+number(player.favor)+' / 100</b></div><div class="hint">Spent on divine abilities that cost Favor. It is earned alongside piety.</div>';
+}
+function bindHudResourceCard(element,kind){
+  if(!element)return;
+  element.removeAttribute('title');element.setAttribute('aria-describedby','dtip');
+  element.querySelectorAll('[title]').forEach(function(child){child.removeAttribute('title');});
+  if(element._hudResourceCard===kind)return;
+  element._hudResourceCard=kind;if(element.tabIndex<0)element.tabIndex=0;
+  hoverCard(element,function(){return hudResourceCard(kind);});
+  element.addEventListener('focus',function(){var r=element.getBoundingClientRect();showCard(hudResourceCard(kind),{clientX:r.left,clientY:r.bottom,isTrusted:false});});
+  element.addEventListener('blur',hideCard);
+  element.addEventListener('click',hideCard);
+}
 function syncAudioButtons(){
   if($('bMute')) $('bMute').textContent = AUDIO.muted ? 'Sound: off' : 'Sound: on';
   if($('bMusic')) $('bMusic').textContent = AUDIO.musicOn ? 'Music: on' : 'Music: off';
+  if(typeof FoteResponsiveHUD!=='undefined')FoteResponsiveHUD.syncAudioButton();
 }
 if($('bMute')) $('bMute').onclick=function(){ audioInit(); toggleMute(); syncAudioButtons(); };
 if($('bMusic')) $('bMusic').onclick=function(){ audioInit(); toggleMusic(); syncAudioButtons(); };
@@ -257,6 +291,7 @@ function bars(){
   if(player.hidden>0) tags.push('<span class="tag t-hidden">hidden '+player.hidden+'</span>');
   if(player.levitate>0) tags.push('<span class="tag t-chill">floating '+player.levitate+'</span>');
   $('fx').innerHTML=tags.join('');
+  if(typeof FoteResponsiveHUD!=='undefined'&&FoteResponsiveHUD.isMounted()){FoteResponsiveHUD.renderReadouts();return;}
   var hud=$('hud2'); if(!hud) return;
   var hp=player.hunger/HUNGER_MAX, hl = player.hunger<=0 ? 'Starving' : player.hunger<300 ? 'Hungry' : 'Fed';
   var h='<span class="chip" title="Hunger">'+hl+' <span class="hunger"><i style="width:'+Math.round(hp*100)+'%"></i></span></span>';
@@ -405,7 +440,9 @@ function showSheet(name){
     $('sheetTitle').textContent=SHEETS[openSheet];
     ['Char','Equip','Faith','Sand','Help'].forEach(function(n){ var e=$('m'+n); if(e) e.classList.toggle('on', n===openSheet); });
     refreshSheet();
+    var body=$('shade').querySelector('.bodyw');if(body)body.scrollTop=0;
   }
+  if(typeof FoteResponsiveHUD!=='undefined')FoteResponsiveHUD.syncSheet();
 }
 function refreshSheet(){
   if(!openSheet) return;
@@ -459,7 +496,7 @@ function inspectHTML(mx,my){
     if(it.kind==='armor') return armorCard(it.it);
     if(it.kind==='off') return bagCard({kind:'off',data:it.it});
     /* 1.3.2 ruling 4 (Justin 2026-09-28): a mote says what it is for; a player who dies before floor 3 never met a Forge */
-    return '<div class="nm">'+cap(itemLabel(it))+'</div><div class="hint">'+(it.kind==='sigil'&&!sigilKnown[it.use]?'Unidentified sigil.':it.kind==='mote'?'Fuse it at the Elemental Forge (on the third or fourth floor of each biome) for a permanent point of affinity, set it into gear, or carve a sigil.':'')+'</div>';
+    return '<div class="nm">'+cap(itemLabel(it))+'</div><div class="hint">'+(it.kind==='sigil'&&!sigilKnown[it.use]?'Unidentified sigil.':it.kind==='mote'?'Infuse it after picking up a boss core, or at an Elemental Forge, for permanent affinity. Forges on the third or fourth floor of each biome also enchant gear and craft sigils.':'')+'</div>';
   }
   var p=propAt(mx,my);
   var restorationForge=typeof FoteUnmakerEncounter!=='undefined'&&FoteUnmakerEncounter.forgeInfo(mx,my);

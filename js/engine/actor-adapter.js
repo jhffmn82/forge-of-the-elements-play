@@ -1,9 +1,10 @@
 /* One decision entry point for every creature. Behaviors never spend time;
  * FoteActors commits exactly one action cost after the selected behavior. */
 function canSeePlayer(e){
-  if(player.hidden>0)return false;
-  if(e&&e.base&&e.base.darksight&&DEEP_RAWVIS)return !!DEEP_RAWVIS[idxOf(e.x,e.y)];
-  for(var y=e.y;y<e.y+entitySize(e);y++)for(var x=e.x;x<e.x+entitySize(e);x++)if(inb(x,y)&&vis[idxOf(x,y)])return true;
+  if(player.hidden>0||e.st&&e.st.blind)return false;
+  var sight=e&&e.base&&e.base.darksight&&typeof DEEP_RAWVIS!=='undefined'&&DEEP_RAWVIS?DEEP_RAWVIS:vis;
+  for(var y=e.y;y<e.y+entitySize(e);y++)for(var x=e.x;x<e.x+entitySize(e);x++)if(inb(x,y)&&sight[idxOf(x,y)]&&
+    (typeof FoteEnemyTeamwork==='undefined'||FoteEnemyTeamwork.openLine({x:x,y:y},player)))return true;
   return false;
 }
 function canActorMove(e){
@@ -40,7 +41,7 @@ function stepEnt(e,dx,dy){
   for(var i=0;i<choices.length;i++){
     var mx=choices[i][0],my=choices[i][1],x=e.x+mx,y=e.y+my;
     if(!actorCellAllowed(e,x,y,mx,my,{doors:true}))continue;
-    if(at(x,y)===DOOR){setT(x,y,OPEN);if(vis[idxOf(x,y)]){log('A door swings open.','c-info');sfx('door-open',{from:{x:x,y:y}});}return true;}
+    if(at(x,y)===DOOR){setT(x,y,OPEN);computeFOV();if(vis[idxOf(x,y)]){log('A door swings open.','c-info');sfx('door-open',{from:{x:x,y:y}});}return true;}
     if(mx)e.facingLeft=mx<0;e.x=x;e.y=y;   /* 2026-09-28 (Justin: 'zombie sprites move backwards'): every creature faces the way it steps, not only allies */
     if(!e.base.flying){
       if(gAt(x,y)===G_GRASS)setG(x,y,G_SHORT);
@@ -79,7 +80,9 @@ function actorFootprintField(e,target,options){
 function actorPathStep(e,target,field){
   if(!canActorMove(e))return false;
   field=entitySize(e)>1||e.base.aquatic?actorFootprintField(e,target):(field||actorFootprintField(e,target));
-  function select(){return FoteActors.bestStep(e,function(x,y){return inb(x,y)?field[idxOf(x,y)]:-1;},function(x,y,dx,dy){return actorCellAllowed(e,x,y,dx,dy,{doors:true,avoidFire:true});});}
+  // Equally short routes should close toward the destination, not favor the
+  // cardinal neighbors simply because they appear first in the shared list.
+  function select(){return FoteActors.bestStep(e,function(x,y){return inb(x,y)?field[idxOf(x,y)]:-1;},function(x,y,dx,dy){return actorCellAllowed(e,x,y,dx,dy,{doors:true,avoidFire:true});},false,function(x,y){return (x-target.x)*(x-target.x)+(y-target.y)*(y-target.y);});}
   var step=select();
   if(!step&&dist(e,target)>1){
     // The shared field ignores bodies. If its next step is occupied, route around
@@ -92,7 +95,11 @@ function stepToward(e,x,y){
   if(!canActorMove(e))return false;
   return actorPathStep(e,{x:x,y:y})||stepEnt(e,Math.sign(x-e.x),Math.sign(y-e.y));
 }
-function chaseStep(e){if(!PDIST||PDIST.targetX!==player.x||PDIST.targetY!==player.y)refreshPlayerDistance();return actorPathStep(e,player,PDIST)||stepToward(e,player.x,player.y);}
+function chaseStep(e){
+  if(!canSeePlayer(e))return typeof FoteEnemyPerception!=='undefined'?FoteEnemyPerception.investigate(e):e.lastSeen&&stepToward(e,e.lastSeen.x,e.lastSeen.y);
+  if(typeof FoteEnemyPerception!=='undefined')FoteEnemyPerception.remember(e,player,'sight');
+  if(!PDIST||PDIST.targetX!==player.x||PDIST.targetY!==player.y)refreshPlayerDistance();return actorPathStep(e,player,PDIST)||stepToward(e,player.x,player.y);
+}
 function allyFollowStep(e){if(!PDIST||PDIST.targetX!==player.x||PDIST.targetY!==player.y)refreshPlayerDistance();return actorPathStep(e,player,PDIST)||stepToward(e,player.x,player.y);}
 function fleeStep(e,threat){
   if(!canActorMove(e))return false;threat=threat||player;
@@ -101,6 +108,7 @@ function fleeStep(e,threat){
 }
 function actorPrepare(context){
   var e=context.actor;
+  if(e.pebbleSlam&&(e.state!=='hunt'||FoteActors.blocked(e,gameEffects)||e.x!==e.pebbleSlam.fromX||e.y!==e.pebbleSlam.fromY))clearPebbleSlam(e);
   if(e.challengeT&&--e.challengeT<=0){e.challenged=false;e.cowardMark=false;}
   if(e.smokeLost&&(e.state==='hunt'||!smokeActive()))e.smokeLost=false;
   if(e.kind==='matron'){
@@ -110,17 +118,19 @@ function actorPrepare(context){
     }
   }
   if(!e.foe||e.base.boss)return false;
+  context.sawPlayer=canSeePlayer(e);
   e.surprised=false;
-  if(!MAPVIEW.on&&!FoteActors.blocked(e,gameEffects)&&canSeePlayer(e)&&e.state==='hunt'&&(e._lostFor||0)>=SURPRISE_LOST){
-    e._lostFor=0;e.surprised=true;e.lastSeen={x:player.x,y:player.y};
-    log('The <b>'+e.name+'</b> spots you!','c-info');if(e.base.sfx)sfx(e.base.sfx+'-alert',{from:e});return true;
-  }
   return false;
 }
 function actorFinish(context){
   var e=context.actor;if(e.hp<=0||!ents.includes(e))return;
+  if(typeof FoteGreenSlime!=='undefined')FoteGreenSlime.moved(e,context.x,context.y);
+  if((e.x!==context.x||e.y!==context.y)&&typeof FoteEnemyFields!=='undefined')FoteEnemyFields.enter(e);
+  if((e.x!==context.x||e.y!==context.y)&&typeof FoteSporecaller!=='undefined'){
+    FoteSporecaller.trample(e);if(e.hp<=0)return;
+  }
   if(e.foe&&(e.x!==context.x||e.y!==context.y)){
-    if(rootG&&rootG[idxOf(e.x,e.y)])applyStatus(e,'root',1);
+    if(rootG&&rootG[idxOf(e.x,e.y)]&&!gameEffects.airborne(e))applyStatus(e,'root',1);
     if(gameEffects.has(e,'burn')&&combo('fire','air')){
       var damage=Math.max(1,Math.round(e.st.burn.d*resistMult(e,'fire')));
       dealDirectDamage(e,damage,'fire',e.lastHitBy||null,{tags:['periodic','movement']});floatText(e.x,e.y,String(damage),'fire');
@@ -128,7 +138,20 @@ function actorFinish(context){
     }
   }
   if(e.foe&&!e.base.boss&&!MAPVIEW.on){
-    var see=canSeePlayer(e);if(context.state!=='hunt'&&e.state==='hunt'&&see)e.surprised=true;
+    var see=canSeePlayer(e);
+    // Move first, then notice from the resulting position. This also catches
+    // the step around a corner, rather than waiting for another actor action.
+    if(see&&e.state==='wander'&&(e.x!==context.x||e.y!==context.y)&&typeof FoteEnemyPerception!=='undefined'){
+      if(FoteEnemyPerception.notice(e))e.surprised=true;
+    }
+    if(see&&e.state==='hunt'){
+      if(typeof FoteEnemyPerception!=='undefined')FoteEnemyPerception.remember(e,player,'sight');
+      if(context.state!=='hunt')e.surprised=true;
+      else if(!FoteActors.blocked(e,gameEffects)&&(!context.sawPlayer||(e._lostFor||0)>=SURPRISE_LOST)){
+        e.surprised=true;
+        log('The <b>'+e.name+'</b> spots you!','c-info');if(e.base.sfx)sfx(e.base.sfx+'-alert',{from:e});
+      }
+    }
     e._lostFor=see?0:e.state==='hunt'?(e._lostFor||0)+1:0;
   }
 }
@@ -139,8 +162,9 @@ var gameActors=FoteActors.create({
   cost:function(e,c){var cost=actCost(e);return c&&(e.x!==c.x||e.y!==c.y)&&typeof murkStride==='function'?murkStride(e,cost):cost;},before:actorPrepare,after:actorFinish,
   blocked:function(e){return MAPVIEW.on&&e.foe?'map-view':FoteActors.blocked(e,gameEffects);},
   behaviors:[
-    actorBehavior('fear',function(e){return gameEffects.hasTag(e,'fear');},function(e){fleeStep(e);return true;}),
+    actorBehavior('fear',function(e){return gameEffects.hasTag(e,'fear');},function(e){var threat=canSeePlayer(e)?player:e.lastSeen;if(threat)fleeStep(e,threat);return true;}),
     actorBehavior('immovable-object',function(e){return e.parent||e.base.object||e.kind==='mawlimb';},function(){return true;}),
+    actorBehavior('perception',function(e){return e.foe&&!e.ally&&typeof FoteEnemyPerception!=='undefined';},function(e){return FoteEnemyPerception.takeTurn(e);}),
     actorBehavior('morty',function(e){return e.kind==='morty';},function(e){mortyAct(e);return true;}),
     actorBehavior('deep-maw',function(e){return e.kind==='deepmaw';},function(e){mawAct(e);return true;}),
     actorBehavior('matron',function(e){return e.kind==='matron';},function(e){matronAct(e);return true;}),
@@ -149,12 +173,14 @@ var gameActors=FoteActors.create({
     actorBehavior('living-flame',function(e){return e.ally&&e.rangedAlly;},function(e){livingFlameBehavior(e);return true;}),
     actorBehavior('ally',function(e){return e.ally;},basicAllyBehavior),
     actorBehavior('chaos-preview',function(e){return !!e.base.chaosAI&&typeof FoteChaosEnemies!=='undefined';},function(e){return FoteChaosEnemies.act(e);}),
+    actorBehavior('local-teamwork',function(e){return typeof FoteEnemyTeamwork!=='undefined'&&!!FoteEnemyTeamwork.family(e);},function(e){return FoteEnemyTeamwork.takeTurn(e);}),
     actorBehavior('summon-retaliation',function(e){return e.foe&&!e.base.boss;},petRetaliationBehavior),
+    actorBehavior('sporecaller',function(e){return !!e.base.sporecaller;},function(e){return FoteSporecaller.act(e);}),
     actorBehavior('elemental-plane',function(e){return inFwa()&&e.base.fwa;},elementalPlaneBehavior),
     actorBehavior('underdark',function(e){return !!e.base.deepAI;},deepCreatureBehavior),
     actorBehavior('caverns',function(e){return e.base.aquatic||e.base.spores||e.kind==='stormbeetle'||e.kind==='sparkjelly';},caveCreatureBehavior),
     actorBehavior('plane-traits',function(){return !!floorMeta.plane;},planeCreatureBehavior),
-    actorBehavior('crypt-traits',function(e){var b=e.base;return b.reloads||b.summoner||b.phases;},cryptCreatureBehavior),
+    actorBehavior('crypt-traits',function(e){var b=e.base;return b.reloads||b.summoner||b.phases;},function(e){return cryptCreatureBehavior(e);}),
     actorBehavior('ordinary-monster',function(e){return !!e.foe;},basicMonsterBehavior)
   ]
 });

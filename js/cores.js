@@ -122,7 +122,7 @@ function entryCollectCores(){
   here.forEach(function(it){
     removeItem(it); player.core = it.name;
     log('You take up the <b>'+it.name+'</b>. It hums against your ribs. Bring it to the exit gate.','c-kill');
-    claimCore(it.name,true);
+    if(claimCore(it.name,true))queueCoreInfusion();
     sfx('pickup-mote'); sparkleFx(player.x, player.y, 'magic', 30);
   });
 }

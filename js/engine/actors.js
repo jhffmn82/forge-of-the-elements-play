@@ -12,10 +12,10 @@
     if(isPlayer&&reason==='stone')reason=null;
     return reason||effects.hasTag(actor,'root')?0:rating;
   }
-  function bestStep(origin,score,allowed,maximize){
+  function bestStep(origin,score,allowed,maximize,tieScore){
     var best=null,value=score(origin.x,origin.y);
     if(!Number.isFinite(value)||value<0)value=maximize?-Infinity:Infinity;
-    neighbors.forEach(function(offset){var x=origin.x+offset[0],y=origin.y+offset[1];if(!allowed(x,y,offset[0],offset[1]))return;var candidate=score(x,y);if(!Number.isFinite(candidate)||candidate<0)return;if(maximize?candidate>value:candidate<value){value=candidate;best={x:x,y:y,dx:offset[0],dy:offset[1]};}});
+    neighbors.forEach(function(offset){var x=origin.x+offset[0],y=origin.y+offset[1];if(!allowed(x,y,offset[0],offset[1]))return;var candidate=score(x,y);if(!Number.isFinite(candidate)||candidate<0)return;if((maximize?candidate>value:candidate<value)||(best&&candidate===value&&tieScore&&tieScore(x,y)<tieScore(best.x,best.y))){value=candidate;best={x:x,y:y,dx:offset[0],dy:offset[1]};}});
     return best;
   }
   function candidates(dx,dy){return [[dx,dy],[dx,0],[0,dy]].filter(function(offset,index,list){return (offset[0]||offset[1])&&!list.slice(0,index).some(function(other){return offset[0]===other[0]&&offset[1]===other[1];});});}

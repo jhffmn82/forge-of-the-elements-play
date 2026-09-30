@@ -118,9 +118,10 @@ function sfx(name, opts){
   if(near<=0)return;
   /* game sounds follow the animation queue: a swing sounds when the swing plays, not when the key was pressed */
   var at = opts.at===undefined ? (name.indexOf('ui-')!==0 && typeof fxClock==='number' ? Math.max(now, fxClock) : now) : opts.at;
-  var alert=/-alert$/.test(name), group=alert?'creature-alert':name;
-  if(SFX_LAST[group]!==undefined && Math.abs(at-SFX_LAST[group])<(alert?350:40) && SFX_LAST_GAIN[group]>=near)return;
+  var alert=/-alert$/.test(name),ui=/^ui-(click|open|close|hover)$/.test(name),group=alert?'creature-alert':ui?'ui-feedback':name;
+  if(SFX_LAST[group]!==undefined && Math.abs(at-SFX_LAST[group])<(alert?350:ui?70:40) && SFX_LAST_GAIN[group]>=near)return;
   SFX_LAST[group]=at; SFX_LAST_GAIN[group]=near;
+  if(name==='ui-click'){tone(AUDIO.ctx.currentTime,'sine',720,520,.035,.03*(opts.vol===undefined?1:opts.vol));return;}
   var file=name==='step-stone' ? ['step-stone','step-stone-1','step-stone-3','step-stone-2'][SFX_STEP++%4] : (SFX_ALIASES[name]||name);
   loadFile(file, function(buf){
     if(AUDIO.muted || performance.now()>at+500)return; // Never replay stale impacts after slow decoding.
@@ -134,6 +135,13 @@ function sfx(name, opts){
     } else { SFX_SYNTH_GAIN=near; try{ synth(name, t, opts); } finally{ SFX_SYNTH_GAIN=1; } }   /* the stand-in softens with distance too */
   });
 }
+
+/* One quiet click for mouse, touch and keyboard activation, including new HUD controls. */
+if(typeof document!=='undefined')document.addEventListener('click',function(ev){
+  var el=ev.target&&ev.target.closest&&ev.target.closest('#top,#bars,#hud2,#studyReadouts,#studyExplore,#log,#hotbar,#dpad,#shade,#modal,#statusbar,#title .menu');
+  if(!el||ev.defaultPrevented||ev.target.closest('[disabled],[aria-disabled="true"]'))return;
+  audioInit();sfx('ui-click');
+},true);
 
 /* ---- the synth ---- */
 function envGain(t, a, d, peak){ var g=AUDIO.ctx.createGain(); g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime((peak||0.5)*SFX_SYNTH_GAIN,t+a); g.gain.exponentialRampToValueAtTime(0.0001,t+a+d); return g; }

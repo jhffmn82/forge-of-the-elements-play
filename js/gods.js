@@ -287,8 +287,9 @@ function prayFieldSmelt(){
 
 /* 2026-09-29 (Justin): Mother Murk's summons. Everything you call to fight for you (Raise Dead, Shades, Shadow Swarm,
    Living Flame, your Shadow) has +5% HP and +5% damage per rank, and from rank 3 moves 10% faster. Freed prisoners
-   are allies, not summons. Life Drain is a 10% chance on each hit you or a summon lands to heal 1 HP per rank
-   (Divine Power scales it, as the old heal on a kill did); damage over time and procs do not roll it. */
+   are allies, not summons. Life Drain rolls 10% per rank on each direct hit,
+   dealing 2 shadow damage per rank, scaled by Divine Power, and healing the attacker for the actual damage dealt.
+   Damage over time and procs do not roll it; each dual-wield weapon can. */
 function murkSummon(e){return !!(e&&e.ally&&(e.undeadServant||e.shade||e.swarm||e.livingFlame||e.shadowClone||e.broodling));}
 function murkRank(){return hasGod('murk')?godRank():0;}
 function murkSummonHp(e){
@@ -299,9 +300,20 @@ function murkSummonDamage(source){return murkSummon(source)?1+.05*murkRank():1;}
 function murkStride(e,cost){return murkRank()>=3&&murkSummon(e)?Math.max(1,Math.round(cost/1.1)):cost;}
 function murkLifeDrain(target,d,source,event){
   var r=murkRank();
-  if(!r||!(d>0)||!target||!target.foe||!(source===player||murkSummon(source)))return;
-  if(event&&(event.tags.has('proc')||event.tags.has('periodic')))return;
-  if(rng()<.10)healPlayer(Math.round(r*divineStrength()));
+  if(!r||!(d>0)||!target||!target.foe||target.hp<=0||!(source===player||murkSummon(source)))return;
+  if(event&&(event.procDepth>0||['proc','periodic','arc','reflected','environment'].some(function(tag){return event.tags.has(tag);})))return;
+  if(rng()>=Math.min(1,.10*r))return;
+  var drained=applyDamage(target,Math.max(1,Math.round(2*r*divineStrength())),'dark',source,{tags:['proc','murk-drain'],reactions:false});
+  if(drained>0){
+    if(source===player)healPlayer(drained);
+    else if(source.hp>0){
+      var amount=gameEffects.has(source,'rot')?drained*.5:drained;
+      var restored=FoteDamage.heal(source.hp,source.maxhp,amount);source.hp=restored.hp;
+      if(restored.restored>0)floatText(source.x,source.y,'+'+restored.restored,'heal');
+      gameDamage.emit('healingApplied',{target:source,amount:amount,restored:restored.restored,overflow:restored.overflow,natural:false});
+    }
+    floatText(target.x,target.y,String(drained),'dark');
+  }
 }
 
 function godDamageResolved(target,d,type,source,event){
@@ -313,7 +325,7 @@ function godDamageResolved(target,d,type,source,event){
   if(player.god==='wobbles')combatAmusement('out');
  }
  if(d>0&&target===player&&source&&source.foe&&player.god==='wobbles')combatAmusement('in');
- if(d>0&&target.foe&&source&&source.ally){target.state='hunt';target.lastSeen={x:source.x,y:source.y};target.petAggressor=source.id;}
+ if(d>0&&target.foe&&source&&source.ally&&typeof FoteEnemyPerception==='undefined'&&!(event&&event.tags.has('periodic'))){target.state='hunt';target.lastSeen={x:source.x,y:source.y};target.petAggressor=source.id;}
 
  // Grave Strength rides a summon's own hit once; that hit's procs (an elemental rider) never repeat it.
  if(d>0&&target&&target.foe&&source&&source.ally&&hasGod('murk')&&godRank()>=3&&!(event&&(event.tags.has('murk-inherited')||event.tags.has('proc')))){
@@ -331,14 +343,33 @@ function godDamageResolved(target,d,type,source,event){
 
 }
 function combatAmusement(side){var k='_amuse_'+side,t=Math.floor(worldNow()/100);if(player[k]===t)return;player[k]=t;player.amusement=Math.min(100,(player.amusement||0)+1);}
+function wobblesMoodOdds(amusement){
+ // Per world turn: pranks are 1/50 at 10 Amusement and 1/500 at 40.
+ // A small floor keeps either outcome possible throughout the meter.
+ var mood=Math.max(0,Math.min(100,Number(amusement)||0)),floor=.0001;
+ var falloff=Math.log((.02-floor)/(.002-floor))/30;
+ return {prank:floor+(.02-floor)*Math.exp((10-mood)*falloff),reward:floor+(.02-floor)*Math.exp((mood-90)*falloff)};
+}
 function resolveAmusement(){
- if(player.god!=='wobbles')return;
- if(player.amusement>=100){player.amusement-=50;if(player.hp<player.maxhp*.75){healPlayer(player.maxhp*.4);log('Wobbles rewards you with healing.','c-good');}else if(rng()<.5){var it=randomGear();it.x=player.x;it.y=player.y;items.push(it);log('Wobbles leaves you a gift.','c-good');}else{gainEssence(ri(20,40));log('Wobbles showers you with essence.','c-good');}}
- else if(player.amusement<=0){player.amusement=50;applyStatus(player,pick(['blind','chill']),2);log('Bored, Wobbles plays a prank.','c-you');}
+ if(!player||player.god!=='wobbles'||player.hp<=0||(typeof RUN!=='undefined'&&RUN&&(RUN.over||RUN.victory)))return;
+ var mood=Math.max(0,Math.min(100,Number(player.amusement)||0)),odds=wobblesMoodOdds(mood),roll=rng();
+ if(roll<odds.prank){
+  player.amusement=Math.min(100,mood+50);
+  applyStatus(player,pick(['blind','chill']),2);log('Wobbles plays a prank. That amuses him.','c-you');
+ }else if(roll<odds.prank+odds.reward){
+  player.amusement=Math.max(0,mood-50);
+  if(player.hp<player.maxhp*.75){healPlayer(player.maxhp*.4);log('Wobbles rewards you with healing.','c-good');}
+  else if(rng()<.5){var it=randomGear();it.x=player.x;it.y=player.y;items.push(it);log('Wobbles leaves you a gift.','c-good');}
+  else{gainEssence(ri(20,40));log('Wobbles showers you with essence.','c-good');}
+ }
 }
 
 function godsWorldAdvance(from,to){if(!buff('ironhide'))player.hideShield=0;if(!(player.hidden>0))player.syllaDark=0;
- ents.forEach(function(e){if(e.cowardMark&&e.challengeUntil<=to){e.cowardMark=false;e.challenged=false;}if(player.god==='reginald'&&e.foe&&e.hp>0&&dist(e,player)<=8){e.state='hunt';e.lastSeen={x:player.x,y:player.y};}});
+ ents.forEach(function(e){if(e.cowardMark&&e.challengeUntil<=to){e.cowardMark=false;e.challenged=false;}if(player.god==='reginald'&&e.foe&&e.hp>0&&dist(e,player)<=8){
+  // The Unsneaky's announced presence is an explicit, local source of noise.
+  if(typeof FoteEnemyPerception!=='undefined')FoteEnemyPerception.remember(e,player,'unsneaky',to);
+  else {e.state='hunt';e.lastSeen={x:player.x,y:player.y};}
+ }});
  if(player.god==='wobbles'&&!recoveryInCombat()){player._amuseDrain=(player._amuseDrain||0)+(to-from);while(player._amuseDrain>=1000){player._amuseDrain-=1000;player.amusement=Math.max(0,player.amusement-1);}}
  resolveAmusement();
 }

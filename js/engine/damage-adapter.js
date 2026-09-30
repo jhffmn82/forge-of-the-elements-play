@@ -8,6 +8,9 @@ function damageCreatureRules(event){
   event.wasStatused=syllaStatused(target);
   event.iceBefore=player.iceArmor||0;
   if(target.syllaResist>0&&event.amount>0)event.amount*=1-target.syllaResist;
+  if(typeof FoteSporecaller!=='undefined'){
+    if(FoteSporecaller.absorb(event)>0&&event.amount<=0)return rejectDamage(event,'sporecoat');
+  }
   if(b&&target!==player&&inFwa()){
     if(b.fwa==='leviathan'&&target.submerged){if(source===player)log('The water closes over <b>the Leviathan Eel</b>. Wait for it to come up.','c-info');return rejectDamage(event,'submerged');}
     /* the shell turns the first blow of each turn; after 3 blows it cracks for good (Justin 2026-09-28: with one attack a
@@ -121,9 +124,18 @@ function damageDefenses(event){
   event.amount=d;
 }
 function commitDamage(event){
-  var target=event.target,d=event.damage;
+  var target=event.target,d=event.damage,hpBefore=target.hp;
   target.hp-=d;
+  if(typeof FoteEnemyPerception!=='undefined')FoteEnemyPerception.damaged(event);
+  else if(d>0&&target!==player&&target.foe&&!target.ally&&target.hp>0&&['asleep','wander','hunt'].indexOf(target.state)>=0){
+    target.state='hunt';target.caughtOff=-1;
+    var attacker=event.tags.has('periodic')?null:event.source==='player'?player:event.source;
+    if(attacker&&Number.isFinite(attacker.x)&&Number.isFinite(attacker.y))target.lastSeen={x:attacker.x,y:attacker.y};
+    else if(!target.lastSeen)target.lastSeen={x:target.x,y:target.y};
+  }
   if(d>0)revealActor(target);
+  if(typeof FoteGreenSlime!=='undefined')FoteGreenSlime.onDamaged(event,hpBefore);
+  if(typeof FoteEnemyFields!=='undefined')FoteEnemyFields.onDamaged(event);
   if(d>0&&typeof FoteChaosEnemies!=='undefined')FoteChaosEnemies.onDamaged(event);
   if(d>0&&event.options.reactions!==false)godDamageResolved(target,d,event.type,event.source,event);
   if(event.options.visuals!==false){
@@ -131,7 +143,7 @@ function commitDamage(event){
     if(target===player&&d>0){setClip(player,'hurt');sfx('player-hurt',{at:target._hit});if(typeof onPlayerHurt==='function')onPlayerHurt(d);}
     else if(target!==player&&d>0&&target.base&&!target._clip)setClip(target,'hurt');
   }
-  if(target!==player&&target.base&&target.base.splits&&!target.split&&target.hp>0&&target.hp<target.maxhp/2&&!event.tags.has('periodic'))slimeSplit(target);
+  if(target!==player&&target.kind!=='slime'&&target.base&&target.base.splits&&!target.split&&target.hp>0&&target.hp<target.maxhp/2&&!event.tags.has('periodic'))slimeSplit(target);
 }
 function damageElementReactions(event){
   var target=event.target,source=event.source,type=event.type,d=event.damage;
@@ -167,9 +179,27 @@ function damageAttackReactions(event){
   if(!syllaOn()||!(event.damage>0)||event.source!==player||target===player||!target.foe||target.ally||!hit||hit.att!==player||hit.def!==target||hit._syl||event.tags.has('periodic')||event.tags.has('proc')||event.tags.has('reflected')||event.tags.has('arc'))return;
   hit._syl=true;syllaHitReactions(event);
 }
+function admitDamage(event){
+  var target=event.target;
+  if(target===player&&event.type==='poison'&&gameEffects.has(player,'stone'))return rejectDamage(event,'stone-skin');
+  // Creature-defined absorption covers ordinary hits and pre-mitigated ticks.
+  // Convert the incoming amount before shields, hurt reactions, or attack procs;
+  // the damage service has already rejected dead targets and invalid amounts.
+  var ratio=target.base&&target.base.damageAbsorption&&target.base.damageAbsorption[event.type];
+  if(Number.isFinite(ratio)&&ratio>0){
+    var amount=event.amount*ratio;if(gameEffects.has(target,'rot'))amount*=.5;
+    var healed=FoteDamage.heal(target.hp,target.maxhp,amount);target.hp=healed.hp;
+    if(healed.restored>0){
+      floatText(target.x,target.y,'+'+Math.round(healed.restored),'heal');
+      gameDamage.emit('healingApplied',{target:target,source:event.source,amount:amount,restored:healed.restored,overflow:healed.overflow,natural:false,damageType:event.type});
+    }
+    return rejectDamage(event,'element-absorption');
+  }
+  return true;
+}
 var gameDamage=FoteDamage.create({
   actionId:function(){var action=typeof gameActions!=='undefined'&&gameActions.current();return action?action.actionId:'world:'+turn;},
-  admit:function(event){return true;},
+  admit:admitDamage,
   modify:function(event){if(damageCreatureRules(event)!==false)damageOutgoingRules(event);},
   defend:damageDefenses,commit:commitDamage,
   after:function(event){damageElementReactions(event);damageReceivedReactions(event);damageAttackReactions(event);}

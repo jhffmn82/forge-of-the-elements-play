@@ -67,7 +67,7 @@ function drawCorpse(f, p, opacity){
     var c=ms.m.clips.death, cell=ms.m.cell, fr=Math.min(c.frames-1, Math.floor(p*c.frames*1.05)), box=ms.m.box||[0,0,cell,cell];
     var target=TS*(f.e.art||0.9), s=target/Math.max(box[3], box[2]*0.8);
     var dx=px+TS/2-(box[0]+box[2]/2)*s, dy=py+TS*0.97-(box[1]+box[3])*s;
-    ctx.save(); ctx.globalAlpha = opacity*(f.remains?1:p<0.75?1:(1-p)/0.25); ctx.imageSmoothingEnabled=true;
+    ctx.save(); ctx.globalAlpha = opacity*(f.remains?1:p<0.75?1:(1-p)/0.25); ctx.imageSmoothingEnabled=spriteSheetSmoothing(ms);
     if(f.e.flip){ ctx.translate(px+TS/2,0); ctx.scale(-1,1); ctx.translate(-(px+TS/2),0); }
     ctx.drawImage(ms.img, fr*cell, c.row*cell, cell, cell, dx, dy, cell*s, cell*s); ctx.restore();
     return;
@@ -81,7 +81,7 @@ function drawCorpse(f, p, opacity){
     ctx.save();
     ctx.globalAlpha = opacity*(f.remains?1:p<0.6?1:Math.max(0,(1-p)/0.4));
     ctx.translate(fx0, fy0); ctx.rotate(dir*ease*Math.PI*0.5); ctx.translate(-fx0, -fy0);
-    ctx.imageSmoothingEnabled=true;
+    ctx.imageSmoothingEnabled=spriteSheetSmoothing(ms);
     ctx.drawImage(ms.img, 0, srow*cell2, cell2, cell2, px+TS/2-(box2[0]+box2[2]/2)*s2, py+TS*0.97-(box2[1]+box2[3])*s2, cell2*s2, cell2*s2);
     if(p<0.25 && typeof whiteCut==='function'){ ctx.globalAlpha*= (0.25-p)/0.25*0.8; ctx.drawImage(whiteCut(ms.img,0,srow*cell2,cell2,cell2), px+TS/2-(box2[0]+box2[2]/2)*s2, py+TS*0.97-(box2[1]+box2[3])*s2, cell2*s2, cell2*s2); }
     ctx.restore();

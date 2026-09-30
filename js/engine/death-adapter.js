@@ -4,6 +4,7 @@
 var resolvingDeaths=new WeakSet();
 function prepareCreatureDeath(event){
   var e=event.entity,b=e.base||{};
+  if(e.pebbleSlam)clearPebbleSlam(e);
   if(b.magmaBurst&&e.hp<=0&&inFwa()){
     burst(e.x,e.y,'fire',34,.09);SHAKE=6;if(vis[idxOf(e.x,e.y)])log('The <b>Magma Crawler</b> bursts open.','c-kill');
     ents.slice().forEach(function(other){if(other===e||other.hp<=0||dist(other,e)>1||other!==player&&fwaNative(other))return;fwaHurt(other,roll(8,13),'fire',null,other===player?'Molten rock sprays over you':null);if(other.hp>0)applyStatus(other,'burn',2,sDMG(3));});

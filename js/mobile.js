@@ -19,14 +19,33 @@
   var DEVICE = q==='1' ? true : q==='0' ? false : !!coarse;
   window.MOBILE = DEVICE;
 
-  /* Orientation is a touch-device preference, independent of the responsive
-     layout. Browsers which cannot lock rotation keep their normal layout and
-     explain how to rotate manually instead of hiding the game. */
+  /* Mobile play uses landscape. Native rotation is best-effort; a focused
+     rotate prompt protects the controls when the browser cannot lock it. */
   var orientationPreference='landscape', orientationMessage='', orientationAttempt=0;
-  try{
-    var savedOrientation=localStorage.getItem('astra-temple-orientation');
-    if(savedOrientation==='portrait' || savedOrientation==='landscape') orientationPreference=savedOrientation;
-  }catch(e){}
+  var orientationBlocked=false,orientationFocus=null;
+  function syncOrientationPrompt(){
+    if(!DEVICE)return;
+    var prompt=document.getElementById('orientationPrompt');if(!prompt)return;
+    var blocked=innerHeight>innerWidth;
+    prompt.hidden=!blocked;document.body.classList.toggle('needs-landscape',blocked);
+    var app=document.getElementById('app');if(app)app.toggleAttribute('inert',blocked);
+    if(blocked&&!orientationBlocked){
+      orientationFocus=document.activeElement;
+      if(typeof stopTravel==='function')stopTravel();
+      prompt.querySelector('button').focus({preventScroll:true});
+    }else if(!blocked&&orientationBlocked&&orientationFocus&&orientationFocus.isConnected){orientationFocus.focus({preventScroll:true});}
+    orientationBlocked=blocked;
+  }
+  function mountOrientationPrompt(){
+    if(!DEVICE)return;
+    var prompt=document.createElement('section');prompt.id='orientationPrompt';prompt.hidden=true;
+    prompt.setAttribute('role','dialog');prompt.setAttribute('aria-modal','true');prompt.setAttribute('aria-labelledby','orientationTitle');
+    prompt.innerHTML='<div><h2 id="orientationTitle">Turn your device sideways</h2><p>Forge of the Elements plays in landscape.</p><p id="orientationStatus">Enable auto-rotate, then turn your device sideways.</p><button type="button">Use landscape</button></div>';
+    prompt.querySelector('button').onclick=applyOrientation;document.body.appendChild(prompt);
+    document.addEventListener('keydown',function(event){if(orientationBlocked&&!prompt.contains(event.target)){event.preventDefault();event.stopImmediatePropagation();}},true);
+    syncOrientationPrompt();
+  }
+  // Landscape is the mobile layout; retired portrait preferences are ignored.
   function orientationHint(value){
     return 'Turn your device '+(value==='landscape'?'sideways':'upright')+'. Your browser controls rotation here; enable auto-rotate if needed.';
   }
@@ -57,10 +76,11 @@
     }
   }
   window.FoteMobileOrientation=Object.freeze({
+    isBlocked:function(){return orientationBlocked;},
     getPreference:function(){ return orientationPreference; },
     getStatus:function(){ return orientationMessage || (orientationPreference==='portrait'?'Portrait selected. Turn your device upright if needed.':'Landscape selected. Turn your device sideways if needed.'); },
     setPreference:function(value){
-      if(!DEVICE || (value!=='portrait' && value!=='landscape')) return Promise.resolve(false);
+      if(!DEVICE || value!=='landscape') return Promise.resolve(false);
       orientationPreference=value;
       try{ localStorage.setItem('astra-temple-orientation', value); }catch(e){}
       return applyOrientation();
@@ -166,7 +186,7 @@
   /* ---------------- the top bar has to fit about 360 CSS pixels, so its labels get shorter */
   var SHORT = {'Character':'Char', 'Equipment':'Gear', 'Sandbox':'Sand', 'Options':'Opts'};
   function shortenTop(){
-    if(!document.body.classList.contains('touch')) return;
+    if(!document.body.classList.contains('touch')||(typeof FoteResponsiveHUD!=='undefined'&&FoteResponsiveHUD.isMounted())) return;
     document.querySelectorAll('#tabs button').forEach(function(b){
       var t=b.textContent.trim(); if(SHORT[t]) b.textContent=SHORT[t];
     });
@@ -201,7 +221,7 @@
     var on=wantTouch(), was=document.body.classList.contains('touch');
     document.body.classList.toggle('touch', on);
     if(on && !was) shortenTop();
-    applyZoom();
+    applyZoom();syncOrientationPrompt();
   }
   /* icons are painted at their slot's exact size, so a layout change during a run repaints them (CSS would stretch the old ones) */
   function relayout(){ sync(); if(typeof abilityBar==='function' && typeof RUN!=='undefined' && RUN && !document.getElementById('loadVeil')) abilityBar(); }
@@ -211,9 +231,9 @@
 
   if(DEVICE){
     /* First tap applies landscape by default, or the player's saved choice. */
-    window.addEventListener('pointerdown', function once(){
+    window.addEventListener('pointerdown', function once(event){
       window.removeEventListener('pointerdown', once, true);
-      applyOrientation();
+      if(!event.target.closest('#orientationPrompt'))applyOrientation();
     }, true);
 
     /* no pinch zoom, no double-tap zoom, no long-press menu on the map */
@@ -296,13 +316,13 @@
         '<div><p class="tg-sec">Worn</p><div class="tg-slots">'+
           SLOTS.map(function(s){ return tile(s[0], s[1], s[2]); }).join('')+'</div></div>'+
         '<div><p class="tg-sec">Bag &middot; '+player.bag.length+' / '+BAG_MAX+'</p><div class="tg-cells">'+cells.join('')+'</div>'+
-          '<p class="tg-hint">Tap an item to read it; its card lets you use, equip or drop it. Drag an item onto a worn slot to equip it, or onto the hotbar to keep it there. Swipe empty bag space to scroll.</p></div>'+
+          '<p class="tg-hint">Tap for details. Drag worn gear into the bag to take it off. Drag a bag item outside this panel to drop it.</p></div>'+
       '</div>';
 
       /* below, scrolled to when wanted: the character and the totals */
       h+='<div class="tg-mid"><div class="tg-portrait" id="dollArt"></div><div class="tg-tot">'+
          '<div><p class="tg-sec">Offense</p>'+kv([['Damage per hit',hr[0]+'-'+hr[1]],['Crit',Math.round(player.crit*100)+'%'],['Crit damage','&times;'+criticalMultiplier().toFixed(2)],
-            ['Accuracy',player.acc],['Range',player.range],['Attack speed',playerSpeedPercent('attack')],['Movement speed',playerSpeedPercent('move')],['Spell power','&times;'+spellPower({}).toFixed(2)],['Divine power','&times;'+divineStrength().toFixed(2)]])+'</div>'+
+            ['Accuracy',player.acc],['Range',player.range],['Attack speed',playerSpeedPercent('attack')],['Movement speed',playerSpeedPercent('move')],['Spell power','&times;'+spellPower({}).toFixed(2)],['Divine Power','&times;'+divineStrength().toFixed(2)]])+'</div>'+
          '<div><p class="tg-sec">Defense</p>'+kv([['HP',Math.round(player.hp)+' / '+player.maxhp],['Shield',playerShield()],
             ['Armor',player.armor],['Evasion',evaOf(player)],['Block',Math.round(player.block*100)+'%'],['Mana',Math.floor(player.mp)+' / '+player.maxmp],['Stealth',Math.round(stealthScore()*100)+'%']])+'</div>'+
          '</div></div>';
@@ -318,7 +338,8 @@
     }
     var _equipHTMLDesk = equipHTML;
     window.equipHTML = function(){
-      return document.body.classList.contains('touch') ? touchEquipHTML() : _equipHTMLDesk.apply(this, arguments);
+      var phone=document.body.classList.contains('touch')&&!window.matchMedia('(orientation:landscape) and (min-width:960px) and (min-height:600px)').matches;
+      return phone ? touchEquipHTML() : _equipHTMLDesk.apply(this, arguments);
     };
   })();
 
@@ -371,7 +392,7 @@
       var b=document.querySelector('#tabs button[data-p="Sand"]'); if(b) b.remove();
       if(typeof openSheet!=='undefined' && openSheet==='Sand' && typeof showSheet==='function') showSheet(null);
     }
-    sync();
+    mountOrientationPrompt();sync();
     /* the audio buttons rewrite their own labels, so shorten them again each time they do */
     if(typeof syncAudioButtons==='function'){
       var _sync=syncAudioButtons;

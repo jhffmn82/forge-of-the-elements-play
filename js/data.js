@@ -167,7 +167,7 @@ var GODS = {
       "bonespear"
     ],
     "boons": [
-      "Life Drain: each hit you or your summons land has a 10% chance to heal you 1 HP per rank. Your summons have +5% HP and +5% damage per rank, and your servant grows with rank and Divine Power.",
+      "Life Drain: each hit you or your summons land has a 10% chance per rank to deal 2 shadow damage per rank, scaled by Divine Power. The attacker heals for the damage dealt: your hits heal you, and a summon's hits heal that summon. Each weapon can trigger it; damage over time and follow-up effects cannot. Your summons have +5% HP and +5% damage per rank, and your servant grows with rank and Divine Power.",
       "Grave Strength: your servant and other summons deal +1 shadow damage per rank, carry your weapon's enchantment and move 10% faster.",
       "Lich: your servant rises as a Lich. The first time it is destroyed, it returns a turn later at half health."
     ],
@@ -246,7 +246,7 @@ var GODS = {
       "Favorite Toy: +10% chance that Roll the Dice and Tempt Fate go your way, rising to +20% at rank 5.",
       "Last Laugh: once per floor, a killing blow leaves you at 1 HP instead, and Wobbles adds a surprise: a heal, a vanishing act or a ward."
     ],
-    "gain": "Kills and new floors earn piety. Fighting earns Amusement: it drains slowly when things are quiet, pays for Tempt Fate, brings rewards when full and invites a prank when empty."
+    "gain": "Kills and new floors earn piety. Fighting earns Amusement: it drains slowly when things are quiet and pays for Tempt Fate. Pranks become more likely as Amusement falls; rewards become more likely as it rises. Either can happen at any level. A prank raises Amusement by 50; a reward spends 50."
   },
   "sylla": {
     "name": "Sylla the Patient",
@@ -827,8 +827,8 @@ var DIVINE_COOLDOWNS = {
 var SIGILS = {
   firestorm:{name:'Fire sigil', motes:['fire'], desc:'Flames burst out around you: enemies within 3 tiles take 8 fire damage plus the floor number and start Burning.'},
   mana:     {name:'Water sigil', motes:['water'], desc:'Restore 50% of your mana.'},
-  levitate: {name:'Air sigil', motes:['air'], desc:'Float for 25 turns: cross chasms and water, ignore floor traps.'},
-  stoneskin:{name:'Earth sigil', motes:['earth'], desc:'Stone skin: -3 physical damage per hit for 15 turns.'},
+  levitate: {name:'Air sigil', motes:['air'], desc:'Break free of roots and webs, then float for 25 turns: cross chasms and water, and avoid roots, webs, floor traps and ground hazards.'},
+  stoneskin:{name:'Earth sigil', motes:['earth'], desc:'Purge poison and stun. For 15 turns, become immune to poison damage, Poison and Stun, and take 3 less physical damage per hit.'},
   heal:     {name:'Light sigil', motes:['light'], desc:'Heal 35% of max HP, then 5% a turn for 15 turns.'},
   vanish:   {name:'Shadow sigil', motes:['shadow'], desc:'Vanish for 5 turns; enemies lose track of you.'},
   identify: {name:'Sigil of Knowing', motes:['light','shadow'], desc:'Identify every sigil you carry.'},
@@ -882,10 +882,14 @@ var MONSTERS = {
             band:[1,5], w:26, art:0.9, sfx:'goblin', living:true, artLeft:true},
   archer:  {name:'Goblin Archer', sprite:'m-goblin-archer', col:'#B8894A', ch:'a', hp:14, dmg:[3,5], acc:60, eva:18, armor:0, speed:100, range:6, xp:10,
             band:[2,5], w:18, kiter:true, art:0.9, sfx:'goblin', living:true, artLeft:true},
-  brute:   {name:'Goblin Brute', sprite:'m-goblin-brute', col:'#4E7A3C', ch:'G', hp:30, dmg:[5,8], acc:58, eva:10, armor:2, speed:100, range:1, xp:18,
+  brute:   {name:'Goblin Brute', sprite:'m-goblin-brute', col:'#4E7A3C', ch:'G', hp:30, dmg:[5,8], acc:58, eva:10, armor:2, speed:100, range:1, xp:18,hint:'An unblocked melee hit can shoulder-check its target back one tile. Four-turn cooldown; deals no extra damage.',
             band:[3,5], w:14, art:1.05, sfx:'brute', living:true, artLeft:true},
-  slime:   {name:'Rock Slime', sprite:'m-slime', col:'#7C8C9E', ch:'s', hp:22, dmg:[4,6], acc:54, eva:8, armor:3, speed:70, range:1, xp:14, rootSpit:true,
-            band:[2,5], w:12, splits:true, art:0.8, sfx:'slime'},
+  slime:   {name:'Rock Slime', sprite:'m-rock-slime', col:'#7C8C9E', ch:'s', hp:24, dmg:[4,6], acc:54, eva:8, armor:3, speed:70, range:1, xp:16, rootSpit:true,
+            band:[2,4], w:12, splits:true, art:0.8, artLeft:true, sfx:'slime',
+            hint:'Regenerates 2 HP per world turn. A damaging hit from full health divides its remaining HP between two full-sized slimes. Both can split again after healing to full.'},
+  pebbleslime:{name:'Pebble Slime', sprite:'m-slime', col:'#7C8C9E', ch:'s', hp:10, dmg:[2,3], acc:54, eva:8, armor:0, speed:70, range:1, xp:8,
+            band:[1,1], biome:[0], w:12, pebbleSlam:true, art:0.65, sfx:'slime',
+            hint:'A young Rock Slime. It crouches before striking the marked tile. Step aside while it winds up.'},
   shaman:  {name:'Goblin Shaman', sprite:'m-goblin-shaman', col:'#C25A3A', ch:'h', hp:16, dmg:[3,5], acc:64, eva:14, armor:0, speed:100, range:1, xp:18,
             band:[3,5], w:10, caster:'firebolt', castRange:6, castEvery:4, el:'fire', art:0.9, sfx:'shaman', living:true, spellcaster:true, artLeft:true},
   skeleton:{name:'Skeleton', sprite:'m-skeleton', col:'#D8CEBC', ch:'k', hp:16, dmg:[3,5], acc:62, eva:18, armor:2, speed:100, range:1, xp:18,
@@ -913,6 +917,7 @@ var DROPS = {
   archer:  {chance:0.20, table:{essence:10, gear:6, sigil:1}},
   brute:   {chance:0.35, table:{essence:4, gear:5, food:2}},
   slime:   {chance:0.15, table:{essence:16, sigil:1}},
+  pebbleslime:{chance:0.15, table:{essence:16, sigil:1}},
   shaman:  {chance:0.35, table:{essence:6, sigil:3, gear:4}},
   skeleton:{chance:0.25, table:{essence:4, gear:6}},
   mimic:   {chance:1.00, table:{gear:6, essence:4}}

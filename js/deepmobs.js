@@ -27,7 +27,7 @@ function deepMobsOn(){ return typeof bidx==='function' && bidx()===3 && !(floorM
   /* region: 0 temple, 1 Underdark, 2 volcanic. deepAI names the special turn (DEEP_AI below). bleeds: chance a
      landed hit opens a Bleed. darksight: sees through a globe of darkness. */
   M.drowblade    = {name:'Drow Blade', sprite:'m-drow-blade', col:'#6A3A5A', ch:'d', hp:90, dmg:[10,14], acc:70, eva:24, armor:3, speed:100, range:1, xp:48,
-                    band:[16,20], w:24, region:0, deepAI:'blade', bleeds:0.50, darksight:true, living:true, art:0.95, artLeft:true, sfx:'drow'};
+                    band:[16,20], w:24, region:0, deepAI:'blade', bleeds:0.50, darksight:true, spawnInvisible:true, living:true, art:0.95, artLeft:true, sfx:'drow'};
   M.drowpriestess= {name:'Drow Priestess', sprite:'m-drow-priestess', col:'#9A2A4A', ch:'p', hp:70, dmg:[12,17], acc:68, eva:18, armor:1, speed:100, range:1, xp:56,
                     band:[16,20], w:12, region:0, deepAI:'priestess', darksight:true, living:true, spellcaster:true, art:0.95, artLeft:true, sfx:'shaman'};
   M.thoughteater = {name:'Thought Eater', sprite:'m-thought-eater', col:'#C89AD0', ch:'t', hp:55, dmg:[8,11], acc:72, eva:28, armor:0, speed:100, range:1, xp:50,
@@ -44,7 +44,7 @@ function deepMobsOn(){ return typeof bidx==='function' && bidx()===3 && !(floorM
                     band:[16,20], w:20, region:2, el:'fire', emberBite:0.30, living:true, spider:true, art:0.9, artLeft:true, sfx:'spider'};
   /* the Matron of the Web: tuned by hand for floor 20, so no floor curve (fixed, like the other bosses) */
   M.matron       = {name:'The Matron of the Web', sprite:'m-matron', col:'#8A1A3A', ch:'M', hp:380, dmg:[15,21], acc:74, eva:12, armor:5, speed:100, range:1, xp:900,
-                    band:[20,20], w:0, boss:true, elite:true, fixed:true, heavy:true, bleeds:0.5, darksight:true, living:true, spellcaster:true, art:2.1, artLeft:true, sfx:'matron'};
+                    band:[20,20], w:0, boss:true, elite:true, fixed:true, heavy:true, bleeds:0.5, darksight:true, living:true, spider:true, spellcaster:true, art:2.1, artLeft:true, sfx:'matron'};
   DROPS.drowblade     = {chance:0.25, table:{essence:10, gear:5, sigil:1}};
   DROPS.drowpriestess = {chance:0.35, table:{essence:8, sigil:3, gear:3, food:1}};
   DROPS.thoughteater  = {chance:0.30, table:{essence:12, sigil:3}};
@@ -65,7 +65,7 @@ var DEEP_KINDS = ['drowblade','drowpriestess','thoughteater','webspitter','spide
 /* ---------------------------------------------------------------- tunables (placeholders, all of them) */
 var BLEED   = {turns:4, base:3, per:0.25};                 /* 2026-09-23 (Justin): 3 + 0.25 per floor (7 at floor 16), 4 turns; it ignores armour */
 var GLOBE   = {r:1, turns:5, cd:[10,14], first:[1,3]};     /* 3x3 of darkness on you for 5 turns */
-var PRIEST  = {healPct:0.30, healFlat:10, healCd:4, ward:8, wardTurns:8, wardCd:7, callCd:9, callN:[1,2], capEach:2, capFloor:8, range:6};
+var PRIEST  = {healPct:0.50, healCd:4, ward:8, wardTurns:8, wardCd:7, callCd:9, callN:[1,2], capEach:2, capFloor:8, range:6};
 var WEBSHOT = {cd:4, range:5, pin:1, slow:3};
 var DRIDER  = {webCd:6, poison:[4,3]};                     /* fangs: poison 4 turns, 3 a turn */
 var SAP     = {cd:3, range:6, base:6, per:0.5, heal:2};    /* drains 6 + half the floor in MP (14 at 16); heals 2 HP per MP */
@@ -180,6 +180,7 @@ if(typeof STATUS_INFO!=='undefined'){
 var DEEP_RAWVIS=null;
 function deepDarkActive(){ return ((floorMeta && floorMeta.dark) || []).filter(function(g){ return turn<g.until; }); }
 function throwDarkness(e){
+  revealActor(e);
   var cells=[];
   for(var dy=-GLOBE.r;dy<=GLOBE.r;dy++) for(var dx=-GLOBE.r;dx<=GLOBE.r;dx++){ var x=player.x+dx, y=player.y+dy; if(inb(x,y) && at(x,y)!==WALL) cells.push(idxOf(x,y)); }
   floorMeta.dark=deepDarkActive().concat([{cells:cells, until:turn+GLOBE.turns}]);
@@ -216,13 +217,13 @@ function drawDarknessTelegraphs(now){
 function webShot(e, who){
   setClip(e,'attack'); boltFx(e.x,e.y,player.x,player.y,'web'); sfx('trap-web',{from:e});
   if(rng() < hostileHitChance(hitChance(e.base.acc+8, evaOf(player)),true)){
-    applyStatus(player, 'root', WEBSHOT.pin);
-    player.syllaWeb=WEBSHOT.slow;   /* tickStatus applies the slow as soon as the one-turn pin ends */
-    if(gAt(player.x,player.y)!==G_WEB) setG(player.x, player.y, G_WEB);
+    var web=gameEffects.apply(player,'web',WEBSHOT.pin);
+    if(web.applied)player.syllaWeb=WEBSHOT.slow;
+    FoteEnemyFields.web(player.x,player.y,e);
     burst(player.x, player.y, 'web', 22, 0.05); floatText(player.x, player.y, 'webbed', 'phys');
-    log('The <b>'+(who||e.name)+'</b> spits sticky webbing over you: <b>pinned</b> for a turn, then slowed for three.','c-you');
+    log('The <b>'+(who||e.name)+'</b> spits sticky webbing over you'+(web.applied?': <b>pinned</b> for a turn, then slowed for three.':', but you resist the snare.'),'c-you');
   } else {
-    var c=nearFree(player.x, player.y, 1); if(c) setG(c.x, c.y, G_WEB);
+    var c=nearFree(player.x, player.y, 1); if(c)FoteEnemyFields.web(c.x,c.y,e);
     log('The '+(who||e.name)+'\'s web splatters beside you.','c-miss');
   }
 }
@@ -239,48 +240,60 @@ var DEEP_AI = {
   },
   /* Drow Priestess: heal a hurt drow, call spiderlings, ward the one closest to you, then blood bolts from range
      (she drinks what she spills). She keeps her distance. */
-  priestess: function(e, d){
+  priestess: function(e, d, target){
+    target=target||player;d=dist(e,target);
     e.healCd=(e.healCd||0)-1; e.wardCd=(e.wardCd===undefined ? 2 : e.wardCd)-1; e.callCd=(e.callCd===undefined ? 1 : e.callCd)-1;
-    var near=function(o){ return o!==player && o.foe && o.hp>0 && !o.parent && dist(o,e)<=PRIEST.range; };
-    var hurt=ents.filter(function(o){ return near(o) && o.hp<o.maxhp*0.65 && o.base && !o.base.object; }).sort(function(a,z){ return a.hp/a.maxhp - z.hp/z.maxhp; })[0];
-    if(hurt && e.healCd<=0){
+    if(FoteEnemyTeamwork.retreat(e,target))return true;
+    var near=function(o){ return o!==player && o.foe && !o.ally && o.hp>0 && !o.parent && o.state==='hunt' && FoteEnemyTeamwork.family(o)==='underdark' && dist(o,e)<=PRIEST.range && FoteEnemyTeamwork.openLine(e,o); };
+    function heal(idle){
+      if(!idle&&e.healCd>0)return false;
+      var hurt=ents.filter(function(o){ return near(o) && o.hp<o.maxhp*(idle?1:0.65) && o.base && !o.base.object; }).sort(function(a,z){ return a.hp/a.maxhp - z.hp/z.maxhp; })[0];
+      if(!hurt)return false;
       if(e.hp<=0)return true;e.healCd=PRIEST.healCd; setClip(e,'attack'); sfx('shaman-cast',{from:e});
-      var h=Math.min(Math.round(hurt.maxhp*PRIEST.healPct), sHP(PRIEST.healFlat+floorNo));
-      hurt.hp=Math.min(hurt.maxhp, hurt.hp+h); floatText(hurt.x, hurt.y, '+'+h, 'heal'); sparkleFx(hurt.x, hurt.y, 'blood', 20); deepStanch(hurt);
+      var h=Math.round(hurt.maxhp*PRIEST.healPct);
+      if(gameEffects.has(hurt,'rot'))h=Math.floor(h*.5);
+      h=Math.min(h,hurt.maxhp-hurt.hp);
+      hurt.hp=Math.min(hurt.maxhp, hurt.hp+h);if(!actorConcealed(hurt)){floatText(hurt.x, hurt.y, '+'+h, 'heal');sparkleFx(hurt.x, hurt.y, 'blood', 20);}deepStanch(hurt);
       if(deepVis(e.x,e.y)) log('The <b>Drow Priestess</b> '+(hurt===e ? 'mends her own wounds' : 'mends the '+hurt.name)+' with blood magic (+'+h+').','c-info');
        return true;
     }
+    function ward(idle){
+      if(!idle&&e.wardCd>0)return false;
+      var front=ents.filter(function(o){ return near(o) && o!==e && o.base && !o.base.object && !gameEffects.has(o,'wardshield'); }).sort(function(a,z){ return dist(a,target)-dist(z,target); })[0];
+      if(!front)return false;
+      if(e.hp<=0)return true;e.wardCd=PRIEST.wardCd;setClip(e,'attack');sfx('shaman-cast',{from:e});
+      gameEffects.apply(front,'wardshield',PRIEST.wardTurns,undefined,{durationModifiers:false,data:{n:sDMG(PRIEST.ward+floorNo*0.5)}});
+      if(!actorConcealed(front)){ringFx(front.x,front.y,'#C0203A',1);sparkleFx(front.x,front.y,'blood',16);}
+      if(deepVis(e.x,e.y))log('The <b>Drow Priestess</b> wraps the '+front.name+' in a <b>blood ward</b>.','c-info');
+      return true;
+    }
+    if(heal(false))return true;
     if(e.callCd<=0){
-      var mine=ents.filter(function(o){ return o.kind==='spiderling' && o.owner===e.id; }).length;
-      var all=ents.filter(function(o){ return o.kind==='spiderling'; }).length;
+      var mine=ents.filter(function(o){ return o.kind==='spiderling' && o.hp>0 && !o.ally && o.owner===e.id; }).length;
+      var all=ents.filter(function(o){ return o.kind==='spiderling' && o.hp>0 && !o.ally; }).length;
       if(mine<PRIEST.capEach && all<PRIEST.capFloor){
-        if(e.hp<=0)return true;e.callCd=PRIEST.callCd; setClip(e,'attack'); sfx('shaman-cast',{from:e});
-        var n=Math.min(ri(PRIEST.callN[0],PRIEST.callN[1]), PRIEST.capEach-mine), got=0;
-        for(var k=0;k<n;k++){ var c=nearFree(e.x,e.y,1) || nearFree(e.x,e.y,2); if(!c || deepLava(c.x,c.y)) break; var s=deepSpawnRaw('spiderling', c.x, c.y); s.state='hunt'; s.noLoot=true; s.owner=e.id; s.t=e.t; sparkleFx(c.x,c.y,'web',14); got++; }
-        if(got && deepVis(e.x,e.y)) log('The <b>Drow Priestess</b> hisses a prayer and '+(got>1 ? got+' <b>Spiderlings</b> scuttle' : 'a <b>Spiderling</b> scuttles')+' out of the dark to her.','c-info');
-         return true;
+        if(e.hp<=0)return true;
+        var n=Math.min(ri(PRIEST.callN[0],PRIEST.callN[1]), PRIEST.capEach-mine, PRIEST.capFloor-all), got=0;
+        for(var k=0;k<n;k++){ var c=nearFree(e.x,e.y,1) || nearFree(e.x,e.y,2); if(!c || deepLava(c.x,c.y)) break; var s=deepSpawnRaw('spiderling', c.x, c.y); s.state='hunt';s.lastSeen={x:target.x,y:target.y}; s.noLoot=true; s.owner=e.id; s.t=e.t; sparkleFx(c.x,c.y,'web',14); got++; }
+        if(got){
+          e.callCd=PRIEST.callCd;setClip(e,'attack');sfx('shaman-cast',{from:e});
+          if(deepVis(e.x,e.y))log('The <b>Drow Priestess</b> hisses a prayer and '+(got>1 ? got+' <b>Spiderlings</b> scuttle' : 'a <b>Spiderling</b> scuttles')+' out of the dark to her.','c-info');
+          return true;
+        }
       }
     }
-    if(e.wardCd<=0){
-      var front=ents.filter(function(o){ return near(o) && o!==e && o.base && !o.base.object && !o.st.wardshield && o.state==='hunt'; }).sort(function(a,z){ return dist(a,player)-dist(z,player); })[0];
-      if(front){
-        if(e.hp<=0)return true;e.wardCd=PRIEST.wardCd; setClip(e,'attack'); sfx('shaman-cast',{from:e});
-        front.st.wardshield={t:PRIEST.wardTurns, n:sDMG(PRIEST.ward+floorNo*0.5)};
-        ringFx(front.x, front.y, '#C0203A', 1); sparkleFx(front.x, front.y, 'blood', 16);
-        if(deepVis(e.x,e.y)) log('The <b>Drow Priestess</b> wraps the '+front.name+' in a <b>blood ward</b>.','c-info');
-         return true;
-      }
-    }
-    if(d<=2 && canActorMove(e) && deepCanFlee(e)){ if(e.hp<=0)return true;fleeStep(e);  return true; }
-    if(d>=2 && d<=PRIEST.range && deepShot(e)){
-      if(e.hp<=0)return true;setClip(e,'attack'); boltFx(e.x,e.y,player.x,player.y,'blood'); sfx('shaman-cast',{from:e});
-      if(rng()<hostileHitChance(hitChance(e.base.acc+6, evaOf(player)),true)){
-        var bd=deepHurt(player, roll(e.dmg[0], e.dmg[1]), 'dark', e, 'The <b>Drow Priestess</b>\'s blood bolt hits you');
-        if(bd>0 && e.hp>0 && e.hp<e.maxhp){ var hh=Math.min(bd, e.maxhp-e.hp); e.hp+=hh; floatText(e.x,e.y,'+'+hh,'heal'); }
-      } else { log('The Drow Priestess\'s blood bolt misses.','c-miss'); floatText(player.x,player.y,'miss','miss'); }
+    if(ward(false))return true;
+    if(d<=PRIEST.range && clearShot(e,target)){
+      if(e.hp<=0)return true;setClip(e,'attack'); boltFx(e.x,e.y,target.x,target.y,'blood'); sfx('shaman-cast',{from:e});
+      var chance=hitChance(e.base.acc+6,evaOf(target));if(target===player)chance=hostileHitChance(chance,true);
+      if(rng()<chance){
+        var bd=deepHurt(target, roll(e.dmg[0], e.dmg[1]), 'dark', e, 'The <b>Drow Priestess</b>\'s blood bolt hits you');
+        if(bd>0 && e.hp>0 && e.hp<e.maxhp){ var hh=Math.min(gameEffects.has(e,'rot')?Math.floor(bd*.5):bd, e.maxhp-e.hp); e.hp+=hh; floatText(e.x,e.y,'+'+hh,'heal'); }
+      } else { log('The Drow Priestess\'s blood bolt misses.','c-miss'); floatText(target.x,target.y,'miss','miss'); }
        return true;
     }
-    return false;
+    if(FoteEnemyTeamwork.position(e,target,PRIEST.range,true))return true;
+    if(!heal(true))ward(true);return true;
   },
   /* Thought Eater: saps your mana to heal itself (dazes you if you have none), lashes your mind otherwise */
   eater: function(e, d){
@@ -550,7 +563,7 @@ function matronAct(e){
      return;
   }
   if(M.webCd<=0 && see && d>=2 && d<=6 && !player.st.root && deepShot(e)){ M.webCd=MATRON.webCd; webShot(e, 'Matron');  return; }
-  if(d<=1){ attack(e, player);  return; }
+  if(see&&d<=1){ attack(e, player);  return; }
   var guard=ents.filter(function(o){ return o.ally && dist(o,e)<=1; })[0];
   if(guard){ attack(e, guard);  return; }
   if(canActorMove(e)) chaseStep(e);

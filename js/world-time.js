@@ -25,6 +25,25 @@ function repairSavedEffectClocks(){
   Object.keys(spans).forEach(function(k){if(player[k]>now+spans[k])player[k]=now;});
   if(player.lastDamageTime>now)player.lastDamageTime=now;
   actors.forEach(function(e){if(e!==player&&e.rallyUntil>now+1300)e.rallyUntil=now;});
+  actors.forEach(function(e){if(e.rageReadyAt>now+600)e.rageReadyAt=now;if(e.teamSearchUntil>now+1200)e.teamSearchUntil=now+1200;});
+  actors.forEach(function(e){if(e.searchUntil>now+600)e.searchUntil=now+600;});
+  actors.forEach(function(e){if(e.pebbleSlam&&e.pebbleSlam.at>now+100)e.pebbleSlam.at=now+100;});
+  actors.forEach(function(e){if(e.sporeFieldReadyAt>now+600)e.sporeFieldReadyAt=now;if(e.sporeSupportReadyAt>now+500)e.sporeSupportReadyAt=now;});
+  actors.forEach(function(e){if(e.greenPulseAt>now)e.greenPulseAt=now;});
+  actors.forEach(function(e){if(e.brutePushReadyAt>now+400)e.brutePushReadyAt=now;});
+  actors.forEach(function(e){if(e.skeletonChargeReadyAt>now+400)e.skeletonChargeReadyAt=now;});
+  if(typeof floorMeta==='object'&&floorMeta)Object.keys(floorMeta.greenTrail||{}).forEach(function(i){
+    var t=floorMeta.greenTrail[i];if(t.bornAt>now){t.expiresAt=now+Math.min(1000,Math.max(0,t.expiresAt-t.bornAt));t.bornAt=now;}
+  });
+  if(typeof floorMeta==='object'&&floorMeta)(floorMeta.sporeFields||[]).forEach(function(f){
+    if(f.fireAt>now+100)f.fireAt=now+100;
+    if(f.armedTurn>turn)f.armedTurn=turn;
+    if(f.expiresAt>now+300)f.expiresAt=now+300;
+  });
+  if(typeof floorMeta==='object'&&floorMeta)['webGround','magmaFlames'].forEach(function(key){Object.keys(floorMeta[key]||{}).forEach(function(i){
+    var f=floorMeta[key][i],life=key==='webGround'?1000:300;if(f.bornAt>now){f.expiresAt=now+Math.min(life,Math.max(0,f.expiresAt-f.bornAt));f.bornAt=now;}
+  });});
+  if(typeof FoteEnemyFields!=='undefined')FoteEnemyFields.restore();
   if(typeof floorMeta==='object'&&floorMeta&&floorMeta.sanctuary){
     var ground=floorMeta.sanctuary,maxDuration=Number.isFinite(ground.duration)&&ground.duration>0?ground.duration:Math.max(1300,typeof fullDivineDuration==='function'?100*fullDivineDuration(10):1300);
     if(ground.until>now+maxDuration)ground.until=now;

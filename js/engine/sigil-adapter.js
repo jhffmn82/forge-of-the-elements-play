@@ -10,10 +10,10 @@ var m=Math.round(player.maxmp*0.5); player.mp=Math.min(player.maxmp,player.mp+m)
 player.buffs.manaflow=Math.max(player.buffs.manaflow||0,20);
 },
 "levitate":function(context){var use=context.use,F=floorNo,bountySpots=context.spots;
-player.levitate=25; log('You float a hand\'s width off the floor. (25 turns)','c-good'); sparkleFx(player.x,player.y,'lightning',20);
+player.levitate=Math.max(player.levitate||0,25); gameEffects.clear(player,'root'); gameEffects.clear(player,'web'); log('You float free of roots and webs, above ground hazards. (25 turns)','c-good'); sparkleFx(player.x,player.y,'lightning',20);
 },
 "stoneskin":function(context){var use=context.use,F=floorNo,bountySpots=context.spots;
-applyStatus(player,'stone',15); log('Your skin turns to stone.','c-good');
+applyStatus(player,'stone',15); log('Your skin turns to stone, purging poison and stun. You are immune to both while it lasts.','c-good');
 },
 "heal":function(context){var use=context.use,F=floorNo,bountySpots=context.spots;
 healPlayer(Math.round(player.maxhp*.35));player.buffs.afterglow=15;sparkleFx(player.x,player.y,'heal',30);
@@ -47,14 +47,14 @@ Object.keys(SIGILS).forEach(function(k){ identifySigilQuiet(k); });
     douseAround(5); log('Clear water runs over everything you own. You know every sigil'+(n?' and '+n+' piece'+(n>1?'s':'')+' of gear':'')+'.','c-kill');
 },
 "levitate2":function(context){var use=context.use,F=floorNo,bountySpots=context.spots;
-player.levitate=Math.max(player.levitate||0,60); player.buffs.haste=Math.max(player.buffs.haste||0,10); derive(player); log('You rise on the wind, light and quick.','c-good'); sparkleFx(player.x,player.y,'lightning',30);
+player.levitate=Math.max(player.levitate||0,60); gameEffects.clear(player,'root'); gameEffects.clear(player,'web'); player.buffs.haste=Math.max(player.buffs.haste||0,10); derive(player); log('You rise free of roots and webs, above ground hazards, light and quick.','c-good'); sparkleFx(player.x,player.y,'lightning',30);
 },
 "haste":function(context){
 player.buffs.haste=Math.max(player.buffs.haste||0,20);derive(player);
 log('The wind quickens your movement, attacks and spellcasting by 30%.','c-good');sparkleFx(player.x,player.y,'lightning',24);
 },
 "stoneskin2":function(context){var use=context.use,F=floorNo,bountySpots=context.spots;
-applyStatus(player,'stone',30); giveWard(player.maxhp*0.2, 30); log('Your skin hardens to granite.','c-good');
+applyStatus(player,'stone',30); giveWard(player.maxhp*0.2, 30); log('Your skin hardens to granite, purging poison and stun. You are immune to both while it lasts.','c-good');
 },
 "heal2":function(context){var use=context.use,F=floorNo,bountySpots=context.spots;
 player.hp=player.maxhp;cleanseAll();sparkleFx(player.x,player.y,'heal',30);

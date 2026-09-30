@@ -22,17 +22,49 @@
     if(!row||typeof row!=='object'||Array.isArray(row))return null;
     var r=Object.assign({},row);
     r.id=text(row.id)||text(row.runId)||legacyId(row);r.won=row.won===true||row.victory===true||row.outcome==='victory';
-    ['name','race','cls','who','god','faith','biome','finishedAt','buildVersion'].forEach(function(k){r[k]=text(row[k]);});
+    ['name','race','cls','who','god','faith','biome','finishedAt','buildVersion','cause'].forEach(function(k){r[k]=text(row[k]);});
     r.finishedAt=r.finishedAt||text(row.date);r.name=r.name||'Unknown adventurer';
     ['level','kills','turns','bosses','faithRank'].forEach(function(k){r[k]=count(row[k]);});
     var hasEarnings=Number.isFinite(row.xpGained)&&row.xpGained>=0&&Number.isFinite(row.essenceGained)&&row.essenceGained>=0;
     if(hasEarnings){r.xpGained=count(row.xpGained);r.essenceGained=count(row.essenceGained);}
     r.earningsEstimated=row.earningsEstimated===true;
     r.floor=count(row.floor);r.depth=Math.max(r.floor,count(row.depth));r.affinities=Array.isArray(row.affinities)?row.affinities.filter(function(a){return a&&typeof a.element==='string';}).map(function(a){return{element:a.element,rank:count(a.rank)};}):[];
+    if(Array.isArray(row.gear))r.gear=row.gear.filter(function(g){return g&&typeof g.slot==='string'&&typeof g.name==='string';}).map(function(g){return {slot:g.slot,name:g.name};});
+    else delete r.gear;
     if(Number.isFinite(row.score)&&row.score>=0){r.score=Math.floor(row.score);r.scoreVersion=count(row.scoreVersion);}
     else if(hasEarnings){var result=score(r);r.score=result.total;r.scoreVersion=result.version;r.scoreParts=result.parts;}
     else{r.score=0;r.scoreVersion=0;r.scoreUnavailable=true;delete r.scoreParts;}
     return r;
+  }
+  function damageCause(event){
+    var tags=event.tags||new Set(),label={phys:'physical',dark:'shadow',ice:'frost'}[event.type]||event.type||'unknown';
+    var causes={starvation:'Starvation',fall:'Falling into a chasm',drowning:'Drowning',sacrifice:'A blood sacrifice',spikes:'A spiked door',thorns:'Thorns',curse:'A cursed item',bleed:'Bleeding',burn:'Burning',poison:'Poison'};
+    for(var key in causes)if(tags.has(key))return causes[key];
+    var source=event.source&&typeof event.source==='object'?(event.source.name||event.source.base&&event.source.base.name):'';
+    if(tags.has('reflected'))return 'Reflected '+label+' damage'+(source?' from '+source:'');
+    if(source)return source+' ('+label+' damage)';
+    return label.charAt(0).toUpperCase()+label.slice(1)+' damage';
+  }
+  function report(record){
+    var r=normalize(record);if(!r)return '';
+    function line(value){return String(value||'').replace(/[\r\n\t]+/g,' ');}
+    function cap(value){value=line(value);return value?value.charAt(0).toUpperCase()+value.slice(1):'Not recorded';}
+    var rows=['Forge of the Elements'+(r.buildVersion?' — '+line(r.buildVersion):'')+' — Run report',
+      line(r.name)+' — '+(r.won?'Victory':'Fallen')+(r.sandbox?' (sandbox)':''),
+      'Build: '+(line(r.who)||cap(r.race)+' '+cap(r.cls)),
+      'Race: '+cap(r.race)+' | Class: '+cap(r.cls)+' | Level: '+r.level,
+      'Affinities: '+(r.affinities.length?r.affinities.map(function(a){return cap(a.element)+' '+a.rank;}).join(', '):'None recorded'),
+      'Patron: '+line(r.faith||r.god||'No patron')+(r.faithRank?' (rank '+r.faithRank+')':''),
+      'Deepest floor: '+r.depth+' | Final floor: '+r.floor+(r.biome?' ('+line(r.biome)+')':''),
+      'Kills: '+r.kills+' | Bosses: '+r.bosses+' | Turns: '+r.turns,
+      'Score: '+(r.scoreUnavailable?'Not recorded':r.score)+(r.earningsEstimated?' (estimated)':'')];
+    if(!r.won)rows.push('Cause of death: '+line(r.cause||'Not recorded'));
+    rows.push('Gear:');
+    if(!r.gear)rows.push('  Not recorded for this older run.');
+    else if(!r.gear.length)rows.push('  None');
+    else r.gear.forEach(function(g){rows.push('  '+line(g.slot)+': '+line(g.name));});
+    if(r.finishedAt)rows.push('Finished: '+line(r.finishedAt));
+    return rows.join('\n');
   }
   function decode(raw){
     if(!raw)return [];
@@ -65,7 +97,7 @@
       persisted:function(){return persisted;}
     };
   }
-  return Object.freeze({key:KEY,backupKey:BACKUP,version:VERSION,scoreVersion:SCORE_VERSION,score:score,normalize:normalize,decode:decode,sort:sort,createStore:createStore});
+  return Object.freeze({key:KEY,backupKey:BACKUP,version:VERSION,scoreVersion:SCORE_VERSION,score:score,normalize:normalize,decode:decode,sort:sort,createStore:createStore,report:report,damageCause:damageCause});
 });
 
 (function(root){
@@ -90,6 +122,11 @@
       xpGained:earnings.xp,essenceGained:earnings.essence,earningsEstimated:!!earnings.legacyBaseline,
       biome:biomeName(),kills:RUN.kills||0,turns:RUN.turns||0,bosses:bossCount(depth),god:player.god||'',faith:player.god&&GODS[player.god]?GODS[player.god].name:'No patron',faithRank:player.god?godRank():0,
       affinities:Object.keys(player.aff||{}).filter(function(el){return player.aff[el]>0;}).map(function(el){return{element:el,rank:player.aff[el]};}),
+      gear:[['main','Main hand'],['off',player.twoHanded?'Off hand (stowed)':'Off hand'],['ranged','Ranged weapon'],['armor','Armor'],['ring0','Ring 1'],['ring1','Ring 2'],['amulet','Amulet']].map(function(pair){
+        var item=typeof FoteInventory!=='undefined'?FoteInventory.slotItem(player,pair[0]):null;
+        return item&&item.name&&item!==root.EMPTY_OFF?{slot:pair[1],name:typeof gearName==='function'?gearName(item):item.name}:null;
+      }).filter(Boolean),
+      cause:!won&&RUN.lastDamage&&RUN.lastDamage.lethal?RUN.lastDamage.cause:'',
       won:!!won,finishedAt:new Date().toISOString(),buildVersion:typeof FOTE_VERSION==='undefined'?'':FOTE_VERSION,sandbox:!!RUN.sandbox};
     var result=FoteRunHistory.score(record);record.score=result.total;record.scoreVersion=result.version;record.scoreParts=result.parts;return record;
   }
@@ -112,18 +149,34 @@
     return '<details class="run-breakdown"><summary>How this score was earned</summary><dl>'+[['Depth reached',p.depth],['Character level',p.level],['Campaign bosses',p.bosses],['Enemies defeated',p.kills],['Victory',p.victory]].map(function(pair){return '<dt>'+pair[0]+'</dt><dd>'+number(pair[1])+'</dd>';}).join('')+'</dl><p>1,000 per floor reached · 100 per level · 2,500 per campaign boss · 5 per kill (first 500) · 25,000 for victory. Time does not affect your score.</p></details>';
   }
   function build(record){return escaped(record.who||[cap(record.race),cap(record.cls)].filter(Boolean).join(' '));}
+  function openReport(record,origin){
+    var returnToHistory=origin==='history-title'||origin==='history-end';
+    function back(){if(returnToHistory)openHistory(origin==='history-end'?'end':'title');else{var button=document.getElementById('bReportEnd');if(button)button.focus();}}
+    openModal('Run report','<p class="run-note">Copy this report to share your build and how the run ended.</p><textarea id="runReportText" class="run-report-text" readonly aria-label="Run report"></textarea><p id="runReportNotice" class="run-note" role="status" aria-live="polite"></p>',[
+      {label:'Copy report',cls:'primary',fn:function(){
+        var field=document.getElementById('runReportText'),notice=document.getElementById('runReportNotice');
+        function fallback(){field.focus();field.select();notice.textContent='Select and copy the report using your device’s copy command.';}
+        if(!root.navigator||!navigator.clipboard||typeof navigator.clipboard.writeText!=='function'){fallback();return;}
+        try{navigator.clipboard.writeText(field.value).then(function(){notice.textContent='Report copied.';},fallback);}catch(error){fallback();}
+      }},
+      {label:returnToHistory?'Back to Previous Runs':'Back to summary',fn:closeModal}
+    ],'run-history-modal');
+    document.getElementById('runReportText').value=FoteRunHistory.report(record);
+    modalOnClose=back;
+  }
   function openHistory(origin){
     var rows=store.read(),html='<p class="run-note">Victories lead the list. Runs scored under older rules come after current ones. Finished runs are kept in this browser; sandbox runs are left out.</p>';
     if(!rows.length)html+='<div class="run-empty"><b>Your story starts here.</b><p>Finish a run to earn a place in these records.</p></div>';
     else {
       var previousGroup=null,rank=0;
-      rows.forEach(function(r){
+      rows.forEach(function(r,index){
         var current=r.scoreVersion===FoteRunHistory.scoreVersion,group=String(r.won)+'-'+r.scoreVersion,date=new Date(r.finishedAt),when=isNaN(date.getTime())?'':date.toLocaleDateString();
         if(group!==previousGroup){if(previousGroup!==null)html+='</ol>';rank=0;html+='<h3 class="run-group">'+(r.won?'Victories':'Other runs')+(current?'':' · earlier scoring')+'</h3><ol class="run-history">';previousGroup=group;}
-        html+='<li class="run-entry'+(r.won?' winner':'')+'"><div class="run-entry-heading"><span class="run-rank">'+(++rank)+'</span><div><span class="run-outcome">'+(r.won?'Victory':'Fallen')+'</span><strong>'+escaped(r.name)+'</strong><span class="run-build">'+build(r)+'</span></div><b class="run-points">'+(r.scoreUnavailable?'Unknown':number(r.score))+'<small>'+(current?(r.earningsEstimated?'estimated score':'score'):'earlier score')+'</small></b></div><p>Level '+r.level+' · deepest floor '+r.depth+' · '+number(r.kills)+' kills · '+number(r.turns)+' turns</p><p>'+escaped(r.faith||'No patron')+(r.faithRank?' · rank '+r.faithRank:'')+(when?' · '+escaped(when):'')+'</p>'+breakdown(r)+'</li>';
+        html+='<li class="run-entry'+(r.won?' winner':'')+'"><div class="run-entry-heading"><span class="run-rank">'+(++rank)+'</span><div><span class="run-outcome">'+(r.won?'Victory':'Fallen')+'</span><strong>'+escaped(r.name)+'</strong><span class="run-build">'+build(r)+'</span></div><b class="run-points">'+(r.scoreUnavailable?'Unknown':number(r.score))+'<small>'+(current?(r.earningsEstimated?'estimated score':'score'):'earlier score')+'</small></b></div><p>Level '+r.level+' · deepest floor '+r.depth+' · '+number(r.kills)+' kills · '+number(r.turns)+' turns</p><p>'+escaped(r.faith||'No patron')+(r.faithRank?' · rank '+r.faithRank:'')+(when?' · '+escaped(when):'')+'</p>'+breakdown(r)+'<button class="run-report-button" data-run-report="'+index+'">Run report</button></li>';
       });html+='</ol>';
     }
     openModal('Previous Runs',html,[{label:origin==='end'?'Back to summary':'Back to title',fn:closeModal}],'run-history-modal');
+    document.querySelectorAll('[data-run-report]').forEach(function(button){button.onclick=function(){openReport(rows[Number(button.getAttribute('data-run-report'))],origin==='end'?'history-end':'history-title');};});
     modalOnClose=function(){var button=document.getElementById(origin==='end'?'bHistoryEnd':'tHistory');if(button)button.focus();};
   }
   var style=document.createElement('style');style.textContent=[
@@ -142,8 +195,12 @@
     '.run-points{color:var(--gold);font-size:21px;text-align:right}.run-points small{display:block;color:var(--dim);font-size:10px;font-weight:normal}.run-entry p{font-size:11px;line-height:1.6;color:var(--ash);margin:10px 0 0}',
     '.run-breakdown{font-size:11px;color:var(--ash);text-align:left;margin-top:12px}.run-breakdown summary{cursor:pointer;min-height:28px;display:list-item;align-content:center}.run-breakdown dl{display:grid;grid-template-columns:1fr auto;gap:5px;margin:8px 0}.run-breakdown dd{margin:0;color:var(--ink)}.run-breakdown p{font-size:10px;line-height:1.6}',
     '#modal .mbox.run-history-modal{width:min(680px,calc(100vw - 24px))}',
+    '.run-report-button{margin-top:12px;min-height:36px}.run-report-text{box-sizing:border-box;width:100%;height:clamp(130px,45vh,360px);resize:vertical;background:var(--panel,#181410);color:var(--ink);border:1px solid var(--edge);border-radius:4px;padding:10px;font:12px/1.6 var(--mono);white-space:pre-wrap;overflow-wrap:anywhere}',
     '@media(max-height:560px){#over.end-screen .box{padding:14px 20px}.end-score{font-size:42px;margin:8px 0}.end-stats{margin:10px 0}.end-story{margin:8px 0}}'
   ].join('\n');document.head.appendChild(style);
   root.finishRunHistory=finish;root.runEndRecord=summary;root.openRunHistory=openHistory;
-  root.FoteRunHistoryUI=Object.freeze({escape:escaped,number:number,build:build,breakdown:breakdown});
+  root.FoteRunHistoryUI=Object.freeze({escape:escaped,number:number,build:build,breakdown:breakdown,openReport:openReport});
+  if(typeof FoteLifecycle!=='undefined')FoteLifecycle.whenReady(function(){
+    gameDamage.on('damageApplied',function(event){if(RUN&&event.target===player&&event.damage>0)RUN.lastDamage={cause:FoteRunHistory.damageCause(event),lethal:player.hp<=0};});
+  });
 })(globalThis);

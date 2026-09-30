@@ -49,6 +49,7 @@
   Object.keys(groups).forEach(function(biome){groups[biome].forEach(function(slug){
     var row=content[slug],kind='chaos-'+slug;row.sfx=voices[slug];
     if(slug==='lash-dancer'||slug==='razor-dancer'){row.spawnInvisible=true;}
+    if(slug==='silk-weaver'||slug==='hookfang')row.spider=true;
     row.statusImmunities=immunities[slug];
     MONSTERS[kind]=Object.assign({sprite:'m-'+kind,ch:row.name.charAt(0),col:biome==='rot-hollows'?'#A0C85A':biome==='prism-archives'?'#84CCEE':biome==='cinder-bastion'?'#D97555':'#C998E8',
       range:1,xp:rewards[slug],band:[99,99],w:0,living:true,artLeft:false,chaosAI:true,chaosBiome:biome},row);
@@ -94,23 +95,27 @@
       return wound||dist(e,a)-dist(e,b)||(a===player?-1:1);
     });return candidates[0]||null;
   }
-  // Alert only this pack and nearby same-island allies; recipients do not
-  // relay alerts, so one fight cannot wake every island or track a hidden player.
+  // Only the support calls for help. A call costs an action and cannot relay.
   function alertPack(e,target){
-    if(!active()||!e||!e.base||!e.base.chaosAI||!target)return;
-    var region=regionAt(e.x,e.y);if(!region||region!==regionAt(target.x,target.y))return;
+    if(!active()||!e||e.kind!=='chaos-lens-bearer'||e.chaosAlerted||!target)return false;
+    var region=regionAt(e.x,e.y);if(!region||region!==regionAt(target.x,target.y))return false;
     e.chaosAlerted=true;
-    ents.forEach(function(ally){
-      if(!ally.foe||ally.hp<=0||!ally.base||!ally.base.chaosAI||regionAt(ally.x,ally.y)!==region)return;
-      var grouped=e.chaosEncounterGroup!==undefined&&ally.chaosEncounterGroup===e.chaosEncounterGroup;
-      if(ally!==e&&!grouped&&dist(e,ally)>6)return;
+    var listeners=ents.filter(function(ally){return ally!==e&&ally.foe&&!ally.ally&&ally.hp>0&&ally.base&&ally.base.chaosAI&&
+      (ally.state==='asleep'||ally.state==='wander')&&regionAt(ally.x,ally.y)===region&&dist(e,ally)<=5&&FoteEnemyTeamwork.openLine(e,ally);
+    }).sort(function(a,b){return dist(e,a)-dist(e,b)||a.id-b.id;}).slice(0,2);
+    listeners.forEach(function(ally){
       ally.state='hunt';ally.chaosAlerted=true;ally._lostFor=0;
       ally.lastSeen={x:target.x,y:target.y};
+      if(typeof FoteEnemyPerception!=='undefined')FoteEnemyPerception.remember(ally,target,'call');
     });
+    if(listeners.length&&vis[idxOf(e.x,e.y)]){log('The <b>Lens Bearer</b> calls nearby allies to its aid!','c-you');floatText(e.x,e.y,'Help!','light');}
+    return listeners.length>0;
   }
   function onDamaged(event){
     var e=event.target,source=event.source==='player'?player:event.source;
-    if(event.damage>0&&e&&e.base&&e.base.chaosAI&&source&&(source===player||source.ally))alertPack(e,source);
+    if(event.damage>0&&e&&e.hp>0&&!e.ally&&e.base&&e.base.chaosAI&&source&&!(event.tags&&event.tags.has('periodic'))&&(source===player||source.ally)){
+      if(typeof FoteEnemyPerception==='undefined'){e.state='hunt';e.lastSeen={x:source.x,y:source.y};}
+    }
   }
   function victims(tiles){return [player].concat(ents.filter(function(o){return o!==player&&o.ally;})).filter(function(o){return o.hp>0&&reaches(tiles,o);});}
   function physical(e,target,mult,label){var result=attack(e,target,mult,label);return !!(result&&result.landed);}
@@ -143,6 +148,13 @@
     else floatText(victim.x,victim.y,'miss','miss');
     return true;
   }
+  function lensShield(e,target){
+    var ally=ents.filter(function(o){return o!==e&&o.foe&&!o.ally&&o.hp>0&&o.state==='hunt'&&o.kind!=='chaos-lens-bearer'&&sameRegion(e,o)&&dist(e,o)<=4&&!gameEffects.has(o,'chaoslens')&&clearShot(e,o);}).sort(function(a,b){return dist(a,target)-dist(b,target)||a.id-b.id;})[0];
+    if(!ally)return false;
+    revealActor(e);gameEffects.apply(ally,'chaoslens',4,undefined,{durationModifiers:false,refresh:'replace',data:{n:sHP(35),sourceId:e.id}});
+    if(!actorConcealed(ally))boltFx(e.x,e.y,ally.x,ally.y,'light');setClip(e,'attack');sound(e,'light-cast',.55);
+    e.chaosCooldown=now()+500;e.chaosLensActive=true;return true;
+  }
   function area(cx,cy,r,region){var out=[];for(var y=cy-r;y<=cy+r;y++)for(var x=cx-r;x<=cx+r;x++)if(land(x,y,region))out.push([x,y]);return out;}
   function poison(e,w,damage){
     var combat=state(),tiles=w.tiles.filter(function(t){return land(t[0],t[1],e.chaosRegionId);});if(!tiles.length)return;
@@ -169,6 +181,7 @@
     var victim;
     if(w.kind==='chaos-ray'||w.kind==='chaos-harpoon'||w.kind==='chaos-web'){
       victim=projectileVictim(e,w);var end=w.tiles[w.tiles.length-1];boltFx(e.x,e.y,end[0],end[1],w.element);
+      if(w.kind==='chaos-web'&&typeof FoteEnemyFields!=='undefined')FoteEnemyFields.web(victim?victim.x:end[0],victim?victim.y:end[1],e);
       if(victim){
         if(w.kind==='chaos-harpoon'){if(physical(e,victim,1.15,'Harpoon')&&victim.hp>0)pull(e,victim);}
         else if(spellLands(e,victim)){
@@ -263,8 +276,7 @@
       case 'chaos-folded-horror':tiles=line(e,target,2);if(reaches(tiles,target))return immediate(e,'reach',tiles,'Heavy Reach');break;
       case 'chaos-rift-skitter':if(d>=2&&d<=5)return blink(e,target);break;
       case 'chaos-lens-bearer':
-        var ally=ents.filter(function(o){return o!==e&&o.foe&&o.hp>0&&o.kind!=='chaos-lens-bearer'&&sameRegion(e,o)&&dist(e,o)<=4&&!gameEffects.has(o,'chaoslens')&&clearShot(e,o);}).sort(function(a,b){return dist(a,target)-dist(b,target)||a.id-b.id;})[0];
-        if(ally){revealActor(e);gameEffects.apply(ally,'chaoslens',4,undefined,{durationModifiers:false,refresh:'replace',data:{n:sHP(35),sourceId:e.id}});if(!actorConcealed(ally))boltFx(e.x,e.y,ally.x,ally.y,'light');setClip(e,'attack');sound(e,'light-cast',.55);e.chaosCooldown=now()+500;e.chaosLensActive=true;return true;}return lensBeam(e,target);
+        return lensShield(e,target)||lensBeam(e,target);
       case 'chaos-plague-bloat':if(d<=2)return immediate(e,'vent',area(e.x,e.y,1,region),'vents poison','poison');break;
       case 'chaos-brood-carrier':
         var canBrood=d<=6&&(e.chaosBorn||0)<4&&ents.filter(function(o){return o.hp>0&&o.chaosOwnerId===e.id;}).length<2;
@@ -288,18 +300,29 @@
     if(e.windup&&e.windup.chaos)e.windup=null;
     if(gameEffects.has(e,'chaosbrace'))return true;
     if(e.state!=='hunt'){
-      var wasAsleep=e.state==='asleep';basicMonsterBehavior(e);
-      if(e.state==='hunt')alertPack(e,player);
-      // Sleeping notice does no movement/attack; wandering behavior may
-      // already have acted, and must not gain a second action on discovery.
-      if(e.state!=='hunt'||!wasAsleep)return true;
+      // Shared perception already tried noticing before this behavior.
+      basicMonsterBehavior(e);return true;
     }
     var target=targetFor(e);
-    if(!target){if(e.lastSeen&&sameRegion(e,e.lastSeen))stepToward(e,e.lastSeen.x,e.lastSeen.y);return true;}
-    if(!e.chaosAlerted)alertPack(e,target);
+    if(!target){if(typeof FoteEnemyPerception!=='undefined')return FoteEnemyPerception.investigate(e);if(e.lastSeen&&sameRegion(e,e.lastSeen))stepToward(e,e.lastSeen.x,e.lastSeen.y);return true;}
+    if(!e.chaosAlerted&&alertPack(e,target))return true;
     e.lastSeen={x:target.x,y:target.y};var d=dist(e,target);
+    // Lens Bearers spend their action escaping close threats before casting.
+    if(e.kind==='chaos-lens-bearer'&&d<3&&fleeStep(e,target))return true;
     if(e.kind==='chaos-lens-bearer'&&e.chaosLensActive&&lensBeam(e,target))return true;
     if(now()>=(e.chaosCooldown||0)&&special(e,target))return true;
+    if(e.kind==='chaos-lens-bearer'){
+      if(d>5&&stepToward(e,target.x,target.y))return true;
+      // Stay in support range of a nearby ally without stepping into melee.
+      var escort=ents.filter(function(o){return o!==e&&o.foe&&!o.ally&&o.hp>0&&o.state==='hunt'&&o.kind!=='chaos-lens-bearer'&&sameRegion(e,o)&&dist(e,o)<=6&&clearShot(e,o);}).sort(function(a,b){return dist(e,a)-dist(e,b)||a.id-b.id;})[0];
+      if(escort&&dist(e,escort)>3){
+        var safe=area(e.x,e.y,1,e.chaosRegionId).filter(function(t){var cell={x:t[0],y:t[1]};return !occupied(t[0],t[1])&&dist(cell,target)>=3&&dist(cell,escort)<dist(e,escort);});
+        safe.sort(function(a,b){return dist({x:a[0],y:a[1]},escort)-dist({x:b[0],y:b[1]},escort);});
+        if(safe.length&&stepToward(e,safe[0][0],safe[0][1]))return true;
+      }
+      lensShield(e,target);
+      return true;
+    }
     var reach=e.kind==='chaos-lash-dancer'||e.kind==='chaos-folded-horror'?2:1;
     if(d<=reach&&reaches(line(e,target,reach),target)){
       var hit=physical(e,target,e.kind==='chaos-razor-dancer'&&gameEffects.has(target,'bleed')?1.3:1);
@@ -323,7 +346,7 @@
     if(!active()||!floorMeta.chaosCombat)return;var combat=state();if(combat.lastPulse===clock)return;combat.lastPulse=clock;
     combat.hazards=combat.hazards.filter(function(h){return h.expiresAt>=clock;});
     [player].concat(ents.filter(function(e){return e!==player&&e.ally;})).forEach(function(victim){
-      if(victim.hp<=0)return;
+      if(victim.hp<=0||gameEffects.airborne(victim))return;
       var patches=combat.hazards.filter(function(h){return h.bornAt<clock&&h.regionId===regionAt(victim.x,victim.y)&&reaches(h.tiles,victim);}).sort(function(a,b){return b.damage-a.damage;});if(!patches.length)return;
       var h=patches[0],source=ents.find(function(e){return e.id===h.sourceId;})||{name:'The poison cloud',foe:true,hp:0,base:{},x:h.x,y:h.y};
       var damage=direct(source,victim,h.damage,'poison',true);
@@ -334,5 +357,9 @@
     });
     combat.hazards=combat.hazards.filter(function(h){return h.expiresAt>clock;});
   }
-  root.FoteChaosEnemies=Object.freeze({kindsForBiome:kindsForBiome,spawn:spawnEnemy,act:act,holdsPosition:holdsPosition,cellAllowed:cellAllowed,damageRules:damageRules,onDamaged:onDamaged,globalPulse:globalPulse});
+  function wash(x,y){
+    var combat=floorMeta.chaosCombat;if(!combat)return;
+    combat.hazards=combat.hazards.filter(function(h){h.tiles=h.tiles.filter(function(t){return t[0]!==x||t[1]!==y;});return h.tiles.length>0;});
+  }
+  root.FoteChaosEnemies=Object.freeze({kindsForBiome:kindsForBiome,spawn:spawnEnemy,act:act,holdsPosition:holdsPosition,cellAllowed:cellAllowed,damageRules:damageRules,onDamaged:onDamaged,globalPulse:globalPulse,wash:wash});
 })(typeof window!=='undefined'?window:globalThis);

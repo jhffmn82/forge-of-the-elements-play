@@ -120,6 +120,13 @@ var FOTE_RUNTIME = {
   "js/engine/actions-adapter.js",
   "js/engine/costs-adapter.js",
   "js/engine/progression-adapter.js",
+  "js/enemy-teamwork.js",
+  "js/enemy-perception.js",
+  "js/skeleton-charge.js",
+  "js/sporecaller.js",
+  "js/green-slime.js",
+  "js/ghoul.js",
+  "js/enemy-fields.js",
   "js/engine/actor-adapter.js",
   "js/engine/turn-presentation.js",
   "js/engine/turn-adapter.js",
@@ -161,6 +168,7 @@ var FOTE_RUNTIME = {
   "js/environment-deco.js",
   "js/environment-props.js",
   "art/packed/environment-vegetation-meta.js",
-  "js/environment-vegetation.js"
+  "js/environment-vegetation.js",
+  "js/responsive-hud.js"
 ]
 };

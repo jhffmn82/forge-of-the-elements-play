@@ -298,6 +298,9 @@ function drawUrnGroupProp(p,px,py,alpha){
 
 function prepareCryptActor(job){
   if(job.entity===player||!cryptRoomsOn())return;
+  // Painted sheets already have their own edge. Match the shared character
+  // renderer instead of adding a blurred second silhouette in the Crypt.
+  if(paintedSheet(mobSheet(job.entity.base.sprite)))return;
   ctx.save();ctx.shadowColor=job.entity.foe?'rgba(226,218,246,0.24)':'rgba(226,218,246,0.48)';ctx.shadowBlur=Math.max(2,TS*.07);ctx.shadowOffsetX=0;ctx.shadowOffsetY=0;
   return function(){ctx.restore();};
 }

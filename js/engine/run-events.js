@@ -88,6 +88,7 @@ function renderEndActions(won){
   if($('bAgain'))actions.appendChild($('bAgain'));
   var old=$('bSaveWin'); if(old) old.remove();
   var history=$('bHistoryEnd');if(!history){history=document.createElement('button');history.id='bHistoryEnd';history.textContent='Previous Runs';actions.appendChild(history);}history.onclick=function(){openRunHistory('end');};
+  var report=$('bReportEnd');if(!report){report=document.createElement('button');report.id='bReportEnd';report.textContent='Run report';actions.appendChild(report);}report.onclick=function(){FoteRunHistoryUI.openReport(runEndRecord(won),'end');};
   var tb=$('bTitleEnd'); if(!tb){ tb=document.createElement('button'); tb.id='bTitleEnd'; tb.textContent='Title screen';actions.appendChild(tb); }
   tb.onclick=function(){ $('over').style.display='none'; openTitle(); };
   if(won){

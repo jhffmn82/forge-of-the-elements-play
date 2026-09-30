@@ -1,9 +1,26 @@
-# Forge of the Elements — Beta 1.3.5
+# Forge of the Elements
 
-[Play in your browser](https://jhffmn82.github.io/forge-of-the-elements-play/).
+A browser roguelike: explore elemental dungeons, shape your build at the Forge, and face each biome's boss.
+Beta 1.4 adds new enemies, coordinated support behavior, persistent ground hazards and counterplay,
+better pursuit around corners, and a rebuilt interface for landscape phones, tablets and PCs.
 
-Explore elemental dungeons, shape your build at the Forge, and face each biome's boss. Journey through the Realm of Chaos and the Unmaker encounter to the Forge of the Elements. Keyboard, mouse and touch controls are supported. Use your browser's installation controls for an installed app.
+## Play on a PC
 
-[Beta 1.3.5 patch notes](PATCH-NOTES.md). The in-game Version button also lists changes and checks for updates.
+**[Play in your browser](https://jhffmn82.github.io/forge-of-the-elements-play/)** - nothing to install.
+Keyboard: WASD or the arrow keys to move, QEZC for diagonals, 1-8 for the hotbar, Tab for the character
+sheet, `i` for equipment, `>` to take the stairs. The mouse works for all of it too: click a tile to walk
+there, click a monster to attack or shoot it.
 
-Generated from source commit `a11c2e680311356418788c38b0fb170ca85f91fd`. Built 2026-09-29 16:40:49 UTC.
+## Play on an Android phone or tablet
+
+**[Download the app (forge.apk)](https://github.com/jhffmn82/forge-of-the-elements-play/releases/latest/download/forge.apk)**
+Open the downloaded file, allow installs from your browser when Android asks, and "Forge" appears in the app
+drawer. Phone and tablet play uses landscape; tap to move and hold anything to inspect it. If the browser cannot lock orientation, the game asks you to turn the device sideways. It plays offline once it has loaded, and
+picks up new builds by itself, so the app only needs installing once.
+
+Or just open the play link above in Chrome on the device - the game lays itself out for touch either way.
+
+## This repository
+
+Generated output only: the playable build, published by `tools/publish.py` from the source project. Last
+build: **2026-09-30 13:45:47 UTC**.

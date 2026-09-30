@@ -40,6 +40,7 @@ function resistMult(target,type){
 function prepareAttack(event){
   var att=event.source,def=event.target,view=event.view=attackView(att,def,event.options);
   revealActor(att);
+  if(typeof FoteEnemyPerception!=='undefined')FoteEnemyPerception.attacked(def,att,event.tags);
   if(att===player&&view.weapon&&view.weapon.unarmed&&!event.options.offhand&&!event.tags.has('proc')&&livingMountain(player)){
     stackLivingMountain();view=event.view=attackView(att,def,event.options);
   }
@@ -251,7 +252,7 @@ function resolveWeaponDamage(event,strike){
   var att=event.source,def=event.target,mult=event.multiplier,label=event.label,view=event.view;
   var ranged=strike.ranged,ch=strike.ch,blocked=strike.blocked;
   var base=strike.base,crit=strike.crit,surprise=strike.surprise;
-  var phys=applyDamage(def,base,att.swarm?'dark':att!==player&&att.base&&att.base.attackType||'phys',att,{hit:event.hit,attackRolled:true,actionId:event.actionId,tags:['attack',ranged?'ranged':'melee']}),extra=0,applied=0,note='',el=null,rawExtra={},bonuses={};
+  var phys=applyDamage(def,base,att.swarm?'dark':att!==player&&att.base&&att.base.attackType||'phys',att,{hit:event.hit,attackRolled:true,actionId:event.actionId,tags:['attack',ranged?'ranged':'melee'].concat(event.tags.has('proc')?['proc']:[])}),extra=0,applied=0,note='',el=null,rawExtra={},bonuses={};
   function addRaw(type,n){rawExtra[type]=(rawExtra[type]||0)+n;}
   function addBonus(type,n){if(n>0){type=FoteDamage.type(type);bonuses[type]=(bonuses[type]||0)+n;}return n;}
   sfx(hitSfx(att,def,crit,blocked), {at:def._hit, from:def});
@@ -317,6 +318,7 @@ function presentWeaponDamage(event,strike,damage){
   if(def!==player) def.caughtOff=-1;   /* the surprise is spent: it knows now */
   if(def!==player && def.living && rng()<0.3) setG(def.x,def.y,G_BLOOD);
   if(att===player && total>0){ if(crit)orbOnCritical(def,view); playerHitRewards(def,true); }
+  if(!ranged&&!blocked&&phys>0&&typeof FoteEnemyTeamwork!=='undefined')FoteEnemyTeamwork.shoulderCheck(att,def);
   if(def.hp<=0){ kill(def, att); }
   if(att===player && hasP('cleaving') && !label){   /* 2026-09-22 audit: the swing carries on through a killing blow too */
     var other=ents.filter(function(o){ return o.foe && o!==def && dist(player,o)<=1; })[0];

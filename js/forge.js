@@ -23,6 +23,50 @@ function t1Text(e, n){ return (T1_LIVE[e] && n>0) ? T1_LIVE[e](n) : (T1_TEXT[e]|
 var ENCHANT_TEXT = FoteEnchantments.formulaTable();
 var forgeTab='fuse';
 
+/* Legacy boss floors lose only crafting tiles, never the final victory Forge. */
+function removeBossFloorForges(){
+  function clean(state,n){
+    var meta=state.floorMeta;
+    if(!meta||meta.plane||!(n>0&&n%5===0)||!state.map)return;
+    var finalForge=meta.unmakerPreview&&meta.unmakerPreview.trueForge;
+    for(var i=0;i<state.map.length;i++)if(state.map[i]===FORGE){
+      var x=i%state.MW,y=Math.floor(i/state.MW);
+      if(finalForge&&x>=finalForge.x&&x<finalForge.x+finalForge.w&&y>=finalForge.y&&y<finalForge.y+finalForge.h)continue;
+      state.map[i]=FLOOR;
+    }
+    meta.forge=false;delete meta.forgeAt;
+    if(meta.unmakerPreview)delete meta.unmakerPreview.ordinaryForge;
+    if(meta.chaosPreview&&meta.chaosPreview.landmarks)meta.chaosPreview.landmarks=meta.chaosPreview.landmarks.filter(function(p){return p.id!=='preparation-forge';});
+    if(meta.notes)meta.notes=meta.notes.map(function(note){return note.replace('safe here by the forge','safe here');});
+    (state.rooms||[]).forEach(function(room){if(room.role==='forge')delete room.role;});
+  }
+  clean({map:map,MW:MW,floorMeta:floorMeta,rooms:rooms},floorNo);
+  if(RUN&&RUN.floorStash)Object.keys(RUN.floorStash).forEach(function(n){clean(RUN.floorStash[n],+n);});
+}
+
+function openCoreInfusion(){
+  forgeTab='fuse';
+  openModal('Core claimed: infuse an element', '<div id="forgeBody" data-core-infusion="1"></div>', [
+    {label:totalAffinity()<affinityCap()?'Keep motes':'Continue',fn:closeModal}
+  ], 'wide');
+  renderForge();
+}
+var coreInfusionTimer=null;
+function queueCoreInfusion(){
+  var run=RUN,hero=player;
+  stopTravel();clearTimeout(coreInfusionTimer);
+  // Tile entry can precede endTurn. Defer until that action and its enemies finish.
+  function offer(){
+    if(RUN!==run||player!==hero||player.hp<=0||RUN.over)return;
+    afterTurn(function(){
+      if(player.hp<=0||RUN.over)return;
+      if(modalOpen){coreInfusionTimer=setTimeout(offer,100);return;}
+      openCoreInfusion();
+    });
+  }
+  coreInfusionTimer=setTimeout(offer,0);
+}
+
 
 function openForge(){
   sfx('forge-open'); forgeTab='fuse';
@@ -31,6 +75,7 @@ function openForge(){
 }
 function renderForge(){
   var body=$('forgeBody'); if(!body) return;
+  var corePickup=body.hasAttribute('data-core-infusion');
   var pouch = ELEMENTS.map(function(el){
     var n=player.motes[el]||0;
     return '<div class="mslot'+(n?'':' none')+'" data-el="'+el+'"><span class="mart" data-art="mote-'+el+'"></span><b>'+n+'</b><span>'+cap(el)+'</span></div>';
@@ -39,8 +84,8 @@ function renderForge(){
   var h='<div class="forge-top"><div class="pouch2">'+pouch+'</div><div class="forge-info">'+
         '<div>Affinity: <b>'+affLine+'</b></div><div>Cap: <b>'+totalAffinity()+' / '+affinityCap()+'</b>'+' <span class="c-info">(rises when you pick up a boss core)</span>'+'</div>'+
         '<div>Essence: <b style="color:var(--gold);font-size:15px">'+player.essence+'</b></div></div></div>'+
-        '<div class="ftabs">'+['fuse','enchant','upgrade','craft'].map(function(t){ return '<button data-ft="'+t+'" class="'+(forgeTab===t?'on':'')+'">'+{fuse:'Fuse',enchant:'Enchant',upgrade:'Upgrade',craft:'Craft sigils'}[t]+'</button>'; }).join('')+'</div><div class="fpanel">';
-  if(forgeTab==='fuse'){
+        (corePickup?'':'<div class="ftabs">'+['fuse','enchant','upgrade','craft'].map(function(t){ return '<button data-ft="'+t+'" class="'+(forgeTab===t?'on':'')+'">'+{fuse:'Fuse',enchant:'Enchant',upgrade:'Upgrade',craft:'Craft sigils'}[t]+'</button>'; }).join('')+'</div>')+'<div class="fpanel">';
+  if(corePickup||forgeTab==='fuse'){
     h+='<p class="c-info">Burn a mote into yourself for a point of affinity. It is permanent. You can hold two elements at most, never opposites; the second can never outgrow the first.</p>';
     ELEMENTS.forEach(function(el){
       var why=fuseCheck(el), cur=player.aff[el]||0, nextT=cur+1;
@@ -66,12 +111,12 @@ function renderForge(){
   body.innerHTML=h+'</div>';
   body.querySelectorAll('[data-ft]').forEach(function(b){ b.onclick=function(){ forgeTab=b.getAttribute('data-ft'); sfx('ui-click'); renderForge(); }; });
   body.querySelectorAll('[data-fuse]').forEach(function(b){ b.onclick=function(){ var el=b.getAttribute('data-fuse');
-    confirmBox('Fuse '+el, 'Permanently gain <b>'+cap(el)+' '+((player.aff[el]||0)+1)+'</b>. This cannot be undone.', 'Fuse', function(){ fuseMote(el); }); }; });
+    forgeConfirm('Fuse '+el, 'Permanently gain <b>'+cap(el)+' '+((player.aff[el]||0)+1)+'</b>. This cannot be undone.', 'Fuse', function(){ fuseMote(el); }); }; });
   body.querySelectorAll('[data-up]').forEach(function(b){ b.onclick=function(){ var t=allUpgradeTargets()[+b.getAttribute('data-up')]; if(t) upgradeItem(t.it); }; });
   body.querySelectorAll('[data-ench]').forEach(function(b){ b.onclick=function(){ var p=b.getAttribute('data-ench').split(':'); enchantItem(p[0],p[1]); }; });
   body.querySelectorAll('[data-craft]').forEach(function(b){ b.onclick=function(){ craftSigil(b.getAttribute('data-craft')); }; });
   body.querySelectorAll('[data-art]').forEach(function(el){ paintArt(el, 'items', el.getAttribute('data-art'), 30); });
-  wireForgePanels(body);
+  if(!corePickup)wireForgePanels(body);
 }
 
 /* ---------------------------------------------------------------- the Forge says what it did (2026-09-20)

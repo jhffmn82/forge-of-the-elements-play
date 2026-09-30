@@ -42,23 +42,27 @@ var gameEffects=FoteEffects.create({
   },
   onBeforePulse:function(event,service){
     var e=event.entity,bornAt=event.clock-101;
-    if(at(e.x,e.y)===WATER){
+    if(!service.airborne(e)&&at(e.x,e.y)===WATER){
       if(service.remove(e,'burn','extinguished'))floatText(e.x,e.y,'hiss','ice');
       service.apply(e,'wet',3,undefined,{durationModifiers:false,refresh:'replace',bornAt:bornAt});
     }
-    if(fireT&&fireT[idxOf(e.x,e.y)]>0&&!(e===player&&aff('fire')>=6)&&!(e.base&&e.base.el==='fire')){
-      service.apply(e,'burn',3,sDMG(2),{bornAt:bornAt});
+    if(!service.airborne(e)&&fireT&&fireT[idxOf(e.x,e.y)]>0){
+      if(e.base&&e.base.damageAbsorption&&e.base.damageAbsorption.fire>0){
+        // Absorbers take the same incoming ground heat through the damage
+        // service. It becomes healing there, without leaving a Burn status.
+        dealDirectDamage(e,sDMG(2),'fire',typeof fireSrc!=='undefined'&&fireSrc[idxOf(e.x,e.y)]===1?player:null,{tags:['periodic','environment','ground-fire']});
+      }else if(!(e===player&&aff('fire')>=6)&&!(e.base&&e.base.el==='fire'))service.apply(e,'burn',3,sDMG(2),{bornAt:bornAt});
     }
   },
   onTick:function(event,service){
     var e=event.entity,s=event.status,key=event.key,damage=0;
     if(key==='bleed'){
-      damage=dealDirectDamage(e,Math.max(1,s.d||2),'phys',e.lastHitBy||null);e._hit=performance.now();floatText(e.x,e.y,String(damage),'blood');
+      damage=dealDirectDamage(e,Math.max(1,s.d||2),'phys',e.lastHitBy||null,{tags:['periodic','bleed']});e._hit=performance.now();floatText(e.x,e.y,String(damage),'blood');
       if(e===player)log('Bleeding: '+damage+' damage.','c-you');
       if(rng()<.35&&typeof setG==='function'&&gAt(e.x,e.y)===G_NONE)setG(e.x,e.y,G_BLOOD);
     }else if(key==='burn'){
       var black=e!==player&&e.foe&&(s.sourceAffinity?(s.sourceAffinity.fire||0)>=3&&(s.sourceAffinity.shadow||0)>=2:combo('fire','shadow'));
-      damage=dealDirectDamage(e,Math.max(1,Math.round(s.d*(black?1:resistMult(e,'fire')))),'fire',e.lastHitBy||null,{resistanceApplied:!black});e._hit=performance.now();floatText(e.x,e.y,String(damage),'fire');
+      damage=dealDirectDamage(e,Math.max(1,Math.round(s.d*(black?1:resistMult(e,'fire')))),'fire',e.lastHitBy||null,{resistanceApplied:!black,tags:['periodic','burn']});e._hit=performance.now();floatText(e.x,e.y,String(damage),'fire');
       if(e===player)log('Burning: '+damage+' fire damage.','c-you');
       if(gAt(e.x,e.y)===G_GRASS||gAt(e.x,e.y)===G_SHORT)ignite(e.x,e.y,e===player?'player':null);
       if(black&&e.hp>0)addHollow(e,1);
@@ -68,7 +72,7 @@ var gameEffects=FoteEffects.create({
       damage*=resistMult(e,'poison');
       if(e===player&&((player.buffs&&player.buffs.poisonward>0)||aff('earth')>=6))damage=0;
       if(e.base&&e.base.sporeproof)damage=0;
-      damage=dealDirectDamage(e,damage,'poison',null,{resistanceApplied:true});floatText(e.x,e.y,String(damage),'poison');
+      damage=dealDirectDamage(e,damage,'poison',null,{resistanceApplied:true,tags:['periodic','poison']});floatText(e.x,e.y,String(damage),'poison');
     }else if(key==='aura'&&e===player){
       ents.slice().forEach(function(o){if(o.foe&&dist(o,player)<=2){var dealt=applyDamage(o,s.d||3,'dark',player);floatText(o.x,o.y,String(dealt),'dark');healPlayer(1);if(o.hp<=0)kill(o,player);}});
     }

@@ -8,7 +8,7 @@
 var AMULETS = {
   hook:     {name:'Amulet of the Hook',   kills:10, aim:true, range:5, desc:'Pull an enemy within 5 tiles to your side, or hook a wall or closed door and haul yourself to it, even over chasms and water.'},
   swap:     {name:'Amulet of Exchange',   kills:8, aim:true, range:8, desc:'Trade places with a creature you can see within 8 tiles.'},
-  tide:     {name:'Amulet of the Tide',   kills:8, aim:true, range:6, desc:'Flood a 3x3 area with water for 20 turns. The wave sets off every trap in that room.'},
+  tide:     {name:'Amulet of the Tide',   kills:8, aim:true, range:6, desc:'Flood a 3x3 area for 20 turns, washing away webs, flames, poison patches and other ground hazards. The wave sets off every trap in that room.'},
   seeking:  {name:'Amulet of Seeking',    kills:10,                    desc:'Reveal the floor within 16 tiles, with every trap and hidden door in it.'},
   pillar:   {name:'Amulet of the Pillar', kills:6, aim:true, range:5, desc:'Raise a stone pillar on an empty tile for 15 turns. It blocks movement and sight.'},
   stillness:{name:'Amulet of Stillness',  kills:15,                    desc:'Stop time for up to 3 steps. Moving is free; attacking or any other action breaks the stillness.'},
@@ -144,13 +144,13 @@ function amuletTide(x,y){
   var cells=[];
   for(var dy=-1;dy<=1;dy++) for(var dx=-1;dx<=1;dx++){
     var cx=x+dx, cy=y+dy; if(!inb(cx,cy)) continue;
+    washGround(cx,cy);
     if(at(cx,cy)===FLOOR){ cells.push([cx,cy,FLOOR,gAt(cx,cy)]); setT(cx,cy,WATER); setG(cx,cy,0); }
-    fireT[idxOf(cx,cy)]=0;
-    ents.forEach(function(e){ if(e.x===cx && e.y===cy && e.st){ if(e.st.burn) delete e.st.burn; e.st.wet={t:6}; } });
+    ents.forEach(function(e){ if(e.x===cx && e.y===cy && e.st){ gameEffects.remove(e,'burn','extinguished'); gameEffects.clear(e,'web'); gameEffects.apply(e,'wet',6); } });
   }
   floorMeta.tides.push({cells:cells, until:turn+20});
   burst(x,y,'ice',40,0.08); sfx('step-water',{from:{x:x,y:y}});
-  log('Water surges out and floods the floor.','c-good');
+  log('Water surges out, washing away ground hazards and flooding the floor.','c-good');
   /* the wave runs through the whole room and trips its traps */
   var room=roomAt(x,y); if(!room) return;
   var tripped=0;

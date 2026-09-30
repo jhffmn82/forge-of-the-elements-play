@@ -17,6 +17,7 @@ function turnPrepareBuffClocks(context){
   if(player.hidden>(player._worldHiddenPrev||0))player._worldHiddenBorn=context.from;
   if(player.levitate>(player._worldLevitatePrev||0))player._worldLevitateBorn=context.from;
 }
+function turnRefreshSight(context){if(context.moved)computeFOV();}
 function turnAdvanceAction(context){
   player.t=context.to;turn++;RUN.turns++;
   context.actionId=turn;
@@ -30,7 +31,7 @@ function turnHunger(context){
   player.hunger=Math.max(0,Math.min(HUNGER_MAX,player.hunger-hungerCost(context.cost)*(1-sustenance)));
   if(before>=300&&player.hunger<300){log('<b>You are getting hungry.</b> Eat something soon.','c-you');sfx('hungry');}
   if(player.hunger<=0&&turn%5===0){
-    dealDirectDamage(player,1,'phys',null);floatText(player.x,player.y,'1','phys');
+    dealDirectDamage(player,1,'phys',null,{tags:['periodic','starvation']});floatText(player.x,player.y,'1','phys');
     if(turn%25===0){log('You are starving!','c-you');sfx('hungry');}
   }
 }
@@ -80,6 +81,9 @@ function turnWorldPulse(clock){
   }
   groundTick();godsWorldAdvance(clock-100,clock);
   if(typeof FoteChaosEnemies!=='undefined')FoteChaosEnemies.globalPulse(clock);
+  if(typeof FoteSporecaller!=='undefined')FoteSporecaller.pulse(clock);
+  if(typeof FoteGreenSlime!=='undefined')FoteGreenSlime.pulse(clock);
+  if(typeof FoteEnemyFields!=='undefined')FoteEnemyFields.pulse(clock);
   if(typeof FoteUnmakerEncounter!=='undefined')FoteUnmakerEncounter.pulsePylons(clock);
 }
 function turnExplore(){
@@ -88,12 +92,13 @@ function turnExplore(){
 function turnFinalizeAction(context){
   if(context.freeStep)player.freeStep=false;
   player.lastAttack=false;player.movedThisTurn=false;player.castingSpell=false;FREE_ACTION=false;delete player.grassStep;
+  delete player.ghoulStep;
   if(player.hp<context.hpBefore)player.lastDamageTime=player.t;
   player._worldBuffPrev=Object.assign({},player.buffs);
   player._buffPrev=Object.assign({},player.buffs);
   player._worldHiddenPrev=player.hidden;player._worldLevitatePrev=player.levitate;
   player._buffSeen=buffTimers();
-  if(player.hp<=0)death();else {derive(player);computeFOV();updateUI();draw();}
+  if(player.hp<=0)death();else {derive(player);computeFOV();if(typeof FoteSporecaller!=='undefined')FoteSporecaller.observe();updateUI();draw();}
 }
 function turnPhase(name,run,aliveOnly){return {name:name,run:run,aliveOnly:!!aliveOnly};}
 var gameTurns=FoteTurns.create({
@@ -108,8 +113,9 @@ var gameTurns=FoteTurns.create({
   cost:function(context){return context.stillness?0:player.tombed?100:context.moved?moveCost():actCost(player);},
   advanceAction:turnAdvanceAction,
   prepare:[turnPhase('action-flags',turnPrepareAction),turnPhase('holy-buff-gain',turnPrepareHolyBuffs),turnPhase('cinder-trail',turnPrepareCinder),turnPhase('effect-birth-clocks',turnPrepareBuffClocks)],
-  beforeWorld:[turnPhase('gear-use',turnIdentifyGear,true),turnPhase('lava-at-player',turnDeepLavaPlayer,true),turnPhase('hunger',turnHunger,true),turnPhase('distance-field',refreshPlayerDistance,true)],
+  beforeWorld:[turnPhase('movement-sight',turnRefreshSight,true),turnPhase('hearing',function(context){if(typeof FoteEnemyPerception!=='undefined')FoteEnemyPerception.playerAction(context);},true),turnPhase('gear-use',turnIdentifyGear,true),turnPhase('lava-at-player',turnDeepLavaPlayer,true),turnPhase('hunger',turnHunger,true),turnPhase('distance-field',refreshPlayerDistance,true)],
   afterWorld:[
+    turnPhase('ghoul-emergence',function(context){if(typeof FoteGhoul!=='undefined')FoteGhoul.emerge(context);},true),
     turnPhase('fire',fireTick,true),turnPhase('regeneration',turnRegeneration,true),turnPhase('exploration',turnExplore,true),
     turnPhase('temporary-terrain',turnExpireAmuletTerrain,true),turnPhase('keen-eyes',turnRevealKeenEyes,true),turnPhase('smoke-expiry',turnExpireSmoke,true),turnPhase('item-expiry',turnExpireItems,true),
     turnPhase('tome-ward',turnClearTomeWard,true),turnPhase('class-recovery',turnClassRecovery,true),turnPhase('element-passives',turnElementAfterAction,true),turnPhase('element-combos',turnComboAfterAction,true),

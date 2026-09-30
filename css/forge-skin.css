@@ -1,0 +1,309 @@
+/* Forge materials. Paint only: the approved layout owns all sizes and spacing.
+   Paper is packed at 128x128 and tiled at its native pixel scale. */
+/* Keep HUD stacking inside the game, below title and character creation. */
+body[data-ui-theme] #app{position:relative;isolation:isolate;}
+body[data-ui-theme=forge]{
+ --ui-bg:#131617;--ui-panel:#25292a;--ui-panel-2:#33393a;--ui-log:#1c2224;
+ --ui-edge:#596162;--ui-raised:#41494a;--ui-ink:#eeeae0;--ui-ash:#bec3c0;--ui-dim:#939e9b;
+ --gold:#d6b779;--ui-radius:5px;--ui-button-radius:5px;
+ --ui-surface:linear-gradient(color-mix(in srgb,#2b3031 var(--ui-background-percent,100%),transparent),color-mix(in srgb,#212729 var(--ui-background-percent,100%),transparent));
+ --ui-header-face:linear-gradient(color-mix(in srgb,#373e40 var(--ui-background-percent,100%),transparent),color-mix(in srgb,#2a3032 var(--ui-background-percent,100%),transparent));
+ --ui-button-face:linear-gradient(color-mix(in srgb,#485153 var(--ui-background-percent,100%),transparent),color-mix(in srgb,#30393b var(--ui-background-percent,100%),transparent));
+ --ui-button-shadow:inset 0 1px #b1baba3d,inset 1px 0 #b1baba1c,inset 0 -3px #090d0fa6,inset -1px 0 #090d0f99;
+ --ui-frame-shadow:inset 0 0 0 1px #969f9f33,inset 0 0 0 3px #080d0f70,0 5px 16px #0008;
+ --forge-paper:url('textures/forge-paper.webp');
+}
+/* A separate paint layer lets transparency fade the material, never the text. */
+body[data-ui-theme=forge] #app{position:relative;isolation:isolate;background:transparent!important;border-top-color:#606869;}
+body[data-ui-theme=forge] #app::before{
+ content:'';position:absolute;inset:0;z-index:-1;pointer-events:none;
+ background:linear-gradient(#171d2077,#171d2077),var(--forge-paper) 0 0/128px 128px repeat;
+ filter:grayscale(.9);
+ image-rendering:pixelated;
+ opacity:var(--ui-background-opacity,1);
+}
+body[data-ui-theme=forge] #app #top,
+body[data-ui-theme=forge] #app #shade .sheet,
+body[data-ui-theme=forge] #modal .mbox{
+ isolation:isolate;position:relative;border-color:var(--ui-edge);
+}
+body[data-ui-theme=forge] #app #top::before,
+body[data-ui-theme=forge] #app #shade .sheet::before,
+body[data-ui-theme=forge] #modal .mbox::before{
+ content:'';position:absolute;inset:0;z-index:-1;pointer-events:none;border-radius:inherit;
+ background:var(--forge-paper) 0 0/128px 128px repeat;image-rendering:pixelated;
+ filter:grayscale(.9);opacity:calc(.28 * var(--ui-background-opacity,1));
+}
+body.fote-study[data-ui-theme=forge] #app :is(#studyLeft,#studyRight,#studyHud,#hotbar){background:transparent;border-color:var(--ui-edge);}
+body.fote-study[data-ui-theme=forge] #app #log{
+ background:color-mix(in srgb,#131d24 calc(var(--ui-background-opacity,1) * 66%),transparent);
+ color:#d0d0c5;text-shadow:0 1px #090e11;
+ box-shadow:inset 0 1px #9aa5a159,inset 0 -1px #9aa5a159;
+ --blood:#d57f6b;--moss:#9eb779;--dim:#aaa38e;
+}
+body.fote-study[data-ui-theme=forge] #app #top{background:var(--ui-header-face);box-shadow:inset 0 1px #acb5b229,inset 0 -2px #080d1066;}
+body.fote-study[data-ui-theme=forge] #app #top #depth{color:var(--ui-ash);text-shadow:0 1px #070a06;}
+body.fote-study[data-ui-theme=forge] #app #top #depth b{color:var(--ui-ink);}
+/* Raised controls carry a matte surface and the sprite art's dark edges. */
+body.fote-study[data-ui-theme=forge] #app :is(#studyNav button,#studyExplore,#dpad button),
+body[data-ui-theme=forge] #app #shade .sheet button,
+body[data-ui-theme=forge] #modal button{
+ position:relative;isolation:isolate;background:var(--ui-button-face);color:var(--ui-ink)!important;
+ border-color:#657173 #363e40 #14191b #525e60;box-shadow:var(--ui-button-shadow);text-shadow:0 1px #0c1215;
+}
+body.fote-study[data-ui-theme=forge] #app :is(#studyNav button,#studyExplore,#dpad button)::before,
+body[data-ui-theme=forge] #app #shade .sheet button::before,
+body[data-ui-theme=forge] #modal button::before{
+ content:'';position:absolute;inset:1px;z-index:-1;pointer-events:none;border-radius:inherit;
+ background:var(--forge-paper) 14px 8px/128px 128px repeat;image-rendering:pixelated;filter:grayscale(.9);opacity:calc(.32 * var(--ui-background-opacity,1));
+}
+body.fote-study[data-ui-theme=forge] #app #studyNav button,
+body.fote-study[data-ui-theme=forge] #app #studyExplore{border-radius:5px!important;}
+body.fote-study[data-ui-theme=forge] #app #studyNav button.on,
+body.fote-study[data-ui-theme=forge] #app :is(#studyNav button,#studyExplore,#dpad button):active,
+body[data-ui-theme=forge] #app #shade .sheet button:active{
+ background:var(--ui-surface);border-color:#172124 #59696c #6c7b7c #243035;
+ box-shadow:inset 0 2px 4px #000b,inset 0 -1px #b1bcbc4d;transform:none;
+}
+body.fote-study[data-ui-theme=forge] #app #studyNav button.on{color:#ecd49d!important;box-shadow:inset 0 2px 4px #000a,inset 0 -2px #ae9564;}
+body.fote-study[data-ui-theme=forge] #app #studyNav .study-points{border-color:#8f805b;background:#3b3a26;color:#f2d99f;}
+@media(hover:hover){
+ body.fote-study[data-ui-theme=forge] #app :is(#studyNav button,#studyExplore,#dpad button):hover,
+ body[data-ui-theme=forge] #app #shade .sheet button:hover{border-top-color:#829291;color:#fff2d5!important;}
+}
+/* Inset tracks keep their game colors and stay fully opaque at every setting. */
+body.fote-study[data-ui-theme=forge] #app #bars .bar,
+body.fote-study[data-ui-theme=forge] #app #studyHunger .study-hunger-track,
+body.fote-study[data-ui-theme=forge] #app #hud2 .faithchip .meter{
+ background:#171d1f;border-color:#505c5c;box-shadow:inset 0 0 0 1px #63706c,inset 0 2px 3px #000a;
+}
+body.fote-study[data-ui-theme=forge] #app #bars .bar>i,
+body.fote-study[data-ui-theme=forge] #app #studyHungerFill,
+body.fote-study[data-ui-theme=forge] #app #hud2 .faithchip .meter>i{box-shadow:inset 0 1px #fff3,inset 0 -2px #0005;}
+body.fote-study[data-ui-theme=forge] #app #studyHungerFill,
+body.fote-study[data-ui-theme=forge] #app #hud2 .faithchip .meter>i{position:relative;}
+body.fote-study[data-ui-theme=forge] #app #bars .bar>i::after,
+body.fote-study[data-ui-theme=forge] #app #studyHungerFill::after,
+body.fote-study[data-ui-theme=forge] #app #hud2 .faithchip .meter>i::after{
+ content:'';position:absolute;inset:0;pointer-events:none;
+ background:var(--forge-paper) 0 0/128px 128px repeat;image-rendering:pixelated;opacity:.12;
+}
+body.fote-study[data-ui-theme=forge] #app #bars .bar :is(span,.l),
+body.fote-study[data-ui-theme=forge] #app #studyHungerText,
+body.fote-study[data-ui-theme=forge] #app #hud2 .faithchip .rk{color:var(--ui-bar-ink);text-shadow:var(--ui-bar-shadow);}
+body.fote-study[data-ui-theme=forge] #app #hud2 button b{color:var(--ui-ink);}
+body.fote-study[data-ui-theme=forge] #app #hud2 button.chip.study-motes{
+ background:var(--ui-panel-2-tint);border-color:#566363;box-shadow:inset 0 1px 2px #090e1077,inset 0 -1px #9baaa724;
+}
+/* The spell art and its elemental halo sit in dark iron sockets. */
+body.fote-study[data-ui-theme=forge] #app #hotbar .slot:not(.empty){
+ background:color-mix(in srgb,#141a13 var(--ui-background-percent,100%),transparent);
+ box-shadow:inset 0 0 0 1px #65624c,inset 0 0 0 2px #11190f,inset 0 0 12px -2px var(--c,transparent),inset 0 2px #b1a87929,inset 0 -3px #030702a6;
+}
+body.fote-study[data-ui-theme=forge] #app #hotbar .slot.armed,
+body.fote-study[data-ui-theme=forge] #app #hotbar .slot.over,
+body.fote-study[data-ui-theme=forge] #app #hotbar .slot:not(:disabled):active{box-shadow:inset 0 0 0 1px #c5ad70,inset 0 2px 4px #000b,inset 0 0 14px -2px var(--c,transparent);}
+body.fote-study[data-ui-theme=forge] #app #hotbar .slot .k{color:#e1d5b7;background:#191e15e6;border-color:#5c624a;}
+body.fote-study[data-ui-theme=forge] #statusbar .sico{box-shadow:inset 0 0 0 1px #cbc19826,inset 0 -2px #0009;border-radius:3px;}
+body[data-ui-theme=forge] #app #shade .sheet{background:var(--ui-surface);border-radius:5px;box-shadow:var(--ui-frame-shadow);}
+body[data-ui-theme=forge] #app #shade .sheet header{background:var(--ui-header-face);border-color:#575e46;box-shadow:inset 0 1px #aaa07a33;}
+body[data-ui-theme=forge] #app #shade .sheet :is(.sec,.tg-sec){color:#d6c698;border-bottom-color:#49513b;text-shadow:0 1px #10150e;}
+body[data-ui-theme=forge] #app #shade :is(.gslot,.cell){background:var(--ui-log-tint);box-shadow:inset 0 1px 3px #0009,inset 0 -1px #98927224;}
+body[data-ui-theme=forge] #app #shade .optrow select{border-color:#5b634a;border-radius:4px;box-shadow:inset 0 1px 3px #0007;}
+body[data-ui-theme=forge] #dtip{background:#1d2319;border-color:#726f52;box-shadow:inset 0 0 0 1px #a89c6930,0 4px 14px #000b;}
+
+/* Three parchment washes share one native 128-pixel grain. */
+body[data-ui-theme^=vellum]{
+ --paper-base:#e4d9bc;--paper-button:#d6c8a6;--paper-header:#cdbf9c;--paper-log:#8c7858;--paper-line:#887754;
+ --forge-paper:url('textures/forge-paper.webp');
+ --ui-bg:#191b17;--ui-panel:var(--paper-base);--ui-panel-2:var(--paper-button);--ui-log:#c4b18b;--ui-raised:var(--paper-button);--ui-edge:var(--paper-line);
+ --ui-ink:#302a20;--ui-ash:#48402f;--ui-dim:#61533c;--gold:#715020;--moss:#416025;--blood:#962d23;--ember:#924517;
+ --ui-radius:5px;--ui-button-radius:5px;
+ --ui-surface:linear-gradient(color-mix(in srgb,var(--paper-base) var(--ui-background-percent,100%),transparent),color-mix(in srgb,var(--paper-base) var(--ui-background-percent,100%),transparent));
+ --ui-header-face:linear-gradient(color-mix(in srgb,var(--paper-header) var(--ui-background-percent,100%),transparent),color-mix(in srgb,var(--paper-button) var(--ui-background-percent,100%),transparent));
+ --ui-button-face:linear-gradient(color-mix(in srgb,var(--paper-base) var(--ui-background-percent,100%),transparent),color-mix(in srgb,var(--paper-button) var(--ui-background-percent,100%),transparent));
+ --ui-frame-shadow:inset 0 0 0 1px #574c2d4d,0 5px 16px #0008;
+ --ui-button-shadow:inset 0 1px #fffae180,inset 1px 0 #fffae140,inset 0 -2px #514a3447;
+}
+body[data-ui-theme=vellum-sand]{--paper-base:#d6be8e;--paper-button:#c4a978;--paper-header:#bca475;--paper-log:#776a4f;--paper-line:#80704b;}
+body[data-ui-theme=vellum-ash]{--paper-base:#d2d2c8;--paper-button:#bfc2b6;--paper-header:#b0b7a9;--paper-log:#637165;--paper-line:#6c7869;--ui-ink:#273026;--ui-ash:#3e483a;--ui-dim:#56614f;--gold:#62542b;}
+body[data-ui-theme^=vellum] #app{position:relative;isolation:isolate;background:transparent!important;border-top-color:var(--paper-line);}
+body[data-ui-theme^=vellum] #app::before,
+body[data-ui-theme^=vellum] #app #shade .sheet::before,
+body[data-ui-theme^=vellum] #modal .mbox::before{
+ content:'';position:absolute;inset:0;z-index:-1;pointer-events:none;border-radius:inherit;
+ background:var(--paper-base) var(--forge-paper) 0 0/128px 128px repeat;
+ background-blend-mode:soft-light;image-rendering:pixelated;opacity:var(--ui-background-opacity,1);
+}
+body.fote-study[data-ui-theme^=vellum] #app :is(#studyLeft,#studyRight,#studyHud,#hotbar){background:transparent;}
+body.fote-study[data-ui-theme^=vellum] #app #log{
+ background:color-mix(in srgb,var(--paper-log) calc(var(--ui-background-opacity,1) * 42%),transparent);
+ color:var(--ui-ink);text-shadow:none;
+ box-shadow:inset 0 1px color-mix(in srgb,var(--paper-line) 72%,transparent),inset 0 -1px color-mix(in srgb,var(--paper-line) 72%,transparent);
+ --ash:var(--ui-ash);--dim:var(--ui-dim);--moss:#34551e;--blood:#962d23;--gold:#624313;--ember:#8b3719;
+}
+body.fote-study[data-ui-theme^=vellum] #app #top{background:var(--ui-header-face);border-color:var(--paper-line);box-shadow:inset 0 1px #fffae18c,inset 0 -1px #514a3447;}
+body.fote-study[data-ui-theme^=vellum] #app #top #depth,
+body.fote-study[data-ui-theme^=vellum] #app #top #depth b{color:var(--ui-ink);text-shadow:none;}
+body.fote-study[data-ui-theme^=vellum] #app :is(#studyNav button,#studyExplore,#dpad button),
+body[data-ui-theme^=vellum] #app #shade .sheet button,
+body[data-ui-theme^=vellum] #modal button{
+ position:relative;isolation:isolate;background:var(--ui-button-face);border-color:var(--paper-line);
+ color:var(--ui-ink)!important;box-shadow:var(--ui-button-shadow);text-shadow:none;
+}
+body.fote-study[data-ui-theme^=vellum] #app :is(#studyNav button,#studyExplore,#dpad button)::before,
+body[data-ui-theme^=vellum] #app #shade .sheet button::before,
+body[data-ui-theme^=vellum] #modal button::before{
+ content:'';position:absolute;inset:1px;z-index:-1;pointer-events:none;border-radius:inherit;
+ background:var(--forge-paper) 0 0/128px 128px repeat;image-rendering:pixelated;opacity:calc(.14 * var(--ui-background-opacity,1));
+}
+body.fote-study[data-ui-theme^=vellum] #app #studyNav button.on,
+body.fote-study[data-ui-theme^=vellum] #app :is(#studyNav button,#studyExplore,#dpad button):active{
+ background:var(--ui-header-face);box-shadow:inset 0 2px 3px #44392066,inset 0 -2px var(--paper-line);transform:none;
+}
+body.fote-study[data-ui-theme^=vellum] #app #hud2 button b{color:var(--ui-ink);}
+body.fote-study[data-ui-theme^=vellum] #app #hud2 button.chip.study-motes{background:color-mix(in srgb,var(--paper-log) calc(var(--ui-background-opacity,1) * 20%),transparent);border-color:var(--paper-line);box-shadow:inset 0 1px 2px #514a3429;}
+body.fote-study[data-ui-theme^=vellum] #app #hud2 .study-motes .dot{box-shadow:0 0 0 1px #65583980;}
+body.fote-study[data-ui-theme^=vellum] #app #bars .bar,
+body.fote-study[data-ui-theme^=vellum] #app #studyHunger .study-hunger-track,
+body.fote-study[data-ui-theme^=vellum] #app #hud2 .faithchip .meter{background:#605c4b;border-color:var(--paper-line);box-shadow:inset 0 0 0 1px #958462;}
+body.fote-study[data-ui-theme^=vellum] #app #bars .bar :is(span,.l),
+body.fote-study[data-ui-theme^=vellum] #app #studyHungerText,
+body.fote-study[data-ui-theme^=vellum] #app #hud2 .faithchip .rk{color:var(--ui-bar-ink);text-shadow:var(--ui-bar-shadow);}
+body.fote-study[data-ui-theme^=vellum] #app #hotbar{--gold:#ebc575;--ink:#f5ebd3;--dim:#c1baa7;}
+body.fote-study[data-ui-theme^=vellum] #app #statusbar .n{color:#fff1d8;}
+body[data-ui-theme^=vellum] #app #shade .sheet,
+body[data-ui-theme^=vellum] #modal .mbox{position:relative;isolation:isolate;background:transparent;border-color:var(--paper-line);box-shadow:var(--ui-frame-shadow);}
+body[data-ui-theme^=vellum] #app #shade .sheet header{background:var(--ui-header-face);border-color:var(--paper-line);}
+body[data-ui-theme^=vellum] #app #shade .sheet :is(h2,.sec,.tg-sec){color:var(--ui-ink);border-color:var(--paper-line);text-shadow:none;}
+body[data-ui-theme^=vellum] #app #shade :is(.gslot,.cell){background:color-mix(in srgb,var(--paper-log) calc(var(--ui-background-opacity,1) * 17%),transparent);box-shadow:inset 0 1px 3px #66583726;border-color:color-mix(in srgb,var(--paper-line) 55%,transparent);}
+body[data-ui-theme^=vellum] #app #shade .slotrow{background:color-mix(in srgb,var(--paper-log) calc(var(--ui-background-opacity,1) * 14%),transparent);}
+body[data-ui-theme^=vellum] #app #shade :is(.mote,.tag){text-shadow:none;}
+/* Keys, mote counts and empty-pouch hints share the paper palette; their
+   icon artwork keeps its elemental colors. Fade only the chip background. */
+body[data-ui-theme^=vellum] #app #shade .pouch .mote{color:var(--ui-ink);background:var(--ui-panel-2-tint);border-color:var(--paper-line);}
+/* Very translucent paper uses solid pale ink against the dark map underneath. */
+body[data-ui-theme^=vellum].ui-paper-faded{--ui-ink:#f0e9d7;--ui-ash:#d6ceb9;--ui-dim:#bdb49b;--gold:#e3c28b;--moss:#a6bc7f;--blood:#e79c87;--ember:#ecae81;}
+body.fote-study[data-ui-theme^=vellum].ui-paper-faded #app #log{--moss:#a6bc7f;--blood:#e79c87;--gold:#e3c28b;--ember:#ecae81;text-shadow:0 1px #18170f;}
+body[data-ui-theme^=vellum] #dtip{background:#e0d3b0;color:#302a20;--ink:#302a20;--ash:#48402f;--dim:#61533c;--gold:#715020;border-color:var(--paper-line);box-shadow:0 4px 14px #0008;}
+/* Scrollbars use the same paper and ink palette as their panel. */
+body[data-ui-theme^=vellum],
+body[data-ui-theme^=vellum] #app :is(#log,.bodyw,.sheet){scrollbar-color:var(--paper-line) var(--paper-button);}
+body[data-ui-theme^=vellum] #app ::-webkit-scrollbar-track{background:var(--paper-button);border-color:var(--paper-line);}
+body[data-ui-theme^=vellum] #app ::-webkit-scrollbar-thumb{background:var(--paper-line);border-color:var(--paper-button);}
+body[data-ui-theme^=vellum] #app ::-webkit-scrollbar-thumb:hover{background:var(--ui-ash);}
+body[data-ui-theme^=vellum] #app ::-webkit-scrollbar-corner{background:var(--paper-button);}
+body[data-ui-theme=forge],
+body[data-ui-theme=forge] #app :is(#log,.bodyw,.sheet){scrollbar-color:#717f80 #242c30;}
+body[data-ui-theme=forge] #app ::-webkit-scrollbar-track{background:#242c30;border-color:#4c5b5e;}
+body[data-ui-theme=forge] #app ::-webkit-scrollbar-thumb{background:#717f80;border-color:#242c30;}
+body[data-ui-theme=forge] #app ::-webkit-scrollbar-corner{background:#242c30;}
+
+/* Inset frames separate the board, controls and log without taking map space. */
+body[data-ui-theme]{--ui-frame-line:var(--ui-edge);--ui-frame-inner:#11191bc7;}
+body[data-ui-theme^=vellum]{--ui-frame-line:var(--paper-line);--ui-frame-inner:#51493680;}
+body.fote-study[data-ui-theme] #app :is(#hotbar,#dpad){position:relative;}
+body.fote-study[data-ui-theme] #app :is(#map,#hotbar,#dpad)::after{
+ content:'';position:absolute;inset:0;z-index:40;pointer-events:none;border-radius:inherit;
+ box-shadow:inset 0 0 0 1px var(--ui-frame-line),inset 0 0 0 3px var(--ui-frame-inner);
+}
+body.fote-study[data-ui-theme] #app #log{
+ box-shadow:inset 0 0 0 1px var(--ui-frame-line),inset 0 0 0 3px var(--ui-frame-inner);
+}
+/* Paint above the fill so a full resource cannot hide its inset rim. */
+body[data-ui-theme] #app #bars .bar::after,
+body.fote-study[data-ui-theme] #app #studyHunger .study-hunger-track::after,
+body.fote-study[data-ui-theme] #app #hud2 .faithchip .meter::after{
+ content:'';position:absolute;inset:0;pointer-events:none;border-radius:inherit;
+ box-shadow:inset 0 0 0 1px var(--ui-frame-line),inset 0 0 0 2px var(--ui-frame-inner);
+}
+
+/* The original character screen is the default visual language. Keep its
+   near-black warm panels, fine edges and gold headings, without a paper wash. */
+body[data-ui-theme=ember],body[data-ui-theme] :is(#title,#create){
+ --ui-bg:#0f0d0c;--ui-panel:#1b1715;--ui-panel-2:#221d1a;--ui-log:#151210;
+ --ui-edge:#3d3229;--ui-raised:#2d251f;--ui-ink:#f2e8dc;--ui-ash:#b8aca0;--ui-dim:#928477;
+ --gold:#e8b44a;--ember:#e2622b;--ui-radius:6px;--ui-button-radius:5px;
+ --ui-frame-line:#4b3e30;--ui-frame-inner:#100d0ac7;
+ --ui-frame-shadow:inset 0 1px #dac49b0d,0 5px 16px #0007;
+ --ui-button-shadow:inset 0 1px #d9bb8d14,inset 0 -2px #09070680;
+}
+body[data-ui-theme=ember] #app{background:var(--ui-panel-tint)!important;border-top-color:var(--ui-frame-line);}
+body.fote-study[data-ui-theme=ember] #app :is(#studyLeft,#studyRight,#studyHud,#hotbar){background:transparent;border-color:var(--ui-edge);}
+body.fote-study[data-ui-theme=ember] #app #top{background:var(--ui-header-face);box-shadow:inset 0 1px #d9bb8d18,inset 0 -1px #08060599;}
+body.fote-study[data-ui-theme=ember] #app #top #depth{color:var(--ui-ash);text-shadow:none;}
+body.fote-study[data-ui-theme=ember] #app #top #depth :is(b,#hBiome){color:var(--gold);}
+body.fote-study[data-ui-theme=ember] #app #log{background:var(--ui-log-tint);color:var(--ui-ash);text-shadow:none;--dim:#928477;}
+body.fote-study[data-ui-theme=ember] #app :is(#studyNav button,#studyExplore,#dpad button){
+ background:var(--ui-button-face);border-color:#493b2e #352b23 #241d18 #403329;
+ box-shadow:var(--ui-button-shadow);color:var(--ui-ink);text-shadow:none;
+}
+body.fote-study[data-ui-theme=ember] #app #studyNav button{color:var(--gold);}
+body.fote-study[data-ui-theme=ember] #app #studyNav button.on,
+body.fote-study[data-ui-theme=ember] #app :is(#studyNav button,#studyExplore,#dpad button):active{
+ background:var(--ui-panel-tint);box-shadow:inset 0 2px 3px #0007,inset 0 -2px var(--ember);transform:none;
+}
+body.fote-study[data-ui-theme=ember] #app #studyNav .study-points{background:#302316;border-color:#806034;color:#f2d090;}
+body.fote-study[data-ui-theme=ember] #app #bars .bar,
+body.fote-study[data-ui-theme=ember] #app #studyHunger .study-hunger-track,
+body.fote-study[data-ui-theme=ember] #app #hud2 .faithchip .meter{background:#100e0c;border-color:var(--ui-edge);box-shadow:none;}
+body.fote-study[data-ui-theme=ember] #app #hud2 button.chip.study-motes{background:var(--ui-panel-2-tint);border-color:#534330;box-shadow:inset 0 1px 2px #0005;}
+body.fote-study[data-ui-theme=ember] #app #hud2 button b{color:var(--ui-ink);}
+body.fote-study[data-ui-theme=ember] #app #hotbar .slot:not(.empty){
+ background:var(--ui-log-tint);
+ box-shadow:inset 0 0 0 1px #534330,inset 0 0 0 2px #100d0a,inset 0 0 12px -2px var(--c,transparent),inset 0 -2px #0008;
+}
+body.fote-study[data-ui-theme=ember] #app #hotbar .slot:is(.armed,.over,:active){box-shadow:inset 0 0 0 1px var(--gold),inset 0 0 14px -2px var(--c,transparent);}
+body.fote-study[data-ui-theme=ember] #app #hotbar .slot .k{background:#171310e6;color:var(--ui-ink);border-color:#534330;}
+body[data-ui-theme=ember] #app #shade .sheet :is(h2,.sec,.tg-sec){border-color:var(--ui-edge);text-shadow:none;}
+body[data-ui-theme=ember] #app #shade .sheet h2{color:var(--gold);}
+body[data-ui-theme=ember] #app #shade .sheet :is(.sec,.tg-sec){color:var(--ui-dim);}
+body[data-ui-theme=ember],body[data-ui-theme=ember] #app :is(#log,.bodyw,.sheet){scrollbar-color:#756346 #211b16;}
+body[data-ui-theme=ember] #app ::-webkit-scrollbar-track{background:#211b16;border-color:#332a24;}
+body[data-ui-theme=ember] #app ::-webkit-scrollbar-thumb{background:#756346;border-color:#211b16;}
+body[data-ui-theme=ember] #app ::-webkit-scrollbar-corner{background:#211b16;}
+
+/* Character-select lettering gives the title bar the same identity. Resource
+   values and combat text retain their compact, readable monospaced font. */
+body.fote-study[data-ui-theme] #app #top #depth,
+body.fote-study[data-ui-theme] #app #top #studyNav button{
+ font-family:var(--display);font-weight:600;font-size:calc(17px * var(--ui-text-scale,1));line-height:1.1;
+}
+body.fote-study[data-ui-theme] #app #top #depth .study-position{font-family:inherit;}
+@media(min-height:600px){
+ body.fote-study[data-ui-theme] #app #top #depth,
+ body.fote-study[data-ui-theme] #app #top #studyNav button{font-size:calc(20px * var(--ui-text-scale,1));}
+}
+@media(max-width:740px){
+ body.fote-study[data-ui-theme] #app #top #depth,
+ body.fote-study[data-ui-theme] #app #top #studyNav button{font-size:calc(15px * var(--ui-text-scale,1));}
+}
+
+/* Front screens retain the original art, element and god colors. Their fine
+   frames and controls match Ember even when an optional HUD skin is selected. */
+body[data-ui-theme] :is(#title,#create){
+ --bg:var(--ui-bg);--panel:var(--ui-panel);--panel-2:var(--ui-panel-2);--edge:var(--ui-edge);
+ --ink:var(--ui-ink);--ash:var(--ui-ash);--dim:var(--ui-dim);
+ --ui-background-percent:100%;--ui-background-opacity:1;
+ --ui-button-face:linear-gradient(#2d251f,#221d1a);
+ scrollbar-color:#756346 #211b16;
+}
+body[data-ui-theme] :is(#title,#create) button{
+ border-radius:5px;border-color:var(--ui-edge);background:var(--ui-button-face);
+ color:var(--ui-ink);box-shadow:var(--ui-button-shadow);text-shadow:none;
+}
+body[data-ui-theme] :is(#title,#create) button:focus-visible{outline:2px solid var(--gold);outline-offset:2px;}
+body[data-ui-theme] #title{background-position:left top;}
+body[data-ui-theme] #title .menu button{color:#f2d9a0;border-color:#53412e;background:linear-gradient(#241d17f2,#171310f2);box-shadow:inset 0 1px #d9bb8d1c,inset 0 -2px #09070699,0 3px 10px #0005;}
+body[data-ui-theme] #title .menu button:focus-visible{outline-offset:-3px;}
+body[data-ui-theme] #title .panel{background:#1b1715f5;border-color:#53412e;box-shadow:var(--ui-frame-shadow);}
+body[data-ui-theme] #create .card{background:#171310;box-shadow:inset 0 1px #dac49b0d,inset 0 -1px #0006;}
+body[data-ui-theme] #create .card.on{border-color:var(--ember);background:#241a12;box-shadow:inset 0 0 0 1px #e2622b40,inset 0 -2px #e2622b80;}
+body[data-ui-theme] #create .summary{background:#1b1715;border-color:var(--ui-edge);box-shadow:inset 0 1px #dac49b0d;}
+body[data-ui-theme] #create input{background:#100e0c;color:var(--ink);border-color:#53412e;border-radius:5px;box-shadow:inset 0 1px 3px #0006;}
+body[data-ui-theme] #create :is(.go,#cBack){font-family:var(--display);font-size:20px;color:var(--gold);}
+body[data-ui-theme] #create .go{border-color:#966231;background:linear-gradient(#3d2c1c,#261c14);}
+@media(hover:hover){
+ body.fote-study[data-ui-theme=ember] #app :is(#studyNav button,#studyExplore,#dpad button):hover,
+ body[data-ui-theme] :is(#title,#create) button:hover{border-color:#896438;color:#ffe1a0;}
+}

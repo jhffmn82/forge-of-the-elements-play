@@ -118,7 +118,7 @@
     return true;
   }
   function targetFor(e){
-    var candidates=party().filter(function(t){return t!==player||canSeePlayer(e);});
+    var candidates=party().filter(function(t){return typeof FoteEnemyPerception!=='undefined'?FoteEnemyPerception.sees(e,t):t!==player||canSeePlayer(e);});
     candidates.sort(function(a,b){return dist(e,a)-dist(e,b)||(a===player?-1:1);});
     if(candidates.length){e.lastSeen={x:candidates[0].x,y:candidates[0].y};return candidates[0];}
     return null;
@@ -251,7 +251,7 @@
     var s=state();if(!s||s.status!=='active'||!owns(e)||e.hp<=0)return false;
     updatePhase(e);if(s.warning)return release(e);
     if(summon(e))return true;
-    var target=targetFor(e);if(!target){if(e.lastSeen)stepToward(e,e.lastSeen.x,e.lastSeen.y);return true;}
+    var target=targetFor(e);if(!target){if(typeof FoteEnemyPerception!=='undefined')return FoteEnemyPerception.investigate(e);if(e.lastSeen)stepToward(e,e.lastSeen.x,e.lastSeen.y);return true;}
     var distance=dist(e,target),clear=clearLine(e,target);
     if(clock()>=s.majorReadyAt&&clear){
       if(s.phase===1&&distance<=2&&warn(e,'cleave',target))return true;

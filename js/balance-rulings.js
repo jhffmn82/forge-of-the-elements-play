@@ -24,7 +24,7 @@ function combatRoll(chance,eligible){
 }
 function pRoll(chance){return combatRoll((chance||0)+luckBonus(),true);}
 
-if(typeof STATUS_INFO!=='undefined')STATUS_INFO.luckystreak={name:'Lucky Streak',icon:'ic-pray',d:'Once a turn, your first failed roll in combat is rolled again.'};
+if(typeof STATUS_INFO!=='undefined')STATUS_INFO.luckystreak={name:'Lucky Streak',icon:'ic-roll-dice',d:'Once a turn, your first failed roll in combat is rolled again.'};
 
 
 function safeWobbleSpots(){

@@ -1058,7 +1058,7 @@ function drawLargeCreature(e, px, py, opts){
       var fr=clipFrame(ms, e, false), m=ms.m, cell=m.cell, box=m.box||[0,0,cell,cell];
       var target=TS*n*0.98*(e.base.bigScale||1), sc=target/Math.max(box[3], box[2]*0.85);   /* bigScale: a boss can stand taller than its footprint (2026-09-19) */
       var w=cell*sc, h=cell*sc, dx=px+(TS*n)/2-(box[0]+box[2]/2)*sc, dy=py+TS*n*0.97-(box[1]+box[3])*sc;
-      ctx.save(); ctx.globalAlpha=opts&&opts.alpha!==undefined?opts.alpha:1; ctx.imageSmoothingEnabled=true;
+      ctx.save(); ctx.globalAlpha=opts&&opts.alpha!==undefined?opts.alpha:1; ctx.imageSmoothingEnabled=spriteSheetSmoothing(ms);
       if(opts&&opts.flip){ ctx.translate(px+TS*n/2,0); ctx.scale(-1,1); ctx.translate(-(px+TS*n/2),0); }
       ctx.drawImage(ms.img, fr.sx, fr.sy, cell, cell, dx, dy, w, h);
       if(opts&&opts.flash>0){ ctx.globalAlpha*=opts.flash; ctx.drawImage(whiteCut(ms.img,fr.sx,fr.sy,cell,cell), dx,dy,w,h); }

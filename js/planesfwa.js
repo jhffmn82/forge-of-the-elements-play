@@ -109,7 +109,7 @@ function fwaSprite(kind){
   M.cinderimp    = mk({name:'Cinder Imp', sprite:fwaSprite('cinderimp'), col:'#FF8A3A', ch:'i', hp:70, dmg:[8,11], acc:72, eva:30, armor:1, xp:85,
                        fwa:'hop', el:'fire', living:true, art:0.75, sfx:'imp'});
   M.magmacrawler = mk({name:'Magma Crawler', sprite:fwaSprite('magmacrawler'), col:'#D8541E', ch:'c', hp:130, dmg:[11,15], acc:68, eva:4, armor:12, speed:70, xp:110,
-                       fwa:'crawler', magmaBurst:true, el:'fire', art:0.95, sfx:'spider'});
+                       fwa:'crawler', magmaBurst:true, el:'fire', damageAbsorption:{fire:1}, art:0.95, sfx:'spider', hint:'Fire restores its health, including burning ground.'});
   M.flamedancer  = mk({name:'Flame Dancer', sprite:fwaSprite('flamedancer'), col:'#FFB066', ch:'f', hp:70, dmg:[8,11], acc:76, eva:38, armor:2, xp:100,
                        fwa:'dancer', kindles:true, el:'fire', art:0.95, sfx:'elementaling'});
   M.emberlord    = mk({name:'The Emberlord', sprite:fwaSprite('emberlord'), col:'#FF6A18', ch:'E', hp:230, dmg:[13,18], acc:78, eva:14, armor:7, xp:700,
@@ -427,7 +427,7 @@ function elementalPlaneBehavior(e){
        return true;
     }
   }
-  if(kind==='dancer' && canActorMove(e) && e.state==='hunt' && d<=1 && rng()<0.35){
+  if(kind==='dancer' && see && canActorMove(e) && e.state==='hunt' && d<=1 && rng()<0.35){
     /* it will not stand and trade: a step aside, then it comes back in */
     var side=[[1,1],[1,-1],[-1,1],[-1,-1],[1,0],[-1,0],[0,1],[0,-1]].filter(function(o){ return walkable(e.x+o[0],e.y+o[1]) && !occupied(e.x+o[0],e.y+o[1]) && dist({x:e.x+o[0],y:e.y+o[1]}, player)<=2; });
     if(side.length){ var o2=side[Math.floor(rng()*side.length)]; e.x+=o2[0]; e.y+=o2[1]; e._lx=undefined;
@@ -459,7 +459,7 @@ function elementalPlaneBehavior(e){
        return true;
     }
   }
-  if(kind==='wisp' && e.state==='hunt' && d<=2 && (e.gustCd=(e.gustCd||0)-1)<=0){
+  if(kind==='wisp' && see && e.state==='hunt' && d<=2 && (e.gustCd=(e.gustCd||0)-1)<=0){
     e.gustCd=3;
     var g=fwaPush(player, player.x-e.x, player.y-e.y, 1);
     if(g){ log('The <b>Wind Wisp</b> shoves you back a tile.','c-you'); burst(player.x, player.y, 'lightning', 10, 0.04); }

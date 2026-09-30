@@ -65,6 +65,26 @@ if($('bArt'))$('bArt').textContent=spriteOn?'Art: sprites':'Art: blocks';
   document.head.appendChild(st);
 })();
 function segHTML(id, opts, cur){ return '<span class="seg" data-seg="'+id+'">'+opts.map(function(o){ return '<button data-v="'+o[0]+'" class="'+(String(o[0])===String(cur)?'on':'')+'">'+o[1]+'</button>'; }).join('')+'</span>'; }
+var UI_THEMES={ember:'Ember (Default)',forge:'Forge',vellum:'Vellum - Ivory','vellum-sand':'Vellum - Sand','vellum-ash':'Vellum - Ash',charcoal:'Charcoal',slate:'Slate',obsidian:'Obsidian',runestone:'Runestone'}, UI_TEXT_SIZES={small:'Small',normal:'Standard',large:'Large'};
+var UI_THEME='ember',UI_TEXT_SIZE='normal',UI_OPACITY=100,UI_SIDE='left',UI_DESKTOP_PAD=false;
+try{UI_SIDE=localStorage.getItem('fote-ui-side')||localStorage.getItem('fote-study-pad-side')||'left';UI_DESKTOP_PAD=(localStorage.getItem('fote-ui-desktop-pad')||localStorage.getItem('fote-study-desktop-pad'))==='shown';}catch(e){}
+if(UI_SIDE!=='right')UI_SIDE='left';
+try{UI_THEME=localStorage.getItem('fote-ui-theme')||UI_THEME;UI_TEXT_SIZE=localStorage.getItem('fote-ui-text')||UI_TEXT_SIZE;UI_OPACITY=Number(localStorage.getItem('fote-ui-opacity')||100);}catch(e){}
+function applyUIAppearance(){
+  if(!UI_THEMES[UI_THEME])UI_THEME='ember';
+  if(!UI_TEXT_SIZES[UI_TEXT_SIZE])UI_TEXT_SIZE='normal';
+  document.body.dataset.uiTheme=UI_THEME;document.body.dataset.uiText=UI_TEXT_SIZE;
+  document.body.style.setProperty('--ui-text-scale',UI_TEXT_SIZE==='large'?'1.12':UI_TEXT_SIZE==='small'?'.9':'1');
+  UI_OPACITY=Number.isFinite(UI_OPACITY)?Math.max(10,Math.min(100,UI_OPACITY)):100;
+  document.body.classList.toggle('ui-paper-faded',UI_THEME.indexOf('vellum')===0&&UI_OPACITY<65);
+  document.body.style.setProperty('--ui-background-opacity',String(UI_OPACITY/100));
+  document.body.style.setProperty('--ui-background-percent',UI_OPACITY+'%');
+  if(typeof FoteResponsiveHUD!=='undefined')FoteResponsiveHUD.relayout();
+}
+applyUIAppearance();
+function appearanceSelect(id,label,choices,value){
+  return '<label class="optrow"><span>'+label+'</span><select id="'+id+'">'+Object.keys(choices).map(function(k){return '<option value="'+k+'"'+(k===value?' selected':'')+'>'+choices[k]+'</option>';}).join('')+'</select></label>';
+}
 function settingsHTML(){
   var h='<div class="optgrid"><div><div class="sec">Key bindings <span style="text-transform:none;letter-spacing:0">(click, then press a key; Esc cancels)</span></div><div class="binds">';
   BIND_ACTIONS.forEach(function(b){
@@ -79,7 +99,11 @@ function settingsHTML(){
      '<label class="optrow"><span>Effects volume</span><input type="range" id="volSfx" min="0" max="100" value="'+Math.round((AUDIO.vol.sfx||0)*100)+'"></label>'+
      '<label class="optrow"><span>Music volume</span><input type="range" id="volMusic" min="0" max="100" value="'+Math.round((AUDIO.vol.music||0)*100)+'"></label>'+
      '<div class="sec">Display</div>'+
-     (window.MOBILE && window.FoteMobileOrientation ? '<div class="optrow"><span>Orientation</span>'+segHTML('orientation', [['portrait','Portrait'],['landscape','Landscape']], FoteMobileOrientation.getPreference())+'</div><p id="orientationStatus" role="status" style="font-size:12px;color:var(--ash);line-height:1.4">'+FoteMobileOrientation.getStatus()+'</p>' : '')+
+     appearanceSelect('uiSide','Status / log side',{left:'Left',right:'Right'},UI_SIDE)+
+     (!(typeof MOBILE!=='undefined'&&MOBILE)?'<div class="optrow"><span>Movement pad</span>'+segHTML('desktopPad', [['shown','Shown'],['hidden','Hidden']],UI_DESKTOP_PAD?'shown':'hidden')+'</div>':'')+
+     appearanceSelect('uiTheme','UI theme',UI_THEMES,UI_THEME)+
+     appearanceSelect('uiTextSize','Text size',UI_TEXT_SIZES,UI_TEXT_SIZE)+
+     '<label class="optrow ui-opacity-row"><span>UI transparency <output id="uiOpacityValue" for="uiOpacity">'+(100-UI_OPACITY)+'%</output></span><input type="range" id="uiOpacity" min="0" max="90" step="5" value="'+(100-UI_OPACITY)+'" aria-label="UI transparency" aria-describedby="uiOpacityHint"></label><div id="uiOpacityHint" class="c-info">Fades panel and button backgrounds. Text, icons and bars stay solid.</div>'+
      '<div class="optrow"><span>Map zoom</span>'+segHTML('mapzoom', [['far','Far'],['normal','Normal'],['close','Close'],['closest','Closest']], MAP_ZOOM)+'</div>'+
      '<div class="optrow"><span>Block art</span>'+segHTML('mapart', [['block','On'],['sprite','Off']], spriteOn?'sprite':'block')+'</div>'+
      '<div class="optrow"><span>Dynamic lighting</span>'+segHTML('light', [['on','On'],['off','Off']], lightOn?'on':'off')+'</div>'+
@@ -106,6 +130,13 @@ function refreshOptions(){
   }else if(typeof refreshSheet==='function')refreshSheet();
 }
 function wireSettings(root){
+  var side=root.querySelector('#uiSide');
+  if(side)side.onchange=function(){UI_SIDE=side.value==='right'?'right':'left';try{localStorage.setItem('fote-ui-side',UI_SIDE);}catch(e){}if(typeof FoteResponsiveHUD!=='undefined')FoteResponsiveHUD.relayout();};
+  var theme=root.querySelector('#uiTheme'),text=root.querySelector('#uiTextSize');
+  if(theme)theme.onchange=function(){UI_THEME=theme.value;try{localStorage.setItem('fote-ui-theme',UI_THEME);}catch(e){}applyUIAppearance();};
+  if(text)text.onchange=function(){UI_TEXT_SIZE=text.value;try{localStorage.setItem('fote-ui-text',UI_TEXT_SIZE);}catch(e){}applyUIAppearance();};
+  var opacity=root.querySelector('#uiOpacity');
+  if(opacity)opacity.oninput=function(){UI_OPACITY=100-Number(opacity.value);applyUIAppearance();root.querySelector('#uiOpacityValue').textContent=(100-UI_OPACITY)+'%';try{localStorage.setItem('fote-ui-opacity',String(UI_OPACITY));}catch(e){}};
   root.querySelectorAll('[data-bind]').forEach(function(b){ b.onclick=function(ev){ ev.stopPropagation(); REBINDING=b.getAttribute('data-bind'); refreshOptions(); }; });
   var rb=root.querySelector('#bindReset'); if(rb) rb.onclick=function(){ BINDS={}; REBINDING=null; saveBinds(); refreshOptions(); };
   root.querySelectorAll('[data-seg]').forEach(function(seg){
@@ -117,9 +148,9 @@ function wireSettings(root){
       if(id==='light'){ try{ localStorage.setItem('astra-temple-light', v); }catch(e){} var bl=$('bLight'); if(bl) bl.textContent='Lighting: '+v; draw(); }
       if(id==='motion'){ if(typeof setMotion==='function') setMotion(v); }
       if(id==='mapart')setMapArt(v);
+      if(id==='desktopPad'){UI_DESKTOP_PAD=v==='shown';try{localStorage.setItem('fote-ui-desktop-pad',UI_DESKTOP_PAD?'shown':'hidden');}catch(e){}if(typeof FoteResponsiveHUD!=='undefined')FoteResponsiveHUD.relayout();}
       if(id==='mapzoom'){ MAP_ZOOM=v; try{ localStorage.setItem('astra-temple-map-zoom', v); }catch(e){} resize(); }
       if(id==='speed'){ ANIM_SPEED=parseFloat(v)||1; try{ localStorage.setItem('astra-temple-anim-speed', String(ANIM_SPEED)); }catch(e){} applyAnimSpeed(); }
-      if(id==='orientation' && window.FoteMobileOrientation) FoteMobileOrientation.setPreference(v).then(function(){var status=root.querySelector('#orientationStatus');if(status)status.textContent=FoteMobileOrientation.getStatus();});
       sfx('ui-click'); refreshOptions();
     }; });
   });

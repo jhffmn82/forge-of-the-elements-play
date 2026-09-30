@@ -3,7 +3,7 @@
    inventory, hunger, the turn loop, floors, death and victory.
    ========================================================================== */
 
-var BAG_MAX = 20;   /* 2026-09-17: 16 was too tight once sigils, keys and a ranged weapon compete for it */
+var BAG_MAX = 25;   /* Five rows of five slots. */
 function hungerCost(cost){ return cost/100 * 2 * (player.race==='gloomling' ? 0.8 : 1); }
 
 function bossNameForFloor(){
@@ -19,6 +19,7 @@ function bossNameForFloor(){
 /* ---------------------------------------------------------------- movement */
 function performPlayerMove(dx,dy){
   if(player.hp<=0 || RUN.victory) return;
+  player.ghoulStep={x:player.x,y:player.y,dx:dx,dy:dy};
   var f=faceOf(dx,dy); if(f) player.face=f;
   if(player.st.frozen){ log('You are frozen solid.','c-info'); endTurn(); return; }
   if(player.st.stun){ log('You are stunned.','c-info'); endTurn(); return; }
@@ -31,7 +32,7 @@ function performPlayerMove(dx,dy){
   }
   if(player.st.root){ log('You are rooted in place.','c-info'); endTurn(); return; }
   var friend=ents.filter(function(e){ return e.ally && e.x===nx && e.y===ny; })[0];
-  if(friend){ friend.x=player.x; friend.y=player.y; player.x=nx; player.y=ny; player.movedThisTurn=true; stepOn(); endTurn(); return; }
+  if(friend){ if(typeof FoteEnemyPerception!=='undefined')FoteEnemyPerception.observeMove(nx,ny); friend.x=player.x; friend.y=player.y; player.x=nx; player.y=ny; player.movedThisTurn=true; stepOn(); endTurn(); return; }
   var pr=propAt(nx,ny);
   if(pr && bumpProp(pr)) return;
   var t=at(nx,ny);
@@ -47,7 +48,7 @@ function performPlayerMove(dx,dy){
   if(t===FORGE){ if(typeof openForge==='function') openForge(); return; }
   if(t===SHRINE){ if(typeof openShrine==='function') openShrine(); return; }
   if(t===CHASM){
-    if(player.levitate>0){ player.x=nx; player.y=ny; player.movedThisTurn=true; stepOn(); endTurn(); return; }
+    if(player.levitate>0){ if(typeof FoteEnemyPerception!=='undefined')FoteEnemyPerception.observeMove(nx,ny); player.x=nx; player.y=ny; player.movedThisTurn=true; stepOn(); endTurn(); return; }
     log('A sheer drop into darkness. You would need to float to cross.','c-info'); return;
   }
   if(t===WALL && gAt(player.x,player.y)===G_TELL){ log('A draft whispers through the stones here. Something is behind this wall.','c-info'); }
@@ -55,6 +56,7 @@ function performPlayerMove(dx,dy){
   /* 2026-09-28 (Justin): the step tramples tall grass before the monsters look, so its stealth never counted while
      walking. The grass you just stepped into still hides you this turn (stealthScore); turnFinalizeAction clears it. */
   if(gAt(nx,ny)===G_GRASS) player.grassStep={x:nx,y:ny};
+  if(typeof FoteEnemyPerception!=='undefined')FoteEnemyPerception.observeMove(nx,ny);
   player.x=nx; player.y=ny; player.movedThisTurn=true;
   if(gAt(nx,ny)===G_GRASS){ setG(nx,ny,G_SHORT); sfx('step-grass',{vol:0.15}); }   /* 2026-09-28 (Justin): a quarter; the rustle is 0.5 s against a 0.07 s stone click, so at half it still sounded bigger. Cutting a bush stays at half. 2026-09-29 (Justin): lower again, 0.15 (on top of step-grass in SFX_LEVEL) */
   else if(t===WATER) sfx('step-water',{vol:0.8}); else sfx('step-stone',{vol:0.8});
@@ -94,7 +96,7 @@ function entryItemsAndTerrain(){
   var here=items.filter(function(it){ return it.x===player.x && it.y===player.y; });
   here.forEach(function(it){
     if(it.kind==='essence'){ removeItem(it); gainEssence(it.n); floatText(player.x,player.y,'+'+it.n,'magic'); log('Picked up '+it.n+' essence.','c-good'); sfx('pickup-essence',{vol:0.5}); }
-    else if(it.kind==='mote'){ removeItem(it); player.motes[it.el]=(player.motes[it.el]||0)+1; log('Picked up '+(/^[aeiou]/.test(it.el)?'an':'a')+' <b>'+it.el+' mote</b>. Bring it to the Elemental Forge'+(RUN&&!RUN.moteTold?', found on the third or fourth floor of each biome.':'.'),'c-kill'); if(RUN)RUN.moteTold=true;   /* 1.3.2 ruling 4: the first mote of a run says where */ sfx('pickup-mote'); sparkleFx(player.x,player.y,TRAIL_EL(it.el),16); }
+    else if(it.kind==='mote'){ removeItem(it); player.motes[it.el]=(player.motes[it.el]||0)+1; log('Picked up '+(/^[aeiou]/.test(it.el)?'an':'a')+' <b>'+it.el+' mote</b>.','c-kill'); sfx('pickup-mote'); sparkleFx(player.x,player.y,TRAIL_EL(it.el),16); }
     else if(it.kind==='key'){ removeItem(it); player.keys[it.key]=(player.keys[it.key]||0)+1; log('Picked up the <b>'+it.key+' key</b>. It fits a door on this floor.','c-kill'); sfx('pickup-key'); }
     else log('You see <b>'+itemLabel(it)+'</b> here.'+((it.kind==='heart'||it.kind==='managlobe') ? ' <span class="roll">(it waits until you need it)</span>' : ' <span class="roll">(g to pick up)</span>'),'c-info');
   });
@@ -296,6 +298,7 @@ function ignite(x,y,src){
 }
 var fireSrc = new Uint8Array(64*40);
 function burnWorld(x,y){
+  if(typeof FoteEnemyFields!=='undefined')FoteEnemyFields.burn(x,y);
   var puzzle=puzzleAtDoor(x,y);
   if(puzzle&&puzzle.puzzle.kind==='barricade'&&!puzzle.puzzle.solved)solvePuzzle(puzzle,'the timber burns away.');
   var t=at(x,y);
@@ -380,7 +383,7 @@ function triggerTrap(tr,e){
     tell('A spark plate discharges: '+d+' lightning damage.', 'A spark plate discharges into the '+e.name+': '+d+' lightning damage.'); sfx('trap-spark',{from:tr}); }
   else if(tr.kind==='gas'){ for(var gy=-1;gy<=1;gy++) for(var gx=-1;gx<=1;gx++) ents.forEach(function(o){ if(o.x===e.x+gx && o.y===e.y+gy) applyStatus(o,'poison',6,2); });
     burst(e.x,e.y,'poison',40,0.05); tell('Poison gas hisses from a vent.', 'Poison gas hisses from a vent under the '+e.name+'.'); sfx('trap-gas',{from:tr}); }
-  else if(tr.kind==='web'){ applyStatus(e,'root',3); tell('Webs! You are stuck.', 'Webs! The '+e.name+' is stuck.', 'c-info'); sfx('trap-web',{from:tr}); }
+  else if(tr.kind==='web'){ if(applyStatus(e,'web',3).applied)tell('Webs! You are stuck.', 'Webs! The '+e.name+' is stuck.', 'c-info'); sfx('trap-web',{from:tr}); }
   /* 2026-09-28 (Justin): an alarm another creature sets off says so, in the danger colour when you can see it
      (what it wakes comes to a spot in view) and as world news when you only hear it. What it wakes is unchanged. */
   /* 1.3.2 ruling 1 (Justin 2026-09-28): the bell draws monsters to it, not to you. Everything within 16 wakes and walks to the

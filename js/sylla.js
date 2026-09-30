@@ -53,9 +53,9 @@ function broodStats(r){ return {hp:5+5*r, dmg:[2+2*r, 10+2*r], armor:2+2*r, resi
 
 /* ---------------------------------------------------------------- the god */
 
-/* the web icon covers both halves of it; Bleed finally has the icon it was waiting for (deepmobs.js) */
+/* Web presentation is selected from effect provenance by statusList. Ordinary
+   Slow keeps its own icon; Bleed uses its existing dedicated artwork. */
 if(typeof STATUS_INFO!=='undefined'){
-  STATUS_INFO.slow = {name:'Webbed', icon:'st-web', bad:1, d:'Moves and acts more slowly (half speed when tangled in silk).'};
   if(STATUS_INFO.bleed) STATUS_INFO.bleed.icon='st-bleed';
 }
 if(typeof DMG_COL!=='undefined' && !DMG_COL.web) DMG_COL.web='#F2F0E8';
