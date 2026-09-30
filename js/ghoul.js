@@ -2,7 +2,7 @@
 var FoteGhoul=(function(){
  'use strict';
  MONSTERS.ghoul={name:'Buried Ghoul',sprite:'m-ghoul',col:'#92998b',ch:'g',hp:32,dmg:[4,7],acc:60,eva:12,armor:0,speed:100,range:1,xp:26,
-  band:[6,9],biome:[1],w:10,undead:true,ghoul:true,art:.95,artLeft:true,sfx:'zombie',
+  band:[6,9],biome:[1],w:10,undead:true,ghoul:true,art:.85,artLeft:true,sfx:'zombie',
   hint:'Lies buried and unseen until you pass. Emerges behind you, spending its first action climbing out before it can attack.'};
  MONSTERS.shambler.w=Math.max(0,MONSTERS.shambler.w-6);MONSTERS.gravebeetle.w=Math.max(0,MONSTERS.gravebeetle.w-4);
  DROPS.ghoul={chance:.12,table:{essence:10,food:2}};
