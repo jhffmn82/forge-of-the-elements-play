@@ -64,11 +64,11 @@ if($('bArt'))$('bArt').textContent=spriteOn?'Art: sprites':'Art: blocks';
   ].join('\n');
   document.head.appendChild(st);
 })();
-function segHTML(id, opts, cur){ return '<span class="seg" data-seg="'+id+'">'+opts.map(function(o){ return '<button data-v="'+o[0]+'" class="'+(String(o[0])===String(cur)?'on':'')+'">'+o[1]+'</button>'; }).join('')+'</span>'; }
+function segHTML(id, opts, cur){ return '<span class="seg" data-seg="'+id+'">'+opts.map(function(o){ var selected=String(o[0])===String(cur);return '<button data-v="'+o[0]+'" class="'+(selected?'on':'')+'" aria-pressed="'+selected+'">'+o[1]+'</button>'; }).join('')+'</span>'; }
 var UI_THEMES={ember:'Ember (Default)',forge:'Forge',vellum:'Vellum - Ivory','vellum-sand':'Vellum - Sand','vellum-ash':'Vellum - Ash',charcoal:'Charcoal',slate:'Slate',obsidian:'Obsidian',runestone:'Runestone'}, UI_TEXT_SIZES={small:'Small',normal:'Standard',large:'Large'};
-var UI_THEME='ember',UI_TEXT_SIZE='normal',UI_OPACITY=100,UI_SIDE='left',UI_DESKTOP_PAD=false;
-try{UI_SIDE=localStorage.getItem('fote-ui-side')||localStorage.getItem('fote-study-pad-side')||'left';UI_DESKTOP_PAD=(localStorage.getItem('fote-ui-desktop-pad')||localStorage.getItem('fote-study-desktop-pad'))==='shown';}catch(e){}
-if(UI_SIDE!=='right')UI_SIDE='left';
+var UI_THEME='ember',UI_TEXT_SIZE='normal',UI_OPACITY=100,UI_SIDE='right',UI_DESKTOP_PAD=false;
+try{UI_SIDE=localStorage.getItem('fote-ui-side')||localStorage.getItem('fote-study-pad-side')||UI_SIDE;UI_DESKTOP_PAD=(localStorage.getItem('fote-ui-desktop-pad')||localStorage.getItem('fote-study-desktop-pad'))==='shown';}catch(e){}
+if(UI_SIDE!=='left'&&UI_SIDE!=='right')UI_SIDE='right';
 try{UI_THEME=localStorage.getItem('fote-ui-theme')||UI_THEME;UI_TEXT_SIZE=localStorage.getItem('fote-ui-text')||UI_TEXT_SIZE;UI_OPACITY=Number(localStorage.getItem('fote-ui-opacity')||100);}catch(e){}
 function applyUIAppearance(){
   if(!UI_THEMES[UI_THEME])UI_THEME='ember';

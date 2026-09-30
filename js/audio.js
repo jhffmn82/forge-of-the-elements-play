@@ -121,7 +121,6 @@ function sfx(name, opts){
   var alert=/-alert$/.test(name),ui=/^ui-(click|open|close|hover)$/.test(name),group=alert?'creature-alert':ui?'ui-feedback':name;
   if(SFX_LAST[group]!==undefined && Math.abs(at-SFX_LAST[group])<(alert?350:ui?70:40) && SFX_LAST_GAIN[group]>=near)return;
   SFX_LAST[group]=at; SFX_LAST_GAIN[group]=near;
-  if(name==='ui-click'){tone(AUDIO.ctx.currentTime,'sine',720,520,.035,.03*(opts.vol===undefined?1:opts.vol));return;}
   var file=name==='step-stone' ? ['step-stone','step-stone-1','step-stone-3','step-stone-2'][SFX_STEP++%4] : (SFX_ALIASES[name]||name);
   loadFile(file, function(buf){
     if(AUDIO.muted || performance.now()>at+500)return; // Never replay stale impacts after slow decoding.
@@ -138,7 +137,7 @@ function sfx(name, opts){
 
 /* One quiet click for mouse, touch and keyboard activation, including new HUD controls. */
 if(typeof document!=='undefined')document.addEventListener('click',function(ev){
-  var el=ev.target&&ev.target.closest&&ev.target.closest('#top,#bars,#hud2,#studyReadouts,#studyExplore,#log,#hotbar,#dpad,#shade,#modal,#statusbar,#title .menu');
+  var el=ev.target&&ev.target.closest&&ev.target.closest('#top,#bars,#hud2,#studyReadouts,#studyExplore,#log,#hotbar,#dpad,#shade,#modal,#statusbar,#title .menu,#create button,#create .card');
   if(!el||ev.defaultPrevented||ev.target.closest('[disabled],[aria-disabled="true"]'))return;
   audioInit();sfx('ui-click');
 },true);

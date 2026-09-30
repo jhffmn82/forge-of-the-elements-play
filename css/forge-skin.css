@@ -307,3 +307,14 @@ body[data-ui-theme] #create .go{border-color:#966231;background:linear-gradient(
  body.fote-study[data-ui-theme=ember] #app :is(#studyNav button,#studyExplore,#dpad button):hover,
  body[data-ui-theme] :is(#title,#create) button:hover{border-color:#896438;color:#ffe1a0;}
 }
+
+/* Options uses the same selected state in title Settings and the in-game sheet.
+   Keep it above the material button rules, including their hover/pressed faces. */
+body[data-ui-theme] #app #shade .sheet .seg button,
+body[data-ui-theme] #modal .seg button{border-radius:0;}
+body[data-ui-theme] #app #shade .sheet .seg button.on,
+body[data-ui-theme] #modal .seg button.on{
+ background:color-mix(in srgb,var(--gold) calc(var(--ui-background-opacity,1) * 18%),transparent);
+ color:var(--gold)!important;text-shadow:none;
+ box-shadow:inset 0 0 0 1px var(--gold),inset 0 -2px var(--gold);
+}
