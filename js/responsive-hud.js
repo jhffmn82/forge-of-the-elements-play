@@ -26,7 +26,8 @@ var FoteResponsiveHUD=(function(){
     if(!mounted)return;
     const map=node('map').getBoundingClientRect(),phone=document.body.classList.contains('study-finger')&&!document.body.classList.contains('study-large-landscape');
     const right=document.body.classList.contains('study-pad-right');
-    const x=phone&&!right?0:map.left,width=phone?(right?innerWidth-map.left:map.right):map.width;
+    // Phone sheets cover the map and movement/log column, leaving abilities reachable.
+    const x=phone&&right?0:map.left,width=phone?(right?map.right:innerWidth-map.left):map.width;
     const sheet=node('shade');
     sheet.style.setProperty('--sheet-x',x+'px');sheet.style.setProperty('--sheet-y',map.top+'px');
     sheet.style.setProperty('--sheet-w',width+'px');sheet.style.setProperty('--sheet-h',map.height+'px');
@@ -35,18 +36,31 @@ var FoteResponsiveHUD=(function(){
     if(!mounted)return;
     const w=innerWidth,h=innerHeight,inputOverride=new URLSearchParams(location.search).get('touch');
     const finger=inputOverride==='1'||(inputOverride!=='0'&&(window.MOBILE||navigator.maxTouchPoints>0||matchMedia('(pointer:coarse)').matches));
-    const wide=w>h;
+    const wide=w>h,large=wide&&h>=600&&w>=960;
     document.body.classList.toggle('study-finger',finger);
     document.body.classList.toggle('study-desktop',!finger);
     document.body.classList.toggle('study-wide',wide);
     document.body.classList.toggle('study-short',wide&&h<360);
-    document.body.classList.toggle('study-large-landscape',wide&&h>=600&&w>=960);
+    document.body.classList.toggle('study-large-landscape',large);
     document.body.classList.toggle('study-portrait',w<600&&!wide);
     document.body.classList.toggle('study-tablet',w>=600&&!wide);
     document.body.classList.toggle('study-pad-right',UI_SIDE==='right');
     document.body.classList.toggle('study-desktop-pad',!finger&&UI_DESKTOP_PAD);
+    composeColumns(finger&&wide&&!large);
     document.documentElement.style.setProperty('--study-top',node('top').getBoundingClientRect().bottom+'px');
     resize();positionSheet();
+  }
+  function composeColumns(phone){
+    const left=node('studyLeft'),right=node('studyRight'),hotbar=node('hotbar'),pad=node('dpad'),explore=node('studyExplore');
+    const abilities=phone?left:right,movement=phone?right:left;
+    // Move the existing controls only at a device breakpoint; retain their handlers and state.
+    if(hotbar.parentElement!==abilities)abilities.append(hotbar);
+    if(pad.parentElement!==movement)movement.append(pad);
+    if(phone){
+      if(explore.parentElement!==node('top'))node('top').insertBefore(explore,node('studyNav'));
+    }else if(explore.parentElement!==movement)movement.insertBefore(explore,pad);
+    left.setAttribute('aria-label',phone?'Player information and abilities':'Player information and movement');
+    right.setAttribute('aria-label',phone?'Combat log and movement':'Combat log and abilities');
   }
   function relayout(){
     if(!mounted||frame)return;

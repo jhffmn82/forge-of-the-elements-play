@@ -66,14 +66,17 @@ if($('bArt'))$('bArt').textContent=spriteOn?'Art: sprites':'Art: blocks';
 })();
 function segHTML(id, opts, cur){ return '<span class="seg" data-seg="'+id+'">'+opts.map(function(o){ var selected=String(o[0])===String(cur);return '<button data-v="'+o[0]+'" class="'+(selected?'on':'')+'" aria-pressed="'+selected+'">'+o[1]+'</button>'; }).join('')+'</span>'; }
 var UI_THEMES={ember:'Ember (Default)',forge:'Forge',vellum:'Vellum - Ivory','vellum-sand':'Vellum - Sand','vellum-ash':'Vellum - Ash',charcoal:'Charcoal',slate:'Slate',obsidian:'Obsidian',runestone:'Runestone'}, UI_TEXT_SIZES={small:'Small',normal:'Standard',large:'Large'};
-var UI_THEME='ember',UI_TEXT_SIZE='normal',UI_OPACITY=100,UI_SIDE='right',UI_DESKTOP_PAD=false;
+var UI_PHONE_PAD_SIZES={large:'Large (Default)',compact:'Compact'};
+var UI_THEME='ember',UI_TEXT_SIZE='normal',UI_OPACITY=100,UI_SIDE='right',UI_DESKTOP_PAD=false,UI_PHONE_PAD_SIZE='large';
 try{UI_SIDE=localStorage.getItem('fote-ui-side')||localStorage.getItem('fote-study-pad-side')||UI_SIDE;UI_DESKTOP_PAD=(localStorage.getItem('fote-ui-desktop-pad')||localStorage.getItem('fote-study-desktop-pad'))==='shown';}catch(e){}
 if(UI_SIDE!=='left'&&UI_SIDE!=='right')UI_SIDE='right';
-try{UI_THEME=localStorage.getItem('fote-ui-theme')||UI_THEME;UI_TEXT_SIZE=localStorage.getItem('fote-ui-text')||UI_TEXT_SIZE;UI_OPACITY=Number(localStorage.getItem('fote-ui-opacity')||100);}catch(e){}
+try{UI_THEME=localStorage.getItem('fote-ui-theme')||UI_THEME;UI_TEXT_SIZE=localStorage.getItem('fote-ui-text')||UI_TEXT_SIZE;UI_OPACITY=Number(localStorage.getItem('fote-ui-opacity')||100);UI_PHONE_PAD_SIZE=localStorage.getItem('fote-ui-phone-pad-size')||UI_PHONE_PAD_SIZE;}catch(e){}
 function applyUIAppearance(){
   if(!UI_THEMES[UI_THEME])UI_THEME='ember';
   if(!UI_TEXT_SIZES[UI_TEXT_SIZE])UI_TEXT_SIZE='normal';
+  if(!UI_PHONE_PAD_SIZES[UI_PHONE_PAD_SIZE])UI_PHONE_PAD_SIZE='large';
   document.body.dataset.uiTheme=UI_THEME;document.body.dataset.uiText=UI_TEXT_SIZE;
+  document.body.dataset.uiPhonePad=UI_PHONE_PAD_SIZE;
   document.body.style.setProperty('--ui-text-scale',UI_TEXT_SIZE==='large'?'1.12':UI_TEXT_SIZE==='small'?'.9':'1');
   UI_OPACITY=Number.isFinite(UI_OPACITY)?Math.max(10,Math.min(100,UI_OPACITY)):100;
   document.body.classList.toggle('ui-paper-faded',UI_THEME.indexOf('vellum')===0&&UI_OPACITY<65);
@@ -100,6 +103,7 @@ function settingsHTML(){
      '<label class="optrow"><span>Music volume</span><input type="range" id="volMusic" min="0" max="100" value="'+Math.round((AUDIO.vol.music||0)*100)+'"></label>'+
      '<div class="sec">Display</div>'+
      appearanceSelect('uiSide','Status / log side',{left:'Left',right:'Right'},UI_SIDE)+
+     appearanceSelect('uiPhonePadSize','Phone movement pad size',UI_PHONE_PAD_SIZES,UI_PHONE_PAD_SIZE)+
      (!(typeof MOBILE!=='undefined'&&MOBILE)?'<div class="optrow"><span>Movement pad</span>'+segHTML('desktopPad', [['shown','Shown'],['hidden','Hidden']],UI_DESKTOP_PAD?'shown':'hidden')+'</div>':'')+
      appearanceSelect('uiTheme','UI theme',UI_THEMES,UI_THEME)+
      appearanceSelect('uiTextSize','Text size',UI_TEXT_SIZES,UI_TEXT_SIZE)+
@@ -132,6 +136,8 @@ function refreshOptions(){
 function wireSettings(root){
   var side=root.querySelector('#uiSide');
   if(side)side.onchange=function(){UI_SIDE=side.value==='right'?'right':'left';try{localStorage.setItem('fote-ui-side',UI_SIDE);}catch(e){}if(typeof FoteResponsiveHUD!=='undefined')FoteResponsiveHUD.relayout();};
+  var phonePad=root.querySelector('#uiPhonePadSize');
+  if(phonePad)phonePad.onchange=function(){UI_PHONE_PAD_SIZE=phonePad.value;applyUIAppearance();try{localStorage.setItem('fote-ui-phone-pad-size',UI_PHONE_PAD_SIZE);}catch(e){}};
   var theme=root.querySelector('#uiTheme'),text=root.querySelector('#uiTextSize');
   if(theme)theme.onchange=function(){UI_THEME=theme.value;try{localStorage.setItem('fote-ui-theme',UI_THEME);}catch(e){}applyUIAppearance();};
   if(text)text.onchange=function(){UI_TEXT_SIZE=text.value;try{localStorage.setItem('fote-ui-text',UI_TEXT_SIZE);}catch(e){}applyUIAppearance();};
