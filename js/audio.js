@@ -137,7 +137,7 @@ function sfx(name, opts){
 
 /* One quiet click for mouse, touch and keyboard activation, including new HUD controls. */
 if(typeof document!=='undefined')document.addEventListener('click',function(ev){
-  var el=ev.target&&ev.target.closest&&ev.target.closest('#top,#bars,#hud2,#studyReadouts,#studyExplore,#log,#hotbar,#dpad,#shade,#modal,#statusbar,#title .menu,#create button,#create .card');
+  var el=ev.target&&ev.target.closest&&ev.target.closest('#top,#bars,#hud2,#studyReadouts,#studyExplore,#bMap,#studyMenuToggle,#studyPortrait,#studyInventoryIcon,#studyLogClose,#log,#hotbar,#dpad,#shade,#modal,#statusbar,#title .menu,#create button,#create .card');
   if(!el||ev.defaultPrevented||ev.target.closest('[disabled],[aria-disabled="true"]'))return;
   audioInit();sfx('ui-click');
 },true);

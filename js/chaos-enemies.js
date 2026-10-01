@@ -108,7 +108,7 @@
       ally.lastSeen={x:target.x,y:target.y};
       if(typeof FoteEnemyPerception!=='undefined')FoteEnemyPerception.remember(ally,target,'call');
     });
-    if(listeners.length&&vis[idxOf(e.x,e.y)]){log('The <b>Lens Bearer</b> calls for help.','c-you');floatText(e.x,e.y,'Help!','light');}
+    if(listeners.length&&vis[idxOf(e.x,e.y)]){log('Lens Bearer: help called.','c-you');floatText(e.x,e.y,'Help!','light');}
     return listeners.length>0;
   }
   function onDamaged(event){
@@ -124,7 +124,7 @@
   }
   function direct(e,target,amount,type,area){
     var damage=applyDamage(target,amount,type,e,{tags:area?['area']:[]});floatText(target.x,target.y,String(damage),type,true);
-    if(target===player&&damage>0)log(e.name+' deals '+damage+' '+FoteDamage.label(type)+' damage.','c-you');if(target.hp<=0)kill(target,e);return damage;
+    if(target===player&&damage>0)log(combatText(e.name)+' → you: '+combatDamageNumber(damage,type)+'.','c-you');if(target.hp<=0)kill(target,e);return damage;
   }
   function projectileVictim(e,w){
     var region=regionAt(e.x,e.y);

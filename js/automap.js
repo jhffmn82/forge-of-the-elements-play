@@ -22,6 +22,7 @@ var AUTOMAP_ON = false;
     if(!$('automap')){ var c=document.createElement('canvas'); c.id='automap'; map.appendChild(c); var t=document.createElement('div'); t.id='automapTag'; t.textContent='Map · V to close'; map.appendChild(t); }
     var tb=$('topbtns');
     if(tb && !$('bMap')){ var b=document.createElement('button'); b.id='bMap'; b.textContent='Map'; b.title='Map overlay (V)'; b.onclick=function(){ toggleAutomap(); }; tb.insertBefore(b, tb.firstChild); }
+    if($('bMap'))$('bMap').setAttribute('aria-pressed',String(AUTOMAP_ON));
     return !!(tb && $('bMap'));
   }
   if(!mount()){ var n=0, t=setInterval(function(){ if(mount() || ++n>40) clearInterval(t); }, 100); }
@@ -32,7 +33,7 @@ function toggleAutomap(force){
   var c=$('automap'), t=$('automapTag'), b=$('bMap');
   if(c) c.classList.toggle('on', AUTOMAP_ON);
   if(t){ t.classList.toggle('on', AUTOMAP_ON); t.textContent='Map · '+(typeof keyLabel==='function' && typeof bindKey==='function' ? keyLabel(bindKey('map')) : 'V')+' to close'; }
-  if(b) b.classList.toggle('on', AUTOMAP_ON);
+  if(b){b.classList.toggle('on', AUTOMAP_ON);b.setAttribute('aria-pressed',String(AUTOMAP_ON));}
   if(typeof sfx==='function') sfx(AUTOMAP_ON ? 'ui-open' : 'ui-close');
   drawAutomap();
 }

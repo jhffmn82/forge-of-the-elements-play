@@ -48,19 +48,19 @@ function wobblesIntervention(big){
     if(foes.length>=2) opts.push('escape');
     var o=pick(opts);
     if(o==='heal'){ var restored=player.maxhp-player.hp;player.hp=player.maxhp;gameDamage.emit('healingApplied',{target:player,restored:restored});sparkleFx(player.x,player.y,'heal',40);log('<b>Wobbles:</b> full healing.','c-kill'); }
-    else if(o==='mote'){ var el=pick(ELEMENTS); player.motes[el]=(player.motes[el]||0)+1; log('<b>Wobbles giggles.</b> A mote of '+el+' appears in your pouch!','c-kill'); }
-    else if(o==='rampage'){ player.buffs.rampage=10; derive(player); log('<b>Wobbles giggles.</b> You feel ridiculously strong!','c-kill'); }
-    else if(o==='sheep' && foes.length){ var t=pick(foes.filter(function(f){ return !f.base.boss; })); if(t){ var x=t.x,y=t.y; ents=ents.filter(function(e){ return e!==t; }); var r=spawn('rat',x,y); r.name='Very Confused Rat'; r.state='wander'; r.noLoot=true; log('<b>Wobbles giggles.</b> '+t.name+' turns into a rat!','c-kill'); sparkleFx(x,y,'magic',30); } }
+    else if(o==='mote'){ var el=pick(ELEMENTS); player.motes[el]=(player.motes[el]||0)+1; log('Wobbles: +1 '+el+' mote.','c-kill'); }
+    else if(o==='rampage'){ player.buffs.rampage=10; derive(player); log('Wobbles: Rampage.','c-kill'); }
+    else if(o==='sheep' && foes.length){ var t=pick(foes.filter(function(f){ return !f.base.boss; })); if(t){ var x=t.x,y=t.y; ents=ents.filter(function(e){ return e!==t; }); var r=spawn('rat',x,y); r.name='Very Confused Rat'; r.state='wander'; r.noLoot=true; log('Wobbles: '+t.name+' becomes a rat.','c-kill'); sparkleFx(x,y,'magic',30); } }
     else if(o==='escape'){ var o2=[]; for(var yy=0;yy<MH;yy++) for(var xx=0;xx<MW;xx++) if(walkable(xx,yy)&&!occupied(xx,yy)&&inRoom(xx,yy)&&dist({x:xx,y:yy},player)>15) o2.push({x:xx,y:yy});
-      var s=pick(o2); if(s){ player.x=s.x; player.y=s.y; player._lx=undefined; log('<b>Wobbles giggles.</b> You are somewhere else, and safe.','c-kill'); } }
-    else { var n=ri(20,40); gainEssence(n); log('<b>Wobbles giggles.</b> '+n+' essence rains from nowhere.','c-kill'); }
+      var s=pick(o2); if(s){ player.x=s.x; player.y=s.y; player._lx=undefined; log('Wobbles: teleported to safety.','c-kill'); } }
+    else { var n=ri(20,40); gainEssence(n); log('Wobbles: +'+n+' essence.','c-kill'); }
   } else {
     var bad=pick(['status','rats','teleport','butterfingers']);
-    if(bad==='status'){ applyStatus(player, pick(['blind','chill','root']), 3); log('<b>Wobbles snickers.</b> Oops.','c-you'); }
-    else if(bad==='rats'){ for(var i=0;i<2;i++){ var c=nearFree(player.x,player.y,2); if(c){ var m=spawn('rat',c.x,c.y); m.state='hunt'; m.noLoot=true; } } log('<b>Wobbles snickers.</b> Rats!','c-you'); }
+    if(bad==='status'){ var prank=pick(['blind','chill','root']);applyStatus(player, prank, 3);log('Wobbles: '+(STATUS_INFO[prank]&&STATUS_INFO[prank].name||prank)+'.','c-you'); }
+    else if(bad==='rats'){ for(var i=0;i<2;i++){ var c=nearFree(player.x,player.y,2); if(c){ var m=spawn('rat',c.x,c.y); m.state='hunt'; m.noLoot=true; } } log('Wobbles: rats summoned!','c-you'); }
     else if(bad==='teleport'){ var o3=[]; for(var y2=0;y2<MH;y2++) for(var x2=0;x2<MW;x2++) if(walkable(x2,y2)&&!occupied(x2,y2)&&inRoom(x2,y2)) o3.push({x:x2,y:y2});
-      var s3=pick(o3); if(s3){ player.x=s3.x; player.y=s3.y; player._lx=undefined; log('<b>Wobbles snickers.</b> Where are you?','c-you'); } }
-    else { player.mp=Math.floor(player.mp/2); log('<b>Wobbles snickers.</b> Half your mana slips away.','c-you'); }
+      var s3=pick(o3); if(s3){ player.x=s3.x; player.y=s3.y; player._lx=undefined; log('Wobbles: teleported!','c-you'); } }
+    else { player.mp=Math.floor(player.mp/2); log('Wobbles: half your Mana lost.','c-you'); }
     player.hp=Math.max(1,player.hp);
   }
   computeFOV();
@@ -79,7 +79,7 @@ function shrineGifts(id, g, mine){
   var boons = g.boons.filter(function(b, i){ return (BR[i]||i+1)<=r; });
   var prayers = mine ? (g.prayers||[]).filter(function(p){ return PRAYERS[p] && r>=PRAYERS[p].rank; }) : [];
   var h='<p><b>'+(mine?'Your boons:':'First boon:')+'</b></p><ol class="boons">'+boons.map(function(b){ return '<li>'+b+'</li>'; }).join('')+'</ol>';
-  if(prayers.length) h+='<p><b>Your abilities:</b> '+prayers.map(function(p){ var P=PRAYERS[p]; return '<b>'+P.name+'</b> ('+prayerCost(p)+'): '+prayerLive(P); }).join(' &middot; ')+'</p>';
+  if(prayers.length) h+='<p><b>Your abilities</b></p>'+prayers.map(function(p){ var P=PRAYERS[p]; return '<div class="shrine-ability"><b>'+P.name+'</b>'+actionDetailsHTML(prayerDetails(P,p))+'</div>'; }).join('');
   if(boons.length<g.boons.length || prayers.length<(g.prayers||[]).length) h+='<p class="c-info" style="font-size:11px">'+(mine?'Grow in piety to learn what else '+g.name.split(',')[0]+' grants.':'Swear yourself and grow in piety to learn what else '+g.name.split(',')[0]+' grants.')+'</p>';
   return h;
 }
@@ -91,7 +91,7 @@ function openShrine(){
   var html = '<div class="shrine">'+art+'<div><h3 style="color:'+g.color+'">'+g.name+'</h3><div class="who">'+cap(g.title)+'</div>'+
     '<p><b>Rule.</b> '+g.rule+'</p><p><b>Piety comes from:</b> '+g.gain+' Piety earned deeper is worth more: x1.3 per biome below the first. Favor is not multiplied.</p>'+
     shrineGifts(id, g, mine)+
-    '<p><b>Cleric ability</b>: <b>'+ABILITIES[g.invoke].name+'</b>. '+(mine?liveDesc(ABILITIES[g.invoke]):ABILITIES[g.invoke].desc)+'</p></div></div>';
+    '<div class="shrine-ability"><b>Cleric ability: '+ABILITIES[g.invoke].name+'</b>'+actionDetailsHTML(mine?abilityDetails(ABILITIES[g.invoke],g.invoke):actionDetail(ABILITIES[g.invoke].desc))+'</div></div></div>';
   var buttons=[];
   var startPiety = 20;   /* flat in every biome: converting late never skips ranks */
   if(refused) html+='<p class="c-you"><b>'+(typeof godRefuses==='function' ? refusalText(id) : g.name+' will not accept a '+RACES[player.race].name+'.')+'</b></p>';
@@ -102,7 +102,7 @@ function openShrine(){
     });
   }});
   if(mine){
-    if(!floorMeta.shrinePrayed){ buttons.push({label:'Pray at your god\'s shrine', cls:'primary', fn:function(){ floorMeta.shrinePrayed=true; player.favor=100; gainPiety(player.cls==='cleric'?25:10); log('You pray at the shrine of your god. Favor restored.','c-kill'); sfx('shrine-convert'); closeModal(); updateUI(); }}); }
+    if(!floorMeta.shrinePrayed){ buttons.push({label:'Pray at your god\'s shrine', cls:'primary', fn:function(){ floorMeta.shrinePrayed=true; player.favor=100; gainPiety(player.cls==='cleric'?25:10); log('Shrine: Favor restored.','c-kill'); sfx('shrine-convert'); closeModal(); updateUI(); }}); }
     else html+='<p class="c-info">You have already prayed here.</p>';
   }
   /* 2026-09-29 (Justin): the tithe blessing lasts 250 turns (was 40); the fade message (blessed) runs on the same clock */
@@ -140,9 +140,9 @@ function faithHTML(){
   h+='<p><b>Rule.</b> '+g.rule+'</p><p><b>Piety from:</b> '+g.gain+'</p><p><b>Depth.</b> Piety earned here is worth x'+deepMul.toFixed(2)+' (x1.3 per biome below the first). Favor is not multiplied.</p><p><b>Boons</b></p><ol class="boons">'+g.boons.map(function(b,i){ var br=BRf[i]||i+1; return br<=r ? '<li><b>Rank '+br+'.</b> '+b+'</li>' : ''; }).join('')+'</ol>'+
      (g.boons.some(function(b,i){ return (BRf[i]||i+1)>r; }) ? '<p class="c-info" style="font-size:11px">Grow in piety to learn what else '+g.name.split(',')[0]+' grants.</p>' : '')+'<p><b>Abilities</b></p>';
   var shown=0;
-  g.prayers.forEach(function(pid){ var P=PRAYERS[pid], ok=canPray(pid), wait=cdLeft(prayerCdKey(pid)); if(godRank()<P.rank) return; shown++;
-    h+='<div class="abrow" data-pr="'+pid+'"><span class="pico"></span><span class="k">'+P.rank+'</span><span><span style="color:var(--ink)">'+P.name+'</span><div class="d">'+prayerLive(P)+(godRank()>=P.rank?' <span style="opacity:.6">(drag to hotbar)</span>':'')+'</div></span>'+
-       '<button class="prayer" data-p="'+pid+'" '+(ok?'':'disabled')+'>'+(wait?'ready in '+wait:prayerCost(pid))+'</button></div>'; });
+  g.prayers.forEach(function(pid){ var P=PRAYERS[pid], ok=canPray(pid); if(godRank()<P.rank) return; shown++;
+    h+='<div class="abrow" data-pr="'+pid+'"><span class="pico"></span><span class="k">'+P.rank+'</span><div><span style="color:var(--ink)">'+P.name+'</span>'+actionDetailsHTML(prayerDetails(P,pid),{omit:['Requires']})+'</div>'+
+       '<button class="prayer" data-p="'+pid+'" '+(ok?'':'disabled')+'>Use</button></div>'; });
   if(!shown) h+='<p class="c-info" style="font-size:11px">No abilities yet. Your god will teach you as your piety grows.</p>';
   return h+'</div>';
 }
@@ -222,7 +222,7 @@ function stackDiscipline(){
 }
 function startPrayerCd(id){startDivineCd(prayerCdKey(id),DIVINE_COOLDOWNS.prayers[prayerId(id)]);stackDiscipline();}
 function startInvokeCd(key){startDivineCd(key,DIVINE_COOLDOWNS.invokes[key]);}
-function prayerRefused(id){var n=cdLeft(prayerCdKey(id)),health=prayerHealthCost(id),P=PRAYERS[prayerId(id)];log(n>0?P.name+' is not ready ('+n+' turns).':health&&player.hp<health+1?P.name+' costs '+health+' HP; you must have at least 1 HP left.':'You cannot use that ability right now.','c-info');sfx('ui-error');}
+function prayerRefused(id){var n=cdLeft(prayerCdKey(id)),health=prayerHealthCost(id),P=PRAYERS[prayerId(id)];log(n>0?P.name+': ready in '+n+' turns.':health&&player.hp<health+1?P.name+': needs '+(health+1)+' HP; costs '+health+'.':P.name+': unavailable.','c-info');sfx('ui-error');}
 function usePrayer(id){
   if(gameTurns.busy())return false;
   if(playerFearAction())return false;
@@ -247,8 +247,9 @@ function performPrayer(id){
       cancelAim();return false;
     }
     aiming={A:aim,prayer:id};if(openSheet)showSheet(openSheet);
-    log('<b>'+aim.name+':</b> click a target within '+aim.range+' tiles, or press Esc.','c-info');
-    abilityBar();draw();if(AUTO_AIM_KINDS[aim.kind])autoAimPick();return true;
+    abilityBar();draw();if(AUTO_AIM_KINDS[aim.kind])autoAimPick();
+    if(!aiming.auto)log(aim.name+': choose a target. Esc cancels.','c-info');
+    return true;
   }
   if(id==='fieldsmelt')return prayFieldSmelt();
   if(id==='raisedead')return prayRaiseDead();
@@ -257,7 +258,7 @@ function performPrayer(id){
   spendPrayer(id);sfx('pray');setClip(player,'cast');
   var div=divineStrength();
   if(id==='ironhide'){player.buffs.ironhide=12;player.hideShield=Math.round((5+2*godRank())*div);derive(player);log('Iron Hide: armor and shield refreshed.','c-good');}
-  else if(id==='pummel'){player.pummel=3;log('Pummel empowers your next three successful unarmed hits.','c-good');updateUI();draw();return true;}
+  else if(id==='pummel'){player.pummel=3;log('Pummel: next 3 unarmed hits.','c-good');updateUI();draw();return true;}
   else if(id==='laststand'||id==='rampage'){player.buffs[id]=10;derive(player);updateUI();return true;}
   else if(id==='luckystreak'){player.buffs.luckystreak=8;derive(player);sfx('wobbles-giggle');updateUI();return true;}
   else if(id==='consecrate'){
@@ -281,7 +282,7 @@ function performPrayer(id){
       var hp=e.hp;attack(player,e,div,"Anvil's Toll");if(e.hp<hp)struck++;
       if(e.hp>0&&e.hp<hp){knockback(e,e.x-player.x,e.y-player.y,2);applyStatus(e,'stun',1);}
     });
-    log("<b>Anvil's Toll.</b> The hammer strikes "+struck+(struck===1?' foe.':' foes.'),'c-good');player.hidden=0;
+    if(!struck)log("Anvil's Toll: no hits.",'c-info');player.hidden=0;
   }
   else if(id==='rolldice2')greaterPrayer();
   if(PRAYERS[id].instant)FREE_ACTION=true;
@@ -362,12 +363,12 @@ function resolveAmusement(){
  var mood=Math.max(0,Math.min(100,Number(player.amusement)||0)),odds=wobblesMoodOdds(mood),roll=rng();
  if(roll<odds.prank){
   player.amusement=Math.min(100,mood+50);
-  applyStatus(player,pick(['blind','chill']),2);log('Wobbles plays a prank. That amuses him.','c-you');
+  var prank=pick(['blind','chill']);applyStatus(player,prank,2);log('Wobbles: '+(STATUS_INFO[prank]&&STATUS_INFO[prank].name||prank)+'.','c-you');
  }else if(roll<odds.prank+odds.reward){
   player.amusement=Math.max(0,mood-50);
-  if(player.hp<player.maxhp*.75){healPlayer(player.maxhp*.4);log('Wobbles rewards you with healing.','c-good');}
-  else if(rng()<.5){var it=randomGear();it.x=player.x;it.y=player.y;items.push(it);log('Wobbles leaves you a gift.','c-good');}
-  else{gainEssence(ri(20,40));log('Wobbles showers you with essence.','c-good');}
+  if(player.hp<player.maxhp*.75){var before=player.hp;healPlayer(player.maxhp*.4);log('Wobbles: +'+Math.round((player.hp-before)*10)/10+' HP.','c-good');}
+  else if(rng()<.5){var it=randomGear();it.x=player.x;it.y=player.y;items.push(it);log('Wobbles: gear dropped.','c-good');}
+  else{var essence=ri(20,40);gainEssence(essence);log('Wobbles: +'+essence+' Essence.','c-good');}
  }
 }
 

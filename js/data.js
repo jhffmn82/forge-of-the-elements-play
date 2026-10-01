@@ -825,11 +825,11 @@ var DIVINE_COOLDOWNS = {
 
 /* ---------------------------------------------------------------- sigils (crafted at the Forge, found unidentified) */
 var SIGILS = {
-  firestorm:{name:'Fire sigil', motes:['fire'], desc:'Deal 8 + floor number fire damage and inflict Burning on enemies within 3 tiles.'},
-  mana:     {name:'Water sigil', motes:['water'], desc:'Restore 50% of your mana.'},
+  firestorm:{name:'Fire sigil', motes:['fire'], desc:'Deal fire damage to enemies within 3 tiles and Burn them for 3 turns. Ignite nearby ground.'},
+  mana:     {name:'Water sigil', motes:['water'], desc:'Restore mana and gain extra mana regeneration for 20 turns.'},
   levitate: {name:'Air sigil', motes:['air'], desc:'Clear roots and webs. Float for 25 turns: cross chasms and water; ignore roots, webs, floor traps and ground hazards.'},
-  stoneskin:{name:'Earth sigil', motes:['earth'], desc:'Clear Poison and Stun. For 15 turns: immune to both and poison damage; -3 physical damage per hit.'},
-  heal:     {name:'Light sigil', motes:['light'], desc:'Heal 35% of max HP, then 5% a turn for 15 turns.'},
+  stoneskin:{name:'Earth sigil', motes:['earth'], desc:'Clear Poison and Stun. Gain Stone Skin for 15 turns: immunity to Poison, Stun and poison damage, plus physical protection.'},
+  heal:     {name:'Light sigil', motes:['light'], desc:'Heal yourself, then recover more HP each turn for 15 turns.'},
   vanish:   {name:'Shadow sigil', motes:['shadow'], desc:'Vanish for 5 turns; enemies lose track of you.'},
   identify: {name:'Sigil of Knowing', motes:['light','shadow'], desc:'Identify every sigil you carry.'},
   mapping:  {name:'Sigil of the Deep Map', motes:['shadow','earth'], desc:'Reveal this floor\'s layout.'},
@@ -926,5 +926,5 @@ var DROPS = {
 /* summoned forms for Mother Murk's Raise Dead, by piety rank */
 var UNDEAD_FORMS = [
   {rank:1, kind:'skeleton', name:'Risen Skeleton', hp:14, dmg:[3,6]},
-  {rank:5, kind:'skeleton', name:'Lich', hp:26, dmg:[5,9], caster:'shadowbolt', sprite:'m-lich', art:1.0}
+  {rank:5, kind:'skeleton', name:'Lich', hp:26, dmg:[5,9], caster:'shadowbolt', sprite:'m-lich', art:1.22}
 ];

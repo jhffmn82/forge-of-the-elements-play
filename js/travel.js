@@ -150,7 +150,12 @@ function travelStateChanged(){window.dispatchEvent(new CustomEvent('fote:travel-
 function syncExploreButton(button){
   if(!button)return;
   var active=autoExploreActive(),stairs=!!(floorMeta&&floorMeta.exploreComplete);
-  button.textContent=active?'Stop':stairs?'Next floor':'Explore';
+  var label=active?'Stop':stairs?'Next floor':'Explore';
+  if(button.dataset.iconOnly==='true'){
+    var shape=active?'<rect x="7" y="7" width="10" height="10" rx="1"/>':stairs?'<path d="M4 18h5v-5h5V8h6M18 3v7m-3-3 3 3 3-3"/>':'<circle cx="12" cy="12" r="8"/><path d="m15 9-2 4-4 2 2-4z"/>';
+    button.innerHTML='<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">'+shape+'</svg>';
+  }else button.textContent=label;
+  button.setAttribute('aria-label',label);
   button.dataset.exploreMode=stairs?'stairs':'explore';button.setAttribute('aria-pressed',String(active));
   button.title=(active?'Stop travelling':stairs?'Walk to the stairs down and descend':'Explore nearby unseen areas')+(typeof bindKey==='function'?' ('+keyLabel(bindKey('explore'))+')':'');
 }

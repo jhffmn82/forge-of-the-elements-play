@@ -50,9 +50,9 @@ function oozeField(wx, wy, cells, salt){
   if(!f) return 0;
   return f + (ptValG(wx*1.9, wy*1.9, salt)-0.5)*0.34 + (ptValG(wx*5.3, wy*5.3, salt+5)-0.5)*0.12;
 }
-function oozeRaster(x, y){
-  var R=32, cells=[];
-  for(var yy=y-2;yy<=y+2;yy++) for(var xx=x-2;xx<=x+2;xx++) if(isOozeAt(xx,yy)) cells.push([xx+0.5, yy+0.5]);
+function oozeRaster(x, y, fieldAt, material){
+  var R=material?64:32, cells=[], contains=fieldAt||isOozeAt;
+  for(var yy=y-2;yy<=y+2;yy++) for(var xx=x-2;xx<=x+2;xx++) if(contains(xx,yy)) cells.push([xx+0.5, yy+0.5]);
   if(!cells.length) return null;
   var c=document.createElement('canvas'); c.width=R; c.height=R;
   var g=c.getContext('2d'), im=g.createImageData(R,R), D=im.data, salt=surfSalt()+7, any=false, T=0.22, e=1.5/R;
@@ -74,10 +74,43 @@ function oozeRaster(x, y){
       if(sheen>0.78 && deep>0.35) { col=[col[0]+18, col[1]+26, col[2]+10]; }   /* broad soft sheen patches */
       if(deep>0.3 && hash2(Math.floor(wx*R), Math.floor(wy*R), salt+13)<0.012) { col=[150,220,120]; a=220; }   /* a few wet glints */
     }
+    if(material){
+      var grain=(ptValG(wx*19,wy*19,salt+23)-.5)*22;
+      if(material==='ice'){col=shore?[164,193,200]:[109+deep*22,143+deep*20,157+deep*16];a=shore?170:100+deep*38;}
+      else if(material==='holy'){col=shore?[208,179,103]:[170,139,69];a=shore?100:35+deep*24;}
+      else if(material==='roots'){col=shore?[92,89,56]:[56,65,37];a=shore?108:78;}
+      else {col=shore?[col[0]*.6+14,col[1]*.66+12,col[2]*.55+10]:[37+deep*8,70+deep*8,34+deep*4];a=Math.min(225,a+12);grain*=.45;}
+      col=col.map(function(v){return Math.max(0,Math.min(255,v+grain));});
+    }
     D[p]=col[0]; D[p+1]=col[1]; D[p+2]=col[2]; D[p+3]=a; any=true;
   }
   if(!any) return null;
   g.putImageData(im,0,0); c.environmentTerrain={pixels:D, detail:'fluid'}; return c;
+}
+/* Combat residues use the same world-coordinate pool edges and raster cache as
+ * the Crypt's ooze. Neighbours merge; camera movement never reshuffles texture. */
+function drawGroundMaterial(kind, cells, alpha, remembered){
+  if(!cells.length)return;
+  var occupiedCells=new Set(cells),patches=new Set();
+  function contains(x,y){return inb(x,y)&&occupiedCells.has(idxOf(x,y));}
+  cells.forEach(function(i){var x=i%MW,y=Math.floor(i/MW);for(var dy=-1;dy<=1;dy++)for(var dx=-1;dx<=1;dx++)if(inb(x+dx,y+dy))patches.add(idxOf(x+dx,y+dy));});
+  patches.forEach(function(i){
+    var x=i%MW,y=Math.floor(i/MW);
+    if(x<camX-1||y<camY-1||x>camX+viewW+1||y>camY+viewH+1||!(revealAll||vis[i]||remembered&&seen[i])||isWallLike(at(x,y)))return;
+    var opacity=typeof alpha==='function'?alpha(i):alpha;
+    if(!(opacity>0))return;
+    var signature='';for(var yy=y-2;yy<=y+2;yy++)for(var xx=x-2;xx<=x+2;xx++)signature+=contains(xx,yy)?'1':'0';
+    var raster=cachedRaster('field-'+kind+'-'+signature+'@',x,y,function(xx,yy){return oozeRaster(xx,yy,contains,kind);});
+    blitRaster(raster,(x-camX)*TS,(y-camY)*TS,opacity*(revealAll||vis[i]?1:memA(.4)));
+  });
+}
+function drawGroundRoots(cells, alpha){
+  var art=objArt('props','root-tangle');if(!art)return;
+  cells.forEach(function(i){
+    if(!(revealAll||vis[i]))return;var x=i%MW,y=Math.floor(i/MW),flip=hash2(x,y,619)<.5;
+    ctx.save();ctx.translate((x-camX+.5)*TS,(y-camY+.82)*TS);ctx.scale(flip?-1:1,.48);
+    drawObj(art,-TS*.5,-TS*.92,{fit:.8,feet:true,alpha:alpha});ctx.restore();
+  });
 }
 function drawOoze(now){
   if(!floorMeta || !floorMeta.ooze) return;
@@ -289,7 +322,7 @@ function turnGraveOoze(context){
     if(e!==player && (e.base.undead || e.base.object || e.base.ooze || e.base.flying)) return;
     var d=dealDirectDamage(e,1,'poison',null); e._hit=Math.max(performance.now(), fxClock);   /* a flat tick like poison status: guards and wards don't soak it */
     floatText(e.x,e.y,String(d),'poison');
-    if(e===player){ log('The grave ooze stings: '+d+' poison damage.','c-you'); if(player.hp<=0){  if(player.hp<=0) death(); } }
+    if(e===player){ log('Grave ooze: '+combatDamageNumber(d,'poison')+'.','c-you'); if(player.hp<=0){  if(player.hp<=0) death(); } }
     else if(e.hp<=0) kill(e, null);
   });
 

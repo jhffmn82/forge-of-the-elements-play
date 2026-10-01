@@ -42,11 +42,13 @@ function saveApply(data){
   if(typeof SANDBOX!=='undefined')SANDBOX.normalTitle=false;
   /* Presentation is rebuilt only after every migration and validation succeeds. */
   fx=[]; PARTS.length=0; aiming=null; LAST_HIT=null;
+  if(typeof BOWAIM!=='undefined')BOWAIM=null;
+  if(typeof FoteCombatLog!=='undefined')FoteCombatLog.reset();
   if(typeof modalOpen!=='undefined' && modalOpen && typeof closeModal==='function') closeModal();
   if(typeof SURF_CACHE!=='undefined') SURF_CACHE.key=null;
-  var L=$('log'); if(L){ L.innerHTML=''; (data.log||[]).forEach(function(p){ log(p[1], p[0]); }); }
-  log('<b>Game loaded.</b> '+player.name+', level '+player.level+', floor '+floorNo+'.','c-kill');
-  if(recoveredInterruptedDeath)log('This save was interrupted by an old damage bug. Your character has been recovered at 1 HP.','c-info');
+  var L=$('log'); if(L){ L.innerHTML=''; (data.log||[]).forEach(function(p){ log(p[1], p[0],{transient:false}); }); }
+  log('<b>Game loaded.</b> '+combatText(player.name)+', level '+player.level+', floor '+floorNo+'.','c-kill',{transient:false});
+  if(recoveredInterruptedDeath)log('This save was interrupted by an old damage bug. Your character has been recovered at 1 HP.','c-info',{transient:false});
   var ov=$('over'); if(ov) ov.style.display='none';
   if(openSheet) showSheet(openSheet);
   resize(); if(typeof abilityBar==='function') abilityBar(); updateUI(); draw();
@@ -188,16 +190,6 @@ function importSave(){
 (function(){
   var st=document.createElement('style');
   st.textContent=[
-    '#title{position:fixed;inset:0;z-index:45;display:none;background:#0B0908 url(art/title/title.jpg) center/cover no-repeat}',
-    '#title.on{display:block}',
-    '#title::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(8,6,5,.72) 0%,rgba(8,6,5,.25) 38%,rgba(8,6,5,0) 60%);pointer-events:none}',
-    '#title .menu{position:absolute;z-index:1;left:max(clamp(16px,6vw,90px),env(safe-area-inset-left,0px));bottom:max(16px,env(safe-area-inset-bottom,0px));max-height:calc(100% - 32px - env(safe-area-inset-top,0px));overflow-y:auto;display:flex;flex-direction:column;gap:10px;width:min(300px,calc(100vw - 32px))}',
-    '#title .menu button{font-family:var(--display);font-size:24px;letter-spacing:.02em;text-align:left;padding:9px 18px;min-height:44px;flex-shrink:0;color:#F2D9A0;',
-    '  background:rgba(20,15,12,.82);border:1px solid #5A4630;border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,.5)}',
-    '#title .menu button:hover:not(:disabled),#title .menu button:focus-visible{border-color:#E8B44A;color:#FFE7B0;background:rgba(42,30,20,.9);outline:none}',
-    '#title .menu button:disabled{opacity:.4;cursor:default}',
-    '#title .menu .sub{font-family:var(--mono);font-size:11px;color:var(--ash);display:block;letter-spacing:0}',
-    '@media(max-height:560px){body.touch #title.on .menu{gap:4px}body.touch #title.on .menu>button{font-size:18px;line-height:1.1;padding:4px 12px;min-height:clamp(34px,9.2vh,44px)}body.touch #title.on .menu .sub{font-size:10px;line-height:1.1}}',
     '#title .panel{position:absolute;z-index:2;left:50%;top:50%;transform:translate(-50%,-50%);width:min(560px,calc(100vw - 32px));max-height:calc(100vh - 40px);overflow-y:auto;',
     '  background:rgba(18,14,11,.96);border:1px solid #5A4630;border-radius:8px;padding:18px 20px;box-shadow:0 10px 40px rgba(0,0,0,.7)}',
     '#title .panel h2{font-family:var(--display);color:var(--gold);font-size:26px;margin:0 0 10px}',
@@ -213,6 +205,30 @@ function importSave(){
   document.head.appendChild(st);
 })();
 
+/* Presentation only: the film never advances or borrows state from a live run. */
+var titleFilmPaused=null;
+function titleContent(){
+  var el=$('title'), content=el.querySelector('.title-content');
+  if(content)return content;
+  el.innerHTML='<div class="title-film" aria-hidden="true"><video id="titleFilm" muted loop playsinline preload="none" poster="art/title/combat-trailer-poster.jpg"><source src="art/title/combat-trailer.mp4" type="video/mp4"></video></div>'+
+    '<div class="title-content"></div><button id="titlePlayback" class="title-playback" aria-label="Pause background combat footage">Pause scene</button>';
+  var video=$('titleFilm');video.muted=true;
+  if(titleFilmPaused===null)titleFilmPaused=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  $('titlePlayback').onclick=function(){audioInit();sfx('ui-click');titleFilmPaused=!titleFilmPaused;syncTitleFilm();};
+  video.addEventListener('error',function(){$('titlePlayback').hidden=true;});
+  syncTitleFilm();
+  return el.querySelector('.title-content');
+}
+function syncTitleFilm(){
+  var el=$('title'),video=$('titleFilm'),button=$('titlePlayback');
+  if(!video)return;
+  var play=el.classList.contains('on')&&!document.hidden&&!titleFilmPaused;
+  if(button){button.textContent=titleFilmPaused?'Play scene':'Pause scene';button.setAttribute('aria-label',titleFilmPaused?'Play background combat footage':'Pause background combat footage');}
+  if(play){if(video.paused){var pending=video.play();if(pending&&pending.catch)pending.catch(function(error){if(error.name==='AbortError')return;titleFilmPaused=true;if(button){button.textContent='Play scene';button.setAttribute('aria-label','Play background combat footage');}});}}
+  else video.pause();
+}
+document.addEventListener('visibilitychange',syncTitleFilm);
+
 function openTitle(){
   var el=$('title');
   if(!el){ el=document.createElement('div'); el.id='title'; document.body.appendChild(el); }
@@ -220,6 +236,7 @@ function openTitle(){
   if($('create')) $('create').classList.remove('on');
   playMusic('title');   /* Keep the instrumental menu music through character creation. */
   renderTitleMenu();
+  syncTitleFilm();
 }
 /* a browser only lets a page close a window it opened itself: try, and otherwise say goodbye so the tab can be closed */
 function exitGame(){
@@ -227,12 +244,12 @@ function exitGame(){
   try{ window.close(); }catch(e){}
   setTimeout(function(){
     var el=$('title'); if(!el) return;
-    el.innerHTML='<div class="panel" style="text-align:center"><h2>Farewell</h2><p>The forge fire banks low. Your saves are kept in this browser; close this tab or window whenever you like.</p>'+
+    titleContent().innerHTML='<div class="panel" style="text-align:center"><h2>Farewell</h2><p>The forge fire banks low. Your saves are kept in this browser; close this tab or window whenever you like.</p>'+
       '<div class="panelfoot" style="justify-content:center"><button id="tBack">Back to the title</button></div></div>';
     $('tBack').onclick=function(){ playMusic('title'); renderTitleMenu(); };
   }, 150);
 }
-function closeTitle(){ var el=$('title'); if(el) el.classList.remove('on'); }
+function closeTitle(){ var el=$('title'); if(el) el.classList.remove('on'); syncTitleFilm(); }
 function latestSave(){
   var best=null, bestSlot=null;
   SAVE_SLOTS.forEach(function(s){ var d=readSlot(s); if(d && d.summary && typeof d.savedAt==='string' && Number.isFinite(Date.parse(d.savedAt)) && (!best || d.savedAt>best.savedAt)){ best=d; bestSlot=s; } });
@@ -240,13 +257,14 @@ function latestSave(){
 }
 function renderTitleMenu(){
   var el=$('title'), last=latestSave(), lastD=last ? readSlot(last) : null;
-  el.innerHTML='<div class="menu">'+
-    (last ? '<button id="tContinue">Continue<span class="sub">'+(lastD.summary.name||'')+' &middot; level '+lastD.summary.level+' &middot; floor '+lastD.summary.floor+'</span></button>' : '')+
-    '<button id="tNew">New Game</button>'+
+  titleContent().innerHTML='<div class="menu">'+
+    '<header class="title-heading"><p class="title-kicker">A turn-based roguelike</p><h1><span>Forge</span><small>of the</small><span>Elements</span></h1><p class="title-pitch">Elemental magic. Strange gods.<br>One life.</p></header>'+
+    (last ? '<button id="tContinue" class="title-primary">Continue<span class="sub">'+(lastD.summary.name||'')+' &middot; level '+lastD.summary.level+' &middot; floor '+lastD.summary.floor+'</span></button>' : '')+
+    '<button id="tNew"'+(!last?' class="title-primary"':'')+'>New Game</button><div class="title-secondary">'+
     '<button id="tLoad">Load Game</button>'+
     '<button id="tSettings">Settings</button>'+
     '<button id="tHistory">Previous Runs</button>'+
-    '<button id="tAbout">About</button>'+
+    '<button id="tAbout">About</button></div>'+
     '<button id="tUpdate">Version &middot; '+(typeof FOTE_VERSION==='string'?FOTE_VERSION:'Beta 1.1')+'<span id="versionStatus" class="sub" role="status"></span></button></div>';
   if($('tContinue')) $('tContinue').onclick=function(){ audioInit(); loadFrom(last); };
   $('tNew').onclick=function(){ audioInit(); sfx('ui-click'); closeTitle(); openCreate(); };
@@ -278,7 +296,7 @@ function slotRows(mode){
 }
 function renderLoadPanel(){
   var el=$('title');
-  el.innerHTML='<div class="panel"><h2>Load Game</h2>'+slotRows('load')+
+  titleContent().innerHTML='<div class="panel"><h2>Load Game</h2>'+slotRows('load')+
     '<div class="panelfoot"><button id="tImport">Import from file&hellip;</button><button id="tBack">Back</button></div></div>';
   el.querySelectorAll('[data-load]').forEach(function(b){ b.onclick=function(){ loadFrom(b.getAttribute('data-load')); }; });
   el.querySelectorAll('[data-del]').forEach(function(b){ b.onclick=function(){ if(confirm('Delete this save? This cannot be undone.')){ deleteSlot(b.getAttribute('data-del')); renderLoadPanel(); } }; });
@@ -287,7 +305,7 @@ function renderLoadPanel(){
 }
 function renderAbout(){
   var el=$('title');
-  el.innerHTML='<div class="panel"><h2>About</h2>'+
+  titleContent().innerHTML='<div class="panel"><h2>About</h2>'+
     '<p><b>Forge of the Elements</b> is a turn-based roguelike. Pick a race and a class and descend twenty-five floors through the Dungeon, the Crypt, the Caverns, the Underdark and the Realm of Chaos. Defeat the biome lords and step through portals into the elemental planes along the way. Fuse elemental motes at forges to shape your gear and your magic, follow a god and cross the floating islands of Chaos on your quest to reach the Forge of the Elements.</p>'+
     '<p>Everything happens in turns: you act, then the dungeon answers. Hover anything for details. Tab opens your character, I your gear, P your faith, Esc closes windows. Key bindings, sound, lighting and animation speed live in the Options tab, along with saving.</p>'+
     '<h3>Credits</h3>'+

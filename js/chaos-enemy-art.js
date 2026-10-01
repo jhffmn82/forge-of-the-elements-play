@@ -36,15 +36,11 @@
   function sheet(name){return active()&&loaded[name]?loaded[name].sheet:null;}
   function visible(x,y){return inb(x,y)&&(revealAll||vis[idxOf(x,y)]);}
   function drawHazards(now){
-    if(!active())return;var pulse=ANIM.reduce?.65:.58+.18*Math.sin((now||0)/260);
-    ctx.save();ctx.globalAlpha=1;
+    if(!active())return;
     ((floorMeta.chaosCombat||{}).hazards||[]).forEach(function(hazard){
-      hazard.tiles.forEach(function(tile){var x=tile[0],y=tile[1];if(!visible(x,y))return;var px=(x-camX)*TS,py=(y-camY)*TS;
-        ctx.fillStyle='rgba(133,215,43,.3)';ctx.fillRect(px+2,py+2,TS-4,TS-4);ctx.strokeStyle='rgba(203,255,88,'+pulse+')';ctx.lineWidth=Math.max(1,TS*.035);ctx.strokeRect(px+2,py+2,TS-4,TS-4);
-        ctx.beginPath();ctx.moveTo(px+TS*.22,py+TS*.7);ctx.lineTo(px+TS*.7,py+TS*.22);ctx.moveTo(px+TS*.4,py+TS*.8);ctx.lineTo(px+TS*.8,py+TS*.4);ctx.stroke();
-      });
+      var cells=hazard.tiles.map(function(tile){return idxOf(tile[0],tile[1]);});
+      drawGroundMaterial('poison',cells,.92);drawFieldMist(cells,'#93ae64',now,.16);
     });
-    ctx.restore();
   }
   function drawActorCues(e,px,py,now){
     if(!active()||!e.base||!e.base.chaosAI||!actorVisible(e))return;

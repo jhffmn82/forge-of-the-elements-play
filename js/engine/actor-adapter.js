@@ -178,7 +178,7 @@ var gameActors=FoteActors.create({
     actorBehavior('sporecaller',function(e){return !!e.base.sporecaller;},function(e){return FoteSporecaller.act(e);}),
     actorBehavior('elemental-plane',function(e){return inFwa()&&e.base.fwa;},elementalPlaneBehavior),
     actorBehavior('underdark',function(e){return !!e.base.deepAI;},deepCreatureBehavior),
-    actorBehavior('caverns',function(e){return e.base.aquatic||e.base.spores||e.kind==='stormbeetle'||e.kind==='sparkjelly';},caveCreatureBehavior),
+    actorBehavior('caverns',function(e){return e.base.aquatic||e.base.spores||e.base.caveSpell||e.kind==='stormbeetle'||e.kind==='sparkjelly';},caveCreatureBehavior),
     actorBehavior('plane-traits',function(){return !!floorMeta.plane;},planeCreatureBehavior),
     actorBehavior('crypt-traits',function(e){var b=e.base;return b.reloads||b.summoner||b.phases;},function(e){return cryptCreatureBehavior(e);}),
     actorBehavior('ordinary-monster',function(e){return !!e.foe;},basicMonsterBehavior)

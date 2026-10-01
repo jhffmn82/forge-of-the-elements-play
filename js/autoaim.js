@@ -28,9 +28,7 @@ function autoAimTarget(){
 function autoAimPick(){
   var e=autoAimTarget(); if(!e) return;
   aiming.auto=e;
-  /* this line replaces the "click a target" one just written, so an aim costs one log line, not two */
-  var L=$('log'), last=L && L.lastElementChild; if(last && /click a target|press Esc/.test(last.textContent)) L.removeChild(last);
-  log('Targeting <b>'+e.name+'</b>. Press again to fire, or pick another target.','c-info');
+  /* The target brackets provide selection feedback; combat results own the log. */
   draw();
 }
 function autoAimLive(){ var e=aiming && aiming.auto; return e && e.hp>0 && e.foe && actorVisible(e) && ents.indexOf(e)>=0 ? e : null; }

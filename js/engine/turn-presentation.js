@@ -44,8 +44,9 @@ function turnAnimationClipEnd(e,now){
   var frames=sheet&&sheet.clips&&sheet.clips[clip.name];
   var heldStill=e.base&&e.base.stillPose&&!shade&&sheet&&sheet.static_row!==undefined;
   var end=frames&&!heldStill?clip.t0+frames.frames*(CLIP_MS[clip.name]||70):now;
-  /* Still-pose elemental art has a finite procedural attack compression. */
-  if(e.base&&(e.base.elementTier||e.base.stillPose)&&clip.name==='attack'&&e.state!=='asleep')end=Math.max(end,clip.t0+540);
+  /* The procedural fallback is only for sheets without authored motion. */
+  var authoredMotion=sheet&&Object.keys(sheet.clips||{}).some(function(name){return sheet.clips[name].frames>1;});
+  if(!authoredMotion&&e.base&&(e.base.elementTier||e.base.stillPose)&&clip.name==='attack'&&e.state!=='asleep')end=Math.max(end,clip.t0+540);
   return end;
 }
 function turnAnimationEffectVisible(f){

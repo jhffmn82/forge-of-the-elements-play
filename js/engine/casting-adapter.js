@@ -3,25 +3,25 @@ var SELF_CASTS={
 "ironbody":function(A,r,div){ player.buffs.ironbody=divineDuration(12); derive(player); log('Iron Body active.','c-good'); sfx('earth-cast'); sparkleFx(player.x,player.y,'earth',20); },
 "bellow":function(A,r,div){  sfx('warchief-roar');
     ents.forEach(function(e){ if(e.foe && dist(e,player)<=3) applyStatus(e,'stun',1); });
-    var h=Math.round(player.maxhp*(.10+.02*r)*div); healPlayer(h); ringFx(player.x,player.y,'#B8453A',3.5);
-    log('Bellow.','c-good'); },
+    var h=Math.round(player.maxhp*(.10+.02*r)*div),before=player.hp; healPlayer(h); ringFx(player.x,player.y,'#B8453A',3.5);
+    log('Bellow: +'+Math.round((player.hp-before)*10)/10+' HP; Stun within 3 tiles.','c-good'); },
 "heal":function(A,r,div){
     var prior=player.hp,bonus=(1+.10*r)*(typeof inSanctuary==='function'&&inSanctuary(player)?1+.25*holyGroundStrength(player):1);
     var raw=Math.round(player.maxhp*(.10+.02*r)*div);
     healPlayer(Math.min(raw,player.maxhp*.4/bonus));
     var hh=Math.round(player.hp-prior);
     sparkleFx(player.x,player.y,'heal',30);sfx('heal');
-    log('Saint Glimmer mends you. +'+hh+' HP.','c-good');
+    log('Heal: +'+hh+' HP.','c-good');
   },
 "arcaneward":function(A,r,div){ player.buffs.communion=8; player.buffs.arcaneward=8; player.ward=Math.round((8+2*r)*div); sfx('cast-generic'); ringFx(player.x,player.y,'#7FA8FF',2); },
-"temper":function(A,r,div){ player.buffs.temper=fullDivineDuration(12);player._buffSeen=player._buffSeen||{};player._buffSeen['b:temper']=player.buffs.temper; derive(player); log('Old Anvil tempers your '+player.weapon.name+'.','c-good'); sfx('forge-enchant'); sparkleFx(player.x,player.y,'fire',20); },
+"temper":function(A,r,div){ player.buffs.temper=fullDivineDuration(12);player._buffSeen=player._buffSeen||{};player._buffSeen['b:temper']=player.buffs.temper; derive(player); log('Temper: '+player.weapon.name+'.','c-good'); sfx('forge-enchant'); sparkleFx(player.x,player.y,'fire',20); },
 "rolldice":function(A,r,div){WOBBLE_BONUS=0;try{ sfx('wobbles-giggle'); wobblesIntervention(false); }finally{WOBBLE_BONUS=0;}},
 "unholyaura":function(A,r,div){
 
 
     player.st.aura={t:divineDuration(8), d:Math.round(4*godRank()*div)};
     sparkleFx(player.x,player.y,'dark',40); sfx('shadow-cast');
-    log('An unholy aura seeps from you ('+player.st.aura.d+' a turn).','c-good');
+    log('Unholy Aura active.','c-good');
     return true;
   },
 "intothedark":function(A,r,div){
@@ -31,8 +31,8 @@ var SELF_CASTS={
     ents.forEach(function(e){ if(e.foe && e.state==='hunt'){ e.state='wander'; e.lastSeen=null; } });
     player.syllaDark = r;player.castingSpell=false;
     sfx('vanish'); sparkleFx(player.x, player.y, 'dark', 30); ringFx(player.x, player.y, GODS.sylla.color, 2.5);
-    log('<b>Into the Dark:</b> hidden for '+player.hidden+' turns'+
-        (r ? '; next hit +'+Math.round(SYLLA.darkPerRank*r*div*100)+'% damage' : '')+'.','c-good');
+    log('Into the Dark: Hidden '+player.hidden+' turns'+
+        (r ? '; next hit +'+Math.round(SYLLA.darkPerRank*r*div*100)+'%' : '')+'.','c-good');
     return true;
   }
 };
@@ -53,7 +53,7 @@ function resolveElementSelf(A){  beginCast(A);
       if(e.foe){ spellHit(e, A, dmg, 'phys'); finishHit(e); }
       else if(e.ally){ var ad=applyDamage(e, dmg, 'phys', player); floatText(e.x,e.y,String(ad),'phys'); if(e.hp<=0) kill(e,null); } });
     markGround(tiles, A);
-    log('Earthquake.','c-hit');
+
   } else if(A.kind==='storm'){
     player.stormUntil=player.t+600;
     sparkleFx(player.x,player.y,'lightning',40); ringFx(player.x,player.y,'#E8D27A',2.5);
@@ -66,38 +66,38 @@ function resolveElementSelf(A){  beginCast(A);
     markGround(tiles,A);
     player.dawnUntil=turn+20;
     sparkleFx(player.x,player.y,'light',60); ringFx(player.x,player.y,'#F6E7B0',5);
-    log('<b>Dawn:</b> '+n+' enem'+(n===1?'y':'ies')+' hit. Enemies revealed.','c-good');
+    log('Dawn: enemies revealed.','c-good');
   }
   endTurn();
 }
 function useShadowstep(){
-  if(cdLeft('shadowstep')>0){log('Shadowstep is not ready ('+cdLeft('shadowstep')+' turns).','c-info');sfx('ui-error');return;}
-  if(ents.some(function(e){return e.foe&&dist(e,player)<=1;})){log('Not with an enemy right next to you.','c-info');sfx('ui-error');return;}
+  if(cdLeft('shadowstep')>0){log('Shadowstep: ready in '+cdLeft('shadowstep')+' turns.','c-info');sfx('ui-error');return;}
+  if(ents.some(function(e){return e.foe&&dist(e,player)<=1;})){log('Enemy adjacent.','c-info');sfx('ui-error');return;}
   startDivineCd('shadowstep',ABILITIES.shadowstep.cd);stackDiscipline();player.hidden=4;
   ents.forEach(function(e){if(e.foe&&e.state==='hunt'){e.state='wander';e.lastSeen=null;e.goal=null;}});
-  setClip(player,'cast');sfx('vanish');sparkleFx(player.x,player.y,'dark',18);log('You <b>Shadowstep</b> into hiding.','c-good');endTurn();
+  setClip(player,'cast');sfx('vanish');sparkleFx(player.x,player.y,'dark',18);log('Shadowstep: hidden.','c-good');endTurn();
 }
 function useAbility(i){
   if(gameTurns.busy())return false;
   var key=player.abilities[i],A=ABILITIES[key];if(!A)return;
   if(playerFearAction())return false;
   var forbidden=spellForbidden(A);
-  if(forbidden){if(aiming&&aiming.i===i)cancelAim();log('<b>'+GODS[player.god].name+'</b> forbids '+forbidden+'. '+A.name+' will not come to you.','c-info');sfx('ui-error');return;}
+  if(forbidden){if(aiming&&aiming.i===i)cancelAim();log(GODS[player.god].name+' forbids '+A.name+'.','c-info');sfx('ui-error');return;}
   if(aiming&&!aiming.amulet&&aiming.i===i&&aiming.auto){var target=autoAimLive(),point=target&&autoAimPoint(target);if(point)castAt(point.x,point.y);else cancelAim();return;}
   if(key==='shadowstep')return useShadowstep();
   if(key==='charge'){
-    if(cdLeft(key)>0){log('Charge is not ready ('+cdLeft(key)+' turns).','c-info');sfx('ui-error');return;}
-    if(effectHasTag(player,'root')||gameEffects.has(player,'frozen')){log('You cannot charge while held fast.','c-info');sfx('ui-error');return;}
+    if(cdLeft(key)>0){log('Charge: ready in '+cdLeft(key)+' turns.','c-info');sfx('ui-error');return;}
+    if(effectHasTag(player,'root')||gameEffects.has(player,'frozen')){log('Cannot charge while held.','c-info');sfx('ui-error');return;}
   }
-  if((A.divine||A.cd)&&cdLeft(key)>0){log(A.name+' is not ready ('+cdLeft(key)+' turns).','c-info');sfx('ui-error');return;}   /* an invoke's cooldown (DIVINE_COOLDOWNS), or Sap's own */
-  if(A.kind!=='charge'&&player.mp<costOf(A)){log('Not enough mana for '+A.name+' ('+costOf(A)+').','c-info');sfx('no-mana');return;}
+  if((A.divine||A.cd)&&cdLeft(key)>0){log(A.name+': ready in '+cdLeft(key)+' turns.','c-info');sfx('ui-error');return;}   /* an invoke's cooldown (DIVINE_COOLDOWNS), or Sap's own */
+  if(A.kind!=='charge'&&player.mp<costOf(A)){log(A.name+': needs '+costOf(A)+' Mana.','c-info');sfx('no-mana');return;}
   if(A.kind==='summon'&&ents.some(function(e){return e.ally&&e.undeadServant;})){log('Your servant still stands.','c-info');return;}
   if(A.kind==='charge'||AIM_KINDS[A.kind]||['bolt','dash','summon'].includes(A.kind)){
     if(aiming&&aiming.i===i){cancelAim();return;}
     aiming={i:i,A:A};
-    if(key==='charge')log('<b>Charge:</b> click an enemy, or open ground, within 5 tiles in a straight line. Esc cancels.','c-info');
-    else log('<b>'+A.name+':</b> '+(A.kind==='umbral'?'click any tile you have seen':A.kind==='tomb'?'click an enemy, or yourself':'click a target within '+spellRange(A)+' tiles')+', or press Esc.','c-info');
-    abilityBar();draw();if(AUTO_AIM_KINDS[A.kind])autoAimPick();return;
+    abilityBar();draw();if(AUTO_AIM_KINDS[A.kind])autoAimPick();
+    if(!aiming.auto)log(A.name+': '+(key==='charge'?'straight path, '+A.range+' tiles':A.kind==='umbral'?'choose explored ground':A.kind==='tomb'?'choose a creature or yourself':'choose a target')+'. Esc cancels.','c-info');
+    return;
   }
   if(['quake','storm','dawn'].includes(A.kind))return castElementSelf(A);
   if(A.kind==='melee2'){
@@ -128,9 +128,9 @@ function castAt(x,y){
   var A=selection.A;
   if(!selection.amulet&&!selection.prayer){
     var forbidden=spellForbidden(A);
-    if(forbidden){log('<b>'+GODS[player.god].name+'</b> forbids '+forbidden+'. '+A.name+' will not come to you.','c-info');sfx('ui-error');return false;}
-    if(A.kind!=='charge'&&player.mp<costOf(A)){log('Not enough mana for '+A.name+' ('+costOf(A)+').','c-info');sfx('no-mana');return false;}
-    if(A.kind==='charge'&&(effectHasTag(player,'root')||gameEffects.has(player,'frozen'))){log('You cannot charge while held fast.','c-info');sfx('ui-error');return false;}
+    if(forbidden){log(GODS[player.god].name+' forbids '+A.name+'.','c-info');sfx('ui-error');return false;}
+    if(A.kind!=='charge'&&player.mp<costOf(A)){log(A.name+': needs '+costOf(A)+' Mana.','c-info');sfx('no-mana');return false;}
+    if(A.kind==='charge'&&(effectHasTag(player,'root')||gameEffects.has(player,'frozen'))){log('Cannot charge while held.','c-info');sfx('ui-error');return false;}
   }
   var before=turn,tiles=effectFootprint(A,x,y),event=gameActions.run('cast',player,foeAt(x,y),{ability:A},function(context){
     player.noisy=true;context.result=resolveTargetedCast(x,y,selection);

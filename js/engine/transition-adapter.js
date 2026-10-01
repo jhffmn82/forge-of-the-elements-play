@@ -79,6 +79,11 @@ var tileEntry=FoteTransitions.stages([
 function stepOn(){tileEntry.run({hpBefore:player.hp});}
 
 var movementEntry=FoteTransitions.stages([
+  {name:'face-direction',run:function(c){
+    if(!player||player.hp<=0||RUN.victory)return true;
+    /* Bumps turn too, including terrain actions that finish before ordinary movement. */
+    var face=faceOf(c.dx,c.dy);if(face)player.face=face;
+  }},
   {name:'impassable-void',run:function(c){
     if(floorMeta&&floorMeta.impassableVoid&&at(player.x+c.dx,player.y+c.dy)===CHASM){log('The void cannot be crossed. Use a bridge or portal.','c-info');return true;}
   }},

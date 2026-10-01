@@ -4,9 +4,8 @@
       behind it is drawn again, so it hides them the way it should.
    2. The Deep Maw's death won the run 1.5 seconds later, before the loot it dropped could be picked up. Its
       burrow now opens as the way out: walk into it to leave the Caverns.
-   3. Four creatures' generated death clips mostly darkened instead of falling, and three attack clips drifted
-      dark in their last frames. The death clips give way to the game's own topple-and-fade, and the attack
-      clips stop before the drift. */
+   Creature animation comes from the packed mob clips; the old fallback and
+   shortened clips were removed when their source poses were repaired. */
 
 /* ---------------------------------------------------------------- 1. occlusion */
 
@@ -14,15 +13,6 @@
 /* ---------------------------------------------------------------- 2. the Maw's burrow is the way out */
 
 /* the exit on floor 15 is the Maw's open burrow, not the Dungeon's gate */
-
-
-/* ---------------------------------------------------------------- 3. weak clips */
-var CAVE_TOPPLE = {'m-storm-beetle':1, 'm-crystal-crawler':1, 'm-shock-eel':1, 'm-myconid':1, 'm-worm-tender':1};
-var CAVE_ATTACK_TRIM = {'m-storm-beetle':6, 'm-spark-jelly':6, 'm-crystal-crawler':6};
-(function trimClips(){
-  if(!(typeof AS!=='undefined' && AS && AS.mobs)){ setTimeout(trimClips, 200); return; }
-  for(var k in CAVE_ATTACK_TRIM){ var m=AS.mobs[k]; if(m && m.clips.attack) m.clips.attack.frames=Math.min(m.clips.attack.frames, CAVE_ATTACK_TRIM[k]); }
-})();
 
 
 /* ---------------------------------------------------------------- 4. standing pieces sit on the ground

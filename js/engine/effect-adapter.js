@@ -10,7 +10,10 @@ var gameEffects=FoteEffects.create({
   defaultBurnDamage:function(){return sDMG(2);},
   bonusDuration:function(e,key,turns){if(e.shadowClone&&e.cloneStats&&e.cloneStats.passives.ironConst)return Math.max(1,Math.round(turns/2))-turns;return e!==player&&e.foe&&syllaOn()&&godRank()>=5?1:0;},
   onBlocked:function(event){
-    if(event.reason==='unstoppable')log('Unstoppable: the '+(event.key==='frozen'?'freeze':event.key==='root'?'hold':event.key)+' fails.','c-good');
+    if(event.reason==='unstoppable'){
+      var info=typeof STATUS_INFO!=='undefined'&&STATUS_INFO[event.key];
+      log('Resisted '+(event.requested==='web'||event.requested==='webbed'?'Web':info&&info.name||event.key)+'.','c-good');
+    }
   },
   onApplied:function(event,service){
     var e=event.entity,key=event.key,sourceAff=event.options&&event.options.sourceAffinity;
@@ -22,7 +25,7 @@ var gameEffects=FoteEffects.create({
     if(key==='root'){
       if(rank('earth')>=6&&event.previous&&!(e.stoneImm>turn)){
         service.apply(e,'stone',2,undefined,{durationModifiers:false,refresh:'replace'});e.stoneImm=turn+4;
-        floatText(e.x,e.y,'stone','earth');log(e.name+' turns to stone.','c-good');sfx('earth-cast',{from:e});
+        floatText(e.x,e.y,'stone','earth');log(e.name+': Petrified.','c-good');sfx('earth-cast',{from:e});
       }
       if(rank('earth')>=3&&!service.has(e,'poison')){
         if(sourceAff)service.apply(e,'poison',Math.min(3,Math.max(1,rank('earth')-2)),undefined,{durationModifiers:false,refresh:'replace',data:{sourceAffinity:sourceAff}});
@@ -59,12 +62,12 @@ var gameEffects=FoteEffects.create({
     var e=event.entity,s=event.status,key=event.key,damage=0;
     if(key==='bleed'){
       damage=dealDirectDamage(e,Math.max(1,s.d||2),'phys',e.lastHitBy||null,{tags:['periodic','bleed']});e._hit=performance.now();floatText(e.x,e.y,String(damage),'blood');
-      if(e===player)log('Bleeding: '+damage+' damage.','c-you');
+      if(e===player)log('Bleed: '+combatDamageNumber(damage,'phys')+'.','c-you');
       if(rng()<.35&&typeof setG==='function'&&gAt(e.x,e.y)===G_NONE)setG(e.x,e.y,G_BLOOD);
     }else if(key==='burn'){
       var black=e!==player&&e.foe&&(s.sourceAffinity?(s.sourceAffinity.fire||0)>=3&&(s.sourceAffinity.shadow||0)>=2:combo('fire','shadow'));
       damage=dealDirectDamage(e,Math.max(1,Math.round(s.d*(black?1:resistMult(e,'fire')))),'fire',e.lastHitBy||null,{resistanceApplied:!black,tags:['periodic','burn']});e._hit=performance.now();floatText(e.x,e.y,String(damage),'fire');
-      if(e===player)log('Burning: '+damage+' fire damage.','c-you');
+      if(e===player)log('Burn: '+combatDamageNumber(damage,'fire')+'.','c-you');
       if(gAt(e.x,e.y)===G_GRASS||gAt(e.x,e.y)===G_SHORT)ignite(e.x,e.y,e===player?'player':null);
       if(black&&e.hp>0)addHollow(e,1);
     }else if(key==='poison'){
@@ -74,7 +77,7 @@ var gameEffects=FoteEffects.create({
       if(e===player&&((player.buffs&&player.buffs.poisonward>0)||aff('earth')>=6))damage=0;
       if(e.base&&e.base.sporeproof)damage=0;
       damage=dealDirectDamage(e,damage,'poison',null,{resistanceApplied:true,tags:['periodic','poison']});floatText(e.x,e.y,String(damage),'poison');
-      if(e===player&&damage>0)log('Poison: '+damage+' damage.','c-you');
+      if(e===player&&damage>0)log('Poison: '+combatDamageNumber(damage,'poison')+'.','c-you');
     }else if(key==='aura'&&e===player){
       ents.slice().forEach(function(o){if(o.foe&&dist(o,player)<=2){var dealt=applyDamage(o,s.d||3,'dark',player);floatText(o.x,o.y,String(dealt),'dark');healPlayer(1);if(o.hp<=0)kill(o,player);}});
     }
@@ -104,8 +107,8 @@ function playerFearAction(){
   },true);
   PLAYER_FEAR_ACTING=true;
   try{
-    if(step){log('Fear drives you away.','c-info');performPlayerMove(step.dx,step.dy);}
-    else {log('You cower in fear, unable to retreat.','c-info');endTurn();}
+    if(step){log('Fear: retreat.','c-info');performPlayerMove(step.dx,step.dy);}
+    else {log('Fear: trapped.','c-info');endTurn();}
   }finally{PLAYER_FEAR_ACTING=false;}
   return true;
 }

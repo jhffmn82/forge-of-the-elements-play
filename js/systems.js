@@ -458,7 +458,7 @@ function identifySigil(use){
   if(sigilKnown[use]) return;
   sigilKnown[use]=true;
   player.bag.forEach(function(b){ if(b.kind==='sigil' && b.data.use===use) b.name=SIGILS[use].name; });
-  log('It was a <b>'+SIGILS[use].name+'</b>: '+SIGILS[use].desc,'c-kill'); sfx('identify');
+  log('It was a <b>'+SIGILS[use].name+'</b>: '+actionDetailsText(sigilDetails(use)),'c-kill'); sfx('identify');
 }
 
 

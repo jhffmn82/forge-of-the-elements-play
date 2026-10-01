@@ -60,14 +60,14 @@ function bowNextTarget(){
 }
 function bowSlotPress(){
   if(gameTurns.busy()||playerFearAction())return false;
-  if(!bowReady()){ log('Nothing is slung across your back. Put a bow in your ranged slot first.','c-info'); return; }
+  if(!bowReady()){ cancelAim(); log('No bow equipped.','c-info'); return; }
   if(typeof aiming!=='undefined' && aiming && typeof cancelAim==='function') cancelAim();
   var live=bowLive();
-  if(live){ BOWAIM=null; shootAt(live); return; }
+  if(live){ cancelAim(); shootAt(live); return; }
   var e=bowNextTarget();
-  if(!e){ BOWAIM=null; log('Nothing in sight is within the <b>'+gearName(player.ranged)+'</b>\'s reach.','c-info'); return; }
+  if(!e){ cancelAim(); log('No bow target in range.','c-info'); return; }
   BOWAIM=e;
-  log('You draw the <b>'+gearName(player.ranged)+'</b> on the <b>'+e.name+'</b>. Press again to loose.','c-info');
+  abilityBar();
   if(typeof draw==='function') draw();
 }
 /* the mark: the same four thin corner brackets the spell aim uses, in the bow's own colour */

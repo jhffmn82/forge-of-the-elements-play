@@ -1,6 +1,22 @@
 /* One contextual path for attacks and spell hits. Equipment is never swapped
  * to simulate an action, and every damage event carries its action identity. */
 var gameActions=FoteActions.create();
+gameActions.on('actionStarted',function(event){
+  if(event.source===player&&!event.parentId&&typeof FoteCombatLog!=='undefined')FoteCombatLog.beginAction();
+});
+gameActions.on('actionResolved',function(event){
+  if(!event.spellResults||!event.spellResults.length)return;
+  var groups=[];
+  event.spellResults.forEach(function(hit){
+    var group=groups.find(function(g){return g.ability===hit.ability;});
+    if(!group){group={ability:hit.ability,results:[]};groups.push(group);}
+    group.results.push(spellDamageResult(hit));
+  });
+  groups.forEach(function(group){log(combatText(group.ability.name)+': '+group.results.join('; ')+'.','c-hit');});
+});
+gameActions.on('actionResolved',function(event){
+  if(event.source===player&&!event.parentId&&typeof FoteCombatLog!=='undefined')FoteCombatLog.finishAction();
+});
 function actionInfusion(kind,view){
   view=view||player;var o=view.twoHanded?null:view.off;
   return o&&(o.icon||'').replace(/^item-/,'')===kind?o.enchant||null:null;
@@ -54,7 +70,7 @@ function prepareAttack(event){
   event.dark=att===player&&syllaOn()&&player.syllaDark>0&&event.wasHidden?player.syllaDark:0;
   if(event.dark)event.multiplier*=1+SYLLA.darkPerRank*event.dark*actionDivine(view);
   if(att.ally&&att.rallyUntil>player.t)event.multiplier*=1.1;
-  if(att.base&&att.base.lurks&&!att._struck&&def===player){event.multiplier*=2;att._struck=true;log('The <b>Stalker</b> strikes from the dark!','c-you');}
+  if(att.base&&att.base.lurks&&!att._struck&&def===player){event.multiplier*=2;att._struck=true;event.feedbackNotes=['ambush'];}
   if(att===player){player.noisy=true;if(view.weapon&&!view.weapon.unarmed)useCount(view.weapon,'weapon');}
   if(def===player&&player.armorItem)useCount(player.armorItem,'armor');
 }
@@ -67,7 +83,7 @@ function attack(att,def,mult,label,options){
       var other=ents.filter(function(o){return o!==player&&!o.foe&&o.hp>0&&dist(o,player)<=3&&canSeeFrom(att,o);})[0];
       if(other)event.multiplier*=.7;
       boltFx(att.x,att.y,player.x,player.y,'light',{});resolveWeaponStrike(event);
-      if(other){boltFx(att.x,att.y,other.x,other.y,'light',{});attack(att,other,(mult||1)*.7,label,{split:true});if(vis[idxOf(att.x,att.y)])log('The <b>Prism Scarab</b> splits its beam between you and '+other.name+'.','c-info');}
+      if(other){boltFx(att.x,att.y,other.x,other.y,'light',{});attack(att,other,(mult||1)*.7,label,{split:true});}
     }else resolveWeaponStrike(event);
     finishAttackReactions(event);
   });
@@ -83,18 +99,18 @@ function finishAttackReactions(event){
   if(att===player){if(H&&landed)afterPlayerHit(def,H);else if(player.friction)player.friction.n=0;}
   if(att!==player&&def===player&&att.foe&&dist(att,player)<=1&&player.hp<event.playerHPBefore&&player.hp>0&&combo('air','shadow')&&!(player.windCd>turn)){
     var best=null,bd=0;for(var dy=-1;dy<=1;dy++)for(var dx=-1;dx<=1;dx++){var nx=player.x+dx,ny=player.y+dy;if((dx||dy)&&walkable(nx,ny)&&!occupied(nx,ny)){var dd=dist({x:nx,y:ny},att);if(dd>bd){bd=dd;best={x:nx,y:ny};}}}
-    if(best&&bd>1){player.x=best.x;player.y=best.y;player.windCd=turn+5;log('Windwalker: you slip away.','c-good');computeFOV();}}
+    if(best&&bd>1){player.x=best.x;player.y=best.y;player.windCd=turn+5;log('Windwalker: retreated.','c-good');computeFOV();}}
   if(att===player&&landed){stokeForgeHeat();if(hasGod('grom')&&event.view.weapon.unarmed&&def.foe&&event.hpBefore>0)gainPiety(0.3,'punch',{pietyOnly:true});}
   if(att===player&&def.surprised)def.surprised=false;
-  if(att===player&&def.base&&def.base.fumes&&dist(att,def)<=1&&def.hp>0&&(def._fumeAt||-9)<turn-1){def._fumeAt=turn;addCloud(def.x,def.y,1,5,sDMG(2+Math.floor(floorNo/3)),'beetle');log('The <b>Grave Beetle</b> releases poison gas.','c-you');sfx('trap-gas',{from:def});}
-  if(att.base&&att.base.reloads&&def===player&&dist(att,def)>1){att.reloading=true;if(landed){applyStatus(player,'root',1);log('An arrow pins you in place.','c-you');}}
+  if(att===player&&def.base&&def.base.fumes&&dist(att,def)<=1&&def.hp>0&&(def._fumeAt||-9)<turn-1){def._fumeAt=turn;addCloud(def.x,def.y,1,5,sDMG(2+Math.floor(floorNo/3)),'beetle');log('<b>Grave Beetle:</b> poison cloud!','c-you');sfx('trap-gas',{from:def});}
+  if(att.base&&att.base.reloads&&def===player&&dist(att,def)>1){att.reloading=true;if(landed){applyStatus(player,'root',1);log('You: Rooted.','c-you');}}
   if(att.base&&landed&&player.hp>0){if(att.base.arcs&&def===player)beetleArc(att);if(att.base.stingChain)jellyChain(att,def);if(att.base.aquatic){att._surfT=turn;if(def===player&&eelWater(att.x,att.y))applyStatus(player,'wet',3);}}
   if(att!==player&&att.base&&landed&&def.hp>0){var b=att.base;
     if(b.chillTouch&&event.primaryDamage>0&&dist(att,def)<=1){addChill(def);floatText(def.x,def.y,'chilled','ice');}
     if(b.bleeds&&rng()<b.bleeds)inflictBleed(def,att);
-    if(b.fangs&&dist(att,def)<=1&&rng()<b.fangs){if(applyStatus(def,'poison',DRIDER.poison[0],sDMG(DRIDER.poison[1])).applied){floatText(def.x,def.y,'poisoned','poison');if(def===player)log('The <b>Drider</b> poisons you.','c-you');}}
-    if(b.emberBite&&rng()<b.emberBite&&!(def.st&&def.st.burn)){if(applyStatus(def,'burn',3,sDMG(2+Math.floor(floorNo/5))).applied&&def===player)log('The <b>Ember Spider</b> burns you.','c-you');}}
-  if(event.dark&&landed){player.syllaDark=0;log('Into the Dark: +'+Math.round(SYLLA.darkPerRank*event.dark*actionDivine(event.view)*100)+'% damage.','c-good');}
+    if(b.fangs&&dist(att,def)<=1&&rng()<b.fangs){if(applyStatus(def,'poison',DRIDER.poison[0],sDMG(DRIDER.poison[1])).applied){floatText(def.x,def.y,'poisoned','poison');if(def===player)log('You: Poisoned.','c-you');}}
+    if(b.emberBite&&rng()<b.emberBite&&!(def.st&&def.st.burn)){if(applyStatus(def,'burn',3,sDMG(2+Math.floor(floorNo/5))).applied&&def===player)log('You: Burning.','c-you');}}
+  if(event.dark&&landed)player.syllaDark=0;
   if(!landed)return;
   if(att.broodling&&def!==player&&def.hp>0)broodBite(def);
 }
@@ -109,7 +125,7 @@ function resolveSpellStrike(f,A,amount,type,options){
     if(dark)amount*=1+SYLLA.darkPerRank*dark*actionDivine(view);
     var base=FoteActions.spellDamage(amount,{bolt:!!options.bolt,numbing:numb,crit:crit,criticalMultiplier:actionCritMultiplier(view),lightUndead:A.el==='light'&&(f.base.undead||f.base.shadowy)});
     event.hit={att:player,def:f,crit:crit,surprise:!!(options.bolt?unaware:opening),spell:true,singleTarget:singleTarget,actionId:event.actionId,view:view};
-    LAST_HIT=event.hit;event.ability=A;
+    LAST_HIT=event.hit;event.ability=A;event.statusBefore=Object.keys(f.st||{});
     if(!options.bolt){if(f.state!=='hunt'&&f.state!=='throne')f.state='hunt';f.caughtOff=-1;}
     event.damage=applyDamage(f,base,type,player,{hit:event.hit,ability:A,actionId:event.actionId,tags:[singleTarget?'single-target':'area','spell']});
     event.primaryDamage=event.damage;
@@ -119,13 +135,31 @@ function resolveSpellStrike(f,A,amount,type,options){
     if(singleTarget&&event.landed&&f.foe&&!f.ally){
       applyPlayerHitBonuses(event);
       afterPlayerHit(f,event.hit);stokeForgeHeat();
-      if(dark){player.syllaDark=0;log('Into the Dark: bonus damage.','c-good');}
+      if(dark)player.syllaDark=0;
     }
     if(event.landed)spellKillReward(f);
     if(!options.bolt){floatText(f.x,f.y,String(event.damage),type,crit);if(event.damage>0)playerHitRewards(f,singleTarget);}
   });
 }
-function spellHit(f,A,amount,type){var event=resolveSpellStrike(f,A,amount,type);return event?event.damage:0;}
+function spellDamageResult(event,note){
+  var target=event.target,parts=combatDamageParts(event.damagePackets||[]),notes=(event.feedbackNotes||[]).slice();
+  Object.keys(target.st||{}).forEach(function(key){
+    if((event.statusBefore||[]).indexOf(key)>=0)return;
+    var info=typeof STATUS_INFO!=='undefined'&&STATUS_INFO[key];
+    if(info&&info.bad&&notes.indexOf(info.name)<0)notes.push(info.name);
+  });
+  event.feedbackNotes=notes;event.damagePresented=true;
+  return (target===player?'you':combatText(target.name))+' '+combatDamageBreakdown(parts.length?parts:[{type:event.ability.type,damage:event.damage}])+
+    (event.hit&&event.hit.crit?' (crit)':'')+combatActionNotes(event,note);
+}
+function presentSpellDamage(event,note){log(combatText(event.ability.name)+': '+spellDamageResult(event,note)+'.','c-hit');}
+function spellHit(f,A,amount,type){
+  var event=resolveSpellStrike(f,A,amount,type);if(!event)return 0;
+  var parent=gameActions.current();
+  if(parent&&['cast','prayer'].indexOf(parent.kind)>=0)(parent.spellResults||(parent.spellResults=[])).push(event);
+  else presentSpellDamage(event);
+  return event.damage;
+}
 function spellOnHit(f,d,crit,A,context){if(!(d>0)||!f.foe||f.ally)return;applySpellOffhandEffects(f,d,crit,A);applySpellWeaponEnchant(f,d,crit,A,context);}
 
 /* Ordinary hits and single-target spells share these effects. Secondary
@@ -190,16 +224,43 @@ function rollWeaponHit(event){
     ch-=echoDefense.luck||0;if(echoDefense.blur)ch=Math.max(.15,ch*.8);
   }
   if(def===player && player.parry && dist(att,def)<=1 && combatRoll(player.parry,true)){
-    log('You parry '+att.name+'.','c-good'); sfx('parry'); floatText(def.x,def.y,'parry','miss');
-    if(att.hp>0){ log('Riposte!','c-good'); attack(player, att, 0.5, 'Riposte'); }
+    log('You parry '+combatText(att.name)+'.','c-good'); sfx('parry'); floatText(def.x,def.y,'parry','miss');
+    if(att.hp>0)attack(player, att, 0.5, 'Riposte');
     return;
   }
   var blocked = def.shadowClone&&def.cloneStats?rng()<def.cloneStats.block:(def===player && player.block && combatRoll(player.block,true));
   if(att===player ? !combatRoll(ch,true) : def===player ? combatRoll(1-ch,true) : rng()>ch){
-    log(who+' miss'+(att===player?'':'es')+' '+foe+' <span class="roll">('+Math.round(ch*100)+'% to hit)</span>','c-miss');
+    log(combatText(who)+' miss'+(att===player?'':'es')+' '+combatText(foe)+'.','c-miss');
     floatText(def.x, def.y, 'miss', 'miss'); sfx('miss',{from:def}); if(att===player && def.state!=='hunt' && def.state!=='throne') def.state='hunt'; if(att===player) def.caughtOff=-1; return;
   }
   return {ranged:ranged,ch:ch,blocked:blocked,who:who,foe:foe};
+}
+/* Shared pre-critical weapon damage for combat and read-only previews. With
+ * no target, omit target-specific bonuses while retaining the current buffs. */
+function weaponBaseDamage(view,base,melee,att,def){
+  att=att||player;
+  var actor=att===player?player:view,rank=att===player?godRank():FoteStats.rankOf(view,statContent());
+  var perk=function(k){return att===player?hasP(k):!!(view.passives&&view.passives[k]);};
+  var active=function(k){return att===player?buff(k):!!(view.buffs&&view.buffs[k]>0);};
+  var gearPool=0,statPool=0.04*(actor.stats.mig-10);
+  if(def&&view.weapon.executioner&&def.hp<=def.maxhp/2)gearPool+=gearPassiveValue(view.weapon.executioner,view);
+  if(melee&&perk('heavyHands'))statPool+=0.10;
+  if(melee&&perk('unstoppable'))statPool+=0.20;
+  if(melee&&active('rampage'))statPool+=(.20+.04*rank)*actionDivine(view);
+  if(def&&perk('crushing')&&def.hp<def.maxhp/2)statPool+=0.25;
+  if(def&&def.challenged&&actor.god==='reginald')statPool+=0.25*actionDivine(view);
+  if(actor.god==='reginald'&&rank>=5)statPool+=0.10*Math.min(3,Math.max(0,(att===player?adjacentFoes():ents.filter(function(o){return o.foe&&o.hp>0&&dist(att,o)<=1;}).length)-1));
+  if(active('rally'))statPool+=0.10;
+  if(def&&actor.god==='glimmer'&&(def.base.undead||def.base.shadowy))statPool+=0.10*rank;
+  if(def&&actor.god==='reginald'&&(def.elite||def.base.elite||def.base.boss))statPool+=0.10*rank;
+  base*=Math.max(0.1,1+gearPool)*Math.max(0.1,1+statPool);
+  if(((view.weapon&&view.weapon.range)||1)>1&&(def?dist(att,def)<=1:melee))base*=0.6;
+  if(att===player&&view.weapon.unarmed&&player.pummel>0)base*=1+actionDivine(view);
+  return base;
+}
+function weaponDamageRange(mult,melee,view){
+  view=view||player;
+  return view.dmg.map(function(n){return Math.max(1,Math.round(weaponBaseDamage(view,n*(mult||1),melee)));});
 }
 function rollWeaponDamage(event,strike){
   var att=event.source,def=event.target,mult=event.multiplier,label=event.label,view=event.view;
@@ -209,31 +270,10 @@ function rollWeaponDamage(event,strike){
   var base = roll(dr[0], dr[1]) * mult;
   var surprise=false, crit=false;
   if(equipped){
-    var actor=att===player?player:view,rank=att===player?godRank():FoteStats.rankOf(view,statContent());
-    var perk=function(k){return att===player?hasP(k):!!(view.passives&&view.passives[k]);};
-    var active=function(k){return att===player?buff(k):!!(view.buffs&&view.buffs[k]>0);};
-    var melee = !ranged;
-    /* two pools: gear bonuses add together, stat + ability bonuses add together, then the pools multiply */
-    /* 2026-09-17: Might is 4% per point above 10, mirroring Focus's 4% spell damage. It covers every weapon
-       attack, bows included - drawing a heavy bow is strength, not nimbleness. Spells stay with Focus. */
-    var gearPool = 0, statPool = 0.04*(actor.stats.mig-10);
-    if(view.weapon.executioner && def.hp <= def.maxhp/2) gearPool += gearPassiveValue(view.weapon.executioner,view);
-    if(melee && perk('heavyHands')) statPool += 0.10;
-    if(melee && perk('unstoppable')) statPool += 0.20;
-    if(melee && active('rampage')) statPool += (.20+.04*rank)*actionDivine(view);   /* 2026-09-29 (Justin): 20% +4% per rank (was 40%) */
-    if(perk('crushing') && def.hp < def.maxhp/2) statPool += 0.25;
-    if(def.challenged && actor.god==='reginald') statPool += 0.25*actionDivine(view);
-    if(actor.god==='reginald' && rank>=5) statPool += 0.10*Math.min(3, Math.max(0, (att===player?adjacentFoes():ents.filter(function(o){return o.foe&&o.hp>0&&dist(att,o)<=1;}).length)-1));   /* Wall of One */
-    if(active('rally')) statPool += 0.10;
-    if(actor.god==='glimmer' && (def.base.undead||def.base.shadowy)) statPool += 0.10*rank;
-    if(actor.god==='reginald' && (def.elite||def.base.elite||def.base.boss)) statPool += 0.10*rank;
-    base *= Math.max(0.1, 1+gearPool) * Math.max(0.1, 1+statPool);
-    /* 2026-09-20: this read player.range, which rangedslot.js sets to the BOW's reach whenever one is
-       slung - so merely carrying a bow cut every adjacent sword swing to 60% damage. Ask the weapon in
-       hand, the same way the hit-chance line above was fixed on 2026-09-17. */
-    if(((view.weapon && view.weapon.range)||1)>1 && dist(att,def)<=1) base *= 0.6;
+    var actor=att===player?player:view;
+    base=weaponBaseDamage(view,base,!ranged,att,def);
     var pummelHit=att===player && view.weapon.unarmed && player.pummel>0;
-    if(pummelHit){base*=1+actionDivine(view);player.pummel--;}
+    if(pummelHit)player.pummel--;
     var unaware = offGuard(def) || def.st.stun || def.st.frozen || (att.hidden>0||event.numbing) || (att===player && typeof smokeAmbush==='function' && smokeAmbush(def)) || def.surprised;
     var critCh = (def.sapped?1:view.crit+actionCritBonus(view)) + actionRootCrit(def,view) + (unaware && actor.aff.shadow ? 0.05*actor.aff.shadow : 0);
     crit = att===player?combatRoll(critCh,true):rng()<critCh;
@@ -321,10 +361,10 @@ function presentWeaponDamage(event,strike,damage){
   var total=parts.length?parts.reduce(function(n,p){return n+p.damage;},0):phys+extra+applied;
   event.damagePresented=true;event.damage=total;event.landed=total>0;
   var bonus=extra+applied;
-  var elTxt=parts.length>1?' ['+combatDamageBreakdown(parts)+']':parts.length?' '+FoteDamage.label(parts[0].type):'';
+  var elTxt=combatDamageBreakdown(parts.length?parts:[{type:att!==player&&att.base&&att.base.attackType||'phys',damage:total}]);
   floatText(def.x, def.y, String(total), bonus>0 && el ? elemToType(el) : att!==player&&att.base&&att.base.attackType||'phys', crit);
-  log((label?label+': ':'')+who+(att===player?' hit ':' hits ')+foe+' <span class="roll">('+Math.round(ch*100)+'% to hit'
-      +(crit?', crit':'')+(surprise?', surprise':'')+(blocked?', blocked':'')+')</span> for <b>'+total+'</b>'+elTxt+(note?'; '+note.trim():'')+'.',
+  log((label?combatText(label)+': ':'')+combatText(who)+(att===player?' hit ':' hits ')+combatText(foe)+': '+elTxt+
+      (crit?' (crit)':'')+(surprise?' (surprise)':'')+(blocked?' (blocked)':'')+combatActionNotes(event,note.trim())+'.',
       att===player?'c-hit':'c-you');
   if(def!==player && def.state!=='hunt' && def.state!=='throne') def.state='hunt';
   if(def!==player) def.caughtOff=-1;   /* the surprise is spent: it knows now */

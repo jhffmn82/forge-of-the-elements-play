@@ -1,0 +1,53 @@
+/* The title uses recorded game-canvas footage and the existing menu actions. */
+#title{position:fixed;inset:0;z-index:45;display:none;overflow:hidden;background:#100e0c;}
+#title.on{display:block;}
+#title .title-film{position:absolute;inset:0 0 0 33%;background:#100e0c url(../art/title/combat-trailer-poster.jpg) center/contain no-repeat;}
+#title .title-film video{width:100%;height:100%;object-fit:contain;object-position:center;image-rendering:pixelated;}
+#title::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(90deg,#100e0c 0%,#100e0c 29%,#100e0cdd 34%,#100e0c30 41%,transparent 48%),linear-gradient(0deg,#100e0cbb,transparent 18%,transparent 88%,#100e0c77);}
+#title .title-content{position:absolute;inset:0;z-index:1;}
+#title .menu{position:absolute;left:max(32px,5vw,env(safe-area-inset-left,0px));top:50%;transform:translateY(-50%);width:clamp(270px,29vw,390px);max-height:calc(100% - 48px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));overflow-y:auto;display:flex;flex-direction:column;gap:10px;padding:3px;}
+#title .title-heading{margin:0 0 15px;}
+#title .title-kicker{margin:0 0 16px;font-size:10px;line-height:1.5;letter-spacing:.23em;text-transform:uppercase;color:#b7a080;}
+#title .title-heading h1{display:flex;flex-direction:column;align-items:flex-start;gap:0;margin:0;font-size:clamp(54px,6.3vw,88px);line-height:.94;letter-spacing:-.025em;font-weight:700;white-space:normal;background:none;color:#efba64;text-shadow:0 2px #4c2b15;}
+#title .title-heading h1 small{margin:5px 0 2px 4px;font-size:.36em;font-weight:500;line-height:1.15;letter-spacing:.02em;color:#c79758;}
+#title .title-pitch{margin:21px 0 0;max-width:290px;color:#b9afa1;font-size:12px;line-height:1.7;}
+#title .menu button{font-family:var(--display);font-size:21px;letter-spacing:.02em;text-align:left;padding:8px 16px;min-height:44px;flex-shrink:0;color:#f2d9a0;cursor:pointer;border:1px solid #53412e;border-radius:5px;background:linear-gradient(#241d17f2,#171310f2);box-shadow:inset 0 1px #d9bb8d1c,inset 0 -2px #09070699;}
+#title .menu button:hover:not(:disabled),#title .menu button:focus-visible{border-color:#bc8a49;color:#ffe7b0;background:#2a2017;outline:none;}
+#title .menu button:focus-visible{outline:2px solid #e8b44a;outline-offset:-3px;}
+#title .menu button:disabled{opacity:.4;cursor:default;}
+body[data-ui-theme] #title .menu .title-primary{border-color:#986634;color:#ffe3a9;background:linear-gradient(#54381e,#312215);font-size:25px;min-height:54px;box-shadow:inset 0 1px #f4ce9140,inset 0 -2px #100e0c88,0 5px 18px #0005;}
+#title .title-secondary{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+#title .title-secondary button{font-size:18px;padding:7px 12px;}
+#title .menu .sub{font-family:var(--mono);font-size:10px;color:#b9afa1;display:block;letter-spacing:0;line-height:1.4;}
+body[data-ui-theme] #title .menu #tUpdate{margin-top:7px;min-height:44px;padding:5px 0;border:1px solid transparent;box-shadow:none;background:none;color:#897d6b;font-family:var(--mono);font-size:10px;letter-spacing:.025em;}
+#title #tUpdate .sub{font-size:9px;color:#706658;}
+body[data-ui-theme] #title .title-playback{position:absolute;z-index:2;right:max(20px,env(safe-area-inset-right,0px));bottom:max(16px,env(safe-area-inset-bottom,0px));min-height:44px;padding:8px 13px;border:1px solid #75634877;border-radius:4px;background:#100e0ca6;color:#d5c9b8;font:11px var(--mono);cursor:pointer;}
+#title .title-playback:hover{border-color:#bc8a49;}
+@media(max-height:700px){
+ #title .menu{gap:7px;max-height:calc(100% - 24px);}
+ #title .title-heading{margin-bottom:8px;}
+ #title .title-kicker{margin-bottom:10px;}
+ #title .title-heading h1{font-size:clamp(48px,5.5vw,65px);}
+ #title .title-pitch{margin-top:12px;font-size:11px;}
+}
+@media(max-height:500px) and (min-aspect-ratio:1/1){
+ #title .menu{left:max(18px,4vw,env(safe-area-inset-left,0px));width:clamp(235px,33vw,300px);gap:5px;max-height:calc(100% - 16px);}
+ #title .title-heading{margin-bottom:4px;}
+ #title .title-kicker{display:none;}
+ #title .title-heading h1{font-size:clamp(34px,7vh,45px);display:block;line-height:1;}
+ #title .title-heading h1 small{font-size:.5em;margin:0 5px;}
+ #title .title-heading h1 span:last-child{display:block;}
+ #title .title-pitch{font-size:10px;line-height:1.4;margin-top:8px;}
+ #title .menu button,#title .title-secondary button{min-height:44px;padding:5px 8px;font-size:16px;letter-spacing:0;}
+ #title .title-secondary button{white-space:nowrap;}
+ body[data-ui-theme] #title .menu .title-primary{min-height:44px;font-size:21px;}
+ #title .title-secondary{gap:5px;}
+ body[data-ui-theme] #title .menu #tUpdate{margin-top:0;padding:2px 0;}
+ #title .title-film{left:29%;}
+ body[data-ui-theme] #title .title-playback{right:10px;bottom:8px;font-size:10px;}
+}
+@media(max-aspect-ratio:1/1){
+ #title .title-film{inset:0;opacity:.5;}
+ #title::after{background:linear-gradient(90deg,#100e0cf5,#100e0c80);}
+ #title .menu{width:min(350px,calc(100% - 48px));left:24px;}
+}

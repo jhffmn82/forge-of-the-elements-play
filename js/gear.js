@@ -12,7 +12,7 @@ var RINGS = {
   evasion:    {name:'Ring of Evasion',    step:5,    unit:'evasion',          desc:'Evasion.'},
   accuracy:   {name:'Ring of Accuracy',   step:5,    unit:'accuracy',         desc:'Accuracy.'},
   vitality:   {name:'Ring of Vitality',   step:0.08, unit:'% max HP',         pct:true, desc:'Max HP.'},
-  wizardry:   {name:'Ring of Wizardry',   step:0.08, unit:'% max mana', pct:true, desc:'Max mana and spell damage.'},
+  wizardry:   {name:'Ring of Wizardry',   step:0.08, unit:'% max Mana', pct:true, desc:'Max Mana and spell damage.'},
   striking:   {name:'Ring of Striking',   step:1,    unit:'weapon damage',    desc:'Weapon damage.'},
   mending:    {name:'Ring of Mending',    step:1/3, unit:'% of max HP healed a turn',pct:true, desc:'Extra HP regeneration while fed and not poisoned.'},
   sustenance: {name:'Ring of Sustenance', step:0.15, unit:'% less hunger',    pct:true, desc:'You get hungry more slowly.'},
@@ -54,14 +54,14 @@ function pctRow(label, v){ return '<div class="row"><span>'+label+'</span><b'+(v
 function focusRows(it){
   var k=focusKey(it); if(!k) return '';
   if(k==='staff') return pctRow('Spell damage', focusBonus(it))+'<div class="row"><span>Spell range</span><b>+1</b></div>';
-  if(k==='wand'){ var t=tierOf(WAND_THRIFT.base,it)+WAND_THRIFT.per*(it.plus||0); return pctRow('Spell damage', focusBonus(it))+pctRow('Spell mana cost', -(it.cursed?-Math.abs(t):t)*gearPassiveBonus()); }
+  if(k==='wand'){ var t=tierOf(WAND_THRIFT.base,it)+WAND_THRIFT.per*(it.plus||0); return pctRow('Spell damage', focusBonus(it))+pctRow('Spell Mana cost', -(it.cursed?-Math.abs(t):t)*gearPassiveBonus()); }
   if(it.cursed) return pctRow('Spell damage', focusBonus(it));
   return pctRow('Crit chance', (tierOf(ORB_CRIT.base,it)+ORB_CRIT.per*(it.plus||0))*gearPassiveBonus());
 }
 function unidHint(it){
   if(!it || !it.unid) return '';
   var how = it.kind==='ring' ? 'wear it for a while' : it.kind==='amulet' ? 'use it a few times' : (it.dmg ? 'fight with it' : it.armor!==undefined ? 'take hits in it' : 'carry it into a few fights');
-  return '<div class="hint" style="color:#C9A8FF">Unidentified: its bonus'+(it.kind==='ring'||it.kind==='amulet'?' is':' and enchantment are')+' unknown, and it could be cursed. To learn it: '+how+', or read a Sigil of Knowledge.</div>';
+  return '<div class="hint" style="color:#C9A8FF">Unidentified; may be cursed. Learn it: '+how+' or use a Water sigil.</div>';
 }
 /* Mending is stored in percentage points per 100 units of world time.
    One point of ring power grants exactly 1/300 max HP before gear bonuses. */
@@ -79,7 +79,7 @@ function ringLine(r){
   if(r.ring==='mending')return v<0?Number((-v).toFixed(2))+'% of max HP lost a turn':'+'+Number(v.toFixed(2))+R.unit;
   if(r.ring==='sustenance')return v<0?Math.round(-v*100)+'% more hunger':Math.round(v*100)+'% less hunger';
   if(r.ring==='keeneyes'&&v<0)return Math.round(-v*100)+'% less chance to spot traps or find hidden doors';
-  if(r.ring==='wizardry'){var sd=Math.max(-50,v*200/3);return (v>=0?'+':'')+Math.round(v*100)+'% max mana, '+(sd>=0?'+':'')+Math.round(sd)+'% spell damage';}  /* spellPower() never lets the ring take more than 50% */
+  if(r.ring==='wizardry'){var sd=Math.max(-50,v*200/3);return (v>=0?'+':'')+Math.round(v*100)+'% max Mana, '+(sd>=0?'+':'')+Math.round(sd)+'% spell damage';}  /* spellPower() never lets the ring take more than 50% */
   return (v>=0?'+':'')+(R.pct?Math.round(v*100):Math.round(v*100)/100)+(R.pct?'':' ')+R.unit;
 }
 function ringDescription(r){
@@ -90,6 +90,16 @@ function ringDescription(r){
     if(r.ring==='luck')return 'Enemies drop loot less often.';
   }
   return RINGS[r.ring].desc;
+}
+/* A sheet summary states the live bonus once, adding only the conditions the
+ * number alone cannot explain. Unknown rings never disclose their power. */
+function ringSummary(r){
+  if(r.unid)return 'Strength unknown until identified.';
+  var line=ringLine(r),cursed=ringPower(r)<0;
+  if(r.ring==='mending')return line+(cursed?' while worn.':' while fed and not poisoned.');
+  if(r.ring==='warding')return line+' against fire, frost, lightning, poison, light and shadow.';
+  if(r.ring==='keeneyes'&&!cursed)return line+'; also helps find hidden doors.';
+  return line+'.';
 }
 
 

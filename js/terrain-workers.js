@@ -91,6 +91,9 @@
    deepRegionAt,deepCellReg,deepContext,deepWallCell,deepPixReg,deepSolid,deepMix,deepRockCol,deepTexel,deepPresent,deepCellRaster];
   return [
    'var map=null,MW=0,MH=0,ground=null,floorMeta=null,floorNo=0,worldSeed=0,CAVERNS=false,DEEP_RC=false,PT_MAT=null,PT_POOL_FX=null,DEEP_ROCK=null,DC=null,FoteChaosPreviewRenderer=null;',
+   // Shared map readers support the page's held-frame view. Workers use their
+   // posted floor snapshot directly and never inherit that page-only override.
+   'var FRAME_MAP=null,FRAME_MW=0,FRAME_MH=0;',
    'var WALL='+WALL+',FLOOR='+FLOOR+',SECRET='+SECRET+',G_MOSS='+G_MOSS+',G_GRASS='+G_GRASS+',PT_R='+PT_R+',SURF_P='+SURF_P+',DEEP_RF='+DEEP_RF+';',
    'var DEEP_REGIONS='+JSON.stringify(DEEP_REGIONS)+',DEEP_STYLE='+JSON.stringify(DEEP_STYLE)+';',
    'var PT_VAL_MEMO=new Float64Array('+PT_VAL_MEMO.length+').fill(NaN),PT_VOR_MEMO=new Float64Array('+PT_VOR_MEMO.length+').fill(NaN),PT_FIELD=null;',

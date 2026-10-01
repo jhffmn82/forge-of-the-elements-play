@@ -188,6 +188,7 @@ function drawSideDoor(x,y,tile,px,py,alpha){
 
 var renderActor=FoteRendering.layered([
   {name:'actor-concealment',paint:function(job){if(actorConcealed(job.entity))return true;}},
+  {name:'glacial-tomb',enter:prepareTombActor},
   {name:'underdark-pose',enter:prepareUnderdarkActor},
   {name:'maw-and-eels',enter:prepareMawActor,paint:drawCavernActor},
   {name:'large-creature',paint:function(job){return drawLargeCreature(job.entity,job.x,job.y,job.options)?true:undefined;}},

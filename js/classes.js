@@ -177,6 +177,6 @@ function castChargeTarget(x,y){
   sfx('charge'); if(typeof SHAKE!=='undefined') SHAKE=5; if(typeof ringFx==='function') ringFx(player.x,player.y,'#E8B44A',1.6);
   if(f)attack(player,f,1,'Charge',{sureHit:true});
   var stunned=0; ents.forEach(function(e){ if(e.foe && e.hp>0 && dist(e,player)<=1){ applyStatus(e,'stun',2); stunned++; } });
-  log('<b>Charge!</b>'+(stunned ? ' Everything around you reels.' : f ? '' : ' You break away.'),'c-good');
+  if(stunned)log('Charge: '+stunned+' stunned.','c-good');
   player.hidden=0; endTurn(); return true;
 }

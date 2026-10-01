@@ -203,7 +203,7 @@ body[data-ui-theme=forge] #app ::-webkit-scrollbar-corner{background:#242c30;}
 body[data-ui-theme]{--ui-frame-line:var(--ui-edge);--ui-frame-inner:#11191bc7;}
 body[data-ui-theme^=vellum]{--ui-frame-line:var(--paper-line);--ui-frame-inner:#51493680;}
 body.fote-study[data-ui-theme] #app :is(#hotbar,#dpad){position:relative;}
-body.fote-study[data-ui-theme] #app :is(#map,#hotbar,#dpad)::after{
+body.fote-study[data-ui-theme] #app :is(#map,#hotbar)::after{
  content:'';position:absolute;inset:0;z-index:40;pointer-events:none;border-radius:inherit;
  box-shadow:inset 0 0 0 1px var(--ui-frame-line),inset 0 0 0 3px var(--ui-frame-inner);
 }
@@ -226,7 +226,8 @@ body[data-ui-theme=ember],body[data-ui-theme] :is(#title,#create){
  --gold:#e8b44a;--ember:#e2622b;--ui-radius:6px;--ui-button-radius:5px;
  --ui-frame-line:#4b3e30;--ui-frame-inner:#100d0ac7;
  --ui-frame-shadow:inset 0 1px #dac49b0d,0 5px 16px #0007;
- --ui-button-shadow:inset 0 1px #d9bb8d14,inset 0 -2px #09070680;
+ --ui-button-shadow:inset 0 1px #d9bb8d0a;
+ --ui-button-face:linear-gradient(color-mix(in srgb,#27211d var(--ui-background-percent,100%),transparent),color-mix(in srgb,#221d1a var(--ui-background-percent,100%),transparent));
 }
 body[data-ui-theme=ember] #app{background:var(--ui-panel-tint)!important;border-top-color:var(--ui-frame-line);}
 body.fote-study[data-ui-theme=ember] #app :is(#studyLeft,#studyRight,#studyHud,#hotbar){background:transparent;border-color:var(--ui-edge);}
@@ -235,15 +236,36 @@ body.fote-study[data-ui-theme=ember] #app #top #depth{color:var(--ui-ash);text-s
 body.fote-study[data-ui-theme=ember] #app #top #depth :is(b,#hBiome){color:var(--gold);}
 body.fote-study[data-ui-theme=ember] #app #log{background:var(--ui-log-tint);color:var(--ui-ash);text-shadow:none;--dim:#928477;}
 body.fote-study[data-ui-theme=ember] #app :is(#studyNav button,#studyExplore,#dpad button){
- background:var(--ui-button-face);border-color:#493b2e #352b23 #241d18 #403329;
+ background:var(--ui-button-face);border-color:var(--ui-edge);
  box-shadow:var(--ui-button-shadow);color:var(--ui-ink);text-shadow:none;
 }
-body.fote-study[data-ui-theme=ember] #app #studyNav button{color:var(--gold);}
+body.fote-study[data-ui-theme=ember] #app #studyNav button{color:var(--ui-ash);}
 body.fote-study[data-ui-theme=ember] #app #studyNav button.on,
 body.fote-study[data-ui-theme=ember] #app :is(#studyNav button,#studyExplore,#dpad button):active{
- background:var(--ui-panel-tint);box-shadow:inset 0 2px 3px #0007,inset 0 -2px var(--ember);transform:none;
+ background:var(--ui-panel-tint);color:var(--gold);box-shadow:inset 0 -2px var(--ember);transform:none;
 }
 body.fote-study[data-ui-theme=ember] #app #studyNav .study-points{background:#302316;border-color:#806034;color:#f2d090;}
+/* One quiet face for movement; its shape and spacing come from the HUD layout. */
+body.fote-study[data-ui-theme] #app #dpad button{background:var(--ui-panel-2-tint);border:1px solid var(--ui-edge);border-radius:12px;box-shadow:inset 0 1px #ffffff08;text-shadow:none;color:var(--ui-ash);}
+body.fote-study[data-ui-theme] #app #dpad button svg{display:block;width:40%;min-width:20px;max-width:28px;height:auto;margin:auto;pointer-events:none;}
+body.fote-study[data-ui-theme] #app #dpad .pad-sector{display:none;}
+body.fote-study[data-ui-theme] #app #dpad button:active{background:var(--ui-panel-tint);color:var(--gold);border-color:var(--gold);box-shadow:inset 0 0 0 1px var(--gold);transform:none;}
+body.fote-study[data-ui-theme] #app :is(#dpad button,#studyNav button,#studyExplore):focus-visible{outline:2px solid var(--gold);outline-offset:-3px;}
+@media(hover:hover){body.fote-study[data-ui-theme] #app #dpad button:hover{background:var(--ui-button-face);color:var(--ui-ink);border-color:var(--ui-ash);}}
+/* A fine full-width footer replaces the short frame around horizontal slots. */
+body.fote-study.study-wide.study-desktop #studyFooter{background:transparent;border-top:1px solid var(--ui-frame-line);box-shadow:none;}
+body.fote-study.study-wide.study-desktop:not(.study-hotbar-vertical) #app #hotbar{background:transparent;}
+body.fote-study.study-wide.study-desktop:not(.study-hotbar-vertical) #app #hotbar::after{display:none;}
+body.fote-study.study-overlay-pad[data-ui-theme] #app #map #dpad button{background:transparent;border:0;border-radius:0;box-shadow:none;color:#f2eee4d9;text-shadow:none;}
+body.fote-study.study-overlay-pad[data-ui-theme] #app #map #dpad button::before{display:none;}
+body.fote-study.study-overlay-pad[data-ui-theme] #app #map #dpad .pad-sector path{fill:#11171d24;stroke:#eee4ce9c;stroke-width:1.1;stroke-linejoin:round;}
+body.fote-study.study-overlay-pad[data-ui-theme] #app #map #dpad button.pad-diagonal{color:#eee8db9c;}
+body.fote-study.study-overlay-pad[data-ui-theme] #app #map #dpad .pad-diagonal .pad-sector path{fill:#11171d0d;stroke:#e8e3d21f;stroke-width:.5;}
+body.fote-study.study-overlay-pad[data-ui-theme] #app #map #dpad button.pad-diagonal .pad-symbol{width:18px;height:18px;}
+body.fote-study.study-overlay-pad[data-ui-theme] #app #map #dpad button[data-d="5"]{background:#11171d30;border:1px solid #ead6af70;border-radius:50%;}
+body.fote-study.study-overlay-pad[data-ui-theme] #app #map #dpad button:is(:active,:focus-visible) .pad-sector path{fill:#322b2159;stroke:#f3c776;stroke-width:1.2;}
+body.fote-study.study-overlay-pad[data-ui-theme] #app #map #dpad button:is(:active,:focus-visible){color:#ffdc96;}
+body.fote-study.study-overlay-pad[data-ui-theme] #app #map #dpad button[data-d="5"]:is(:active,:focus-visible){background:#322b2159;border-color:#f3c776;}
 body.fote-study[data-ui-theme=ember] #app #bars .bar,
 body.fote-study[data-ui-theme=ember] #app #studyHunger .study-hunger-track,
 body.fote-study[data-ui-theme=ember] #app #hud2 .faithchip .meter{background:#100e0c;border-color:var(--ui-edge);box-shadow:none;}
@@ -251,7 +273,7 @@ body.fote-study[data-ui-theme=ember] #app #hud2 button.chip.study-motes{backgrou
 body.fote-study[data-ui-theme=ember] #app #hud2 button b{color:var(--ui-ink);}
 body.fote-study[data-ui-theme=ember] #app #hotbar .slot:not(.empty){
  background:var(--ui-log-tint);
- box-shadow:inset 0 0 0 1px #534330,inset 0 0 0 2px #100d0a,inset 0 0 12px -2px var(--c,transparent),inset 0 -2px #0008;
+ box-shadow:inset 0 0 0 1px var(--ui-edge),inset 0 0 10px -3px color-mix(in srgb,var(--c,transparent) 65%,transparent);
 }
 body.fote-study[data-ui-theme=ember] #app #hotbar .slot:is(.armed,.over,:active){box-shadow:inset 0 0 0 1px var(--gold),inset 0 0 14px -2px var(--c,transparent);}
 body.fote-study[data-ui-theme=ember] #app #hotbar .slot .k{background:#171310e6;color:var(--ui-ink);border-color:#534330;}
@@ -318,3 +340,33 @@ body[data-ui-theme] #modal .seg button.on{
  color:var(--gold)!important;text-shadow:none;
  box-shadow:inset 0 0 0 1px var(--gold),inset 0 -2px var(--gold);
 }
+
+/* Ordinary navigation reads as tabs; the selected panel carries the accent. */
+body.fote-study[data-ui-theme=ember] #app #top #studyNav button{background:transparent;border-color:transparent;border-radius:0!important;box-shadow:none;color:var(--ui-ash);}
+
+/* Floating controls carry only their own fine edge; the map has no UI frame. */
+body.fote-study.study-minimal[data-ui-theme] #app :is(#map,#hotbar)::after{display:none;}
+body.fote-study.study-minimal[data-ui-theme] #app #studyHud{background:none;border:0;box-shadow:none;}
+body.fote-study.study-minimal[data-ui-theme] #app #hotbar{background:none;box-shadow:none;}
+body.fote-study.study-minimal[data-ui-theme] #app :is(#studyMenuToggle,#studyExplore,#bMap,#studyLogClose,#studyInventoryIcon,#studyPortrait){
+ background:var(--ui-log-tint);border:1px solid var(--ui-edge);box-shadow:none;color:var(--ui-ink);text-shadow:none;
+}
+body.fote-study.study-minimal[data-ui-theme] #app #top{background:var(--ui-header-face);border-color:var(--ui-edge);box-shadow:0 4px 16px #0006;}
+body.fote-study.study-minimal[data-ui-theme] #app #top #studyNav button{font:calc(13px * var(--ui-text-scale,1)) var(--mono);border-radius:5px!important;text-align:left;}
+body.fote-study.study-minimal[data-ui-theme] #app #studyPortraitStats{background:var(--ui-header-face);color:var(--ui-ink);border:1px solid var(--ui-edge);text-shadow:none;}
+body.fote-study.study-minimal[data-ui-theme] #app #studyPortrait{background:var(--ui-log-tint);border-color:var(--ui-edge);}
+body.fote-study.study-minimal[data-ui-theme] #app #bMap.on{color:var(--gold);border-color:var(--gold);}
+body.fote-study.study-minimal[data-ui-theme] #app #studyPietyBar{background:#171411c9;border:1px solid var(--ui-edge);box-shadow:none;}
+body.fote-study.study-minimal[data-ui-theme] #app #bars :is(.xp,#studyPietyBar)::after{box-shadow:none;}
+body.fote-study.study-minimal[data-ui-theme] #app #studySheetTabs button{background:none;border-color:transparent;box-shadow:none;color:var(--ui-ash);}
+body.fote-study.study-minimal[data-ui-theme] #app #studySheetTabs button.on{color:var(--gold);box-shadow:inset 0 -2px var(--gold);}
+body.fote-study.study-minimal[data-ui-theme] #app #hud2 .study-favor{color:#ebd9b8;}
+body.fote-study.study-minimal[data-ui-theme] #app #studyRecentLog{color:#d5ccc0;--ash:#d5ccc0;--dim:#b5ab9d;text-shadow:0 1px 2px #000,0 0 5px #000c;}
+body.fote-study.study-minimal[data-ui-theme] #app #studyHunger{color:#d8b46e;text-shadow:0 1px 2px #000;}
+body.fote-study.study-minimal[data-ui-theme] #app #studyHunger.study-starving{color:#ee9d87;}
+body.fote-study.study-minimal[data-ui-theme] #app :is(#studyMenuToggle,#studyExplore,#bMap,#studyLogClose,#studyPortrait,#studyInventoryIcon,#studyPietyBar):focus-visible{outline:2px solid var(--gold);outline-offset:2px;}
+body.fote-study[data-ui-theme=ember] #app #top #studyNav button.on{background:var(--ui-panel-2-tint);color:var(--gold);border-color:transparent;box-shadow:inset 0 -2px var(--gold);}
+body.fote-study[data-ui-theme=ember] #app #studyExplore{background:var(--ui-panel-2-tint);border:1px solid var(--ui-edge);box-shadow:none;}
+body.fote-study[data-ui-theme=ember] #app #hotbar .slot:not(.empty):not(.armed):not(.over):not(:active){box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--c,var(--ui-edge)) 25%,var(--ui-edge));}
+body.fote-study[data-ui-theme=ember] #app #hud2 button.chip.study-motes{box-shadow:none;border-color:var(--ui-edge);}
+@media(hover:hover){body.fote-study[data-ui-theme=ember] #app #top #studyNav button:hover{background:var(--ui-panel-2-tint);color:var(--ui-ink);}}

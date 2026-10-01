@@ -240,7 +240,11 @@ function heldTierImage(o, key, tier, k){
   HELD_TIER_CACHE[id]=c;
   return c;
 }
-function heldTier(it){ return (it && typeof itemKey==='function' && itemKey(it) && typeof tierNum==='function') ? tierNum(it) : null; }
+function heldTier(it){
+  // itemKey repairs legacy item identities. A renderer must only repair a copy.
+  var appearance=it && it!==EMPTY_OFF && Object.assign({},it);
+  return (appearance && typeof itemKey==='function' && itemKey(appearance) && typeof tierNum==='function') ? tierNum(appearance) : null;
+}
 /* handOv: draw this item in the other hand (an off-hand weapon), mirrored so its own art faces outward. cell: the sheet's
    cell size, for the short-forearm rule */
 function drawHeld(g, key, pose, rest, dx, dy, sc, drawH, enchant, now, tier, handOv, cell, aim, grip, strike){
@@ -313,12 +317,7 @@ function drawHeld(g, key, pose, rest, dx, dy, sc, drawH, enchant, now, tier, han
   g.restore();
 }
 
-/* the whole figure: items behind the body, the (tinted) body, items in front */
-function drawCastLayers(e, cs, fr, dx, dy, w, h, g){
-  g = g || ctx;
-  var m=cs.m, cell=m.cell, row=Math.round(fr.sy/cell), col=Math.round(fr.sx/cell), sc=w/cell, now=performance.now();
-  var who = e || player;
-  var pose=poseFor(m,row,col), rest=restPose(m);
+function castEquipmentFor(who){
   var wpn=who.weapon, off=who.twoHanded ? null : who.off, arm=who.armorItem;
   if(who===player && who.god==='grom' && typeof equipmentForbidden==='function'){
     /* The conduct helper may normalize legacy item keys; rendering checks a
@@ -327,6 +326,16 @@ function drawCastLayers(e, cs, fr, dx, dy, w, h, g){
     if(equipmentForbidden('off',off && Object.assign({},off)))off=null;
     if(equipmentForbidden('armor',arm && Object.assign({},arm)))arm=null;
   }
+  return {weapon:wpn,off:off,armorItem:arm};
+}
+/* the whole figure: items behind the body, the (tinted) body, items in front.
+ * A fixed presentation time keeps a cached portrait's floating focus still. */
+function drawCastLayers(e, cs, fr, dx, dy, w, h, g, time){
+  g = g || ctx;
+  var m=cs.m, cell=m.cell, row=Math.round(fr.sy/cell), col=Math.round(fr.sx/cell), sc=w/cell, now=time===undefined?performance.now():time;
+  var who = e || player;
+  var pose=poseFor(m,row,col), rest=restPose(m), gear=castEquipmentFor(who);
+  var wpn=gear.weapon,off=gear.off,arm=gear.armorItem;
   var mainKey=heldKeyOf(wpn), offKey=heldKeyOf(off), clip=castClipAt(m,row);
   if(mainKey && HELD[mainKey].hand==='l'){ offKey=null; }            /* a bow takes the left hand */
   /* 2026-09-27 (Justin, equip plan D3a): the bow-shot clip has the bow painted into its frames, and the sword, axe or
@@ -398,4 +407,50 @@ function paintDoll(el, size, who){
   var g=c.getContext('2d'); g.setTransform(d,0,0,d,0,0); g.imageSmoothingEnabled=hi;
   drawCastLayers(who, cs, {sx:0, sy:row*m.cell}, (c.width/d-w)/2, c.height/d-pad-w+S*.02, w, w, g);
   el.innerHTML=''; el.appendChild(c);
+}
+
+/* The HUD uses the upper third of the same equipped, still paper doll. Draw
+ * directly into its device-pixel canvas; do not resample a full-size doll. */
+var DOLL_PORTRAITS=new WeakMap();
+function paintDollPortrait(el,size,who){
+  if(!el)return false;
+  who=who||player;if(!who)return false;
+  var look=castLookFor(who.look,who.god),sheet=castSheet(look);
+  var full=AS.cast && AS.cast[look],dm=full && full.doll;
+  var di=dm && atl('cast-'+look+'-doll.webp');
+  function ready(img){return !!(img && img.complete!==false && (img.naturalWidth===undefined || img.naturalWidth>0));}
+  var native=ready(di);
+  if(native)sheet={img:di,m:dm,look:look};
+  if(!sheet || !ready(sheet.img))return false;
+  var m=sheet.m,row=m.static_row!==undefined?m.static_row:(m.clips.idle?m.clips.idle.row:0);
+  if(!(m.cell>0 && m.stand>0))return false;
+  var S=Number(size);if(!Number.isFinite(S)||S<=0)S=68;
+  var d=Number(window.devicePixelRatio);if(!Number.isFinite(d)||d<=0)d=1;
+  var pixels=Math.max(1,Math.round(S*d)),gear=castEquipmentFor(who);
+  var mainKey=heldKeyOf(gear.weapon),offKey=heldKeyOf(gear.off);
+  if(mainKey && HELD[mainKey].hand==='l')offKey=null;
+  var held=[mainKey,offKey].filter(Boolean).map(function(key){return objArt('held','held-'+key);});
+  var complete=(!dm||native) && (!sheet.look||sheet.look===look) && held.every(function(o){return o&&ready(o.img);});
+  function itemView(it){return it?[heldKeyOf(it),it.icon,it.weight,heldTier(it),it.enchant||null,it.plus||0,!!it.cursed]:null;}
+  var key=JSON.stringify([look,who.god||null,S,d,pixels,row,m.cell,m.stand,m.foot||0,complete,
+    itemView(gear.weapon),offKey?itemView(gear.off):null,itemView(gear.armorItem),
+    sheet.img.src||'',sheet.img.naturalWidth||sheet.img.width||0,
+    held.map(function(o){return o?[o.img.src||'',o.img.naturalWidth||o.img.width||0,o.sx,o.sy,o.sw,o.sh]:null;})]);
+  var memo=DOLL_PORTRAITS.get(el);
+  if(memo && memo.key===key && memo.image===sheet.img && memo.metadata===m && held.every(function(o,i){return (o&&o.img)===memo.held[i];})){
+    if(el.firstChild!==memo.canvas || el.childNodes.length!==1)el.replaceChildren(memo.canvas);
+    return complete;
+  }
+  var canvas=document.createElement('canvas');canvas.width=canvas.height=pixels;
+  canvas.style.width=canvas.style.height=S+'px';canvas.setAttribute('aria-hidden','true');
+  var g=canvas.getContext('2d');if(!g)return false;
+  g.setTransform(pixels/S,0,0,pixels/S,0,0);g.imageSmoothingEnabled=true;g.imageSmoothingQuality='high';
+  g.beginPath();g.arc(S/2,S/2,S/2,0,Math.PI*2);g.clip();
+  // foot is the transparent strip below the soles, not the sole's y position.
+  // Six percent breathing room keeps the crown inside the circular crop.
+  var top=m.cell-(m.foot||0)-m.stand,sc=S*.88/(m.stand/3),width=m.cell*sc;
+  drawCastLayers(who,sheet,{sx:0,sy:row*m.cell},(S-width)/2,S*.06-top*sc,width,width,g,0);
+  el.replaceChildren(canvas);
+  DOLL_PORTRAITS.set(el,{key:key,image:sheet.img,metadata:m,held:held.map(function(o){return o&&o.img;}),canvas:canvas});
+  return complete;
 }

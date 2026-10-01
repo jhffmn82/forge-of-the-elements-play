@@ -327,12 +327,7 @@
             ['Armor',player.armor],['Evasion',evaOf(player)],['Block',Math.round(player.block*100)+'%'],['Mana',Math.floor(player.mp)+' / '+player.maxmp],['Stealth',Math.round(stealthScore()*100)+'%']])+'</div>'+
          '</div></div>';
 
-      var motes=ELEMENTS.filter(function(m){ return player.motes[m]>0; }).map(function(m){
-        return '<span class="mote"><span class="mart" data-mote="'+m+'"></span>'+m+' &times;'+player.motes[m]+'</span>'; }).join('');
-      var keys=[['iron','Iron key','item-key-iron'],['crystal','Crystal key','item-key-crystal']].filter(function(k){ return (player.keys[k[0]]||0)>0; })
-        .map(function(k){ return '<span class="mote keychip"><span class="kart" data-kicon="'+k[2]+'"></span>'+k[1]+' &times;'+player.keys[k[0]]+'</span>'; }).join('');
-      h+='<div><p class="tg-sec">Pouch &middot; '+player.essence+' essence</p><div class="pouch">'+
-         (keys||'')+(motes||'')+((keys||motes)?'':'<span class="mote">no keys or motes yet</span>')+'</div></div>';
+      h+='<div>'+equipResourcesHTML('tg-sec')+'</div>';
       h+='<div><p class="tg-sec">Resistances</p>'+resHTML()+'</div>';
       return h+'</div>';
     }

@@ -69,24 +69,21 @@ function buildHotbarCard(i){
   if(!s) return '<div class="nm">Empty slot '+(i+1)+'</div><div class="hint">Drag an ability or bag item here.</div>';
   if(s.type==='ability'){
     var A=ABILITIES[s.key]; if(!A) return '';
-    var cost = A.cd ? (A.cost ? costOf(A)+' mana, ' : '')+(typeof cdLeft==='function' && cdLeft(s.key) ? 'ready in '+cdLeft(s.key)+' turns' : cooldownTurns(A.cd)+'-turn cooldown') : A.favor ? A.favor+' Favor' : costOf(A)+' mana';
-    var wait = !A.cd && cdLeft(s.key) ? '<div class="row"><span>Cooldown</span><b>ready in '+cdLeft(s.key)+' turns</b></div>' : '';   /* an invoke's (DIVINE_COOLDOWNS) */
-    return '<div class="nm">'+A.name+'</div><div class="row"><span>Cost</span><b>'+cost+'</b></div>'+wait+(A.range?'<div class="row"><span>Range</span><b>'+spellRange(A)+'</b></div>':'')+'<div class="hint">'+(typeof liveDesc==='function'?liveDesc(A):A.desc)+'</div><div class="hint">Key '+(i+1)+'</div>';
+    return '<div class="nm">'+A.name+'</div>'+actionDetailsHTML(abilityDetails(A,s.key))+'<div class="hint">Key '+(i+1)+'</div>';
   }
   if(s.type==='prayer'){
     var P=PRAYERS[s.key]; if(!P) return '';
-    var pl=cdLeft(prayerCdKey(s.key));
-    return '<div class="nm">'+P.name+'</div><div class="row"><span>Cost</span><b>'+prayerCost(s.key)+'</b></div>'+(pl ? '<div class="row"><span>Cooldown</span><b>ready in '+pl+' turns</b></div>' : '')+'<div class="row"><span>Needs</span><b>rank '+P.rank+'</b></div><div class="hint">'+(typeof prayerLive==='function'?prayerLive(P):P.desc)+'</div><div class="hint">Key '+(i+1)+'</div>';
+    return '<div class="nm">'+P.name+'</div>'+actionDetailsHTML(prayerDetails(P,s.key))+'<div class="hint">Key '+(i+1)+'</div>';
   }
   if(s.type==='amulet') return player.amulet && typeof trinketCard==='function' ? trinketCard(player.amulet) : '<div class="nm">Amulet</div>';
   if(s.type==='ranged'){
     var rw=player.ranged;
-    if(!rw) return '<div class="nm">Ranged</div><div class="hint">Your ranged slot is empty. Sling a bow and this slot shoots it.</div>';
+    if(!rw) return '<div class="nm">Ranged</div><div class="hint">Equip a bow to shoot.</div>';
     return '<div class="nm">'+gearName(rw)+'</div><div class="row"><span>Range</span><b>'+player.range+'</b></div>'+
            (player.rangedDmg ? '<div class="row"><span>Damage</span><b>'+player.rangedDmg[0]+'-'+player.rangedDmg[1]+'</b></div>' : '')+
-           '<div class="hint">Press to draw on the nearest enemy in reach; press again to loose.</div><div class="hint">Key '+(i+1)+'</div>';
+           '<div class="hint">Press to aim; press again to fire.</div><div class="hint">Key '+(i+1)+'</div>';
   }
-  if(s.type==='swap'){ return '<div class="nm">Nothing here</div><div class="hint">Weapon swapping is gone: a bow in your ranged slot fires by itself at anything out of reach.</div>'; }
+  if(s.type==='swap'){ return '<div class="nm">Empty slot</div><div class="hint">Assign an ability or item.</div>'; }
   if(s.ref) return bagCard(s.ref)+'<div class="hint">Key '+(i+1)+'</div>';
   return '';
 }

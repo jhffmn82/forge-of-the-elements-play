@@ -218,7 +218,7 @@ function hudResourceCard(kind){
   function escape(s){return String(s).replace(/[&<>"']/g,function(ch){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch];});}
   function row(label,value){return '<div class="row"><span>'+label+'</span><b>'+value+'</b></div>';}
   if(kind==='hp')return '<div class="nm">Health</div>'+row('HP',number(player.hp)+' / '+number(player.maxhp))+(playerShield()>0?row('Shield',number(playerShield()))+'<div class="hint">'+escape(shieldParts().join(', '))+'. Shields absorb damage before HP.</div>':'');
-  if(kind==='mp')return '<div class="nm">Mana</div>'+row('MP',number(Math.floor(player.mp))+' / '+number(player.maxmp))+'<div class="hint">Used to cast spells and abilities that cost mana.</div>';
+  if(kind==='mp')return '<div class="nm">Mana</div>'+row('Mana',number(Math.floor(player.mp))+' / '+number(player.maxmp));
   if(kind==='xp')return '<div class="nm">Experience</div>'+row('Level',player.level)+row('XP',number(player.xp)+' / '+number(player.xpNext))+'<div class="hint">'+(player.level>=20?'Maximum level reached. Further XP still counts toward your run total.':number(Math.max(0,player.xpNext-player.xp))+' XP to the next level.')+'</div>';
   if(kind==='stock')return '<div class="nm">Essence &amp; keys</div>'+row('Essence',number(player.essence))+row('Iron keys',number(player.keys&&player.keys.iron))+row('Crystal keys',number(player.keys&&player.keys.crystal))+'<div class="hint">Essence pays for crafting, upgrades and enchantments at a forge. Keys open locked doors on the floor where you find them.</div>';
   if(kind==='motes')return '<div class="nm">Elemental motes</div>'+['fire','water','earth','air','light','shadow'].map(function(k){return row(cap(k),number(player.motes[k]));}).join('')+'<div class="hint">Infuse carried motes when claiming a boss core or at a forge. Open Gear to see your pouch.</div>';
@@ -551,8 +551,9 @@ function inspectHTML(mx,my){
 
 /* ---------------------------------------------------------------- keys */
 window.addEventListener('keydown', function(ev){
+  if(typeof FoteResponsiveHUD!=='undefined'&&FoteResponsiveHUD.hasOverlay())return;
   var tgt=ev.target.tagName;
-  var editing=tgt==='INPUT'||tgt==='SELECT'||tgt==='TEXTAREA';
+  var editing=tgt==='INPUT'||tgt==='SELECT'||tgt==='TEXTAREA'||(tgt==='BUTTON'&&ev.target.closest('[data-seg]'));
   if($('create') && $('create').classList.contains('on')) { if(!editing)ev.stopImmediatePropagation(); return; }
   if(modalOpen){
     if(ev.key==='Escape'){closeModal();ev.preventDefault();}

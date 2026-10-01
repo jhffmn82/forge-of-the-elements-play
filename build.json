@@ -1,6 +1,8 @@
 {
   "version": "Beta 1.4.2",
-  "built": "2026-10-01 16:07:32 UTC",
-  "epoch": 1790870852,
-  "source": "8e0382e499b9ef78eec9863641db67476ce72bb0"
+  "built": "2026-10-01T23:21:00.565946+00:00",
+  "epoch": 1790896860,
+  "source": "8e0382e499b9ef78eec9863641db67476ce72bb0+uncommitted",
+  "candidate": true,
+  "releaseState": "playtest"
 }

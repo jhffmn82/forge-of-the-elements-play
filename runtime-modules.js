@@ -20,6 +20,7 @@ var FOTE_RUNTIME = {
   "js/engine/turns.js",
   "js/engine/damage.js",
   "js/engine/actions.js",
+  "js/engine/combat-log.js",
   "js/engine/actors.js",
   "art/packed/assets.js",
   "js/keybind.js",

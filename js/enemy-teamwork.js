@@ -6,7 +6,7 @@ var FoteEnemyTeamwork=(function(){
   if(!e||!e.foe||e.ally||e.hp<=0||!e.base||e.base.boss||e.base.object)return null;
   if(goblins.indexOf(e.kind)>=0)return 'goblin';
   if(['acolyte','shambler','ghoul','skeleton','bonearcher','shade','gravebloat'].indexOf(e.kind)>=0)return 'crypt';
-  if(['sporecaller','myconid','shroomling','stormbeetle','sparkjelly','shockeel','crystalcrawler','caverat','cavebat','caveslime'].indexOf(e.kind)>=0)return 'cavern';
+  if(['sporecaller','myconid','shroomling','stormbeetle','sparkjelly','shockeel','crystalcrawler','rootbound','caverat','cavebat','caveslime'].indexOf(e.kind)>=0)return 'cavern';
   if(['drowpriestess','drowblade','drider','webspitter','spiderling','thoughteater'].indexOf(e.kind)>=0)return 'underdark';
   return null;
  }
@@ -53,7 +53,7 @@ var FoteEnemyTeamwork=(function(){
   if(!gameEffects.has(target,'goblinrage'))gameEffects.apply(target,'goblinrage',4,undefined,{durationModifiers:false});
   e.rageReadyAt=worldNow()+600;setClip(e,'attack');sfx('shaman-cast',{from:e});
   boltFx(e.x,e.y,target.x,target.y,'fire');sparkleFx(target.x,target.y,'heal',16);floatText(target.x,target.y,'Rage','fire');
-  if(vis[idxOf(e.x,e.y)]||vis[idxOf(target.x,target.y)])log('<b>Goblin Shaman:</b> '+target.name+' gains Rage'+(healed?' and '+healed+' HP':'')+'.','c-you');
+  if(vis[idxOf(e.x,e.y)]||vis[idxOf(target.x,target.y)])log('<b>Goblin Shaman:</b> '+target.name+': Rage'+(healed?'; +'+healed+' HP':'')+'.','c-you');
   return true;
  }
  function boneWard(e,idle){
@@ -62,7 +62,7 @@ var FoteEnemyTeamwork=(function(){
   if(!allies.length)return false;
   allies.forEach(function(o){o.boneWard=true;sparkleFx(o.x,o.y,'dark',12);});
   e.wardCd=5;setClip(e,'attack');sfx('shaman-cast',{from:e});
-  if(vis[idxOf(e.x,e.y)])log('The <b>Necro-Acolyte</b> grants Bone Ward.','c-info');
+  if(vis[idxOf(e.x,e.y)])log('Necro-Acolyte: Bone Ward.','c-info');
   return true;
  }
  function retreat(e,target){
@@ -99,7 +99,7 @@ var FoteEnemyTeamwork=(function(){
    if(rng()<chance){
     var damage=applyDamage(target,roll(5,8)+floorNo,'fire',e);floatText(target.x,target.y,String(damage),'fire');
     var burn=target.hp>0&&rng()<.5;if(burn)applyStatus(target,'burn',3,sDMG(2));
-    log(e.name+' hurls a firebolt'+(target===player?'':' at '+target.name)+': <b>'+damage+'</b> fire'+(burn?'. '+(target===player?'You are':target.name+' is')+' burning':'')+'.','c-you');
+    log(combatText(e.name)+' → '+(target===player?'you':combatText(target.name))+': '+combatDamageNumber(damage,'fire')+(burn?'; Burning':'')+'.','c-you');
     if(target.hp<=0)kill(target,e);
    }else{log(e.name+'\'s firebolt misses.','c-miss');floatText(target.x,target.y,'miss','miss');}
    return true;
@@ -115,8 +115,8 @@ var FoteEnemyTeamwork=(function(){
   var dx=Math.sign(target.x-e.x),dy=Math.sign(target.y-e.y),cell={x:target.x+dx,y:target.y+dy};
   if(!inb(cell.x,cell.y)||at(cell.x,cell.y)===CHASM||!openLine(target,cell))return false;
   if(!knockback(target,dx,dy,1))return false;
-  if(target===player)log('The <b>Goblin Brute</b> shoulder-checks you back!','c-you');
-  else if(vis[idxOf(e.x,e.y)])log('The <b>Goblin Brute</b> shoulder-checks '+target.name+' back!','c-info');
+  if(target===player)log('Goblin Brute: you pushed back.','c-you');
+  else if(vis[idxOf(e.x,e.y)])log('Goblin Brute: '+target.name+' pushed back.','c-info');
   return true;
  }
  return Object.freeze({family:family,openLine:openLine,nearby:nearby,alert:alert,takeTurn:takeTurn,rally:rally,boneWard:boneWard,retreat:retreat,position:position,shaman:shaman,shoulderCheck:shoulderCheck});

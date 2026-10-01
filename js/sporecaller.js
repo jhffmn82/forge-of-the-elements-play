@@ -8,8 +8,8 @@ var FoteSporecaller=(function(){
   hint:'Marks a root-and-poison field that sprouts two Shroomlings. Retreats, heals allies and grants Sporecoat.'
  });
  DROPS.sporecaller=DROPS.myconid;
- // Replace part of the vermin weight rather than increasing encounter counts.
- MONSTERS.caverat.w=4;MONSTERS.cavebat.w=4;
+ // Sporecaller and Root-bound share the retired vermin's combined weight of 16.
+ MONSTERS.caverat.w=0;MONSTERS.cavebat.w=0;
  var RANGE=5,FIELD_LIFE=300,FIELD_COOLDOWN=600,SUPPORT_COOLDOWN=500;
  function fields(){return floorMeta.sporeFields||(floorMeta.sporeFields=[]);}
  function growth(){return floorMeta.sporeGrowth||(floorMeta.sporeGrowth={});}
@@ -31,7 +31,7 @@ var FoteSporecaller=(function(){
   fields().push({owner:e.id,x:center.x,y:center.y,cells:cells,armedTurn:turn,fireAt:worldNow()+100,rooted:[]});
   e.sporeFieldReadyAt=worldNow()+FIELD_COOLDOWN;
   setClip(e,'attack');sfx('shaman-cast',{from:e});
-  if(visible(e)||visible(target))log('<b>Sporecaller:</b> mushroom field forming.','c-you');
+  if(visible(e)||visible(target))log('<b>Spore field:</b> leave marked ground!','c-you',{priority:'warning'});
   return true;
  }
  function support(e,idle){
@@ -46,7 +46,7 @@ var FoteSporecaller=(function(){
   e.sporeSupportReadyAt=worldNow()+SUPPORT_COOLDOWN;
   setClip(e,'attack');sfx('shaman-cast',{from:e});boltFx(e.x,e.y,target.x,target.y,'poison');sparkleFx(target.x,target.y,'heal',12);
   floatText(target.x,target.y,'Sporecoat','heal');
-  if(visible(e)||visible(target))log('<b>Sporecaller:</b> '+target.name+' gains Sporecoat'+(healing?' and '+healing+' HP':'')+'.','c-you');
+  if(visible(e)||visible(target))log('<b>Sporecaller:</b> '+target.name+': Sporecoat'+(healing?'; +'+healing+' HP':'')+'.','c-you');
   return true;
  }
  function act(e,target){
@@ -70,7 +70,7 @@ var FoteSporecaller=(function(){
     f.cells.forEach(function(i){growth()[i]={known:!!vis[i]};});
     var sprouts=sproutShroomlings(caster,f.cells.map(function(i){return {x:i%MW,y:Math.floor(i/MW)};}),2,clock);
     if(typeof burst==='function'&&f.cells.some(function(i){return vis[i];}))burst(f.x,f.y,'poison',24,.05);
-    if(f.cells.some(function(i){return vis[i];})){sfx('trap-gas',{from:f});log('The mushroom field blooms: Root and Poison.'+(sprouts.length?' '+sprouts.length+' Shroomling'+(sprouts.length===1?' sprouts.':'s sprout.') : ''),'c-you');}
+    if(f.cells.some(function(i){return vis[i];})){sfx('trap-gas',{from:f});log('Spore field: Root, Poison'+(sprouts.length?'; '+sprouts.length+' Shroomling'+(sprouts.length===1?'':'s')+' summoned':'')+'.','c-you');}
    }
    if(clock>=f.expiresAt)return false;
    targets().forEach(function(e){
@@ -106,7 +106,7 @@ var FoteSporecaller=(function(){
   if(visible(e))sfx('step-grass',{from:e,vol:.5});
   if(e.base&&e.base.sporeproof||gameEffects.blocked(e,'poison')||e===player&&player.buffs&&player.buffs.poisonward>0)return true;
   var damage=applyDamage(e,2,'poison',null,{tags:['environment','movement']});
-  if(damage>0){floatText(e.x,e.y,String(damage),'poison');if(e===player)log('Trampled mushrooms: '+damage+' poison damage.','c-you');}
+  if(damage>0){floatText(e.x,e.y,String(damage),'poison');if(e===player)log('Mushrooms: '+combatDamageNumber(damage,'poison')+'.','c-you');}
   if(e.hp<=0)kill(e,null);
   return true;
  }
@@ -114,7 +114,7 @@ var FoteSporecaller=(function(){
   var e=event.target,s=e.st&&e.st.sporecoat;if(!s||!(s.n>0)||!(event.amount>0))return;
   var n=Math.min(s.n,event.amount);s.n-=n;event.amount-=n;
   floatText(e.x,e.y,'-'+Math.round(n),'heal');
-  if(s.n<=0){gameEffects.remove(e,'sporecoat','depleted');if(visible(e))log('The Sporecoat around the <b>'+e.name+'</b> breaks.','c-good');}
+  if(s.n<=0){gameEffects.remove(e,'sporecoat','depleted');if(visible(e))log(e.name+': Sporecoat broken.','c-good');}
   return n;
  }
  var greenPlants={};
@@ -137,25 +137,20 @@ var FoteSporecaller=(function(){
   Object.keys(floorMeta.sporeGrowth).forEach(function(key){
    var i=Number(key),x=i%MW,y=Math.floor(i/MW);
    if(x<camX-1||y<camY-1||x>camX+viewW+1||y>camY+viewH+1)return;
-   if(vis[i]||floorMeta.sporeGrowth[key].known&&seen[i])plant(i,.92,vis[i]?.88:memA(.4),now);
+   if(vis[i]||floorMeta.sporeGrowth[key].known&&seen[i])plant(i,.72,vis[i]?.88:memA(.4),now);
   });
  }
  function draw(now){
   if(!floorMeta)return;ctx.save();
   (floorMeta.sporeFields||[]).forEach(function(f){
-   var active=!!f.expiresAt,pulse=ANIM.reduce?1:.85+.15*Math.sin((now||0)/190);
+   var active=!!f.expiresAt;
+   if(!active)drawGroundWarning(f.cells,'#96B75F',now,.8);
+   drawGroundMaterial('roots',f.cells,active?.55:.28);
+   drawFieldMist(f.cells,'#a6b884',now,active?.15:.22);
+   if(active)drawGroundRoots(f.cells,.48);
    f.cells.forEach(function(i){
     if(!vis[i])return;
-    var x=(i%MW-camX)*TS,y=(Math.floor(i/MW)-camY)*TS;
-    ctx.globalAlpha=(active?.14:.2)*pulse;ctx.fillStyle='#9bbd72';ctx.beginPath();ctx.ellipse(x+TS*.5,y+TS*.68,TS*.46,TS*.29,0,0,Math.PI*2);ctx.fill();
-    if(!active)plant(i,.4,.88,now);
-    ctx.globalAlpha=active?.65:.48*pulse;ctx.lineWidth=Math.max(1,TS/40);ctx.strokeStyle=active?'#81976c':'#bfcb90';
-    ctx.beginPath();
-    for(var n=0;n<3;n++){
-     var seed=((i*7+n*11)%13)/13,fromX=x+TS*(.15+n*.27),fromY=y+TS*(.68+seed*.2);
-     ctx.moveTo(fromX,fromY);ctx.quadraticCurveTo(fromX-TS*.12,y+TS*.43,fromX+TS*.1,y+TS*(active?.2:.55));
-    }
-    ctx.stroke();
+    if(!active)plant(i,.28,.82,now);
    });
   });
   ents.forEach(function(e){

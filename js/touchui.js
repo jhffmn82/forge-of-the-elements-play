@@ -81,7 +81,7 @@
     /* Keep every title action reachable even on a short phone screen. 2026-09-28: the menu sits at the bottom, under
        the logo painted into the title art (it ends about 31% down), instead of stretching over it. */
     '@media (max-height:560px){',
-    ' body.touch #title .menu{top:auto;bottom:max(12px,env(safe-area-inset-bottom,0px));overflow-y:auto;justify-content:flex-end;gap:6px}',
+    ' body.touch #title .menu{top:auto;bottom:max(12px,env(safe-area-inset-bottom,0px));transform:none;overflow-y:auto;justify-content:flex-end;gap:6px}',
     ' body.touch #title .menu button{font-size:20px;min-height:44px;padding:6px 14px;flex-shrink:0}',
     '}',
     /* Landscape: vitals and controls | map and hotbar | menus and combat log.
@@ -194,7 +194,7 @@
   function hookDpad(){
     var dp=document.getElementById('dpad'); if(!dp || dp._touchWait) return !!dp;
     dp._touchWait=true;
-    var c=dp.querySelector('[data-d="5"]'); if(c){ c.innerHTML='&#9906;'; c.title='Wait and search'; }   /* a magnifier-ish ring */
+    var c=dp.querySelector('[data-d="5"]'); if(c){ if(!c.querySelector('svg'))c.innerHTML='&#9906;'; c.title='Wait and search'; }
     dp.addEventListener('click', function(ev){
       var b=ev.target.closest && ev.target.closest('button'); if(!b) return;
       // Landscape keeps the controls visible beside sheets, but browsing a

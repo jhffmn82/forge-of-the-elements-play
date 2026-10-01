@@ -36,5 +36,5 @@ function applySpellWeaponEnchant(f,d,crit,A,context){
     var dealt=dealDirectDamage(f,Math.round(extra*resistMult(f,type)),type,player,{tags:['proc','enchant'],actionId:context.actionId,resistanceApplied:true});
     if(dealt>0&&type==='dark'&&aff('shadow')>=6)addHollow(f,1);
   }
-  if(note&&f.hp>0)log(f.name+': '+note+'.','c-good');
+  if(note&&f.hp>0)combatActionNote(f,note);
 }

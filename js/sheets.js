@@ -60,11 +60,9 @@ function resHTML(){
 }
 /* what one weapon hit does before the target's armor: weapon dice with Might, melee passives and fire affinity */
 function hitRange(){
-  var melee = !(player.range>1);
-  var mult = 1 + 0.04*(player.stats.mig-10) + (melee && hasP('heavyHands')?0.10:0) + (melee && hasP('unstoppable')?0.20:0) + (melee && buff('rampage')?.20+.04*godRank():0);
-  mult = Math.max(0.1, mult);
+  var range=weaponDamageRange(1,!((player.weapon&&player.weapon.range)>1));
   var fire = (player.aff && player.aff.fire) || 0;
-  return [Math.max(1,Math.round(player.dmg[0]*mult))+fire, Math.max(1,Math.round(player.dmg[1]*mult))+fire];
+  return [range[0]+fire,range[1]+fire];
 }
 function paintIcon(el, name, size){
   if(!el || !name) return;
@@ -75,7 +73,7 @@ function paintIcon(el, name, size){
 /* ---------------------------------------------------------------- Character */
 function charHTML(){
   var h='<div class="cols3">';
-  /* left: who, attributes, affinity, derived, resistances */
+  /* left: who, attributes, affinity, combat, resistances */
   h+='<div><h2 class="head">'+player.name+'</h2><div class="who">'+player.who+' &middot; Level '+player.level+
      (player.points?' &middot; <span style="color:var(--gold)">'+player.points+' unspent</span>':'')+'</div>';
   h+='<div class="sec">Attributes</div><div class="grid4">'+statBox('Might',player.stats.mig,'mig')+statBox('Agility',player.stats.agi,'agi')+statBox('Vitality',player.stats.vit,'vit')+statBox('Focus',player.stats.foc,'foc')+'</div>';
@@ -85,7 +83,7 @@ function charHTML(){
   }).join('');
   h+='<div class="sec">Affinity ('+totalAffinity()+' / '+affinityCap()+')</div>'+(pips || '<div class="c-info" style="font-size:11.5px">None yet. Carry a mote to the Elemental Forge.</div>');
   var hr=hitRange();
-  h+='<div class="sec">Derived</div>'+kv([['HP',Math.round(player.hp)+' / '+player.maxhp+(playerShield()?' <span style="color:#9FD8FF">+'+playerShield()+'</span>':'')],['Mana',Math.floor(player.mp)+' / '+player.maxmp],
+  h+='<div class="sec">Combat</div>'+kv([['HP',Math.round(player.hp)+' / '+player.maxhp+(playerShield()?' <span style="color:#9FD8FF">+'+playerShield()+'</span>':'')],['Mana',Math.floor(player.mp)+' / '+player.maxmp],
     ['Damage per hit',hr[0]+'-'+hr[1]],['Crit',Math.round(player.crit*100)+'%'],['Crit damage','&times;'+criticalMultiplier().toFixed(2)],['Accuracy',player.acc],['Evasion',evaOf(player)],['Armor',player.armor],
     ['Block',Math.round(player.block*100)+'%'],['Parry',Math.round(player.parry*100)+'%'],['Spell power','&times;'+spellPower({}).toFixed(2)],['Divine Power','&times;'+divineStrength().toFixed(2)],['Range',player.range],
     ['Attack speed',playerSpeedPercent('attack')],['Movement speed',playerSpeedPercent('move')],['XP',player.xp+' / '+player.xpNext]]);
@@ -96,20 +94,19 @@ function charHTML(){
   if(!player.abilities.length) h+='<div class="c-info" style="font-size:11.5px">No active abilities yet.</div>';
   player.abilities.forEach(function(k){
     var A=ABILITIES[k]; if(!A) return;
-    var cost = A.cd ? (A.cost ? costOf(A)+' mana, ' : '')+(typeof cdLeft==='function' && cdLeft(k) ? 'ready in '+cdLeft(k)+' turns' : cooldownTurns(A.cd)+'-turn cooldown') : (A.favor ? A.favor+' Favor' : costOf(A)+' mana');
-    h+='<div class="arow" data-ab="'+k+'" draggable="true"><span class="ic" data-icon="'+(A.icon||'')+'"></span><span><span class="n">'+A.name+'</span><div class="d">'+(typeof liveDesc==='function' ? liveDesc(A) : A.desc)+'</div></span><span class="c" style="color:var(--ice)">'+cost+'</span></div>';
+    h+='<div class="arow" data-ab="'+k+'" draggable="true"><span class="ic" data-icon="'+(A.icon||'')+'"></span><div><div class="n">'+A.name+'</div>'+actionDetailsHTML(abilityDetails(A,k))+'</div></div>';
   });
   if(player.god){
     var g=GODS[player.god];
     h+='<div class="sec">Abilities &middot; <span style="color:'+g.color+';text-transform:none;letter-spacing:0">'+g.name+'</span></div>';
     (g.prayers||[]).forEach(function(pid){
       var P=PRAYERS[pid]; if(!P) return; var ok=godRank()>=P.rank; if(!ok) return;
-      h+='<div class="arow'+(ok?'':' locked')+'" data-pr="'+pid+'"'+(ok?' draggable="true"':'')+'><span class="ic" data-icon="'+prayerIcon(pid)+'"></span><span><span class="n">'+P.name+'</span><div class="d">'+(typeof prayerLive==='function' ? prayerLive(P) : P.desc)+'</div></span><span class="c" style="color:var(--gold)">'+(ok?prayerCost(pid):'rank '+P.rank)+'</span></div>';
+      h+='<div class="arow'+(ok?'':' locked')+'" data-pr="'+pid+'"'+(ok?' draggable="true"':'')+'><span class="ic" data-icon="'+prayerIcon(pid)+'"></span><div><div class="n">'+P.name+'</div>'+actionDetailsHTML(prayerDetails(P,pid))+'</div></div>';
     });
   }
   if(player.amulet && typeof AMULETS!=='undefined' && AMULETS[player.amulet.amulet]){
     var a=player.amulet, known=!a.unid || (RUN.amuletKnown||{})[a.amulet];
-    h+='<div class="sec">Amulet</div><div class="arow"><span class="ic" data-icon="'+a.icon+'"></span><span><span class="n">'+gearName(a)+'</span><div class="d">'+(known?amuletDescription(a):'Use it to learn what it does.')+'</div></span><span class="c" style="color:var(--gold)">'+(a.charges!==undefined?a.charges+' charges':'')+'</span></div>';
+    h+='<div class="sec">Amulet</div><div class="arow"><span class="ic" data-icon="'+a.icon+'"></span><span><span class="n">'+gearName(a)+'</span>'+(known?actionDetailsHTML(amuletDetails(a)):'<div class="d">Unidentified amulet.</div>')+'</span><span class="c" style="color:var(--gold)">'+(a.charges!==undefined?a.charges+' charges':'')+'</span></div>';
   }
   h+='</div>';
 
@@ -152,7 +149,7 @@ function charHTML(){
     });
   }
   var gear=[];
-  (player.rings||[]).forEach(function(r){ if(r) gear.push([gearName(r), r.unid ? 'Strength unknown until it is identified.' : (ringDescription(r)+' '+ringLine(r))]); });
+  (player.rings||[]).forEach(function(r){ if(r) gear.push([gearName(r), ringSummary(r)]); });
   var w=player.weapon;
   if(w && !w.unarmed && (w.note || w.enchant)) gear.push([gearName(w), (w.note||'')+(w.enchant && !w.unid ? ' &middot; '+enchantLive('weapon',w.enchant) : '')]);
   var ar=player.armorItem;
@@ -163,7 +160,6 @@ function charHTML(){
     h+='<div class="sec">Gear</div>';
     gear.forEach(function(g){ h+='<div class="prow"><span class="k">&#9679;</span><span><span class="n">'+g[0]+'</span><div class="d">'+g[1]+'</div></span></div>'; });
   }
-  h+='<div class="c-info" style="font-size:11px;margin-top:10px;color:var(--dim)">Training attributes, attuning to elements and serving a god reveal more.</div>'
   h+='</div></div>';
   return h;
 }
@@ -180,6 +176,19 @@ function slotHTML(key, label, it, placeholder){
   var col=(typeof tierCol==='function' && tierCol(it)) || 'var(--edge)';
   var ench=it.enchant && !it.unid ? '<span class="ench" style="background:'+AFF_COL[it.enchant]+'"></span>' : '';
   return '<div class="gslot'+(it.cursed && !it.unid?' cursed':'')+'" data-slot="'+key+'" style="border-color:'+col+'"><span class="icon" data-gicon="'+(it.icon||'')+'"></span>'+ench+'<span class="lab">'+label+'</span></div>';
+}
+/* Desktop and touch inventory share the same live resource counts. Zeroes stay
+ * visible here because the minimal HUD leaves resources in the inventory. */
+function equipResourcesHTML(sectionClass){
+  sectionClass=sectionClass||'sec';
+  function count(n){return Math.round(n||0).toLocaleString('en-US');}
+  var motes=ELEMENTS.map(function(m){return '<span class="mote"><span class="mart" data-mote="'+m+'"></span>'+cap(m)+' &times;'+count(player.motes&&player.motes[m])+'</span>';}).join('');
+  var keys=[['iron','Iron key','item-key-iron'],['crystal','Crystal key','item-key-crystal']].map(function(k){
+    return '<span class="mote keychip"><span class="kart" data-kicon="'+k[2]+'"></span>'+k[1]+' &times;'+count(player.keys&&player.keys[k[0]])+'</span>';
+  }).join('');
+  return '<div class="'+sectionClass+'">Keys</div><div class="pouch">'+keys+'</div>'+
+    '<div class="'+sectionClass+'">Pouch &middot; '+count(player.essence)+' essence</div><div class="pouch">'+motes+'</div>'+
+    '<label class="optrow"><span>Traditional UI</span><input id="gearTraditionalUI" type="checkbox"'+(uiHudMode()==='traditional'?' checked':'')+'></label>';
 }
 function equipHTML(){
   var w=player.weapon, off=player.twoHanded?null:player.off, ar=player.armorItem, r=player.rings||[null,null], stow=player.ranged;
@@ -198,13 +207,8 @@ function equipHTML(){
   /* right: bag and pouch */
   var cells=player.bag.map(function(it,idx){ return '<div class="cell" data-b="'+idx+'" draggable="true">'+(it.n>1?'<b>'+it.n+'</b>':'')+'</div>'; });
   while(cells.length<BAG_MAX) cells.push('<div class="cell empty"></div>');
-  var motes=ELEMENTS.filter(function(m){ return player.motes[m]>0; }).map(function(m){ return '<span class="mote"><span class="mart" data-mote="'+m+'"></span>'+m+' &times;'+player.motes[m]+'</span>'; }).join('');
-  var keyChips=[['iron','Iron key','item-key-iron'],['crystal','Crystal key','item-key-crystal']].filter(function(k){ return (player.keys[k[0]]||0)>0; })
-    .map(function(k){ return '<span class="mote keychip"><span class="kart" data-kicon="'+k[2]+'"></span>'+k[1]+' &times;'+player.keys[k[0]]+'</span>'; }).join('');
   h+='<div><div class="sec">Bag ('+player.bag.length+' / '+BAG_MAX+')</div><div class="invgrid">'+cells.join('')+'</div>'+
-     '<div class="sec">Keys</div><div class="pouch">'+(keyChips||'<span class="mote">no keys &middot; they open locked doors on the floor where you find them</span>')+'</div>'+
-     '<div class="sec">Pouch &middot; '+player.essence+' essence</div>'+
-     '<div class="pouch">'+(motes||'<span class="mote">no motes yet</span>')+'</div></div>';
+     equipResourcesHTML()+'</div>';
   return h+'</div>';
 }
 function slotItem(key){
@@ -229,6 +233,8 @@ function slotCard(key){
   return bagCard({kind:'off', data:it}) + (player.block?'<div class="row"><span>Your block</span><b>'+Math.round(player.block*100)+'%</b></div>':'') + (player.parry?'<div class="row"><span>Your parry</span><b>'+Math.round(player.parry*100)+'%</b></div>':'');
 }
 function wireEquip(root){
+  var traditional=root.querySelector('#gearTraditionalUI');
+  if(traditional)traditional.onchange=function(){setUIHudMode(traditional.checked?'traditional':'minimal');};
   /* the doll box is wider now, so the figure is drawn bigger to match (2026-09-17) */
   if(typeof paintDoll==='function') paintDoll($('dollArt'), 210); else paintArt($('dollArt'),'cast',playerCastLook(),210);
   root.querySelectorAll('[data-mote]').forEach(function(e){ paintArt(e,'items','mote-'+e.getAttribute('data-mote'),16); });

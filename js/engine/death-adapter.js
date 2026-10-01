@@ -6,7 +6,7 @@ function prepareCreatureDeath(event){
   var e=event.entity,b=e.base||{};
   if(e.pebbleSlam)clearPebbleSlam(e);
   if(b.magmaBurst&&e.hp<=0&&inFwa()){
-    burst(e.x,e.y,'fire',34,.09);SHAKE=6;if(vis[idxOf(e.x,e.y)])log('The <b>Magma Crawler</b> bursts open.','c-kill');
+    burst(e.x,e.y,'fire',34,.09);SHAKE=6;if(vis[idxOf(e.x,e.y)])log('<b>Magma Crawler explodes!</b>','c-kill');
     ents.slice().forEach(function(other){if(other===e||other.hp<=0||dist(other,e)>1||other!==player&&fwaNative(other))return;fwaHurt(other,roll(8,13),'fire',null,other===player?'Molten rock sprays over you':null);if(other.hp>0)applyStatus(other,'burn',2,sDMG(3));});
     for(var y=-1;y<=1;y++)for(var x=-1;x<=1;x++)if(rng()<.5)fwaBurnGround(e.x+x,e.y+y);
   }
@@ -30,20 +30,20 @@ function prepareCreatureDeath(event){
   if(e.kind==='shockeel'||e.kind==='sparkjelly')floorMeta.marks=(floorMeta.marks||[]).filter(function(mark){return mark.kind!=='eel'+e.id;});
   if(b.big||e.kind==='deepmaw')ents=ents.filter(function(other){return other.parent!==e;});
   if(b.shatters){
-    ents.forEach(function(other){if(other!==e&&dist(other,e)<=1&&(other===player||!other.foe)){var damage=applyDamage(other,6,'phys',null);floatText(other.x,other.y,String(damage),'phys');if(other===player)log('Crystal shards fly: '+damage+'.','c-you');}});burst(e.x,e.y,'earth',30,.08);
+    ents.forEach(function(other){if(other!==e&&dist(other,e)<=1&&(other===player||!other.foe)){var damage=applyDamage(other,6,'phys',null);floatText(other.x,other.y,String(damage),'phys');if(other===player)log('Crystal shards: '+damage+'.','c-you');}});burst(e.x,e.y,'earth',30,.08);
   }
-  if(e.kind==='crystalnode'&&(floorMeta.heartNodes||[]).indexOf(e.id)>=0){var left=(floorMeta.heartNodes||[]).filter(function(id){return id!==e.id&&ents.some(function(other){return other.id===id&&other.hp>0;});}).length;log(left?'A crystal node shatters. '+left+' left.':'<b>The last crystal node shatters!</b> The Heart of the Mountain is exposed.','c-kill');}
+  if(e.kind==='crystalnode'&&(floorMeta.heartNodes||[]).indexOf(e.id)>=0){var left=(floorMeta.heartNodes||[]).filter(function(id){return id!==e.id&&ents.some(function(other){return other.id===id&&other.hp>0;});}).length;log(left?'Crystal node destroyed; '+left+' left.':'<b>Heart of the Mountain exposed!</b>','c-kill');}
   if(e.elite&&floorMeta.plane&&e.id===floorMeta.eliteId){floorMeta.eliteDead=true;setTimeout(function(){log('The guardian of '+PLANE_TITLE[floorMeta.plane]+' falls. Its treasure waits in the grotto.','c-kill');},0);}
   if(b.rises&&!e.risen&&e._lastType!=='fire'&&e._lastType!=='light'&&!(e.st&&e.st.burn)){
     ents=ents.filter(function(other){return other!==e;});var fell=deathAnimation(e,false);floorMeta.corpses=floorMeta.corpses||[];floorMeta.corpses.push({x:e.x,y:e.y,at:turn+3,kind:e.kind,maxhp:e.maxhp,id:e.id,flip:fell.flip});
-    if(vis[idxOf(e.x,e.y)])log('The <b>Shambler</b> collapses... and twitches. Finish it, or burn it.','c-info');
+    if(vis[idxOf(e.x,e.y)])log('<b>Shambler reviving:</b> smash or burn its corpse!','c-info',{priority:'warning'});
     event.deferred='shambler';return false;
   }
-  if(b.bursts){addCloud(e.x,e.y,1,5,sDMG(3+Math.floor(floorNo/3)),'bloat');if(vis[idxOf(e.x,e.y)])log('The <b>Grave Bloat</b> bursts in a cloud of rot!','c-you');sfx('trap-gas',{from:e});}
+  if(b.bursts){addCloud(e.x,e.y,1,5,sDMG(3+Math.floor(floorNo/3)),'bloat');if(vis[idxOf(e.x,e.y)])log('<b>Grave Bloat:</b> Rot cloud!','c-you');sfx('trap-gas',{from:e});}
   if(inCrypt()&&b.living!==false&&!b.object){floorMeta.deathSpots=floorMeta.deathSpots||[];floorMeta.deathSpots.push({x:e.x,y:e.y});if(floorMeta.deathSpots.length>12)floorMeta.deathSpots.shift();}
   if(e.kind==='morty'&&ents.some(function(other){return other.id===floorMeta.phylId&&other.hp>0;})){
     ents=ents.filter(function(other){return other!==e;});floorMeta.mortyReturn={at:turn+3,maxhp:e.maxhp};sparkleFx(e.x,e.y,'dark',60);
-    log('Morty crumbles to dust... and the phylactery on the altar pulses. <b>"Oh, I\'ll be right back."</b> Break the phylactery!','c-you');event.deferred='morty';return false;
+    log('<b>Morty reviving:</b> break the phylactery!','c-you',{priority:'warning'});event.deferred='morty';return false;
   }
   if(e.kind==='phylactery')phylacteryBreaks(e);
   return true;
@@ -69,9 +69,9 @@ function deathAnimation(e,persistent){
 function commitCreatureDeath(event){
   var e=event.entity,by=event.source;
   ents=ents.filter(function(other){return other!==e;});deathAnimation(e);
-  if(e.ally){sfx('ally-death',{at:fxClock,from:e});log(e.name+' falls.','c-info');return;}
+  if(e.ally){sfx('ally-death',{at:fxClock,from:e});log(combatText(e.name)+' falls.','c-info');return;}
   /* 2026-09-28 (Justin): quietDeath, a trap kill out of sight (triggerTrap): heard, not named */
-  if(e.base.sfx)sfx(e.base.sfx+'-death',{at:fxClock,from:e});var seenDeath=revealAll||vis[idxOf(e.x,e.y)],ourKill=by===player||!!(by&&by.ally);if(!e.quietDeath&&(seenDeath||ourKill))log(e.name+' dies.','c-kill');   /* 1.3.2 ruling 2: an unseen death is quiet unless you or an ally made the kill */
+  if(e.base.sfx)sfx(e.base.sfx+'-death',{at:fxClock,from:e});var seenDeath=revealAll||vis[idxOf(e.x,e.y)],ourKill=by===player||!!(by&&by.ally);if(!e.quietDeath&&(seenDeath||ourKill))log(combatText(e.name)+' dies.','c-kill');   /* 1.3.2 ruling 2: an unseen death is quiet unless you or an ally made the kill */
   RUN.kills++;
   if(event.playerSide&&!e.noXp)gainXP(e.base.xp||10);
   godOnKill(e,by);
@@ -89,7 +89,7 @@ function rewardAmuletKill(event){
     a.progress=(a.progress||0)+(e.elite||e.base.elite||e.base.boss?3:1);
     var need=amuletKillsNeeded(a),gained=0;while(a.progress>=need&&a.charges<maximum){a.progress-=need;a.charges++;gained++;}
     if(a.charges>=maximum)a.progress=0;
-    if(gained){log('Your <b>'+gearName(a)+'</b> gains a charge ('+a.charges+'/'+maximum+').','c-good');sfx('pickup-essence');}
+    if(gained){log(gearName(a)+': '+a.charges+'/'+maximum+' charges.','c-good');sfx('pickup-essence');}
   }
   amuletSync(a);
 }
@@ -103,14 +103,14 @@ function rewardCreatureDeath(event){
   if(e.foe&&burn&&(burnAffinity?burnAffinity.fire||0:aff('fire'))>=6){var other=ents.filter(function(o){return o.foe&&o.hp>0&&dist(o,e)<=3;}).sort(function(a,b){return dist(a,e)-dist(b,e);})[0];if(other){
     if(burnAffinity)gameEffects.apply(other,'burn',3+(burn.sourceDuration||0),sDMG(2+(burnAffinity.fire||0)),{sourceAffinity:burnAffinity,data:{sourceAffinity:burnAffinity,sourceDuration:burn.sourceDuration||0},durationModifiers:false});
     else applyStatus(other,'burn',3,burnDmg());
-    boltFx(e.x,e.y,other.x,other.y,'fire');log('Wildfire leaps to '+other.name+'.','c-fire');}}
-  if(e.foe&&e.st&&e.st.burn&&combo('shadow','fire')&&(event.source===player||event.source==='player')){player.hidden=Math.max(player.hidden||0,3);log('Smolder: you vanish into the smoke.','c-good');}
+    boltFx(e.x,e.y,other.x,other.y,'fire');log('Wildfire: '+combatText(other.name)+' Burning.','c-fire');}}
+  if(e.foe&&e.st&&e.st.burn&&combo('shadow','fire')&&(event.source===player||event.source==='player')){player.hidden=Math.max(player.hidden||0,3);log('Smolder: Hidden.','c-good');}
 }
 function finishCreatureDeath(event){
   var e=event.entity,boss=e.base.boss||e.caveBoss;
   if(boss&&inCaverns()&&(floorNo===LAST_FLOOR||floorNo===15)&&!caveBossesLeft())caveBossDown();
-  if(e.kind==='deepmaw'){log('<b>The Deep Maw</b> shudders, groans and goes still. The Caverns fall quiet.','c-kill');caveBossDown();}
-  if(e.kind==='matron'){log('<b>The Matron of the Web</b> curls her legs in and is still. Across the Underdark, the webs fall quiet.','c-kill');deepEnsureExit(e);}
+  if(e.kind==='deepmaw'){log('<b>Deep Maw defeated.</b>','c-kill');caveBossDown();}
+  if(e.kind==='matron'){log('<b>Matron defeated.</b>','c-kill');deepEnsureExit(e);}
   if(event.revive)floorMeta.pendingLich={entity:e,at:turn+1};
 }
 function kill(e,by){

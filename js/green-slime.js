@@ -43,19 +43,18 @@ var FoteGreenSlime=(function(){
   });
  }
  function draw(now){
-  if(!floorMeta.greenTrail)return;ctx.save();
-  Object.keys(floorMeta.greenTrail).forEach(function(key){
-   var i=Number(key),t=floorMeta.greenTrail[key],x=i%MW,y=Math.floor(i/MW);
-   if(x<camX-1||y<camY-1||x>camX+viewW+1||y>camY+viewH+1||!(vis[i]||t.known&&seen[i]))return;
-   var px=(x-camX)*TS,py=(y-camY)*TS,fade=Math.min(1,(t.expiresAt-worldNow())/200);
-   ctx.globalAlpha=(vis[i]?.82:memA(.4))*fade;ctx.fillStyle='#4f7939';
-   ctx.beginPath();ctx.ellipse(px+TS*.48,py+TS*.74,TS*.37,TS*.16,.16,0,Math.PI*2);ctx.fill();
-   ctx.fillStyle='#91b562';ctx.globalAlpha*=.65;
-   for(var n=0;n<4;n++){
-    var h=hash2(x,y,n+551),p=Math.max(1,Math.round(TS/40));
-    ctx.fillRect(Math.round(px+TS*(.23+h*.5)),Math.round(py+TS*(.66+hash2(x,y,n+631)*.12)),p*2,p);
+  if(!floorMeta.greenTrail)return;
+  var cells=Object.keys(floorMeta.greenTrail).map(Number).filter(function(i){return vis[i]||floorMeta.greenTrail[i].known&&seen[i];});
+  drawGroundMaterial('poison',cells,function(i){
+   // The connected pool's soft shore can extend into adjacent stone. Fade it
+   // with its neighbouring trail cells rather than cutting it at tile edges.
+   var left=0,x=i%MW,y=Math.floor(i/MW);
+   for(var dy=-1;dy<=1;dy++)for(var dx=-1;dx<=1;dx++){
+    if(!inb(x+dx,y+dy))continue;var t=floorMeta.greenTrail[idxOf(x+dx,y+dy)];
+    if(t)left=Math.max(left,t.expiresAt-worldNow());
    }
-  });ctx.restore();
+   return Math.max(0,Math.min(1,left/200));
+  },true);
  }
  function wash(x,y){if(floorMeta.greenTrail)delete floorMeta.greenTrail[idxOf(x,y)];}
  return Object.freeze({onDamaged:onDamaged,moved:moved,pulse:pulse,draw:draw,wash:wash});

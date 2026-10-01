@@ -37,7 +37,7 @@ function armorCard(item,worn){
       '<div class="row"><span>Evasion</span><b>'+((a.eva||0)>=0?'+':'')+passiveNumber(a.eva)+'</b></div>'+
       (a.enchant?'<div class="row"><span>Enchant</span><b style="color:'+AFF_COL[a.enchant]+'">'+cap(a.enchant)+'</b></div><div class="hint">'+enchantLive('armor',a.enchant)+'</div>':'')+
       '<div class="hint">'+(a.note||'')+'</div>'+(a.cursed?'<div class="hint" style="color:#D0605A">Cursed: cannot unequip until cleansed.</div>':'');
-    if(itemKey(a)==='robe')h+='<div class="row"><span>Spell damage</span><b>+'+Math.round(robeSpell(a)*gearPassiveBonus()*100)+'%</b></div><div class="row"><span>Max mana</span><b>+'+Math.round(TIER_ROBE.mana[tierNum(a)]*gearPassiveBonus()*100)+'%</b></div>';
+    if(itemKey(a)==='robe')h+='<div class="row"><span>Spell damage</span><b>+'+Math.round(robeSpell(a)*gearPassiveBonus()*100)+'%</b></div><div class="row"><span>Max Mana</span><b>+'+Math.round(TIER_ROBE.mana[tierNum(a)]*gearPassiveBonus()*100)+'%</b></div>';
   }
   return tierTint(h,a)+(worn?'':reqRow(a));
 }
@@ -54,7 +54,7 @@ function offhandCard(item){
   if(!d.unid){
     var key=itemKey(d);
     if(TIER_BLOCK[key])h+='<div class="row"><span>Block</span><b>'+Math.round((d.block+TIER_BLOCK.per*(d.plus||0))*100)+'%</b></div>';
-    if(key==='tome')h+='<div class="row"><span>Max mana</span><b>+'+Math.round(d.manaPct*gearPassiveBonus()*100)+'%</b></div>';
+    if(key==='tome')h+='<div class="row"><span>Max Mana</span><b>+'+Math.round(d.manaPct*gearPassiveBonus()*100)+'%</b></div>';
     if(key==='holy')h+='<div class="row"><span>Divine Power</span><b>+'+Math.round(d.divine*gearPassiveBonus()*100)+'%</b></div><div class="row"><span>Buff duration</span><b>+'+Math.round(holyDurationPct(d)*100)+'%</b></div>';
     if(d.kind==='off'&&d.weapon)h+='<div class="row"><span>Off-hand strike</span><b>60% damage</b></div>';
   }
@@ -70,11 +70,11 @@ function trinketCard(item){
   }
   if(!amuletOk(item))return '<div class="nm">'+gearName(item)+'</div><div class="hint">This amulet has lost its power.</div>';
   var state=FoteGear.amuletState(item,amuletKillsNeeded(item)),cap=amuletCap(item),knownAmulet=!item.unid||RUN.amuletKnown[item.amulet];
-  return '<div class="nm">'+gearName(item)+'</div>'+(knownAmulet?'<div class="hint">'+amuletDescription(item)+'</div><div class="row"><span>Kills per charge</span><b>'+(item.unid?'?':amuletKillsNeeded(item))+'</b></div>':'')+
+  return '<div class="nm">'+gearName(item)+'</div>'+(knownAmulet?actionDetailsHTML(amuletDetails(item))+'<div class="row"><span>Kills per charge</span><b>'+(item.unid?'?':amuletKillsNeeded(item))+'</b></div>':'')+
     '<div class="row"><span>Charges</span><b>'+state.charges+' / '+cap+'</b></div>'+
     (state.charges<cap&&!item.unid?'<div class="row"><span>Next charge</span><b>'+(amuletKillsNeeded(item)-(state.progress||0))+' more kill'+(amuletKillsNeeded(item)-(state.progress||0)===1?'':'s')+'</b></div>':'')+
     (item.cursed&&!item.unid?'<div class="hint" style="color:#D0605A">Cursed: +30% kills per charge. Cannot unequip until cleansed.</div>':'')+unidHint(item)+
-    '<div class="hint">Holds '+cap+' charge'+(cap>1?'s':'')+' at level '+state.level+'. Levels up with use (max 3). Kills recharge it; elites and bosses count as 3.</div>';
+    '<div class="hint">Level '+state.level+' / 3. Use to level up; kills recharge. Elites and bosses count as 3.</div>';
 }
 function bagCard(entry){
   if(!entry)return '';
@@ -82,7 +82,7 @@ function bagCard(entry){
   if(entry.kind==='armor')return armorCard(entry.data);
   if(entry.kind==='off')return offhandCard(entry.data);
   if(entry.kind==='ring'||entry.kind==='amulet')return trinketCard(entry.data);
-  if(entry.kind==='sigil'){var known=sigilKnown[entry.data.use];return '<div class="nm">'+entry.name+'</div><div class="hint">'+(known?SIGILS[entry.data.use].desc:'Unidentified sigil.')+'</div>';}
+  if(entry.kind==='sigil'){var known=sigilKnown[entry.data.use];return '<div class="nm">'+entry.name+'</div>'+(known?actionDetailsHTML(sigilDetails(entry.data.use)):'<div class="hint">Unidentified sigil.</div>');}
   if(entry.kind==='food'){var f=FOODS[entry.data.food];return '<div class="nm">'+f.name+'</div><div class="hint">'+(f.desc?f.desc+' ':'')+'Restores '+f.nutrition+' hunger'+(f.heal?', heals '+Math.round(f.heal*100)+'% max HP':'')+'.</div>';}
   return '<div class="nm">'+entry.name+'</div>';
 }

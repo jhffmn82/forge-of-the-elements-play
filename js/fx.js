@@ -17,6 +17,9 @@ var TRAIL = {
   magic:    {col:['#FFFFFF','#D9B8FF','#9A6AF0'], size:2.4, rate:2.2, life:420, drift:-0.004, glow:'#D9B8FF'},
   heal:     {col:['#DFFFE0','#7FD08A'], size:2.2, rate:1, life:700, drift:-0.02, glow:'#7FD08A'}
 };
+function trailPalette(type,fallback){
+  return Object.prototype.hasOwnProperty.call(TRAIL,type) ? TRAIL[type] : TRAIL[fallback||'phys'];
+}
 
 function particle(x,y,o){
   if(ANIM.reduce && !o.force) return;
@@ -24,7 +27,7 @@ function particle(x,y,o){
   PARTS.push({x:x,y:y,vx:o.vx||0,vy:o.vy||0,life:o.life||400,max:o.life||400,col:o.col||'#FFF',size:o.size||2,grav:o.grav||0,glow:!!o.glow,shrink:o.shrink!==false});
 }
 function burst(tx,ty,type,n,spread){
-  var t=TRAIL[type]||TRAIL.phys; n=n||14; spread=spread||0.06;
+  var t=trailPalette(type); n=n||14; spread=spread||0.06;
   for(var i=0;i<n;i++){
     var a=Math.random()*Math.PI*2, s=Math.random()*spread;
     particle(tx+0.5, ty+0.5, {vx:Math.cos(a)*s, vy:Math.sin(a)*s + (t.drift||0)*4, life:t.life*(0.6+Math.random()*0.8),
@@ -49,9 +52,19 @@ function boltFx(ax,ay,bx,by,type,opts){
   /* an arrow is loosed, not lobbed: about a third of the flight time of a spell bolt (2026-09-18) */
   var dur=(opts && opts.arrow) ? 45+18*d : 110+55*d;
   var el = type==='phys' && opts && opts.arrow ? 'arrow' : type;
-  var bolt={k:'p', ax:ax, ay:ay, bx:bx, by:by, type:type, arrow: !!(opts&&opts.arrow), dur:dur, hit:false, sfxHit: opts&&opts.sfxHit, silentHit:!!(opts&&opts.silentHit)};
+  var bolt={k:'p', ax:ax, ay:ay, bx:bx, by:by, type:type, arrow: !!(opts&&opts.arrow), explosion:!!(opts&&opts.explosion), dur:dur, hit:false, sfxHit: opts&&opts.sfxHit, silentHit:!!(opts&&opts.silentHit)};
   bolt.t0=fxAt(dur, dur*0.85, !turnAnimationEffectVisible(bolt));   /* one flying off the screen queues nothing */
   fx.push(bolt);
+}
+
+/* Both player and enemy beams draw their actual affected cells. Keep gaps in
+ * the footprint, and let the existing animation clock handle cast windup. */
+function beamFx(tiles,type,opts){
+  opts=opts||{};
+  var palette=trailPalette(type,'magic');
+  var beam={k:'beam',tiles:tiles.map(function(t){return t.slice();}),col:opts.col||palette.glow||palette.col[0],dur:opts.dur||(ANIM.reduce?180:320)};
+  beam.t0=fxAt(beam.dur,beam.dur*.65,!tiles.some(function(t){return inb(t[0],t[1])&&(revealAll||vis[idxOf(t[0],t[1])]);}));
+  fx.push(beam);
 }
 
 function drawCorpse(f, p, opacity){
@@ -63,11 +76,11 @@ function drawCorpse(f, p, opacity){
   if(f.e.livingFlame){drawLivingFlame(f.e,px,py,{alpha:opacity*(1-p),flip:f.e.flip});return;}
   var ms = spriteOn && f.e.sprite ? (f.e.shade?shadeSummonSheet():mobSheet(f.e.sprite)) : null;
   if(f.e.shade)opacity*=.62;
-  if(ms && ms.m.clips.death && !CAVE_TOPPLE[f.e.sprite] && !DEEP_TOPPLE[f.e.sprite]){
+  if(ms && ms.m.clips.death){
     var c=ms.m.clips.death, cell=ms.m.cell, fr=Math.min(c.frames-1, Math.floor(p*c.frames*1.05)), box=ms.m.box||[0,0,cell,cell];
     var target=TS*(f.e.art||0.9), s=target/Math.max(box[3], box[2]*0.8);
     var dx=px+TS/2-(box[0]+box[2]/2)*s, dy=py+TS*0.97-(box[1]+box[3])*s;
-    ctx.save(); ctx.globalAlpha = opacity*(f.remains?1:p<0.75?1:(1-p)/0.25); ctx.imageSmoothingEnabled=spriteSheetSmoothing(ms);
+    ctx.save(); ctx.globalAlpha = opacity*(f.remains?1:p<0.75?1:(1-p)/0.25); ctx.imageSmoothingEnabled=spriteSheetSmoothing(ms,s);
     if(f.e.flip){ ctx.translate(px+TS/2,0); ctx.scale(-1,1); ctx.translate(-(px+TS/2),0); }
     ctx.drawImage(ms.img, fr*cell, c.row*cell, cell, cell, dx, dy, cell*s, cell*s); ctx.restore();
     return;
@@ -81,7 +94,7 @@ function drawCorpse(f, p, opacity){
     ctx.save();
     ctx.globalAlpha = opacity*(f.remains?1:p<0.6?1:Math.max(0,(1-p)/0.4));
     ctx.translate(fx0, fy0); ctx.rotate(dir*ease*Math.PI*0.5); ctx.translate(-fx0, -fy0);
-    ctx.imageSmoothingEnabled=spriteSheetSmoothing(ms);
+    ctx.imageSmoothingEnabled=spriteSheetSmoothing(ms,s2);
     ctx.drawImage(ms.img, 0, srow*cell2, cell2, cell2, px+TS/2-(box2[0]+box2[2]/2)*s2, py+TS*0.97-(box2[1]+box2[3])*s2, cell2*s2, cell2*s2);
     if(p<0.25 && typeof whiteCut==='function'){ ctx.globalAlpha*= (0.25-p)/0.25*0.8; ctx.drawImage(whiteCut(ms.img,0,srow*cell2,cell2,cell2), px+TS/2-(box2[0]+box2[2]/2)*s2, py+TS*0.97-(box2[1]+box2[3])*s2, cell2*s2, cell2*s2); }
     ctx.restore();
@@ -114,7 +127,8 @@ function drawFX(){
   for(var i=0;i<fx.length;i++){
     var f=fx[i], p=(now-f.t0)/f.dur;
     if(p>=1){
-      if(f.k==='p' && !f.hit){ f.hit=true; burst(f.bx,f.by, f.arrow?'phys':f.type, f.type==='phys'?6:18, 0.05);
+      if(f.k==='p' && !f.hit){ f.hit=true;
+        if(f.explosion)explosionFx(f.bx,f.by);else burst(f.bx,f.by, f.arrow?'phys':f.type, f.type==='phys'?6:18, 0.05);
         if(!f.silentHit && typeof sfx==='function') sfx(f.sfxHit || hitSfxFor(f.type), {from:{x:f.bx,y:f.by}}); }
       continue;
     }
@@ -126,15 +140,22 @@ function drawFX(){
       var px=(f.x-camX+0.5+f.jitter)*TS, py=(f.y-camY)*TS;
       var rise=TS*0.9*p;
       ctx.globalAlpha = p<0.75 ? 1 : (1-p)/0.25;
-      var fs=Math.round(TS*(f.big?0.62:0.46)*(p<0.12 ? 0.7+p*2.5 : 1));
-      ctx.font='700 '+fs+'px "IBM Plex Mono",monospace'; ctx.textAlign='center'; ctx.textBaseline='middle';
-      ctx.lineWidth=3; ctx.strokeStyle='rgba(0,0,0,.85)'; ctx.strokeText(f.text, px, py+TS*0.45-rise);
-      ctx.fillStyle=f.col; ctx.fillText(f.text, px, py+TS*0.45-rise); ctx.lineWidth=1;
+      var fs=Math.max(9,Math.round(TS*(f.big?0.43:0.33)*(p<0.12 ? 0.7+p*2.5 : 1)));
+      ctx.font='500 '+fs+'px "IBM Plex Mono",monospace'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      var width=ctx.measureText(String(f.text)).width;
+      if(width>TS*1.8){
+        fs=Math.max(9,Math.floor(fs*TS*1.8/width));
+        ctx.font='500 '+fs+'px "IBM Plex Mono",monospace';
+      }
+      var textY=py+TS*(0.45+(f.offsetY||0))-rise;
+      ctx.lineWidth=Math.max(0.8,Math.min(1.5,TS*0.02));
+      ctx.strokeStyle='rgba(0,0,0,.8)'; ctx.strokeText(f.text, px, textY);
+      ctx.fillStyle=f.col; ctx.fillText(f.text, px, textY); ctx.lineWidth=1;
       ctx.globalAlpha=1;
     } else if(f.k==='p'){
       var ease = (f.arrow || f.type==='lightning') ? p : p*p*(3-2*p)*0.35 + p*0.65;
       var cx=f.ax+(f.bx-f.ax)*ease, cy=f.ay+(f.by-f.ay)*ease;
-      var t=TRAIL[f.type]||TRAIL.phys;
+      var t=trailPalette(f.type);
       if(f.arrow){
         var ang=Math.atan2(f.by-f.ay, f.bx-f.ax), ao=spriteOn?objArt('items','item-arrow'):null;
         var hx=(cx-camX+0.5)*TS, hy=(cy-camY+0.5)*TS;
@@ -179,10 +200,16 @@ function drawFX(){
       /* Grid beams preserve gaps in their warning; they never bridge safe cells. */
       ctx.save();ctx.globalCompositeOperation='lighter';ctx.lineCap='round';ctx.lineJoin='round';ctx.beginPath();
       var beamPrior=null;
-      f.tiles.forEach(function(tile){
+      f.tiles.forEach(function(tile,index){
         if(!inb(tile[0],tile[1])||!(revealAll||vis[idxOf(tile[0],tile[1])])){beamPrior=null;return;}
         var prior=beamPrior,x=(tile[0]-camX+.5)*TS,y=(tile[1]-camY+.5)*TS;beamPrior=tile;
-        if(!prior||Math.max(Math.abs(prior[0]-tile[0]),Math.abs(prior[1]-tile[1]))>1)ctx.moveTo(x,y);
+        if(!prior||Math.max(Math.abs(prior[0]-tile[0]),Math.abs(prior[1]-tile[1]))>1){
+          ctx.moveTo(x,y);
+          // A single affected cell still has a visible beam core. A move-only
+          // subpath paints nothing, including a segment isolated by fog.
+          var next=f.tiles[index+1];
+          if(!next||!inb(next[0],next[1])||!(revealAll||vis[idxOf(next[0],next[1])])||Math.max(Math.abs(next[0]-tile[0]),Math.abs(next[1]-tile[1]))>1)ctx.lineTo(x+.01,y);
+        }
         else ctx.lineTo(x,y);
       });
       ctx.globalAlpha=(1-p)*.8;ctx.strokeStyle=f.col;ctx.lineWidth=TS*.18;ctx.stroke();
@@ -213,7 +240,8 @@ function drawFX(){
   ctx.globalAlpha=1;
 }
 function hitSfxFor(type){
-  return {phys:'arrow-hit', fire:'fire-hit', ice:'ice-hit', lightning:'lightning-hit', poison:'earth-hit', earth:'earth-hit', light:'light-hit', dark:'shadow-hit', magic:'magic-missile-hit'}[type] || 'hit-flesh';
+  var sounds={phys:'arrow-hit', fire:'fire-hit', ice:'ice-hit', lightning:'lightning-hit', poison:'earth-hit', earth:'earth-hit', light:'light-hit', dark:'shadow-hit', magic:'magic-missile-hit'};
+  return Object.prototype.hasOwnProperty.call(sounds,type) ? sounds[type] : 'hit-flesh';
 }
 function ringFx(x,y,col,r,o){ fx.push({k:'ring', x:x, y:y, col:col||'#FFF', r:r||2, t0:(o&&o.at)||performance.now(), dur:(o&&o.dur)||450, a:o&&o.a, w:o&&o.w}); }   /* o.at: a later start (2026-09-28) */
 

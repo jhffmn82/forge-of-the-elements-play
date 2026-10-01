@@ -10,7 +10,7 @@ Object.assign(FOODS, {
   ration:     {name:'Ration', nutrition:700, icon:'item-ration'},
   /* anywhere */
   honeycake:  {name:'Honeycake', nutrition:400, icon:'item-honeycake', buff:'regeneration', turns:60, desc:'Regenerate 1% max HP per turn for 60 turns.'},
-  moontart:   {name:'Moonberry Tart', nutrition:400, icon:'item-moontart', buff:'manaflow', turns:60, desc:'Double mana regeneration for 60 turns.'},
+  moontart:   {name:'Moonberry Tart', nutrition:400, icon:'item-moontart', buff:'manaflow', turns:60, desc:'Recover an extra 0.9% of max Mana per turn for 60 turns.'},
   figs:       {name:'Sugared Figs', nutrition:300, icon:'item-figs', buff:'haste', turns:20, desc:'You move, attack and cast 30% faster for 20 turns.'},
   meat:       {name:'Roast Meat', nutrition:550, icon:'item-meat', buff:'might', turns:30, desc:'+20% weapon damage for 30 turns.'},
   /* one per biome, found only there */

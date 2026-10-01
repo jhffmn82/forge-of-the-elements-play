@@ -59,7 +59,7 @@
       fields(e,['rallyUntil','challengeUntil','waterPullReadyAt'],ticks);
       fields(e,['sporeFieldReadyAt','sporeSupportReadyAt','rageReadyAt','teamSearchUntil','searchUntil'],ticks);
       fields(e,['greenPulseAt','brutePushReadyAt','skeletonChargeReadyAt'],ticks);
-      fields(e,['chaosCooldown','chaosDebuffReadyAt','chaosBeamReadyAt','rootSpitReadyAt'],ticks);
+      fields(e,['chaosCooldown','chaosDebuffReadyAt','chaosBeamReadyAt','rootSpitReadyAt','caveSpellReadyAt'],ticks);
       path(e,['st','*'],'bornAt',ticks);
     });
     saved.turn=turn;saved.clock=clock;

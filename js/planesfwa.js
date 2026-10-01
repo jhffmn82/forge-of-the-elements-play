@@ -300,7 +300,7 @@ function fwaPush(t, dx, dy, n){
 function fwaHurt(t, n, type, src, why){
   if(!t || t.hp<=0) return 0;
   var d=applyDamage(t, n, type, src); floatText(t.x, t.y, String(d), type);
-  if(t===player){ if(why) log(why+': <b>'+d+'</b>.','c-you'); if(player.hp<=0){  if(player.hp<=0) death(); } }
+  if(t===player){ if(why) log(why+': '+combatDamageNumber(d,type)+'.','c-you'); if(player.hp<=0){  if(player.hp<=0) death(); } }
   else if(t.hp<=0) kill(t, src);
   return d;
 }
@@ -316,7 +316,7 @@ function fwaTick(){
   /* standing damage: lava beside you, deep water under you, a vent under your feet */
   if(el==='fire'){
     if(!(player.levitate>0) && fwaLavaBeside(player.x, player.y)){
-      fwaHurt(player, sDMG(4+Math.floor(floorNo/4)), 'fire', null, 'The lava beside you scorches you');
+      fwaHurt(player, sDMG(4+Math.floor(floorNo/4)), 'fire', null, 'Lava');
       if(player.hp<=0) return;
     }
     ents.slice().forEach(function(e){
@@ -325,7 +325,7 @@ function fwaTick(){
     });
   } else if(el==='water'){
     if(fwaDeepAt(player.x, player.y) && !(player.levitate>0)){
-      fwaHurt(player, sDMG(4+Math.floor(floorNo/4)), 'ice', null, 'The deep water drags you under');
+      fwaHurt(player, sDMG(4+Math.floor(floorNo/4)), 'ice', null, 'Deep water');
       if(player.hp<=0) return;
       addChill(player);
     }
@@ -333,7 +333,7 @@ function fwaTick(){
   } else if(el==='air'){
     if(fwaVentAt(player.x, player.y) && !player.st.root){
       var a=rng()*6.283, m=fwaPush(player, Math.cos(a), Math.sin(a), 1);
-      if(m){ log('The vent catches you and throws you off your feet.','c-you'); sfx('trap-spark'); burst(player.x, player.y, 'lightning', 14, 0.05); }
+      if(m){ log('Air vent: pushed.','c-you'); sfx('trap-spark'); burst(player.x, player.y, 'lightning', 14, 0.05); }
     }
   }
   /* the telegraphed hazard: marked cells, then it lands two turns later */
@@ -351,9 +351,9 @@ function fwaTick(){
       ents.slice().forEach(function(t){
         if(t.x!==x || t.y!==y || t.hp<=0 || fwaNative(t) || struck.indexOf(t)>=0) return;
         struck.push(t);
-        if(el==='fire'){ fwaHurt(t, roll(7,11)+Math.floor(floorNo/2), 'fire', null, t===player?'Burning rock rains down on you':null); if(t.hp>0) applyStatus(t,'burn',3,sDMG(3)); }
-        else if(el==='water'){ fwaHurt(t, roll(6,10)+Math.floor(floorNo/2), 'ice', null, t===player?'The surge crashes over you':null); if(t.hp>0){ fwaPush(t, pend.dx, pend.dy, 1); if(t===player) addChill(player); } }
-        else { fwaHurt(t, roll(5,9)+Math.floor(floorNo/2), 'phys', null, t===player?'The gale slams into you':null); if(t.hp>0) fwaPush(t, pend.dx, pend.dy, 2); }
+        if(el==='fire'){ fwaHurt(t, roll(7,11)+Math.floor(floorNo/2), 'fire', null, t===player?'Burning rocks':null); if(t.hp>0) applyStatus(t,'burn',3,sDMG(3)); }
+        else if(el==='water'){ fwaHurt(t, roll(6,10)+Math.floor(floorNo/2), 'ice', null, t===player?'Surge':null); if(t.hp>0){ fwaPush(t, pend.dx, pend.dy, 1); if(t===player) addChill(player); } }
+        else { fwaHurt(t, roll(5,9)+Math.floor(floorNo/2), 'phys', null, t===player?'Gale':null); if(t.hp>0) fwaPush(t, pend.dx, pend.dy, 2); }
       });
       if(el==='fire' && rng()<0.4) fireT[i]=Math.max(fireT[i], 3);
     });
@@ -381,7 +381,7 @@ function fwaTick(){
   if(!cells.length) return;
   floorMeta.fwaPending={cells:cells, at:turn+2, dx:dir[0], dy:dir[1]};
   floorMeta.marks=(floorMeta.marks||[]).concat([{cells:cells, col: el==='fire' ? '#FF7A2A' : el==='water' ? '#5CC8FF' : '#DCEEFF', until:turn+2, kind:'fwa'}]);
-  log(el==='fire' ? 'The roof above you glows red...' : el==='water' ? 'The water draws back around you...' : 'The air goes still, and then it starts to move...','c-you');
+  log(el==='fire' ? '<b>Burning rocks:</b> leave marked ground!' : el==='water' ? '<b>Surge:</b> leave marked water!' : '<b>Gale:</b> leave its path!','c-you',{priority:'warning'});
 }
 
 
@@ -408,7 +408,7 @@ function elementalPlaneBehavior(e){
     if(inLine && see && d<=6 && e.zapCd<=0){
       e.zapCd=2; setClip(e,'attack');
       if(typeof boltFx==='function') boltFx(e.x, e.y, player.x, player.y, 'lightning', {});
-      fwaHurt(player, roll(e.dmg[0], e.dmg[1]), 'lightning', e, 'The totem discharges down the line');
+      fwaHurt(player, roll(e.dmg[0], e.dmg[1]), 'lightning', e, 'Thunder Totem');
       if(player.hp>0 && rng()<0.25) applyStatus(player,'stun',1);
        return true;
     }
@@ -423,7 +423,7 @@ function elementalPlaneBehavior(e){
       e.x=land.x; e.y=land.y; e._lx=undefined; e.hopCd=3;
       fwaBurnGround(e.x, e.y);
       burst(e.x, e.y, 'fire', 14, 0.05);
-      if(vis[idxOf(e.x,e.y)]) log('The <b>Cinder Imp</b> hops at you, and the stone burns where it lands.','c-you');
+      if(vis[idxOf(e.x,e.y)]) log('Cinder Imp: leaps; ground ignited.','c-you');
        return true;
     }
   }
@@ -441,20 +441,20 @@ function elementalPlaneBehavior(e){
     sparkleFx(player.x, player.y, 'magic', 20);
     var step=fwaPush(player, e.x-player.x, e.y-player.y, 1);
     if(step)player.waterPullRecoveryUntil=worldNow()+200;
-    log('The <b>Siren</b> sings. '+(step?'Her song draws you one step closer.':'You hold your ground.'),'c-you');
+    log('Siren song: '+(step?'pulled 1 tile.':'resisted.'),'c-you');
      return true;
   }
   if(kind==='drowned' && e.state==='hunt' && d>=2 && d<=4 && see && waterPullReady && fwaSees(e)){
     e.waterPullReadyAt=worldNow()+500; setClip(e,'attack');
     var got=fwaPush(player, e.x-player.x, e.y-player.y, 1);
-    if(got){ player.waterPullRecoveryUntil=worldNow()+200;log('The <b>Drowned One</b> hauls you one tile toward it.','c-you'); sfx('trap-web',{from:e}); }
+    if(got){ player.waterPullRecoveryUntil=worldNow()+200;log('Drowned One: pulled 1 tile.','c-you'); sfx('trap-web',{from:e}); }
      return true;
   }
   if(kind==='hawk' && canActorMove(e) && e.state==='hunt' && d>=3 && d<=5 && see && (e.swoopCd=(e.swoopCd||0)-1)<=0){
     var spot=nearFree(player.x, player.y, 1);
     if(spot){
       e.swoopCd=4; e.x=spot.x; e.y=spot.y; e._lx=undefined; setClip(e,'attack');
-      var hd=fwaHurt(player, roll(e.dmg[0], e.dmg[1]), 'phys', e, 'The <b>Storm Hawk</b> stoops on you');
+      var hd=fwaHurt(player, roll(e.dmg[0], e.dmg[1]), 'phys', e, 'Storm Hawk');
       if(player.hp>0 && hd>0) fwaPush(player, player.x-e.x, player.y-e.y, 1);
        return true;
     }
@@ -462,12 +462,12 @@ function elementalPlaneBehavior(e){
   if(kind==='wisp' && see && e.state==='hunt' && d<=2 && (e.gustCd=(e.gustCd||0)-1)<=0){
     e.gustCd=3;
     var g=fwaPush(player, player.x-e.x, player.y-e.y, 1);
-    if(g){ log('The <b>Wind Wisp</b> shoves you back a tile.','c-you'); burst(player.x, player.y, 'lightning', 10, 0.04); }
+    if(g){ log('Wind Wisp: pushed 1 tile.','c-you'); burst(player.x, player.y, 'lightning', 10, 0.04); }
      return true;
   }
   /* --- the elites ------------------------------------------------------------------------------- */
   if(kind==='emberlord' && e.state==='hunt'){
-    if(e.hp <= e.maxhp*0.5 && !e.kindled){ e.kindled=true; log('<b>The Emberlord</b> flares white-hot. The floor around him catches.','c-you'); SHAKE=8; }
+    if(e.hp <= e.maxhp*0.5 && !e.kindled){ e.kindled=true; log('<b>Emberlord enraged:</b> ground ignites!','c-you'); SHAKE=8; }
     if(e.kindled) for(var ky=-1;ky<=1;ky++) for(var kx=-1;kx<=1;kx++) fwaBurnGround(e.x+kx, e.y+ky);
     e.eruptCd=(e.eruptCd||0)-1;
     if(e.erupt && turn>=e.erupt.at){
@@ -477,7 +477,7 @@ function elementalPlaneBehavior(e){
       cells.forEach(function(i){
         var ex=i%MW, ey=(i/MW)|0; burst(ex, ey, 'fire', 18, 0.06);
         ents.slice().forEach(function(t){ if(t.x===ex && t.y===ey && t.hp>0 && !fwaNative(t)){
-          fwaHurt(t, roll(14,20)+Math.floor(floorNo/2), 'fire', e, t===player?'<b>The Emberlord\'s eruption</b> tears up through the floor':null);
+          fwaHurt(t, roll(14,20)+Math.floor(floorNo/2), 'fire', e, t===player?'Emberlord eruption':null);
           if(t.hp>0) applyStatus(t,'burn',3,sDMG(4)); } });
         if(rng()<0.5) fireT[i]=Math.max(fireT[i], 3);
       });
@@ -488,7 +488,7 @@ function elementalPlaneBehavior(e){
       if(ec.length){
         e.erupt={cells:ec, at:turn+2}; e.eruptCd=6; setClip(e,'attack');
         floorMeta.marks=(floorMeta.marks||[]).concat([{cells:ec, col:'#FF5A10', until:turn+2, kind:'erupt'}]);
-        log('<b>The Emberlord</b> drives a fist into the basalt. The ground around you cracks and glows. Step off the marked stones!','c-you');
+        log('<b>Emberlord eruption:</b> leave marked ground!','c-you',{priority:'warning'});
          return true;
       }
     }
@@ -502,18 +502,18 @@ function elementalPlaneBehavior(e){
       if(up){ e.x=up.x; e.y=up.y; e._lx=undefined; }
       e.submerged=false; e.diveCd=5; SHAKE=6;
       burst(e.x, e.y, 'ice', 30, 0.07);
-      log('<b>The Leviathan Eel</b> bursts up out of the water beside you!','c-you');
+      log('<b>Leviathan Eel emerges!</b>','c-you');
        return true;
     }
     if(canActorMove(e)&&e.diveCd<=0 && at(e.x,e.y)===WATER && d>1){
       e.submerged=true; e.diveCd=2; burst(e.x, e.y, 'ice', 20, 0.05);
-      log('<b>The Leviathan Eel</b> slides under the water. Nothing can touch it down there.','c-info');
+      log('Leviathan Eel dives: invulnerable.','c-info');
        return true;
     }
     e.sweepCd=(e.sweepCd||0)-1;
     if(d<=1 && e.sweepCd<=0){
       e.sweepCd=4; setClip(e,'attack'); SHAKE=7;
-      fwaHurt(player, roll(e.dmg[0], e.dmg[1]), 'phys', e, '<b>The Leviathan\'s tail</b> sweeps you off your feet');
+      fwaHurt(player, roll(e.dmg[0], e.dmg[1]), 'phys', e, 'Leviathan tail');
       if(player.hp>0){ fwaPush(player, player.x-e.x, player.y-e.y, 3); applyStatus(player,'stun',1); }
        return true;
     }
@@ -524,13 +524,13 @@ function elementalPlaneBehavior(e){
       e.cycloneCd=6; setClip(e,'attack');
       var pulled=fwaPush(player, e.x-player.x, e.y-player.y, 3);
       applyStatus(player,'stun',1); burst(player.x, player.y, 'lightning', 24, 0.06); SHAKE=6;
-      log('<b>The Tempest Djinn</b> opens the whirlwind'+(pulled?' and drags you '+pulled+' tile'+(pulled===1?'':'s')+' in':'')+'. You cannot keep your feet.','c-you');
+      log('Tempest Djinn: whirlwind'+(pulled?'; pulled '+pulled+' tile'+(pulled===1?'':'s'):'')+'.','c-you');
        return true;
     }
     if(d>=2 && see && e.boltCd<=0 && fwaSees(e)){
       e.boltCd=3; setClip(e,'attack');
       if(typeof boltFx==='function') boltFx(e.x, e.y, player.x, player.y, 'lightning', {});
-      fwaHurt(player, roll(e.dmg[0], e.dmg[1]), 'lightning', e, '<b>The Tempest Djinn</b> throws lightning at you');
+      fwaHurt(player, roll(e.dmg[0], e.dmg[1]), 'lightning', e, 'Tempest Djinn');
        return true;
     }
   }

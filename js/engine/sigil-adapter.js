@@ -3,23 +3,23 @@ var SIGIL_CASTS={
 "transmutation":function(context){return transmutationPicker(context);},
 "firestorm":function(context){var use=context.use,F=floorNo,bountySpots=context.spots;
 burst(player.x,player.y,'fire',60,0.12); ents.slice().forEach(function(e){ if(e.foe && dist(player,e)<=3){ var fd=applyDamage(e,8+floorNo,'fire',player); floatText(e.x,e.y,String(fd),'fire'); applyStatus(e,'burn',3,sDMG(2)); if(e.hp<=0) kill(e,player); } });
-    for(var dy=-2;dy<=2;dy++) for(var dx=-2;dx<=2;dx++) if(dx||dy) ignite(player.x+dx,player.y+dy,'player'); log('Flames burst out around you.','c-fire');
+    for(var dy=-2;dy<=2;dy++) for(var dx=-2;dx<=2;dx++) if(dx||dy) ignite(player.x+dx,player.y+dy,'player'); log('Firestorm: ground ignited.','c-fire');
 },
 "mana":function(context){var use=context.use,F=floorNo,bountySpots=context.spots;
-var m=Math.round(player.maxmp*0.5); player.mp=Math.min(player.maxmp,player.mp+m); floatText(player.x,player.y,'+'+m,'ice'); log('Cool water fills your mind. +'+m+' mana.','c-good');
+var before=player.mp,m=Math.round(player.maxmp*0.5);player.mp=Math.min(player.maxmp,player.mp+m);var restored=Number((player.mp-before).toFixed(1));if(restored>0)floatText(player.x,player.y,'+'+restored,'ice');log('Deep Well: +'+restored+' Mana.','c-good');
 player.buffs.manaflow=Math.max(player.buffs.manaflow||0,20);
 },
 "levitate":function(context){var use=context.use,F=floorNo,bountySpots=context.spots;
-player.levitate=Math.max(player.levitate||0,25); gameEffects.clear(player,'root'); gameEffects.clear(player,'web'); log('Floating: 25 turns. Roots and webs cleared.','c-good'); sparkleFx(player.x,player.y,'lightning',20);
+player.levitate=Math.max(player.levitate||0,25); gameEffects.clear(player,'root'); gameEffects.clear(player,'web'); log('Floating; roots and webs cleared.','c-good'); sparkleFx(player.x,player.y,'lightning',20);
 },
 "stoneskin":function(context){var use=context.use,F=floorNo,bountySpots=context.spots;
-applyStatus(player,'stone',15); log('Stone Skin: 15 turns. Poison and Stun cleared.','c-good');
+applyStatus(player,'stone',15); log('Stone Skin; Poison and Stun cleared.','c-good');
 },
 "heal":function(context){var use=context.use,F=floorNo,bountySpots=context.spots;
 healPlayer(Math.round(player.maxhp*.35));player.buffs.afterglow=15;sparkleFx(player.x,player.y,'heal',30);
 },
 "vanish":function(context){var use=context.use,F=floorNo,bountySpots=context.spots;
-player.hidden=5; ents.forEach(function(e){ if(e.foe && e.state==='hunt'){ e.state='wander'; e.lastSeen=null; } }); log('Shadows swallow you.','c-good'); sfx('vanish');
+player.hidden=5; ents.forEach(function(e){ if(e.foe && e.state==='hunt'){ e.state='wander'; e.lastSeen=null; } }); log('Hidden: 5 turns.','c-good'); sfx('vanish');
 },
 "identify":function(context){var use=context.use,F=floorNo,bountySpots=context.spots;
 Object.keys(SIGILS).forEach(function(k){ if(player.bag.some(function(b){ return b.kind==='sigil' && b.data.use===k; })) identifySigil(k); });
@@ -34,33 +34,33 @@ var spots=[]; for(var y=0;y<MH;y++) for(var x=0;x<MW;x++) if(walkable(x,y) && vi
 },
 "naturesbounty":function(context){var use=context.use,F=floorNo,bountySpots=context.spots;
 ['honeycake','skewer','moontart'].forEach(function(food,i){var spot=bountySpots[i];items.push({kind:'food',food:food,x:spot.x,y:spot.y});sparkleFx(spot.x,spot.y,'heal',12);});
-    log('A Honeycake, a Mushroom Skewer and a Moonberry Tart appear nearby.','c-good');
+    log("Nature's Bounty: Honeycake, Mushroom Skewer, Moonberry Tart.",'c-good');
 },
 "firestorm2":function(context){var use=context.use,F=floorNo,bountySpots=context.spots;
 burst(player.x,player.y,'fire',90,0.14); visibleFoes(4).forEach(function(e){ hurt(e, 14+F, 'fire'); if(e.hp>0) applyStatus(e,'burn',4,sDMG(3)); });
-    for(var dy=-3;dy<=3;dy++) for(var dx=-3;dx<=3;dx++) if(dx||dy) ignite(player.x+dx,player.y+dy,'player'); log('A firestorm roars out around you.','c-fire');
+    for(var dy=-3;dy<=3;dy++) for(var dx=-3;dx<=3;dx++) if(dx||dy) ignite(player.x+dx,player.y+dy,'player'); log('Firestorm: ground ignited.','c-fire');
 },
 "identify2":function(context){var use=context.use,F=floorNo,bountySpots=context.spots;
 Object.keys(SIGILS).forEach(function(k){ identifySigilQuiet(k); });
     var list=wornGear().concat(player.bag.filter(function(b){ return b.data && b.data.unid; }).map(function(b){ return b.data; }));
     var n=0; list.forEach(function(it){ if(identifyGear(it, true)) n++; }); refreshBagNames();
-    douseAround(5); log('Clear water runs over everything you own. You know every sigil'+(n?' and '+n+' piece'+(n>1?'s':'')+' of gear':'')+'.','c-kill');
+    douseAround(5); log('All sigils identified'+(n?'; '+n+' gear identified':'')+'.','c-kill');
 },
 "levitate2":function(context){var use=context.use,F=floorNo,bountySpots=context.spots;
-player.levitate=Math.max(player.levitate||0,60); gameEffects.clear(player,'root'); gameEffects.clear(player,'web'); player.buffs.haste=Math.max(player.buffs.haste||0,10); derive(player); log('Floating: 60 turns. Haste: 10 turns. Roots and webs cleared.','c-good'); sparkleFx(player.x,player.y,'lightning',30);
+player.levitate=Math.max(player.levitate||0,60); gameEffects.clear(player,'root'); gameEffects.clear(player,'web'); player.buffs.haste=Math.max(player.buffs.haste||0,10); derive(player); log('Floating, Haste; roots and webs cleared.','c-good'); sparkleFx(player.x,player.y,'lightning',30);
 },
 "haste":function(context){
 player.buffs.haste=Math.max(player.buffs.haste||0,20);derive(player);
 log('Haste: +30% speed for 20 turns.','c-good');sparkleFx(player.x,player.y,'lightning',24);
 },
 "stoneskin2":function(context){var use=context.use,F=floorNo,bountySpots=context.spots;
-applyStatus(player,'stone',30); giveWard(player.maxhp*0.2, 30); log('Stone Skin and shield: 30 turns. Poison and Stun cleared.','c-good');
+applyStatus(player,'stone',30); giveWard(player.maxhp*0.2, 30); log('Stone Skin, shield; Poison and Stun cleared.','c-good');
 },
 "heal2":function(context){var use=context.use,F=floorNo,bountySpots=context.spots;
 var restored=player.maxhp-player.hp;player.hp=player.maxhp;gameDamage.emit('healingApplied',{target:player,restored:restored});cleanseAll();sparkleFx(player.x,player.y,'heal',30);
 },
 "vanish2":function(context){var use=context.use,F=floorNo,bountySpots=context.spots;
-player.hidden=5; ents.forEach(function(e){ if(e.foe && e.state==='hunt'){ e.state='wander'; e.lastSeen=null; } }); log('You fold into the shadows.','c-good');
+player.hidden=5; ents.forEach(function(e){ if(e.foe && e.state==='hunt'){ e.state='wander'; e.lastSeen=null; } }); log('Hidden: 5 turns.','c-good');
 },
 "cinder":function(context){var use=context.use,F=floorNo,bountySpots=context.spots;
 player.buffs.cinder=10; derive(player); player._cinderAt={x:player.x,y:player.y}; log('Cinder Stride: +50% speed; leave burning ground.','c-fire');
@@ -77,19 +77,19 @@ raiseSmoke();
 rotPicker(context);
 },
 "sunburst":function(context){var use=context.use,F=floorNo,bountySpots=context.spots;
-ringFx(player.x,player.y,'#FFF1CC',5); visibleFoes().forEach(function(e){ hurt(e, 6+F, 'light'); if(e.hp>0) applyStatus(e,'blind',3); }); log('A blinding sun flares from your hand.','c-good');
+ringFx(player.x,player.y,'#FFF1CC',5); visibleFoes().forEach(function(e){ hurt(e, 6+F, 'light'); if(e.hp>0) applyStatus(e,'blind',3); }); log('Sunburst: enemies Blinded.','c-good');
 },
 "storm":function(context){var use=context.use,F=floorNo,bountySpots=context.spots;
 var foes=visibleFoes().sort(function(a,b){ return dist(player,a)-dist(player,b); });
     foes.slice(0,3).forEach(function(e){ var wet=isWet(e); hurt(e, Math.round((10+F)*(wet?1.5:1)), 'lightning'); if(e.hp>0 && rng()<0.5) applyStatus(e,'stun',1); burst(e.x,e.y,'lightning',16,0.06); });
-    foes.forEach(function(e){ if(e.hp>0){ e.st.wet={t:5}; } }); log('Thunder cracks and rain hammers down.','c-good');
+    foes.forEach(function(e){ if(e.hp>0){ e.st.wet={t:5}; } }); log('Tempest: enemies Wet.','c-good');
 },
 "mire":function(context){var use=context.use,F=floorNo,bountySpots=context.spots;
-ents.forEach(function(e){ if(e.foe && dist(e,player)<=3){ applyStatus(e,'root',3); e.st.wet={t:6}; burst(e.x,e.y,'earth',8,0.04); } }); log('The ground turns to sucking mud.','c-good');
+ents.forEach(function(e){ if(e.foe && dist(e,player)<=3){ applyStatus(e,'root',3); e.st.wet={t:6}; burst(e.x,e.y,'earth',8,0.04); } }); log('Quagmire: enemies Rooted, Wet.','c-good');
 },
 "purify":function(context){var use=context.use,F=floorNo,bountySpots=context.spots;
 cleanseAll(); healPlayer(Math.round(player.maxhp*0.2));
-    var broke=0; wornGear().forEach(function(it){ if(breakCurse(it)) broke++; }); log('Clear water washes over you'+(broke?' and your gear':'')+'.','c-good');
+    var broke=0; wornGear().forEach(function(it){ if(breakCurse(it)) broke++; }); log('Cleansed'+(broke?'; '+broke+' curse'+(broke===1?'':'s')+' removed':'')+'.','c-good');
 },
 "recall":function(context){var use=context.use,F=floorNo,bountySpots=context.spots;
 var g2=null; for(var j=0;j<map.length;j++){ if(map[j]===STAIRS || (map[j]===EXIT && floorMeta.exitOpen)){ g2={x:j%MW, y:(j/MW)|0}; break; } }
@@ -97,10 +97,10 @@ var g2=null; for(var j=0;j<map.length;j++){ if(map[j]===STAIRS || (map[j]===EXIT
     if(land){ sparkleFx(player.x,player.y,'lightning',20); player.x=land.x; player.y=land.y; player._lx=undefined; seen[idxOf(g2.x,g2.y)]=1; sparkleFx(player.x,player.y,'lightning',20); computeFOV(); log('Returned to the exit.','c-good'); }
 },
 "aegis":function(context){var use=context.use,F=floorNo,bountySpots=context.spots;
-giveWard(player.maxhp*0.5, 15); applyStatus(player,'stone',15); ringFx(player.x,player.y,'#F6E7B0',2.5); log('A shining aegis settles around you ('+player.ward+').','c-good');
+giveWard(player.maxhp*0.5, 15); applyStatus(player,'stone',15); ringFx(player.x,player.y,'#F6E7B0',2.5); log('Aegis: '+player.ward+' ward.','c-good');
 },
 "wisdom":function(context){var use=context.use,F=floorNo,bountySpots=context.spots;
-var progress=player.xp,need=(typeof xpToNext==='function' ? xpToNext(player.level) : player.xpNext);player.xp=0;gainXP(player.cls==='tourist'?Math.ceil(need/1.25):need);player.xp=progress; log('Understanding floods in.','c-kill');
+var progress=player.xp,need=(typeof xpToNext==='function' ? xpToNext(player.level) : player.xpNext);player.xp=0;gainXP(player.cls==='tourist'?Math.ceil(need/1.25):need);player.xp=progress; log('Level gained.','c-kill');
 },
 "ascension":function(context){var use=context.use,F=floorNo,bountySpots=context.spots;
 sigilUpgradePicker(context);

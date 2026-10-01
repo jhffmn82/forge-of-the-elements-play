@@ -169,7 +169,7 @@ function pressSlotIndex(i){
   }
 }
 
-function abilityBar(){renderHotbarSlots();renderAmuletHotbar();renderAmuletCharges();renderHotbarCooldowns();bindHotbarCards();bindHotbarClickSpells();renderTouchHotbar();}
+function abilityBar(){renderHotbarSlots();renderAmuletHotbar();renderAmuletCharges();renderHotbarCooldowns();bindHotbarCards();bindHotbarClickSpells();renderTouchHotbar();if(typeof FoteResponsiveHUD!=='undefined')FoteResponsiveHUD.syncTouchControls();}
 
 function compactHUDChips(){
 

@@ -60,23 +60,57 @@ if($('bArt'))$('bArt').textContent=spriteOn?'Art: sprites':'Art: blocks';
     '.seg{display:inline-flex;border:1px solid var(--edge);border-radius:4px;overflow:hidden}',
     '.seg button{border:0;border-right:1px solid var(--edge);background:var(--panel-2);color:var(--ash);padding:3px 9px;font-size:11px;border-radius:0}',
     '.seg button:last-child{border-right:0} .seg button.on{background:#3A2E1C;color:var(--gold)}',
+    '.opt-appearance{flex-wrap:wrap;align-items:center}',
+    '.opt-appearance>.seg{flex:0 1 auto;flex-wrap:wrap;min-width:0;max-width:100%}',
+    '.opt-appearance>.seg button{flex:0 0 auto;min-height:28px;padding:4px 9px;font-size:11px;line-height:1.2}',
+    '.opt-appearance>.seg button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}',
+    'body.touch .opt-appearance>.seg button{min-height:34px}',
     '.legend{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;font-size:11px} .legend b{color:var(--gold);font-weight:600} .legend span{color:var(--dim)}'
   ].join('\n');
   document.head.appendChild(st);
 })();
-function segHTML(id, opts, cur){ return '<span class="seg" data-seg="'+id+'">'+opts.map(function(o){ var selected=String(o[0])===String(cur);return '<button data-v="'+o[0]+'" class="'+(selected?'on':'')+'" aria-pressed="'+selected+'">'+o[1]+'</button>'; }).join('')+'</span>'; }
+function segHTML(id, opts, cur, label){ return '<span class="seg" data-seg="'+id+'"'+(label?' role="group" aria-labelledby="'+label+'"':'')+'>'+opts.map(function(o){ var selected=String(o[0])===String(cur);return '<button type="button" data-v="'+o[0]+'" class="'+(selected?'on':'')+'" aria-pressed="'+selected+'">'+o[1]+'</button>'; }).join('')+'</span>'; }
 var UI_THEMES={ember:'Ember (Default)',forge:'Forge',vellum:'Vellum - Ivory','vellum-sand':'Vellum - Sand','vellum-ash':'Vellum - Ash',charcoal:'Charcoal',slate:'Slate',obsidian:'Obsidian',runestone:'Runestone'}, UI_TEXT_SIZES={small:'Small',normal:'Standard',large:'Large'};
-var UI_PHONE_PAD_SIZES={large:'Large (Default)',compact:'Compact'};
-var UI_THEME='ember',UI_TEXT_SIZE='normal',UI_OPACITY=100,UI_SIDE='right',UI_DESKTOP_PAD=false,UI_PHONE_PAD_SIZE='large';
+var UI_PHONE_PAD_SIZES={compact:'Compact',normal:'Normal (Default)',large:'Large'};
+var UI_TOUCH_LAYOUTS={unified:'Map and sidebar',classic:'Classic touch layout'},UI_HOTBAR_LAYOUTS={auto:'Auto',vertical:'Vertical',horizontal:'Horizontal'};
+var UI_PAD_SIDES={auto:'With UI',left:'Left',right:'Right'},UI_PAD_SIDE='right';
+try{var savedPadSide=localStorage.getItem('fote-ui-pad-side');if(Object.prototype.hasOwnProperty.call(UI_PAD_SIDES,savedPadSide))UI_PAD_SIDE=savedPadSide;}catch(e){}
+var UI_HUD_MODES={minimal:'Minimal (Default)',traditional:'Traditional'},UI_HUD_MODE='minimal',UI_HUD_PREVIEW=null;
+try{var savedHUD=localStorage.getItem('fote-ui-hud-mode');if(Object.prototype.hasOwnProperty.call(UI_HUD_MODES,savedHUD))UI_HUD_MODE=savedHUD;}catch(e){}
+try{var previewHUD=new URLSearchParams(location.search).get('hud');if(Object.prototype.hasOwnProperty.call(UI_HUD_MODES,previewHUD))UI_HUD_PREVIEW=previewHUD;}catch(e){}
+function uiHudMode(){return UI_HUD_PREVIEW||UI_HUD_MODE;}
+function setUIHudMode(mode){
+  if(!Object.prototype.hasOwnProperty.call(UI_HUD_MODES,mode))return false;
+  // A preview URL never writes preferences. An explicit control choice does,
+  // and takes effect immediately for the rest of this page's preview session.
+  UI_HUD_MODE=mode;UI_HUD_PREVIEW=null;
+  try{localStorage.setItem('fote-ui-hud-mode',mode);}catch(e){}
+  applyUIAppearance();return true;
+}
+function uiUsesTouchInput(){
+  try{var override=new URLSearchParams(location.search).get('touch');if(override==='0'||override==='1')return override==='1';}catch(e){}
+  return !!((typeof MOBILE!=='undefined'&&MOBILE)||(typeof navigator!=='undefined'&&navigator.maxTouchPoints>0)||(typeof matchMedia==='function'&&matchMedia('(pointer:coarse)').matches));
+}
+function uiHotbarLayout(){return UI_HOTBAR_LAYOUT==='auto'?(uiUsesTouchInput()?'vertical':'horizontal'):UI_HOTBAR_LAYOUT;}
+var UI_TOUCH_LAYOUT='unified',UI_HOTBAR_LAYOUT=uiUsesTouchInput()?'vertical':'horizontal',UI_TOUCH_PAD=true;
+try{UI_TOUCH_LAYOUT=localStorage.getItem('fote-ui-touch-layout')||UI_TOUCH_LAYOUT;UI_HOTBAR_LAYOUT=localStorage.getItem('fote-ui-hotbar-layout')||UI_HOTBAR_LAYOUT;UI_TOUCH_PAD=localStorage.getItem('fote-ui-touch-pad')!=='off';}catch(e){}
+var UI_THEME='ember',UI_TEXT_SIZE='normal',UI_OPACITY=100,UI_SIDE='left',UI_DESKTOP_PAD=false,UI_PHONE_PAD_SIZE='normal';
 try{UI_SIDE=localStorage.getItem('fote-ui-side')||localStorage.getItem('fote-study-pad-side')||UI_SIDE;UI_DESKTOP_PAD=(localStorage.getItem('fote-ui-desktop-pad')||localStorage.getItem('fote-study-desktop-pad'))==='shown';}catch(e){}
-if(UI_SIDE!=='left'&&UI_SIDE!=='right')UI_SIDE='right';
-try{UI_THEME=localStorage.getItem('fote-ui-theme')||UI_THEME;UI_TEXT_SIZE=localStorage.getItem('fote-ui-text')||UI_TEXT_SIZE;UI_OPACITY=Number(localStorage.getItem('fote-ui-opacity')||100);UI_PHONE_PAD_SIZE=localStorage.getItem('fote-ui-phone-pad-size')||UI_PHONE_PAD_SIZE;}catch(e){}
+if(UI_SIDE!=='left'&&UI_SIDE!=='right')UI_SIDE='left';
+try{UI_THEME=localStorage.getItem('fote-ui-theme')||UI_THEME;UI_TEXT_SIZE=localStorage.getItem('fote-ui-text')||UI_TEXT_SIZE;UI_OPACITY=Number(localStorage.getItem('fote-ui-opacity')||100);UI_PHONE_PAD_SIZE=localStorage.getItem('fote-ui-touch-pad-size')||(localStorage.getItem('fote-ui-phone-pad-size')==='compact'?'compact':'normal');}catch(e){}
 function applyUIAppearance(){
-  if(!UI_THEMES[UI_THEME])UI_THEME='ember';
-  if(!UI_TEXT_SIZES[UI_TEXT_SIZE])UI_TEXT_SIZE='normal';
-  if(!UI_PHONE_PAD_SIZES[UI_PHONE_PAD_SIZE])UI_PHONE_PAD_SIZE='large';
+  if(!Object.prototype.hasOwnProperty.call(UI_THEMES,UI_THEME))UI_THEME='ember';
+  if(!Object.prototype.hasOwnProperty.call(UI_TEXT_SIZES,UI_TEXT_SIZE))UI_TEXT_SIZE='normal';
+  if(!Object.prototype.hasOwnProperty.call(UI_PHONE_PAD_SIZES,UI_PHONE_PAD_SIZE))UI_PHONE_PAD_SIZE='normal';
+  if(!Object.prototype.hasOwnProperty.call(UI_TOUCH_LAYOUTS,UI_TOUCH_LAYOUT))UI_TOUCH_LAYOUT='unified';
+  if(!Object.prototype.hasOwnProperty.call(UI_HOTBAR_LAYOUTS,UI_HOTBAR_LAYOUT))UI_HOTBAR_LAYOUT=uiUsesTouchInput()?'vertical':'horizontal';
+  if(!Object.prototype.hasOwnProperty.call(UI_PAD_SIDES,UI_PAD_SIDE))UI_PAD_SIDE='right';
+  if(!Object.prototype.hasOwnProperty.call(UI_HUD_MODES,UI_HUD_MODE))UI_HUD_MODE='minimal';
   document.body.dataset.uiTheme=UI_THEME;document.body.dataset.uiText=UI_TEXT_SIZE;
+  document.body.dataset.uiHudMode=uiHudMode();
   document.body.dataset.uiPhonePad=UI_PHONE_PAD_SIZE;
+  document.body.dataset.uiTouchPad=UI_TOUCH_PAD?'on':'off';
+  document.body.dataset.uiPadSide=UI_PAD_SIDE;
   document.body.style.setProperty('--ui-text-scale',UI_TEXT_SIZE==='large'?'1.12':UI_TEXT_SIZE==='small'?'.9':'1');
   UI_OPACITY=Number.isFinite(UI_OPACITY)?Math.max(10,Math.min(100,UI_OPACITY)):100;
   document.body.classList.toggle('ui-paper-faded',UI_THEME.indexOf('vellum')===0&&UI_OPACITY<65);
@@ -85,8 +119,23 @@ function applyUIAppearance(){
   if(typeof FoteResponsiveHUD!=='undefined')FoteResponsiveHUD.relayout();
 }
 applyUIAppearance();
-function appearanceSelect(id,label,choices,value){
-  return '<label class="optrow"><span>'+label+'</span><select id="'+id+'">'+Object.keys(choices).map(function(k){return '<option value="'+k+'"'+(k===value?' selected':'')+'>'+choices[k]+'</option>';}).join('')+'</select></label>';
+function appearanceSegments(id,label,choices,value){
+  return '<div class="optrow opt-appearance"><span id="'+id+'Label">'+label+'</span>'+segHTML(id,Object.keys(choices).map(function(k){return[k,choices[k]];}),value,id+'Label')+'</div>';
+}
+var UI_APPEARANCE_CHOICES={uiHudMode:UI_HUD_MODES,uiControlsSide:{left:'Left',right:'Right'},uiSide:{left:'Left',right:'Right'},uiPadSide:UI_PAD_SIDES,uiTouchLayout:UI_TOUCH_LAYOUTS,uiHotbarLayout:UI_HOTBAR_LAYOUTS,uiPhonePadSize:UI_PHONE_PAD_SIZES,uiTheme:UI_THEMES,uiTextSize:UI_TEXT_SIZES};
+function setAppearanceSetting(id,value){
+  if(!Object.prototype.hasOwnProperty.call(UI_APPEARANCE_CHOICES,id)||!Object.prototype.hasOwnProperty.call(UI_APPEARANCE_CHOICES[id],value))return false;
+  if(id==='uiHudMode')return setUIHudMode(value);
+  var key;
+  if(id==='uiControlsSide'||id==='uiSide'){UI_SIDE=id==='uiControlsSide'?(value==='left'?'right':'left'):value;key='fote-ui-side';value=UI_SIDE;}
+  if(id==='uiPadSide'){UI_PAD_SIDE=value;key='fote-ui-pad-side';}
+  if(id==='uiTouchLayout'){UI_TOUCH_LAYOUT=value;key='fote-ui-touch-layout';}
+  if(id==='uiHotbarLayout'){UI_HOTBAR_LAYOUT=value;key='fote-ui-hotbar-layout';}
+  if(id==='uiPhonePadSize'){UI_PHONE_PAD_SIZE=value;key='fote-ui-touch-pad-size';}
+  if(id==='uiTheme'){UI_THEME=value;key='fote-ui-theme';}
+  if(id==='uiTextSize'){UI_TEXT_SIZE=value;key='fote-ui-text';}
+  try{localStorage.setItem(key,value);}catch(e){}
+  applyUIAppearance();return true;
 }
 function settingsHTML(){
   var h='<div class="optgrid"><div><div class="sec">Key bindings <span style="text-transform:none;letter-spacing:0">(click, then press a key; Esc cancels)</span></div><div class="binds">';
@@ -102,11 +151,18 @@ function settingsHTML(){
      '<label class="optrow"><span>Effects volume</span><input type="range" id="volSfx" min="0" max="100" value="'+Math.round((AUDIO.vol.sfx||0)*100)+'"></label>'+
      '<label class="optrow"><span>Music volume</span><input type="range" id="volMusic" min="0" max="100" value="'+Math.round((AUDIO.vol.music||0)*100)+'"></label>'+
      '<div class="sec">Display</div>'+
-     appearanceSelect('uiSide','Status / log side',{left:'Left',right:'Right'},UI_SIDE)+
-     appearanceSelect('uiPhonePadSize','Phone movement pad size',UI_PHONE_PAD_SIZES,UI_PHONE_PAD_SIZE)+
+     appearanceSegments('uiHudMode','Interface',UI_HUD_MODES,uiHudMode())+
+     (uiHudMode()==='minimal'
+       ? appearanceSegments('uiControlsSide','Controls side',{left:'Left',right:'Right'},UI_SIDE==='right'?'left':'right')
+       : appearanceSegments('uiSide','Status / log side',{left:'Left',right:'Right'},UI_SIDE))+
+     appearanceSegments('uiPadSide','Control pad side',UI_PAD_SIDES,UI_PAD_SIDE)+
+     appearanceSegments('uiTouchLayout','Touch layout',UI_TOUCH_LAYOUTS,UI_TOUCH_LAYOUT)+
+     appearanceSegments('uiHotbarLayout','Hotbar orientation',UI_HOTBAR_LAYOUTS,UI_HOTBAR_LAYOUT)+
+     '<div class="optrow"><span>Touch direction pad</span>'+segHTML('touchPad',[['on','On'],['off','Off']],UI_TOUCH_PAD?'on':'off')+'</div>'+
+     appearanceSegments('uiPhonePadSize','Touch control size',UI_PHONE_PAD_SIZES,UI_PHONE_PAD_SIZE)+
      (!(typeof MOBILE!=='undefined'&&MOBILE)?'<div class="optrow"><span>Movement pad</span>'+segHTML('desktopPad', [['shown','Shown'],['hidden','Hidden']],UI_DESKTOP_PAD?'shown':'hidden')+'</div>':'')+
-     appearanceSelect('uiTheme','UI theme',UI_THEMES,UI_THEME)+
-     appearanceSelect('uiTextSize','Text size',UI_TEXT_SIZES,UI_TEXT_SIZE)+
+     appearanceSegments('uiTheme','UI theme',UI_THEMES,UI_THEME)+
+     appearanceSegments('uiTextSize','Text size',UI_TEXT_SIZES,UI_TEXT_SIZE)+
      '<label class="optrow ui-opacity-row"><span>UI transparency <output id="uiOpacityValue" for="uiOpacity">'+(100-UI_OPACITY)+'%</output></span><input type="range" id="uiOpacity" min="0" max="90" step="5" value="'+(100-UI_OPACITY)+'" aria-label="UI transparency" aria-describedby="uiOpacityHint"></label><div id="uiOpacityHint" class="c-info">Fades panel and button backgrounds. Text, icons and bars stay solid.</div>'+
      '<div class="optrow"><span>Map zoom</span>'+segHTML('mapzoom', [['far','Far'],['normal','Normal'],['close','Close'],['closest','Closest']], MAP_ZOOM)+'</div>'+
      '<div class="optrow"><span>Block art</span>'+segHTML('mapart', [['block','On'],['sprite','Off']], spriteOn?'sprite':'block')+'</div>'+
@@ -119,28 +175,24 @@ function settingsHTML(){
   return h;
 }
 function optionsHTML(){return settingsHTML();}
-function refreshOptions(){
-  var root=$('titleSettings');
-  if(root&&typeof modalOpen!=='undefined'&&modalOpen){
-    var active=document.activeElement,selector='',scroll=root.parentElement.scrollTop;
+function refreshOptions(settingsRoot){
+  var title=$('titleSettings'),isTitle=title&&typeof modalOpen!=='undefined'&&modalOpen;
+  var root=settingsRoot||(isTitle?title:$('mHelp'));
+  var active=document.activeElement,selector='',scroller=root&&(root.closest('.bodyw')||root.parentElement),scroll=scroller?scroller.scrollTop:0;
+  if(root){
     if(root.contains(active)){
       if(active.id)selector='#'+active.id;
       else if(active.hasAttribute('data-bind'))selector='[data-bind="'+active.getAttribute('data-bind')+'"]';
       else if(active.hasAttribute('data-v')&&active.closest('[data-seg]'))selector='[data-seg="'+active.closest('[data-seg]').getAttribute('data-seg')+'"] [data-v="'+active.getAttribute('data-v')+'"]';
     }
+  }
+  if(isTitle&&root===title){
     root.innerHTML=settingsHTML();wireSettings(root);
-    var focus=selector&&root.querySelector(selector);if(focus)focus.focus({preventScroll:true});
-    root.parentElement.scrollTop=scroll;
   }else if(typeof refreshSheet==='function')refreshSheet();
+  var focus=root&&selector&&root.querySelector(selector);if(focus)focus.focus({preventScroll:true});
+  if(scroller)scroller.scrollTop=scroll;
 }
 function wireSettings(root){
-  var side=root.querySelector('#uiSide');
-  if(side)side.onchange=function(){UI_SIDE=side.value==='right'?'right':'left';try{localStorage.setItem('fote-ui-side',UI_SIDE);}catch(e){}if(typeof FoteResponsiveHUD!=='undefined')FoteResponsiveHUD.relayout();};
-  var phonePad=root.querySelector('#uiPhonePadSize');
-  if(phonePad)phonePad.onchange=function(){UI_PHONE_PAD_SIZE=phonePad.value;applyUIAppearance();try{localStorage.setItem('fote-ui-phone-pad-size',UI_PHONE_PAD_SIZE);}catch(e){}};
-  var theme=root.querySelector('#uiTheme'),text=root.querySelector('#uiTextSize');
-  if(theme)theme.onchange=function(){UI_THEME=theme.value;try{localStorage.setItem('fote-ui-theme',UI_THEME);}catch(e){}applyUIAppearance();};
-  if(text)text.onchange=function(){UI_TEXT_SIZE=text.value;try{localStorage.setItem('fote-ui-text',UI_TEXT_SIZE);}catch(e){}applyUIAppearance();};
   var opacity=root.querySelector('#uiOpacity');
   if(opacity)opacity.oninput=function(){UI_OPACITY=100-Number(opacity.value);applyUIAppearance();root.querySelector('#uiOpacityValue').textContent=(100-UI_OPACITY)+'%';try{localStorage.setItem('fote-ui-opacity',String(UI_OPACITY));}catch(e){}};
   root.querySelectorAll('[data-bind]').forEach(function(b){ b.onclick=function(ev){ ev.stopPropagation(); REBINDING=b.getAttribute('data-bind'); refreshOptions(); }; });
@@ -149,15 +201,19 @@ function wireSettings(root){
     var id=seg.getAttribute('data-seg');
     seg.querySelectorAll('button').forEach(function(b){ b.onclick=function(){
       var v=b.getAttribute('data-v');
+      if(Object.prototype.hasOwnProperty.call(UI_APPEARANCE_CHOICES,id)){
+        if(setAppearanceSetting(id,v)){sfx('ui-click');refreshOptions(root);}return;
+      }
       if(id==='mute'){ audioInit(); if((v==='1')!==AUDIO.muted) toggleMute(); if(typeof syncAudioButtons==='function') syncAudioButtons(); }
       if(id==='music'){ audioInit(); if((v==='1')!==AUDIO.musicOn) toggleMusic(); if(typeof syncAudioButtons==='function') syncAudioButtons(); }
       if(id==='light'){ try{ localStorage.setItem('astra-temple-light', v); }catch(e){} var bl=$('bLight'); if(bl) bl.textContent='Lighting: '+v; draw(); }
       if(id==='motion'){ if(typeof setMotion==='function') setMotion(v); }
       if(id==='mapart')setMapArt(v);
       if(id==='desktopPad'){UI_DESKTOP_PAD=v==='shown';try{localStorage.setItem('fote-ui-desktop-pad',UI_DESKTOP_PAD?'shown':'hidden');}catch(e){}if(typeof FoteResponsiveHUD!=='undefined')FoteResponsiveHUD.relayout();}
+      if(id==='touchPad'){UI_TOUCH_PAD=v==='on';try{localStorage.setItem('fote-ui-touch-pad',v);}catch(e){}applyUIAppearance();}
       if(id==='mapzoom'){ MAP_ZOOM=v; try{ localStorage.setItem('astra-temple-map-zoom', v); }catch(e){} resize(); }
       if(id==='speed'){ ANIM_SPEED=parseFloat(v)||1; try{ localStorage.setItem('astra-temple-anim-speed', String(ANIM_SPEED)); }catch(e){} applyAnimSpeed(); }
-      sfx('ui-click'); refreshOptions();
+      sfx('ui-click'); refreshOptions(root);
     }; });
   });
   var vs=root.querySelector('#volSfx'); if(vs) vs.oninput=function(){ AUDIO.vol.sfx=vs.value/100; if(AUDIO.sfxBus) AUDIO.sfxBus.gain.value=AUDIO.vol.sfx; audioSave(); };

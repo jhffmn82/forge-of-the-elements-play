@@ -38,7 +38,7 @@ function damageCreatureRules(event){
   if(target!==player&&target.st&&target.st.wardshield&&event.amount>0){
     var ward=target.st.wardshield,absorbed=Math.min(ward.n,event.amount);ward.n-=absorbed;event.amount-=absorbed;
     if(absorbed>0)floatText(target.x,target.y,'-'+Math.round(absorbed),'magic');
-    if(ward.n<=0){gameEffects.remove(target,'wardshield','depleted');if(deepVis(target.x,target.y))log('The blood ward around the '+target.name+' shatters.','c-good');}
+    if(ward.n<=0){gameEffects.remove(target,'wardshield','depleted');if(deepVis(target.x,target.y))log(combatText(target.name)+': Blood Ward broken.','c-good');}
     if(event.amount<=0)return rejectDamage(event,'blood-ward');
   }
   if(MAPVIEW.on&&target===player)return rejectDamage(event,'map-preview');
@@ -60,7 +60,7 @@ function damageCreatureRules(event){
         floatText(target.x,target.y,'immune','miss');if(target._immuneMsg!==turn){target._immuneMsg=turn;log('<b>Heart of the Mountain:</b> immune. Destroy '+count+' crystal node'+(count===1?'':'s')+'.','c-info');}}
       return rejectDamage(event,'heart-nodes');
     }
-    if(b.moonbound&&!inMoonlight(target)){floatText(target.x,target.y,'immune','miss');if(source===player)log('<b>'+target.name+':</b> immune outside crystal light.','c-info');return rejectDamage(event,'moonlight');}
+    if(b.moonbound&&!inMoonlight(target)){floatText(target.x,target.y,'immune','miss');if(source===player)log('<b>'+combatText(target.name)+':</b> immune outside crystal light.','c-info');return rejectDamage(event,'moonlight');}
     if(b.burrows&&target.burrowed)return rejectDamage(event,'burrowed');
     if(b.blocksFirst&&target._blockTurn!==turn&&event.amount>0){target._blockTurn=turn;floatText(target.x,target.y,'block','miss');if(vis[idxOf(target.x,target.y)])log('<b>Zealot Knight:</b> blocked.','c-info');return rejectDamage(event,'first-hit-block');}
     if(b.big&&source===player)target._provoked=true;
@@ -76,7 +76,7 @@ function damageCreatureRules(event){
     if(b.boneType&&type==='phys'&&source===player){var weapon=event.hit&&event.hit.view?event.hit.view.weapon:player.weapon;var key=itemKey(weapon);if(weapon.unarmed||key==='mace')event.amount*=1.5;else if(['dagger','bow','spear'].indexOf(key)>=0)event.amount*=.5;}
     if(b.phases&&type==='phys')event.amount*=.5;
     if(b.object&&target.kind==='phylactery')event.amount*=type==='light'||type==='fire'?2:.25;
-    if(target.boneWard&&event.amount>0){target.boneWard=false;floatText(target.x,target.y,'ward','miss');if(vis[idxOf(target.x,target.y)])log('A bone ward shatters around the '+target.name+'.','c-info');return rejectDamage(event,'bone-ward');}
+    if(target.boneWard&&event.amount>0){target.boneWard=false;floatText(target.x,target.y,'ward','miss');if(vis[idxOf(target.x,target.y)])log(combatText(target.name)+': Bone Ward broken.','c-info');return rejectDamage(event,'bone-ward');}
     target._lastType=type;
   }
   return true;
@@ -110,7 +110,7 @@ function damageDefenses(event){
   var isPlayer=target===player,foe=source&&source!==player&&source.foe;
   var wardChance=player.block>0?player.block:Math.min(.40,.25+.01*Math.max(0,player.stats.mig-10));
   if(isPlayer&&!event.options.attackRolled&&!event.tags.has('area')&&foe&&hasP('spellWard')&&wardChance>0&&combatRoll(wardChance,true)){
-    d*=.25;onShieldBlock(source,player,amount);log('Your shield turns the '+(type==='phys'?'blow':FoteDamage.label(type))+' from '+(source.name||'the attack')+'.','c-good');floatText(player.x,player.y,'block','miss');sfx('block');
+    d*=.25;onShieldBlock(source,player,amount);combatActionNote(player,'blocked');floatText(player.x,player.y,'block','miss');sfx('block');
   }
   var barrier=isPlayer&&hasP('magicBarrier')&&!event.tags.has('area')&&foe&&dist(source,player)>1?5:0;
   if(type==='phys'){
@@ -127,7 +127,7 @@ function damageDefenses(event){
     if(buff('laststand'))d*=.5;
     if(hasGod('reginald')&&godRank()>=3&&foe&&source.challenged)d*=Math.max(0,1-.05*godRank()*divineStrength());
     if(hasGod('reginald')&&godRank()>=5&&foe)d*=1-.10*Math.min(3,Math.max(0,adjacentFoes()-1));
-    if(hasGod('reginald')&&godRank()>=3&&foe&&source.hp>0&&!source.challenged&&dist(source,player)>1){source.challenged=true;source.challengeUntil=worldNow()+500;source.state='hunt';source.cowardMark=true;log('<b>'+(source.name||'It')+'</b> strikes from afar. Sir Reginald marks the coward: it must face you.','c-good');}
+    if(hasGod('reginald')&&godRank()>=3&&foe&&source.hp>0&&!source.challenged&&dist(source,player)>1){source.challenged=true;source.challengeUntil=worldNow()+500;source.state='hunt';source.cowardMark=true;log(combatText(source.name||'Attacker')+': Challenged.','c-good');}
     d=d>0&&barrier>0?Math.max(1,d-barrier):Math.max(0,d);
     // A landed physical hit survives rounding; actual shields can still absorb it.
     if(type==='phys'&&d>0)d=Math.max(1,d);
@@ -136,9 +136,9 @@ function damageDefenses(event){
       var pools=[['ward','magic'],['iceArmor','ice'],['hideShield','phys'],['mward','magic'],['guard','phys']].map(function(p){return {key:p[0],amount:player[p[0]],type:p[1]};});
       var absorption=FoteDamage.absorb(d,pools);d=absorption.remaining;event.absorbed=absorption.absorbed;
       Object.keys(absorption.pools).forEach(function(key){player[key]=absorption.pools[key];});
-      absorption.absorbed.forEach(function(pool){floatText(player.x,player.y,'-'+Math.round(pool.amount),pool.type);if(pool.key==='ward'&&player.ward<=0)log('Your Arcane Ward shatters.','c-info');});
+      absorption.absorbed.forEach(function(pool){floatText(player.x,player.y,'-'+Math.round(pool.amount),pool.type);if(pool.key==='ward'&&player.ward<=0)combatActionNote(player,'ward broken');});
     }
-    if(Math.round(d)>0&&foe&&hasP('fortitude')&&!(player.fortUntil>worldNow())){d*=.5;player.fortUntil=worldNow()+600;log('Fortitude blunts the blow.','c-good');}
+    if(Math.round(d)>0&&foe&&hasP('fortitude')&&!(player.fortUntil>worldNow())){d*=.5;player.fortUntil=worldNow()+600;combatActionNote(player,'Fortitude');}
   }
   if(target.challenged&&target.challengeBoost)d*=1.2;
   if(target.dazed>0)d*=1.5;
@@ -184,14 +184,14 @@ function damageReceivedReactions(event){
   if(target!==player)return;
   var soaked=event.iceBefore-(player.iceArmor||0);
   if(soaked>0&&combo('water','light'))healPlayer(Math.max(1,Math.round(soaked*.25)));
-  if(d>0&&source&&source.foe&&source.hp>0&&combo('fire','earth')&&(dist(source,player)>1||type!=='phys')){applyStatus(source,'root',1);applyStatus(source,'burn',3,burnDmg());burst(source.x,source.y,'fire',18,.06);log('Lava erupts under '+source.name+'.','c-fire');}
+  if(d>0&&source&&source.foe&&source.hp>0&&combo('fire','earth')&&(dist(source,player)>1||type!=='phys')){applyStatus(source,'root',1);applyStatus(source,'burn',3,burnDmg());burst(source.x,source.y,'fire',18,.06);log(combatText(source.name)+': Rooted, Burning.','c-fire');}
   if(source&&source.base){var b=source.base;
-    if(d>0&&b.poisons&&!player.st.poison&&rng()<b.poisons&&aff('earth')<6){if(applyStatus(player,'poison',4,Math.max(2,sDMG(2))).applied)log('Poisoned by '+source.name+'.','c-you');}
+    if(d>0&&b.poisons&&!player.st.poison&&rng()<b.poisons&&aff('earth')<6){if(applyStatus(player,'poison',4,Math.max(2,sDMG(2))).applied)combatActionNote(player,'Poisoned');}
     if(d>0&&b.phases){var drained=Math.min(Math.floor(player.mp),4);if(drained>0){player.mp-=drained;floatText(player.x,player.y,'-'+drained+' mp','magic');}}
     if(d>0&&b.rots)applyStatus(player,'rot',30);   /* 2026-09-28 (Justin): rot lasts 30 turns (was 20) */
-    if(b.snuffs){player.snuffed=5;log('The <b>Gloom Moth</b> smothers your light.','c-you');computeFOV();}
+    if(b.snuffs){player.snuffed=5;combatActionNote(player,'light snuffed');computeFOV();}
     if(b.lurks&&!source._struck)source._struck=true;
-    if(b.kindles&&d>0&&player.hp>0){var lit=applyStatus(player,'burn',3,sDMG(3));if(lit.applied&&(!player._fwaLitMsg||player._fwaLitMsg<turn-8)){player._fwaLitMsg=turn;log('The <b>Flame Dancer</b> sets you alight.','c-you');}}
+    if(b.kindles&&d>0&&player.hp>0){var lit=applyStatus(player,'burn',3,sDMG(3));if(lit.applied&&(!player._fwaLitMsg||player._fwaLitMsg<turn-8)){player._fwaLitMsg=turn;combatActionNote(player,'Burning');}}
   }
   if(d>0){player.lastDamageTime=player.t;if(hasGod('grumbok')&&godRank()>=3&&(type!=='phys'||event.tags.has('ranged')))player.wizardHunterUntil=player.t+300;}   /* 2026-09-29 (Justin): Wizard Hunter wakes to ranged attacks too; Spellbreaker is retired */
   if(player.hp<=0)lastLaugh();
@@ -233,6 +233,11 @@ gameDamage.on('healingApplied',function(event){
   var n=Math.round(event.restored*10)/10,target=event.target;
   if(!(n>0)||event.regen||typeof actorConcealed==='function'&&actorConcealed(target))return;
   floatText(target.x,target.y,'+'+n,'heal');
+  var action=typeof gameActions!=='undefined'&&gameActions.current();
+  if(action&&['attack','spell'].indexOf(action.kind)>=0&&!action.damagePresented){
+    var heals=action.healingNotes||(action.healingNotes=[]),prior=heals.find(function(h){return h.target===target;});
+    if(prior)prior.amount+=n;else heals.push({target:target,amount:n});
+  }
 });
 function combatDamageName(event){
   var names={'murk-drain':'Life Drain',venomtouch:'Venomtouch',
@@ -244,29 +249,56 @@ function combatDamageName(event){
 function combatDamageParts(packets){
   var parts=[];
   packets.slice().sort(function(a,b){return a.id-b.id;}).forEach(function(packet){
-    var name=combatDamageName(packet),part=parts.find(function(p){return p.type===packet.type&&p.name===name;});
-    if(part)part.damage+=packet.damage;else parts.push({type:packet.type,name:name,damage:packet.damage});
+    var part=parts.find(function(p){return p.type===packet.type;});
+    if(part)part.damage+=packet.damage;else parts.push({type:packet.type,damage:packet.damage});
   });
   return parts;
 }
 function combatDamageBreakdown(parts){
-  return parts.map(function(p){return p.damage+' '+FoteDamage.label(p.type)+(p.name?' ('+p.name+')':'');}).join(' + ');
+  return parts.map(function(p,i){return combatDamageNumber(p.damage,p.type,i?'+':'');}).join(' ');
+}
+function combatText(value){
+  return String(value==null?'':value).replace(/[&<>"']/g,function(ch){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch];});
+}
+function combatDamageNumber(amount,type,prefix){
+  type=FoteDamage.type(type)||'phys';
+  var label=FoteDamage.label(type),color=typeof DMG_COL!=='undefined'&&DMG_COL[type]||'currentColor',number=combatText(amount);
+  return '<b style="color:'+color+'" title="'+number+' '+label+' damage" aria-label="'+number+' '+label+' damage">'+combatText(prefix||'')+number+'</b>';
+}
+function combatActionNote(target,note){
+  var action=typeof gameActions!=='undefined'&&gameActions.current();
+  if(action&&['attack','spell'].indexOf(action.kind)>=0&&!action.damagePresented&&action.target===target){
+    var notes=action.feedbackNotes||(action.feedbackNotes=[]);if(notes.indexOf(note)<0)notes.push(note);
+  }else log((target===player?'You':combatText(target.name))+': '+note+'.',target===player?'c-you':'c-good');
+}
+function combatActionNotes(event,note){
+  var notes=(event.feedbackNotes||[]).slice();
+  if(note&&notes.indexOf(note)<0)notes.push(note);
+  (event.healingNotes||[]).forEach(function(h){
+    var who=h.target===event.source?'':(h.target===player?'you':combatText(h.target.name))+' ',amount=Math.round(h.amount*10)/10;
+    var color=typeof DMG_COL!=='undefined'?DMG_COL.heal:'currentColor';
+    notes.push(who+'<b style="color:'+color+'" title="'+amount+' HP restored">+'+amount+' HP</b>');
+  });
+  return notes.length?'; '+notes.join('; '):'';
 }
 /* Read the resolved packets, including nested god/enchant procs. Only the
- * current weapon hit's own target/source joins its total; arcs, reflections,
- * spell riders and later effects get a short line of their own. */
+ * current hit's own target/source joins its breakdown; arcs, reflections and
+ * later effects keep their own target and short result. */
 gameDamage.on('damageApplied',function(event){
   if(!(event.damage>0))return;
   var action=typeof gameActions!=='undefined'&&gameActions.current();
-  if(action&&action.kind==='attack'&&!action.damagePresented&&event.source===action.source&&event.target===action.target&&
+  if(action&&['attack','spell'].indexOf(action.kind)>=0&&!action.damagePresented&&event.source===action.source&&event.target===action.target&&
       !event.tags.has('arc')&&!event.tags.has('reflected')&&!event.tags.has('periodic')){
+    // Spell riders keep their existing floating feedback; only their log merges.
+    if(action.kind==='spell'&&event.tags.has('proc')&&!event.tags.has('attack')&&
+       !(typeof actorConcealed==='function'&&actorConcealed(event.target)))floatText(event.target.x,event.target.y,String(event.damage),event.type);
     (action.damagePackets||(action.damagePackets=[])).push(event);return;
   }
   if(event.tags.has('attack')||!['proc','arc','reflected'].some(function(tag){return event.tags.has(tag);}))return;
   if(typeof actorConcealed==='function'&&actorConcealed(event.target))return;
-  var name=combatDamageName(event),target=event.target===player?'You':event.target.name;
+  var name=combatDamageName(event),target=event.target===player?'You':combatText(event.target.name);
   floatText(event.target.x,event.target.y,String(event.damage),event.type);
-  log(name+': '+target+' '+(event.target===player?'take':'takes')+' '+event.damage+' '+FoteDamage.label(event.type)+'.',event.target===player?'c-you':'c-hit');
+  log(name+' → '+target+': '+combatDamageNumber(event.damage,event.type)+'.',event.target===player?'c-you':'c-hit');
 });
 function applyDamage(target,amount,type,source,options){
   var action=typeof gameActions!=='undefined'&&gameActions.current();

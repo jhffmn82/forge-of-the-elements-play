@@ -105,7 +105,7 @@ function slimeSplit(e){
   var c=nearFree(e.x,e.y,1); if(!c) return;
   var half=Math.max(1,Math.floor(e.hp/2)); e.hp-=half;
   var s=spawn(e.kind==='caveslime'?'caveslime':'slime',c.x,c.y); s.hp=s.maxhp=half; s.split=true; s.state='hunt'; s.name=e.kind==='caveslime'?'Basalt Slimelet':'Slimelet'; s.small=true; s.noLoot=true;
-  log('The slime splits in two!','c-info'); sfx('slime-split',{from:e});
+  log('Slime splits.','c-info'); sfx('slime-split',{from:e});
 }
 
 function hitSfx(att, def, crit, blocked){
@@ -155,7 +155,7 @@ function raiseShade(e){
   var s=spawn(e.kind, e.x, e.y);
   s.foe=false; s.ally=true; s.shade=true; s.state='ally'; s.name='Shade of '+e.base.name; s.col='#8A6FB0';
   s.maxhp=s.hp=Math.max(1,Math.round(e.maxhp/2)); s.dmg=[Math.max(1,Math.round(e.dmg[0]/2)), Math.max(1,Math.round(e.dmg[1]/2))]; murkSummonHp(s);
-  log('Its shade rises and serves you.','c-good'); sparkleFx(e.x,e.y,'dark',20);
+  log('Shade summoned.','c-good'); sparkleFx(e.x,e.y,'dark',20);
 }
 
 
@@ -238,14 +238,14 @@ function pebbleSlimeBehavior(e,see,target){
     clearPebbleSlam(e);
     var victim=[player].concat(ents).find(function(other){return other.hp>0&&(other===player||other.ally)&&entityOccupies(other,pending.x,pending.y);});
     if(victim&&dist(e,victim)<=1)attack(e,victim);
-    else {setClip(e,'attack');sfx('slime-attack',{from:e});if(see)log('The Pebble Slime lands on the empty tile.','c-info');}
+    else {setClip(e,'attack');sfx('slime-attack',{from:e});if(see)log('Pebble Slam misses.','c-info');}
     return true;
   }
   if(!see||dist(e,target)>1||!clearShot(e,target))return false;
   e.pebbleSlam={x:target.x,y:target.y,fromX:e.x,fromY:e.y,turn:turn,at:worldNow()+100};
   floorMeta.marks=(floorMeta.marks||[]).concat([{cells:[idxOf(target.x,target.y)],col:'#D2AA6E',until:Number.MAX_SAFE_INTEGER,kind:'pebble'+e.id}]);
   setClip(e,'attack');floatText(e.x,e.y,'!', 'earth');
-  if(canSeePlayer(e))log('The <b>Pebble Slime</b> crouches. Step off the marked tile!','c-info');
+  if(canSeePlayer(e))log('<b>Pebble Slam:</b> leave the marked tile!','c-info',{priority:'warning'});
   return true;
 }
 function basicMonsterBehavior(e){
@@ -257,7 +257,7 @@ function basicMonsterBehavior(e){
        the corridor and shoot him to death for free, since nothing outside the room could ever wake him
        (Justin, 2026-09-23). Anything that has actually hurt him ends the staging too. */
     var rm=roomAt(player.x,player.y);
-    if((see && d<=7 && rm && rm.role==='boss') || e.hp<e.maxhp){ e.state='hunt'; log('<b>'+e.name+'</b> rises from his throne with a roar!','c-you'); sfx('warchief-roar',{from:e}); playMusic('boss');
+    if((see && d<=7 && rm && rm.role==='boss') || e.hp<e.maxhp){ e.state='hunt'; log('<b>'+e.name+'</b> awakens!','c-you'); sfx('warchief-roar',{from:e}); playMusic('boss');
       ents.forEach(function(o){ if(o.guard) o.state='hunt'; }); SHAKE=8; }
      return true;
   }
@@ -274,7 +274,7 @@ function basicMonsterBehavior(e){
       if(!combatRoll(1-spitChance,true)){
         var spit=applyDamage(player,roll(e.dmg[0],e.dmg[1]),'phys',e,{tags:['single-target','projectile']});
         floatText(player.x,player.y,String(spit),'phys');if(spit>0&&player.hp>0)applyStatus(player,'root',2);
-        log(e.name+' spits clinging stone: '+spit+'.','c-you');
+        log(combatText(e.name)+' → you: '+combatDamageNumber(spit,'phys')+'.','c-you');
       }else floatText(player.x,player.y,'miss','miss');
       return true;
     }
@@ -287,7 +287,7 @@ function basicMonsterBehavior(e){
         boltFx(e.x,e.y,player.x,player.y,'fire');
         if(rng() < hostileHitChance(hitChance(e.base.acc+10, evaOf(player)),true)){
           var fd=applyDamage(player, roll(5,8)+floorNo, 'fire', e); floatText(player.x,player.y,String(fd),'fire'); var brn=rng()<0.5; if(brn) applyStatus(player,'burn',3,sDMG(2));
-          log(e.name+' hurls a firebolt: <b>'+fd+'</b> fire'+(brn?'. You are burning':'')+'.','c-you');
+          log(combatText(e.name)+' → you: '+combatDamageNumber(fd,'fire')+(brn?'; Burning':'')+'.','c-you');
           if(player.hp<=0) kill(player,e);
         } else { log(e.name+'\'s firebolt misses.','c-miss'); floatText(player.x,player.y,'miss','miss'); }
          return true;
@@ -353,7 +353,7 @@ function hitTiles(e, tiles, dmg, label, extra){
     victims.forEach(function(v){
       var d=applyDamage(v, roll(dmg[0],dmg[1]), 'phys', e); floatText(v.x,v.y,String(d),'phys',true); hitAny=true;
       if(extra) extra(v);
-      if(v===player){ log('<b>'+label+'</b> catches you for '+d+'.','c-you'); if(player.hp<=0) kill(player,e); }
+      if(v===player){ log(label+' → you: '+combatDamageNumber(d,'phys')+'.','c-you'); if(player.hp<=0) kill(player,e); }
       else if(v.hp<=0) kill(v,e);
     });
   });
@@ -363,7 +363,7 @@ function hitTiles(e, tiles, dmg, label, extra){
 function bossTurn(e, see, d){
   var pct=e.hp/e.maxhp;
   e.phase=e.phase||0;
-  if(e.dazed>0){ e.dazed--; if(e.dazed===0) log('Grukk shakes off the daze.','c-info'); return true; }
+  if(e.dazed>0){ e.dazed--; if(e.dazed===0) log('Grukk recovers.','c-info'); return true; }
   /* a telegraphed attack resolves when its countdown runs out */
   if(e.windup){
     if(e.windup.kind==='charge'&&!canActorMove(e)){e.windup=null;return true;}
@@ -373,9 +373,9 @@ function bossTurn(e, see, d){
     setClip(e,'attack');
     if(w.kind==='slam' || w.kind==='ring'){
       sfx('warchief-slam',{from:e}); SHAKE=w.kind==='slam'?14:10;
-      hitTiles(e, w.tiles, w.kind==='slam'?[16,24]:[12,18], w.kind==='slam'?'Ground Slam':'The shockwave', function(v){ applyStatus(v,'stun',1); });
-      log(w.kind==='slam' ? '<b>Grukk brings the axe down.</b> The floor cracks.' : 'A shockwave rolls outward.','c-you');
-      if(w.kind==='slam' && e.phase>=2){ e.windup={kind:'ring', tiles:tilesWithin(e.x,e.y,3,4), due:2}; log('<b>The ground heaves.</b> A shockwave is building: get close to him.','c-you'); }
+      hitTiles(e, w.tiles, w.kind==='slam'?[16,24]:[12,18], w.kind==='slam'?'Ground Slam':'Shockwave', function(v){ applyStatus(v,'stun',1); });
+
+      if(w.kind==='slam' && e.phase>=2){ e.windup={kind:'ring', tiles:tilesWithin(e.x,e.y,3,4), due:2}; log('<b>Shockwave:</b> get close to Grukk!','c-you'); }
     } else if(w.kind==='charge'){
       sfx('warchief-roar',{from:e}); SHAKE=10;
       var path=w.tiles, stopAt=null, hit=false;
@@ -386,13 +386,13 @@ function bossTurn(e, see, d){
         stopAt=t;
       }
       if(stopAt){ e.x=stopAt[0]; e.y=stopAt[1]; }
-      if(hit){ var cd=applyDamage(player, roll(14,20), 'phys', e); floatText(player.x,player.y,String(cd),'phys',true); log('<b>Grukk\'s charge</b> slams into you for '+cd+'.','c-you'); if(player.hp<=0) kill(player,e); }
-      else { e.dazed=2; log('<b>Grukk thunders past and crashes into the wall!</b> He is dazed. Strike now.','c-kill'); sparkleFx(e.x,e.y,'lightning',20); }
+      if(hit){ var cd=applyDamage(player, roll(14,20), 'phys', e); floatText(player.x,player.y,String(cd),'phys',true); log('Grukk charge: '+combatDamageNumber(cd,'phys')+'.','c-you'); if(player.hp<=0) kill(player,e); }
+      else { e.dazed=2; log('<b>Grukk stunned.</b> Strike now!','c-kill'); sparkleFx(e.x,e.y,'lightning',20); }
     }
     return true;
   }
   if((e.phase===0 && pct<0.66) || (e.phase===1 && pct<0.33)){
-    e.phase++; log('<b>Grukk</b> bellows for help!'+(e.phase===2?' He is enraged: every slam now sends out a shockwave.':''),'c-you'); sfx('warchief-roar',{from:e}); SHAKE=10;
+    e.phase++; log('<b>Grukk</b> calls reinforcements!'+(e.phase===2?' Enraged: slams cause shockwaves.':''),'c-you'); sfx('warchief-roar',{from:e}); SHAKE=10;
     for(var j=0;j<2;j++){ var c=nearFree(e.x,e.y,3); if(c){ var g=spawn(j===0?'goblin':'archer',c.x,c.y); g.state='hunt'; g.noXp=false; sparkleFx(c.x,c.y,'earth',10); } }
     return true;
   }
@@ -403,7 +403,7 @@ function bossTurn(e, see, d){
     e.rot=(e.rot||0)+1;
     e.windup={kind:'slam', tiles:tilesWithin(e.x,e.y,0,2), due:2};
     setClip(e,'attack'); sfx('warchief-roar',{from:e});
-    log('<b>Grukk raises his axe overhead!</b> Get out of the marked ground.','c-you');
+    log('<b>Axe Slam:</b> leave marked ground!','c-you',{priority:'warning'});
     return true;
   }
   if(step==='charge' && d>=2&&canActorMove(e)){
@@ -411,7 +411,7 @@ function bossTurn(e, see, d){
     if(line.length>=2){
       e.rot=(e.rot||0)+1;
       e.windup={kind:'charge', tiles:line, due:1};
-      log('<b>Grukk lowers his head and paws the ground.</b> Step out of his path.','c-you');
+      log('<b>Grukk charging:</b> leave his path!','c-you',{priority:'warning'});
       return true;
     }
   }
@@ -434,7 +434,7 @@ function bossTurn(e, see, d){
 function basicAllyBehavior(e){
   if(e.hp<=0)return true;if(e.life!==undefined && !e.shade){
 
-    if(e.life<=0){ ents=ents.filter(function(o){ return o!==e; }); log('Your '+e.name+' crumbles back into the floor.','c-info'); return true; }
+    if(e.life<=0){ ents=ents.filter(function(o){ return o!==e; }); log('Your '+e.name+' expires.','c-info'); return true; }
   }
 
   var target=null, best=99;
@@ -450,7 +450,7 @@ function basicAllyBehavior(e){
       if(typeof boltFx==='function') boltFx(e.x, e.y, target.x, target.y, 'dark');
       var ld=applyDamage(target, roll(e.dmg[0], e.dmg[1]), 'dark', e);
       floatText(target.x, target.y, String(ld), 'dark');
-      log('Your '+e.name+' hurls a shadow bolt for <b>'+ld+'</b> shadow damage.','c-good');
+      log(combatText(e.name)+' → '+combatText(target.name)+': '+combatDamageNumber(ld,'dark')+'.','c-good');
       if(target.hp<=0) kill(target, e);
        return true;
     }
@@ -496,6 +496,7 @@ function petRetaliationBehavior(e){
   e.state='hunt';e.lastSeen={x:pet.x,y:pet.y};
   if(typeof FoteSkeletonCharge!=='undefined'&&FoteSkeletonCharge.act(e,pet))return true;
   if(e.base.sporecaller)return FoteSporecaller.act(e,FoteEnemyTeamwork.openLine(e,pet)?pet:null);
+  if(e.base.caveSpell&&caveSpellAct(e,pet))return true;
   if(e.base.pebbleSlam&&pebbleSlimeBehavior(e,clearShot(e,pet),pet))return true;
     if(typeof FoteEnemyTeamwork!=='undefined'&&FoteEnemyTeamwork.openLine(e,pet)){
     if(e.kind==='shaman')return FoteEnemyTeamwork.shaman(e,pet);
@@ -527,7 +528,7 @@ function castBoltTarget(x,y){
   if(key==='challenge'){
     ents.forEach(function(e){if(!e.cowardMark)e.challenged=false;});
     f.challenged=true; f.challengeBoost = false; f.state='hunt'; f.challengeT=0;
-    log('You challenge '+f.name+'. It must face you.','c-good'); sfx('shrine-open'); ringFx(f.x,f.y,'#E8B44A',1.2);
+    log(f.name+': Challenged.','c-good'); sfx('shrine-open'); ringFx(f.x,f.y,'#E8B44A',1.2);
     endTurn(); return true;
   }
   var ptype = A.type==='magic'?'magic':A.type==='phys'?(A.el==='earth'?'earth':'phys'):A.type==='ice'?'ice':A.type==='dark'?'dark':A.type;
@@ -552,17 +553,17 @@ function castBoltTarget(x,y){
   floatText(f.x,f.y,String(d),dmgType==='phys'?'phys':dmgType,crit);
   var note='';
   if(A.status){ for(var k in A.status){
-    if(k==='chill') { addChill(f); note+=' chilled'; }
-    else if(k==='stun' && key==='sap'){ if(f.stunImmune){ f.state='hunt'; note+=' (already Sapped)'; } else { applyStatus(f,'stun', wasAsleep?6:A.status.stun); f.state='hunt'; note+=' knocked out'; } }
-    else { applyStatus(f,k,A.status[k], k==='burn'?sDMG(3):undefined); note+=' '+k; } } }
-  if(A.stunChance && rng()<A.stunChance){ applyStatus(f,'stun',1); note+=' stunned'; }
-  if(A.blindChance && rng()<A.blindChance){ applyStatus(f,'blind',2); note+=' blinded'; }
+    if(k==='chill') { addChill(f); }
+    else if(k==='stun' && key==='sap'){ if(f.stunImmune){ f.state='hunt'; note+='already Sapped'; } else { applyStatus(f,'stun', wasAsleep?6:A.status.stun); f.state='hunt'; } }
+    else { applyStatus(f,k,A.status[k], k==='burn'?sDMG(3):undefined); } } }
+  if(A.stunChance && rng()<A.stunChance){ applyStatus(f,'stun',1); }
+  if(A.blindChance && rng()<A.blindChance){ applyStatus(f,'blind',2); }
   if(A.type==='fire'){ ignite(f.x,f.y,'player'); }
   if(d>0)markGround([[end.x,end.y]],A);
   if(f.state==='asleep' && key!=='sap') f.state='hunt';
   if(key==='sap'&&f.hp>0&&f.st.stun&&!f.stunImmune){f.sapped=true;f.stunImmune=true;}
   if(d>0)playerHitRewards(f,true);
-  log(A.name+' hits '+f.name+' for <b>'+d+'</b> '+FoteDamage.label(dmgType)+(crit?' (crit)':'')+note,'c-hit');
+  presentSpellDamage(hitEvent,note.trim());
   if(f.hp<=0){
     kill(f,player);
   }

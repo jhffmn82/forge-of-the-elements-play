@@ -6,14 +6,14 @@
    ===================================================================== */
 
 var AMULETS = {
-  hook:     {name:'Amulet of the Hook',   kills:10, aim:true, range:5, desc:'Pull an enemy to you, or pull yourself to a wall or closed door. Range 5; crosses chasms and water.'},
-  swap:     {name:'Amulet of Exchange',   kills:8, aim:true, range:8, desc:'Swap places with a visible creature within 8 tiles.'},
-  tide:     {name:'Amulet of the Tide',   kills:8, aim:true, range:6, desc:'Flood a 3x3 area for 20 turns. Clear ground hazards, including webs, flames and poison. Trigger all traps in the room.'},
+  hook:     {name:'Amulet of the Hook',   kills:10, aim:true, range:5, desc:'Pull a non-boss enemy to you and Stun it for 1 turn, or pull yourself toward a wall, closed door or solid obstacle. Range: 5 tiles. Crosses chasms and water.'},
+  swap:     {name:'Amulet of Exchange',   kills:8, aim:true, range:8, desc:'Swap places with a visible creature within 8 tiles. Cannot move bosses.'},
+  tide:     {name:'Amulet of the Tide',   kills:8, aim:true, range:6, desc:'Flood a 3x3 area within 6 tiles for 20 turns. Wash away ground hazards, extinguish Burning and clear webs. Make creatures Wet for 6 turns. Trigger every trap in the target room.'},
   seeking:  {name:'Amulet of Seeking',    kills:10,                    desc:'Reveal terrain, traps and hidden doors within 16 tiles.'},
-  pillar:   {name:'Amulet of the Pillar', kills:6, aim:true, range:5, desc:'Raise a stone pillar on an empty tile for 15 turns. It blocks movement and sight.'},
+  pillar:   {name:'Amulet of the Pillar', kills:6, aim:true, range:5, desc:'Raise a stone pillar on an empty tile within 5 tiles for 15 turns. Blocks movement and sight.'},
   stillness:{name:'Amulet of Stillness',  kills:15,                    desc:'Take 3 steps without spending time. Any other action ends the effect.'},
   echo:     {name:'Amulet of Echoes',     kills:10,                    desc:'Repeat your last sigil without consuming another.'},
-  thorns:   {name:'Amulet of Thorns',     kills:8,                    desc:'Root yourself for 5 turns. Gain a 35% max HP shield and reflect 50% of melee damage taken.'},
+  thorns:   {name:'Amulet of Thorns',     kills:8,                    desc:'Root yourself and gain a ward for 5 turns. Reflect 50% of melee damage taken by your health, ward or Ice Armor.'},
   plenty:   {name:'Amulet of Plenty',     kills:20,                   desc:'Conjure a ration at your feet.'}
 };
 var AMULET_LOOKS = ['sun','fang','eye','feather','skull','tear','star','knot','wheat'];
@@ -26,8 +26,11 @@ var AMULET_MAX_CHARGES = 3;
 
 /* older saves or items made before the rework */
 function amuletOk(a){ return a && AMULETS[a.amulet]; }
+function amuletThornsWard(){return Math.round(player.maxhp*.35);}
 function amuletDescription(a){
-  return a.cursed&&!a.unid?'Cursed: each use spends a charge and triggers a random trap instead of its normal power.':AMULETS[a.amulet].desc;
+  if(typeof amuletDetails==='function')return actionDetailsText(amuletDetails(a));
+  if(a.cursed&&!a.unid)return 'Cursed: spends a charge and triggers a random trap instead of its normal power.';
+  return AMULETS[a.amulet].desc;
 }
 
 
@@ -62,7 +65,7 @@ useAmulet = function(){
   if(A.aim){
     if(aiming && aiming.amulet){ cancelAim(); return; }
     aiming={amulet:true, A:{name:A.name, range:A.range, kind:'amulet'}};
-    log('<b>'+(a.unid && !RUN.amuletKnown[a.amulet] ? 'The amulet' : A.name)+'</b>: click a target within '+A.range+' tiles, or press Esc.','c-info');
+    log((a.unid && !RUN.amuletKnown[a.amulet] ? 'Amulet' : A.name)+': choose a target. Esc cancels.','c-info');
     abilityBar(); draw(); return;
   }
   var k=a.amulet;
@@ -72,12 +75,12 @@ useAmulet = function(){
   spendAmulet(a); setClip(player,'cast'); sfx('sigil-use');
   if(k==='seeking') amuletSeeking();
   else if(k==='stillness'){ player.stillness=3; log('<b>Time stops.</b> Move freely; any other action starts it again.','c-kill'); sparkleFx(player.x,player.y,'ice',30); draw(); updateUI(); return; }
-  else if(k==='echo'){ log('The amulet echoes your last sigil.','c-good'); player._echoing=true; try{useSigil(player.lastSigil);}finally{player._echoing=false;} }
+  else if(k==='echo'){  player._echoing=true; try{useSigil(player.lastSigil);}finally{player._echoing=false;} }
   else if(k==='plenty'){ items.push({x:player.x, y:player.y, kind:'food', food:'ration'}); log('A ration drops at your feet.','c-good'); sparkleFx(player.x,player.y,'light',16); }
   else if(k==='thorns'){
     applyStatus(player,'root',5); player.buffs.thorns=5; player.buffs.arcaneward=Math.max(player.buffs.arcaneward||0,5);
-    player.ward=Math.max(player.ward||0, Math.round(player.maxhp*0.35)); derive(player);
-    log('Thorns burst from the ground around your feet. You are rooted and warded ('+player.ward+').','c-good'); sparkleFx(player.x,player.y,'earth',30);
+    player.ward=Math.max(player.ward||0, amuletThornsWard()); derive(player);
+    log('Thorns: Rooted; '+player.ward+' ward.','c-good'); sparkleFx(player.x,player.y,'earth',30);
   }
   endTurn();
 };
@@ -105,13 +108,13 @@ function amuletHook(x,y,check){
     if(!land){ if(check) log('It is already next to you.','c-info'); return !check ? false : false; }
     if(check) return true;
     sparkleFx(foe.x,foe.y,'phys',10); foe.x=land.x; foe.y=land.y; foe._lx=undefined; foe.state='hunt';
-    applyStatus(foe,'stun',1); log('The chain whips out and drags the '+foe.name+' to you.','c-good'); sfx('swing');
+    applyStatus(foe,'stun',1); log('Hook: '+foe.name+' pulled.','c-good'); sfx('swing');
     if(at(foe.x,foe.y)===CHASM && !foe.base.flying){ log('The '+foe.name+' tumbles into the chasm!','c-kill'); kill(foe, player); }
     return true;
   }
   var t0=at(x,y);
   var anchor = isWallLike(t0) || t0===DOOR || t0===LOCKED || t0===SEALED || t0===ICEDOOR || (propAt(x,y) && propAt(x,y).b);
-  if(!anchor){ if(check) log('The hook needs an enemy, a wall, a closed door or something solid to catch on.','c-info'); return false; }
+  if(!anchor){ if(check) log('Hook: target an enemy, wall, closed door or solid object.','c-info'); return false; }
   var dest=null;
   for(var k=0;k<path.length-1;k++){
     var p=path[k], tt2=at(p.x,p.y);
@@ -121,7 +124,7 @@ function amuletHook(x,y,check){
   if(!dest || (dest.x===player.x && dest.y===player.y)){ if(check) log('There is no room to haul yourself there.','c-info'); return false; }
   if(check) return true;
   sparkleFx(player.x,player.y,'phys',10); player.x=dest.x; player.y=dest.y; player._lx=undefined;
-  log('You hook the '+(isWallLike(t0)?'wall':'far side')+' and haul yourself across.','c-good'); sfx('swing');
+  log('Hook: pulled across.','c-good'); sfx('swing');
   if(typeof stepOn==='function') stepOn();
   computeFOV();
   return true;
@@ -150,7 +153,7 @@ function amuletTide(x,y){
   }
   floorMeta.tides.push({cells:cells, until:turn+20});
   burst(x,y,'ice',40,0.08); sfx('step-water',{from:{x:x,y:y}});
-  log('Water surges out, washing away ground hazards and flooding the floor.','c-good');
+  log('Tide: hazards cleared; ground flooded.','c-good');
   /* the wave runs through the whole room and trips its traps */
   var room=roomAt(x,y); if(!room) return;
   var tripped=0;
@@ -161,7 +164,7 @@ function amuletTide(x,y){
     else { f.found=true; burst(f.x,f.y,'ice',10,0.05); if(f.kind==='alarm') ents.forEach(function(e){ if(e.foe && e.state==='asleep' && dist(e,f)<=10) e.state='hunt'; }); feats=feats.filter(function(o){ return o!==f; }); }
     tripped++;
   });
-  if(tripped) log('The wave sets off <b>'+tripped+'</b> trap'+(tripped>1?'s':'')+' in the room.','c-kill');
+  if(tripped) log('Tide: '+tripped+' traps triggered.','c-kill');
 }
 function amuletSeeking(){
   var R=16, n=0, doors=0;
@@ -171,7 +174,7 @@ function amuletSeeking(){
   }
   feats.forEach(function(f){ if(!f.found && Math.max(Math.abs(f.x-player.x),Math.abs(f.y-player.y))<=R){ f.found=true; n++; } });
   ringFx(player.x,player.y,'#9FD8FF',5);
-  log('The floor around you settles into your mind'+(n?': <b>'+n+'</b> trap'+(n>1?'s':''):'')+(doors?(n?' and ':': ')+'<b>'+doors+'</b> hidden door'+(doors>1?'s':''):'')+'.','c-kill');
+  log('Seeking: nearby map revealed'+(n?'; '+n+' trap'+(n>1?'s':''):'')+(doors?'; '+doors+' hidden door'+(doors>1?'s':''):'')+'.','c-kill');
   computeFOV();
 }
 function amuletPillar(x,y,check){
@@ -179,7 +182,7 @@ function amuletPillar(x,y,check){
   if(check) return true;
   addProp(x,y,'pillar',{b:1, pillar:true, until:turn+15});
   burst(x,y,'earth',24,0.06); SHAKE=4; sfx('crate-break',{from:{x:x,y:y}});
-  log('A stone pillar grinds up out of the floor.','c-good');
+  log('Pillar raised.','c-good');
   computeFOV(); return true;
 }
 /* pillars block sight */

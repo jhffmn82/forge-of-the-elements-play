@@ -80,7 +80,7 @@
       s.warning=null;e.windup=null;s.majorReadyAt=clock()+200;s.summonReadyAt=clock();
       ensurePylons(s);
       if(!quiet){animation(e,'transition','cast');burst(e.x,e.y,phase===2?'magic':'light',38,.08);
-        log(phase===2?'The armor breaks apart. <b>The Unbound</b> unfurls its crystal wings. <b>Three Prism Pylons awaken</b>, and each charges its own beam!':'The body shatters. The <b>Heart of Discord</b> calls demons through the breach.','c-kill');}
+        log(phase===2?'<b>The Unbound:</b> 3 Prism Pylons charge beams!':'<b>Heart of Discord:</b> demons incoming!','c-kill',{priority:'warning'});}
     }
     return changed;
   }
@@ -125,7 +125,7 @@
   }
   function direct(e,target,amount,type){
     var damage=applyDamage(target,sDMG(amount),type,e,{tags:['area','unmaker']});floatText(target.x,target.y,String(damage),type,true);
-    if(target===player&&damage>0)log('The Unmaker deals '+damage+' '+FoteDamage.label(type)+' damage.','c-you');if(target.hp<=0)kill(target,e);return damage;
+    if(target===player&&damage>0)log('Unmaker → you: '+damage+' '+FoteDamage.label(type)+'.','c-you');if(target.hp<=0)kill(target,e);return damage;
   }
   function spell(e,target){
     var s=state(),type=elements[s.elementIndex++%elements.length],chance=hitChance(accOf(e),evaOf(target));
@@ -177,7 +177,7 @@
     else {var pulse=planPulse(e);tiles=pulse.tiles;outer=pulse.outer;}
     if(!tiles.length)return false;
     var w={unmaker:true,kind:kind,tiles:tiles,outer:outer,origin:origin,armedTurn:turn,beat:1,due:1};s.warning=w;e.windup=w;
-    animation(e,kind==='pulse'?'pulse-inner':kind,'cast');log('<b>'+({cleave:'Great Cleave: circle its flank!',rupture:'Rupture: leave the marked ground!',ring:'Inversion Pulse: get in close!',pulse:'Discord Pulse: red first, then violet. Step out, then back in!'})[kind]+'</b>','c-info');return true;
+    animation(e,kind==='pulse'?'pulse-inner':kind,'cast');log('<b>'+({cleave:'Great Cleave: circle its flank!',rupture:'Rupture: leave the marked ground!',ring:'Inversion Pulse: get in close!',pulse:'Discord Pulse: red first, then violet. Step out, then back in!'})[kind]+'</b>','c-info',{priority:'warning'});return true;
   }
   function release(e){
     var s=state(),w=s.warning;if(!w||turn<=w.armedTurn)return true;
@@ -223,7 +223,7 @@
       var tiles=safePattern(beamTiles(p,target),e,pendingTiles());
       if(!tiles.length){p.readyAt=now+100;return;}
       p.warning={kind:'pylon-beam',tiles:tiles,origin:{x:p.x,y:p.y},armedTurn:turn,fireAt:now+200};
-      log('<b>Prism Pylon '+pylonSites[p.id].label+'</b> charges a beam. It fires in 2 turns.','c-info');
+      log('<b>Pylon '+pylonSites[p.id].label+':</b> beam in 2 turns!','c-info');
     });
   }
   function rush(e,target){
@@ -245,7 +245,7 @@
       if(!add)continue;add.unmakerOwnerId=e.id;add.chaosAlerted=true;add.lastSeen={x:player.x,y:player.y};add.t=clock()+100;
       s.summoned++;(s.summonIds||(s.summonIds=[])).push(add.id);born++;burst(add.x,add.y,'dark',20,.06);
     }
-    if(!born)return false;s.summonReadyAt=clock()+400;animation(e,'summon','cast');log('The Unmaker tears open a breach. <b>Chaos demons answer.</b>','c-you');return true;
+    if(!born)return false;s.summonReadyAt=clock()+400;animation(e,'summon','cast');log('<b>Chaos demons summoned!</b>','c-you');return true;
   }
   function act(e){
     var s=state();if(!s||s.status!=='active'||!owns(e)||e.hp<=0)return false;

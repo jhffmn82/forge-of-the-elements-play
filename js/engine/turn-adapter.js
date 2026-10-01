@@ -1,6 +1,8 @@
 /* Explicit action phases. `turn` is a paid-action counter for saved telegraphs;
  * `player.t` is scheduler time. Periodic work requires positive elapsed time. */
 function turnInCombat(){return ents.some(function(e){return e.foe&&e.hp>0&&e.state==='hunt'&&vis[idxOf(e.x,e.y)];});}
+function turnBeginCombatLog(){if(typeof FoteCombatLog!=='undefined')FoteCombatLog.beginTurn();}
+function turnFinishCombatLog(){if(typeof FoteCombatLog!=='undefined')FoteCombatLog.finishTurn();}
 function turnPrepareAction(context){
   BOWAIM=null;player.movedLast=context.moved;
   if(player.castingSpell){player.hidden=0;player.syllaDark=0;}
@@ -29,10 +31,10 @@ function turnAdvanceAction(context){
 function turnHunger(context){
   var before=player.hunger,sustenance=ringVal('sustenance');
   player.hunger=Math.max(0,Math.min(HUNGER_MAX,player.hunger-hungerCost(context.cost)*(1-sustenance)));
-  if(before>=300&&player.hunger<300){log('<b>You are getting hungry.</b> Eat something soon.','c-you');sfx('hungry');}
+  if(before>=300&&player.hunger<300){log('<b>You are getting hungry.</b> Eat something soon.','c-you',{priority:'warning'});sfx('hungry');}
   if(player.hunger<=0&&turn%5===0){
     dealDirectDamage(player,1,'phys',null,{tags:['periodic','starvation']});floatText(player.x,player.y,'1','phys');
-    if(turn%25===0){log('You are starving!','c-you');sfx('hungry');}
+    if(turn%25===0){log('You are starving!','c-you',{priority:'warning'});sfx('hungry');}
   }
 }
 function turnDeepLavaPlayer(){if(inDeep()&&floorMeta.lava&&player.hp>0)deepLavaBurn(player);}
@@ -112,7 +114,7 @@ var gameTurns=FoteTurns.create({
   actorCost:function(e){return actCost(e);},pulse:turnWorldPulse,
   cost:function(context){return context.stillness?0:player.tombed?100:context.moved?moveCost():actCost(player);},
   advanceAction:turnAdvanceAction,
-  prepare:[turnPhase('action-flags',turnPrepareAction),turnPhase('holy-buff-gain',turnPrepareHolyBuffs),turnPhase('cinder-trail',turnPrepareCinder),turnPhase('effect-birth-clocks',turnPrepareBuffClocks)],
+  prepare:[turnPhase('combat-log-start',turnBeginCombatLog),turnPhase('action-flags',turnPrepareAction),turnPhase('holy-buff-gain',turnPrepareHolyBuffs),turnPhase('cinder-trail',turnPrepareCinder),turnPhase('effect-birth-clocks',turnPrepareBuffClocks)],
   beforeWorld:[turnPhase('movement-sight',turnRefreshSight,true),turnPhase('hearing',function(context){if(typeof FoteEnemyPerception!=='undefined')FoteEnemyPerception.playerAction(context);},true),turnPhase('gear-use',turnIdentifyGear,true),turnPhase('lava-at-player',turnDeepLavaPlayer,true),turnPhase('hunger',turnHunger,true),turnPhase('distance-field',refreshPlayerDistance,true)],
   afterWorld:[
     turnPhase('ghoul-emergence',function(context){if(typeof FoteGhoul!=='undefined')FoteGhoul.emerge(context);},true),
@@ -123,12 +125,12 @@ var gameTurns=FoteTurns.create({
     turnPhase('plane-hazards',planeTick,true),turnPhase('plane-creatures',planeCreaturesTick,true),turnPhase('shock-clouds',turnShockClouds,true),turnPhase('cave-spores',turnCaveSpores,true),turnPhase('eel-placement',eelPlacement,true),turnPhase('maw',mawTick,true),
     turnPhase('vegetation',vegRegrowTick,true),turnPhase('food-regeneration',turnFoodRecovery,true),turnPhase('lava-at-enemies',turnDeepLavaEnemies,true),turnPhase('cocoon-hatching',deepHatchTick,true),turnPhase('matron-venom',matronVenomTick,true),turnPhase('elemental-plane-weather',fwaTick,true),turnPhase('lich-return',turnLichReturn,true)
   ],
-  finalize:[turnPhase('finalize-action',turnFinalizeAction),turnPhase('start-slides',turnStartSlides)]
+  finalize:[turnPhase('finalize-action',turnFinalizeAction),turnPhase('start-slides',turnStartSlides),turnPhase('combat-log-finish',turnFinishCombatLog)]
 });
 function endTurn(){
   // Reflection and other action-time damage can kill before scheduling starts.
   // The scheduler rejects dead actors, so finish that death at the action boundary.
-  if(player&&player.hp<=0){death();updateUI();draw();return;}
+  if(player&&player.hp<=0){death();updateUI();draw();turnFinishCombatLog();return;}
   if(!player.movedThisTurn&&!player.lastAttack&&!player.castingSpell&&playerFearAction())return;
   var result=gameActions.suspend(function(){return gameTurns.action();});
   if(result&&typeof result.catch==='function')result.catch(function(error){console.error('Enemy turn failed',error);stopTravel();PACING.pending=null;});

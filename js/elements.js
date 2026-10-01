@@ -73,16 +73,27 @@ function drawElementGroundTelegraphs(now){
 
   if(!iceG || iceG.length!==MW*MH) return;
   ctx.save();
+  var frost=[],roots=[];
   for(var i=0;i<iceG.length;i++){
     if(!iceG[i] && !rootG[i] && !holyG[i]) continue;
-    var x=i%MW, y=(i/MW)|0; if(!(revealAll||vis[i])) continue;
-    var px=(x-camX)*TS, py=(y-camY)*TS;
-    if(iceG[i]){ ctx.fillStyle='rgba(150,210,255,0.28)'; ctx.fillRect(px+1,py+1,TS-2,TS-2); }
-    if(rootG[i]){ ctx.strokeStyle='rgba(127,160,90,0.8)'; ctx.lineWidth=Math.max(1,TS*0.05); ctx.beginPath(); ctx.moveTo(px+TS*0.2,py+TS*0.8); ctx.lineTo(px+TS*0.45,py+TS*0.35); ctx.moveTo(px+TS*0.55,py+TS*0.85); ctx.lineTo(px+TS*0.75,py+TS*0.3); ctx.stroke(); }
+    if(!(revealAll||vis[i])) continue;
+    if(iceG[i])frost.push(i);
+    if(rootG[i])roots.push(i);
   }
-  ents.forEach(function(e){ if(e.tomb>0 && (revealAll||vis[idxOf(e.x,e.y)])){ var rp=renderPos(e), px=(rp.x-camX)*TS, py=(rp.y-camY)*TS; ctx.fillStyle='rgba(170,220,255,0.35)'; ctx.fillRect(px+2,py+2,TS-4,TS-4); ctx.strokeStyle='rgba(220,245,255,0.9)'; ctx.lineWidth=2; ctx.strokeRect(px+3,py+3,TS-6,TS-6); } });
+  drawGroundMaterial('ice',frost,.78);drawGroundMaterial('roots',roots,.65);drawGroundRoots(roots,.88);
   ctx.restore();
 
+}
+
+/* The existing painted ice block forms the shell over an entombed creature.
+ * The actor layer owns depth, concealment and cleanup for both sides. */
+function prepareTombActor(job){
+  var e=job.entity;if(!(e.tomb>0||e===player&&e.tombed))return;
+  return function(){
+    var ice=objArt('props','ice-block');if(!ice)return;
+    var size=typeof entitySize==='function'?entitySize(e):1;
+    drawObj(ice,job.x+TS*(size-1)*.5,job.y+TS*(size-1),{feet:true,fit:1.05*size,alpha:.52*(job.options&&job.options.alpha!==undefined?job.options.alpha:1)});
+  };
 }
 
 /* ---------------------------------------------------------------- statuses: immunities, Deep Freeze, Petrify, poison */
@@ -93,7 +104,7 @@ function applyPoison(e, announce, turns){
   gameEffects.apply(e,'poison',turns||Math.min(3,Math.max(1,aff('earth')-2)),Math.max(1,Math.round(e.maxhp*0.10*(big?0.5:1))),{durationModifiers:false,refresh:'replace'});
   if(announce){
     if(typeof floatText==='function') floatText(e.x, e.y, 'poisoned', 'poison');
-    if(typeof log==='function' && vis[idxOf(e.x,e.y)]) log('<b>Venom.</b> The rooted '+e.name+' is poisoned: '+e.st.poison.d+' a turn for '+e.st.poison.t+' turn'+(e.st.poison.t===1?'':'s')+'.','c-good');
+    if(typeof log==='function' && vis[idxOf(e.x,e.y)]) log(e.name+': Poisoned.','c-good');
   }
 }
 
@@ -137,7 +148,7 @@ function turnElementAfterAction(context){  /* Fade (Shadow 3) */
       if(at(w.x,w.y)===WALL) setT(w.x,w.y,FLOOR);
       return false;
     });
-    if(floorMeta.upheaval.length!==up.length){ log('The raised stone crumbles.','c-info'); computeFOV(); }
+    if(floorMeta.upheaval.length!==up.length){ log('Upheaval ends.','c-info'); computeFOV(); }
   }
 
 }
@@ -168,7 +179,7 @@ function bresenham(x0,y0,x1,y1,len){ var pts=[], dx=Math.abs(x1-x0), dy=Math.abs
 
 function livingFlameBehavior(e){
   if(!e.rangedAlly) return false;
-  if(e.hp<=0)return true; if(e.life<=0){ ents=ents.filter(function(o){ return o!==e; }); log('Your '+e.name+' gutters out.','c-info'); return true; }
+  if(e.hp<=0)return true; if(e.life<=0){ ents=ents.filter(function(o){ return o!==e; }); log('Your '+e.name+' expires.','c-info'); return true; }
 
   var tgt=ents.filter(function(o){return o.foe&&o.hp>0&&actorVisible(o)&&dist(e,o)<=e.rangedAlly&&clearShot(e,o);})
     .sort(function(a,b){ return dist(a,e)-dist(b,e); })[0];
@@ -195,12 +206,12 @@ function castElementTarget(x,y){
   if(!inRange(x,y)){ log(((revealAll||vis[idxOf(x,y)]) ? 'Out of range.' : 'You cannot see that tile.'),'c-info'); sfx('ui-error'); return false; }
   var f=foeAt(x,y);
   if(A.kind==='blast'){
-    beginCast(A); boltFx(player.x,player.y,x,y,'fire'); explosionFx(x,y);
+    beginCast(A); boltFx(player.x,player.y,x,y,'fire',{explosion:true,sfxHit:'explosion'});
     var dmg=spellRoll(A), tiles=[];
     for(var ty=y-A.radius;ty<=y+A.radius;ty++) for(var tx=x-A.radius;tx<=x+A.radius;tx++){ if(!inb(tx,ty)) continue; tiles.push([tx,ty]); ignite(tx,ty,'player'); burnWorld(tx,ty); }
     ents.slice().forEach(function(e){ if(!e.foe || dist(e,{x:x,y:y})>A.radius) return; spellHit(e,A,dmg,'fire'); if(e.hp>0) applyStatus(e,'burn',3,Math.max(1,Math.round(burnDmg()*spellPower(A)))); finishHit(e); });
     markGround(tiles, A);
-    log('<b>Fireball!</b>','c-fire');
+
   }
   else if(A.kind==='cone'){
     var dmg2=spellRoll(A), hitT=effectFootprint(A,x,y);
@@ -212,7 +223,7 @@ function castElementTarget(x,y){
         if(!e.base.boss && walkable(kx,ky) && !occupied(kx,ky)){ e.x=kx; e.y=ky; } }
       finishHit(e); });
     markGround(hitT, A);
-    log('<b>Frost Cone.</b>','c-hit');
+
   }
   else if(A.kind==='chain'){
     var path=boltPath(player.x,player.y,x,y), end=path.length?path[path.length-1]:{x:x,y:y}, t0=foeAt(end.x,end.y);
@@ -227,7 +238,7 @@ function castElementTarget(x,y){
       finishHit(cur);
       if(nx) hit.push(nx); cur=nx;
     }
-    log('<b>Chain Lightning</b> strikes '+hit.length+' enem'+(hit.length===1?'y':'ies')+'.','c-hit');
+
   }
   else if(A.kind==='beam'){
     var ddx=Math.sign(x-player.x), ddy=Math.sign(y-player.y);
@@ -235,10 +246,11 @@ function castElementTarget(x,y){
     var bt=effectFootprint(A,x,y);
     beginCast(A);
     var dmg3=spellRoll(A);
+    beamFx(bt,'light');
     bt.forEach(function(t){ sparkleFx(t[0],t[1],'light',4); });
     ents.slice().forEach(function(e){ if(!e.foe || !entityIntersects(e,bt)) return; spellHit(e,A,dmg3,'light'); if(e.hp>0 && rng()<.05*aff('light')) applyStatus(e,'blind',2); finishHit(e); });
     markGround(bt, A);
-    log('<b>Radiant Beam.</b>','c-hit');
+
   }
   else if(A.kind==='swarm'){
     var spots=[];
@@ -248,7 +260,7 @@ function castElementTarget(x,y){
     ents=ents.filter(function(e){return !e.swarm;});
     var swarmStats=shadowSwarmStats(A);
     spots.forEach(function(s){ var m=spawn('wisp',s[0],s[1]); m.foe=false; m.ally=true; m.state='ally'; m.name='Shade'; m.base=Object.assign({},m.base,{name:'Shade',sprite:'m-shade',art:.8,dmg:[swarmStats.damage,swarmStats.damage],el:'shadow'});m.maxhp=m.hp=swarmStats.hp; m.dmg=[swarmStats.damage,swarmStats.damage]; m.life=swarmStats.duration; m.noXp=true; m.swarm=true; murkSummonHp(m); m.t=player.t+100; sparkleFx(s[0],s[1],'dark',8); });
-    log('<b>Shadow Swarm.</b> '+spots.length+' shadows rise.','c-good');
+    log('Shadow Swarm: '+spots.length+' summoned.','c-good');
   }
   else if(A.kind==='lflame'){
     if(!walkable(x,y) || occupied(x,y)){ log('The flame needs an empty tile.','c-info'); return false; }
@@ -261,18 +273,18 @@ function castElementTarget(x,y){
     var land=spellRoll(A);
     ents.slice().forEach(function(e){ if(e.foe && dist(e,m2)<=1){ spellHit(e,A,land,'fire'); finishHit(e); } });
     markGround([[x,y]], A);
-    log('<b>Living Flame.</b> A fire elemental answers.','c-fire');
+    log('Living Flame summoned.','c-fire');
   }
   else if(A.kind==='tomb'){
     if(x===player.x && y===player.y){
       beginCast(A);
-      log('<b>Glacial Tomb.</b> Ice closes over you.','c-good'); sfx('status-freeze');
+      log('You: Glacial Tomb.','c-good'); sfx('status-freeze');
       player.tombed=true;
       var tombPlayer=player,savedConditions=player.st,tombTurns=0;player.st={};
       function restoreTomb(){tombPlayer.st=savedConditions;tombPlayer.tombed=false;}
       function finishTomb(){
         restoreTomb();
-        healPlayer(player.maxhp*.25);player.mp=Math.min(player.maxmp,player.mp+Math.round(player.maxmp*.25));log('The tomb melts away.','c-info');return true;
+        healPlayer(player.maxhp*.25);player.mp=Math.min(player.maxmp,player.mp+Math.round(player.maxmp*.25));log('Glacial Tomb ends.','c-info');return true;
       }
       function advanceTomb(){
         try{
@@ -300,7 +312,7 @@ function castElementTarget(x,y){
     }finally{AOE_HIT=tombArea;}
     markGround(tombTiles,A);
     burst(f.x,f.y,'ice',30,0.06); floatText(f.x,f.y,'entombed','ice');
-    log('<b>Glacial Tomb.</b> '+f.name+' is sealed in ice for '+f.tomb+' turns.','c-good');
+    log(f.name+': entombed '+f.tomb+' turns.','c-good');
   }
   else if(A.kind==='upheaval'){
     var walls=upheavalWallTiles(x,y);
@@ -326,7 +338,7 @@ function castElementTarget(x,y){
     }finally{AOE_HIT=upheavalArea;}
     markGround(impact, A);
     computeFOV();
-    log('<b>Upheaval.</b> '+walls.length+' walls of stone tear up the floor, striking enemies and summons nearby.','c-good');
+    log('Upheaval: '+walls.length+' walls.','c-good');
   }
   else if(A.kind==='umbral'){
     if(!walkable(x,y) || occupied(x,y)){ log('You cannot step there.','c-info'); return false; }
@@ -338,7 +350,7 @@ function castElementTarget(x,y){
     player.hidden=3;
     ents.forEach(function(e){ if(e.foe && e.state==='hunt'){ e.state='wander'; e.lastSeen=null; } });
     computeFOV();
-    log('<b>Umbral Passage.</b> You step through the dark, leaving your shadow to fight.','c-good');
+    log('Umbral Passage: shadow summoned.','c-good');
   }
   endTurn(); return true;
 }

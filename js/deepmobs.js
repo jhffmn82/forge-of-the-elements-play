@@ -106,7 +106,7 @@ function deepHurt(t, n, type, src, why){
   if(!t || t.hp<=0) return 0;
   var d=applyDamage(t, n, type, src);
   floatText(t.x, t.y, String(d), type==='dark' ? 'dark' : type);
-  if(t===player){ if(why) log(why+': <b>'+d+'</b>.','c-you'); if(player.hp<=0) kill(player, src); }
+  if(t===player){ if(why) log(why+': '+combatDamageNumber(d,type)+'.','c-you'); if(player.hp<=0) kill(player, src); }
   else if(t.hp<=0) kill(t, src);
   return d;
 }
@@ -152,7 +152,7 @@ function inflictBleed(t, src, turns){
   if(!t || t.hp<=0 || (t!==player && !(t.base && t.base.living))) return;
   var fresh=!(t.st && t.st.bleed);
   applyStatus(t, 'bleed', turns||BLEED.turns, sDMG(BLEED.base + floorNo*BLEED.per));
-  if(fresh){ floatText(t.x, t.y, 'bleeding', 'blood'); if(t===player) log('You are <b>bleeding</b>. Any healing will close the wound.','c-you'); }
+  if(fresh){ floatText(t.x, t.y, 'bleeding', 'blood'); if(t===player) log('<b>Bleeding.</b> Heal to stop it.','c-you'); }
 }
 function deepStanch(t){ if(t && t.st && t.st.bleed){ delete t.st.bleed; if(t===player) log('The bleeding stops.','c-good'); else if(deepVis(t.x,t.y)) log('The '+t.name+' stops bleeding.','c-info'); } }
 
@@ -186,7 +186,7 @@ function throwDarkness(e){
   floorMeta.dark=deepDarkActive().concat([{cells:cells, until:turn+GLOBE.turns}]);
   setClip(e,'attack'); boltFx(e.x,e.y,player.x,player.y,'dark'); sfx('shaman-cast',{from:e});
   burst(player.x, player.y, 'dark', 40, 0.08);
-  log('The <b>Drow Blade</b> flings a <b>globe of darkness</b> over you. You can barely see past your own hands, but the drow can.','c-you');
+  log('<b>Darkness:</b> your sight shrinks; drow see through it.','c-you');
   computeFOV();
 }
 function inDeepDark(x,y){ var i=idxOf(x,y); return deepDarkActive().some(function(g){ return g.cells.indexOf(i)>=0; }); }
@@ -221,10 +221,10 @@ function webShot(e, who){
     if(web.applied)player.syllaWeb=WEBSHOT.slow;
     FoteEnemyFields.web(player.x,player.y,e);
     burst(player.x, player.y, 'web', 22, 0.05); floatText(player.x, player.y, 'webbed', 'phys');
-    log('The <b>'+(who||e.name)+'</b> spits sticky webbing over you'+(web.applied?': <b>pinned</b> for a turn, then slowed for three.':', but you resist the snare.'),'c-you');
+    log((who||e.name)+': '+(web.applied?'Root 1 turn, Slow 3.':'web resisted.'),'c-you');
   } else {
     var c=nearFree(player.x, player.y, 1); if(c)FoteEnemyFields.web(c.x,c.y,e);
-    log('The '+(who||e.name)+'\'s web splatters beside you.','c-miss');
+    log((who||e.name)+': web misses.','c-miss');
   }
 }
 
@@ -254,7 +254,7 @@ var DEEP_AI = {
       if(gameEffects.has(hurt,'rot'))h=Math.floor(h*.5);
       h=Math.min(h,hurt.maxhp-hurt.hp);
       hurt.hp=Math.min(hurt.maxhp, hurt.hp+h);if(!actorConcealed(hurt)){floatText(hurt.x, hurt.y, '+'+h, 'heal');sparkleFx(hurt.x, hurt.y, 'blood', 20);}deepStanch(hurt);
-      if(deepVis(e.x,e.y)) log('The <b>Drow Priestess</b> '+(hurt===e ? 'mends her own wounds' : 'mends the '+hurt.name)+' with blood magic (+'+h+').','c-info');
+      if(deepVis(e.x,e.y)) log('Priestess heals '+hurt.name+': +'+h+' HP.','c-info');
        return true;
     }
     function ward(idle){
@@ -264,7 +264,7 @@ var DEEP_AI = {
       if(e.hp<=0)return true;e.wardCd=PRIEST.wardCd;setClip(e,'attack');sfx('shaman-cast',{from:e});
       gameEffects.apply(front,'wardshield',PRIEST.wardTurns,undefined,{durationModifiers:false,data:{n:sDMG(PRIEST.ward+floorNo*0.5)}});
       if(!actorConcealed(front)){ringFx(front.x,front.y,'#C0203A',1);sparkleFx(front.x,front.y,'blood',16);}
-      if(deepVis(e.x,e.y))log('The <b>Drow Priestess</b> wraps the '+front.name+' in a <b>blood ward</b>.','c-info');
+      if(deepVis(e.x,e.y))log(front.name+': Blood Ward.','c-info');
       return true;
     }
     if(heal(false))return true;
@@ -277,7 +277,7 @@ var DEEP_AI = {
         for(var k=0;k<n;k++){ var c=nearFree(e.x,e.y,1) || nearFree(e.x,e.y,2); if(!c || deepLava(c.x,c.y)) break; var s=deepSpawnRaw('spiderling', c.x, c.y); s.state='hunt';s.lastSeen={x:target.x,y:target.y}; s.noLoot=true; s.owner=e.id; s.t=e.t; sparkleFx(c.x,c.y,'web',14); got++; }
         if(got){
           e.callCd=PRIEST.callCd;setClip(e,'attack');sfx('shaman-cast',{from:e});
-          if(deepVis(e.x,e.y))log('The <b>Drow Priestess</b> hisses a prayer and '+(got>1 ? got+' <b>Spiderlings</b> scuttle' : 'a <b>Spiderling</b> scuttles')+' out of the dark to her.','c-info');
+          if(deepVis(e.x,e.y))log('Priestess: '+got+' Spiderlings summoned.','c-info');
           return true;
         }
       }
@@ -287,9 +287,9 @@ var DEEP_AI = {
       if(e.hp<=0)return true;setClip(e,'attack'); boltFx(e.x,e.y,target.x,target.y,'blood'); sfx('shaman-cast',{from:e});
       var chance=hitChance(e.base.acc+6,evaOf(target));if(target===player)chance=hostileHitChance(chance,true);
       if(rng()<chance){
-        var bd=deepHurt(target, roll(e.dmg[0], e.dmg[1]), 'dark', e, 'The <b>Drow Priestess</b>\'s blood bolt hits you');
+        var bd=deepHurt(target, roll(e.dmg[0], e.dmg[1]), 'dark', e, 'Priestess → you');
         if(bd>0 && e.hp>0 && e.hp<e.maxhp){ var hh=Math.min(gameEffects.has(e,'rot')?Math.floor(bd*.5):bd, e.maxhp-e.hp); e.hp+=hh; floatText(e.x,e.y,'+'+hh,'heal'); }
-      } else { log('The Drow Priestess\'s blood bolt misses.','c-miss'); floatText(target.x,target.y,'miss','miss'); }
+      } else { log('Priestess blood bolt misses.','c-miss'); floatText(target.x,target.y,'miss','miss'); }
        return true;
     }
     if(FoteEnemyTeamwork.position(e,target,PRIEST.range,true))return true;
@@ -301,21 +301,21 @@ var DEEP_AI = {
     if(d<=2 && canActorMove(e) && deepCanFlee(e)){ if(e.hp<=0)return true;fleeStep(e);  return true; }
     if(d>=2 && d<=SAP.range && deepShot(e)){
       if(e.hp<=0)return true;setClip(e,'attack'); boltFx(e.x,e.y,player.x,player.y,'magic'); sfx('shaman-cast',{from:e});
-      if(rng() >= hostileHitChance(hitChance(e.base.acc+10, evaOf(player)),true)){ log('The Thought Eater\'s '+(e.sapCd<=0 ? 'mana sap' : 'lash')+' slides off your mind.','c-miss'); floatText(player.x,player.y,'miss','miss'); if(e.sapCd<=0) e.sapCd=1;  return true; }
+      if(rng() >= hostileHitChance(hitChance(e.base.acc+10, evaOf(player)),true)){ log('Thought Eater '+(e.sapCd<=0 ? 'mana sap' : 'lash')+' misses.','c-miss'); floatText(player.x,player.y,'miss','miss'); if(e.sapCd<=0) e.sapCd=1;  return true; }
       if(e.sapCd<=0){
         e.sapCd=SAP.cd;
         if(player.mp>=1){
           var n=Math.min(Math.floor(player.mp), sDMG(SAP.base+floorNo*SAP.per)); player.mp-=n;
           var h=Math.min(e.maxhp-e.hp, Math.round(n*SAP.heal)); e.hp+=h;
           floatText(player.x,player.y,'-'+n+' mp','magic'); if(h>0) floatText(e.x,e.y,'+'+h,'heal');
-          log('The <b>Thought Eater</b> saps <b>'+n+' mana</b> out of your head'+(h>0 ? ' and swells (+'+h+' HP)' : '')+'.','c-you');
+          log('Thought Eater: −'+n+' Mana'+(h>0 ? '; +'+h+' HP' : '')+'.','c-you');
           /* 2026-09-23 (Justin): the sap hurts too - half the mana taken lands as magic damage (past armour, Spell Ward may turn it) */
-          if(n>0) deepHurt(player, Math.round(n*0.5), 'magic', e, 'The <b>Thought Eater</b> feeds on the torn thoughts');
+          if(n>0) deepHurt(player, Math.round(n*0.5), 'magic', e, 'Thought Eater → you');
         } else {
           applyStatus(player,'stun',1); floatText(player.x,player.y,'dazed','magic');
-          log('The <b>Thought Eater</b> finds no mana left to eat and rattles your empty mind: <b>dazed</b> for a turn.','c-you');
+          log('Thought Eater: you Stunned (1 turn).','c-you');
         }
-      } else deepHurt(player, roll(e.dmg[0], e.dmg[1]), 'magic', e, 'The <b>Thought Eater</b> lashes your mind');
+      } else deepHurt(player, roll(e.dmg[0], e.dmg[1]), 'magic', e, 'Thought Eater → you');
        return true;
     }
     return false;
@@ -342,11 +342,11 @@ var DEEP_AI = {
     if(e.boltCd<=0 && d>=2 && d<=IMP.range && deepShot(e)){
       if(e.hp<=0)return true;e.boltCd=IMP.cd; setClip(e,'attack'); boltFx(e.x,e.y,player.x,player.y,'fire'); sfx('shaman-cast',{from:e});
       if(rng()<hostileHitChance(hitChance(e.base.acc+6, evaOf(player)),true)){
-        var fd=deepHurt(player, roll(e.dmg[0], e.dmg[1]), 'fire', e, 'The <b>Fire Imp</b>\'s fire bolt hits you');
-        if(player.hp>0 && rng()<IMP.burn){ applyStatus(player,'burn',3,sDMG(2)); log('You are <span class="c-fire">burning</span>.','c-you'); }
+        var fd=deepHurt(player, roll(e.dmg[0], e.dmg[1]), 'fire', e, 'Fire Imp → you');
+        if(player.hp>0 && rng()<IMP.burn){ applyStatus(player,'burn',3,sDMG(2)); log('Burning.','c-you'); }
         ignite(player.x, player.y, null);
       } else {
-        log('The Fire Imp\'s fire bolt misses and splashes the floor.','c-miss');
+        log('Fire Imp misses; ground ignited.','c-miss');
         var c=nearFree(player.x,player.y,1); if(c) ignite(c.x, c.y, null);
       }
        return true;
@@ -385,7 +385,7 @@ function deepHatchTick(){
       var s=deepSpawnRaw('spiderling', c.x, c.y); s.state='hunt'; s.t=player.t; s.caughtOff=turn; got++;
     }
     sfx('trap-web',{from:p}); SHAKE=Math.max(SHAKE||0, 3);
-    log('A cocoon splits open with a wet tearing sound, and '+(got>1 ? '<b>'+got+' Spiderlings</b> spill' : 'a <b>Spiderling</b> spills')+' out of it!','c-you');
+    log('Cocoon: '+got+' Spiderlings hatch.','c-you');
   });
 }
 
@@ -443,7 +443,7 @@ function matronCircleCells(c){ var out=[]; for(var y=c.y;y<=c.y+1;y++) for(var x
 function matronWake(e, M){
   e.state='hunt'; e.caughtOff=-1; M.nextRit=turn+4;
   ents.forEach(function(o){ if(o.guard && o.foe) o.state='hunt'; });
-  log('<b>The Matron of the Web</b> uncoils from her throne, eight legs unfolding. "Another offering walks in on its own."','c-you');
+  log('<b>The Matron awakens!</b>','c-you');
   sfx('matron-intro',{from:e}); if(typeof playMusic==='function') playMusic('boss'); SHAKE=8;
 }
 function matronStartRitual(e, M){
@@ -468,8 +468,7 @@ function matronStartRitual(e, M){
   M.n++; M.nextRit=turn+MATRON.ritTurns+MATRON.ritEvery[Math.min(2,M.phase)];
   setClip(e,'attack'); sfx('shaman-cast',{from:e}); SHAKE=Math.max(SHAKE||0, 4); ringFx(e.x, e.y, '#D0203A', 2);
   var nm = kind==='tithe' ? 'Blood Tithe' : 'Brood Call';
-  log('The Matron '+(circle ? 'drops onto a ritual circle on a line of silk' : 'rears up')+' and begins the <b>'+nm+'</b>! '+
-      'Break it: <b>'+M.rit.need+' damage in '+MATRON.ritTurns+' turns</b>, or stun her.','c-you');
+  log('<b>'+nm+':</b> deal '+M.rit.need+' damage in '+MATRON.ritTurns+' turns, or Stun.','c-you',{priority:'warning'});
   return true;
 }
 function matronEndRitual(M){
@@ -481,7 +480,7 @@ function matronBreak(e, M){
   matronEndRitual(M);
   applyStatus(e, 'stun', 1); floatText(e.x, e.y, 'broken!', 'magic', true);
   ringFx(e.x, e.y, '#FFFFFF', 2); sfx('parry',{from:e});
-  log('<b>You break the Matron\'s ritual!</b> The circle gutters out and she reels.','c-good');
+  log('<b>Ritual broken. Matron Stunned.</b>','c-good');
 }
 function matronBrood(e, driders, spiders, why){
   var got=[];
@@ -498,7 +497,7 @@ function matronBrood(e, driders, spiders, why){
   }
   if(n) got.push((n>1 ? n : 'a')+' <b>Spiderling'+(n>1?'s':'')+'</b>');
   var who=got.join(' and ');
-  log(why+(got.length ? ' '+who.charAt(0).toUpperCase()+who.slice(1)+' crawl'+(got.length===1 && n<=1 ? 's' : '')+' out of the webs to her.' : ' Nothing answers.'),'c-you');
+  log(why+': '+(got.length ? who+' summoned.' : 'no summons.'),'c-you');
 }
 function matronFinish(e, M){
   var R=M.rit; matronEndRitual(M);
@@ -506,11 +505,11 @@ function matronFinish(e, M){
   if(R.kind==='tithe'){
     var raw=Math.min(roll(MATRON.tithe[0], MATRON.tithe[1]), Math.round(player.maxhp*MATRON.titheCap));   /* never a one-shot */
     boltFx(player.x, player.y, e.x, e.y, 'blood'); burst(player.x, player.y, 'blood', 40, 0.08);
-    var d=deepHurt(player, raw, 'dark', e, 'The <b>Blood Tithe</b> tears the blood out of you');
+    var d=deepHurt(player, raw, 'dark', e, 'Blood Tithe → you');
     if(player.hp>0) inflictBleed(player, e, 3);
-    var h=Math.min(e.maxhp-e.hp, d*MATRON.titheHeal); if(h>0){ e.hp+=h; floatText(e.x, e.y, '+'+h, 'heal'); log('The Matron drinks it: <b>+'+h+'</b> HP.','c-you'); }
+    var h=Math.min(e.maxhp-e.hp, d*MATRON.titheHeal); if(h>0){ e.hp+=h; floatText(e.x, e.y, '+'+h, 'heal'); log('Matron: +'+h+' HP.','c-you'); }
   } else {
-    matronBrood(e, 1, ri(MATRON.broodSpiderlings[0], MATRON.broodSpiderlings[1]), 'The <b>Brood Call</b> is answered.');
+    matronBrood(e, 1, ri(MATRON.broodSpiderlings[0], MATRON.broodSpiderlings[1]), 'Brood Call');
   }
 }
 /* venom rain lands on its own clock (endTurn), so stunning her does not stop what is already falling */
@@ -524,7 +523,7 @@ function matronVenomTick(){
     if(t!==player && !t.ally) return;
     if(V.cells.indexOf(idxOf(t.x,t.y))<0) return;
     var raw=roll(MATRON.venom[0], MATRON.venom[1]); if(t===player) raw=Math.min(raw, Math.round(player.maxhp*MATRON.venomCap));
-    deepHurt(t, raw, 'poison', e, t===player ? 'The <b>venom rain</b> splashes over you' : null);
+    deepHurt(t, raw, 'poison', e, t===player ? 'Venom Rain → you' : null);
     if(t.hp>0) applyStatus(t, 'poison', 3, sDMG(3));
   });
 }
@@ -544,12 +543,12 @@ function matronAct(e){
   var pct=e.hp/e.maxhp;
   if(M.phase<2 && pct<MATRON.phase[M.phase]){
     M.phase++; setClip(e,'attack'); sfx('matron-intro',{from:e}); SHAKE=10; ringFx(e.x, e.y, '#8A1A3A', 4);
-    matronBrood(e, 1, M.phase===1 ? 2 : 3, '<b>The Matron shrieks</b>, and the webs overhead shake.');
+    matronBrood(e, 1, M.phase===1 ? 2 : 3, 'Matron reinforcements');
      return;
   }
   if(M.rit){
     if(turn>=M.rit.at) matronFinish(e, M);
-    else { burst(e.x, e.y, 'blood', 12, 0.05); if(deepVis(e.x,e.y)) log('The Matron\'s chant rises. <b>'+(M.rit.at-turn)+'</b> turn'+(M.rit.at-turn===1?'':'s')+' left ('+Math.max(0,M.rit.hp0-e.hp)+'/'+M.rit.need+' damage to break it).','c-you'); }
+    else { burst(e.x, e.y, 'blood', 12, 0.05); if(deepVis(e.x,e.y)) log('Ritual: '+(M.rit.at-turn)+' turns; '+Math.max(0,M.rit.hp0-e.hp)+'/'+M.rit.need+' damage.','c-you'); }
      return;
   }
   if(turn>=M.nextRit && matronStartRitual(e, M)){  return; }
@@ -559,7 +558,7 @@ function matronAct(e){
     M.venom={cells:cells, at:turn+2}; M.venomCd=MATRON.venomCd;
     floorMeta.marks=(floorMeta.marks||[]).filter(function(k){ return k.kind!=='matron-venom'; }).concat([{cells:cells, col:'#FF3A2A', until:turn+2, kind:'matron-venom'}]);
     setClip(e,'attack'); sfx('trap-gas',{from:e}); boltFx(e.x, e.y, player.x, player.y, 'poison');
-    log('The Matron spits a spray of <b>venom</b> high into the air above you. <b>Move off the red!</b>','c-you');
+    log('<b>Venom falling:</b> leave the red tiles!','c-you',{priority:'warning'});
      return;
   }
   if(M.webCd<=0 && see && d>=2 && d<=6 && !player.st.root && deepShot(e)){ M.webCd=MATRON.webCd; webShot(e, 'Matron');  return; }
@@ -595,16 +594,6 @@ function deepEnsureExit(e){
 /* ---------------------------------------------------------------- drawing
    The Matron is one still (256px, not animated): she breathes and sways in code, and while she channels she
    rises on her silk with a red glow under her. Hovering creatures (the imp, the thought eater) bob. */
-
-
-/* weak generated clips (see tools/deepart.py): these death clips darken or morph instead of falling, so the
-   game's own topple-and-fade plays; the ember spider's idle and attack drift dark in their last frames */
-var DEEP_TOPPLE = {'m-web-spitter':1, 'm-drider':1, 'm-thought-eater':1};
-var DEEP_TRIM = {'m-ember-spider':{idle:5, attack:6}, 'm-spiderling':{idle:4, hurt:2}};
-(function trimDeepClips(){
-  if(!(typeof AS!=='undefined' && AS && AS.mobs)){ setTimeout(trimDeepClips, 200); return; }
-  for(var k in DEEP_TRIM){ var m=AS.mobs[k]; if(!m) continue; for(var c in DEEP_TRIM[k]) if(m.clips[c]) m.clips[c].frames=Math.min(m.clips[c].frames, DEEP_TRIM[k][c]); }
-})();
 
 
 /* ---------------------------------------------------------------- words: hover cards and the boss floor */

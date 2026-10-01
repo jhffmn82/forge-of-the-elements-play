@@ -86,13 +86,41 @@ var VENOM_BURST={name:'Venom Burst',base:[10,16],kind:'aoe',type:'poison',divine
 
 function drawSanctuarySurface(){
   if(!floorMeta)return;
-  ctx.save();ctx.strokeStyle='rgba(245,219,142,.55)';ctx.fillStyle='rgba(245,219,142,.06)';ctx.lineWidth=1;
+  var cells=[];
   for(var y=Math.max(0,camY-1);y<Math.min(MH,camY+viewH+2);y++)for(var x=Math.max(0,camX-1);x<Math.min(MW,camX+viewW+2);x++){
     if(!vis[idxOf(x,y)]||!holyGroundAt(x,y))continue;
-    var px=(x-camX)*TS,py=(y-camY)*TS;ctx.fillRect(px,py,TS,TS);
-    ctx.beginPath();ctx.moveTo(px+TS*.4,py+TS*.5);ctx.lineTo(px+TS*.6,py+TS*.5);ctx.moveTo(px+TS*.5,py+TS*.4);ctx.lineTo(px+TS*.5,py+TS*.6);ctx.stroke();
-  }ctx.restore();
-
+    cells.push(idxOf(x,y));
+  }
+  if(!cells.length)return;
+  // Holy Ground is light falling onto the existing stone. Both sources share
+  // this radiance; each affected tile has two fine shafts behind the creatures.
+  var now=performance.now(),t=ANIM.reduce?0:now/1000;
+  ctx.save();ctx.globalCompositeOperation='screen';
+  drawFieldMist(cells,'#fff5dc',now,.12);
+  cells.forEach(function(i){
+    var x=i%MW,y=Math.floor(i/MW),seed=hash2(x,y,911),phase=t*.8+seed*6.28;
+    var cx=(x-camX+.5)*TS,cy=(y-camY+.6)*TS,breath=ANIM.reduce?.82:.8+.12*Math.sin(phase);
+    ctx.globalAlpha=breath;
+    ctx.save();ctx.translate(cx,cy);ctx.scale(1,.62);
+    var pool=ctx.createRadialGradient(0,0,0,0,0,TS*.78);
+    pool.addColorStop(0,'rgba(255,252,235,.3)');pool.addColorStop(.42,'rgba(255,243,203,.18)');pool.addColorStop(1,'rgba(255,235,180,0)');
+    ctx.fillStyle=pool;ctx.fillRect(-TS*.78,-TS*.78,TS*1.56,TS*1.56);ctx.restore();
+    for(var beam=0;beam<2;beam++){
+    var salt=beam*31,sx=cx+((beam-.5)*.38+(hash2(x,y,919+salt)-.5)*.18)*TS;
+    var sy=cy+TS*(.04+hash2(x,y,921+salt)*.1),h=TS*(.5+hash2(x,y,923+salt)*.4),w=TS*(.045+hash2(x,y,927+salt)*.04);
+    ctx.globalAlpha=breath;
+    // A soft column carries the light; its fine inner ray fades before the top.
+    ctx.save();ctx.translate(sx,sy-h*.38);ctx.scale(w,h*.6);
+    var halo=ctx.createRadialGradient(0,.25,0,0,0,1);
+    halo.addColorStop(0,'rgba(255,252,235,.26)');halo.addColorStop(.4,'rgba(255,246,212,.13)');halo.addColorStop(1,'rgba(255,239,190,0)');
+    ctx.fillStyle=halo;ctx.fillRect(-1,-1,2,2);ctx.restore();
+    var ray=ctx.createLinearGradient(sx,sy-h,sx,sy);
+    ray.addColorStop(0,'rgba(255,253,240,0)');ray.addColorStop(.65,'rgba(255,253,240,.23)');ray.addColorStop(1,'rgba(255,253,240,.65)');
+    ctx.strokeStyle=ray;ctx.lineWidth=Math.max(.9,TS*.017);ctx.beginPath();ctx.moveTo(sx,sy-h);ctx.lineTo(sx,sy);ctx.stroke();
+    var rise=ANIM.reduce?.35:(t*.18+hash2(x,y,929+salt))%1;
+    ctx.globalAlpha=breath*(.45+.35*Math.sin(rise*Math.PI));ctx.fillStyle='#fffdf1';ctx.beginPath();ctx.arc(sx,sy-h*rise,Math.max(.65,TS*.014),0,7);ctx.fill();
+    }
+  });ctx.restore();
 }
 
 function castArcaneNova(x,y){

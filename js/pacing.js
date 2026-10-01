@@ -37,7 +37,7 @@ function animBusy(move){
   }
   return false;
 }
-function uiOpen(){ return (typeof FoteMobileOrientation!=='undefined'&&FoteMobileOrientation.isBlocked()) || (typeof modalOpen!=='undefined' && modalOpen) || (typeof openSheet!=='undefined' && openSheet) || ($('title') && $('title').classList.contains('on')) || ($('create') && $('create').classList.contains('on')); }
+function uiOpen(){ return (typeof FoteMobileOrientation!=='undefined'&&FoteMobileOrientation.isBlocked()) || (typeof FoteResponsiveHUD!=='undefined'&&FoteResponsiveHUD.hasOverlay()) || (typeof modalOpen!=='undefined' && modalOpen) || (typeof openSheet!=='undefined' && openSheet) || ($('title') && $('title').classList.contains('on')) || ($('create') && $('create').classList.contains('on')); }
 
 window.addEventListener('keydown', function(ev){
   var tgt=ev.target && ev.target.tagName;

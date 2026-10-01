@@ -218,6 +218,7 @@ function newRun(seed,choice){
   generate(worldSeed);player._lx=undefined;RUN.over=false;
   if($('bReveal'))$('bReveal').textContent='Reveal: off';
   $('over').style.display='none';$('log').innerHTML='';
+  if(typeof FoteCombatLog!=='undefined')FoteCombatLog.reset();
   log('<b>'+player.name+'</b>, '+player.who+', enters the Dungeon.','c-kill');
   if(!window.TIPS_SHOWN){
     window.TIPS_SHOWN=true;

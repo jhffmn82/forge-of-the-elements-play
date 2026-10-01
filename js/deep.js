@@ -627,7 +627,7 @@ function deepLavaBurn(e){
   if(!e || e.hp<=0 || !deepLavaAdjacent(e.x,e.y)) return false;
   if(e===player && player.levitate>0) return false;
   var d=applyDamage(e, deepLavaDmg(), 'fire', null); floatText(e.x, e.y, String(d), 'fire');
-  if(e===player){ if(!floorMeta.lavaWarned){ floorMeta.lavaWarned=1; log('The lava beside you <b>scorches</b> you. Do not stand next to it.','c-you'); } }
+  if(e===player){ if(!floorMeta.lavaWarned){ floorMeta.lavaWarned=1; log('Lava: '+combatDamageNumber(d,'fire')+'. Move away!','c-you'); } }
   return true;
 }
 function deepLavaIgnite(){

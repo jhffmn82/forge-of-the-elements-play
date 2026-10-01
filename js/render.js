@@ -30,15 +30,15 @@ function anyObj(name){
   for(var i=0;i<groups.length;i++){ var o=objArt(groups[i],name); if(o) return o; }
   return null;
 }
-/* white silhouettes of sheet frames, for hit flashes and the foe halo. 2026-09-27: the cache never evicted (16.8 MiB in
+/* Cached silhouettes for hit flashes and sprite edges. 2026-09-27: the cache never evicted (16.8 MiB in
    5.5 s of goblin idle frames); it now keeps the 128 most recently drawn. */
 var WHITE_CACHE=new Map(), WHITE_CACHE_MAX=128;
-function whiteCut(img, sx,sy,sw,sh){
-  var key=img.src+'|'+sx+','+sy+','+sw+','+sh, c=WHITE_CACHE.get(key);
+function whiteCut(img, sx,sy,sw,sh,color){
+  var key=img.src+'|'+sx+','+sy+','+sw+','+sh+'|'+(color||'#fff'), c=WHITE_CACHE.get(key);
   if(c){ WHITE_CACHE.delete(key); WHITE_CACHE.set(key,c); return c; }
   c=document.createElement('canvas'); c.width=sw; c.height=sh;
   var g=c.getContext('2d'); g.drawImage(img,sx,sy,sw,sh,0,0,sw,sh);
-  g.globalCompositeOperation='source-in'; g.fillStyle='#fff'; g.fillRect(0,0,sw,sh);
+  g.globalCompositeOperation='source-in'; g.fillStyle=color||'#fff'; g.fillRect(0,0,sw,sh);
   WHITE_CACHE.set(key,c); if(WHITE_CACHE.size>WHITE_CACHE_MAX) WHITE_CACHE.delete(WHITE_CACHE.keys().next().value);
   return c;
 }
@@ -514,9 +514,9 @@ function castSheet(look){
    carry their own dark edge, so the pale foe halo is for the older sheets only. A new atlas says which way its art faces,
    or is Chaos art. */
 function paintedSheet(sheet){ return !!(sheet && sheet.m && (sheet.m.facing || sheet.m.chaos)); }
-/* Sampling belongs to the authored sheet, shared by living actors and corpses.
- * Small native pixel sheets can opt out of a second softening pass at map scale. */
-function spriteSheetSmoothing(sheet){ return !(sheet && sheet.m && sheet.m.sampling==='nearest'); }
+/* Preserve native pixels when enlarged, but filter every sheet when reduced.
+ * Skipping that reduction made small outlines stair-step and lose detail. */
+function spriteSheetSmoothing(sheet,scale){ return scale<1 || !(sheet && sheet.m && sheet.m.sampling==='nearest'); }
 function mobSheet(name){ var preview=typeof FoteChaosEnemyArt!=='undefined'&&FoteChaosEnemyArt.sheet(name);if(preview)return preview;var m=AS.mobs && AS.mobs[name]; if(!m) return null; var img=atl('mob-'+name+'.webp'); return img ? {img:img, m:m} : null; }
 /* Share artwork without granting temporary swarms the raised-shade gameplay tag. */
 function isShadeSummon(e){return !!(e && e.ally && (e.shade || e.swarm));}
@@ -550,9 +550,6 @@ function clipFrame(sheet, e, sliding){
   /* 2026-09-19: Justin - a sleeping creature kept playing its idle (the Myconid swayed about with a Z over it).
      Asleep it holds its still pose until something wakes it. */
   if(e.state==='asleep'){ var sr=m.static_row!==undefined ? m.static_row : (m.clips.idle?m.clips.idle.row:0); return {sx:0, sy:sr*cell}; }
-  /* The Myconid's supplied idle row changes foot positions like a run. Its
-     planted pose breathes below; attack and hurt clips still take precedence. The Worm Tender is its recolour. */
-  if(e.base && (e.base.sprite==='m-myconid'||e.base.sprite==='m-worm-tender') && !sliding && m.static_row!==undefined)return {sx:0,sy:m.static_row*cell};
   if(sliding && m.clips.walk){ var w=m.clips.walk; return {sx:(Math.floor(now/CLIP_MS.walk)%w.frames)*cell, sy:w.row*cell}; }
   if(m.clips.idle){ var id=m.clips.idle, ph=((e.id||0)*97)%500; return {sx:(Math.floor((now+ph)/CLIP_MS.idle)%id.frames)*cell, sy:id.row*cell}; }
   return {sx:0, sy:(m.static_row||0)*cell};
@@ -567,8 +564,10 @@ function drawCharacterSprite(e, px, py, opts){
       var fr=clipFrame(cs, e, opts.sliding), m=cs.m, cell=m.cell, sc=(TS*1.08)/m.stand;
       var w=cell*sc, h=cell*sc, dx=px+TS/2-w/2, dy=py+TS-(cell-m.foot)*sc;
       var rect=placementRect(dx,dy,w,h);dx=rect.x;dy=rect.y;w=rect.w;h=rect.h;
-      ctx.save(); ctx.globalAlpha=(opts.alpha===undefined?1:opts.alpha)*(e.shadowClone?.58:1); ctx.imageSmoothingEnabled=true;
-      if(e.shadowClone)ctx.filter='grayscale(1) brightness(.42) sepia(.6) hue-rotate(205deg) saturate(1.5)';
+      // Keep the copied hands readable on dark floors: the former .42 brightness
+      // combined with .58 opacity buried small weapons inside the silhouette.
+      ctx.save(); ctx.globalAlpha=(opts.alpha===undefined?1:opts.alpha)*(e.shadowClone?.72:1); ctx.imageSmoothingEnabled=true;
+      if(e.shadowClone)ctx.filter='grayscale(1) brightness(.78) sepia(.6) hue-rotate(205deg) saturate(1.5)';
       if(opts.flip){ ctx.translate(px+TS/2,0); ctx.scale(-1,1); ctx.translate(-(px+TS/2),0); }
       if(typeof drawCastLayers==='function') drawCastLayers(e, cs, fr, dx, dy, w, h); else ctx.drawImage(cs.img, fr.sx, fr.sy, cell, cell, dx, dy, w, h);
       if(opts.flash>0){ ctx.globalAlpha*=opts.flash; ctx.drawImage(whiteCut(cs.img,fr.sx,fr.sy,cell,cell), dx,dy,w,h); }
@@ -584,9 +583,10 @@ function drawCharacterSprite(e, px, py, opts){
     var target=TS*(visualBase.art||0.9)*(e.big&&!isShade?1.25:1), s2=target/Math.max(box[3], box[2]*0.8);
     var w2=c2*s2, h2=c2*s2, feet=(box[1]+box[3]);
     var dx2=px+TS/2-(box[0]+box[2]/2)*s2, dy2=py+TS*0.97-feet*s2;
-    /* Tier-two reference art has a single pose: give it a restrained breath,
-       attack compression and recoil without altering simulation state. */
-    if((visualBase.elementTier || visualBase.stillPose || visualBase.sprite==='m-myconid' || visualBase.sprite==='m-worm-tender') && !ANIM.reduce && e.state!=='asleep'){
+    /* Only legacy single-pose sheets need this fallback. Authored clips already
+       contain their own breathing and attack motion. */
+    var authoredMotion=Object.keys(mm.clips||{}).some(function(name){return mm.clips[name].frames>1;});
+    if(!authoredMotion && (visualBase.elementTier || visualBase.stillPose) && !ANIM.reduce && e.state!=='asleep'){
       var msNow=performance.now(), age2=e._clip?msNow-e._clip.t0:9999;
       var action2=e._clip&&e._clip.name==='attack'&&age2>=0&&age2<540?Math.sin(age2/540*Math.PI):0;
       var pulse2=Math.sin(msNow/330+(e.id||0))*.012;
@@ -596,12 +596,14 @@ function drawCharacterSprite(e, px, py, opts){
     }
     var rect2=placementRect(dx2,dy2,w2,h2);dx2=rect2.x;dy2=rect2.y;w2=rect2.w;h2=rect2.h;
     var actorAlpha=(opts.alpha===undefined?1:opts.alpha)*(isShade ? .62 : 1);
-    ctx.save(); ctx.globalAlpha=actorAlpha; ctx.imageSmoothingEnabled=spriteSheetSmoothing(ms);
+    ctx.save(); ctx.globalAlpha=actorAlpha; ctx.imageSmoothingEnabled=spriteSheetSmoothing(ms,Math.min(w2,h2)/c2);
     if(opts.flip){ ctx.translate(px+TS/2,0); ctx.scale(-1,1); ctx.translate(-(px+TS/2),0); }
-    if(opts.outline && !paintedSheet(ms)){
-      var cut2=whiteCut(ms.img,f2.sx,f2.sy,c2,c2),edge2=Math.max(1,Math.round(TS/40));
-      ctx.globalAlpha=actorAlpha*.11;
-      [[-edge2,0],[edge2,0],[0,-edge2],[0,edge2],[-edge2,-edge2],[edge2,-edge2],[-edge2,edge2],[edge2,edge2]].forEach(function(d){ctx.drawImage(cut2,dx2+d[0],dy2+d[1],w2,h2);});
+    if(mm.edge || (opts.outline && !paintedSheet(ms))){
+      var cut2=whiteCut(ms.img,f2.sx,f2.sy,c2,c2,mm.edge),edge2=mm.edge?Math.max(.6,s2):Math.max(1,Math.round(TS/40));
+      ctx.globalAlpha=actorAlpha*(mm.edge?.68:.11);
+      var offsets=[[-edge2,0],[edge2,0],[0,-edge2],[0,edge2]];
+      if(!mm.edge)offsets.push([-edge2,-edge2],[edge2,-edge2],[-edge2,edge2],[edge2,edge2]);
+      offsets.forEach(function(d){ctx.drawImage(cut2,dx2+d[0],dy2+d[1],w2,h2);});
       ctx.globalAlpha=actorAlpha;
     }
     ctx.drawImage(ms.img, f2.sx, f2.sy, c2, c2, dx2, dy2, w2, h2);
@@ -870,12 +872,33 @@ function groundRangeAny(test){
   for(var y=y0;y<=y1;y++) for(var x=x0;x<=x1;x++) if(test(y*W+x,x,y)) return true;
   return false;
 }
+/* Natural rock blends across cells, but an isolated unseen floor notch must stay
+ * concealed. Soften its square omission on the known side of the fog boundary;
+ * never sample its terrain or mark it explored. Wider fog keeps its own shape. */
+function naturalFogNotch(x,y,W,H,known){
+  if(x<1||y<1||x>=W-1||y>=H-1||known[y*W+x]||typeof ptMat!=='function')return false;
+  var material=ptMat(x,y);if(!material)return false;
+  for(var dy=-1;dy<=1;dy++)for(var dx=-1;dx<=1;dx++){
+    if(!dx&&!dy)continue;
+    if(!known[(y+dy)*W+x+dx]||ptMat(x+dx,y+dy)!==material)return false;
+  }
+  return true;
+}
+function drawNaturalFogNotch(px,py){
+  var cx=px+TS*.5,cy=py+TS*.5,inner=TS*.72,outer=TS*1.08;
+  ctx.save();ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';
+  // The opaque radius contains every corner of the undiscovered cell. Only
+  // already-known ground in the surrounding ring is additionally darkened.
+  var fog=ctx.createRadialGradient(cx,cy,inner,cx,cy,outer);
+  fog.addColorStop(0,'rgba(7,6,10,1)');fog.addColorStop(.45,'rgba(7,6,10,.55)');fog.addColorStop(1,'rgba(7,6,10,0)');
+  ctx.fillStyle=fog;ctx.fillRect(cx-outer,cy-outer,outer*2,outer*2);ctx.restore();
+}
 function drawTerrainPass(){
-  var x, y, W=MW, H=MH, M=map, V=vis, S=seen, all=revealAll, x0=camX, y0=camY, fade=memA(0.40);
+  var x, y, W=MW, H=MH, M=map, V=vis, S=seen, all=revealAll, x0=camX, y0=camY, fade=memA(0.40),fogNotches=[];
   for(y=y0;y<=y0+viewH;y++) for(x=x0;x<=x0+viewW;x++){
     if(x<0||y<0||x>=W||y>=H) continue;
     var i=y*W+x, lit=all||V[i], known=all||S[i];
-    if(!known) continue;
+    if(!known){if(spriteOn&&naturalFogNotch(x,y,W,H,S))fogNotches.push([(x-x0)*TS,(y-y0)*TS]);continue;}
     var t=M[i], px=(x-x0)*TS, py=(y-y0)*TS, a=lit?1:fade;
     if(spriteOn){
       if(isWallLike(t)) blitTile(wallTile(x,y), px, py, a);
@@ -904,6 +927,7 @@ function drawTerrainPass(){
       }
     }
   }
+  fogNotches.forEach(function(p){drawNaturalFogNotch(p[0],p[1]);});
   ctx.globalAlpha=1;
 }
 /* fallback water tint where no water tileset exists */
