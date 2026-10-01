@@ -24,6 +24,7 @@ function presentRestoredFloor(at){
   if(spot){ player.x=spot.x; player.y=spot.y; }
   player._lx=undefined;
   if(typeof FoteShadowClone!=='undefined')FoteShadowClone.arrive();
+  if(typeof syncMurkSummons==='function')syncMurkSummons();
   if(typeof repairBossCore==='function')repairBossCore();
   computeFOV(); resize(); updateUI(); draw();
 }

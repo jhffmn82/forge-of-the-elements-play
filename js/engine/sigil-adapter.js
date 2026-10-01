@@ -10,10 +10,10 @@ var m=Math.round(player.maxmp*0.5); player.mp=Math.min(player.maxmp,player.mp+m)
 player.buffs.manaflow=Math.max(player.buffs.manaflow||0,20);
 },
 "levitate":function(context){var use=context.use,F=floorNo,bountySpots=context.spots;
-player.levitate=Math.max(player.levitate||0,25); gameEffects.clear(player,'root'); gameEffects.clear(player,'web'); log('You float free of roots and webs, above ground hazards. (25 turns)','c-good'); sparkleFx(player.x,player.y,'lightning',20);
+player.levitate=Math.max(player.levitate||0,25); gameEffects.clear(player,'root'); gameEffects.clear(player,'web'); log('Floating: 25 turns. Roots and webs cleared.','c-good'); sparkleFx(player.x,player.y,'lightning',20);
 },
 "stoneskin":function(context){var use=context.use,F=floorNo,bountySpots=context.spots;
-applyStatus(player,'stone',15); log('Your skin turns to stone, purging poison and stun. You are immune to both while it lasts.','c-good');
+applyStatus(player,'stone',15); log('Stone Skin: 15 turns. Poison and Stun cleared.','c-good');
 },
 "heal":function(context){var use=context.use,F=floorNo,bountySpots=context.spots;
 healPlayer(Math.round(player.maxhp*.35));player.buffs.afterglow=15;sparkleFx(player.x,player.y,'heal',30);
@@ -26,7 +26,7 @@ Object.keys(SIGILS).forEach(function(k){ if(player.bag.some(function(b){ return 
 knowPicker(context);
 },
 "mapping":function(context){var use=context.use,F=floorNo,bountySpots=context.spots;
-for(var i=0;i<seen.length;i++) if(map[i]!==WALL || true) seen[i]=1; log('The shape of the whole floor settles into your mind.','c-good');
+for(var i=0;i<seen.length;i++) if(map[i]!==WALL || true) seen[i]=1; log('Floor map revealed.','c-good');
 },
 "blink":function(context){var use=context.use,F=floorNo,bountySpots=context.spots;
 var spots=[]; for(var y=0;y<MH;y++) for(var x=0;x<MW;x++) if(walkable(x,y) && vis[idxOf(x,y)] && dist(player,{x:x,y:y})<=6 && dist(player,{x:x,y:y})>=3 && !occupied(x,y)) spots.push({x:x,y:y});
@@ -47,28 +47,28 @@ Object.keys(SIGILS).forEach(function(k){ identifySigilQuiet(k); });
     douseAround(5); log('Clear water runs over everything you own. You know every sigil'+(n?' and '+n+' piece'+(n>1?'s':'')+' of gear':'')+'.','c-kill');
 },
 "levitate2":function(context){var use=context.use,F=floorNo,bountySpots=context.spots;
-player.levitate=Math.max(player.levitate||0,60); gameEffects.clear(player,'root'); gameEffects.clear(player,'web'); player.buffs.haste=Math.max(player.buffs.haste||0,10); derive(player); log('You rise free of roots and webs, above ground hazards, light and quick.','c-good'); sparkleFx(player.x,player.y,'lightning',30);
+player.levitate=Math.max(player.levitate||0,60); gameEffects.clear(player,'root'); gameEffects.clear(player,'web'); player.buffs.haste=Math.max(player.buffs.haste||0,10); derive(player); log('Floating: 60 turns. Haste: 10 turns. Roots and webs cleared.','c-good'); sparkleFx(player.x,player.y,'lightning',30);
 },
 "haste":function(context){
 player.buffs.haste=Math.max(player.buffs.haste||0,20);derive(player);
-log('The wind quickens your movement, attacks and spellcasting by 30%.','c-good');sparkleFx(player.x,player.y,'lightning',24);
+log('Haste: +30% speed for 20 turns.','c-good');sparkleFx(player.x,player.y,'lightning',24);
 },
 "stoneskin2":function(context){var use=context.use,F=floorNo,bountySpots=context.spots;
-applyStatus(player,'stone',30); giveWard(player.maxhp*0.2, 30); log('Your skin hardens to granite, purging poison and stun. You are immune to both while it lasts.','c-good');
+applyStatus(player,'stone',30); giveWard(player.maxhp*0.2, 30); log('Stone Skin and shield: 30 turns. Poison and Stun cleared.','c-good');
 },
 "heal2":function(context){var use=context.use,F=floorNo,bountySpots=context.spots;
-player.hp=player.maxhp;cleanseAll();sparkleFx(player.x,player.y,'heal',30);
+var restored=player.maxhp-player.hp;player.hp=player.maxhp;gameDamage.emit('healingApplied',{target:player,restored:restored});cleanseAll();sparkleFx(player.x,player.y,'heal',30);
 },
 "vanish2":function(context){var use=context.use,F=floorNo,bountySpots=context.spots;
 player.hidden=5; ents.forEach(function(e){ if(e.foe && e.state==='hunt'){ e.state='wander'; e.lastSeen=null; } }); log('You fold into the shadows.','c-good');
 },
 "cinder":function(context){var use=context.use,F=floorNo,bountySpots=context.spots;
-player.buffs.cinder=10; derive(player); player._cinderAt={x:player.x,y:player.y}; log('Your feet catch fire. Run.','c-fire');
+player.buffs.cinder=10; derive(player); player._cinderAt={x:player.x,y:player.y}; log('Cinder Stride: +50% speed; leave burning ground.','c-fire');
 },
 "magma":function(context){var use=context.use,F=floorNo,bountySpots=context.spots;
 player.buffs.moltenring=Math.max(player.buffs.moltenring||0,5);
 for(var my=-2;my<=2;my++) for(var mx=-2;mx<=2;mx++){ var tx=player.x+mx, ty=player.y+my; if((mx||my) && inb(tx,ty) && walkable(tx,ty)) fireT[idxOf(tx,ty)]=Math.max(fireT[idxOf(tx,ty)],5); }
-    ents.forEach(function(e){ if(e.foe && dist(e,player)<=2) applyStatus(e,'burn',3,sDMG(2)); }); log('The floor around you melts into a ring of fire. Your attacks gain 5 fire damage.','c-fire');
+    ents.forEach(function(e){ if(e.foe && dist(e,player)<=2) applyStatus(e,'burn',3,sDMG(2)); }); log('Molten Ring: +5 fire damage on hits for 5 turns.','c-fire');
 },
 "smoke":function(context){var use=context.use,F=floorNo,bountySpots=context.spots;
 raiseSmoke();
@@ -88,13 +88,13 @@ var foes=visibleFoes().sort(function(a,b){ return dist(player,a)-dist(player,b);
 ents.forEach(function(e){ if(e.foe && dist(e,player)<=3){ applyStatus(e,'root',3); e.st.wet={t:6}; burst(e.x,e.y,'earth',8,0.04); } }); log('The ground turns to sucking mud.','c-good');
 },
 "purify":function(context){var use=context.use,F=floorNo,bountySpots=context.spots;
-cleanseAll(); var ph=Math.round(player.maxhp*0.2); { healPlayer(ph); floatText(player.x,player.y,'+'+ph,'heal'); }
+cleanseAll(); healPlayer(Math.round(player.maxhp*0.2));
     var broke=0; wornGear().forEach(function(it){ if(breakCurse(it)) broke++; }); log('Clear water washes over you'+(broke?' and your gear':'')+'.','c-good');
 },
 "recall":function(context){var use=context.use,F=floorNo,bountySpots=context.spots;
 var g2=null; for(var j=0;j<map.length;j++){ if(map[j]===STAIRS || (map[j]===EXIT && floorMeta.exitOpen)){ g2={x:j%MW, y:(j/MW)|0}; break; } }
     var land=(!occupied(g2.x,g2.y) && walkable(g2.x,g2.y)) ? g2 : nearFree(g2.x,g2.y,2);
-    if(land){ sparkleFx(player.x,player.y,'lightning',20); player.x=land.x; player.y=land.y; player._lx=undefined; seen[idxOf(g2.x,g2.y)]=1; sparkleFx(player.x,player.y,'lightning',20); computeFOV(); log('The wind lifts you and sets you down by the way onward.','c-good'); }
+    if(land){ sparkleFx(player.x,player.y,'lightning',20); player.x=land.x; player.y=land.y; player._lx=undefined; seen[idxOf(g2.x,g2.y)]=1; sparkleFx(player.x,player.y,'lightning',20); computeFOV(); log('Returned to the exit.','c-good'); }
 },
 "aegis":function(context){var use=context.use,F=floorNo,bountySpots=context.spots;
 giveWard(player.maxhp*0.5, 15); applyStatus(player,'stone',15); ringFx(player.x,player.y,'#F6E7B0',2.5); log('A shining aegis settles around you ('+player.ward+').','c-good');
@@ -111,12 +111,12 @@ function prepareSigil(use){
   if(sigilConduct(use)===false)return null;
   var context={use:use,echo:!!player._echoing};
   if(use==='naturesbounty'){context.spots=natureBountySpots();if(context.spots.length<3){log('Nature\'s Bounty needs 3 empty tiles nearby.','c-info');return null;}}
-  if(use==='ascension'&&!allUpgradeTargets().some(function(o){return upgradeCost(o.it)!==null;})){log('Nothing you carry can be raised any higher.','c-info');return null;}
-  if(use==='wisdom'&&player.level>=20){log('Your wisdom can no longer grow. This sigil would do nothing.','c-info');return null;}
-  if(use==='rot'&&!wornGear().some(FoteInventory.curseBinds)){log('Nothing you wear has a known curse. The sigil stays quiet.','c-info');return null;}
+  if(use==='ascension'&&!allUpgradeTargets().some(function(o){return upgradeCost(o.it)!==null;})){log('No gear can be upgraded.','c-info');return null;}
+  if(use==='wisdom'&&player.level>=20){log('Already at maximum level.','c-info');return null;}
+  if(use==='rot'&&!wornGear().some(FoteInventory.curseBinds)){log('No equipped item has a known curse.','c-info');return null;}
   if(use==='recall'){
     var goal=null;for(var i=0;i<map.length;i++)if(map[i]===STAIRS||(map[i]===EXIT&&floorMeta.exitOpen)){goal={x:i%MW,y:(i/MW)|0};break;}
-    if(!goal){log('There is nowhere to be carried to.','c-info');return null;}
+    if(!goal){log('No exit available.','c-info');return null;}
   }
   return context;
 }

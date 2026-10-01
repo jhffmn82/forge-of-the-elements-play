@@ -1,10 +1,6 @@
 /* Reconciled owner decisions from docs/recovered/grom-balance-discussion.md.
  * Helpers here are shared by previews, descriptions and runtime resolution. */
 function chillSlow(e){var r=e.st&&e.st.chill&&e.st.chill.waterRank||0;return Math.min(.50,.33+(r>=3?.03*r:0));}
-RANK_TEXT[3].water='Deep Chill: enemies you Chill are slowed by 33% plus 3% per Water point, up to 50%. Immune to Chill and Freeze.';
-RANK_TEXT[3].fire='Searing: +5% damage per Fire point against Burning enemies. Immune to Burning.';
-RANK_TEXT[3].earth='Venom: anything you Root is also Poisoned for 1 turn, rising to 3 at Earth 5. Poison takes 10% of max HP a turn, 5% for bosses. Immune to Root.';
-RANK_TEXT[3].shadow='Fade: after 10 quiet turns out of combat you become Hidden (only 4 at Shadow 6). Immune to Fear.';
 
 var ARCANE_LANCE={name:'Arcane Lance',kind:'bolt',type:'magic',range:6,base:[10,16],cost:0,prayerSpell:true,icon:'ic-magic-missile'};
 
@@ -45,7 +41,6 @@ function lastLaugh(){
 }
 
 
-RACES.dwarf.blurb='Sturdy masters of the forge. Weapons and armor count as one upgrade higher, on top of their own upgrades. Heavy armor costs no evasion, and Forge upgrades cost 25% less.';
 
 
 // The servant's existing rank scaling is applied in castRaiseDead before it acts.
@@ -78,7 +73,7 @@ function holyGroundPulse(){
   [player].concat(ents.filter(function(e){return e!==player;})).forEach(function(e){
     if(!e||e.hp<=0)return;var field=holyGroundAt(e.x,e.y);if(!field)return;
     if(e===player)healPlayer(e.maxhp*.02*field.power,true,{holyGround:true});
-    else if(e.ally)e.hp=Math.min(e.maxhp,e.hp+e.maxhp*.02*field.power);
+    else if(e.ally){var before=e.hp;e.hp=Math.min(e.maxhp,e.hp+e.maxhp*.02*field.power);gameDamage.emit('healingApplied',{target:e,restored:e.hp-before,natural:true});}
     else if(e.foe){var d=applyDamage(e,field.damage*((e.base.undead||e.base.shadowy)?2:1),'light',player,{tags:['periodic','holy-ground']});if(d>0)floatText(e.x,e.y,String(d),'light');if(e.hp<=0)kill(e,player);}
   });
 }

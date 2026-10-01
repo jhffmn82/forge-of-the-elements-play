@@ -5,8 +5,7 @@
    makes, and for every spell it carries (above). It is an ordinary heal, so Rot halves it (rotHealing). */
 function hallowedEdge(values){
   if(!player||player.hp<=0||player.hp>=player.maxhp||!(values.healPerHit>0))return;
-  var before=player.hp;healPlayer(values.healPerHit);var h=Math.round(player.hp-before);
-  if(h>0)floatText(player.x,player.y,'+'+h,'heal');
+  healPlayer(values.healPerHit);
 }
 function applySpellWeaponEnchant(f,d,crit,A,context){
   var w=player.weapon,ench=w&&w.enchant;
@@ -19,27 +18,25 @@ function applySpellWeaponEnchant(f,d,crit,A,context){
   var raw=context.rawDamage===undefined?d:context.rawDamage;
   if(ench==='fire'){
     extra+=Math.round(raw*values.extraDamage);
-    if(pRoll(values.burnChance)){applyStatus(f,'burn',values.burnDuration,burnDmg());note=' burning';}
+    if(pRoll(values.burnChance)&&applyStatus(f,'burn',values.burnDuration,burnDmg()).applied)note='Burning';
   }
-  if(ench==='water'&&pRoll(values.chillChance)){addChill(f);note=' chilled';}
-  if(ench==='earth'&&pRoll(values.rootChance)){applyStatus(f,'root',values.rootDuration);note=' rooted';}
+  if(ench==='water'&&pRoll(values.chillChance)){var chill=addChill(f);if(chill.applied)note=chill.key==='frozen'?'Frozen':'Chilled';}
+  if(ench==='earth'&&pRoll(values.rootChance)&&applyStatus(f,'root',values.rootDuration).applied)note='Rooted';
   if(ench==='air'&&pRoll(values.repeatChance)){
     var type=FoteDamage.type(context.type||A&&A.type||'magic');
-    var repeat=applyDamage(f,raw,type,player,{tags:['proc','enchant'],actionId:context.actionId});
-    if(repeat>0){floatText(f.x,f.y,String(repeat),type,crit);log('<b>Gust.</b> The spell strikes again for <b>'+repeat+'</b> '+FoteDamage.label(type)+' damage.','c-good');}
+    applyDamage(f,raw,type,player,{tags:['proc','gust','enchant'],actionId:context.actionId});
     if(f.hp<=0){kill(f,player);return;}
   }
   if(ench==='light')hallowedEdge(values);
   if(ench==='shadow'){
     if(f.st.corrupt)extra+=values.corruptDamage;   /* 2026-09-29 (Justin): Corrupted, was Hollowed */
-    if(pRoll(values.procChance)){extra+=Math.round(raw*values.extraDamage);applyStatus(f,'corrupt',values.corruptDuration);note=' corrupted';}
+    if(pRoll(values.procChance)){extra+=Math.round(raw*values.extraDamage);if(applyStatus(f,'corrupt',values.corruptDuration).applied)note='Corrupted';}
   }
   if(extra>0){
     var type=ench==='fire'?'fire':'dark';
     var dealt=dealDirectDamage(f,Math.round(extra*resistMult(f,type)),type,player,{tags:['proc','enchant'],actionId:context.actionId,resistanceApplied:true});
-    if(dealt>0)floatText(f.x,f.y,String(dealt),type);
     if(dealt>0&&type==='dark'&&aff('shadow')>=6)addHollow(f,1);
     if(f.hp<=0)kill(f,player);
   }
-  if(note&&f.hp>0)log('Your '+gearName(w)+' leaves it'+note+'.','c-good');
+  if(note&&f.hp>0)log(f.name+': '+note+'.','c-good');
 }

@@ -105,6 +105,7 @@ var FoteResponsiveHUD=(function(){
   }
   function renderReadouts(){
     if(!mounted||!player)return;
+    syncExploreButton(node('studyExplore'));
     const hungry=player.hunger<=0?'Starving':player.hunger<300?'Hungry':'Fed';
     node('studyHungerText').textContent=hungry;
     node('studyHungerFill').style.width=clamp(player.hunger/HUNGER_MAX*100,0,100)+'%';

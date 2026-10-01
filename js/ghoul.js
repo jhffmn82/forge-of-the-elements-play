@@ -1,9 +1,9 @@
 /* Buried Crypt ambushers are floor records, not targetable or blocking actors. */
 var FoteGhoul=(function(){
  'use strict';
- MONSTERS.ghoul={name:'Buried Ghoul',sprite:'m-ghoul',col:'#92998b',ch:'g',hp:32,dmg:[4,7],acc:60,eva:12,armor:0,speed:100,range:1,xp:26,
+ MONSTERS.ghoul={name:'Buried Ghoul',sprite:'m-ghoul',col:'#988398',ch:'g',hp:64,dmg:[8,12],acc:60,eva:12,armor:0,speed:130,range:1,xp:26,
   band:[6,9],biome:[1],w:10,undead:true,ghoul:true,art:.85,artLeft:true,sfx:'zombie',
-  hint:'Lies buried and unseen until you pass. Emerges behind you, spending its first action climbing out before it can attack.'};
+  hint:'Emerges behind you, then pursues quickly. React while it surfaces.'};
  MONSTERS.shambler.w=Math.max(0,MONSTERS.shambler.w-6);MONSTERS.gravebeetle.w=Math.max(0,MONSTERS.gravebeetle.w-4);
  DROPS.ghoul={chance:.12,table:{essence:10,food:2}};
  CLIP_MS.emerge=140;if(typeof BASE_CLIP_MS!=='undefined')BASE_CLIP_MS.emerge=140;
@@ -26,7 +26,7 @@ var FoteGhoul=(function(){
   // Called AFTER the enemy schedule. Even a very slow player action cannot
   // give this newly surfaced ghoul an attack before the player's next input.
   if(typeof stopTravel==='function')stopTravel();
-  log('A <b>Buried Ghoul</b> claws out of the ground behind you!','c-you');sfx('zombie-alert',{from:e});
+  log('A <b>Buried Ghoul</b> emerges behind you.','c-you');sfx('zombie-alert',{from:e});
   return true;
  }
  return Object.freeze({bury:bury,emerge:emerge});

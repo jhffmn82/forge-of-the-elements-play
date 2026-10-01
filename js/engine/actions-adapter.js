@@ -5,7 +5,7 @@ function actionInfusion(kind,view){
   view=view||player;var o=view.twoHanded?null:view.off;
   return o&&(o.icon||'').replace(/^item-/,'')===kind?o.enchant||null:null;
 }
-function actionDivine(view){var w=view.weapon||{},o=view.twoHanded?{}:view.off||{};return 1+((w.cursed?0:w.divine||0)+(o.cursed?0:o.divine||0))*gearPassiveBonus();}
+function actionDivine(view){return FoteStats.powers(view,statContent()).divine;}
 function actionCritBonus(view){return actionInfusion('holy',view)==='shadow'&&isBuffed()?enchantValues('holy','shadow').critChance:0;}
 function actionRootCrit(target,view){return actionInfusion('orb',view)==='earth'&&effectHasTag(target,'root')?enchantValues('orb','earth').critChance:0;}
 function actionCritMultiplier(view){return FoteActions.criticalMultiplier(view.stats.agi,actionInfusion('orb',view)==='shadow'?enchantValues('orb','shadow').critMultiplier:0);}
@@ -78,22 +78,22 @@ function offHandSwing(foe){
 function finishAttackReactions(event){
   var att=event.source,def=event.target,H=event.hit,landed=def.hp<event.hpBefore;
   if(event.thorns){var taken=event.shieldedHPBefore-(player.hp+(player.ward||0)+(player.iceArmor||0));
-    if(taken>0&&att.hp>0){var d=applyDamage(att,Math.max(1,Math.round(taken*.5)),'phys',player,{tags:['reflected'],actionId:event.actionId});floatText(att.x,att.y,String(d),'poison');if(att.hp<=0)kill(att,player);}}
+    if(taken>0&&att.hp>0){applyDamage(att,Math.max(1,Math.round(taken*.5)),'phys',player,{tags:['reflected'],actionId:event.actionId});if(att.hp<=0)kill(att,player);}}
   if(att===player){if(H&&landed)afterPlayerHit(def,H);else if(player.friction)player.friction.n=0;}
   if(att!==player&&def===player&&att.foe&&dist(att,player)<=1&&player.hp<event.playerHPBefore&&player.hp>0&&combo('air','shadow')&&!(player.windCd>turn)){
     var best=null,bd=0;for(var dy=-1;dy<=1;dy++)for(var dx=-1;dx<=1;dx++){var nx=player.x+dx,ny=player.y+dy;if((dx||dy)&&walkable(nx,ny)&&!occupied(nx,ny)){var dd=dist({x:nx,y:ny},att);if(dd>bd){bd=dd;best={x:nx,y:ny};}}}
     if(best&&bd>1){player.x=best.x;player.y=best.y;player.windCd=turn+5;log('Windwalker: you slip away.','c-good');computeFOV();}}
   if(att===player&&landed){stokeForgeHeat();if(hasGod('grom')&&event.view.weapon.unarmed&&def.foe&&event.hpBefore>0)gainPiety(0.3,'punch',{pietyOnly:true});}
   if(att===player&&def.surprised)def.surprised=false;
-  if(att===player&&def.base&&def.base.fumes&&dist(att,def)<=1&&def.hp>0&&(def._fumeAt||-9)<turn-1){def._fumeAt=turn;addCloud(def.x,def.y,1,5,sDMG(2+Math.floor(floorNo/3)),'beetle');log('The <b>Grave Beetle</b> vents a cloud of noxious fumes!','c-you');sfx('trap-gas',{from:def});}
+  if(att===player&&def.base&&def.base.fumes&&dist(att,def)<=1&&def.hp>0&&(def._fumeAt||-9)<turn-1){def._fumeAt=turn;addCloud(def.x,def.y,1,5,sDMG(2+Math.floor(floorNo/3)),'beetle');log('The <b>Grave Beetle</b> releases poison gas.','c-you');sfx('trap-gas',{from:def});}
   if(att.base&&att.base.reloads&&def===player&&dist(att,def)>1){att.reloading=true;if(landed){applyStatus(player,'root',1);log('An arrow pins you in place.','c-you');}}
   if(att.base&&landed&&player.hp>0){if(att.base.arcs&&def===player)beetleArc(att);if(att.base.stingChain)jellyChain(att,def);if(att.base.aquatic){att._surfT=turn;if(def===player&&eelWater(att.x,att.y))applyStatus(player,'wet',3);}}
   if(att!==player&&att.base&&landed&&def.hp>0){var b=att.base;
     if(b.chillTouch&&event.primaryDamage>0&&dist(att,def)<=1){addChill(def);floatText(def.x,def.y,'chilled','ice');}
     if(b.bleeds&&rng()<b.bleeds)inflictBleed(def,att);
-    if(b.fangs&&dist(att,def)<=1&&rng()<b.fangs){applyStatus(def,'poison',DRIDER.poison[0],sDMG(DRIDER.poison[1]));floatText(def.x,def.y,'poisoned','poison');if(def===player)log('The <b>Drider</b>\'s fangs sink in: you are poisoned.','c-you');}
-    if(b.emberBite&&rng()<b.emberBite&&!(def.st&&def.st.burn)){applyStatus(def,'burn',3,sDMG(2+Math.floor(floorNo/5)));if(def===player)log('The <b>Ember Spider</b>\'s bite sets you <span class="c-fire">burning</span>.','c-you');}}
-  if(event.dark&&landed){player.syllaDark=0;log('<b>Into the Dark.</b> You come out of the black: +'+Math.round(SYLLA.darkPerRank*event.dark*100)+'% on the strike.','c-good');}
+    if(b.fangs&&dist(att,def)<=1&&rng()<b.fangs){if(applyStatus(def,'poison',DRIDER.poison[0],sDMG(DRIDER.poison[1])).applied){floatText(def.x,def.y,'poisoned','poison');if(def===player)log('The <b>Drider</b> poisons you.','c-you');}}
+    if(b.emberBite&&rng()<b.emberBite&&!(def.st&&def.st.burn)){if(applyStatus(def,'burn',3,sDMG(2+Math.floor(floorNo/5))).applied&&def===player)log('The <b>Ember Spider</b> burns you.','c-you');}}
+  if(event.dark&&landed){player.syllaDark=0;log('Into the Dark: +'+Math.round(SYLLA.darkPerRank*event.dark*actionDivine(event.view)*100)+'% damage.','c-good');}
   if(!landed)return;
   if(att.broodling&&def!==player&&def.hp>0)broodBite(def);
 }
@@ -116,10 +116,9 @@ function resolveSpellStrike(f,A,amount,type,options){
     if(singleTarget&&!event.landed&&player.friction)player.friction.n=0;
     if(singleTarget||!options.bolt||!A.tech&&!A.divine)spellOnHit(f,event.damage,crit,A,{singleTarget:singleTarget,rawDamage:base,type:type,actionId:event.actionId});
     if(singleTarget&&event.landed&&f.foe&&!f.ally){
-      var bonus=applyPlayerHitBonuses(event);
-      Object.keys(bonus.damage).forEach(function(t){if(bonus.damage[t]>0){floatText(f.x,f.y,'+'+bonus.damage[t],t);log('<b>'+A.name+'</b>: +'+bonus.damage[t]+' '+FoteDamage.label(t)+'.','c-hit');}});
+      applyPlayerHitBonuses(event);
       afterPlayerHit(f,event.hit);stokeForgeHeat();
-      if(dark){player.syllaDark=0;log('<b>Into the Dark.</b> Your spell strikes from concealment.','c-good');}
+      if(dark){player.syllaDark=0;log('Into the Dark: bonus damage.','c-good');}
     }
     if(event.landed)spellKillReward(f);
     if(!options.bolt){floatText(f.x,f.y,String(event.damage),type,crit);if(event.damage>0)playerHitRewards(f,singleTarget);}
@@ -140,14 +139,12 @@ function applyPlayerHitBonuses(event){
     var sm=applyDamage(def,smiteDamage(),'light',player,{attackRolled:true,actionId:event.actionId,tags:['proc','smite']});
     sm+=onSmiteProc(def,event.actionId)||0;record('light',sm);
     if(aff('light')>=6&&inb(def.x,def.y))markHolyGround(def.x,def.y,spellPower());
-    if(sm>0)result.note+=' <span style="color:#FFF1B8">smite '+sm+'</span>';
     if(def.hp>0&&rng()<.10*player.aff.light)applyStatus(def,'blind',2);
     sparkleFx(def.x,def.y,'light',10);
   }
   if(player.aff.shadow&&def.hp>0)addHollow(def,0);
   if(player.buffs&&player.buffs.moltenring>0&&def.hp>0){
-    var molten=record('fire',applyDamage(def,5,'fire',player,{attackRolled:true,actionId:event.actionId,tags:['proc','molten-ring']}));
-    if(molten>0)result.note+=' <span class="c-fire">molten ring '+molten+'</span>';
+    record('fire',applyDamage(def,5,'fire',player,{attackRolled:true,actionId:event.actionId,tags:['proc','molten-ring']}));
   }
   return result;
 }
@@ -263,23 +260,23 @@ function resolveWeaponDamage(event,strike){
       var values=enchantValues('weapon',ench);
       var roll1 = function(c){ return (typeof pRoll==='function' ? pRoll(c) : rng()<c); };
       el=ench;
-      if(ench==='fire'){ addRaw('fire',Math.round(base*values.extraDamage)); if(roll1(values.burnChance)){ applyStatus(def,'burn',values.burnDuration,burnDmg()); note=' <span class="c-fire">burning</span>'; } }
-      if(ench==='water' && roll1(values.chillChance)){ addChill(def); note=' chilled'; }
-      if(ench==='earth' && roll1(values.rootChance)){ applyStatus(def,'root',values.rootDuration); note=' rooted'; }
+      if(ench==='fire'){ addRaw('fire',Math.round(base*values.extraDamage)); if(roll1(values.burnChance)&&applyStatus(def,'burn',values.burnDuration,burnDmg()).applied)note=' <span class="c-fire">Burning</span>'; }
+      if(ench==='water' && roll1(values.chillChance)){ var chill=addChill(def);if(chill.applied)note=chill.key==='frozen'?' Frozen':' Chilled'; }
+      if(ench==='earth' && roll1(values.rootChance)&&applyStatus(def,'root',values.rootDuration).applied)note=' Rooted';
       if(ench==='shadow'){ if(def.st.corrupt) addRaw('dark',values.corruptDamage);   /* 2026-09-29 (Justin): +2 against Corrupted, was +1 against Hollowed */
         if(roll1(values.procChance)){
-          addRaw('dark',Math.round(base*values.extraDamage)); applyStatus(def,'corrupt',values.corruptDuration); note=' <span style="color:#B58BFF">corrupted</span>';
+          addRaw('dark',Math.round(base*values.extraDamage)); if(applyStatus(def,'corrupt',values.corruptDuration).applied)note=' <span style="color:#B58BFF">Corrupted</span>';
           /* the enchant's bite IS this build's dark damage, so at Shadow 6 it is what stacks Hollow.
              Spells stack it through the applyDamage wrapper in elements.js; this is the melee half. */
           if(typeof aff==='function' && aff('shadow')>=6) addHollow(def, 1);
         } }
-      if(ench==='air' && roll1(values.repeatChance) && !label && def.hp>0){ note=' (gust: extra attack)'; event.pendingExtra=def; }
+      if(ench==='air' && roll1(values.repeatChance) && !label && def.hp>0)event.pendingExtra=def;
       if(ench==='light' && phys>0) hallowedEdge(values);   /* 2026-09-29 (Justin): Hallowed Edge (spellench.js) */
     }
     event.primaryDamage=phys;
     var hitBonus=applyPlayerHitBonuses(event);note+=hitBonus.note;
     Object.keys(hitBonus.damage).forEach(function(type){applied+=addBonus(type,hitBonus.damage[type]);el=el||({dark:'shadow',lightning:'air',ice:'water'}[type]||type);});
-    if(view.weapon.unarmed && hasGod('grom') && def.hp>0 && rng() < (buff('ironbody')?0.3*actionDivine(view):0) + (godRank()>=3?0.15:0)){ applyStatus(def,'stun',1); note+=' staggered'; }
+    if(view.weapon.unarmed && hasGod('grom') && def.hp>0 && rng() < (buff('ironbody')?0.3*actionDivine(view):0) + (godRank()>=3?0.15:0)){ if(applyStatus(def,'stun',1).applied)note+=' Stunned'; }
     Object.keys(rawExtra).forEach(function(type){
       extra+=addBonus(type,dealDirectDamage(def,Math.round(rawExtra[type]*resistMult(def,type)),type,player,{tags:['proc','enchant'],actionId:event.actionId,resistanceApplied:true}));
     });
@@ -289,16 +286,19 @@ function resolveWeaponDamage(event,strike){
     el = att.base.el;
     var add = applyDamage(def,base*.5,elemToType(el),att,{attackRolled:true,tags:['proc','elemental-attack'],actionId:event.actionId});
     if(add>0&&def.hp>0&&rng() < 0.22){
-      if(el==='fire'){ applyStatus(def,'burn',3,sDMG(2)); note=' <span class="c-fire">burning</span>'; }
-      else if(el==='water'){ addChill(def); note=' chilled'; }
-      else if(el==='earth'){ applyStatus(def,'root',2); note=' rooted'; }
-      else if(el==='shadow'){ applyStatus(def,'fear',2); note=' shaken'; }
-      else if(el==='air'){ applyStatus(def,'stun',1); note=' stunned'; }
-      else if(el==='light'){ applyStatus(def,'blind',2); note=' dazzled'; }
+      if(el==='fire'&&applyStatus(def,'burn',3,sDMG(2)).applied)note=' Burning';
+      else if(el==='water'){var chilled=addChill(def);if(chilled.applied)note=chilled.key==='frozen'?' Frozen':' Chilled';}
+      else if(el==='earth'&&applyStatus(def,'root',2).applied)note=' Rooted';
+      else if(el==='shadow'&&applyStatus(def,'fear',2).applied)note=' Afraid';
+      else if(el==='air'&&applyStatus(def,'stun',1).applied)note=' Stunned';
+      else if(el==='light'&&applyStatus(def,'blind',2).applied)note=' Blind';
     }
     extra=addBonus(elemToType(el),add);
   }
-  if(att.lifesteal && att.ally){ att.hp=Math.min(att.maxhp, att.hp+Math.round(phys*0.3)); }
+  if(att.lifesteal && att.ally){
+    var healing=FoteDamage.heal(att.hp,att.maxhp,Math.round(phys*.3));att.hp=healing.hp;
+    gameDamage.emit('healingApplied',{target:att,restored:healing.restored,overflow:healing.overflow,natural:false});
+  }
   return {phys:phys,extra:extra,applied:applied,note:note,element:el,bonuses:bonuses};
 }
 function presentWeaponDamage(event,strike,damage){
@@ -307,12 +307,14 @@ function presentWeaponDamage(event,strike,damage){
   var base=strike.base,crit=strike.crit,surprise=strike.surprise;
   var phys=damage.phys,extra=damage.extra,applied=damage.applied,note=damage.note,el=damage.element,who=strike.who,foe=strike.foe;
   event.primaryDamage=phys;
-  var total=phys+extra+applied;event.damage=total;event.landed=total>0;
+  var parts=combatDamageParts(event.damagePackets||[]);
+  var total=parts.length?parts.reduce(function(n,p){return n+p.damage;},0):phys+extra+applied;
+  event.damagePresented=true;event.damage=total;event.landed=total>0;
   var bonus=extra+applied;
-  var elTxt = Object.keys(damage.bonuses||{}).map(function(type){return ' <span style="color:'+DMG_COL[type]+'">+'+damage.bonuses[type]+' '+FoteDamage.label(type)+'</span>';}).join('');
+  var elTxt=parts.length>1?' ['+combatDamageBreakdown(parts)+']':parts.length?' '+FoteDamage.label(parts[0].type):'';
   floatText(def.x, def.y, String(total), bonus>0 && el ? elemToType(el) : att!==player&&att.base&&att.base.attackType||'phys', crit);
-  log((label?label+': ':'')+who+' hit '+foe+' <span class="roll">('+Math.round(ch*100)+'%'
-      +(crit?', crit':'')+(surprise?', surprise':'')+(blocked?', blocked':'')+')</span> for <b>'+total+'</b>'+elTxt+note,
+  log((label?label+': ':'')+who+(att===player?' hit ':' hits ')+foe+' <span class="roll">('+Math.round(ch*100)+'% to hit'
+      +(crit?', crit':'')+(surprise?', surprise':'')+(blocked?', blocked':'')+')</span> for <b>'+total+'</b>'+elTxt+(note?'; '+note.trim():'')+'.',
       att===player?'c-hit':'c-you');
   if(def!==player && def.state!=='hunt' && def.state!=='throne') def.state='hunt';
   if(def!==player) def.caughtOff=-1;   /* the surprise is spent: it knows now */
@@ -322,7 +324,7 @@ function presentWeaponDamage(event,strike,damage){
   if(def.hp<=0){ kill(def, att); }
   if(att===player && hasP('cleaving') && !label){   /* 2026-09-22 audit: the swing carries on through a killing blow too */
     var other=ents.filter(function(o){ return o.foe && o!==def && dist(player,o)<=1; })[0];
-    if(other){ log('Your swing carries into '+other.name+'.','c-info'); attack(player,other,.5,'Cleave',{weapon:view.weapon,offhand:!!event.options.offhand,tags:['proc']}); }
+    if(other)attack(player,other,.5,'Cleave',{weapon:view.weapon,offhand:!!event.options.offhand,tags:['proc']});
   }
   if(att===player && event.pendingExtra && event.pendingExtra===def && def.hp>0){ event.pendingExtra=null; attack(player,def,1,'Gust',{weapon:view.weapon,offhand:!!event.options.offhand,tags:['proc']}); }
   event.pendingExtra=null;

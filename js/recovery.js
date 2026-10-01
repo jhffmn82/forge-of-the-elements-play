@@ -21,7 +21,7 @@ function stackLivingMountain(){
   derive(player);
 }
 
-if(typeof STATUS_INFO!=='undefined')STATUS_INFO.livingmountain={name:'Living Mountain',icon:'ic-iron-body',d:'Each stack gives +2% crit chance, +2% accuracy and +2 attack damage, up to 10 stacks. Every unarmed swing, hit or miss, adds a stack and renews them all.'};
+if(typeof STATUS_INFO!=='undefined')STATUS_INFO.livingmountain={name:'Living Mountain',icon:'ic-iron-body',d:'+2% crit, +2% accuracy and +2 damage per stack (max 10). Unarmed attacks add and refresh stacks, even on misses.'};
 
 /* Anvil's Toll: a weapon attack on everything within two tiles, each thrown back and stunned (2026-09-23) */
 
@@ -62,7 +62,7 @@ function castReginaldLance(x,y){
   }
 function castBoneSpear(x,y){  if(!canPray('bonespear') || !inb(x,y) || dist(player,{x:x,y:y})>6 || !(revealAll||vis[idxOf(x,y)]))return false;
   var path=spearPath(player.x,player.y,x,y);if(!path.length)return false;
-  spendDivineSpell(5);startPrayerCd('bonespear');aiming=null;setClip(player,'cast');sfx('shadow-cast');
+  if(!spendPrayer('bonespear'))return false;player.castingSpell=true;aiming=null;setClip(player,'cast');sfx('shadow-cast');
   var end=path[path.length-1];boltFx(player.x,player.y,end.x,end.y,'dark');
   var hit=new Set();path.forEach(function(p){ents.slice().forEach(function(e){if(!e.foe||e.hp<=0||hit.has(e)||!entityOccupies(e,p.x,p.y))return;hit.add(e);if(combatRoll(hitChance(player.acc+10,evaOf(e)),true)){spellHit(e,BONE_SPEAR,Math.round(roll(5*godRank(),5*godRank()+6)*divineStrength()),'dark');finishHit(e);}});});
   endTurn();return true;

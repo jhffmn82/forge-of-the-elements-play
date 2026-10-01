@@ -62,4 +62,4 @@ function knockback(e,dx,dy,n){
 function worldStatusPulse(e,clock){
   return gameEffects.pulse(e,clock);
 }
-STATUS_INFO.resolve={name:'Resolve',icon:'st-stone',d:'Just held fast or knocked back: can\'t be Stunned, Rooted, Frozen or knocked back again for a short while.'};
+STATUS_INFO.resolve={name:'Resolve',icon:'st-stone',d:'Immune to Stun, Root, Freeze and knockback.'};

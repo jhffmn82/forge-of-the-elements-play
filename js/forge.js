@@ -12,12 +12,12 @@ var T1_TEXT = {
 };
 /* 2026-09-23 (Justin): the sheet's element lines show the live total at the current affinity, not only the rate */
 var T1_LIVE = {
-  fire:   function(n){ return '+'+n+' fire damage on every hit (1 per point)'; },
-  water:  function(n){ return 'Ice Armor: absorbs '+(3*n)+' damage (3 per point), recharges out of combat'; },
-  air:    function(n){ return '+'+(10*n)+'% movement speed (10% per point)'; },
-  earth:  function(n){ return 'Stone Skin: -'+n+' physical damage per hit (1 per point)'; },
-  light:  function(n){ return (10*n)+'% chance that your hits Smite: '+(3+n)+'-'+(6+n)+' light damage (10% and +1 per point)'; },
-  shadow: function(n){ return '+'+(5*n)+'% crit chance on surprise attacks (5% per point)'; }
+  fire:   function(n){ return '+'+n+' fire damage per hit'; },
+  water:  function(n){ return 'Ice Armor: '+(3*n)+' damage shield; recharges out of combat'; },
+  air:    function(n){ return '+'+(10*n)+'% movement speed'; },
+  earth:  function(n){ return '-'+n+' physical damage per hit'; },
+  light:  function(n){ return (10*n)+'% Smite chance on hit: '+(3+n)+'-'+(6+n)+' light damage'; },
+  shadow: function(n){ return '+'+(5*n)+'% crit chance on surprise attacks'; }
 };
 function t1Text(e, n){ return (T1_LIVE[e] && n>0) ? T1_LIVE[e](n) : (T1_TEXT[e]||''); }
 var ENCHANT_TEXT = FoteEnchantments.formulaTable();

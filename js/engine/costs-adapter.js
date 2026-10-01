@@ -15,7 +15,11 @@ function playerTiming(){
   c.water=at(player.x,player.y)===WATER;c.levitate=player.levitate;
   return c;
 }
-function actCost(actor){return actor.shadowClone&&typeof FoteShadowClone!=='undefined'?FoteShadowClone.cost(actor):FoteCosts.action(actor===player?playerTiming():actorTiming(actor));}
+function actCost(actor){
+  var cost=actor.shadowClone&&typeof FoteShadowClone!=='undefined'?FoteShadowClone.cost(actor):FoteCosts.action(actor===player?playerTiming():actorTiming(actor));
+  var bonus=typeof murkSummonBonus==='function'?murkSummonBonus(actor):0;
+  return bonus?Math.max(1,Math.round(cost/(1+bonus))):cost;
+}
 function moveCost(){return FoteCosts.movement(playerTiming());}
 /* Stable sheet values describe the next ordinary move/attack, not the last
  * command or a one-use free-action receipt. 100 time units = one global turn. */
@@ -37,7 +41,7 @@ function shieldParts(){
 /* Receipts are transient command state, never inferred from a previous saved cost. */
 var SPELL_PAYMENTS=new WeakMap();
 function spendSpellMana(A){
-  var cost=costOf(A);if(freeInvocation(A))cost=0;
+  var cost=costOf(A);
   player.mp-=cost;player._actualSpellCost=cost;
   SPELL_PAYMENTS.set(player,{ability:A,cost:cost,eligible:!A.tech&&!A.divine,conducted:false});
   if(!A.tech)player.castingSpell=true;

@@ -117,7 +117,7 @@ function fwaSprite(kind){
   /* --- Water ------------------------------------------------------------------------------------ */
   M.tidecrab     = mk({name:'Tide Crab', sprite:fwaSprite('tidecrab'), col:'#5CC8D8', ch:'C', hp:130, dmg:[11,15], acc:70, eva:8, armor:10, xp:105,
                        fwa:'crab', shellGuard:true, living:true, art:1.0, sfx:'spider',
-                       hint:'Its shell takes the first blow of each turn. After three blows it cracks, and every hit lands.'});
+                       hint:'Blocks the first hit each turn until its shell breaks after 3 blocks.'});
   /* 2026-09-23: the five were re-animated from their masters the same day (PixelLab animate-with-text-v3 at the
      sheet size, drift held to the first frame, idle looped on it, seeds scored against the still). A creature
      whose rows drift again can hold its still with base.stillPose (render.js clipFrame). */

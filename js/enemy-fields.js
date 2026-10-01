@@ -20,7 +20,7 @@ var FoteEnemyFields=(function(){
   var result=gameEffects.apply(e,'web',1,undefined,{sourceAffinity:{},durationModifiers:false});
   if(!result.applied)return false;
   e.syllaWeb=3;floatText(e.x,e.y,'webbed','phys');
-  if(e===player)log('The webbing catches your feet. You are pinned, then slowed.','c-you');
+  if(e===player)log('Webbed: Root, then Slow.','c-you');
   else if(vis[idxOf(e.x,e.y)])log('The webbing catches the <b>'+e.name+'</b>.','c-info');
   return true;
  }
@@ -38,7 +38,7 @@ var FoteEnemyFields=(function(){
   var e=event.target;
   if(e.kind!=='magmacrawler'||event.damage<=0||!event.source||event.tags.has('periodic')||event.tags.has('environment'))return;
   spread(e.x,e.y,e,function(x,y,i){if(!fireT[i])fireSrc[i]=0;fwaBurnGround(x,y);burn(x,y);});
-  if(vis[idxOf(e.x,e.y)])log('The <b>Magma Crawler</b> sets the surrounding ground burning!','c-you');
+  if(vis[idxOf(e.x,e.y)])log('<b>Magma Crawler:</b> nearby ground burns.','c-you');
  }
  function pulse(clock){
   restore();

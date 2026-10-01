@@ -418,6 +418,7 @@ body.fote-study.study-wide.study-finger:not(.study-large-landscape) #app #studyE
   font:600 calc(15px * var(--ui-text-scale,1)) var(--display);
 }
 body.fote-study[data-ui-phone-pad=compact] {--study-phone-pad-scale:.8;}
+body.fote-study.study-wide.study-finger:not(.study-large-landscape) #app #studyExplore[data-explore-mode="stairs"] {flex-basis:84px;width:84px;}
 body.fote-study.study-wide.study-finger:not(.study-large-landscape) #app #dpad {
   width:100%;height:var(--study-right)!important;
   align-self:stretch;grid-template-rows:repeat(3,minmax(0,1fr))!important;
@@ -592,6 +593,9 @@ body.fote-study.study-wide.study-desktop #app #bars{position:relative;top:5px;}
 body.fote-study #app #studyExplore{opacity:1;cursor:pointer;}
 body.fote-study #app #studyExplore[aria-pressed="true"]{color:var(--gold)!important;box-shadow:inset 0 -2px var(--gold);}
 body.fote-study #statusbar .sico img{image-rendering:auto;}
+/* Class emblems have their own size; race portraits and shrines retain theirs. */
+body.fote-study.study-finger:not(.study-large-landscape) #create .card .class-symbol{height:36px;}
+body.fote-study.study-finger:not(.study-large-landscape) #create .class-symbol canvas{width:32px!important;height:32px!important;}
 
 /* Native orientation locks are unavailable in some mobile browsers/iframes. */
 #orientationPrompt[hidden]{display:none!important;}

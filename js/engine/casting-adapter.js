@@ -1,16 +1,16 @@
 /* One command owner for ability selection, self casts and target validation. */
 var SELF_CASTS={
-"ironbody":function(A,r,div){ player.buffs.ironbody=divineDuration(12); derive(player); log('Iron Body: your skin turns hard as iron.','c-good'); sfx('earth-cast'); sparkleFx(player.x,player.y,'earth',20); },
+"ironbody":function(A,r,div){ player.buffs.ironbody=divineDuration(12); derive(player); log('Iron Body active.','c-good'); sfx('earth-cast'); sparkleFx(player.x,player.y,'earth',20); },
 "bellow":function(A,r,div){  sfx('warchief-roar');
     ents.forEach(function(e){ if(e.foe && dist(e,player)<=3) applyStatus(e,'stun',1); });
-    var h=Math.round(player.maxhp*(.10+.02*r)*div); healPlayer(h); floatText(player.x,player.y,'+'+h,'heal'); ringFx(player.x,player.y,'#B8453A',3.5);
-    log('You bellow. Everything nearby reels.','c-good'); },
+    var h=Math.round(player.maxhp*(.10+.02*r)*div); healPlayer(h); ringFx(player.x,player.y,'#B8453A',3.5);
+    log('Bellow.','c-good'); },
 "heal":function(A,r,div){
     var prior=player.hp,bonus=(1+.10*r)*(typeof inSanctuary==='function'&&inSanctuary(player)?1+.25*holyGroundStrength(player):1);
     var raw=Math.round(player.maxhp*(.10+.02*r)*div);
     healPlayer(Math.min(raw,player.maxhp*.4/bonus));
     var hh=Math.round(player.hp-prior);
-    floatText(player.x,player.y,'+'+hh,'heal');sparkleFx(player.x,player.y,'heal',30);sfx('heal');
+    sparkleFx(player.x,player.y,'heal',30);sfx('heal');
     log('Saint Glimmer mends you. +'+hh+' HP.','c-good');
   },
 "arcaneward":function(A,r,div){ player.buffs.communion=8; player.buffs.arcaneward=8; player.ward=Math.round((8+2*r)*div); sfx('cast-generic'); ringFx(player.x,player.y,'#7FA8FF',2); },
@@ -31,8 +31,8 @@ var SELF_CASTS={
     ents.forEach(function(e){ if(e.foe && e.state==='hunt'){ e.state='wander'; e.lastSeen=null; } });
     player.syllaDark = r;player.castingSpell=false;
     sfx('vanish'); sparkleFx(player.x, player.y, 'dark', 30); ringFx(player.x, player.y, GODS.sylla.color, 2.5);
-    log('<b>Into the Dark.</b> The dark closes over you for '+SYLLA.darkTurns+' turns; nothing can keep your trail. Your next strike comes out of it'+
-        (r ? ' (+'+Math.round(SYLLA.darkPerRank*r*100)+'%)' : '')+'.','c-good');
+    log('<b>Into the Dark:</b> hidden for '+player.hidden+' turns'+
+        (r ? '; next hit +'+Math.round(SYLLA.darkPerRank*r*div*100)+'% damage' : '')+'.','c-good');
     return true;
   }
 };
@@ -53,11 +53,11 @@ function resolveElementSelf(A){  beginCast(A);
       if(e.foe){ spellHit(e, A, dmg, 'phys'); finishHit(e); }
       else if(e.ally){ var ad=applyDamage(e, dmg, 'phys', player); floatText(e.x,e.y,String(ad),'phys'); if(e.hp<=0) kill(e,null); } });
     markGround(tiles, A);
-    log('<b>Earthquake.</b> The ground heaves.','c-hit');
+    log('Earthquake.','c-hit');
   } else if(A.kind==='storm'){
     player.stormUntil=player.t+600;
     sparkleFx(player.x,player.y,'lightning',40); ringFx(player.x,player.y,'#E8D27A',2.5);
-    log('<b>Storm Form.</b> The world slows around you.','c-good');
+    log('Storm Form: double speed.','c-good');
     updateUI(); draw(); return;   /* instant: no time passes */
   } else if(A.kind==='dawn'){
     var n=0,tiles=[],damage=Math.round(sDMG(roll(A.base[0],A.base[1]))*spellPower(A));
@@ -66,7 +66,7 @@ function resolveElementSelf(A){  beginCast(A);
     markGround(tiles,A);
     player.dawnUntil=turn+20;
     sparkleFx(player.x,player.y,'light',60); ringFx(player.x,player.y,'#F6E7B0',5);
-    log('<b>Dawn.</b> Light strikes '+n+' enem'+(n===1?'y':'ies')+'; survivors are blinded, and nothing on this floor can hide from you.','c-good');
+    log('<b>Dawn:</b> '+n+' enem'+(n===1?'y':'ies')+' hit. Enemies revealed.','c-good');
   }
   endTurn();
 }
@@ -109,7 +109,7 @@ function useAbility(i){
 function inRange(x,y){
   if(!aiming||!inb(x,y))return false;
   var A=aiming.A;if(A.kind==='umbral')return !!seen[idxOf(x,y)];
-  var range=A.kind==='charge'?ABILITIES.charge.range:A.kind==='upheaval'?7:A.kind==='dash'?3:spellRange(A);
+  var range=aiming.prayer?A.range:A.kind==='charge'?ABILITIES.charge.range:A.kind==='upheaval'?7:A.kind==='dash'?3:spellRange(A);
   return dist(player,{x:x,y:y})<=range&&(revealAll||vis[idxOf(x,y)]);
 }
 
@@ -141,11 +141,5 @@ function castAt(x,y){
 
 /* Sheets and damage resolution read exactly the same spell-power calculation. */
 function spellPower(){
-  var character=.04*(player.stats.foc-10)+(hasP('arcaneStudy')?.10:0)+(hasP('archmage')?.10:0);
-  var gear=focusBonus(player.weapon)+(player.twoHanded?0:focusBonus(player.off));
-  var power=Math.max(.3,1+character)*(1+gear)*(1+Math.max(-.5,ringVal('wizardry')*2/3));
-  if(infusion('tome')==='fire')power*=1+enchantValues('tome','fire').spellPower;
-  var armor=player.armorItem;
-  if(armor&&itemKey(armor)==='robe'&&!armor.cursed)power*=Math.max(.1,1+gear+robeSpell(armor)*gearPassiveBonus())/Math.max(.1,1+gear);
-  return power*(buff('rally')?1.1:1);
+  return FoteStats.powers(player,statContent()).spell;
 }

@@ -139,7 +139,7 @@ function renderCreate(){
     var ic = C.icon && objArt('icons', C.icon) ? C.icon
            : C.ability && C.ability!=='invoke' ? ABILITIES[C.ability].icon
            : C.ability==='invoke' ? 'ic-pray' : 'ic-wait';
-    h+='<button class="card'+(c.cls===k?' on':'')+'" data-cls="'+k+'"><div class="port" style="height:48px" data-icon="'+ic+'"></div><b>'+C.name+'</b><span>'+C.blurb+'</span><span style="color:var(--gold)">'+ab+'</span></button>';
+    h+='<button class="card'+(c.cls===k?' on':'')+'" data-cls="'+k+'"><div class="port class-symbol" data-icon="'+ic+'"></div><b>'+C.name+'</b><span>'+C.blurb+'</span><span style="color:var(--gold)">'+ab+'</span></button>';
   });
   h+='</div>';
   if(c.cls==='cleric'){

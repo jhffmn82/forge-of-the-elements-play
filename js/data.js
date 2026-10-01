@@ -17,20 +17,20 @@ function cap(s){ return s ? s.charAt(0).toUpperCase()+s.slice(1) : s; }
    starting stat is below 10. */
 var RACES = {
   human:    {name:'Human', mods:{mig:0,agi:0,vit:0,foc:0}, speed:100,
-             blurb:'Adaptable. +1 to every stat, +1 stat point every 3 levels and +25% piety gain.',
+             blurb:'+1 to all stats. +1 stat point every 3 levels. +25% piety gain.',
              sexes:{m:'human-m', f:'human-f'}},
   elf:      {name:'Elf', mods:{agi:1, foc:2}, speed:110,
-             blurb:'Quick and arcane. +10% speed, spells cost 15% less, +1 range on every ranged attack and spell.',
+             blurb:'+10% speed. Spells cost 15% less mana. +1 range for ranged attacks and spells.',
              sexes:{m:'elf-m', f:'elf-f'}},
   dwarf:    {name:'Dwarf', mods:{mig:1, vit:2}, speed:100,
-             blurb:'Sturdy masters of the forge. Weapons and armor count as one upgrade higher, on top of their own upgrades. Heavy armor costs no evasion, and Forge upgrades cost 25% less.',
+             blurb:'Weapons and armor gain one effective upgrade. No heavy armor evasion penalty. Forge upgrades cost 25% less.',
              sexes:{m:'dwarf-m', f:'dwarf-f'}},
   fae:      {name:'Fae', mods:{agi:2, foc:1}, speed:100, locked:true, capBonus:1,
-             blurb:'Born of one court\'s element. Starts with 1 affinity in it and +1 affinity cap.',
+             blurb:'Start with 1 affinity in your court\'s element. +1 affinity cap.',
              courts:{fire:'Ember Court', water:'Tide Court', air:'Gale Court', earth:'Stone Court'},
              sexes:{m:'fae-%s-m', f:'fae-%s-f'}},
   gloomling:{name:'Gloomling', mods:{vit:2, foc:1}, speed:100, locked:'shadow', capBonus:1,
-             blurb:'Pale things that walk with shadow. Starts with Shadow 1, +1 affinity cap and 20% less hunger. Takes 25% more light damage.',
+             blurb:'Start with Shadow 1. +1 affinity cap, 20% less hunger. Take 25% more light damage.',
              sexes:{m:'gloomling-m', f:'gloomling-f'}}
 };
 
@@ -70,24 +70,24 @@ function clone(o){ return JSON.parse(JSON.stringify(o)); }
 
 var CLASSES = {
   fighter:  {name:'Fighter', mods:{mig:2,vit:2}, ability:'double', icon:'cls-fighter',
-             passive:'Guard: a shield worth 12% of your max HP that refills out of combat.',
-             blurb:'Sword and board, with Double Strike, Charge and a shield that actually stops things.',
+             passive:'Guard: 12% max HP shield; refills out of combat.',
+             blurb:'Sword and shield. Double Strike hits twice; Charge closes distance and stuns.',
              kit:{main:'sword', alt:'longsword', armor:'chain', off:'kite'}},
   cleric:   {name:'Cleric', mods:{foc:2,vit:2}, ability:'invoke', icon:'cls-cleric',
              passive:'Starts sworn to a god of your choice (rank 1, 20 piety).',
-             blurb:'Chooses a god at the start. Its first ability is that god\'s everyday miracle.',
+             blurb:'Start with a god and its invoke ability.',
              kit:{main:'mace', alt:'staff', armor:'leather', off:'holy'}},
   mage:     {name:'Mage', mods:{foc:3,vit:1}, ability:'missile', icon:'cls-mage',
              passive:'Deep Reserves: +30% max mana.',
-             blurb:'Magic Missile: always hits, nothing resists it, grows with every affinity point.',
+             blurb:'Magic Missile always hits, ignores resistance and gains damage from affinity.',
              kit:{main:'wand', alt:'staff', armor:'robe', off:'orb'}},
   scoundrel:{name:'Scoundrel', mods:{agi:4}, ability:'sap', icon:'cls-scoundrel',
-             passive:'Sneaky: double damage on surprise attacks. Enemies spot you half as often and from 2 tiles closer. Shadowstep hides you when no enemy is adjacent.',
-             blurb:'Bow and dagger. Sap knocks a target out, and a knocked-out target takes a surprise attack.',
+             passive:'Sneaky: double surprise damage. Halve enemy detection chance and reduce detection range by 2 tiles. Shadowstep requires no adjacent enemies.',
+             blurb:'Bow and dagger. Sap disables an enemy and sets up a surprise attack.',
              kit:{main:'dagger', alt:'bow', armor:'leather', off:'dagger'}},
   tourist:  {name:'Tourist', mods:{}, ability:null, icon:'cls-tourist',
              passive:'Well-Traveled: +1 extra stat point every 2 levels.',
-             blurb:'No training, a Hawaiian shirt and a camera that does nothing. Grows faster than anyone.',
+             blurb:'Extra XP and stat points. Starts with a dagger, shirt and camera.',
              kit:{main:'dagger', alt:null, armor:'shirt', off:'camera'}, extraFood:2}
 };
 
@@ -99,16 +99,16 @@ var GODS = {
     "title": "god of the bare fist",
     "sprite": "shrine-grom",
     "color": "#C98A5A",
-    "rule": "Dwarves cannot worship Chad. Only Holy Symbols, rings and amulets may be equipped. No other weapons, ranged equipment, armor or off-hand items.",
+    "rule": "No Dwarves. Equip only Holy Symbols, rings and amulets.",
     "invoke": "ironbody",
     "prayers": [
       "ironhide",
       "pummel"
     ],
     "boons": [
-      "Iron Flesh: +2 armor, +10% movement speed and +10% evasion per rank. Your fists hit harder as you rise, and they can parry.",
+      "Iron Flesh: +2 armor, +10% movement speed and +10% evasion per rank. Fists gain damage with rank and can parry.",
       "Staggering Blows: unarmed hits have a 15% chance to stun for 1 turn, and you punch 10% faster per rank.",
-      "Living Mountain: every unarmed attack, hit or miss, adds a stack (up to 10) and keeps them all for 6 turns, longer with Divine Power. Each stack gives +2% crit, +2% accuracy and +2 damage."
+      "Living Mountain: unarmed attacks add a stack, even on misses (max 10). Each gives +2% crit, +2% accuracy and +2 damage. Attacks refresh all stacks for 6 turns; Divine Power extends this."
     ],
     "gain": "Damaging unarmed hits, plus kills while your hands are empty; elites and bosses grant extra."
   },
@@ -117,7 +117,7 @@ var GODS = {
     "title": "god of honest violence",
     "sprite": "shrine-grumbok",
     "color": "#B8453A",
-    "rule": "No spells, wands or sigils. Your other abilities are fine.",
+    "rule": "No spells, wands or sigils.",
     "invoke": "bellow",
     "prayers": [
       "rampage",
@@ -125,8 +125,8 @@ var GODS = {
     ],
     "boons": [
       "Thick Hide: +4% resistance to magic and elemental damage and +20% HP regeneration per rank.",
-      "Wizard Hunter: when magic or elemental damage or a ranged attack hurts you, you move and attack 5% faster per rank for 3 turns.",
-      "Warrior's Discipline: your abilities recharge 1 turn faster per rank (never under 1 turn), and each ability you use grants +2 damage for 6 turns, stacking once per rank."
+      "Wizard Hunter: taking magic, elemental or ranged damage grants +5% movement and attack speed per rank for 3 turns.",
+      "Warrior's Discipline: -1 turn ability cooldown per rank (minimum 1). Abilities grant +2 damage for 6 turns, up to one stack per rank."
     ],
     "gain": "Kills, extra for spellcasters and elemental creatures."
   },
@@ -136,7 +136,7 @@ var GODS = {
     "sprite": "shrine-glimmer",
     "color": "#F6E7B0",
     "refuses": "gloomling",
-    "rule": "No Shadow: no Shadow affinity, enchantments, spells or sigils. She will not take you if there is no room left for Light among your elements.",
+    "rule": "No Shadow affinity, enchantments, spells or sigils. Requires room for Light affinity.",
     "invoke": "heal",
     "prayers": [
       "consecrate",
@@ -145,7 +145,7 @@ var GODS = {
     "boons": [
       "Mending Light: +10% healing and HP regeneration per rank, and +10% weapon damage per rank against undead and shadow creatures.",
       "Guiding Light: +5% Smite chance per rank.",
-      "Kindled: Saint Glimmer sets 1 Light affinity burning in you that does not count toward your cap."
+      "Kindled: +1 Light affinity, outside your affinity cap."
     ],
     "gain": "Kills, extra for undead and shadow creatures.",
     "boonRanks": [
@@ -167,9 +167,9 @@ var GODS = {
       "bonespear"
     ],
     "boons": [
-      "Life Drain: each hit you or your summons land has a 10% chance per rank to deal 2 shadow damage per rank, scaled by Divine Power. The attacker heals for the damage dealt: your hits heal you, and a summon's hits heal that summon. Each weapon can trigger it; damage over time and follow-up effects cannot. Your summons have +5% HP and +5% damage per rank, and your servant grows with rank and Divine Power.",
-      "Grave Strength: your servant and other summons deal +1 shadow damage per rank, carry your weapon's enchantment and move 10% faster.",
-      "Lich: your servant rises as a Lich. The first time it is destroyed, it returns a turn later at half health."
+      "Life Drain: your direct hits have a 10% chance per rank to deal 2 shadow damage per rank, scaled by Divine Power. Heal yourself for the damage dealt.",
+      "Grave Strength: summons gain Life Drain and +5% HP, movement speed, attack speed and damage per rank, scaled by Divine Power. Their Life Drain heals them.",
+      "Lich: your servant becomes a Lich and revives once, after 1 turn, at half HP. Gain +2% Divine Power per Vitality above 10."
     ],
     "gain": "Kills of the living, extra for kills by your undead."
   },
@@ -178,7 +178,7 @@ var GODS = {
     "title": "patron of the fair fight",
     "sprite": "shrine-reginald",
     "color": "#9FB0C0",
-    "rule": "Your presence wakes every enemy within 8 tiles. No Scoundrels, and no Shadow affinity, enchantments, spells or sigils.",
+    "rule": "Wake enemies within 8 tiles. No Scoundrels or Shadow affinity, enchantments, spells or sigils.",
     "invoke": "challenge",
     "prayers": [
       "laststand",
@@ -186,8 +186,8 @@ var GODS = {
     ],
     "boons": [
       "Fair Fight: +4 accuracy and +2% crit per rank, and +10% weapon damage per rank against elites and bosses.",
-      "Coward's Mark: an enemy that hurts you from afar is marked for 5 turns. It must come for you, deals 5% less damage per rank and takes +25% weapon damage.",
-      "Wall of One: for each enemy adjacent to you beyond the first, you take 10% less damage and deal 10% more, up to three."
+      "Coward's Mark: ranged attackers must approach for 5 turns. They deal 5% less damage per rank and take +25% weapon damage.",
+      "Wall of One: each adjacent enemy beyond the first grants -10% damage taken and +10% damage dealt (max 3)."
     ],
     "gain": "Kills of enemies that see you coming, extra for elites and bosses."
   },
@@ -197,7 +197,7 @@ var GODS = {
     "sprite": "shrine-anvil",
     "color": "#E8B44A",
     "tithe": true,
-    "rule": "No rule. Old Anvil wants essence.",
+    "rule": "No restrictions.",
     "invoke": "temper",
     "prayers": [
       "fieldsmelt",
@@ -225,7 +225,7 @@ var GODS = {
     "boons": [
       "Arcane Attunement: the bonuses and enchantments on your gear are 5% stronger per rank.",
       "Repelling Force: weapon hits and single-target spells have a 10% chance per rank to knock the enemy back 2 tiles.",
-      "Perfect Invocation: invokes and spells have a 30% chance to cost no mana or Favor."
+      "Perfect Invocation: gain Divine Power equal to your bonus Spell Power."
     ],
     "gain": "Spell kills, mana spent on spells and mana globes picked up. Communion earns Favor from damaging attacks."
   },
@@ -235,7 +235,7 @@ var GODS = {
     "sprite": "shrine-wobbles",
     "color": "#D98BD0",
     "chaos": true,
-    "rule": "No rule and no tithe. The cost is that you never know.",
+    "rule": "No restrictions or tithes.",
     "invoke": "rolldice",
     "prayers": [
       "luckystreak",
@@ -244,9 +244,9 @@ var GODS = {
     "boons": [
       "Lady Luck: +3% per rank to your crit, evasion, parry, block and enchantment chances.",
       "Favorite Toy: +10% chance that Roll the Dice and Tempt Fate go your way, rising to +20% at rank 5.",
-      "Last Laugh: once per floor, a killing blow leaves you at 1 HP instead, and Wobbles adds a surprise: a heal, a vanishing act or a ward."
+      "Last Laugh: survive a killing blow at 1 HP once per floor. Gain healing, invisibility or a ward."
     ],
-    "gain": "Kills and new floors earn piety. Fighting earns Amusement: it drains slowly when things are quiet and pays for Tempt Fate. Pranks become more likely as Amusement falls; rewards become more likely as it rises. Either can happen at any level. A prank raises Amusement by 50; a reward spends 50."
+    "gain": "Kills and new floors earn piety. Combat raises Amusement; quiet turns lower it. Low Amusement favors pranks, high Amusement favors rewards; either can happen at any level. Pranks add 50 Amusement; rewards spend 50. Tempt Fate also costs Amusement."
   },
   "sylla": {
     "name": "Sylla the Patient",
@@ -287,7 +287,7 @@ var ABILITIES = {
     "kind": "melee2",
     "icon": "ic-double-strike",
     "sfx": "double-strike",
-    "desc": "Hit an adjacent enemy twice with your weapon, in the time of one attack."
+    "desc": "Hit an adjacent enemy twice in one attack."
   },
   "missile": {
     "name": "Magic Missile",
@@ -303,7 +303,7 @@ var ABILITIES = {
     "perAffinity": 1,
     "icon": "ic-magic-missile",
     "el": "magic",
-    "desc": "Always hits, and nothing resists its magic damage. +1 damage per affinity point."
+    "desc": "Always hits and ignores resistance. +1 magic damage per affinity point."
   },
   "sap": {
     "name": "Sap",
@@ -321,7 +321,7 @@ var ABILITIES = {
       "stun": 3
     },
     "icon": "ic-sap",
-    "desc": "Knock the target out for 3 turns, or 6 if it was unaware. The hit that wakes it is a surprise critical. Once Sapped, it can never be Stunned again."
+    "desc": "Stun for 3 turns (6 if unaware). The waking hit is a surprise critical. Target then becomes immune to Stun."
   },
   "firebolt": {
     "name": "Firebolt",
@@ -338,7 +338,7 @@ var ABILITIES = {
     },
     "icon": "ic-firebolt",
     "el": "fire",
-    "desc": "Fire damage that sets the target Burning for 3 turns. Ignites grass and burns away thorns."
+    "desc": "Deal fire damage and inflict Burning for 3 turns. Ignites grass; destroys thorns."
   },
   "frostshard": {
     "name": "Frost Shard",
@@ -355,7 +355,7 @@ var ABILITIES = {
     },
     "icon": "ic-frost-shard",
     "el": "water",
-    "desc": "Frost damage and Chill. Four Chills freeze the target solid (three at Water 6)."
+    "desc": "Deal frost damage and apply Chill. Freeze at 4 stacks (3 at Water 6)."
   },
   "spark": {
     "name": "Spark",
@@ -369,7 +369,7 @@ var ABILITIES = {
     ],
     "icon": "ic-spark",
     "el": "air",
-    "desc": "Lightning damage with a 5% chance per Air point to Stun. +50% against targets that are Wet or standing in water.",
+    "desc": "Deal lightning damage; 5% Stun chance per Air point. +50% damage to Wet targets or targets in water.",
     "stunChance": 0
   },
   "root": {
@@ -387,7 +387,7 @@ var ABILITIES = {
     },
     "icon": "ic-earth-root",
     "el": "earth",
-    "desc": "Physical damage that Roots the target for 2 turns."
+    "desc": "Deal physical damage and Root for 2 turns."
   },
   "smite": {
     "name": "Lightfall",
@@ -401,7 +401,7 @@ var ABILITIES = {
     ],
     "icon": "ic-smite",
     "el": "light",
-    "desc": "Light damage with a 10% chance per Light point to Blind. +50% against undead and shadow creatures.",
+    "desc": "Deal light damage; 10% Blind chance per Light point. +50% damage to undead and shadow creatures.",
     "blindChance": 0
   },
   "shadowbolt": {
@@ -419,7 +419,7 @@ var ABILITIES = {
     },
     "icon": "ic-shadow-bolt",
     "el": "shadow",
-    "desc": "Shadow damage, and the target flees in Fear for 2 turns."
+    "desc": "Deal shadow damage and inflict Fear for 2 turns."
   },
   "ironbody": {
     "name": "Iron Body",
@@ -459,7 +459,7 @@ var ABILITIES = {
     "icon": "ic-raise-dead",
     "divine": true,
     "god": "murk",
-    "desc": "The dead rise to fight for you. One at a time."
+    "desc": "Summon one undead servant."
   },
   "arcaneward": {
     "name": "Communion",
@@ -479,7 +479,7 @@ var ABILITIES = {
     "icon": "ic-challenge",
     "divine": true,
     "god": "reginald",
-    "desc": "Mark one enemy. It must come for you, and your weapon deals +25% damage to it."
+    "desc": "Force one enemy to approach. Deal +25% weapon damage to it."
   },
   "temper": {
     "name": "Temper",
@@ -497,7 +497,7 @@ var ABILITIES = {
     "icon": "ic-roll-dice",
     "divine": true,
     "god": "wobbles",
-    "desc": "Something happens. Probably good."
+    "desc": "Trigger a random reward or prank."
   },
   "shadowstep": {
     "name": "Shadowstep",
@@ -506,7 +506,7 @@ var ABILITIES = {
     "kind": "self",
     "tech": true,
     "icon": "ic-shadowstep",
-    "desc": "Slip into hiding for 3 turns, as long as no enemy is next to you. Hunting enemies lose your trail."
+    "desc": "Hide for 3 turns and break pursuit. Requires no adjacent enemies."
   },
   "charge": {
     "name": "Charge",
@@ -516,7 +516,7 @@ var ABILITIES = {
     "range": 6,
     "tech": true,
     "icon": "ic-charge",
-    "desc": "Rush up to 5 tiles in a straight line, at an enemy or onto open ground. Your blow cannot miss, and every enemy beside you where you land is Stunned for 2 turns."
+    "desc": "Charge up to 5 tiles in a straight line. Always hits an enemy target. Stun adjacent enemies at your destination for 2 turns."
   },
   "fireball": {
     "name": "Fireball",
@@ -527,7 +527,7 @@ var ABILITIES = {
     "type": "fire",
     "el": "fire",
     "icon": "ic-fireball",
-    "desc": "Pick a tile in sight: a 5x5 blast of fire damage that sets everything in it Burning."
+    "desc": "Deal fire damage and inflict Burning in a 5x5 area centered on a visible tile."
   },
   "frostcone": {
     "name": "Frost Cone",
@@ -557,7 +557,7 @@ var ABILITIES = {
     "type": "phys",
     "el": "earth",
     "icon": "ic-earthquake",
-    "desc": "The ground heaves 5 tiles around you: physical damage to everything but you, your own summons included."
+    "desc": "Deal physical damage within 5 tiles, including to your summons. Does not hit you."
   },
   "radiantbeam": {
     "name": "Radiant Beam",
@@ -588,7 +588,7 @@ var ABILITIES = {
     "type": "fire",
     "el": "fire",
     "icon": "ic-living-flame",
-    "desc": "Call a Living Flame onto an empty tile for 30 turns. It scorches enemies beside it as it lands, then hurls fire at range 6; every third shot splashes nearby enemies. Counts toward your two summons."
+    "desc": "Summon a Living Flame for 30 turns. Damages adjacent enemies on arrival; fires at range 6. Every third shot splashes nearby enemies. Uses one of 2 summon slots."
   },
   "glacialtomb": {
     "name": "Glacial Tomb",
@@ -600,7 +600,7 @@ var ABILITIES = {
     "type": "ice",
     "el": "water",
     "icon": "ic-glacial-tomb",
-    "desc": "Seal an enemy in ice for 10 turns (6 for elites, 2 for bosses); it can neither act nor be hurt. Enemies beside it take 32-48 frost damage. On yourself: 3 safe turns, then 25% of max HP and mana back."
+    "desc": "Imprison an enemy, unable to act or take damage: 10 turns (elites 6, bosses 2). Deal 32-48 frost damage to adjacent enemies. Self-cast: 3 turns, then restore 25% max HP and mana."
   },
   "stormform": {
     "name": "Storm Form",
@@ -620,7 +620,7 @@ var ABILITIES = {
     "type": "phys",
     "el": "earth",
     "icon": "ic-upheaval",
-    "desc": "Raise a line of stone walls up to 7 tiles long for 20 turns. Enemies and your summons within 2 tiles of a wall take 24-36 physical damage and are Rooted for 2 turns. You are spared."
+    "desc": "Create up to 7 walls in a line for 20 turns. Deal 24-36 physical damage and Root creatures within 2 tiles for 2 turns. Hits your summons; does not hit you."
   },
   "dawn": {
     "name": "Dawn",
@@ -630,7 +630,7 @@ var ABILITIES = {
     "type": "light",
     "el": "light",
     "icon": "ic-dawn",
-    "desc": "Strike every enemy in sight for 24-36 light damage and Blind the survivors for 3 turns. For 20 turns, every enemy on the floor is revealed."
+    "desc": "Deal 24-36 light damage and Blind visible enemies for 3 turns. Reveal all enemies for 20 turns."
   },
   "umbral": {
     "name": "Umbral Passage",
@@ -639,7 +639,7 @@ var ABILITIES = {
     "type": "dark",
     "el": "shadow",
     "icon": "ic-umbral-passage",
-    "desc": "Step to any tile you have seen with no enemy beside it, arriving hidden for 2 turns. Your shadow stays behind to cast Shadow Bolt, following you between floors, until it falls or you cast this again."
+    "desc": "Teleport to an explored tile with no adjacent enemies; hide for 2 turns. Leave a shadow that casts Shadow Bolt and follows between floors. Lasts until destroyed or recast."
   },
   "unholyaura": {
     "name": "Unholy Aura",
@@ -648,7 +648,7 @@ var ABILITIES = {
     "icon": "pr-unholyaura",
     "divine": true,
     "god": "murk",
-    "desc": "For 8 turns, enemies within 2 tiles take 4 shadow damage per rank each turn, and you heal 1 HP for each of them. Grows with Divine Power."
+    "desc": "For 8 turns, deal 4 shadow damage per rank per turn to enemies within 2 tiles; heal 1 HP per enemy hit. Scales with Divine Power."
   },
   "intothedark": {
     "name": "Into the Dark",
@@ -657,7 +657,7 @@ var ABILITIES = {
     "icon": "ic-into-the-dark",
     "divine": true,
     "god": "sylla",
-    "desc": "Vanish for 3 turns, and enemies lose your trail. Your next hit from hiding deals +10% damage per rank."
+    "desc": "Hide for 3 turns and break pursuit. Your next hit from hiding deals +10% damage per rank."
   }
 };
 var ELEMENT_ABILS = {fire:{2:'firebolt'}, water:{2:'frostshard'}, air:{2:'spark'}, earth:{2:'root'}, light:{2:'smite'}, shadow:{2:'shadowbolt'}};
@@ -730,13 +730,13 @@ var PRAYERS = {
     "favor": 0,
     "rank": 4,
     "amusement": 40,
-    "desc": "An 80% chance of a gift (85% at rank 5): a full heal, motes, gear or jewelry. Otherwise an ambush, blood loss, a random teleport or, rarely, the loss of half your essence."
+    "desc": "80% reward chance (85% at rank 5): full healing, motes or gear. Otherwise: ambush, HP loss, teleport or, rarely, lose half your essence."
   },
   "raisedead": {
     "name": "Raise Dead",
     "favor": 20,
     "rank": 2,
-    "desc": "The dead rise beside you and fight until destroyed or you leave the floor. One at a time."
+    "desc": "Summon one undead servant until destroyed or you leave the floor."
   },
   "the-brood": {
     "name": "The Brood",
@@ -754,13 +754,13 @@ var PRAYERS = {
     "name": "Field Smelt",
     "rank": 2,
     "favor": 5,
-    "desc": "Out of combat, melt one carried item down for its full essence value. Takes no turn."
+    "desc": "Recycle one carried item for full essence value. Requires being out of combat. Instant."
   },
   "anviltoll": {
     "name": "Anvil's Toll",
     "rank": 4,
     "favor": 20,
-    "desc": "Strike every enemy within 2 tiles with your weapon. Those you hit are knocked back 2 tiles and Stunned for 1 turn."
+    "desc": "Attack all enemies within 2 tiles. Hits knock back 2 tiles and Stun for 1 turn."
   },
   "lance": {
     "name": "Lance",
@@ -771,14 +771,14 @@ var PRAYERS = {
   "bonespear": {
     "name": "Bone Spear",
     "rank": 4,
-    "favor": 5,
-    "desc": "Shadow damage to every enemy in a line up to 6 tiles long. Grows with rank and Divine Power."
+    "health": 5,
+    "desc": "Shadow damage to every enemy in a line up to 6 tiles long, scaled by rank and Divine Power. Costs 5 HP; must leave at least 1 HP. No cooldown."
   },
   "arcanelance": {
     "name": "Arcane Lance",
     "rank": 2,
     "favor": 5,
-    "desc": "Magic damage to one enemy within 6 tiles. Grows with rank and Divine Power."
+    "desc": "Magic damage to one enemy within 6 tiles. Grows with rank and Divine Power. Costs 5 Favor. No cooldown."
   },
   "luckystreak": {
     "name": "Lucky Streak",
@@ -811,10 +811,10 @@ var DIVINE_COOLDOWNS = {
     ironhide:18, pummel:5,                 /* Chad the Unclad (grom) */
     rampage:15, trollblood:20,              /* Grumbok */
     consecrate:8, sanctuary:15,            /* Saint Glimmer (sanctuary is Holy Ground) */
-    raisedead:20, bonespear:2,             /* Mother Murk */
+    raisedead:20, bonespear:0,             /* Mother Murk */
     laststand:15, lance:2,                 /* Sir Reginald */
     fieldsmelt:20, anviltoll:8,            /* Old Anvil */
-    arcanelance:2, arcanenova:8,          /* Vellum */
+    arcanelance:0, arcanenova:8,           /* Vellum */
     luckystreak:12, rolldice2:20,           /* Wobbles (rolldice2 is Tempt Fate) */
     'the-brood':20, 'venom-burst':8        /* Sylla */
   },
@@ -825,10 +825,10 @@ var DIVINE_COOLDOWNS = {
 
 /* ---------------------------------------------------------------- sigils (crafted at the Forge, found unidentified) */
 var SIGILS = {
-  firestorm:{name:'Fire sigil', motes:['fire'], desc:'Flames burst out around you: enemies within 3 tiles take 8 fire damage plus the floor number and start Burning.'},
+  firestorm:{name:'Fire sigil', motes:['fire'], desc:'Deal 8 + floor number fire damage and inflict Burning on enemies within 3 tiles.'},
   mana:     {name:'Water sigil', motes:['water'], desc:'Restore 50% of your mana.'},
-  levitate: {name:'Air sigil', motes:['air'], desc:'Break free of roots and webs, then float for 25 turns: cross chasms and water, and avoid roots, webs, floor traps and ground hazards.'},
-  stoneskin:{name:'Earth sigil', motes:['earth'], desc:'Purge poison and stun. For 15 turns, become immune to poison damage, Poison and Stun, and take 3 less physical damage per hit.'},
+  levitate: {name:'Air sigil', motes:['air'], desc:'Clear roots and webs. Float for 25 turns: cross chasms and water; ignore roots, webs, floor traps and ground hazards.'},
+  stoneskin:{name:'Earth sigil', motes:['earth'], desc:'Clear Poison and Stun. For 15 turns: immune to both and poison damage; -3 physical damage per hit.'},
   heal:     {name:'Light sigil', motes:['light'], desc:'Heal 35% of max HP, then 5% a turn for 15 turns.'},
   vanish:   {name:'Shadow sigil', motes:['shadow'], desc:'Vanish for 5 turns; enemies lose track of you.'},
   identify: {name:'Sigil of Knowing', motes:['light','shadow'], desc:'Identify every sigil you carry.'},
@@ -882,14 +882,14 @@ var MONSTERS = {
             band:[1,5], w:26, art:0.9, sfx:'goblin', living:true, artLeft:true},
   archer:  {name:'Goblin Archer', sprite:'m-goblin-archer', col:'#B8894A', ch:'a', hp:14, dmg:[3,5], acc:60, eva:18, armor:0, speed:100, range:6, xp:10,
             band:[2,5], w:18, kiter:true, art:0.9, sfx:'goblin', living:true, artLeft:true},
-  brute:   {name:'Goblin Brute', sprite:'m-goblin-brute', col:'#4E7A3C', ch:'G', hp:30, dmg:[5,8], acc:58, eva:10, armor:2, speed:100, range:1, xp:18,hint:'An unblocked melee hit can shoulder-check its target back one tile. Four-turn cooldown; deals no extra damage.',
+  brute:   {name:'Goblin Brute', sprite:'m-goblin-brute', col:'#4E7A3C', ch:'G', hp:30, dmg:[5,8], acc:58, eva:10, armor:2, speed:100, range:1, xp:18,hint:'Unblocked melee hits can push the target 1 tile. 4-turn cooldown; no extra damage.',
             band:[3,5], w:14, art:1.05, sfx:'brute', living:true, artLeft:true},
   slime:   {name:'Rock Slime', sprite:'m-rock-slime', col:'#7C8C9E', ch:'s', hp:24, dmg:[4,6], acc:54, eva:8, armor:3, speed:70, range:1, xp:16, rootSpit:true,
             band:[2,4], w:12, splits:true, art:0.8, artLeft:true, sfx:'slime',
-            hint:'Regenerates 2 HP per world turn. A damaging hit from full health divides its remaining HP between two full-sized slimes. Both can split again after healing to full.'},
+            hint:'Regenerates 2 HP per turn. Damage at full HP splits it into two slimes sharing its remaining HP. Either can split again at full HP.'},
   pebbleslime:{name:'Pebble Slime', sprite:'m-slime', col:'#7C8C9E', ch:'s', hp:10, dmg:[2,3], acc:54, eva:8, armor:0, speed:70, range:1, xp:8,
             band:[1,1], biome:[0], w:12, pebbleSlam:true, art:0.65, sfx:'slime',
-            hint:'A young Rock Slime. It crouches before striking the marked tile. Step aside while it winds up.'},
+            hint:'Marks a tile before striking. Move off the mark.'},
   shaman:  {name:'Goblin Shaman', sprite:'m-goblin-shaman', col:'#C25A3A', ch:'h', hp:16, dmg:[3,5], acc:64, eva:14, armor:0, speed:100, range:1, xp:18,
             band:[3,5], w:10, caster:'firebolt', castRange:6, castEvery:4, el:'fire', art:0.9, sfx:'shaman', living:true, spellcaster:true, artLeft:true},
   skeleton:{name:'Skeleton', sprite:'m-skeleton', col:'#D8CEBC', ch:'k', hp:16, dmg:[3,5], acc:62, eva:18, armor:2, speed:100, range:1, xp:18,

@@ -14,7 +14,38 @@
     return found;
   }
   function itemKey(item){return item&&item.key||null;}
-  function tierOf(item){return item&&typeof item.tier==='number'?Math.max(0,Math.min(3,item.tier)):1;}
+  function tierOf(item){
+    if(item&&typeof item.tier==='number')return Math.max(0,Math.min(3,item.tier));
+    var legacy={Worn:0,Rusty:1,'':1,Plain:1,Trusty:2,Fine:2,Masterwork:3},tier=item&&legacy[item.tier];
+    return tier===undefined||tier===null?1:tier;
+  }
+  function focusBonus(item,tables,gearBonus){
+    var key=item&&(item.icon||'').replace(/^item-/,''),rule=tables&&tables[key];
+    if(!rule)return item&&item.spell||0;
+    var tier=tierOf(item),plus=item.plus||0;
+    if(key==='orb')return item.cursed?-((rule.curse[tier]||0)+rule.cursePer*Math.abs(plus)):0;
+    return ((item.cursed?-rule.base[tier]:rule.base[tier])+rule.per*plus)*gearBonus;
+  }
+  function powerValues(actor,content,c){
+    var stats=actor.stats||{},p=c.passives,w=c.weapon,o=c.off,a=c.armor;
+    var character=.04*((stats.foc||10)-10)+(p.arcaneStudy?.10:0)+(p.archmage?.10:0);
+    var focus=focusBonus(w,content.focus,c.gearBonus)+focusBonus(o,content.focus,c.gearBonus);
+    var rings=ringBonuses(actor,content,c.gearBonus);
+    var spell=Math.max(.3,1+character)*(1+focus)*(1+Math.max(-.5,(rings.wizardry||0)*2/3));
+    if(o&&(o.icon||'').replace(/^item-/,'')==='tome'&&o.enchant==='fire')spell*=1+c.enchant('tome','fire').spellPower;
+    if(itemKey(a)==='robe'&&!a.cursed){
+      var robe=content.robe.spell[tierOf(a)]+content.robe.spellPer*Math.max(0,(a.plus||0)+(actor.race==='dwarf'?1:0));
+      spell*=Math.max(.1,1+focus+robe*c.gearBonus)/Math.max(.1,1+focus);
+    }
+    if(c.buffs.rally>0)spell*=1.1;
+    var divine=1+((w.cursed?0:w.divine||0)+(o&&!o.cursed?o.divine||0:0))*c.gearBonus;
+    if(c.rank>=5){
+      if(actor.god==='murk')divine+=.02*Math.max(0,(stats.vit||10)-10);
+      // Spell Power is resolved first and never reads Divine Power.
+      if(actor.god==='vellum')divine+=Math.max(0,spell-1);
+    }
+    return {spell:spell,divine:divine};
+  }
   /* Dwarf (DESIGN races table): worn weapons and armor count as one upgrade level higher, on top of their own upgrades */
   function upgradeValue(item,actor){
     return (item&&item.plus||0)+(item&&item.tier==='Trusty'?1:0)+(actor.race==='dwarf'&&item&&(item.dmg&&!item.unarmed||item.weight)?1:0);
@@ -40,18 +71,22 @@
     if(extra&&result.indexOf(extra)<0)result.splice(1,0,extra);
     return result;
   }
-  function computationContext(actor,content,weapon){
+  function computationContext(actor,content,weapon,actionEquipment){
     var rank=rankOf(actor,content),options={vellumRank:actor.god==='vellum'?rank:0,anvilRank:actor.god==='anvil'?rank:0};
     var gearBonus=content.enchantments.gearBonus(options.vellumRank);
     var enchantBonus=content.enchantments.godBonus(options);
     var mountain=actor.god==='grom'&&rank>=5;
     weapon=weapon||(actor.sets||[])[actor.activeSet||0]||content.fists;
-    var off=weapon.hands===2?null:actor.off;
-    return {rank:rank,gearBonus:gearBonus,enchantBonus:enchantBonus,mountain:mountain,
+    var off=(actionEquipment?actor.twoHanded:weapon.hands===2)?null:actor.off;
+    var c={rank:rank,gearBonus:gearBonus,enchantBonus:enchantBonus,mountain:mountain,
       weapon:weapon,off:off,armor:actor.armorItem||{},
-      divine:1+((weapon.cursed?0:weapon.divine||0)+(off&&!off.cursed?off.divine||0:0))*gearBonus,
       passives:passivesFor(actor.stats,content.passives),aff:actor.aff||{},buffs:actor.buffs||{},
       enchant:function(slot,el){return content.enchantments.values(slot,el,(actor.aff||{})[el]||0,options);}};
+    var power=powerValues(actor,content,c);c.divine=power.divine;c.spell=power.spell;return c;
+  }
+  function powers(actor,content){
+    var c=computationContext(actor,content,actor.weapon,true);
+    return {spell:c.spell,divine:c.divine};
   }
   function baseStats(actor,content,c){
     var s=actor.stats,p=c.passives,w=c.weapon,o=c.off,a=c.armor;
@@ -151,7 +186,7 @@
     }
     return out;
   }
-  var api={compute:compute,computeWithRanged:computeWithRanged,passivesFor:passivesFor,rankOf:rankOf};
+  var api={compute:compute,computeWithRanged:computeWithRanged,passivesFor:passivesFor,rankOf:rankOf,powers:powers,focusBonus:focusBonus};
   root.FoteStats=Object.freeze(api);
   if(typeof module==='object'&&module.exports)module.exports=api;
 })(typeof globalThis==='object'?globalThis:this);

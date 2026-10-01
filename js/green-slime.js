@@ -3,7 +3,7 @@ var FoteGreenSlime=(function(){
  'use strict';
  MONSTERS.greenslime={name:'Green Slime',sprite:'m-green-slime',col:'#75a64e',ch:'s',hp:12,dmg:[1,2],acc:48,eva:0,armor:0,speed:70,range:1,xp:10,
   band:[1,4],biome:[0],w:12,living:true,sporeproof:true,greenSlime:true,art:.7,artLeft:true,sfx:'slime',
-  hint:'Regenerates 2 HP per world turn. A damaging hit from full health divides its remaining HP between two full-sized slimes. Both can split again after healing to full. Its poison trail fades after 10 world turns.'};
+  hint:'Regenerates 2 HP per turn. Damage at full HP splits it into two slimes sharing its remaining HP. Either can split again at full HP. Leaves a 10-turn poison trail.'};
  DROPS.greenslime={chance:.12,table:{essence:1}};
  if(MONSTERS.pebbleslime)MONSTERS.pebbleslime.w=0;
  function splittingSlime(e){return e.base&&(e.base.greenSlime||e.kind==='slime');}
@@ -18,7 +18,7 @@ var FoteGreenSlime=(function(){
   child.greenPulseAt=worldNow();
   child.lastSeen=e.lastSeen?{x:e.lastSeen.x,y:e.lastSeen.y}:null;
   child.t=Math.max(e.t||0,worldNow())+actCost(child);
-  if(vis[idxOf(e.x,e.y)]){log('The <b>'+e.name+'</b> divides into two slimes! Both can reproduce again at full health.','c-info');sfx('slime-split',{from:e});}
+  if(vis[idxOf(e.x,e.y)]){log('<b>'+e.name+'</b> splits.','c-info');sfx('slime-split',{from:e});}
  }
  function moved(e,x,y){
   if(!e.base||!e.base.greenSlime||e.hp<=0||e.x===x&&e.y===y||!walkable(x,y))return;
@@ -38,7 +38,7 @@ var FoteGreenSlime=(function(){
    var ground=trail[idxOf(e.x,e.y)];
    if(!ground||ground.bornAt>=clock||e.hp<=0||gameEffects.airborne(e)||e.base&&e.base.sporeproof||gameEffects.blocked(e,'poison'))return;
    var n=applyDamage(e,1,'poison',null,{tags:['periodic','environment']});
-   if(n>0){floatText(e.x,e.y,String(n),'poison');if(e===player)log('The slime trail stings: <b>'+n+'</b> poison damage.','c-you');}
+   if(n>0){floatText(e.x,e.y,String(n),'poison');if(e===player)log('Slime trail: '+n+' poison damage.','c-you');}
    if(e.hp<=0)kill(e,null);
   });
  }

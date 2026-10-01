@@ -73,6 +73,7 @@ var gameEffects=FoteEffects.create({
       if(e===player&&((player.buffs&&player.buffs.poisonward>0)||aff('earth')>=6))damage=0;
       if(e.base&&e.base.sporeproof)damage=0;
       damage=dealDirectDamage(e,damage,'poison',null,{resistanceApplied:true,tags:['periodic','poison']});floatText(e.x,e.y,String(damage),'poison');
+      if(e===player&&damage>0)log('Poison: '+damage+' damage.','c-you');
     }else if(key==='aura'&&e===player){
       ents.slice().forEach(function(o){if(o.foe&&dist(o,player)<=2){var dealt=applyDamage(o,s.d||3,'dark',player);floatText(o.x,o.y,String(dealt),'dark');healPlayer(1);if(o.hp<=0)kill(o,player);}});
     }

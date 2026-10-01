@@ -47,7 +47,7 @@ function wobblesIntervention(big){
     var opts=['heal','mote','rampage','sheep','essence'];
     if(foes.length>=2) opts.push('escape');
     var o=pick(opts);
-    if(o==='heal'){ player.hp=player.maxhp; floatText(player.x,player.y,'full heal','heal'); sparkleFx(player.x,player.y,'heal',40); log('<b>Wobbles giggles.</b> You are fully healed!','c-kill'); }
+    if(o==='heal'){ var restored=player.maxhp-player.hp;player.hp=player.maxhp;gameDamage.emit('healingApplied',{target:player,restored:restored});sparkleFx(player.x,player.y,'heal',40);log('<b>Wobbles:</b> full healing.','c-kill'); }
     else if(o==='mote'){ var el=pick(ELEMENTS); player.motes[el]=(player.motes[el]||0)+1; log('<b>Wobbles giggles.</b> A mote of '+el+' appears in your pouch!','c-kill'); }
     else if(o==='rampage'){ player.buffs.rampage=10; derive(player); log('<b>Wobbles giggles.</b> You feel ridiculously strong!','c-kill'); }
     else if(o==='sheep' && foes.length){ var t=pick(foes.filter(function(f){ return !f.base.boss; })); if(t){ var x=t.x,y=t.y; ents=ents.filter(function(e){ return e!==t; }); var r=spawn('rat',x,y); r.name='Very Confused Rat'; r.state='wander'; r.noLoot=true; log('<b>Wobbles giggles.</b> '+t.name+' turns into a rat!','c-kill'); sparkleFx(x,y,'magic',30); } }
@@ -142,7 +142,7 @@ function faithHTML(){
   var shown=0;
   g.prayers.forEach(function(pid){ var P=PRAYERS[pid], ok=canPray(pid), wait=cdLeft(prayerCdKey(pid)); if(godRank()<P.rank) return; shown++;
     h+='<div class="abrow" data-pr="'+pid+'"><span class="pico"></span><span class="k">'+P.rank+'</span><span><span style="color:var(--ink)">'+P.name+'</span><div class="d">'+P.desc+(godRank()>=P.rank?' <span style="opacity:.6">(drag to hotbar)</span>':'')+'</div></span>'+
-       '<button class="prayer" data-p="'+pid+'" '+(ok?'':'disabled')+'>'+(wait?'ready in '+wait:P.favor?P.favor+' Favor':P.essence?P.essence+' essence':P.amusement?P.amusement+' Amusement':'use')+'</button></div>'; });
+       '<button class="prayer" data-p="'+pid+'" '+(ok?'':'disabled')+'>'+(wait?'ready in '+wait:prayerCost(pid))+'</button></div>'; });
   if(!shown) h+='<p class="c-info" style="font-size:11px">No abilities yet. Your god will teach you as your piety grows.</p>';
   return h+'</div>';
 }
@@ -169,10 +169,7 @@ function enforceDivineEquipment(p){
  [['armorItem','armor'],['off','off'],['ranged','weapon']].forEach(function(pair){var it=p[pair[0]];if(equipmentForbidden(pair[0]==='ranged'?'ranged':pair[1],it)){stow(it,pair[1]);p[pair[0]]=pair[0]==='off'?EMPTY_OFF:null;}});
 }
 
-function freeInvocation(A){return capstone('vellum')&&A&&!A.tech&&rng()<.30;}
-
-
-function spendDivineSpell(n){if(capstone('vellum')&&rng()<.30)n=0;player.favor-=n;player.castingSpell=true;return n;}
+function spendDivineSpell(n){player.favor-=n;player.castingSpell=true;return n;}
 
 function fullDivineDuration(n){var p=holyDurationPct();return n+(p>0?Math.max(1,Math.round(n*p)):0);}
 
@@ -187,6 +184,7 @@ function playerHitRewards(target,singleTarget){
 
 /* Old save/hotbar names resolve here; only current prayers have implementations. */
 function prayerId(id){return {manatide:'arcanelance',unbound:'arcanenova',corpsefeast:'bonespear',offering:'fieldsmelt',reforge:'anviltoll'}[id]||id;}
+function prayerHealthCost(id){var P=PRAYERS[prayerId(id)];return P&&P.health||0;}
 function canPray(id){
   id=prayerId(id);
   var P=PRAYERS[id];
@@ -194,14 +192,17 @@ function canPray(id){
   if(id==='fieldsmelt' && recoveryInCombat())return false;
   if(id==='laststand' && (player.hp>player.maxhp*.5 || buff('laststand')))return false;
   if(cdLeft(prayerCdKey(id))>0)return false;
+  var health=prayerHealthCost(id);if(health&&player.hp<health+1)return false;
   return !(P.favor && (player.favor||0)<P.favor || P.essence && player.essence<P.essence || P.amusement && (player.amusement||0)<P.amusement);
 }
 function spendPrayer(id){
-  var P=PRAYERS[prayerId(id)];
+  var P=PRAYERS[prayerId(id)],health=prayerHealthCost(id);
+  if(health&&player.hp<health+1)return false;
+  if(health){dealDirectDamage(player,health,'phys',null,{tags:['cost','sacrifice']});floatText(player.x,player.y,String(health),'phys');log(P.name+': '+health+' HP spent.','c-info');}
   if(P.favor)player.favor-=P.favor;
   if(P.essence)spendEssence(P.essence);
   if(P.amusement)player.amusement-=P.amusement;
-  startPrayerCd(id);
+  startPrayerCd(id);return true;
 }
 /* Prayer and invoke cooldowns (DIVINE_COOLDOWNS in data.js; all 0 until Justin sets them). The wait starts when
    the cost is paid and is kept in player.cds beside Shadowstep and Charge. A prayer's is kept as 'pray:<id>',
@@ -221,7 +222,7 @@ function stackDiscipline(){
 }
 function startPrayerCd(id){startDivineCd(prayerCdKey(id),DIVINE_COOLDOWNS.prayers[prayerId(id)]);stackDiscipline();}
 function startInvokeCd(key){startDivineCd(key,DIVINE_COOLDOWNS.invokes[key]);}
-function prayerRefused(id){var n=cdLeft(prayerCdKey(id));log(n>0?PRAYERS[prayerId(id)].name+' is not ready ('+n+' turns).':'You cannot use that ability right now.','c-info');sfx('ui-error');}
+function prayerRefused(id){var n=cdLeft(prayerCdKey(id)),health=prayerHealthCost(id),P=PRAYERS[prayerId(id)];log(n>0?P.name+' is not ready ('+n+' turns).':health&&player.hp<health+1?P.name+' costs '+health+' HP; you must have at least 1 HP left.':'You cannot use that ability right now.','c-info');sfx('ui-error');}
 function usePrayer(id){
   if(gameTurns.busy())return false;
   if(playerFearAction())return false;
@@ -239,7 +240,16 @@ function usePrayer(id){
 function performPrayer(id){
   if(!canPray(id)){prayerRefused(id);return false;}
   var aim={bonespear:BONE_SPEAR,lance:LANCE,arcanelance:ARCANE_LANCE,arcanenova:ARCANE_NOVA}[id];
-  if(aim){aiming={A:aim,prayer:id};if(openSheet)showSheet(openSheet);log(aim.name+': choose a target within '+aim.range+' tiles.','c-info');draw();return true;}
+  if(aim){
+    if(aiming&&aiming.prayer===id){
+      var target=autoAimLive(),point=target&&autoAimPoint(target);
+      if(point)return castAt(point.x,point.y);
+      cancelAim();return false;
+    }
+    aiming={A:aim,prayer:id};if(openSheet)showSheet(openSheet);
+    log('<b>'+aim.name+':</b> click a target within '+aim.range+' tiles, or press Esc.','c-info');
+    abilityBar();draw();if(AUTO_AIM_KINDS[aim.kind])autoAimPick();return true;
+  }
   if(id==='fieldsmelt')return prayFieldSmelt();
   if(id==='raisedead')return prayRaiseDead();
   if(id==='the-brood')return prayTheBrood();
@@ -259,7 +269,8 @@ function performPrayer(id){
   else if(id==='rally'){
     healPlayer(player.maxhp*.25*div);clearBad();player.buffs.rally=10;
     ents.forEach(function(e){if(e.ally&&e.hp>0&&vis[idxOf(e.x,e.y)]){
-      e.hp=Math.min(e.maxhp,e.hp+e.maxhp*.25*div*(1+.25*holyGroundStrength(e)));
+      var before=e.hp;e.hp=Math.min(e.maxhp,e.hp+e.maxhp*.25*div*(1+.25*holyGroundStrength(e)));
+      gameDamage.emit('healingApplied',{target:e,restored:e.hp-before});
       Object.keys(e.st||{}).forEach(function(k){if(STATUS_INFO[k]&&STATUS_INFO[k].bad)delete e.st[k];});e.rallyUntil=player.t+100*fullDivineDuration(10);
     }});
   }
@@ -285,22 +296,32 @@ function prayFieldSmelt(){
   }};}));return true;
 }
 
-/* 2026-09-29 (Justin): Mother Murk's summons. Everything you call to fight for you (Raise Dead, Shades, Shadow Swarm,
-   Living Flame, your Shadow) has +5% HP and +5% damage per rank, and from rank 3 moves 10% faster. Freed prisoners
-   are allies, not summons. Life Drain rolls 10% per rank on each direct hit,
-   dealing 2 shadow damage per rank, scaled by Divine Power, and healing the attacker for the actual damage dealt.
-   Damage over time and procs do not roll it; each dual-wield weapon can. */
+/* Murk grants Life Drain to the player at rank 1 and summons at rank 3.
+ * Summon bonuses use one rank/Divine Power multiplier, with HP owned here,
+ * damage in the shared damage pipeline, and speed in the action-cost adapter. */
 function murkSummon(e){return !!(e&&e.ally&&(e.undeadServant||e.shade||e.swarm||e.livingFlame||e.shadowClone||e.broodling));}
 function murkRank(){return hasGod('murk')?godRank():0;}
-function murkSummonHp(e){
-  var r=murkRank();if(!r||!murkSummon(e))return e;
-  var m=1+.05*r;e.maxhp=Math.round(e.maxhp*m);e.hp=Math.min(e.maxhp,Math.round(e.hp*m));return e;
+function murkSummonBonus(e){var rank=murkRank();return rank>=3&&murkSummon(e)?.05*rank*divineStrength():0;}
+function murkSummonHp(e,existing){
+  if(!murkSummon(e))return e;
+  if(!Number.isFinite(e.murkBaseHp)){
+    // Legacy saves baked the old +5% per rank into max HP. New summons record
+    // their base before applying a boon, so later derivations never compound it.
+    var old=existing?1+.05*murkRank():1;e.murkBaseHp=e.maxhp/old;
+  }
+  var maximum=Math.max(1,Math.round(e.murkBaseHp*(1+murkSummonBonus(e))));
+  if(maximum!==e.maxhp){e.hp=Math.min(maximum,e.hp*maximum/e.maxhp);e.maxhp=maximum;}
+  return e;
 }
-function murkSummonDamage(source){return murkSummon(source)?1+.05*murkRank():1;}
-function murkStride(e,cost){return murkRank()>=3&&murkSummon(e)?Math.max(1,Math.round(cost/1.1)):cost;}
+function syncMurkSummons(){
+  // Initial character derivation happens before the first floor exists.
+  if(ents)ents.forEach(function(e){murkSummonHp(e,true);});
+  if(floorMeta&&floorMeta.pendingLich)murkSummonHp(floorMeta.pendingLich.entity,true);
+}
+function murkSummonDamage(source){return 1+murkSummonBonus(source);}
 function murkLifeDrain(target,d,source,event){
   var r=murkRank();
-  if(!r||!(d>0)||!target||!target.foe||target.hp<=0||!(source===player||murkSummon(source)))return;
+  if(!r||!(d>0)||!target||!target.foe||target.hp<=0||!(source===player||r>=3&&murkSummon(source)))return;
   if(event&&(event.procDepth>0||['proc','periodic','arc','reflected','environment'].some(function(tag){return event.tags.has(tag);})))return;
   if(rng()>=Math.min(1,.10*r))return;
   var drained=applyDamage(target,Math.max(1,Math.round(2*r*divineStrength())),'dark',source,{tags:['proc','murk-drain'],reactions:false});
@@ -309,10 +330,8 @@ function murkLifeDrain(target,d,source,event){
     else if(source.hp>0){
       var amount=gameEffects.has(source,'rot')?drained*.5:drained;
       var restored=FoteDamage.heal(source.hp,source.maxhp,amount);source.hp=restored.hp;
-      if(restored.restored>0)floatText(source.x,source.y,'+'+restored.restored,'heal');
       gameDamage.emit('healingApplied',{target:source,amount:amount,restored:restored.restored,overflow:restored.overflow,natural:false});
     }
-    floatText(target.x,target.y,String(drained),'dark');
   }
 }
 
@@ -327,19 +346,6 @@ function godDamageResolved(target,d,type,source,event){
  if(d>0&&target===player&&source&&source.foe&&player.god==='wobbles')combatAmusement('in');
  if(d>0&&target.foe&&source&&source.ally&&typeof FoteEnemyPerception==='undefined'&&!(event&&event.tags.has('periodic'))){target.state='hunt';target.lastSeen={x:source.x,y:source.y};target.petAggressor=source.id;}
 
- // Grave Strength rides a summon's own hit once; that hit's procs (an elemental rider) never repeat it.
- if(d>0&&target&&target.foe&&source&&source.ally&&hasGod('murk')&&godRank()>=3&&!(event&&(event.tags.has('murk-inherited')||event.tags.has('proc')))){
-   var inherited={tags:['proc','murk-inherited']};
-   var el=player.weapon&&player.weapon.enchant,values=enchantValues('weapon',el),bonus=godRank();
-   if(target.hp>0)applyDamage(target,bonus,'dark',source,inherited);
-   if(target.hp>0){
-    if(el==='fire'){applyDamage(target,Math.round(d*values.extraDamage),'fire',source,inherited);if(target.hp>0&&pRoll(values.burnChance))applyStatus(target,'burn',values.burnDuration,burnDmg());}
-    if(el==='water'&&pRoll(values.chillChance))addChill(target);
-    if(el==='earth'&&pRoll(values.rootChance))applyStatus(target,'root',values.rootDuration);
-    if(el==='air'&&pRoll(values.repeatChance))applyDamage(target,Math.round(d),type,source,inherited);
-    if(el==='shadow'&&pRoll(values.procChance)){applyDamage(target,Math.round(d*values.extraDamage),'dark',source,inherited);if(target.hp>0)applyStatus(target,'corrupt',values.corruptDuration);}
-   }
- }
 
 }
 function combatAmusement(side){var k='_amuse_'+side,t=Math.floor(worldNow()/100);if(player[k]===t)return;player[k]=t;player.amusement=Math.min(100,(player.amusement||0)+1);}

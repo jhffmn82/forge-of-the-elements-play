@@ -9,37 +9,37 @@ var STATUS_INFO = {
   burn:   {name:'Burning', icon:'st-burn', bad:1, d:'Takes fire damage every turn.'},
   chill:  {name:'Chilled', icon:'st-chill', bad:1, d:'Acts more slowly; takes more frost damage.'},
   slow:   {name:'Slowed', icon:'st-slow', bad:1, d:'Acts more slowly.'},
-  frozen: {name:'Frozen', icon:'st-frozen', bad:1, d:'Can\'t act. Evasion is 0. Any damage breaks the ice; a physical hit shatters it for double damage.'},
-  root:   {name:'Rooted', icon:'ic-earth-root', bad:1, d:'Can\'t move, but can still attack. Evasion is 0.'},
-  stun:   {name:'Stunned', icon:'st-stun', bad:1, d:'Can\'t act. Evasion is 0.'},
-  fear:   {name:'Afraid', icon:'st-fear', bad:1, d:'Flees instead of fighting, and cowers in place when there is nowhere to run.'},
+  frozen: {name:'Frozen', icon:'st-frozen', bad:1, d:'Cannot act; 0 evasion. Damage ends Freeze. Physical hits deal double damage.'},
+  root:   {name:'Rooted', icon:'ic-earth-root', bad:1, d:'Cannot move; can attack. 0 evasion.'},
+  stun:   {name:'Stunned', icon:'st-stun', bad:1, d:'Cannot act; 0 evasion.'},
+  fear:   {name:'Afraid', icon:'st-fear', bad:1, d:'Flees; skips its action if trapped.'},
   blind:  {name:'Blind', icon:'st-blind', bad:1, d:'Attacks miss far more often.'},
   poison: {name:'Poisoned', icon:'st-poison', bad:1, d:'Takes damage every turn and doesn\'t regenerate.'},
-  rot:    {name:'Rot', icon:'st-rot', bad:1, d:'Your wounds fester: no HP regeneration, and all healing is halved.'},
+  rot:    {name:'Rot', icon:'st-rot', bad:1, d:'No HP regeneration. Healing is halved.'},
   wet:    {name:'Wet', icon:'ic-tidal-surge', bad:1, d:'Takes more lightning damage and less fire damage.'},
   corrupt:{name:'Corrupted', icon:'ic-shadow-swarm', bad:1, d:'Takes 25% more shadow damage. If you kill it, its shade may rise to serve you.'},
   hollow: {name:'Hollowed', icon:'ic-shadow-bolt', bad:1, d:'Takes more damage from every source and has less armor, more with each stack.'},
-  stone:  {name:'Stone skin', icon:'st-stone', d:'Immune to poison damage, Poison and Stun. Physical hits deal 3 less damage. Applying Stone Skin purges poison and stun.'},
+  stone:  {name:'Stone skin', icon:'st-stone', d:'Immune to Poison, poison damage and Stun. -3 physical damage per hit. Clears Poison and Stun on use.'},
   aura:   {name:'Unholy Aura', icon:'pr-unholyaura', d:'Enemies within 2 tiles take shadow damage each turn, healing you for each enemy hit.'},
-  goblinrage:{name:'Goblin Rage',icon:'pr-rampage',d:'Roused by a Goblin Shaman. Movement and actions are 30% faster for 4 turns.'},
-  sporecoat:{name:'Sporecoat',icon:'st-stone',d:'Protective fungal spores absorb damage for up to 3 turns.'},
+  goblinrage:{name:'Goblin Rage',icon:'pr-rampage',d:'+30% movement and action speed for 4 turns.'},
+  sporecoat:{name:'Sporecoat',icon:'st-stone',d:'Absorbs damage for up to 3 turns.'},
   boneward:{name:'Bone Ward',icon:'ic-arcane-ward',d:'A Necro-Acolyte\'s ward blocks the next damaging hit.'},
   /* 2026-09-23 (Justin): the Challenge and Coward's Mark show on the foe as debuffs */
-  challenged:{name:'Challenged', icon:'st-challenged', bad:1, d:'Called out: it must come to you and fight. You deal it 25% more damage and, from rank 3, take less from it.'},
-  coward:    {name:"Coward's Mark", icon:'st-coward', bad:1, d:'It struck from afar, so Sir Reginald marked it. It must come to you, deals you less damage and takes 25% more from you.'},
+  challenged:{name:'Challenged', icon:'st-challenged', bad:1, d:'Must approach you. Takes +25% weapon damage; deals less damage to you from rank 3.'},
+  coward:    {name:"Coward's Mark", icon:'st-coward', bad:1, d:'Must approach you. Deals less damage to you; takes +25% weapon damage.'},
   /* buffs (player.buffs) */
   rampage:   {name:'Rampage', icon:'pr-rampage', d:'More melee damage and faster melee attacks.'},
   ironhide:  {name:'Iron Hide', icon:'pr-ironhide', d:'Extra armor and a shield.'},
   ironbody:  {name:'Iron Body', icon:'ic-iron-body', d:'Extra armor, and your unarmed hits may Stun.'},
   laststand: {name:'Last Stand', icon:'pr-laststand', d:'You take half damage.'},
   rally:     {name:'Rally', icon:'pr-rally', d:'+10% damage and spell power.'},
-  temper:    {name:'Temper', icon:'ic-temper', d:'Your weapon hits harder and your armor is thicker.'},
-  arcaneward:{name:'Ward', icon:'ic-arcane-ward', d:'A ward absorbs damage.'},
+  temper:    {name:'Temper', icon:'ic-temper', d:'Increased weapon damage and armor.'},
+  arcaneward:{name:'Ward', icon:'ic-arcane-ward', d:'Absorbs damage.'},
   haste:     {name:'Haste', icon:'ic-flame-step', d:'Movement, attacks and spellcasting are 30% faster.'},
   moltenring:{name:'Molten Ring', icon:'ic-firebolt', d:'Attacks and single-target spells deal 5 additional fire damage.'},
   cinder:    {name:'Cinder Stride', icon:'ic-flame-step', d:'Faster, leaving fire where you step.'},
   manaflow:  {name:'Mana Flow', icon:'pr-manatide', d:'Mana returns twice as fast.'},
-  afterglow: {name:'Afterglow', icon:'ic-heal', d:'Light lingers: you heal 5% of your max HP each turn.'},
+  afterglow: {name:'Afterglow', icon:'ic-heal', d:'Heal 5% max HP per turn.'},
   discipline:{name:"Warrior's Discipline", icon:'ic-charge', d:'+2 damage per stack, up to one stack per rank. Every ability you use adds a stack and renews them all.'},   /* 2026-09-29 (Justin): Grumbok rank 5; Charge's icon, no new art */
   thorns:    {name:'Thorns', icon:'ic-earth-root', d:'Enemies that hit you in melee take half the damage back.'},
   regeneration:{name:'Regeneration',icon:'item-honeycake',d:'Heals 1% of your maximum HP each turn.'},
@@ -49,14 +49,14 @@ var STATUS_INFO = {
   stormward: {name:'Storm Ward',icon:'item-glowstew',d:'Your light reaches farther, and lightning damage is halved.'},
   fireward:  {name:'Fire Ward',icon:'item-emberpepper',d:'Fire damage is halved.'},
   starward:  {name:'Star Ward',icon:'item-starfruit',d:'Elemental damage is reduced by 20%.'},
-  stormform: {name:'Storm Form',icon:'ic-storm-form',d:'Movement and actions take half as long. Casting Storm Form itself is instant.'},
+  stormform: {name:'Storm Form',icon:'ic-storm-form',d:'Movement and action time halved. Instant cast.'},
   wizardhunter:{name:'Wizard Hunter',icon:'ic-charge',d:'After being hurt by magic, elemental damage or a ranged attack, movement and attacks are faster for 3 turns.'},
   /* other timers on the player */
   hidden:    {name:'Hidden', icon:'st-hidden', d:'Enemies can\'t see you; your next hit is a surprise attack.'},
   stillness: {name:'Stillness', icon:'item-amulet', unit:'steps', d:'Moving costs no time for the remaining steps. Attacking or any other action ends Stillness.'},
-  resolve:   {name:'Resolve',icon:'st-stone',d:'Just held fast or knocked back: can\'t be Stunned, Rooted, Frozen or knocked back again for a short while.'},
-  snuffed:   {name:'Light Snuffed',icon:'st-blind',bad:1,d:'Your light reaches only 2 tiles until it steadies.'},
-  levitate:  {name:'Floating', icon:'st-floating', d:'Breaks existing roots and webs. Cross chasms and water. Immune to roots and webs; floor traps and ground hazards do not affect you.'}
+  resolve:   {name:'Resolve',icon:'st-stone',d:'Immune to Stun, Root, Freeze and knockback.'},
+  snuffed:   {name:'Light Snuffed',icon:'st-blind',bad:1,d:'Light radius reduced to 2 tiles.'},
+  levitate:  {name:'Floating', icon:'st-floating', d:'Cross chasms and water; ignore roots, webs, floor traps and ground hazards. Clears roots and webs on use.'}
 };
 
 /* icon art as data URLs, so tooltips (HTML strings) can show them too */
@@ -94,8 +94,8 @@ function statusList(e){
   return out.map(function(o){
     var I=STATUS_INFO[o.k] || {name:cap(o.k), icon:'ic-arcane-ward', d:''};
     /* Sylla's web starts as Root, then becomes Slow. Show silk in both phases. */
-    if(o.k==='root'&&(e.syllaWeb>0||e.st.root.effect==='web')) I={name:'Webbed',icon:'st-web',bad:1,d:'Pinned in silk: can\'t move, and evasion is 0. Once free, moves and acts at half speed.'};
-    if(o.k==='slow'&&e.st.slow.effect==='web')I={name:'Webbed',icon:'st-web',bad:1,d:'Tangled in silk: moves and acts at half speed.'};
+    if(o.k==='root'&&(e.syllaWeb>0||e.st.root.effect==='web')) I={name:'Webbed',icon:'st-web',bad:1,d:'Cannot move; 0 evasion. Movement and action speed halved after release.'};
+    if(o.k==='slow'&&e.st.slow.effect==='web')I={name:'Webbed',icon:'st-web',bad:1,d:'Movement and action speed halved.'};
     if(o.k==='stillness'){
       var amulet=e.amulet,look=typeof RUN!=='undefined'&&RUN.amuletLook&&RUN.amuletLook.stillness;
       I=Object.assign({},I,{icon:amulet&&amulet.amulet==='stillness'&&amulet.icon||look&&'item-amulet-'+look||I.icon});

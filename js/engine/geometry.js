@@ -1,7 +1,6 @@
 /* Terrain, sight, and concealment rules. Rendering consumes these results. */
 (function(root,factory){var api=factory();if(typeof module==='object'&&module.exports)module.exports=api;else root.FoteGeometry=api;})(globalThis,function(){
   'use strict';
-  var octants=[[1,0,0,1],[0,1,1,0],[0,-1,1,0],[-1,0,0,1],[-1,0,0,-1],[0,-1,-1,0],[0,1,-1,0],[1,0,0,-1]];
   // Explicit collision size; legacy `big` sprites may still own proxy limbs.
   function bodySize(entity){return Math.max(1,Math.floor(entity&&entity.base&&entity.base.footprint||1));}
   function bodyContains(entity,x,y){var n=bodySize(entity);return !!entity&&x>=entity.x&&y>=entity.y&&x<entity.x+n&&y<entity.y+n;}
@@ -29,24 +28,50 @@
     if(view.darkRoom&&!view.lightAffinity&&!view.fireAffinity)result=2;
     return result;
   }
-  function cast(view,radius){
-    var width=view.width,height=view.height,vis=view.vis,seen=view.seen,cx=view.x,cy=view.y;
-    function light(row,start,end,xx,xy,yx,yy){
-      if(start<end)return;var newStart=start;
-      for(var i=row;i<=radius;i++){
-        var blocked=false;
-        for(var dx=-i,dy=-i;dx<=0;dx++){
-          var left=(dx-.5)/(dy+.5),right=(dx+.5)/(dy-.5);if(start<right)continue;else if(end>left)break;
-          var x=cx+dx*xx+dy*xy,y=cy+dx*yx+dy*yy;if(x<0||y<0||x>=width||y>=height)continue;
-          if(dx*dx+dy*dy<=radius*radius){vis[y*width+x]=1;seen[y*width+x]=1;}
-          if(blocked){if(view.opaque(x,y)){newStart=right;continue;}blocked=false;start=newStart;}
-          else if(view.opaque(x,y)&&i<radius){blocked=true;light(i+1,start,left,xx,xy,yx,yy);newStart=right;}
+  // Integer cell-center rays. At an exact half-cell tie either rasterization
+  // is valid; prefer the one clear of terrain, instead of rounding toward the
+  // shooter. Canonical endpoint order makes the choices reciprocal.
+  function traceLine(from,to,blocked){
+    var dx=Math.abs(to.x-from.x),dy=Math.abs(to.y-from.y),horizontal=dx>=dy,steps=Math.max(dx,dy);
+    if(!steps)return {path:[],clear:true};
+    var reverse=horizontal?from.x>to.x:from.y>to.y,a=reverse?to:from,b=reverse?from:to;
+    var minor=horizontal?b.y-a.y:b.x-a.x,sign=minor<0?-1:1,span=Math.abs(minor),ties=false;
+    function ray(upper){
+      var cells=[];
+      for(var i=0;i<=steps;i++){
+        var twice=2*span*i,remainder=twice%(2*steps),offset=Math.floor(twice/(2*steps));
+        if(remainder===steps){ties=true;if(upper)offset++;}else if(remainder>steps)offset++;
+        cells.push(horizontal?{x:a.x+i,y:a.y+sign*offset}:{x:a.x+sign*offset,y:a.y+i});
+      }
+      if(reverse)cells.reverse();
+      var path=[];
+      for(var j=1;j<cells.length;j++){
+        var p=cells[j],previous=cells[j-1];
+        // Two touching blockers seal a diagonal, as they do for movement.
+        if(p.x!==previous.x&&p.y!==previous.y&&blocked(p.x,previous.y)&&blocked(previous.x,p.y)){
+          path.push({x:p.x,y:previous.y});return {path:path,clear:false};
         }
-        if(blocked)break;
+        path.push(p);if(blocked(p.x,p.y))return {path:path,clear:false};
+      }
+      return {path:path,clear:true};
+    }
+    var first=ray(false);if(first.clear||!ties)return first;
+    var second=ray(true);
+    return second.clear||second.path.length>first.path.length?second:first;
+  }
+  function cast(view,radius){
+    var width=view.width,height=view.height,vis=view.vis,seen=view.seen,cx=view.x,cy=view.y,origin={x:cx,y:cy};
+    vis.fill(0);vis[cy*width+cx]=1;seen[cy*width+cx]=1;
+    // A turn casts only the local sight circle. Use the targeting ray for each
+    // tile so a half-cell tie cannot disagree with detection or aiming.
+    for(var y=Math.max(0,cy-radius);y<=Math.min(height-1,cy+radius);y++)for(var x=Math.max(0,cx-radius);x<=Math.min(width-1,cx+radius);x++){
+      if((x-cx)*(x-cx)+(y-cy)*(y-cy)>radius*radius)continue;
+      var destination={x:x,y:y};
+      // The first wall is visible; opaque terrain beyond it is not.
+      if(traceLine(origin,destination,function(bx,by){return (bx!==x||by!==y)&&view.opaque(bx,by);}).clear){
+        vis[y*width+x]=1;seen[y*width+x]=1;
       }
     }
-    vis.fill(0);vis[cy*width+cx]=1;seen[cy*width+cx]=1;
-    for(var i=0;i<octants.length;i++)light(1,1,0,octants[i][0],octants[i][1],octants[i][2],octants[i][3]);
   }
   function mask(view,blocked){
     var inside=blocked[view.y*view.width+view.x];
@@ -71,6 +96,6 @@
     if(view.weight==='medium')value-=.10;else if(view.weight==='heavy')value-=.25;
     value+=view.extra||0;return Math.max(0,Math.min(.9,value));
   }
-  return Object.freeze({terrain:terrain,radius:radius,cast:cast,mask:mask,revealRock:revealRock,stealth:stealth,
+  return Object.freeze({terrain:terrain,radius:radius,traceLine:traceLine,cast:cast,mask:mask,revealRock:revealRock,stealth:stealth,
     bodySize:bodySize,bodyContains:bodyContains,bodyPoint:bodyPoint,bodyDistance:bodyDistance,bodyIntersects:bodyIntersects});
 });

@@ -179,7 +179,7 @@ var PLANE_ROSTER = {
   /* fixed: these are tuned for the plane they guard, so spawn() does not put the dungeon floor curve on top */
   function mk(o){ o.band=[0,0]; o.w=0; o.speed=o.speed||100; o.range=o.range||1; o.fixed=true; return o; }
   /* Light (Justin's creatures, 2026-09-17) */
-  M.dawnsentinel = mk({name:'Dawn Sentinel', sprite:'m-dawn-sentinel', col:'#F6E7B0', ch:'D', hp:75, dmg:[8,11], acc:66, eva:12, armor:5, xp:42, reflects:true, el:'light', art:1.05, sfx:'golem'});
+  M.dawnsentinel = mk({name:'Dawn Sentinel', sprite:'m-dawn-sentinel', col:'#F6E7B0', ch:'D', hp:75, dmg:[8,11], acc:66, eva:12, armor:5, xp:42, reflects:4, el:'light', art:1.05, sfx:'golem'});
   M.halowisp     = mk({name:'Halo Wisp', sprite:'m-halo-wisp', col:'#FFE08A', ch:'w', hp:24, dmg:[4,6], acc:60, eva:34, armor:0, xp:30, healer:true, flying:true, el:'light', art:0.75, sfx:'wisp'});
   M.prismscarab  = mk({name:'Prism Scarab', sprite:'m-prism-scarab', col:'#C8F0FF', ch:'p', hp:55, dmg:[6,9], acc:66, eva:14, armor:3, xp:36, range:4, prism:true, el:'light', art:0.85, sfx:'spider'});
   /* 2026-09-18 (Justin): both wardens brought to the Heart's 110 HP and 8-12 - 150/140 and 9-14 was out of reach at level 8 */
@@ -347,8 +347,22 @@ function refreshEncounterTuning(){
     (chaosCombat.hazards||[]).forEach(function(h){h.damage=Math.max(1,Math.round(h.damage*1.5));});
     chaosCombat.damageVersion=2;
   }
-  ents.forEach(function(e){
+  ents.concat(floorMeta.buriedGhouls||[]).forEach(function(e){
     if(!e.base || e.hp<=0)return;
+    if(e.kind==='ghoul'){
+      var ghoulBase=MONSTERS.ghoul;
+      if(e.base.hp>0&&e.base.hp!==ghoulBase.hp){
+        var ghoulHealth=e.hp/e.maxhp;e.maxhp=Math.max(1,Math.round(e.maxhp*ghoulBase.hp/e.base.hp));
+        e.hp=Math.max(1,Math.min(e.maxhp,Math.round(e.maxhp*ghoulHealth)));
+      }
+      if(String(e.base.dmg)!==String(ghoulBase.dmg)){
+        // Preserve existing biome/elite adjustments while changing base damage.
+        e.dmg=(e.dmg||e.base.dmg).map(function(n,i){return n+sDMG(ghoulBase.dmg[i])-sDMG(e.base.dmg[i]);});
+      }
+      e.base=Object.assign({},e.base,{hp:ghoulBase.hp,dmg:ghoulBase.dmg.slice(),speed:ghoulBase.speed,col:ghoulBase.col,
+        art:ghoulBase.art,artLeft:ghoulBase.artLeft,hint:ghoulBase.hint});
+      e.col=ghoulBase.col;
+    }
     if(e.kind==='drowblade'&&!e.base.spawnInvisible){e.base=Object.assign({},e.base,{spawnInvisible:true});if(e.state==='hunt')e.visibilityRevealed=true;}
     if(e.kind==='slime'||e.kind==='greenslime'){
       var slimeBase=MONSTERS[e.kind];

@@ -9,16 +9,16 @@ var FOOD_BUFFS = ['regeneration','manaflow','haste','might','poisonward','shadew
 Object.assign(FOODS, {
   ration:     {name:'Ration', nutrition:700, icon:'item-ration'},
   /* anywhere */
-  honeycake:  {name:'Honeycake', nutrition:400, icon:'item-honeycake', buff:'regeneration', turns:60, desc:'You heal 1% of your max HP a turn for 60 turns.'},
-  moontart:   {name:'Moonberry Tart', nutrition:400, icon:'item-moontart', buff:'manaflow', turns:60, desc:'Mana returns twice as fast for 60 turns.'},
+  honeycake:  {name:'Honeycake', nutrition:400, icon:'item-honeycake', buff:'regeneration', turns:60, desc:'Regenerate 1% max HP per turn for 60 turns.'},
+  moontart:   {name:'Moonberry Tart', nutrition:400, icon:'item-moontart', buff:'manaflow', turns:60, desc:'Double mana regeneration for 60 turns.'},
   figs:       {name:'Sugared Figs', nutrition:300, icon:'item-figs', buff:'haste', turns:20, desc:'You move, attack and cast 30% faster for 20 turns.'},
   meat:       {name:'Roast Meat', nutrition:550, icon:'item-meat', buff:'might', turns:30, desc:'+20% weapon damage for 30 turns.'},
   /* one per biome, found only there */
   skewer:     {name:'Mushroom Skewer', nutrition:400, icon:'item-skewer', biome:0, buff:'poisonward', turns:60, desc:'Poison cannot hurt you for 60 turns.'},
-  graveplum:  {name:'Grave Plum', nutrition:300, icon:'item-graveplum', biome:1, buff:'shadeward', turns:60, desc:'Shadow hurts you half as much for 60 turns.'},
-  glowstew:   {name:'Glowcap Stew', nutrition:500, icon:'item-glowstew', biome:2, buff:'stormward', turns:60, desc:'Your light reaches further, and lightning hurts you half as much, for 60 turns.'},
-  emberpepper:{name:'Ember Pepper', nutrition:250, icon:'item-emberpepper', biome:3, buff:'fireward', turns:60, desc:'Fire hurts you half as much for 60 turns.'},
-  starfruit:  {name:'Starfruit', nutrition:400, icon:'item-starfruit', biome:4, buff:'starward', turns:60, desc:'Every element hurts you 20% less for 60 turns.'}
+  graveplum:  {name:'Grave Plum', nutrition:300, icon:'item-graveplum', biome:1, buff:'shadeward', turns:60, desc:'Take 50% less shadow damage for 60 turns.'},
+  glowstew:   {name:'Glowcap Stew', nutrition:500, icon:'item-glowstew', biome:2, buff:'stormward', turns:60, desc:'Increase light radius; take 50% less lightning damage for 60 turns.'},
+  emberpepper:{name:'Ember Pepper', nutrition:250, icon:'item-emberpepper', biome:3, buff:'fireward', turns:60, desc:'Take 50% less fire damage for 60 turns.'},
+  starfruit:  {name:'Starfruit', nutrition:400, icon:'item-starfruit', biome:4, buff:'starward', turns:60, desc:'Take 20% less elemental damage for 60 turns.'}
 });
 /* what a food drop turns out to be */
 function randomFood(){

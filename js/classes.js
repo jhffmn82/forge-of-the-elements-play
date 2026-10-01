@@ -10,15 +10,15 @@
 var FIGHTER_NO_BLOCK = true;   /* Shield Training is gone; tiers.js reads this */
 
 /* ---------------------------------------------------------------- tables */
-CLASSES.fighter.passive = 'Guard: a shield worth 12% of your max HP that refills out of combat.';
-CLASSES.cleric.passive  = 'Devout: starts sworn to a god (rank 1, 20 piety) and gains piety 25% faster.';
+CLASSES.fighter.passive = 'Guard: 12% max HP shield; refills out of combat.';
+CLASSES.cleric.passive  = 'Devout: start at god rank 1 with 20 piety. +25% piety gain.';
 CLASSES.mage.passive    = 'Deep Reserves: +30% max mana.';
-CLASSES.mage.blurb      = 'A staff and a robe. Magic Missile always hits, grows with every affinity point and carries your weapon\'s enchantment.';
+CLASSES.mage.blurb      = 'Staff and robe. Magic Missile always hits, scales with affinity and carries weapon enchantments.';
 CLASSES.mage.kit        = {main:'staff', alt:null, armor:'robe', off:null};
-CLASSES.scoundrel.passive = 'Sneaky: double damage on surprise attacks. Enemies spot you half as often and from 2 tiles closer. Shadowstep hides you when no enemy is adjacent.';
-CLASSES.scoundrel.blurb = 'A dagger in each hand and a bow across the back. Sap knocks a target out; the hit that wakes it is a surprise critical.';
-CLASSES.tourist.passive = 'Well-Traveled: +1 stat point every 2 levels, +25% experience, and 1 free stat point to start.';
-RACES.human.blurb = 'Adaptable. +1 to every stat, +1 stat point every 3 levels and +25% piety gain.';
+CLASSES.scoundrel.passive = 'Sneaky: double surprise damage. Halve enemy detection chance and reduce detection range by 2 tiles. Shadowstep requires no adjacent enemies.';
+CLASSES.scoundrel.blurb = 'Two daggers and a bow. Sap disables an enemy; the next hit is a surprise critical.';
+CLASSES.tourist.passive = 'Well-Traveled: +25% XP. +1 starting stat point and +1 every 2 levels.';
+RACES.human.blurb = '+1 to all stats. +1 stat point every 3 levels. +25% piety gain.';
 RACES.fae.blurb   = RACES.fae.blurb + ' Takes 25% more damage from the element opposite its court.';
 
 /* 2026-09-20: Justin - "scoundrel shouldn't have two paths, the starting set should just be 2 daggers and a bow".

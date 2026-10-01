@@ -47,7 +47,7 @@ function turnPrepareHolyBuffs(context){
     }
     if(gained && infusion('holy')==='light'){
       var h=Math.max(1, Math.round(player.maxhp*enchantValues('holy','light').buffHeal*gained));
-      if(player.race!=='gloomling'){ healPlayer(h); floatText(player.x,player.y,'+'+h,'heal'); }
+      if(player.race!=='gloomling')healPlayer(h);
     }
   }
 

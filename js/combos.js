@@ -6,19 +6,19 @@
    ===================================================================== */
 
 var COMBOS = {
-  'fire/earth':  {name:'Magma Answer',  d:'When a ranged attack or spell hurts you, lava erupts under the attacker: Rooted 1 turn and Burning.'},
+  'fire/earth':  {name:'Magma Answer',  d:'Taking ranged or spell damage Roots the attacker for 1 turn and inflicts Burning.'},
   'fire/air':    {name:'Fanned Flames', d:'Burning enemies take their burn damage again each time they move.'},
   'fire/light':  {name:'Purging Flame', d:'Enemies you set Burning are also Blinded.'},
   'fire/shadow': {name:'Black Flame',   d:'Burning on enemies ignores fire resistance, and each tick adds a Hollow stack.'},
   'water/air':   {name:'Squall',        d:'Enemies you Chill are pushed 1 tile away from you.'},
   'water/earth': {name:'Permafrost',    d:'Rooted enemies gain a Chill stack each turn they stay rooted.'},
   'water/light': {name:'Clear Waters',  d:'When Ice Armor absorbs damage, heal 25% of the amount absorbed.'},
-  'water/shadow':{name:'Numbing Dark',  d:'Your attacks and spells against Chilled enemies count as surprise attacks.'},
+  'water/shadow':{name:'Numbing Dark',  d:'Attacks and spells against Chilled enemies count as surprise attacks.'},
   'air/fire':    {name:'Friction',      d:'Every 3rd attack or single-target spell hit in a row on the same target sets it Burning.'},
   'air/shadow':  {name:'Windwalker',    d:'When an enemy hits you in melee, you step 1 tile away at once (every 5 turns).'},
-  'air/water':   {name:'Riptide',       d:'Your attacks and single-target spell hits push enemies 1 tile; slammed into a wall or creature, they are Chilled.'},
+  'air/water':   {name:'Riptide',       d:'Weapon and single-target spell hits push enemies 1 tile. Collisions apply Chill.'},
   'air/light':   {name:'Glint',         d:'Your critical hits Blind the target for 1 turn.'},
-  'earth/fire':  {name:'Forge Heat',    d:'Every attack or single-target spell hit stokes the heat: +2 attack damage and +2 armor per stack, up to 5. The heat fades after 3 turns without a hit.'},
+  'earth/fire':  {name:'Forge Heat',    d:'Weapon and single-target spell hits grant +2 damage and armor (max 5 stacks). Expires after 3 turns without a hit.'},
   'earth/light': {name:'Radiant Roots', d:'Rooted enemies are also Blinded.'},
   'earth/shadow':{name:'Blight',        d:'Poisoned enemies deal 20% less damage.'},
   'earth/water': {name:'Silt Shield',   d:'Max Ice Armor +3 per Earth point, refilling twice as fast out of combat.'},

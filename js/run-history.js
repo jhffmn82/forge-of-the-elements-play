@@ -155,9 +155,15 @@
     openModal('Run report','<p class="run-note">Copy this report to share your build and how the run ended.</p><textarea id="runReportText" class="run-report-text" readonly aria-label="Run report"></textarea><p id="runReportNotice" class="run-note" role="status" aria-live="polite"></p>',[
       {label:'Copy report',cls:'primary',fn:function(){
         var field=document.getElementById('runReportText'),notice=document.getElementById('runReportNotice');
-        function fallback(){field.focus();field.select();notice.textContent='Select and copy the report using your device’s copy command.';}
+        function select(){field.focus({preventScroll:true});field.select();field.setSelectionRange(0,field.value.length);}
+        function copied(){notice.textContent='Report copied.';}
+        function fallback(){select();notice.textContent='Copy unavailable. Text selected; use your device’s Copy command.';}
+        // Embedded hosts may deny the Clipboard API. Copy the selected report
+        // during the click, while browsers still grant a user gesture.
+        select();
+        try{if(document.execCommand&&document.execCommand('copy')){copied();return;}}catch(error){}
         if(!root.navigator||!navigator.clipboard||typeof navigator.clipboard.writeText!=='function'){fallback();return;}
-        try{navigator.clipboard.writeText(field.value).then(function(){notice.textContent='Report copied.';},fallback);}catch(error){fallback();}
+        try{navigator.clipboard.writeText(field.value).then(copied,fallback);}catch(error){fallback();}
       }},
       {label:returnToHistory?'Back to Previous Runs':'Back to summary',fn:closeModal}
     ],'run-history-modal');

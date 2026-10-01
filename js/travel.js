@@ -79,20 +79,20 @@ function clickIntent(x, y){
 
 /* ---------------------------------------------------------------- paths over what you know */
 function travelPath(tx, ty, stopAdjacent, explore){
-  var W=MW, prev=new Int32Array(MW*MH).fill(-1), start=idxOf(player.x,player.y), goal=explore?-1:idxOf(tx,ty), q=[start], h=0;
+  var W=MW, prev=new Int32Array(MW*MH).fill(-1), start=idxOf(player.x,player.y), goal=explore&&!explore.destination?-1:idxOf(tx,ty), q=[start], h=0;
   prev[start]=start;
   var knownTrap={}; feats.forEach(function(f){ if(f.found) knownTrap[idxOf(f.x,f.y)]=1; });
   while(h<q.length){
     var i=q[h++]; if(i===goal) break;
     var x=i%W, y=(i/W)|0;
-    if(explore && i!==start && exploreFrontier(x,y,explore)){ goal=i; break; }
+    if(explore && !explore.destination && i!==start && exploreFrontier(x,y,explore)){ goal=i; break; }
     if(stopAdjacent && Math.max(Math.abs(x-tx),Math.abs(y-ty))<=1 && i!==start){ goal=i; break; }
     for(var dy=-1;dy<=1;dy++) for(var dx=-1;dx<=1;dx++){
       if(!dx && !dy) continue; var nx=x+dx, ny=y+dy; if(!inb(nx,ny)) continue; var ni=idxOf(nx,ny);
       if(prev[ni]>=0 || !knownTile(nx,ny)) continue;
       var t=at(nx,ny), isGoal = ni===goal;
       var ok = travelWalkable(nx,ny) || t===DOOR || t===OPEN || (isGoal && (useTile(t) || t===EXIT));
-      if(!ok || (knownTrap[ni] && !isGoal)) continue;
+      if(!ok || (knownTrap[ni] && (!isGoal||explore))) continue;
       if(explore && (!exploreWalkable(nx,ny) || travelHazard(nx,ny)))continue;
       if(!isGoal && ents.some(function(e){ return e!==player && entityOccupies(e,nx,ny) && !e.ally && (explore?actorVisible(e):!actorConcealed(e)); })) continue;
       prev[ni]=i; q.push(ni);
@@ -118,7 +118,13 @@ function exploreFrontier(x,y,state){
   if(state.visited[idxOf(x,y)])return false;
   if(at(x,y)===DOOR)return true;
   for(var dy=-1;dy<=1;dy++)for(var dx=-1;dx<=1;dx++){
-    if(inb(x+dx,y+dy)&&!knownTile(x+dx,y+dy))return true;
+    var nx=x+dx,ny=y+dy;
+    if(!inb(nx,ny)||knownTile(nx,ny))continue;
+    // A hidden tile behind two touching walls cannot be revealed from here.
+    // Use the sight rule, but never inspect terrain the player has not seen.
+    if(FoteGeometry.traceLine({x:x,y:y},{x:nx,y:ny},function(bx,by){
+      return knownTile(bx,by)&&opaque(bx,by);
+    }).clear)return true;
   }
   return false;
 }
@@ -141,10 +147,17 @@ function travelHazard(x,y){
 }
 function autoExploreActive(){return !!(TRAVEL&&TRAVEL.explore);}
 function travelStateChanged(){window.dispatchEvent(new CustomEvent('fote:travel-state',{detail:{exploring:autoExploreActive()}}));}
+function syncExploreButton(button){
+  if(!button)return;
+  var active=autoExploreActive(),stairs=!!(floorMeta&&floorMeta.exploreComplete);
+  button.textContent=active?'Stop':stairs?'Next floor':'Explore';
+  button.dataset.exploreMode=stairs?'stairs':'explore';button.setAttribute('aria-pressed',String(active));
+  button.title=(active?'Stop travelling':stairs?'Walk to the stairs down and descend':'Explore nearby unseen areas')+(typeof bindKey==='function'?' ('+keyLabel(bindKey('explore'))+')':'');
+}
 function bindExploreButton(button){
   if(!button||button.dataset.autoExplore)return;
   button.dataset.autoExplore='true';button.disabled=false;
-  function sync(){var active=autoExploreActive();button.textContent=active?'Stop':'Explore';button.setAttribute('aria-pressed',String(active));button.title=active?'Stop exploring':'Explore nearby unseen areas'+(typeof bindKey==='function'?' ('+keyLabel(bindKey('explore'))+')':'');}
+  function sync(){syncExploreButton(button);}
   button.addEventListener('click',function(ev){ev.preventDefault();ev.stopPropagation();toggleAutoExplore();});
   window.addEventListener('fote:travel-state',sync);sync();
 }
@@ -155,6 +168,15 @@ function exploreStopReason(T){
   if(T&&T.alarms.some(function(f){return feats.indexOf(f)<0;}))return 'You stop exploring: an alarm sounds nearby.';
   return null;
 }
+function exploreDownstairs(T){
+  var best=null,length=Infinity;
+  for(var y=0;y<MH;y++)for(var x=0;x<MW;x++){
+    if(!knownTile(x,y)||at(x,y)!==STAIRS)continue;
+    var point={x:x,y:y},path=travelPath(x,y,false,Object.assign({},T,{destination:point}));
+    if(path&&path.length<length){best=point;length=path.length;}
+  }
+  return best;
+}
 function toggleAutoExplore(){
   if(autoExploreActive()){stopTravel();return false;}
   if(!player||player.hp<=0||uiOpen()||RUN.over||RUN.victory||typeof turnSequenceBusy==='function'&&turnSequenceBusy())return false;
@@ -163,7 +185,17 @@ function toggleAutoExplore(){
   var why=exploreStopReason();if(why){log(why,'c-info');return false;}
   var T={path:[],explore:true,visited:{},hp:player.hp,foes:[],traps:feats.filter(function(f){return f.found;}).length,
     floor:floorMeta,run:RUN,hero:player,alarms:feats.filter(function(f){return f.kind==='alarm'&&Math.max(Math.abs(f.x-player.x),Math.abs(f.y-player.y))<=12;})};
-  T.visited[idxOf(player.x,player.y)]=true;TRAVEL=T;travelStateChanged();travelStep();return autoExploreActive();
+  T.visited[idxOf(player.x,player.y)]=true;
+  if(floorMeta.exploreComplete){
+    // Opening a route since the last search makes Explore available again.
+    var remaining=travelPath(null,null,false,T);
+    if(remaining&&remaining.length)delete floorMeta.exploreComplete;
+    else{
+      T.destination=exploreDownstairs(T);
+      if(!T.destination){log('No safely reachable stairs down.','c-info');travelStateChanged();return false;}
+    }
+  }
+  TRAVEL=T;travelStateChanged();travelStep();return autoExploreActive();
 }
 
 /* ---------------------------------------------------------------- walking */
@@ -198,8 +230,15 @@ function travelStep(){
   if(feats.filter(function(f){ return f.found; }).length > T.traps){ stopTravel('You stop: you spotted a trap.'); return; }
   if(T.explore){
     var why=exploreStopReason(T);if(why){stopTravel(why);return;}
-    T.path=travelPath(null,null,false,T);
-    if(!T.path||!T.path.length){stopTravel('No more safely reachable areas to explore.');return;}
+    if(T.destination&&at(T.destination.x,T.destination.y)!==STAIRS){stopTravel('The stairs are no longer there.');return;}
+    T.path=T.destination?travelPath(T.destination.x,T.destination.y,false,T):travelPath(null,null,false,T);
+    if(!T.path||!T.path.length){
+      if(T.destination){
+        var arrived=player.x===T.destination.x&&player.y===T.destination.y;
+        stopTravel(arrived?null:'No safely reachable stairs down.');if(arrived){descend();travelStateChanged();}
+      }else{floorMeta.exploreComplete=true;stopTravel('No more safely reachable areas to explore.');}
+      return;
+    }
   }
   var step=T.path.shift();
   if(!step){ var then=T.then; TRAVEL=null; if(then) then(); return; }

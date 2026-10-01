@@ -8,7 +8,7 @@ var AUTO_AIM_KINDS = {bolt:1, chain:1, beam:1, tomb:1};
 
 function autoAimPoint(e){
   if(!e||!aiming)return null;
-  if(aiming.A.kind==='bolt'){var line=projectileLine(player,e,{visible:true,range:spellRange(aiming.A)});return line&&inRange(line.to.x,line.to.y)?line.to:null;}
+  if(aiming.A.kind==='bolt'){var line=projectileLine(player,e,{visible:true,range:aiming.prayer?aiming.A.range:spellRange(aiming.A)});return line&&inRange(line.to.x,line.to.y)?line.to:null;}
   var cells=[];for(var y=e.y;y<e.y+entitySize(e);y++)for(var x=e.x;x<e.x+entitySize(e);x++)if(inRange(x,y))cells.push({x:x,y:y});
   cells.sort(function(a,b){return dist(a,player)-dist(b,player)||a.y-b.y||a.x-b.x;});return cells[0]||null;
 }

@@ -56,8 +56,8 @@
     DROPS[kind]={chance:.22,table:{essence:12,gear:3,food:2}};
   });});
   if(typeof STATUS_INFO!=='undefined'){
-    STATUS_INFO.chaoslens={name:'Lens Shield',icon:'ic-arcane-ward',d:'A lens of light absorbs damage until it breaks or fades after 4 turns.'};
-    STATUS_INFO.chaosbrace={name:'Iron Brace',icon:'ic-arcane-ward',d:'Braced in place: takes 45% less damage for 2 turns.'};
+    STATUS_INFO.chaoslens={name:'Lens Shield',icon:'ic-arcane-ward',d:'Absorbs damage for up to 4 turns.'};
+    STATUS_INFO.chaosbrace={name:'Iron Brace',icon:'ic-arcane-ward',d:'Stationary; takes 45% less damage for 2 turns.'};
   }
   var elements=['fire','ice','lightning'];
   function sound(from,name,volume){if(typeof sfx==='function')sfx(name,{vol:volume===undefined?.7:volume,from:from});}
@@ -108,7 +108,7 @@
       ally.lastSeen={x:target.x,y:target.y};
       if(typeof FoteEnemyPerception!=='undefined')FoteEnemyPerception.remember(ally,target,'call');
     });
-    if(listeners.length&&vis[idxOf(e.x,e.y)]){log('The <b>Lens Bearer</b> calls nearby allies to its aid!','c-you');floatText(e.x,e.y,'Help!','light');}
+    if(listeners.length&&vis[idxOf(e.x,e.y)]){log('The <b>Lens Bearer</b> calls for help.','c-you');floatText(e.x,e.y,'Help!','light');}
     return listeners.length>0;
   }
   function onDamaged(event){

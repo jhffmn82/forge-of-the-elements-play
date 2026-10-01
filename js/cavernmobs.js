@@ -29,7 +29,7 @@
   /* 2026-09-28 (Justin): the Deep Maw's brood. A Myconid in every way but its name and its colours (the Maw's own
      earth-brown and bruised pink); only the Maw calls it up, see mawCallTender */
   M.wormtender    = Object.assign({}, M.myconid, {name:'Worm Tender', sprite:'m-worm-tender', col:'#A8705A', band:[0,0], w:0,
-                     hint:'The Deep Maw calls one up beside a burrow mound whenever it erupts. Its spore clouds poison you, and slow you while you stand in them.'});
+                     hint:'Summoned by the Deep Maw. Spore clouds poison and slow creatures inside.'});
   M.crystalcrawler= {name:'Crystal Crawler', sprite:'m-crystal-crawler', col:'#8A6AD0', ch:'c', hp:50, dmg:[6,9], acc:68, eva:20, armor:3, speed:130, range:1, xp:38,
                      band:[13,15], w:9, shatters:true, el:'earth', art:0.95, artLeft:true, sfx:'spider'};   /* the Caverns' one fast creature */
   /* Biome-three versions of the Dungeon vermin; the originals stay on floors 1-5. */
@@ -40,7 +40,7 @@
   /* The Deep Maw: tuned by hand for floor 15, so no floor curve (fixed, like the plane elites) */
   M.deepmaw       = {name:'The Deep Maw', sprite:'m-deep-maw', col:'#B07A4A', ch:'W', hp:720, dmg:[24,34], acc:70, eva:0, armor:4, speed:100, range:1, xp:600,
                      band:[15,15], w:0, boss:true, elite:true, big:2, fixed:true, heavy:true, living:true, art:2.0, bigScale:1.5, artLeft:true, sfx:'maw',
-                     hint:'Each time it erupts it calls up a Worm Tender, a spore-lobbing myconid of its brood, beside one of its burrow mounds. Only one is alive at a time.'};
+                     hint:'Each eruption summons a Worm Tender by a burrow mound. Maximum 1 Tender alive.'};
   M.mawlimb       = {name:'The Deep Maw', sprite:'m-deep-maw', col:'#B07A4A', ch:'W', hp:9999, dmg:[0,0], acc:0, eva:0, armor:4, speed:100, range:0, xp:0,
                      band:[0,0], w:0, object:true, fixed:true, art:0.1};
   DROPS.stormbeetle   = {chance:0.20, table:{essence:10, gear:3, sigil:1}};
@@ -143,6 +143,23 @@ function jellyChain(j, first){
 
 /* ---------------------------------------------------------------- monster turns */
 var SHROOM_CAP_EACH = 2, SHROOM_CAP_FLOOR = 6;
+
+/* Myconids and Sporecallers share the same summons, ownership and live caps. */
+function sproutShroomlings(e,cells,count,clock){
+  var sprouts=[];
+  if(e.hp<=0)return sprouts;
+  var mine=ents.filter(function(o){return o.hp>0&&o.kind==='shroomling'&&o.owner===e.id;}).length;
+  var all=ents.filter(function(o){return o.hp>0&&o.kind==='shroomling';}).length;
+  cells=cells.filter(function(c){return inb(c.x,c.y)&&walkable(c.x,c.y)&&at(c.x,c.y)!==CHASM&&!occupied(c.x,c.y);});
+  var limit=Math.min(count,SHROOM_CAP_EACH-mine,SHROOM_CAP_FLOOR-all);
+  while(sprouts.length<limit&&cells.length){
+    var c=cells.length===1?cells[0]:pick(cells);
+    cells=cells.filter(function(o){return o.x!==c.x||o.y!==c.y;});
+    var s=spawn('shroomling',c.x,c.y);s.state='hunt';s.noLoot=true;s.owner=e.id;s.t=clock===undefined?e.t:clock;
+    sparkleFx(c.x,c.y,'poison',16);sprouts.push(s);
+  }
+  return sprouts;
+}
 
 function caveCreatureBehavior(e){
   var b=e.base||{};
@@ -266,13 +283,9 @@ function myconidAct(e){
      return true;
   }
   if(e.sproutCd<=0 && d>1){
-    var mine=ents.filter(function(o){ return o.hp>0 && o.kind==='shroomling' && o.owner===e.id; }).length;
-    var all=ents.filter(function(o){ return o.hp>0 && o.kind==='shroomling'; }).length;
     var c=nearFree(player.x,player.y,1);
-    if(mine<SHROOM_CAP_EACH && all<SHROOM_CAP_FLOOR && c){
-      if(e.hp<=0)return true;e.sproutCd=6;
-      var s=spawn('shroomling', c.x, c.y); s.state='hunt'; s.noLoot=true; s.owner=e.id; s.t=e.t;
-      setClip(e,'attack'); sparkleFx(c.x,c.y,'poison',16);
+    if(c&&sproutShroomlings(e,[c],1).length){
+      e.sproutCd=6;setClip(e,'attack');
       if(caveVis(e.x,e.y)) log('The <b>'+e.base.name+'</b> shakes its cap and a <b>Shroomling</b> pops up out of the moss.','c-info');
        return true;
     }

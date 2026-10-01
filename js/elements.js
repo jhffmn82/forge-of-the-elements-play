@@ -22,12 +22,12 @@ var AOE_BASE = [14,22];
 var AIM_KINDS = {blast:1, cone:1, chain:1, beam:1, swarm:1, lflame:1, tomb:1, upheaval:1, umbral:1};
 
 var RANK_TEXT = {
-  3:{fire:'Searing: Burning enemies take 15% more damage from you. Immune to Burning.',
-     water:'Shatter: Frozen enemies take a further +50% physical damage. Immune to Chill and Freeze.',
-     air:'Arc: a 5% chance per Air point that any hit or spell arcs to a nearby enemy for half damage. Immune to Stun.',
-     earth:'Venom: anything you Root is poisoned as it is pinned (10% of max HP a turn; half on bosses). Immune to Root.',
+  3:{fire:'Searing: +5% damage per Fire point against Burning enemies. Immune to Burning.',
+     water:'Deep Chill: your Chill slows by 33% + 3% per Water point (max 50%). Immune to Chill and Freeze.',
+     air:'Arc: hits have a 5% chance per Air point to arc to a nearby enemy for half damage. Immune to Stun.',
+     earth:'Venom: Root also inflicts Poison for 1 turn (2 at Earth 4, 3 at Earth 5). Poison deals 10% max HP per turn (bosses 5%). Immune to Root.',
      light:'Radiance: heal 1 HP per Light point whenever you deal light damage. Immune to Blind.',
-     shadow:'Fade: after 50 turns out of combat you are fully hidden. Immune to Fear.'},
+     shadow:'Fade: hide after 10 quiet turns out of combat, 2 fewer per extra Shadow point (minimum 4). Immune to Fear.'},
   6:{fire:'Wildfire: when a Burning enemy dies, its fire leaps to the nearest enemy within 3 tiles. Fire spells leave flames for 3 turns. Immune to fire.',
      water:'Deep Freeze: three Chills freeze an enemy instead of four. Water spells leave icy ground that Chills for 3 turns. Immune to frost.',
      air:'Lightning Reflexes: 15% of your attacks and spells take no time; lightning damage has a 15% stun chance. Immune to lightning.',

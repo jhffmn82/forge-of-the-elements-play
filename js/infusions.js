@@ -18,7 +18,7 @@ function applySpellOffhandEffects(f, d, crit, A){
 function spellKillReward(f){
   if(f.hp<=0 && infusion('tome')==='shadow'){
     var h=Math.max(1, Math.round(player.maxhp*enchantValues('tome','shadow').killHeal));
-    healPlayer(h); floatText(player.x,player.y,'+'+h,'heal');
+    healPlayer(h);
   }
 }
 

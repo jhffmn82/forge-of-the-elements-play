@@ -3,7 +3,7 @@
 function statContent(){
   return {races:RACES,classes:CLASSES,gods:GODS,passives:PASSIVES,rings:RINGS,
     invokes:INVOKE_OF,elementAbilities:ELEMENT_ABILS,pietyRanks:PIETY_RANKS,
-    fists:FISTS,orbCrit:ORB_CRIT,robe:TIER_ROBE,blockPer:TIER_BLOCK.per,
+    fists:FISTS,focus:FOCUS_BONUS,orbCrit:ORB_CRIT,robe:TIER_ROBE,blockPer:TIER_BLOCK.per,
     gromFists:GROM_FISTS,numberScale:NUM,lethality:LETH,enchantments:FoteEnchantments,gear:FoteGear};
 }
 function normalizeActorGear(actor){
@@ -27,5 +27,5 @@ function derive(actor){
   actor.guard=actor.guard===undefined?actor.guardMax:Math.min(actor.guard,actor.guardMax);
   actor.iceArmor=actor.iceArmor===undefined?actor.iceArmorMax:Math.min(actor.iceArmor,actor.iceArmorMax);
   // Legacy spell execution consumes these chances from the authored ability.
-  if(actor===player){ABILITIES.spark.stunChance=.05*(actor.aff.air||0);ABILITIES.smite.blindChance=.10*(actor.aff.light||0);}
+  if(actor===player){ABILITIES.spark.stunChance=.05*(actor.aff.air||0);ABILITIES.smite.blindChance=.10*(actor.aff.light||0);if(typeof syncMurkSummons==='function')syncMurkSummons();}
 }

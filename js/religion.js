@@ -106,16 +106,16 @@ function greaterPrayer(){
   var good=rng()<.65+wobbleBias(godRank()),roll=rng();sfx('wobbles-giggle');
   function drop(it){var s=nearFree(player.x,player.y,2)||player;it.x=s.x;it.y=s.y;items.push(it);}
   if(good){
-    if(roll<.35 && (player.hp<player.maxhp||player.mp<player.maxmp)){player.hp=player.maxhp;player.mp=player.maxmp;clearBad();log('<b>Tempt Fate:</b> restoration.','c-good');}
+    if(roll<.35 && (player.hp<player.maxhp||player.mp<player.maxmp)){var restored=player.maxhp-player.hp;player.hp=player.maxhp;gameDamage.emit('healingApplied',{target:player,restored:restored});player.mp=player.maxmp;clearBad();log('<b>Tempt Fate:</b> full HP and mana; cleansed.','c-good');}
     else if(roll<.65){for(var i=0;i<2;i++){var e=pick(ELEMENTS);player.motes[e]=(player.motes[e]||0)+1;}log('<b>Tempt Fate:</b> two elemental motes.','c-good');}
     else if(roll<.9){drop(randomGear());log('<b>Tempt Fate:</b> equipment.','c-good');}
     else {drop(rng()<.5?{kind:'ring',it:makeRing(null,false)}:{kind:'amulet',it:makeAmulet(null,false)});log('<b>Tempt Fate:</b> jewelry.','c-good');}
   }else if(roll<.35){
     var pool=ents.filter(function(e){return e.foe&&e.hp>0&&!(e.base&&e.base.boss)&&!e.elite;});
     for(var i=0;i<3;i++){var s=nearFree(player.x,player.y,3);if(s){var model=pool.length?pick(pool):null;var m=spawn(model?model.kind:'rat',s.x,s.y);m.state='hunt';m.noLoot=true;}}
-    log('<b>Tempt Fate:</b> an unrewarding ambush!','c-you');
-  }else if(roll<.70){player.hp=Math.max(1,Math.ceil(player.hp/2));applyStatus(player,'blind',4);log('<b>Tempt Fate:</b> blood and sight.','c-you');}
-  else if(roll<.95){var spots=safeWobbleSpots();if(spots.length){var s=pick(spots);player.x=s.x;player.y=s.y;player._lx=undefined;}log('<b>Tempt Fate:</b> displacement.','c-you');}
+    log('<b>Tempt Fate:</b> ambush.','c-you');
+  }else if(roll<.70){player.hp=Math.max(1,Math.ceil(player.hp/2));applyStatus(player,'blind',4);log('<b>Tempt Fate:</b> half HP lost; Blind.','c-you');}
+  else if(roll<.95){var spots=safeWobbleSpots();if(spots.length){var s=pick(spots);player.x=s.x;player.y=s.y;player._lx=undefined;}log('<b>Tempt Fate:</b> teleport.','c-you');}
   else {var loss=Math.floor(player.essence/2);player.essence-=loss;log('<b>Tempt Fate:</b> '+loss+' essence lost.','c-you');}
   computeFOV();updateUI();
 }
@@ -125,13 +125,13 @@ function greaterPrayer(){
    Justin: "the faith tab should really show the artwork of the statue, maybe a little blurb about the god". The
    sheet was all rules and numbers; these are the few lines that say what kind of thing you have sworn to. */
 var GOD_BLURB = {
-  grom:     'A bare-knuckled god of the old sort, who thinks a weapon is an apology for weak arms. His shrines are worn smooth where fists have struck them.',
-  grumbok:  'He hates wizards. That is the whole of his theology, and he pursues it with the patience of a man sharpening a very large axe.',
-  glimmer:  'A saint, not a god: a healer who walked into the dark once too often and never quite came back. Her light mends what it touches and burns what should not be.',
-  murk:     'Mother Murk keeps the dead close. She never raises her voice, and she does not think dying should end anyone\'s usefulness.',
-  reginald: 'An adventurer who died of an ambush and took it personally. He asks only that you let them see you coming, and hit them anyway.',
-  anvil:    'He never sleeps, and he never asks what you did. Bring him essence, and he will make your gear worthy of a better owner.',
-  vellum:   'A book that reads itself, endlessly. Vellum has heard every spell there is and wants nothing more than to hear them all again.',
-  wobbles:  'Nobody knows what Wobbles is. He finds that funny. Amuse him and he is generous; bore him and he gets creative.',
-  sylla:    'A drider carved in white stone, waiting with her legs folded beneath her. Sylla teaches that the fight is decided before it starts: web it, let it bleed, and be somewhere else when it dies.'
+  grom:     'God of unarmed combat.',
+  grumbok:  'God of martial strength who forbids spellcasting.',
+  glimmer:  'Saint of healing and light.',
+  murk:     'Patron of life drain and undead servants.',
+  reginald: 'Patron of open combat and challenges.',
+  anvil:    'God of forging and enchantments.',
+  vellum:   'Patron of spellcasting and arcane equipment.',
+  wobbles:  'God of luck, rewards and pranks.',
+  sylla:    'Patron of webs, poison and ambushes.'
 };

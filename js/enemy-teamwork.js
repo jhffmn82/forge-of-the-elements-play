@@ -11,14 +11,7 @@ var FoteEnemyTeamwork=(function(){
   return null;
  }
  function openLine(a,b){
-  var x=a.x,y=a.y,dx=Math.abs(b.x-x),dy=Math.abs(b.y-y),sx=x<b.x?1:-1,sy=y<b.y?1:-1,err=dx-dy;
-  while(x!==b.x||y!==b.y){
-   var oldX=x,oldY=y,e2=2*err;
-   if(e2>-dy){err-=dy;x+=sx;}if(e2<dx){err+=dx;y+=sy;}
-   if(!inb(x,y)||opaque(x,y))return false;
-   if(x!==oldX&&y!==oldY&&opaque(x,oldY)&&opaque(oldX,y))return false;
-  }
-  return true;
+  return FoteGeometry.traceLine(a,b,function(x,y){return !inb(x,y)||opaque(x,y);}).clear;
  }
  function nearby(e,radius){
   var group=family(e);if(!group)return [];
@@ -38,7 +31,7 @@ var FoteEnemyTeamwork=(function(){
    if(typeof FoteEnemyPerception!=='undefined')FoteEnemyPerception.remember(o,e.lastSeen,'call');
   });
   if(!allies.length)return false;
-  if(vis[idxOf(e.x,e.y)]){log('The <b>'+e.name+'</b>'+(e.kind==='sporecaller'?' releases a pulse of spores, calling nearby creatures!':' cries for help!'),'c-you');floatText(e.x,e.y,e.kind==='sporecaller'?'Spore call':'Help!','miss');}
+  if(vis[idxOf(e.x,e.y)]){log('<b>'+e.name+'</b> calls for help.','c-you');floatText(e.x,e.y,e.kind==='sporecaller'?'Spore call':'Help!','miss');}
   if(e.base.sfx)sfx(e.base.sfx+'-alert',{from:e});
   return true;
  }
@@ -60,7 +53,7 @@ var FoteEnemyTeamwork=(function(){
   if(!gameEffects.has(target,'goblinrage'))gameEffects.apply(target,'goblinrage',4,undefined,{durationModifiers:false});
   e.rageReadyAt=worldNow()+600;setClip(e,'attack');sfx('shaman-cast',{from:e});
   boltFx(e.x,e.y,target.x,target.y,'fire');sparkleFx(target.x,target.y,'heal',16);floatText(target.x,target.y,'Rage','fire');
-  if(vis[idxOf(e.x,e.y)]||vis[idxOf(target.x,target.y)])log('The <b>Goblin Shaman</b> rouses the <b>'+target.name+'</b> into a rage'+(healed?', healing '+healed+' HP':'')+'.','c-you');
+  if(vis[idxOf(e.x,e.y)]||vis[idxOf(target.x,target.y)])log('<b>Goblin Shaman:</b> '+target.name+' gains Rage'+(healed?' and '+healed+' HP':'')+'.','c-you');
   return true;
  }
  function boneWard(e,idle){
@@ -69,7 +62,7 @@ var FoteEnemyTeamwork=(function(){
   if(!allies.length)return false;
   allies.forEach(function(o){o.boneWard=true;sparkleFx(o.x,o.y,'dark',12);});
   e.wardCd=5;setClip(e,'attack');sfx('shaman-cast',{from:e});
-  if(vis[idxOf(e.x,e.y)])log('The <b>Necro-Acolyte</b> wraps the dead in bone wards.','c-info');
+  if(vis[idxOf(e.x,e.y)])log('The <b>Necro-Acolyte</b> grants Bone Ward.','c-info');
   return true;
  }
  function retreat(e,target){

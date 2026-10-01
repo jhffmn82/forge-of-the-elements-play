@@ -26,22 +26,22 @@ function isScoundrel(){ return player.cls==='scoundrel'; }
 var PASSIVES={
   mig:[{at:12,id:'heavyHands',name:'Heavy Hands',d:'+10% melee damage'},
        {at:15,id:'crushing',  name:'Crushing Blows',d:'+25% weapon damage to targets below half HP'},
-       {at:18,id:'spellWard', name:'Spell Ward',d:'your block also works against spells and abilities. Without a shield you still block them 33% of the time, up to 40% with more Might'},
-       {at:21,id:'cleaving',  name:'Cleaving Swings',d:'your attacks also hit one other adjacent enemy for half'},
-       {at:25,id:'unstoppable',name:'Unstoppable',d:'immune to Stun, Root, Chill, Freeze, slows and knockback; +20% melee damage'}],
+       {at:18,id:'spellWard', name:'Spell Ward',d:'Block spells and abilities. Without a shield: 33% block chance, up to 40% with Might.'},
+       {at:21,id:'cleaving',  name:'Cleaving Swings',d:'Attacks hit one other adjacent enemy for half damage.'},
+       {at:25,id:'unstoppable',name:'Unstoppable',d:'Immune to Stun, Root, Chill, Freeze, slows and knockback. +20% melee damage.'}],
   agi:[{at:12,id:'lightFeet',name:'Light Feet',d:'+8 evasion'},
-       {at:15,id:'deadeye',  name:'Deadeye',d:'+8% crit chance and +25% critical damage for all attacks and spells'},
-       {at:18,id:'fleet',    name:'Fleet',d:'moving costs 15% less time'},
-       {at:21,id:'keenAim',  name:'Keen Aim',d:'your attacks ignore 25% of the target\'s evasion; +25% additional critical damage for all attacks and spells'},
-       {at:25,id:'blur',     name:'Blur',d:'enemy attacks are 20% less likely to hit you'}],
+       {at:15,id:'deadeye',  name:'Deadeye',d:'+8% crit chance and +25% crit damage for attacks and spells.'},
+       {at:18,id:'fleet',    name:'Fleet',d:'Movement takes 15% less time.'},
+       {at:21,id:'keenAim',  name:'Keen Aim',d:'Attacks ignore 25% evasion. +25% crit damage for attacks and spells.'},
+       {at:25,id:'blur',     name:'Blur',d:'Enemy attacks are 20% less likely to hit you.'}],
   vit:[{at:12,id:'tough',    name:'Tough',d:'+15% max HP'},
-       {at:15,id:'resilient',name:'Resilient',d:'HP regeneration doubles below half HP'},
-       {at:18,id:'ironConst',name:'Iron Constitution',d:'statuses on you last half as long'},
-       {at:21,id:'fortitude',name:'Fortitude',d:'once every 6 turns, halve a hit that gets through your shields'},
-       {at:25,id:'bulwark',  name:'Bulwark',d:'immune to critical hits; +5% resistance to all but physical damage'}],
+       {at:15,id:'resilient',name:'Resilient',d:'Double HP regeneration below half HP.'},
+       {at:18,id:'ironConst',name:'Iron Constitution',d:'Statuses last half as long.'},
+       {at:21,id:'fortitude',name:'Fortitude',d:'Halve a hit that damages HP. 6-turn cooldown.'},
+       {at:25,id:'bulwark',  name:'Bulwark',d:'Immune to critical hits. +5% nonphysical resistance.'}],
   foc:[{at:12,id:'arcaneStudy',name:'Arcane Study',d:'+10% spell damage'},
        {at:15,id:'meditation',name:'Meditation',d:'+25% mana regeneration'},
-       {at:18,id:'tidalMind', name:'Tidal Mind',d:'mana regeneration doubles below half mana'},
+       {at:18,id:'tidalMind', name:'Tidal Mind',d:'Double mana regeneration below half mana.'},
        {at:21,id:'magicBarrier',name:'Magic Barrier',d:'-5 damage from single-target ranged attacks'},
        {at:25,id:'archmage',  name:'Archmage',d:'+10% spell damage, +5% crit chance, +20% max mana'}]
 };
@@ -82,10 +82,7 @@ function costOf(A){
 function focusKey(it){ if(!it) return null; var ic=(it.icon||'').replace(/^item-/,''); return FOCUS_BONUS[ic] ? ic : null; }
 
 function focusBonus(it){
-  var k=focusKey(it); if(!k) return (it && it.spell) || 0;
-  var F=FOCUS_BONUS[k];
-  if(k==='orb') return it.cursed ? -(tierOf(F.curse,it) + F.cursePer*Math.abs(it.plus||0)) : 0;
-  return ((it.cursed ? -tierOf(F.base,it) : tierOf(F.base,it)) + F.per*(it.plus||0))*gearPassiveBonus();
+  return FoteStats.focusBonus(it,FOCUS_BONUS,gearPassiveBonus());
 }
 function wandThrift(){ var w=player.weapon; if(focusKey(w)!=='wand') return 0; var v=tierOf(WAND_THRIFT.base,w)+WAND_THRIFT.per*(w.plus||0); return (w.cursed ? -Math.abs(v) : v)*gearPassiveBonus(); }
 function orbCrit(){ var o=player.twoHanded ? null : player.off; if(focusKey(o)!=='orb' || o.cursed) return 0; return (tierOf(ORB_CRIT.base,o)+ORB_CRIT.per*(o.plus||0))*gearPassiveBonus(); }
@@ -165,21 +162,20 @@ function raiseShade(e){
 /* ---------------------------------------------------------------- abilities */
 
 function divineStrength(){
-  var w=player.weapon||{},o=player.twoHanded?{}:(player.off||{});
-  return 1+((w.cursed?0:w.divine||0)+(o.cursed?0:o.divine||0))*gearPassiveBonus();
+  return FoteStats.powers(player,statContent()).divine;
 }
 function divineDuration(n){ return n; }
 
 
 /* targeting: bolts stop at the first creature or wall in the way */
 function boltPath(ax,ay,bx,by){
-  var pts=[], x=ax, y=ay, dx=Math.abs(bx-ax), dy=Math.abs(by-ay), sx=ax<bx?1:-1, sy=ay<by?1:-1, err=dx-dy;
+  var pts=FoteGeometry.traceLine({x:ax,y:ay},{x:bx,y:by},function(x,y){return !inb(x,y)||opaque(x,y);}).path;
   var source=ents.find(function(e){return entityOccupies(e,ax,ay);});
-  while(!(x===bx && y===by)){
-    var e2=2*err; if(e2>-dy){ err-=dy; x+=sx; } if(e2<dx){ err+=dx; y+=sy; }
-    pts.push({x:x,y:y});
-    if(opaque(x,y) && !(x===bx&&y===by)) break;
-    if(occupied(x,y,source) && !(x===bx&&y===by) && !(x===player.x&&y===player.y)) break;
+  // Choose the terrain ray first; creatures still intercept that same ray in
+  // previews, target validation, and the actual attack.
+  for(var i=0;i<pts.length;i++){
+    var p=pts[i];
+    if(occupied(p.x,p.y,source)&&!(p.x===bx&&p.y===by)&&!(p.x===player.x&&p.y===player.y))return pts.slice(0,i+1);
   }
   return pts;
 }

@@ -100,8 +100,7 @@ function syllaHitReactions(event){
   if(rank>=3&&target.hp>0){
     syllaPoison(target,SYLLA.poisonTurns,rank);
     if(event.wasStatused&&target.hp>0){
-      var venom=gameDamage.resolve(target,rank,'poison',player,{tags:['proc','venomtouch']});
-      if(venom.damage>0)floatText(target.x,target.y,String(venom.damage),'poison');
+      gameDamage.resolve(target,rank,'poison',player,{tags:['proc','venomtouch']});
     }
   }
   if(rank>0&&target.hp>0&&rng()<SYLLA.webChance*rank)syllaWeb(target,rank);

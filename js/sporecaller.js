@@ -5,7 +5,7 @@ var FoteSporecaller=(function(){
  MONSTERS.sporecaller=Object.assign({},MONSTERS.myconid,{
   name:'Myconid Sporecaller',sprite:'m-sporecaller',spores:false,sporecaller:true,
   dmg:[3,5],xp:40,w:8,
-  hint:'Mushroom buds warn of a root-and-poison field. Leave the marked ground before it blooms. Between casts it retreats, heals allies and protects them with Sporecoat.'
+  hint:'Marks a root-and-poison field that sprouts two Shroomlings. Retreats, heals allies and grants Sporecoat.'
  });
  DROPS.sporecaller=DROPS.myconid;
  // Replace part of the vermin weight rather than increasing encounter counts.
@@ -31,7 +31,7 @@ var FoteSporecaller=(function(){
   fields().push({owner:e.id,x:center.x,y:center.y,cells:cells,armedTurn:turn,fireAt:worldNow()+100,rooted:[]});
   e.sporeFieldReadyAt=worldNow()+FIELD_COOLDOWN;
   setClip(e,'attack');sfx('shaman-cast',{from:e});
-  if(visible(e)||visible(target))log('The <b>Myconid Sporecaller</b> seeds the ground. Move out of the mushroom buds before they bloom!','c-you');
+  if(visible(e)||visible(target))log('<b>Sporecaller:</b> mushroom field forming.','c-you');
   return true;
  }
  function support(e,idle){
@@ -46,7 +46,7 @@ var FoteSporecaller=(function(){
   e.sporeSupportReadyAt=worldNow()+SUPPORT_COOLDOWN;
   setClip(e,'attack');sfx('shaman-cast',{from:e});boltFx(e.x,e.y,target.x,target.y,'poison');sparkleFx(target.x,target.y,'heal',12);
   floatText(target.x,target.y,'Sporecoat','heal');
-  if(visible(e)||visible(target))log('The <b>Myconid Sporecaller</b> coats the <b>'+target.name+'</b> in protective spores'+(healing?', healing '+healing+' HP':'')+'.','c-you');
+  if(visible(e)||visible(target))log('<b>Sporecaller:</b> '+target.name+' gains Sporecoat'+(healing?' and '+healing+' HP':'')+'.','c-you');
   return true;
  }
  function act(e,target){
@@ -68,8 +68,9 @@ var FoteSporecaller=(function(){
     if(turn<=f.armedTurn||clock<f.fireAt)return true;
     f.expiresAt=clock+FIELD_LIFE;
     f.cells.forEach(function(i){growth()[i]={known:!!vis[i]};});
+    var sprouts=sproutShroomlings(caster,f.cells.map(function(i){return {x:i%MW,y:Math.floor(i/MW)};}),2,clock);
     if(typeof burst==='function'&&f.cells.some(function(i){return vis[i];}))burst(f.x,f.y,'poison',24,.05);
-    if(f.cells.some(function(i){return vis[i];})){sfx('trap-gas',{from:f});log('The fungal field blooms into grasping roots and poisonous spores!','c-you');}
+    if(f.cells.some(function(i){return vis[i];})){sfx('trap-gas',{from:f});log('The mushroom field blooms: Root and Poison.'+(sprouts.length?' '+sprouts.length+' Shroomling'+(sprouts.length===1?' sprouts.':'s sprout.') : ''),'c-you');}
    }
    if(clock>=f.expiresAt)return false;
    targets().forEach(function(e){
@@ -105,7 +106,7 @@ var FoteSporecaller=(function(){
   if(visible(e))sfx('step-grass',{from:e,vol:.5});
   if(e.base&&e.base.sporeproof||gameEffects.blocked(e,'poison')||e===player&&player.buffs&&player.buffs.poisonward>0)return true;
   var damage=applyDamage(e,2,'poison',null,{tags:['environment','movement']});
-  if(damage>0){floatText(e.x,e.y,String(damage),'poison');if(e===player)log('You crush the green mushrooms, releasing spores: <b>'+damage+'</b> poison damage.','c-you');}
+  if(damage>0){floatText(e.x,e.y,String(damage),'poison');if(e===player)log('Trampled mushrooms: '+damage+' poison damage.','c-you');}
   if(e.hp<=0)kill(e,null);
   return true;
  }

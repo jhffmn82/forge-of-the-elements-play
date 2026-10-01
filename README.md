@@ -1,8 +1,8 @@
 # Forge of the Elements
 
 A browser roguelike: explore elemental dungeons, shape your build at the Forge, and face each biome's boss.
-Beta 1.4 adds new enemies, coordinated support behavior, persistent ground hazards and counterplay,
-better pursuit around corners, and a rebuilt interface for landscape phones, tablets and PCs.
+Beta 1.4.1 improves corner visibility, auto-explore, combat feedback and divine caster builds,
+reworks Ghouls, and lets Sporecaller fields sprout Shroomlings.
 
 ## Play on a PC
 
@@ -23,4 +23,4 @@ Or just open the play link above in Chrome on the device - the game lays itself 
 ## This repository
 
 Generated output only: the playable build, published by `tools/publish.py` from the source project. Last
-build: **2026-09-30 17:20:00 UTC**.
+build: **2026-10-01 11:58:26 UTC**.

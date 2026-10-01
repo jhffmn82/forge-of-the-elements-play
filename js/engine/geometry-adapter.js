@@ -25,7 +25,7 @@ function visionDeepDarkness(context){
   DEEP_RAWVIS=vis.slice();var mask=new Uint8Array(MW*MH);globes.forEach(function(globe){globe.cells.forEach(function(i){mask[i]=1;});});FoteGeometry.mask(context.view,mask);
 }
 var visionStages=FoteTransitions.stages([
-  {name:'radius-and-shadowcast',run:visionCast},{name:'smoke-mask',run:visionSmoke},
+  {name:'radius-and-sight',run:visionCast},{name:'smoke-mask',run:visionSmoke},
   {name:'plane-rock-band',run:visionRockBand},{name:'darkness-mask-and-darksight',run:visionDeepDarkness}
 ]);
 function computeFOV(radius){visionStages.run({radius:radius});}

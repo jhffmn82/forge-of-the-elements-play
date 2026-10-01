@@ -81,6 +81,7 @@
   #create .card b{font-family:var(--display);font-size:17px;color:var(--gold)}
   #create .card span{font-size:11px;color:var(--ash);line-height:1.4}
   #create .card .port{height:120px;display:flex;align-items:flex-end;justify-content:center}
+  #create .card .class-symbol{height:48px}
   #create .summary{display:grid;grid-template-columns:200px 1fr;gap:18px;align-items:center;background:#141110;border:1px solid var(--edge);border-radius:10px;padding:14px;margin-top:18px}
   #create .summary .big{height:230px;display:flex;align-items:flex-end;justify-content:center}
   #create .go{font-size:16px;padding:10px 26px;margin-top:10px}
@@ -365,7 +366,7 @@ var PRAYER_ICONS={
   "arcanenova": "pr-arcanenova"
 };
 function prayerIcon(pid){pid=prayerId(pid);return PRAYER_ICONS[pid]||'pr-'+pid;}
-function prayerCost(pid){ var P=PRAYERS[pid]; return P.favor ? P.favor+' Favor' : P.essence ? P.essence+' essence' : P.amusement ? P.amusement+' Amusement' : 'prayer'; }
+function prayerCost(pid){ var P=PRAYERS[prayerId(pid)]; return P.health ? prayerHealthCost(pid)+' HP' : P.favor ? P.favor+' Favor' : P.essence ? P.essence+' essence' : P.amusement ? P.amusement+' Amusement' : 'prayer'; }
 
 /* every ability or prayer you gain drops into the first empty hotbar slot once; clearing a slot keeps it cleared */
 

@@ -77,7 +77,7 @@
     RUN.shadowClone=e;sparkleFx(x,y,'dark',24);return e;
   }
   function damage(e,target,amount,type,extra){
-    return applyDamage(target,amount,type,e,Object.assign({tags:['spell','single-target','shadow-clone','murk-inherited']},extra||{}));
+    return applyDamage(target,amount,type,e,Object.assign({tags:['spell','single-target','shadow-clone']},extra||{}));
   }
   function effectOptions(e){return {sourceAffinity:copy(e.cloneStats.aff),sourcePoint:{x:e.x,y:e.y},data:{sourceAffinity:copy(e.cloneStats.aff),sourceDuration:e.cloneStats.syllaDuration},durationModifiers:false,bossControl:true};}
   function status(e,target,key,turns,amount){return gameEffects.apply(target,key,turns+e.cloneStats.syllaDuration,amount,effectOptions(e));}
@@ -89,7 +89,7 @@
     if(el==='earth'&&rng()<v.rootChance)status(e,target,'root',v.rootDuration);
     if(el==='air'&&rng()<v.repeatChance)damage(e,target,dealt,'dark');
     if(el==='shadow'){if(target.st.corrupt)extra+=v.corruptDamage||0;if(rng()<v.procChance){extra+=Math.round(dealt*v.extraDamage);status(e,target,'corrupt',v.corruptDuration);}}
-    if(extra>0)dealDirectDamage(target,extra,el==='fire'?'fire':'dark',e,{tags:['proc','enchant','shadow-clone','murk-inherited']});
+    if(extra>0)dealDirectDamage(target,extra,el==='fire'?'fire':'dark',e,{tags:['proc','enchant','shadow-clone']});
   }
   function cast(e,target){
     refreshStats(e);var s=e.cloneStats,A=ABILITIES.shadowbolt,line=projectileLine(e,target,{range:s.range});if(!line)return;
@@ -187,6 +187,6 @@
   }
   MONSTERS.shadowclone={name:'Shadow Clone',hp:1,dmg:[0,0],acc:0,eva:0,speed:100,armor:0,xp:0,band:[99,99],w:0,ch:'@',col:'#7962AA',living:true};
   DROPS.shadowclone={chance:0,table:{}};
-  ABILITIES.umbral.desc='Step to any tile you have seen with no enemy beside it, arriving hidden for 2 turns. Your shadow stays behind to cast Shadow Bolt, following you between floors, until it falls or you cast this again.';
+  ABILITIES.umbral.desc='Teleport to an explored tile with no adjacent enemies; hide for 2 turns. Leave a shadow that casts Shadow Bolt and follows between floors. Lasts until destroyed or recast.';
   root.FoteShadowClone=Object.freeze({isClone:isClone,snapshot:snapshot,create:create,act:act,cast:cast,defend:defend,block:block,pulse:pulse,cost:cost,resistance:resistance,arrive:arrive});
 })(globalThis);

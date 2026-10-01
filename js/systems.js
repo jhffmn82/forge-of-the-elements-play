@@ -232,7 +232,7 @@ function bumpProp(p){
     else { m.state='hunt'; log('The prisoner lunges at you!','c-you'); }
     sfx('door-open'); endTurn(); return true;
   }
-  if(p.drink){ var h=Math.round(player.maxhp*0.1); healPlayer(h); p.drink=false; log('You drink from the fountain. +'+h+' HP.','c-good'); floatText(player.x,player.y,'+'+h,'heal'); sfx('step-water'); endTurn(); return true; }
+  if(p.drink){ var before=player.hp; healPlayer(Math.round(player.maxhp*0.1)); p.drink=false; log('Fountain: +'+Math.round((player.hp-before)*10)/10+' HP.','c-good'); sfx('step-water'); endTurn(); return true; }
   if(p.br){ setClip(player,'melee'); lungeFx(player,p.x,p.y); damageProp(p, player, 'phys'); endTurn(); return true; }
   if(p.b){ log('Something is in the way.','c-info'); return true; }
   return false;
@@ -381,7 +381,7 @@ function triggerTrap(tr,e){
     tell('A frost jet blasts you: '+d+' frost damage and Chill.', 'A frost jet blasts the '+e.name+': '+d+' frost damage and Chill.'); sfx('trap-frost',{from:tr}); }
   else if(tr.kind==='spark'){ d=applyDamage(e, trapDmg(e, roll(4,8)+floorNo), 'lightning', null); if(rng()<0.5) applyStatus(e,'stun',1); floatText(e.x,e.y,String(d),'lightning'); burst(e.x,e.y,'lightning',18,0.06);
     tell('A spark plate discharges: '+d+' lightning damage.', 'A spark plate discharges into the '+e.name+': '+d+' lightning damage.'); sfx('trap-spark',{from:tr}); }
-  else if(tr.kind==='gas'){ for(var gy=-1;gy<=1;gy++) for(var gx=-1;gx<=1;gx++) ents.forEach(function(o){ if(o.x===e.x+gx && o.y===e.y+gy) applyStatus(o,'poison',6,2); });
+  else if(tr.kind==='gas'){ for(var gy=-1;gy<=1;gy++) for(var gx=-1;gx<=1;gx++) ents.forEach(function(o){ if(o.x===e.x+gx && o.y===e.y+gy) applyStatus(o,'poison',4,2); });
     burst(e.x,e.y,'poison',40,0.05); tell('Poison gas hisses from a vent.', 'Poison gas hisses from a vent under the '+e.name+'.'); sfx('trap-gas',{from:tr}); }
   else if(tr.kind==='web'){ if(applyStatus(e,'web',3).applied)tell('Webs! You are stuck.', 'Webs! The '+e.name+' is stuck.', 'c-info'); sfx('trap-web',{from:tr}); }
   /* 2026-09-28 (Justin): an alarm another creature sets off says so, in the danger colour when you can see it
@@ -553,7 +553,7 @@ function useBagFood(idx){
   var it=player.bag[idx];if(!it||it.kind!=='food')return false;
 
     var fd=FOODS[it.data.food]; player.hunger=Math.min(HUNGER_MAX, player.hunger+fd.nutrition);
-    if(fd.heal){ var before=player.hp;healPlayer(Math.round(player.maxhp*fd.heal));var h=Math.round(player.hp-before);floatText(player.x,player.y,'+'+h,'heal'); }
+    if(fd.heal)healPlayer(Math.round(player.maxhp*fd.heal));
     consume(idx); log('You eat the '+fd.name.toLowerCase()+'.','c-good'); sfx('eat');
     if(fd.buff && typeof eatFoodBuff==='function') eatFoodBuff(fd);
     endTurn(); return true;

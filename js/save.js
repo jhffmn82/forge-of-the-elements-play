@@ -63,6 +63,9 @@ function repairInterruptedPlayerDeath(){
 function restoreRunReferences(){
   if(typeof FoteShadowClone!=='undefined')FoteShadowClone.arrive();
   if(player.buffs)delete player.buffs.unbound;
+  Object.keys(player.cds||{}).forEach(function(key){
+    if(key.indexOf('pray:')===0&&DIVINE_COOLDOWNS.prayers[prayerId(key.slice(5))]===0)delete player.cds[key];
+  });
   floorMeta.puzzles=rooms.filter(function(room){return room&&room.puzzle;});
   ents.forEach(function(entity){entity._lx=undefined;entity._ly=undefined;});
   RUN.over=false;
