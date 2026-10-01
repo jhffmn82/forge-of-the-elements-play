@@ -3,6 +3,22 @@
 (function(root){
   'use strict';
   function active(){return floorMeta&&floorMeta.chaosEntryPreview||null;}
+  function ensureForge(){
+    if(!active())return false;
+    var point=null,cells=[];
+    for(var y=0;y<MH;y++)for(var x=0;x<MW;x++){
+      if(at(x,y)===FORGE){point={x:x,y:y};break;}
+      if(at(x,y)===FLOOR&&!propAt(x,y)&&!items.some(function(it){return it.x===x&&it.y===y;})&&
+        !ents.some(function(e){return e.hp>0&&e.x===x&&e.y===y;}))cells.push({x:x,y:y});
+    }
+    if(!point){
+      // Beside the portal, outside the treasure rows and the central approach.
+      cells.sort(function(a,b){return Math.abs(a.x-24)+Math.abs(a.y-13)-Math.abs(b.x-24)-Math.abs(b.y-13)||a.y-b.y||a.x-b.x;});
+      point=cells[0];if(!point)return false;
+      map[idxOf(point.x,point.y)]=FORGE;
+    }
+    floorMeta.forge=true;floorMeta.forgeAt=point;return true;
+  }
   function portalInfo(x,y){
     var entry=active();
     return entry&&x===entry.portal.x&&y===entry.portal.y&&at(x,y)===PORTAL?
@@ -49,7 +65,7 @@
     map[idxOf(entry.spawn.x,entry.spawn.y)]=UPSTAIRS;
     floorMeta={floor:20,biome:0,boss:false,forge:false,shrine:false,portal:'light',portalUsed:false,portalAt:entry.portal,
       upAt:entry.spawn,exitOpen:false,keyHolder:false,puzzles:[],searched:{},planeLights:[],chaosEntryPreview:entry,
-      notes:['A quiet treasure room lies beneath the twentieth floor. Gather the supplies, then enter the portal to floor 21.','There are no god shrines in the Realm of Chaos.']};
+      notes:['A quiet treasure room lies beneath the twentieth floor. Gather supplies and prepare at the forge before entering Chaos.','There are no god shrines in the Realm of Chaos.']};
     // Loot has its own stream, leaving the run's combat and item RNG untouched.
     var choose=mulberry32(seed^0x54726561),cells=[];
     for(var yy=14;yy<=19;yy++)for(var xx=22;xx<=33;xx++)if(xx!==28)cells.push({x:xx,y:yy});
@@ -64,7 +80,7 @@
     });
     ELEMENTS.forEach(function(el){put({kind:'mote',el:el});put({kind:'mote',el:el});});
     for(var f=0;f<4;f++)put({kind:'food',food:'ration'});
-    player.x=entry.spawn.x;player.y=entry.spawn.y;resetMotion(player);placeCompanions(companions);clearPresentation();
+    player.x=entry.spawn.x;player.y=entry.spawn.y;resetMotion(player);ensureForge();placeCompanions(companions);clearPresentation();
     return entry;
   }
   function enterPortal(){
@@ -76,5 +92,5 @@
     stopTravel();confirmBox('Enter the Realm of Chaos','The portal leads to <b>floor 21</b>. Collect any supplies you want to carry before leaving. There are no god shrines in Chaos.','Step through',enterPortal);
     return true;
   }
-  root.FoteChaosEntryPreview=Object.freeze({active:active,build:build,portalInfo:portalInfo,prompt:prompt,enterPortal:enterPortal});
+  root.FoteChaosEntryPreview=Object.freeze({active:active,build:build,ensureForge:ensureForge,portalInfo:portalInfo,prompt:prompt,enterPortal:enterPortal});
 })(typeof window!=='undefined'?window:globalThis);

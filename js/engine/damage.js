@@ -46,7 +46,10 @@
         procDepth:parent?parent.procDepth+1:0,parentId:parent?parent.id:null,options:options,
         hit:options.hit||null,ability:options.ability||null,reason:null};
       if(!event.type){event.reason='invalid-type';return event;}
-      if(!target||!Number.isFinite(amount)||amount<0||!Number.isFinite(target.hp)||target.hp<=0){event.reason='invalid';return event;}
+      if(!target||!Number.isFinite(amount)||amount<0||!Number.isFinite(target.hp)){event.reason='invalid';return event;}
+      // A killing hit may still have riders to resolve before death is committed.
+      // Ordinary damage, later actions and periodic ticks cannot damage corpses.
+      if(target.hp<=0&&!(event.tags.has('proc')&&!['periodic','arc','reflected','environment'].some(function(tag){return event.tags.has(tag);})&&ports.pendingHit&&ports.pendingHit(target,event.source))){event.reason='invalid';return event;}
       if(event.procDepth>32){event.reason='proc-depth';return event;}
       active=event;
       try{

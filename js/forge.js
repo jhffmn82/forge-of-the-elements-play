@@ -27,7 +27,7 @@ var forgeTab='fuse';
 function removeBossFloorForges(){
   function clean(state,n){
     var meta=state.floorMeta;
-    if(!meta||meta.plane||!(n>0&&n%5===0)||!state.map)return;
+    if(!meta||meta.plane||meta.chaosEntryPreview||!(n>0&&n%5===0)||!state.map)return;
     var finalForge=meta.unmakerPreview&&meta.unmakerPreview.trueForge;
     for(var i=0;i<state.map.length;i++)if(state.map[i]===FORGE){
       var x=i%state.MW,y=Math.floor(i/state.MW);

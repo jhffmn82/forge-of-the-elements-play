@@ -95,6 +95,7 @@
   }
   function refresh(){computeFOV();resize();updateUI();draw();playSceneMusic();}
   function restore(){
+    if(entry()){root.FoteChaosEntryPreview.ensureForge();return;}
     if(!floorMeta||!floorMeta.chaosCampaign)return;
     floorMeta.shrine=false;delete floorMeta.shrineGod;
     if(floorNo===25){root.FoteUnmakerEncounter.install(true);root.FoteUnmakerPreview.repairGates();root.FoteUnmakerEncounter.restore();}
@@ -102,6 +103,7 @@
   function restoreEntry(arrival){
     var saved=RUN.chaosEntryStash;if(!saved)return false;
     FoteTransitions.restore(gameState,saved,20);delete RUN.chaosEntryStash;
+    restore();
     presentRestoredFloor(arrival||{x:28,y:13});return true;
   }
   function descend(){

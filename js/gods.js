@@ -79,7 +79,7 @@ function shrineGifts(id, g, mine){
   var boons = g.boons.filter(function(b, i){ return (BR[i]||i+1)<=r; });
   var prayers = mine ? (g.prayers||[]).filter(function(p){ return PRAYERS[p] && r>=PRAYERS[p].rank; }) : [];
   var h='<p><b>'+(mine?'Your boons:':'First boon:')+'</b></p><ol class="boons">'+boons.map(function(b){ return '<li>'+b+'</li>'; }).join('')+'</ol>';
-  if(prayers.length) h+='<p><b>Your abilities:</b> '+prayers.map(function(p){ var P=PRAYERS[p]; return '<b>'+P.name+'</b> ('+prayerCost(p)+'): '+P.desc; }).join(' &middot; ')+'</p>';
+  if(prayers.length) h+='<p><b>Your abilities:</b> '+prayers.map(function(p){ var P=PRAYERS[p]; return '<b>'+P.name+'</b> ('+prayerCost(p)+'): '+prayerLive(P); }).join(' &middot; ')+'</p>';
   if(boons.length<g.boons.length || prayers.length<(g.prayers||[]).length) h+='<p class="c-info" style="font-size:11px">'+(mine?'Grow in piety to learn what else '+g.name.split(',')[0]+' grants.':'Swear yourself and grow in piety to learn what else '+g.name.split(',')[0]+' grants.')+'</p>';
   return h;
 }
@@ -91,7 +91,7 @@ function openShrine(){
   var html = '<div class="shrine">'+art+'<div><h3 style="color:'+g.color+'">'+g.name+'</h3><div class="who">'+cap(g.title)+'</div>'+
     '<p><b>Rule.</b> '+g.rule+'</p><p><b>Piety comes from:</b> '+g.gain+' Piety earned deeper is worth more: x1.3 per biome below the first. Favor is not multiplied.</p>'+
     shrineGifts(id, g, mine)+
-    '<p><b>Cleric ability</b>: <b>'+ABILITIES[g.invoke].name+'</b>. '+ABILITIES[g.invoke].desc.replace(/^Invoke \([^)]*\): /,'')+'</p></div></div>';
+    '<p><b>Cleric ability</b>: <b>'+ABILITIES[g.invoke].name+'</b>. '+(mine?liveDesc(ABILITIES[g.invoke]):ABILITIES[g.invoke].desc)+'</p></div></div>';
   var buttons=[];
   var startPiety = 20;   /* flat in every biome: converting late never skips ranks */
   if(refused) html+='<p class="c-you"><b>'+(typeof godRefuses==='function' ? refusalText(id) : g.name+' will not accept a '+RACES[player.race].name+'.')+'</b></p>';
@@ -141,7 +141,7 @@ function faithHTML(){
      (g.boons.some(function(b,i){ return (BRf[i]||i+1)>r; }) ? '<p class="c-info" style="font-size:11px">Grow in piety to learn what else '+g.name.split(',')[0]+' grants.</p>' : '')+'<p><b>Abilities</b></p>';
   var shown=0;
   g.prayers.forEach(function(pid){ var P=PRAYERS[pid], ok=canPray(pid), wait=cdLeft(prayerCdKey(pid)); if(godRank()<P.rank) return; shown++;
-    h+='<div class="abrow" data-pr="'+pid+'"><span class="pico"></span><span class="k">'+P.rank+'</span><span><span style="color:var(--ink)">'+P.name+'</span><div class="d">'+P.desc+(godRank()>=P.rank?' <span style="opacity:.6">(drag to hotbar)</span>':'')+'</div></span>'+
+    h+='<div class="abrow" data-pr="'+pid+'"><span class="pico"></span><span class="k">'+P.rank+'</span><span><span style="color:var(--ink)">'+P.name+'</span><div class="d">'+prayerLive(P)+(godRank()>=P.rank?' <span style="opacity:.6">(drag to hotbar)</span>':'')+'</div></span>'+
        '<button class="prayer" data-p="'+pid+'" '+(ok?'':'disabled')+'>'+(wait?'ready in '+wait:prayerCost(pid))+'</button></div>'; });
   if(!shown) h+='<p class="c-info" style="font-size:11px">No abilities yet. Your god will teach you as your piety grows.</p>';
   return h+'</div>';
@@ -297,11 +297,12 @@ function prayFieldSmelt(){
 }
 
 /* Murk grants Life Drain to the player at rank 1 and summons at rank 3.
- * Summon bonuses use one rank/Divine Power multiplier, with HP owned here,
+ * Grave Strength scales with rank only; summoned forms already scale at cast.
+ * HP is owned here,
  * damage in the shared damage pipeline, and speed in the action-cost adapter. */
 function murkSummon(e){return !!(e&&e.ally&&(e.undeadServant||e.shade||e.swarm||e.livingFlame||e.shadowClone||e.broodling));}
 function murkRank(){return hasGod('murk')?godRank():0;}
-function murkSummonBonus(e){var rank=murkRank();return rank>=3&&murkSummon(e)?.05*rank*divineStrength():0;}
+function murkSummonBonus(e){var rank=murkRank();return rank>=3&&murkSummon(e)?.05*rank:0;}
 function murkSummonHp(e,existing){
   if(!murkSummon(e))return e;
   if(!Number.isFinite(e.murkBaseHp)){
@@ -321,7 +322,7 @@ function syncMurkSummons(){
 function murkSummonDamage(source){return 1+murkSummonBonus(source);}
 function murkLifeDrain(target,d,source,event){
   var r=murkRank();
-  if(!r||!(d>0)||!target||!target.foe||target.hp<=0||!(source===player||r>=3&&murkSummon(source)))return;
+  if(!r||!(d>0)||!target||!target.foe||!(source===player||r>=3&&murkSummon(source)))return;
   if(event&&(event.procDepth>0||['proc','periodic','arc','reflected','environment'].some(function(tag){return event.tags.has(tag);})))return;
   if(rng()>=Math.min(1,.10*r))return;
   var drained=applyDamage(target,Math.max(1,Math.round(2*r*divineStrength())),'dark',source,{tags:['proc','murk-drain'],reactions:false});

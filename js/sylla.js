@@ -97,9 +97,9 @@ clearBad = function(){ _clearBadSyl(); delete player.st.slow; player.syllaWeb=0;
    hit, so its own poison and Web cannot create an immediate extra payout. */
 function syllaHitReactions(event){
   var target=event.target,hit=event.hit,rank=godRank();
-  if(rank>=3&&target.hp>0){
+  if(rank>=3){
     syllaPoison(target,SYLLA.poisonTurns,rank);
-    if(event.wasStatused&&target.hp>0){
+    if(event.wasStatused){
       gameDamage.resolve(target,rank,'poison',player,{tags:['proc','venomtouch']});
     }
   }

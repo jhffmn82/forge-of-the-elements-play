@@ -77,51 +77,76 @@
     RUN.shadowClone=e;sparkleFx(x,y,'dark',24);return e;
   }
   function damage(e,target,amount,type,extra){
-    return applyDamage(target,amount,type,e,Object.assign({tags:['spell','single-target','shadow-clone']},extra||{}));
+    return applyDamage(target,amount,type,e,Object.assign({tags:['proc','shadow-clone']},extra||{}));
   }
   function effectOptions(e){return {sourceAffinity:copy(e.cloneStats.aff),sourcePoint:{x:e.x,y:e.y},data:{sourceAffinity:copy(e.cloneStats.aff),sourceDuration:e.cloneStats.syllaDuration},durationModifiers:false,bossControl:true};}
   function status(e,target,key,turns,amount){return gameEffects.apply(target,key,turns+e.cloneStats.syllaDuration,amount,effectOptions(e));}
-  function weaponProc(e,target,dealt){
-    var spec=e.cloneStats.weapon;if(!spec||target.hp<=0||dealt<=0)return;
-    var el=spec.element,v=spec.values,extra=0;
-    if(el==='fire'){extra+=Math.round(dealt*v.extraDamage);if(rng()<v.burnChance)status(e,target,'burn',v.burnDuration,e.cloneStats.burn);}
+  function attackView(e,options){
+    refreshStats(e);options=options||{};var s=e.cloneStats,appearance=s.appearance||e;
+    var model=Object.assign({},s.statModel||{name:e.name,race:s.race,cls:'fighter',level:1,stats:s.stats,aff:s.aff,sets:[appearance.weapon||FISTS],rings:[],off:appearance.off},
+      {buffs:e.buffs,st:{livingmountain:e.st.livingmountain},forgeHeat:e.cloneForgeHeat});
+    if(options.offhand)model.off=EMPTY_OFF;
+    var stats=FoteStats.compute(model,statContent(),{weapon:options.weapon||appearance.weapon||FISTS});
+    return Object.assign({},e,model,stats,{x:e.x,y:e.y,hp:e.hp,maxhp:e.maxhp,st:e.st,passives:s.passives||stats.passives});
+  }
+  function heal(e,amount){
+    if(gameEffects.has(e,'rot'))amount*=.5;
+    var result=FoteDamage.heal(e.hp,e.maxhp,amount);e.hp=result.hp;
+    if(result.restored>0)gameDamage.emit('healingApplied',{target:e,restored:result.restored,overflow:result.overflow,natural:false});
+  }
+  function weaponHit(event,strike,dealt){
+    var e=event.source,target=event.target,view=event.view,s=e.cloneStats,bonus={};
+    if(!(dealt>0))return bonus;
+    function extra(type,amount,tags){var n=damage(e,target,amount,type,{tags:['proc','shadow-clone'].concat(tags||[]),actionId:event.actionId});if(n>0)bonus[type]=(bonus[type]||0)+n;}
+    var el=view.weapon&&view.weapon.enchant,v=el&&enchantValues('weapon',el,view),raw=strike.base;
+    if(el==='fire'){extra('fire',Math.round(raw*v.extraDamage),['enchant']);if(rng()<v.burnChance)status(e,target,'burn',v.burnDuration,s.burn);}
     if(el==='water'&&rng()<v.chillChance)gameEffects.addChill(target,effectOptions(e));
     if(el==='earth'&&rng()<v.rootChance)status(e,target,'root',v.rootDuration);
-    if(el==='air'&&rng()<v.repeatChance)damage(e,target,dealt,'dark');
-    if(el==='shadow'){if(target.st.corrupt)extra+=v.corruptDamage||0;if(rng()<v.procChance){extra+=Math.round(dealt*v.extraDamage);status(e,target,'corrupt',v.corruptDuration);}}
-    if(extra>0)dealDirectDamage(target,extra,el==='fire'?'fire':'dark',e,{tags:['proc','enchant','shadow-clone']});
+    if(el==='shadow'){
+      var dark=target.st.corrupt?v.corruptDamage||0:0;
+      if(rng()<v.procChance){dark+=Math.round(raw*v.extraDamage);status(e,target,'corrupt',v.corruptDuration);}
+      if(dark>0){extra('dark',dark,['enchant']);if((s.aff.shadow||0)>=6&&target.hp>0)addHollow(target,1);}
+    }
+    if(el==='light'&&v.healPerHit>0)heal(e,v.healPerHit);
+    if(el==='air'&&!event.label&&target.hp>0&&rng()<v.repeatChance)event.pendingExtra=target;
+    if(s.aff.fire)extra('fire',s.aff.fire,['fire-affinity']);
+    if(e.buffs.moltenring>0)extra('fire',5,['molten-ring']);
+    var orb=s.orb;if(strike.crit&&orb){v=orb.values;
+      if(orb.element==='water')e.iceArmor=Math.min(e.iceArmorMax,(e.iceArmor||0)+v.iceArmor);
+      if(orb.element==='air'&&target.hp>0)status(e,target,'stun',v.stunDuration);
+      if(orb.element==='light')e.mp=Math.min(e.maxmp,e.mp+v.mana);
+      if(orb.element==='fire'&&target.hp>0)status(e,target,'burn',v.burnDuration,s.burn);
+    }
+    if(target.hp<=0&&s.tomeHeal)heal(e,Math.max(1,Math.round(e.maxhp*s.tomeHeal)));
+    return bonus;
   }
-  function cast(e,target){
-    refreshStats(e);var s=e.cloneStats,A=ABILITIES.shadowbolt,line=projectileLine(e,target,{range:s.range});if(!line)return;
-    var point=line.to;setClip(e,'cast');e.facingLeft=point.x<e.x;boltFx(line.from.x,line.from.y,point.x,point.y,'dark');
-    var chance=hitChance(e.acc+10,evaOf(target));if(gameEffects.has(e,'blind'))chance*=.6;
-    if(rng()>=chance){floatText(point.x,point.y,'miss','miss');return;}
-    return gameActions.run('spell',e,target,{ability:A,tags:['shadow-clone']},function(event){
-      var numb=!!(target.st.chill&&(s.aff.water||0)>=3&&(s.aff.shadow||0)>=2),unaware=offGuard(target)||numb||target.st.stun||target.st.frozen;
-      var crit=rng()<((target.sapped?1:e.crit+(s.holyCrit!==undefined?(buffed(e)?s.holyCrit:0):s.critBonus))+(effectHasTag(target,'root')?s.rootCrit:0)+(unaware?.05*(s.aff.shadow||0):0));
-      var power=s.spellPowerBase!==undefined?s.spellPowerBase*(e.buffs.rally>0?1.1:1):s.spellPower;
-      var raw=Math.round(sDMG(roll(A.base[0],A.base[1]))*power)+(s.aff.fire||0);
-      raw=FoteActions.spellDamage(raw,{bolt:true,numbing:numb,crit:crit,criticalMultiplier:s.criticalMultiplier});
-      if((s.aff.fire||0)>=3&&target.st.burn)raw*=1+.05*s.aff.fire;
-      if(buffed(e)&&s.holyFire)raw*=1+s.holyFire;
-      event.hit={att:e,def:target,crit:crit,spell:true,surprise:!!unaware,view:e,actionId:event.actionId};
-      var dealt=damage(e,target,raw,'dark',{hit:event.hit,ability:A,actionId:event.actionId});event.damage=dealt;event.landed=dealt>0;
-      target.lastHitBy=e;floatText(point.x,point.y,String(dealt),'dark',crit);
-      if(target.hp>0){status(e,target,'fear',A.status.fear);if((s.aff.shadow||0)>=6&&dealt>0)addHollow(target,1);}
-      var orb=s.orb;if(crit&&orb){var v=orb.values;
-        if(orb.element==='water')e.iceArmor=Math.min(e.iceArmorMax,(e.iceArmor||0)+v.iceArmor);
-        if(orb.element==='air'&&target.hp>0)status(e,target,'stun',v.stunDuration);
-        if(orb.element==='light')e.mp=Math.min(e.maxmp,e.mp+v.mana);
-        if(orb.element==='fire'&&target.hp>0)status(e,target,'burn',v.burnDuration,s.burn);
-      }
-      weaponProc(e,target,dealt);
-      if(target.hp<=0){if(s.tomeHeal)e.hp=Math.min(e.maxhp,e.hp+Math.max(1,Math.round(e.maxhp*s.tomeHeal)));kill(target,e);}
-    });
+  function strike(e,target){
+    if(!target||target.hp<=0||dist(e,target)>1||!clearShot(e,target))return false;
+    e.cloneAction='attack';attack(e,target,1,undefined,{tags:['shadow-clone']});
+    if(e.hp>0&&target.hp>0&&dist(e,target)<=1&&e.off&&e.off.weapon&&!e.twoHanded)attack(e,target,.6,undefined,{weapon:e.off,offhand:true,tags:['shadow-clone','offhand']});
+    return true;
   }
   function act(e){
     if(!isClone(e))return false;
-    var target=ents.filter(function(o){return o.foe&&o.hp>0&&!actorConcealed(o)&&dist(e,o)<=e.cloneStats.range&&clearShot(e,o);}).sort(function(a,b){return dist(e,a)-dist(e,b)||a.id-b.id;})[0];
-    if(target)cast(e,target);else if(dist(e,player)>2&&canActorMove(e))allyFollowStep(e);
+    e.cloneAction='move';
+    // Join a visible fight, then finish that engagement without a player leash.
+    // Lost sight means pursuing a remembered tile, not tracking through walls.
+    var target=ents.find(function(o){return o.id===e.cloneTargetId&&o.foe&&o.hp>0;});
+    if(!target){
+      delete e.cloneTargetId;e.lastSeen=null;
+      target=ents.filter(function(o){return o.foe&&o.hp>0&&actorVisible(o)&&dist(e,o)<=8;}).sort(function(a,b){return dist(e,a)-dist(e,b)||a.id-b.id;})[0];
+      if(target){e.cloneTargetId=target.id;e.lastSeen={x:target.x,y:target.y};}
+    }
+    if(target){
+      var sees=!actorConcealed(target)&&!gameEffects.has(e,'blind')&&dist(e,target)<=8&&clearShot(e,target);
+      if(sees){e.lastSeen={x:target.x,y:target.y};if(strike(e,target))return true;}
+      if(e.lastSeen&&(sees||dist(e,e.lastSeen)>1)){
+        if(canActorMove(e))actorPathStep(e,e.lastSeen);
+        return true;
+      }
+      delete e.cloneTargetId;e.lastSeen=null;
+    }
+    if(dist(e,player)>2&&canActorMove(e))allyFollowStep(e);
     return true;
   }
   function block(e,source,raw){
@@ -170,11 +195,27 @@
     refreshStats(e);
   }
   function cost(e){var s=e.cloneStats;if(!s.timing)return Math.max(1,Math.round(s.castCost/(1-(e.st.chill?chillSlow(e):0))/(e.st.slow?(e.st.slow.mult||SYLLA.slowMult):1)));
-    refreshStats(e);return FoteCosts.action(Object.assign({},s.timing,{speed:e.speed,storm:e.cloneStormTurns>0,holyAir:s.holyAir&&buffed(e),holyReduction:s.holyReduction,chill:e.st.chill?chillSlow(e):0,slow:e.st.slow?(e.st.slow.mult||SYLLA.slowMult):0}));}
+    refreshStats(e);return FoteCosts.action(Object.assign({},s.timing,{speed:e.speed,casting:false,attacking:e.cloneAction==='attack',unarmed:!!(e.weapon&&e.weapon.unarmed),dagger:!!(e.weapon&&/Dagger/.test(e.weapon.name||'')),rampage:e.buffs.rampage>0,storm:e.cloneStormTurns>0,holyAir:s.holyAir&&buffed(e),holyReduction:s.holyReduction,chill:e.st.chill?chillSlow(e):0,slow:e.st.slow?(e.st.slow.mult||SYLLA.slowMult):0}));}
   function resistance(e,type){
     var s=e.cloneStats,c=s.resistanceContexts&&s.resistanceContexts[type];if(!c)return s.resist[type]===undefined?1:s.resist[type];
     return FoteActions.resistance(type,Object.assign({},c,{wet:!!isWet(e),chilled:!!e.st.chill,sanctuary:inSanctuary(e),divine:holyGroundStrength(e),
       poisonward:e.buffs.poisonward>0,shadeward:e.buffs.shadeward>0,stormward:e.buffs.stormward>0,fireward:e.buffs.fireward>0,starward:e.buffs.starward>0}));
+  }
+  function arrivalSpot(e){
+    // Search outward through legal movement cells. A random tile in a square
+    // can put the clone across a wall, ahead of the player's exploration.
+    var queue=[{x:player.x,y:player.y,steps:0}],visited=new Set([idxOf(player.x,player.y)]);
+    for(var head=0;head<queue.length;head++){
+      var p=queue[head],probe=Object.assign({},e,{x:p.x,y:p.y});
+      if(p.steps>0&&!occupied(p.x,p.y)&&!feats.some(function(f){return f.x===p.x&&f.y===p.y;}))return p;
+      if(p.steps>=4)continue;
+      FoteActors.neighbors.forEach(function(d){
+        var x=p.x+d[0],y=p.y+d[1],index=idxOf(x,y);
+        if(visited.has(index)||!actorCellAllowed(probe,x,y,d[0],d[1],{terrainOnly:true,avoidFire:true}))return;
+        visited.add(index);queue.push({x:x,y:y,steps:p.steps+1});
+      });
+    }
+    return null;
   }
   function arrive(){
     if(!RUN)return;
@@ -182,11 +223,12 @@
     if(!isClone(e)){e=ents.find(isClone);if(e)RUN.shadowClone=e;else return;}
     if(e.hp<=0){delete RUN.shadowClone;return;}
     if(ents.includes(e))return;
-    var spot=nearFree(player.x,player.y,4);if(!spot)return;
+    delete e.cloneTargetId;e.lastSeen=null;
+    var spot=arrivalSpot(e);if(!spot)return;
     e.x=spot.x;e.y=spot.y;e.t=player.t+Math.max(1,cost(e));e.clonePulseAt=worldNow();e._lx=e._ly=undefined;delete e._clip;ents.push(e);
   }
   MONSTERS.shadowclone={name:'Shadow Clone',hp:1,dmg:[0,0],acc:0,eva:0,speed:100,armor:0,xp:0,band:[99,99],w:0,ch:'@',col:'#7962AA',living:true};
   DROPS.shadowclone={chance:0,table:{}};
-  ABILITIES.umbral.desc='Teleport to an explored tile with no adjacent enemies; hide for 2 turns. Leave a shadow that casts Shadow Bolt and follows between floors. Lasts until destroyed or recast.';
-  root.FoteShadowClone=Object.freeze({isClone:isClone,snapshot:snapshot,create:create,act:act,cast:cast,defend:defend,block:block,pulse:pulse,cost:cost,resistance:resistance,arrive:arrive});
+  ABILITIES.umbral.desc='Teleport to an explored tile with no adjacent enemies; hide for 2 turns. Leave a melee shadow with your weapons and combat stats. It follows between floors until destroyed or recast.';
+  root.FoteShadowClone=Object.freeze({isClone:isClone,snapshot:snapshot,create:create,act:act,strike:strike,attackView:attackView,weaponHit:weaponHit,buffed:buffed,defend:defend,block:block,pulse:pulse,cost:cost,resistance:resistance,arrive:arrive});
 })(globalThis);

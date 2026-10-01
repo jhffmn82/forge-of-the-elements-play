@@ -8,11 +8,45 @@
 var UPSTAIRS = 19;
 var FLOOR_KEYS = FoteTransitions.floorKeys;
 
+// Portals are placed after traps, so clear every trap on a travel tile.
+// Pits and teleport runes also cannot displace the player from a narrow
+// approach. Follow those passages into the room, including their mouth.
+// Derive this from terrain so old saves and later-carved arrival stairs agree.
+function repairStairApproachTraps(){
+  if(!feats.length)return false;
+  var travelTiles=new Set(),protectedTiles=new Set(),directions=[[1,0],[-1,0],[0,1],[0,-1]];
+  function open(x,y){
+    if(!inb(x,y))return false;
+    var t=at(x,y),p=propAt(x,y);
+    return !(p&&p.b)&&(walkable(x,y)||isDoorish(t)||t===STAIRS||t===UPSTAIRS||t===EXIT||t===PORTAL);
+  }
+  function neighbors(x,y){return directions.map(function(d){return{x:x+d[0],y:y+d[1]};}).filter(function(p){return open(p.x,p.y);});}
+  for(var i=0;i<map.length;i++){
+    if(map[i]!==STAIRS&&map[i]!==UPSTAIRS&&map[i]!==EXIT&&map[i]!==PORTAL)continue;
+    travelTiles.add(i);protectedTiles.add(i);
+    var pending=neighbors(i%MW,Math.floor(i/MW)),visited=new Set([i]);
+    while(pending.length){
+      var cell=pending.pop(),index=idxOf(cell.x,cell.y);
+      if(visited.has(index))continue;
+      visited.add(index);protectedTiles.add(index);
+      var next=neighbors(cell.x,cell.y);
+      if(next.length<=2)Array.prototype.push.apply(pending,next);
+    }
+  }
+  var before=feats.length;
+  feats=feats.filter(function(f){
+    var index=idxOf(f.x,f.y);
+    return !travelTiles.has(index)&&(!(f.kind==='teleport'||f.kind==='pit')||!protectedTiles.has(index));
+  });
+  return feats.length!==before;
+}
+
 /* the tile behaves like stairs everywhere else in the code */
 
 
 function presentRestoredFloor(at){
   if(typeof repairWallMemorials==='function')repairWallMemorials();
+  repairStairApproachTraps();
   if(floorMeta && floorMeta.shrineGod) RUN.shrineGod=floorMeta.shrineGod;
   if(typeof repairCoreProgress==='function')repairCoreProgress();
   if(typeof refreshCavernResidents==='function')refreshCavernResidents();
@@ -40,6 +74,7 @@ function placeArrivalStairs(){
   }
   if(hall){player.x=hall.x;player.y=hall.y;player._lx=undefined;if(typeof SURF_CACHE!=='undefined')SURF_CACHE.key=null;}
   setT(player.x,player.y,UPSTAIRS);floorMeta.upAt={x:player.x,y:player.y};
+  repairStairApproachTraps();
   computeFOV();items=items.filter(function(it){return !(it.x===player.x&&it.y===player.y);});draw();
 }
 function findTileIn(stash, t){ var m=stash.map,w=FoteState.dimensions(stash).width; for(var i=0;i<m.length;i++) if(m[i]===t) return {x:i%w, y:(i/w)|0}; return null; }

@@ -6,10 +6,11 @@ function actionInfusion(kind,view){
   return o&&(o.icon||'').replace(/^item-/,'')===kind?o.enchant||null:null;
 }
 function actionDivine(view){return FoteStats.powers(view,statContent()).divine;}
-function actionCritBonus(view){return actionInfusion('holy',view)==='shadow'&&isBuffed()?enchantValues('holy','shadow').critChance:0;}
-function actionRootCrit(target,view){return actionInfusion('orb',view)==='earth'&&effectHasTag(target,'root')?enchantValues('orb','earth').critChance:0;}
-function actionCritMultiplier(view){return FoteActions.criticalMultiplier(view.stats.agi,actionInfusion('orb',view)==='shadow'?enchantValues('orb','shadow').critMultiplier:0);}
+function actionCritBonus(view){return actionInfusion('holy',view)==='shadow'&&(view&&view.shadowClone?FoteShadowClone.buffed(view):isBuffed())?enchantValues('holy','shadow',view).critChance:0;}
+function actionRootCrit(target,view){return actionInfusion('orb',view)==='earth'&&effectHasTag(target,'root')?enchantValues('orb','earth',view).critChance:0;}
+function actionCritMultiplier(view){return FoteActions.criticalMultiplier(view.stats.agi,actionInfusion('orb',view)==='shadow'?enchantValues('orb','shadow',view).critMultiplier:0);}
 function attackView(att,def,options){
+  if(att.shadowClone&&typeof FoteShadowClone!=='undefined')return FoteShadowClone.attackView(att,options);
   if(att!==player)return att;
   var selected=options.weapon;
   if(!selected&&isRangedWeapon(player.ranged)&&dist(player,def)>1&&!player._reaching)selected=player.ranged;
@@ -133,9 +134,9 @@ function applyPlayerHitBonuses(event){
   var def=event.target,result={damage:{},note:''};
   function record(type,n){if(n>0)result.damage[type]=(result.damage[type]||0)+n;return n;}
   if(!(event.primaryDamage>0)||!def.foe||def.ally)return result;
-  if(player.aff.fire&&def.hp>0)
+  if(player.aff.fire)
     record('fire',dealDirectDamage(def,Math.round(player.aff.fire*resistMult(def,'fire')),'fire',player,{tags:['proc','fire-affinity'],actionId:event.actionId,resistanceApplied:true}));
-  if(player.aff.light&&def.hp>0&&rng()<.10*player.aff.light+smiteBonus()){
+  if(player.aff.light&&rng()<.10*player.aff.light+smiteBonus()){
     var sm=applyDamage(def,smiteDamage(),'light',player,{attackRolled:true,actionId:event.actionId,tags:['proc','smite']});
     sm+=onSmiteProc(def,event.actionId)||0;record('light',sm);
     if(aff('light')>=6&&inb(def.x,def.y))markHolyGround(def.x,def.y,spellPower());
@@ -143,7 +144,7 @@ function applyPlayerHitBonuses(event){
     sparkleFx(def.x,def.y,'light',10);
   }
   if(player.aff.shadow&&def.hp>0)addHollow(def,0);
-  if(player.buffs&&player.buffs.moltenring>0&&def.hp>0){
+  if(player.buffs&&player.buffs.moltenring>0){
     record('fire',applyDamage(def,5,'fire',player,{attackRolled:true,actionId:event.actionId,tags:['proc','molten-ring']}));
   }
   return result;
@@ -163,19 +164,20 @@ function rollWeaponHit(event){
   if(def===player && dist(att,def)>1 && deflectProjectile())return;
   if(att!==player && def.x!==att.x) att.facingLeft=def.x<att.x;   /* a creature turns to what it swings at */
   var ranged = (att.base && att.base.range>1 && dist(att,def)>1) || (att===player && ((view.weapon&&view.weapon.range)||1)>1 && dist(att,def)>1);
-  var ch=hitChance(att===player?view.acc:accOf(att), evaOf(def) * (att===player && hasP('keenAim') ? 0.75 : 1));
+  var equipped=att===player||att.shadowClone,perks=equipped?view.passives||{}:{};
+  var ch=hitChance(equipped?view.acc:accOf(att), evaOf(def) * (equipped && (att===player?hasP('keenAim'):perks.keenAim) ? 0.75 : 1));
   if(att===player){player.lastAttack=true;player.lastAttackMelee=!((view.weapon&&view.weapon.range||1)>1 && !player._reaching);}
   if(att===player && ((view.weapon&&view.weapon.range)||1)>1 && dist(att,def)<=1) ch *= 0.7;
   if(att.st && att.st.blind) ch *= 0.6;
   if(def===player && typeof luckBonus==='function') ch -= luckBonus();   /* Lady Luck's Blessing: blows slide off */
   /* 2026-09-20: Justin - "surprise attacks shouldn't miss". Striking something that has not noticed you always
      lands. Immobilization instead uses the shared effective evasion rule. */
-  if(att===player && def!==player && (typeof offGuard==='function' && offGuard(def) || (player.hidden>0||event.numbing) || def.surprised)) ch = 1;
+  if(equipped && def!==player && (typeof offGuard==='function' && offGuard(def) || (att.hidden>0||event.numbing) || def.surprised)) ch = 1;
   if(att===player && event.options.sureHit) ch = 1;
   var who = att===player ? 'You' : att.name;
   var foe = def===player ? 'you' : def.name;
   var tAt = fxClock;
-  if(att===player) setClip(player, ranged ? 'ranged' : 'melee');
+  if(equipped) setClip(att, ranged ? 'ranged' : 'melee');
   else setClip(att, 'attack');
   var tSwing = Math.max(performance.now(), fxClock);   /* the release or swing frame, after the clip's windup */
   if(ranged){ boltFx(att.x,att.y,def.x,def.y,'phys',{arrow:true,silentHit:true}); sfx('bow-shot',{at:tSwing,from:att}); }
@@ -202,42 +204,46 @@ function rollWeaponHit(event){
 function rollWeaponDamage(event,strike){
   var att=event.source,def=event.target,mult=event.multiplier,label=event.label,view=event.view;
   var ranged=strike.ranged,ch=strike.ch,blocked=strike.blocked;
-  var dr = att===player ? view.dmg : (att.dmg || att.base.dmg);
+  var equipped=att===player||att.shadowClone;
+  var dr = equipped ? view.dmg : (att.dmg || att.base.dmg);
   var base = roll(dr[0], dr[1]) * mult;
   var surprise=false, crit=false;
-  if(att===player){
+  if(equipped){
+    var actor=att===player?player:view,rank=att===player?godRank():FoteStats.rankOf(view,statContent());
+    var perk=function(k){return att===player?hasP(k):!!(view.passives&&view.passives[k]);};
+    var active=function(k){return att===player?buff(k):!!(view.buffs&&view.buffs[k]>0);};
     var melee = !ranged;
     /* two pools: gear bonuses add together, stat + ability bonuses add together, then the pools multiply */
     /* 2026-09-17: Might is 4% per point above 10, mirroring Focus's 4% spell damage. It covers every weapon
        attack, bows included - drawing a heavy bow is strength, not nimbleness. Spells stay with Focus. */
-    var gearPool = 0, statPool = 0.04*(player.stats.mig-10);
-    if(view.weapon.executioner && def.hp <= def.maxhp/2) gearPool += gearPassiveValue(view.weapon.executioner);
-    if(melee && hasP('heavyHands')) statPool += 0.10;
-    if(melee && hasP('unstoppable')) statPool += 0.20;
-    if(melee && buff('rampage')) statPool += (.20+.04*godRank())*actionDivine(view);   /* 2026-09-29 (Justin): 20% +4% per rank (was 40%) */
-    if(hasP('crushing') && def.hp < def.maxhp/2) statPool += 0.25;
-    if(def.challenged && hasGod('reginald')) statPool += 0.25*actionDivine(view);
-    if(hasGod('reginald') && godRank()>=5) statPool += 0.10*Math.min(3, Math.max(0, adjacentFoes()-1));   /* Wall of One */
-    if(buff('rally')) statPool += 0.10;
-    if(hasGod('glimmer') && (def.base.undead||def.base.shadowy)) statPool += 0.10*godRank();
-    if(hasGod('reginald') && (def.elite||def.base.elite||def.base.boss)) statPool += 0.10*godRank();
+    var gearPool = 0, statPool = 0.04*(actor.stats.mig-10);
+    if(view.weapon.executioner && def.hp <= def.maxhp/2) gearPool += gearPassiveValue(view.weapon.executioner,view);
+    if(melee && perk('heavyHands')) statPool += 0.10;
+    if(melee && perk('unstoppable')) statPool += 0.20;
+    if(melee && active('rampage')) statPool += (.20+.04*rank)*actionDivine(view);   /* 2026-09-29 (Justin): 20% +4% per rank (was 40%) */
+    if(perk('crushing') && def.hp < def.maxhp/2) statPool += 0.25;
+    if(def.challenged && actor.god==='reginald') statPool += 0.25*actionDivine(view);
+    if(actor.god==='reginald' && rank>=5) statPool += 0.10*Math.min(3, Math.max(0, (att===player?adjacentFoes():ents.filter(function(o){return o.foe&&o.hp>0&&dist(att,o)<=1;}).length)-1));   /* Wall of One */
+    if(active('rally')) statPool += 0.10;
+    if(actor.god==='glimmer' && (def.base.undead||def.base.shadowy)) statPool += 0.10*rank;
+    if(actor.god==='reginald' && (def.elite||def.base.elite||def.base.boss)) statPool += 0.10*rank;
     base *= Math.max(0.1, 1+gearPool) * Math.max(0.1, 1+statPool);
     /* 2026-09-20: this read player.range, which rangedslot.js sets to the BOW's reach whenever one is
        slung - so merely carrying a bow cut every adjacent sword swing to 60% damage. Ask the weapon in
        hand, the same way the hit-chance line above was fixed on 2026-09-17. */
     if(((view.weapon && view.weapon.range)||1)>1 && dist(att,def)<=1) base *= 0.6;
-    var pummelHit=view.weapon.unarmed && player.pummel>0;
+    var pummelHit=att===player && view.weapon.unarmed && player.pummel>0;
     if(pummelHit){base*=1+actionDivine(view);player.pummel--;}
-    var unaware = offGuard(def) || def.st.stun || def.st.frozen || (player.hidden>0||event.numbing) || (typeof smokeAmbush==='function' && smokeAmbush(def)) || def.surprised;
-    var critCh = (def.sapped?1:view.crit+actionCritBonus(view)) + actionRootCrit(def,view) + (unaware && player.aff.shadow ? 0.05*player.aff.shadow : 0);
-    crit = combatRoll(critCh,true);
-    if(unaware){ surprise=true; base *= isScoundrel() ? 2.0 : 1.5; if(view.weapon.name.indexOf('Dagger')>=0) base*=1.2;
+    var unaware = offGuard(def) || def.st.stun || def.st.frozen || (att.hidden>0||event.numbing) || (att===player && typeof smokeAmbush==='function' && smokeAmbush(def)) || def.surprised;
+    var critCh = (def.sapped?1:view.crit+actionCritBonus(view)) + actionRootCrit(def,view) + (unaware && actor.aff.shadow ? 0.05*actor.aff.shadow : 0);
+    crit = att===player?combatRoll(critCh,true):rng()<critCh;
+    if(unaware){ surprise=true; base *= (att===player?isScoundrel():actor.cls==='scoundrel') ? 2.0 : 1.5; if(view.weapon.name.indexOf('Dagger')>=0) base*=1.2;
       /* 2026-09-22 (Justin): no piety for surprise attacks at all - his followers simply cannot sneak (stealthScore), and
          his only foul is Shadow (gods.js, forge.js). */ }
   } else {
     crit = !(def===player && hasP('bulwark')||def.shadowClone&&def.cloneStats.passives.bulwark) && rng() < 0.05;
   }
-  if(crit){base *= att===player?actionCritMultiplier(view):1.6;}
+  if(crit){base *= equipped?actionCritMultiplier(view):1.6;}
   if(att===player&&pummelHit&&def.hp>0)applyStatus(def,'stun',1);
   if(blocked){ if(typeof onShieldBlock==='function') onShieldBlock(att, def, base); base *= 0.25; }
   /* Fortitude resolves after mitigation in applyDamage. */
@@ -255,7 +261,7 @@ function resolveWeaponDamage(event,strike){
   sfx(hitSfx(att,def,crit,blocked), {at:def._hit, from:def});
   if(att===player){
     var ench = view.weapon.enchant;
-    if(ench){
+    if(ench&&phys>0){
       /* The same authored enchant magnitudes drive weapon and spell procs. */
       var values=enchantValues('weapon',ench);
       var roll1 = function(c){ return (typeof pRoll==='function' ? pRoll(c) : rng()<c); };
@@ -281,6 +287,10 @@ function resolveWeaponDamage(event,strike){
       extra+=addBonus(type,dealDirectDamage(def,Math.round(rawExtra[type]*resistMult(def,type)),type,player,{tags:['proc','enchant'],actionId:event.actionId,resistanceApplied:true}));
     });
 
+  }
+  if(att.shadowClone&&typeof FoteShadowClone!=='undefined'){
+    var cloneBonuses=FoteShadowClone.weaponHit(event,strike,phys);
+    Object.keys(cloneBonuses).forEach(function(type){applied+=addBonus(type,cloneBonuses[type]);el=el||type;});
   }
   if(att!==player && att.base && att.base.el && def.hp>0){
     el = att.base.el;
@@ -327,5 +337,6 @@ function presentWeaponDamage(event,strike,damage){
     if(other)attack(player,other,.5,'Cleave',{weapon:view.weapon,offhand:!!event.options.offhand,tags:['proc']});
   }
   if(att===player && event.pendingExtra && event.pendingExtra===def && def.hp>0){ event.pendingExtra=null; attack(player,def,1,'Gust',{weapon:view.weapon,offhand:!!event.options.offhand,tags:['proc']}); }
+  if(att.shadowClone && event.pendingExtra===def && def.hp>0){event.pendingExtra=null;attack(att,def,1,'Gust',{weapon:view.weapon,offhand:!!event.options.offhand,tags:['proc','shadow-clone']});}
   event.pendingExtra=null;
 }

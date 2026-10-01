@@ -33,7 +33,8 @@ var floorGeneration=FoteGeneration.create({
     {name:'deep-portal-reachability',run:repairGeneratedDeepPortal},
     {name:'concealment-reset',run:resetGeneratedConcealment},
     {name:'wall-memorials',run:repairGeneratedMemorials},
-    {name:'biome-balance',run:balanceGeneratedEnemies}
+    {name:'biome-balance',run:balanceGeneratedEnemies},
+    {name:'stair-approach-traps',run:repairStairApproachTraps}
   ]
 });
 // Dimension changes never allocate floor arrays. Builders install a new map

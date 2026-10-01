@@ -1,6 +1,19 @@
 /* One damage pipeline. Content reactions are named stages, never replacement
  * functions. Callers can identify periodic or inherited damage explicitly. */
 function rejectDamage(event,reason){event.reason=reason;event.amount=0;return false;}
+/* Hit effects finish before kill() removes the actor. Use the existing action
+ * and damage contexts, including direct summon hits, to keep this permission
+ * local to the successful hit rather than allowing effects on dead actors. */
+function pendingHit(target,source){
+  if(!target||!target.foe||target.ally||ents.indexOf(target)<0||
+      typeof resolvingDeaths!=='undefined'&&resolvingDeaths.has(target))return false;
+  var damage=gameDamage.current();
+  if(damage&&damage.target===target&&damage.damage>0&&
+      (source===undefined||damage.source===source)&&
+      !['proc','periodic','arc','reflected','environment'].some(function(tag){return damage.tags.has(tag);}))return true;
+  var action=typeof gameActions!=='undefined'&&gameActions.current(),hit=action&&action.hit;
+  return !!(hit&&hit.def===target&&hit.landed&&(source===undefined||hit.att===source));
+}
 var damagedMultipartBodies=new WeakMap();
 function damageCreatureRules(event){
   var target=event.target,source=event.source,type=event.type,b=target.base;
@@ -81,6 +94,11 @@ function damageOutgoingRules(event){
   if(target===player){for(var el in IMMUNE_TYPE)if(IMMUNE_TYPE[el]===type&&aff(el)>=6){floatText(player.x,player.y,'immune','miss');return rejectDamage(event,'element-immunity');}}
   if(target!==player){
     if(target.foe&&!event.tags.has('proc')&&typeof murkSummonDamage==='function')event.amount*=murkSummonDamage(source);
+    if(source&&source.shadowClone&&source.cloneStats){
+      var copied=source.cloneStats;
+      if(copied.holyFire&&FoteShadowClone.buffed(source))event.amount*=1+copied.holyFire;
+      if((copied.aff.fire||0)>=3&&target.st&&target.st.burn)event.amount*=1+.05*copied.aff.fire;
+    }
     if((source===player||source==='player')&&aff('fire')>=3&&target.st&&target.st.burn)event.amount*=1+.05*aff('fire');
     if(target.st&&target.st.hollow)event.amount*=1+.05*target.st.hollow.n;
   }
@@ -97,7 +115,7 @@ function damageDefenses(event){
   var barrier=isPlayer&&hasP('magicBarrier')&&!event.tags.has('area')&&foe&&dist(source,player)>1?5:0;
   if(type==='phys'){
     var hitWeapon=event.hit&&event.hit.view?event.hit.view.weapon:player.weapon;
-    var pierce=(source===player?gearPassiveValue(hitWeapon&&hitWeapon.pierce):0)+(source&&source.base?source.base.pierce||0:0);
+    var pierce=(source===player||source&&source.shadowClone&&event.hit&&event.hit.view?gearPassiveValue(hitWeapon&&hitWeapon.pierce,event.hit&&event.hit.view):0)+(source&&source.base?source.base.pierce||0:0);
     d=FoteDamage.physical(d,{armor:armorOf(target),pierce:pierce,heavy:!!(source&&source.base&&source.base.heavy),earth:isPlayer?player.aff.earth||0:0,stone:isPlayer&&target.st.stone,frozen:target.st&&target.st.frozen});
     if(isPlayer)d*=resistMult(target,'phys');
     if(target.st&&target.st.frozen){gameEffects.remove(target,'frozen','shattered');if(!isPlayer)gameEffects.apply(target,'imm_frozen',3,undefined,{durationModifiers:false,ignoreImmunity:true});floatText(target.x,target.y,'shatter','ice');}
@@ -129,6 +147,7 @@ function damageDefenses(event){
 function commitDamage(event){
   var target=event.target,d=event.damage,hpBefore=target.hp;
   target.hp-=d;
+  if(event.hit&&d>0)event.hit.landed=true;
   if(typeof FoteEnemyPerception!=='undefined')FoteEnemyPerception.damaged(event);
   else if(d>0&&target!==player&&target.foe&&!target.ally&&target.hp>0&&['asleep','wander','hunt'].indexOf(target.state)>=0){
     target.state='hunt';target.caughtOff=-1;
@@ -190,6 +209,7 @@ function admitDamage(event){
   // the damage service has already rejected dead targets and invalid amounts.
   var ratio=target.base&&target.base.damageAbsorption&&target.base.damageAbsorption[event.type];
   if(Number.isFinite(ratio)&&ratio>0){
+    if(target.hp<=0)return rejectDamage(event,'element-absorption');
     var amount=event.amount*ratio;if(gameEffects.has(target,'rot'))amount*=.5;
     var healed=FoteDamage.heal(target.hp,target.maxhp,amount);target.hp=healed.hp;
     if(healed.restored>0){
@@ -200,6 +220,7 @@ function admitDamage(event){
   return true;
 }
 var gameDamage=FoteDamage.create({
+  pendingHit:pendingHit,
   actionId:function(){var action=typeof gameActions!=='undefined'&&gameActions.current();return action?action.actionId:'world:'+turn;},
   admit:admitDamage,
   modify:function(event){if(damageCreatureRules(event)!==false)damageOutgoingRules(event);},

@@ -9,7 +9,7 @@ function hallowedEdge(values){
 }
 function applySpellWeaponEnchant(f,d,crit,A,context){
   var w=player.weapon,ench=w&&w.enchant;
-  if(!ench||!f||f.hp<=0||!(d>0))return;
+  if(!ench||!f||!(d>0))return;
   context=context||{};
   var singleTarget=context.singleTarget===undefined?!!(A&&A.kind==='bolt'&&!A.piercing):context.singleTarget;
   var k=itemKey(w);
@@ -25,7 +25,6 @@ function applySpellWeaponEnchant(f,d,crit,A,context){
   if(ench==='air'&&pRoll(values.repeatChance)){
     var type=FoteDamage.type(context.type||A&&A.type||'magic');
     applyDamage(f,raw,type,player,{tags:['proc','gust','enchant'],actionId:context.actionId});
-    if(f.hp<=0){kill(f,player);return;}
   }
   if(ench==='light')hallowedEdge(values);
   if(ench==='shadow'){
@@ -36,7 +35,6 @@ function applySpellWeaponEnchant(f,d,crit,A,context){
     var type=ench==='fire'?'fire':'dark';
     var dealt=dealDirectDamage(f,Math.round(extra*resistMult(f,type)),type,player,{tags:['proc','enchant'],actionId:context.actionId,resistanceApplied:true});
     if(dealt>0&&type==='dark'&&aff('shadow')>=6)addHollow(f,1);
-    if(f.hp<=0)kill(f,player);
   }
   if(note&&f.hp>0)log(f.name+': '+note+'.','c-good');
 }

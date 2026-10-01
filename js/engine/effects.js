@@ -58,7 +58,7 @@
     function hasTag(e,tag){return Object.keys(e&&e.st||{}).some(function(key){return has(e,key)&&tags(key,e.st[key]).indexOf(tag)>=0;});}
     function airborne(e){return !!(e&&(e.base&&e.base.flying||player(e)&&(e.levitate>0||e.windCarry)));}
     function blocked(e,key,options){
-      if(!alive(e))return 'dead';
+      if(!alive(e)&&!(hooks.pendingHit&&hooks.pendingHit(e)))return 'dead';
       if(options&&options.ignoreImmunity)return null;
       if(key==='knockback'&&boss(e))return 'boss';
       var d=definition(key),t=d.tags;

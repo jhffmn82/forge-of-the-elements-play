@@ -1,6 +1,7 @@
 /* The single connection between status rules and the existing game world.
  * All hooks are evaluated when an action runs, never while the game loads. */
 var gameEffects=FoteEffects.create({
+  pendingHit:function(e){return pendingHit(e);},
   getPlayer:function(){return player;},
   now:function(){return typeof worldNow==='function'?worldNow():player.t;},
   hasPerk:function(id){return hasP(id);},

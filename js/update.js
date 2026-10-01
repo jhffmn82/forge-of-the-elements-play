@@ -1,7 +1,16 @@
 /* Release history and title-screen freshness checks. Saves are never cleared. */
-var FOTE_VERSION = 'Beta 1.4.1';
+var FOTE_VERSION = 'Beta 1.4.2';
 /* Keep newest first; describe only changes already present in this build. */
 var FOTE_PATCHES = [
+  {version:'Beta 1.4.2', notes:[
+    "The treasure room before Chaos now has a forge, including rooms in existing saves.",
+    "Murk's Grave Strength grants summons +5% HP, movement speed, attack speed and damage per rank. Divine Power no longer multiplies this bonus.",
+    "Shadow clones now fight in melee with copied weapons and combat stats. They finish fights they have joined, then return to you; they do not seek new fights outside your sight.",
+    "Clones arriving on a new floor stay on reachable ground near you, avoiding traps and flames.",
+    "On-hit effects, including Life Drain and weapon enchantments, now resolve on killing blows.",
+    "Removed traps covering stairs and portals, and displacement traps blocking narrow approaches. Existing saves are repaired on load.",
+    "Ability descriptions show current damage, healing, range and duration instead of scaling formulas. The Faith tab uses the same descriptions as the hotbar and character sheet."
+  ]},
   {version:'Beta 1.4.1', notes:[
     "Fixed auto-explore wasting turns chasing unseen tiles behind sealed wall corners.",
     "After exploration finishes, Explore becomes Next floor. Press it to travel safely to known stairs down and descend.",

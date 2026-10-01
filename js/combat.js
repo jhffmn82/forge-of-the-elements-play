@@ -3,8 +3,8 @@ function enchantContext(actor){
   return {anvilRank:actor&&actor.god==='anvil'?rank:0,vellumRank:actor&&actor.god==='vellum'?rank:0};
 }
 function enchantValues(slot,el,actor){actor=actor||player;return FoteEnchantments.values(slot,el,actor&&actor.aff&&actor.aff[el]||0,enchantContext(actor));}
-function gearPassiveBonus(){return FoteEnchantments.gearBonus(enchantContext().vellumRank);}
-function gearPassiveValue(value){return FoteEnchantments.amplifyBonus(value,gearPassiveBonus());}
+function gearPassiveBonus(actor){return FoteEnchantments.gearBonus(enchantContext(actor).vellumRank);}
+function gearPassiveValue(value,actor){return FoteEnchantments.amplifyBonus(value,gearPassiveBonus(actor));}
 function enchantGodBonus(){return FoteEnchantments.godBonus(enchantContext());}
 function orbRootCrit(target){return infusion('orb')==='earth'&&target&&effectHasTag(target,'root')?enchantValues('orb','earth').critChance:0;}
 function criticalMultiplier(){return FoteActions.criticalMultiplier(player.stats.agi,infusion('orb')==='shadow'?enchantValues('orb','shadow').critMultiplier:0);}
@@ -447,7 +447,7 @@ function basicAllyBehavior(e){
     e.castCd=(e.castCd||0)-1;
     if(e.castCd<=0 && clearShot(e,target)){   /* nor does your Lich bolt through you or another creature */
       e.castCd=2; setClip(e,'attack');
-      if(typeof boltFx==='function') boltFx(e.x, e.y, target.x, target.y, 'shadow');
+      if(typeof boltFx==='function') boltFx(e.x, e.y, target.x, target.y, 'dark');
       var ld=applyDamage(target, roll(e.dmg[0], e.dmg[1]), 'dark', e);
       floatText(target.x, target.y, String(ld), 'dark');
       log('Your '+e.name+' hurls a shadow bolt for <b>'+ld+'</b> shadow damage.','c-good');

@@ -168,7 +168,7 @@ var GODS = {
     ],
     "boons": [
       "Life Drain: your direct hits have a 10% chance per rank to deal 2 shadow damage per rank, scaled by Divine Power. Heal yourself for the damage dealt.",
-      "Grave Strength: summons gain Life Drain and +5% HP, movement speed, attack speed and damage per rank, scaled by Divine Power. Their Life Drain heals them.",
+      "Grave Strength: summons gain Life Drain and +5% HP, movement speed, attack speed and damage per rank. Their Life Drain heals them.",
       "Lich: your servant becomes a Lich and revives once, after 1 turn, at half HP. Gain +2% Divine Power per Vitality above 10."
     ],
     "gain": "Kills of the living, extra for kills by your undead."
@@ -303,7 +303,7 @@ var ABILITIES = {
     "perAffinity": 1,
     "icon": "ic-magic-missile",
     "el": "magic",
-    "desc": "Always hits and ignores resistance. +1 magic damage per affinity point."
+    "desc": "Deal magic damage. Always hits and ignores resistance."
   },
   "sap": {
     "name": "Sap",
@@ -369,7 +369,7 @@ var ABILITIES = {
     ],
     "icon": "ic-spark",
     "el": "air",
-    "desc": "Deal lightning damage; 5% Stun chance per Air point. +50% damage to Wet targets or targets in water.",
+    "desc": "Deal lightning damage with a chance to Stun. +50% damage to Wet targets.",
     "stunChance": 0
   },
   "root": {
@@ -401,7 +401,7 @@ var ABILITIES = {
     ],
     "icon": "ic-smite",
     "el": "light",
-    "desc": "Deal light damage; 10% Blind chance per Light point. +50% damage to undead and shadow creatures.",
+    "desc": "Deal light damage with a chance to Blind. +50% damage to undead and shadow creatures.",
     "blindChance": 0
   },
   "shadowbolt": {
@@ -429,7 +429,7 @@ var ABILITIES = {
     "icon": "ic-iron-body",
     "divine": true,
     "god": "grom",
-    "desc": "+4 armor and a 30% chance for your unarmed hits to stun, for 12 turns. Grows with Divine Power. Takes no turn."
+    "desc": "Gain armor and a chance for unarmed hits to Stun for 12 turns. Instant."
   },
   "bellow": {
     "name": "Bellow",
@@ -439,7 +439,7 @@ var ABILITIES = {
     "divine": true,
     "god": "grumbok",
     "tech": true,
-    "desc": "Stun every enemy within 3 tiles for 1 turn and heal 10% of max HP, plus 2% per rank. Grows with Divine Power."
+    "desc": "Stun every enemy within 3 tiles for 1 turn and restore HP."
   },
   "heal": {
     "name": "Heal",
@@ -448,7 +448,7 @@ var ABILITIES = {
     "icon": "ic-heal",
     "divine": true,
     "god": "glimmer",
-    "desc": "Heal 10% of max HP, plus 2% per rank, up to 40% of max HP. Grows with Divine Power."
+    "desc": "Restore HP."
   },
   "raisedead": {
     "name": "Raise Dead",
@@ -468,7 +468,7 @@ var ABILITIES = {
     "icon": "ic-arcane-ward",
     "divine": true,
     "god": "vellum",
-    "desc": "Gain a shield and Communion for 8 turns: each action that deals damage earns 1 Favor per rank. Grows with Divine Power."
+    "desc": "Gain a shield and Communion for 8 turns. Damaging actions earn Favor."
   },
   "challenge": {
     "name": "Challenge",
@@ -488,7 +488,7 @@ var ABILITIES = {
     "icon": "ic-temper",
     "divine": true,
     "god": "anvil",
-    "desc": "+2 weapon damage and +4 armor for 12 turns. Grows with Divine Power. Takes no turn."
+    "desc": "Gain weapon damage and armor for 12 turns. Instant."
   },
   "rolldice": {
     "name": "Roll the Dice",
@@ -567,7 +567,7 @@ var ABILITIES = {
     "type": "light",
     "el": "light",
     "icon": "ic-radiant-lance",
-    "desc": "A beam 3 tiles wide along a row, column or diagonal: light damage (+50% to undead and shadow), 5% Blind per Light point."
+    "desc": "Deal light damage in a 3-tile-wide beam, with a chance to Blind. +50% damage to undead and shadow creatures."
   },
   "shadowswarm": {
     "name": "Shadow Swarm",
@@ -578,7 +578,7 @@ var ABILITIES = {
     "el": "shadow",
     "icon": "ic-shadow-swarm",
     "summon": {"hp": 10, "damage": 10, "duration": 5},
-    "desc": "Summon up to nine Shades in a 3x3 area for 5 turns. Each has 10 HP and hits for 10 shadow damage, all growing with spell power. A new swarm replaces the old one."
+    "desc": "Summon up to nine Shades in a 3x3 area. Replaces your previous swarm."
   },
   "livingflame": {
     "name": "Living Flame",
@@ -639,7 +639,7 @@ var ABILITIES = {
     "type": "dark",
     "el": "shadow",
     "icon": "ic-umbral-passage",
-    "desc": "Teleport to an explored tile with no adjacent enemies; hide for 2 turns. Leave a shadow that casts Shadow Bolt and follows between floors. Lasts until destroyed or recast."
+    "desc": "Teleport to an explored tile with no adjacent enemies; hide for 2 turns. Leave a melee shadow with your weapons and combat stats. It follows between floors until destroyed or recast."
   },
   "unholyaura": {
     "name": "Unholy Aura",
@@ -648,7 +648,7 @@ var ABILITIES = {
     "icon": "pr-unholyaura",
     "divine": true,
     "god": "murk",
-    "desc": "For 8 turns, deal 4 shadow damage per rank per turn to enemies within 2 tiles; heal 1 HP per enemy hit. Scales with Divine Power."
+    "desc": "For 8 turns, deal shadow damage each turn to enemies within 2 tiles. Heal for each enemy hit."
   },
   "intothedark": {
     "name": "Into the Dark",
@@ -657,7 +657,7 @@ var ABILITIES = {
     "icon": "ic-into-the-dark",
     "divine": true,
     "god": "sylla",
-    "desc": "Hide for 3 turns and break pursuit. Your next hit from hiding deals +10% damage per rank."
+    "desc": "Hide for 3 turns and break pursuit. Your next hit from hiding deals bonus damage."
   }
 };
 var ELEMENT_ABILS = {fire:{2:'firebolt'}, water:{2:'frostshard'}, air:{2:'spark'}, earth:{2:'root'}, light:{2:'smite'}, shadow:{2:'shadowbolt'}};
@@ -680,32 +680,32 @@ var PRAYERS = {
     "instant": true,
     "favor": 10,
     "rank": 2,
-    "desc": "+5 armor and a shield for 12 turns. Grows with Divine Power. Takes no turn."
+    "desc": "Gain armor and a shield for 12 turns. Instant."
   },
   "pummel": {
     "name": "Pummel",
     "instant": true,
     "favor": 25,
     "rank": 4,
-    "desc": "Your next 3 unarmed hits deal +100% damage and stun for 1 turn. Grows with Divine Power. Takes no turn."
+    "desc": "Your next 3 unarmed hits deal bonus damage and Stun for 1 turn. Instant."
   },
   "rampage": {
     "name": "Rampage",
     "favor": 10,
     "rank": 2,
-    "desc": "+20% melee damage and +10% melee attack speed, plus 4% and 2% per rank, for 10 turns. Grows with Divine Power. Takes no turn."
+    "desc": "Gain melee damage and attack speed for 10 turns. Instant."
   },
   "trollblood": {
     "name": "Trollblood",
     "favor": 25,
     "rank": 4,
-    "desc": "Heal 20% of max HP plus 5% per rank, and cleanse yourself. Grows with Divine Power."
+    "desc": "Restore HP and cleanse harmful statuses."
   },
   "consecrate": {
     "name": "Consecrate",
     "favor": 10,
     "rank": 2,
-    "desc": "Cleanse yourself and deal 8 light damage to every undead and shadow creature within 3 tiles. Grows with Divine Power. Takes no turn."
+    "desc": "Cleanse yourself and deal light damage to every undead and shadow creature within 3 tiles. Instant."
   },
   "sanctuary": {
     "name": "Holy Ground",
@@ -742,13 +742,13 @@ var PRAYERS = {
     "name": "The Brood",
     "favor": 20,
     "rank": 2,
-    "desc": "Summon up to 3 spiderlings for 30 turns. Their bites web or poison, and they grow with rank and Divine Power."
+    "desc": "Summon up to 3 spiderlings for 30 turns. Their bites web or poison."
   },
   "venom-burst": {
     "name": "Venom Burst",
     "favor": 25,
     "rank": 4,
-    "desc": "Poison damage to every enemy within 3 tiles, then Poison and Blind for 3 turns. Grows with rank and Divine Power."
+    "desc": "Deal poison damage to enemies within 3 tiles, then Poison and Blind for 3 turns."
   },
   "fieldsmelt": {
     "name": "Field Smelt",
@@ -772,13 +772,13 @@ var PRAYERS = {
     "name": "Bone Spear",
     "rank": 4,
     "health": 5,
-    "desc": "Shadow damage to every enemy in a line up to 6 tiles long, scaled by rank and Divine Power. Costs 5 HP; must leave at least 1 HP. No cooldown."
+    "desc": "Deal shadow damage to every enemy in a line up to 6 tiles long. Costs 5 HP; must leave at least 1 HP. No cooldown."
   },
   "arcanelance": {
     "name": "Arcane Lance",
     "rank": 2,
     "favor": 5,
-    "desc": "Magic damage to one enemy within 6 tiles. Grows with rank and Divine Power. Costs 5 Favor. No cooldown."
+    "desc": "Deal magic damage to one enemy within 6 tiles. Costs 5 Favor. No cooldown."
   },
   "luckystreak": {
     "name": "Lucky Streak",
@@ -790,7 +790,7 @@ var PRAYERS = {
     "name": "Arcane Nova",
     "rank": 4,
     "favor": 20,
-    "desc": "Magic damage to every enemy in a 3x3 area within 6 tiles. Grows with rank and Divine Power."
+    "desc": "Deal magic damage in a 3x3 area within 6 tiles."
   }
 };
 

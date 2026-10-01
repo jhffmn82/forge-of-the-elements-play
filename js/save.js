@@ -35,7 +35,7 @@ function saveApply(data){
     migrations:[function(){recoveredInterruptedDeath=repairInterruptedPlayerDeath();},restoreRunReferences,removeBossFloorForges,ensureRunEarnings,migrateXpCurve,repairCoreProgress,repairBossCore,repairWallMemorials,
       refreshCavernResidents,refreshEncounterTuning,repairSavedEffectClocks,
       saveMigrateSigils,sigilNamesRefresh,ensureRuneLooks,repairTouristShirts,migrateRangedSlot,hideRetiredSwapSlots,restorePuzzleState,
-      function(){if(typeof FoteChaosCampaign!=='undefined')FoteChaosCampaign.restore();if(typeof FoteUnmakerPreview!=='undefined')FoteUnmakerPreview.repairGates();if(typeof FoteUnmakerEncounter!=='undefined')FoteUnmakerEncounter.restore();}],
+      function(){if(typeof FoteChaosCampaign!=='undefined')FoteChaosCampaign.restore();if(typeof FoteUnmakerPreview!=='undefined')FoteUnmakerPreview.repairGates();if(typeof FoteUnmakerEncounter!=='undefined')FoteUnmakerEncounter.restore();},repairStairApproachTraps],
     recompute:function(){derive(player);}
   });
   gameTurns.cancel();PACING.pending=null;stopTravel();fxClock=0;

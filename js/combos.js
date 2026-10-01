@@ -70,9 +70,9 @@ function numbingDark(f){ return !!(f && f.st && f.st.chill && combo('water','sha
 /* Smite procs: Searing Light, Swift Judgment, Beacon Root */
 function onSmiteProc(def,actionId){
   var extra=0;
-  if(def.hp>0 && combo('light','fire')) applyStatus(def,'burn',3,burnDmg());
+  if(combo('light','fire')) applyStatus(def,'burn',3,burnDmg());
   if(def.hp>0 && combo('light','earth') && (def.base.range>1 || def.base.caster || def.base.spellcaster)) applyStatus(def,'root',1);   /* 2026-09-22 audit: spellcasters are ranged attackers too */
-  if(def.hp>0 && combo('light','air')){ extra=applyDamage(def,smiteDamage(),'light',player,{tags:['proc','smite'],actionId:actionId}); sparkleFx(def.x,def.y,'light',10); }
+  if(combo('light','air')){ extra=applyDamage(def,smiteDamage(),'light',player,{tags:['proc','smite'],actionId:actionId}); sparkleFx(def.x,def.y,'light',10); }
   return extra;
 }
 
