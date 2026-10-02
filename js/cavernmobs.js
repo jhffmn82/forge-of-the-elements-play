@@ -77,7 +77,7 @@ CAVE_ELEMENT_TIERS.forEach(function(r){CAVE_SWAP[r.old]=r.kind;});
 /* Keep wounded health proportional and make old saves and repeated visits safe. */
 function applyCavernEnemyTuning(e){
   if(!e||!e.foe||e.ally||!e.base||e.base.object||e.hp<=0||e.cavernHp15Adjusted||floorNo<11||floorNo>15||floorMeta.plane||floorMeta.chaosPreview)return;
-  var kinds=['stormbeetle','sparkjelly','shockeel','myconid','shroomling','wormtender','crystalcrawler','rootbound','caveslime','deepmaw'].concat(CAVE_ELEMENT_TIERS.map(function(r){return r.kind;}));
+  var kinds=['stormbeetle','sparkjelly','shockeel','myconid','sporecaller','shroomling','wormtender','crystalcrawler','rootbound','caveslime','deepmaw'].concat(CAVE_ELEMENT_TIERS.map(function(r){return r.kind;}));
   if(kinds.indexOf(e.kind)<0||!Number.isFinite(e.maxhp)||e.maxhp<=0)return;
   var fraction=e.hp/e.maxhp;e.maxhp=Math.max(1,Math.round(e.maxhp*1.15));e.hp=Math.max(1,Math.min(e.maxhp,Math.round(e.maxhp*fraction)));e.cavernHp15Adjusted=true;
 }
