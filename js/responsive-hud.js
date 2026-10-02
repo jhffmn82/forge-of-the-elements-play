@@ -73,7 +73,7 @@ var FoteResponsiveHUD=(function(){
     document.querySelectorAll('#studyNav [data-p],#studySheetTabs [data-p]').forEach(b=>{
       const on=b.dataset.p===openSheet;b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on));
     });
-    node('shade').classList.toggle('study-character-panel',['Char','Equip','Faith'].includes(openSheet));
+    node('shade').classList.toggle('study-character-panel',['Char','Equip','Faith','Help'].includes(openSheet));
     document.body.classList.toggle('study-sheet-open',!!openSheet);
     positionSheet();syncTouchControls();
   }
@@ -100,6 +100,25 @@ var FoteResponsiveHUD=(function(){
     const sheet=node('shade');
     sheet.style.setProperty('--sheet-x',x+'px');sheet.style.setProperty('--sheet-y',y+'px');
     sheet.style.setProperty('--sheet-w',Math.max(0,width)+'px');sheet.style.setProperty('--sheet-h',Math.max(0,height)+'px');
+    positionRecentLog();
+  }
+  function positionRecentLog(){
+    const recent=node('studyRecentLog');if(!recent)return;
+    recent.style.width='';recent.style.maxHeight='';
+    const style=getComputedStyle(recent),right=document.body.classList.contains('study-control-pad-left');
+    const inset=parseFloat(style.getPropertyValue('--minimal-inset'))||8;
+    const edge=parseFloat(right?style.right:style.left)||inset;
+    const pad=node('dpad').getBoundingClientRect();
+    let width=parseFloat(style.width)||Math.min(340,innerWidth-inset*2);
+    if(document.body.classList.contains('study-overlay-pad')){
+      const available=right?innerWidth-edge-pad.right-8:pad.left-edge-8;
+      width=Math.min(width,Math.max(80,available));recent.style.width=width+'px';
+    }
+    const left=right?innerWidth-edge-width:edge,hud=node('studyHud').getBoundingClientRect();
+    if(left<hud.right&&left+width>hud.left){
+      recent.style.maxHeight=Math.max(40,innerHeight-(parseFloat(style.bottom)||inset)-hud.bottom-10)+'px';
+    }
+    recent.scrollTop=recent.scrollHeight;
   }
   function hasOverlay(){return menuOpen||document.body.classList.contains('study-log-history');}
   function setMenu(on,restoreFocus){
@@ -153,8 +172,11 @@ var FoteResponsiveHUD=(function(){
     const w=innerWidth,h=innerHeight,inputOverride=new URLSearchParams(location.search).get('touch');
     const finger=inputOverride==='1'||(inputOverride!=='0'&&(window.MOBILE||navigator.maxTouchPoints>0||matchMedia('(pointer:coarse)').matches));
     const wide=w>h,large=wide&&h>=600&&w>=960;
-    // Grow actual control dimensions with the viewport; DPR belongs to the painters.
-    const scale=Math.max(1,Math.min(1.5,w/960,h/600));
+    // Fit smaller controls to short phone viewports, then grow with available room.
+    // Use CSS pixels; DPR belongs to the painters rather than HUD sizing.
+    const scale=finger&&!large
+      ?Math.max(.8,Math.min(1.1,wide?w/800:w/430,wide?h/440:h/780))
+      :Math.max(1,Math.min(1.5,w/960,h/600));
     document.body.style.setProperty('--study-interface-scale',String(Math.round(scale*1000)/1000));
     document.body.classList.add('study-minimal');
     document.body.classList.toggle('study-finger',finger);
@@ -185,11 +207,12 @@ var FoteResponsiveHUD=(function(){
     const hotbar=node('hotbar'),pad=node('dpad'),explore=node('studyExplore');
     const app=node('app'),hud=node('studyHud'),status=node('statusbar'),recent=node('studyRecentLog');
     const panels=node('studySheetTabs');
-    ['studyChar','studyGear','studyFaith'].forEach(id=>{const button=node(id);if(button.parentElement!==panels)panels.append(button);});
+    const panelButtons=['studyChar','studyGear','studyFaith','studySheetOptions'].map(node);
+    if(panelButtons.some((button,index)=>panels.children[index]!==button))panels.append(...panelButtons);
     const mapToggle=node('bMap');if(mapToggle.parentElement!==app)app.append(mapToggle);
     if(hud.parentElement!==app)app.append(hud);
     if(status&&status.parentElement!==hud)hud.append(status);
-    if(recent&&recent.parentElement!==hud)hud.append(recent);
+    if(recent&&recent.parentElement!==app)app.append(recent);
     if(hotbar.parentElement!==app)app.append(hotbar);
     if(pad.parentElement!==node('map'))node('map').append(pad);
     if(explore.parentElement!==app)app.append(explore);
@@ -214,6 +237,7 @@ var FoteResponsiveHUD=(function(){
     document.head.append(node('responsiveHudStyles'),node('forgeSkin'));
     const hud=document.createElement('div');hud.id='studyHud';app.append(hud);
     const readouts=document.createElement('div');readouts.id='studyReadouts';hud.append(node('bars'),readouts);readouts.append(node('hud2'));
+    const depth=document.createElement('span');depth.id='studyDepth';hud.prepend(depth);
     const portrait=document.createElement('button');portrait.id='studyPortrait';portrait.type='button';portrait.title='Character';
     portrait.innerHTML='<span id="studyPortraitArt"></span><span id="studyPortraitStats"><span id="studyLevel"></span><span id="studyRank"></span></span>';hud.prepend(portrait);
     const statPoints=document.createElement('button');statPoints.id='studyStatPoints';statPoints.type='button';statPoints.hidden=true;statPoints.setAttribute('aria-controls','shade');hud.append(statPoints);
@@ -240,6 +264,7 @@ var FoteResponsiveHUD=(function(){
       const button=node('tabs').querySelector('[data-p="'+panel+'"]');
       button.type='button';button.id=id;button.textContent=label;nav.append(button);
     }
+    const sheetOptions=document.createElement('button');sheetOptions.id='studySheetOptions';sheetOptions.type='button';sheetOptions.dataset.p='Help';sheetOptions.textContent='Options';sheetTabs.append(sheetOptions);
     const panelClick=event=>{
       const button=event.target.closest('[data-p]');
       if(!button||event.currentTarget===sheetTabs&&button.dataset.p===openSheet)return;
@@ -257,7 +282,7 @@ var FoteResponsiveHUD=(function(){
       button.innerHTML=lineIcon(path)+'<span>'+label+'</span>';nav.insertBefore(button,node('studyOptions'));
     }
     const history=document.createElement('button');history.id='studyHistory';history.type='button';history.textContent='Log history';nav.append(history);
-    for(const [id,kind]of [['studyPortrait','character'],['studyInventoryIcon','inventory'],['studyMenuToggle','menu'],['studyOptions','options'],['studyHistory','history'],['studyLogClose','history-close'],['studyChar','character'],['studyGear','inventory'],['studyFaith','faith'],['studyMenuChar','character'],['studyMenuGear','inventory'],['studyMenuFaith','faith']])bindHudResourceCard(node(id),kind);
+    for(const [id,kind]of [['studyPortrait','character'],['studyInventoryIcon','inventory'],['studyMenuToggle','menu'],['studyOptions','options'],['studySheetOptions','options'],['studyHistory','history'],['studyLogClose','history-close'],['studyChar','character'],['studyGear','inventory'],['studyFaith','faith'],['studyMenuChar','character'],['studyMenuGear','inventory'],['studyMenuFaith','faith']])bindHudResourceCard(node(id),kind);
     const explore=document.createElement('button');explore.id='studyExplore';explore.type='button';explore.textContent='Explore';
     left.insertBefore(explore,node('dpad'));bindExploreButton(explore);
     const hunger=document.createElement('button');hunger.id='studyHunger';hunger.type='button';hunger.className='study-hunger';
@@ -271,6 +296,7 @@ var FoteResponsiveHUD=(function(){
     if(window.visualViewport)visualViewport.addEventListener('resize',relayout);
     new ResizeObserver(positionSheet).observe(node('map'));
     new ResizeObserver(positionSheet).observe(node('hotbar'));
+    new ResizeObserver(positionRecentLog).observe(node('studyHud'));
     node('responsiveHudStyles').addEventListener('load',relayout);
     const firstVisibleLog=new ResizeObserver(()=>{if(node('log').clientHeight>0){node('log').scrollTop=node('log').scrollHeight;firstVisibleLog.disconnect();}});
     firstVisibleLog.observe(node('log'));
@@ -278,6 +304,7 @@ var FoteResponsiveHUD=(function(){
   function renderReadouts(){
     if(!mounted||!player)return;
     syncExploreButton(node('studyExplore'));
+    node('studyDepth').textContent=node('hBiome').textContent+' · Floor '+node('hFloor').textContent;
     bindHudResourceCard(node('studyExplore'),'explore');
     const hungry=player.hunger<=0?'Starving':player.hunger<300?'Hungry':'Fed';
     node('studyHungerText').textContent=hungry;

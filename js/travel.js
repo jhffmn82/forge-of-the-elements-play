@@ -346,7 +346,10 @@ function handleMapClick(ev){
 setTimeout(function(){   /* registered after boot.js, so its door-closing click still comes first */
   window.addEventListener('click', function(ev){
     if(TRAVEL&&!(ev.target.closest&&ev.target.closest('[data-auto-explore]')))stopTravel();
-    if(ev.target!==cv || aiming || uiOpen() || !player || (RUN && RUN.over)) return;
+    if(ev.target!==cv || !player)return;
+    var selected=tileAt(ev);
+    if(!inb(selected.x,selected.y)){ev.stopImmediatePropagation();ev.preventDefault();return;}
+    if(aiming || uiOpen() || (RUN && RUN.over)) return;
     if(handleMapClick(ev)){ ev.stopImmediatePropagation(); ev.preventDefault(); updateUI(); }
   }, true);
   /* any key or a click elsewhere stops a walk */

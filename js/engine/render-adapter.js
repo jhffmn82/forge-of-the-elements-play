@@ -265,8 +265,8 @@ function holdFloor(){
 }
 /* The tile window the next frame will draw (drawScene's own camera, from the player's drawn position). */
 function terrainViewNow(){
-  var prp=renderPos(player);
-  return {x:Math.floor(clamp(prp.x-(viewW>>1),0,Math.max(0,MW-viewW))),y:Math.floor(clamp(prp.y-(viewH>>1),0,Math.max(0,MH-viewH))),w:viewW,h:viewH,reveal:!!revealAll};
+  var camera=sceneCameraPoint(renderPos(player));
+  return {x:Math.floor(camera.x),y:Math.floor(camera.y),w:viewW,h:viewH,reveal:!!revealAll};
 }
 function holdTerrain(changed){
   if(typeof FoteEnvironmentTerrain==='undefined'||!FoteEnvironmentTerrain.bakeView)return false;

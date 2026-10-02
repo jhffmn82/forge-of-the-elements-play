@@ -14,15 +14,13 @@
     var later=options.setTimer||function(fn,ms){return setTimeout(fn,ms);};
     var cancel=options.clearTimer||function(id){clearTimeout(id);};
     var recent=null,enabled=false,history=false,entries=[],sequence=0,batch=0,pending=false,inTurn=false,turnEnded=false;
-    var timer=null,closeTimer=null,ordinaryAge=14000,warningAge=18000,fadeAge=3000,limit=7;
+    var timer=null,closeTimer=null,ordinaryAge=14000,warningAge=18000,fadeAge=3000;
     function clearTimer(){if(timer!==null){cancel(timer);timer=null;}}
     function clearClose(){if(closeTimer!==null){cancel(closeTimer);closeTimer=null;}}
     function trim(){
       var time=now();entries=entries.filter(function(e){return e.expiresAt>time||inTurn&&e.batch===batch;});
-      var warningLimit=entries.some(function(e){return !e.warning;})?limit-1:limit;
-      var warnings=entries.filter(function(e){return e.warning;}).slice(-warningLimit);
-      var slots=limit-warnings.length,ordinary=slots?entries.filter(function(e){return !e.warning;}).slice(-slots):[];
-      entries=warnings.concat(ordinary).sort(function(a,b){return a.id-b.id;});
+      // The turn window and reading timer bound this view. A busy turn must
+      // retain every result rather than silently discard its first attacks.
     }
     function state(){
       var time=now(),live=entries.filter(function(e){return e.expiresAt>time||inTurn&&e.batch===batch;});
@@ -48,6 +46,7 @@
         if(!child){child=doc.createElement('div');child.dataset.entry=String(entry.id);child.className='study-recent-line '+entry.cls;child.innerHTML=entry.html;child.style.transition='opacity '+fadeAge+'ms ease';recent.appendChild(child);}
         child.dataset.priority=entry.warning?'warning':'normal';child.style.opacity=entry.fading?'0':'1';
       });
+      recent.scrollTop=recent.scrollHeight;
     }
     function refresh(){
       clearTimer();trim();render();

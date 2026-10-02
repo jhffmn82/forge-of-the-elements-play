@@ -29,7 +29,7 @@ function speedFxList(){
    A multiplier on however many tiles the current view wants (desktop, phone portrait or landscape), so it
    stacks with the layout's own choice instead of replacing it. Closer = fewer, bigger tiles. */
 /* Landscape presets target 22, 18, 15 and 12 rows; width follows the map panel. */
-var MAP_ZOOM_MUL = {far:22/12, normal:18/12, close:15/12, closest:1}, MAP_ZOOM='normal';
+var MAP_ZOOM_MUL = {far:18/12, normal:14/12, close:1, closest:10/12}, MAP_ZOOM='normal';
 try { MAP_ZOOM = localStorage.getItem('astra-temple-map-zoom') || 'normal'; } catch(e){}
 if(!MAP_ZOOM_MUL[MAP_ZOOM]) MAP_ZOOM='normal';
 
@@ -73,6 +73,8 @@ if($('bArt'))$('bArt').textContent=spriteOn?'Art: sprites':'Art: blocks';
 function segHTML(id, opts, cur, label){ return '<span class="seg" data-seg="'+id+'"'+(label?' role="group" aria-labelledby="'+label+'"':'')+'>'+opts.map(function(o){ var selected=String(o[0])===String(cur);return '<button type="button" data-v="'+o[0]+'" class="'+(selected?'on':'')+'" aria-pressed="'+selected+'">'+o[1]+'</button>'; }).join('')+'</span>'; }
 var UI_THEMES={ember:'Ember (Default)',forge:'Forge',vellum:'Vellum - Ivory','vellum-sand':'Vellum - Sand','vellum-ash':'Vellum - Ash',charcoal:'Charcoal',slate:'Slate',obsidian:'Obsidian',runestone:'Runestone'}, UI_TEXT_SIZES={small:'Small',normal:'Standard',large:'Large'};
 var UI_PHONE_PAD_SIZES={compact:'Compact',normal:'Normal (Default)',large:'Large'};
+var UI_STATUS_SIZES={compact:'Compact',normal:'Normal (Default)',large:'Large'},UI_STATUS_SIZE='normal';
+try{UI_STATUS_SIZE=localStorage.getItem('fote-ui-status-size')||UI_STATUS_SIZE;}catch(e){}
 var UI_HOTBAR_LAYOUTS={vertical:'Vertical',horizontal:'Horizontal'};
 var UI_PAD_SIDES={left:'Left',right:'Right'},UI_PAD_SIDE='left';
 try{var savedPadSide=localStorage.getItem('fote-ui-pad-side');if(Object.prototype.hasOwnProperty.call(UI_PAD_SIDES,savedPadSide))UI_PAD_SIDE=savedPadSide;}catch(e){}
@@ -93,6 +95,7 @@ try{UI_THEME=localStorage.getItem('fote-ui-theme')||UI_THEME;UI_TEXT_SIZE=localS
 function applyUIAppearance(){
   if(!Object.prototype.hasOwnProperty.call(UI_THEMES,UI_THEME))UI_THEME='ember';
   if(!Object.prototype.hasOwnProperty.call(UI_TEXT_SIZES,UI_TEXT_SIZE))UI_TEXT_SIZE='normal';
+  if(!Object.prototype.hasOwnProperty.call(UI_STATUS_SIZES,UI_STATUS_SIZE))UI_STATUS_SIZE='normal';
   if(!Object.prototype.hasOwnProperty.call(UI_PHONE_PAD_SIZES,UI_PHONE_PAD_SIZE))UI_PHONE_PAD_SIZE='normal';
   if(!Object.prototype.hasOwnProperty.call(UI_HOTBAR_LAYOUTS,UI_HOTBAR_LAYOUT))UI_HOTBAR_LAYOUT='horizontal';
   if(!Object.prototype.hasOwnProperty.call(UI_PAD_SIDES,UI_PAD_SIDE))UI_PAD_SIDE='left';
@@ -101,6 +104,8 @@ function applyUIAppearance(){
   document.body.dataset.uiPhonePad=UI_PHONE_PAD_SIZE;
   document.body.dataset.uiTouchPad=UI_TOUCH_PAD?'on':'off';
   document.body.dataset.uiPadSide=UI_PAD_SIDE;
+  document.body.dataset.uiStatusSize=UI_STATUS_SIZE;
+  document.body.style.setProperty('--ui-status-scale',UI_STATUS_SIZE==='large'?'1.6':UI_STATUS_SIZE==='compact'?'1':'1.3');
   document.body.style.setProperty('--ui-text-scale',UI_TEXT_SIZE==='large'?'1.12':UI_TEXT_SIZE==='small'?'.9':'1');
   UI_OPACITY=Number.isFinite(UI_OPACITY)?Math.max(10,Math.min(100,UI_OPACITY)):100;
   document.body.classList.toggle('ui-paper-faded',UI_THEME.indexOf('vellum')===0&&UI_OPACITY<65);
@@ -112,7 +117,7 @@ applyUIAppearance();
 function appearanceSegments(id,label,choices,value){
   return '<div class="optrow opt-appearance"><span id="'+id+'Label">'+label+'</span>'+segHTML(id,Object.keys(choices).map(function(k){return[k,choices[k]];}),value,id+'Label')+'</div>';
 }
-var UI_APPEARANCE_CHOICES={uiSide:{left:'Left',right:'Right'},uiPadSide:UI_PAD_SIDES,uiHotbarLayout:UI_HOTBAR_LAYOUTS,uiPhonePadSize:UI_PHONE_PAD_SIZES,uiTheme:UI_THEMES,uiTextSize:UI_TEXT_SIZES};
+var UI_APPEARANCE_CHOICES={uiSide:{left:'Left',right:'Right'},uiPadSide:UI_PAD_SIDES,uiHotbarLayout:UI_HOTBAR_LAYOUTS,uiPhonePadSize:UI_PHONE_PAD_SIZES,uiStatusSize:UI_STATUS_SIZES,uiTheme:UI_THEMES,uiTextSize:UI_TEXT_SIZES};
 function setAppearanceSetting(id,value){
   if(!Object.prototype.hasOwnProperty.call(UI_APPEARANCE_CHOICES,id)||!Object.prototype.hasOwnProperty.call(UI_APPEARANCE_CHOICES[id],value))return false;
   var key;
@@ -120,6 +125,7 @@ function setAppearanceSetting(id,value){
   if(id==='uiPadSide'){UI_PAD_SIDE=value;key='fote-ui-pad-side';}
   if(id==='uiHotbarLayout'){UI_HOTBAR_LAYOUT=value;key='fote-ui-hotbar-layout';}
   if(id==='uiPhonePadSize'){UI_PHONE_PAD_SIZE=value;key='fote-ui-touch-pad-size';}
+  if(id==='uiStatusSize'){UI_STATUS_SIZE=value;key='fote-ui-status-size';}
   if(id==='uiTheme'){UI_THEME=value;key='fote-ui-theme';}
   if(id==='uiTextSize'){UI_TEXT_SIZE=value;key='fote-ui-text';}
   try{localStorage.setItem(key,value);}catch(e){}
@@ -139,6 +145,7 @@ function settingsHTML(){
      '<label class="optrow"><span>Effects volume</span><input type="range" id="volSfx" min="0" max="100" value="'+Math.round((AUDIO.vol.sfx||0)*100)+'"></label>'+
      '<label class="optrow"><span>Music volume</span><input type="range" id="volMusic" min="0" max="100" value="'+Math.round((AUDIO.vol.music||0)*100)+'"></label>'+
      '<div class="sec">Display</div>'+
+     appearanceSegments('uiStatusSize','Portrait and bars',UI_STATUS_SIZES,UI_STATUS_SIZE)+
      appearanceSegments('uiSide','Portrait side',{left:'Left',right:'Right'},UI_SIDE)+
      appearanceSegments('uiPadSide','Control pad side',UI_PAD_SIDES,UI_PAD_SIDE)+
      appearanceSegments('uiHotbarLayout','Hotbar orientation',UI_HOTBAR_LAYOUTS,UI_HOTBAR_LAYOUT)+

@@ -283,7 +283,7 @@ function makeEscapee(e,cage){
   e.maxhp=Math.max(1,Math.floor(e.maxhp/2));e.hp=cage.ritual?Math.max(1,Math.ceil(e.maxhp*cage.captiveHp/cage.captiveMaxhp)):e.maxhp;
   e.base=Object.assign({},e.base,{armor:(e.base.armor||0)/2,eva:(e.base.eva||0)/2});
   e.name='Escaping '+e.name;e.escapeExit=prisonExit();
-  log('The prisoner says: &quot;Please get me to the stairs out. I will repay you.&quot;','c-good');
+  log('Escort the prisoner to the '+(at(e.escapeExit.x,e.escapeExit.y)===UPSTAIRS?'upstairs':'exit')+'. Reward on arrival.','c-good',{priority:'warning'});
   if(!cage.ritual)prisonAmbush(cage);
 }
 function escapeeAct(e){

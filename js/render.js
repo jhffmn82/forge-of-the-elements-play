@@ -891,7 +891,7 @@ function drawNaturalFogNotch(px,py){
   // The opaque radius contains every corner of the undiscovered cell. Only
   // already-known ground in the surrounding ring is additionally darkened.
   var fog=ctx.createRadialGradient(cx,cy,inner,cx,cy,outer);
-  fog.addColorStop(0,'rgba(7,6,10,1)');fog.addColorStop(.45,'rgba(7,6,10,.55)');fog.addColorStop(1,'rgba(7,6,10,0)');
+  fog.addColorStop(0,'rgba(0,0,0,1)');fog.addColorStop(.45,'rgba(0,0,0,.55)');fog.addColorStop(1,'rgba(0,0,0,0)');
   ctx.fillStyle=fog;ctx.fillRect(cx-outer,cy-outer,outer*2,outer*2);ctx.restore();
 }
 function drawTerrainPass(){
@@ -1033,7 +1033,7 @@ function drawGroundLayer(now, m, restX, restY){
     var g=L.g, frame=TILE_FRAME;
     L.key=null; L.epoch=G.epoch;
     g.setTransform(1,0,0,1,0,0); g.globalAlpha=1; g.globalCompositeOperation='source-over'; if('filter' in g) g.filter='none'; g.shadowColor='rgba(0,0,0,0)';
-    g.clearRect(0,0,lw,lh); g.fillStyle='#07060A'; g.fillRect(0,0,lw,lh);   /* cleared first: nothing from its last drawing is left in it */
+    g.clearRect(0,0,lw,lh); g.fillStyle='#000'; g.fillRect(0,0,lw,lh);   /* cleared first: nothing from its last drawing is left in it */
     setGroundState(g, inherit);
     g.setTransform(m.a,m.b,m.c,m.d,e[0],e[1]);
     ctx=g; TILE_FRAME={ctx:g, m:g.getTransform()}; G.building=true;
@@ -1055,24 +1055,33 @@ function drawGroundLayer(now, m, restX, restY){
   return n;
 }
 
+/* The player remains centered at world edges; reveal tools keep their bounded view. */
+function sceneCameraPoint(point){
+  if(revealAll)return {x:clamp(point.x-(viewW>>1),0,Math.max(0,MW-viewW)),y:clamp(point.y-(viewH>>1),0,Math.max(0,MH-viewH))};
+  return {x:point.x-(viewW-1)/2,y:point.y-(viewH-1)/2};
+}
+function drawMapMargins(){
+  var width=viewW*TS,height=viewH*TS,m=ctx.getTransform();
+  function edge(v,scale,offset){return (Math.round(v*scale+offset+1e-6)-offset)/scale;}
+  var left=clamp(edge(-camX*TS-camOX,m.a,m.e),0,width),top=clamp(edge(-camY*TS-camOY,m.d,m.f),0,height);
+  var right=clamp(edge((MW-camX)*TS-camOX,m.a,m.e),0,width),bottom=clamp(edge((MH-camY)*TS-camOY,m.d,m.f),0,height);
+  ctx.save();ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';ctx.shadowColor='rgba(0,0,0,0)';
+  if('filter' in ctx)ctx.filter='none';ctx.fillStyle='#000';
+  if(top>0)ctx.fillRect(0,0,width,top);if(bottom<height)ctx.fillRect(0,bottom,width,height-bottom);
+  if(left>0)ctx.fillRect(0,0,left,height);if(right<width)ctx.fillRect(right,0,width-right,height);
+  ctx.restore();
+}
+
 /* ============================================================== draw */
 function drawScene(){
   if(!map || !ground) return;
   /* the run state is read through getters (js/engine/state.js); a frame reads it once, here (2026-09-28, frame cost) */
   var x, y, now=performance.now(), W=MW, H=MH, MAP=map, VIS=vis, SEEN=seen, GRD=ground, ALL=revealAll, FIRE=fireT, fade40=memA(0.4), fade45=memA(0.45);
-  var prp=renderPos(player), touch=document.body.classList.contains('touch');
-  var camFX=clamp(prp.x-(viewW>>1), 0, Math.max(0,W-viewW));
-  var camFY=clamp(prp.y-(viewH>>1), 0, Math.max(0,H-viewH));
-  camX=Math.floor(camFX); camY=Math.floor(camFY);
-  /* 2026-09-18: on touch the player stays centred even at a map edge. The tile window stays clamped (every
-     loop below reads inside the map); only the pixel offset follows the player, so the far side of the edge
-     is empty dark and the tiles pushed past the other side are simply off-canvas. Taps convert through camOX. */
-  if(touch){ camFX=prp.x-(viewW>>1); camFY=prp.y-(viewH>>1); }
-  camOX=(camFX-camX)*TS; camOY=(camFY-camY)*TS;
-  /* where the camera rests once the hero's slide ends (the ground layer is kept for that offset) */
-  var restFX=touch ? player.x-(viewW>>1) : clamp(player.x-(viewW>>1), 0, Math.max(0,W-viewW));
-  var restFY=touch ? player.y-(viewH>>1) : clamp(player.y-(viewH>>1), 0, Math.max(0,H-viewH));
-  ctx.globalAlpha=1; ctx.fillStyle='#07060A';
+  var prp=renderPos(player), camera=sceneCameraPoint(prp), rest=sceneCameraPoint(player);
+  camX=Math.floor(camera.x);camY=Math.floor(camera.y);
+  camOX=(camera.x-camX)*TS;camOY=(camera.y-camY)*TS;
+  var restFX=rest.x,restFY=rest.y;
+  ctx.globalAlpha=1; ctx.fillStyle='#000';
   /* the layer is kept for the plain screen transform; a shaking frame, or a watched canvas, draws the ground directly */
   var screen=ctx.getTransform(), layered=GROUND_LAYER_ON && screen.b===0 && screen.c===0 && screen.e===0 && screen.f===0 && screen.a===screen.d && !groundWatched(ctx);
   if(!layered){ ctx.fillRect(0,0,viewW*TS,viewH*TS); if(GROUND_LAYER_ON) GROUND_LAYER.stats.direct++; }
@@ -1330,7 +1339,7 @@ function drawScene(){
       if(!inb(tx,ty) || !(revealAll||vis[idxOf(tx,ty)])) continue;
       atTile(tx,ty,function(px,py){ ctx.fillStyle='rgba(226,98,43,.10)'; ctx.fillRect(px,py,TS,TS); });
     }
-    if(hoverX>=0){
+    if(inb(hoverX,hoverY)){
       var ok=inRange(hoverX,hoverY);
       var onFoe=ents.some(function(e){return e.foe&&!actorConcealed(e)&&entityOccupies(e,hoverX,hoverY);});
       if(A.kind==='summon' && ok && (!walkable(hoverX,hoverY) || occupied(hoverX,hoverY))) ok=false;
@@ -1350,6 +1359,8 @@ function drawScene(){
   vg.addColorStop(0,'rgba(0,0,0,0)'); vg.addColorStop(1,'rgba(0,0,0,0.45)');
   ctx.fillStyle=vg; ctx.fillRect(0,0,viewW*TS,viewH*TS);
   drawStairsPointer(now);
+  // Lighting, particles and ground effects cannot color the empty world margins.
+  drawMapMargins();
 }
 
 /* Compact summoned elemental; all movement respects reduced-motion settings. */
