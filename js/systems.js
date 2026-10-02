@@ -110,7 +110,7 @@ function entryItemsAndTerrain(){
   }
   if(plates) pressPlateAt(player.x,player.y,player);
   var t=at(player.x,player.y);
-  if(t===STAIRS&&!(typeof FoteChaosCampaign!=='undefined'&&FoteChaosCampaign.entryHint())) log('Stairs down to floor '+(floorNo+1)+'. '+(document.body.classList.contains('touch') ? 'Tap them to descend.' : 'Press <b>&gt;</b> or click them to descend.'),'c-kill');
+  if(t===STAIRS&&!(typeof FoteChaosCampaign!=='undefined'&&FoteChaosCampaign.entryHint())) log('Down to floor '+(floorNo+1)+': '+(document.body.classList.contains('touch') ? 'tap stairs.' : '<b>&gt;</b> or click.'),'c-kill');
   if(t===EXIT && floorMeta.exitOpen){ if(floorNo<LAST_FLOOR) descend(); else victory(); }
   if(t===CHASM && !(player.levitate>0)) fallIntoChasm();
 }

@@ -88,8 +88,8 @@ function openShrine(){
   sfx('shrine-open');
   var mine = player.god===id, refused = !mine && (typeof godRefuses==='function' ? godRefuses(id) : (g.refuses && player.race===g.refuses));
   var art = '<div class="shrine-art" data-art="'+g.sprite+'"></div>';
-  var html = '<div class="shrine">'+art+'<div><h3 style="color:'+g.color+'">'+g.name+'</h3><div class="who">'+cap(g.title)+'</div>'+
-    '<p><b>Rule.</b> '+g.rule+'</p><p><b>Piety comes from:</b> '+g.gain+' Piety earned deeper is worth more: x1.3 per biome below the first. Favor is not multiplied.</p>'+
+  var html = '<div class="shrine"><div class="shrine-head">'+art+'<div><h3 style="color:'+g.color+'">'+g.name+'</h3><div class="who">'+cap(g.title)+'</div>'+
+    '<p><b>Rule.</b> '+g.rule+'</p></div></div><div class="shrine-details"><p><b>Piety comes from:</b> '+g.gain+' Piety earned deeper is worth more: x1.3 per biome below the first. Favor is not multiplied.</p>'+
     shrineGifts(id, g, mine)+
     '<div class="shrine-ability"><b>Cleric ability: '+ABILITIES[g.invoke].name+'</b>'+actionDetailsHTML(mine?abilityDetails(ABILITIES[g.invoke],g.invoke):actionDetail(ABILITIES[g.invoke].desc))+'</div></div></div>';
   var buttons=[];

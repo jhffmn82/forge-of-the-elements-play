@@ -29,7 +29,8 @@
   .bossbar{position:absolute;left:50%;top:10px;transform:translateX(-50%);z-index:5;width:min(420px,70%);text-align:center;font-family:var(--display);color:#E8B44A;font-size:15px;text-shadow:0 1px 3px #000;pointer-events:none}
   .bossbar .bb{height:9px;border:1px solid #5A2E18;background:#1A0E0A;border-radius:4px;overflow:hidden;margin-top:3px}
   .bossbar .bb i{display:block;height:100%;background:linear-gradient(90deg,#8E2F27,#E2622B)}
-  .shrine{display:grid;grid-template-columns:130px 1fr;gap:14px;align-items:start}
+  .shrine-head{display:grid;grid-template-columns:130px minmax(0,1fr);gap:14px;align-items:start;margin-bottom:12px}
+  .shrine-details{min-width:0;overflow-wrap:anywhere}
   .shrine h3,.faith h3{font-family:var(--display);font-size:20px;margin:0}
   .boons{margin:0 0 8px 18px;padding:0} .boons li{margin:2px 0}
   .forge-top{display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
@@ -95,7 +96,7 @@
   #create .summary .big{height:230px;display:flex;align-items:flex-end;justify-content:center}
   #create .go{font-size:16px;padding:10px 26px;margin-top:10px}
   #create input{width:220px;font-size:14px}
-  @media (max-width:640px){ #create .summary{grid-template-columns:1fr} .shrine{grid-template-columns:1fr} }
+  @media (max-width:640px){ #create .summary{grid-template-columns:1fr} .shrine-head{grid-template-columns:80px minmax(0,1fr);gap:10px} .shrine-head .shrine-art{max-width:80px;overflow:hidden} .shrine-head .shrine-art canvas{max-width:100%;height:auto!important} }
   `;
   var s=document.createElement('style'); s.textContent=css; document.head.appendChild(s);
 })();

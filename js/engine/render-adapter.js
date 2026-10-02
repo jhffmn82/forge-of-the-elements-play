@@ -187,7 +187,7 @@ function drawGrassTile(x,y,px,py,alpha,layer,now){
   return drawOrdinaryGrass(x,y,px,py,alpha,layer,now);
 }
 function drawVegSpots(now){return inDeep()?drawUnderdarkPlants(now):drawOrdinaryPlants(now);}
-function drawAutomap(){var result=drawBaseAutomap();drawAutomapLava();return result;}
+function drawAutomap(){var result=drawBaseAutomap();drawAutomapLava(result);return result;}
 function drawSideDoor(x,y,tile,px,py,alpha){
   if(drawUnderdarkDoor(x,y,tile,px,py,alpha))return true;
   if(tile===BRIDGE&&inCaverns()){drawCaveBridge(x,y,px,py,alpha);return true;}

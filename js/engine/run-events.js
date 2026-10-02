@@ -1,17 +1,48 @@
 /* Run milestones produce state changes and their presentation directly. */
+// Compact authored entry notices at display time, including cached/save floors.
+// Unknown instructions and the raw notes used by generators remain unchanged.
+var FLOOR_ENTRY_NOTICES={
+  'Bones and claw marks litter one doorway. A crowd of monsters sleeps behind it.':'Monster zoo: sleeping enemies.',
+  'One room swallows light. Only Light or Fire affinity cuts through it.':'Dark room: Light or Fire reveals it.',
+  '<b>A crystal vault</b> glints somewhere on this floor. Its crystal key lies about; inside, you may take one treasure.':'Crystal vault: find key; choose one treasure.',
+  '<b>Chasm vault.</b> A chasm splits a side room with treasure beyond. Floating would carry you over.':'Chasm vault: levitation crosses the gap.',
+  '<b>Drowned cellar.</b> A flooded cellar: swimming across is possible, but the cold water takes its toll.':'Drowned cellar: cold water hurts; levitate across.',
+  '<b>Burning chamber.</b> ':'Burning chamber.',
+  '<b>Frozen hoard.</b> Treasure sealed in blocks of ice. Weapons only glance off them; fire will melt them.':'Frozen hoard: Fire melts the ice.',
+  '<b>Everburning door.</b> A doorway wreathed in flame that never dies. Water would put it out.':'Everburning door: Water puts out the flames.',
+  '<b>Scalding baths.</b> ':'Scalding baths.',
+  '<b>Spike gauntlet.</b> A room bristling with spikes. Skin of stone would shrug them off.':'Spike gauntlet: Stoneskin protects against spikes.',
+  '<b>Stone sentinels.</b> Two stone sentinels guard a hoard. They let their own kind pass.':'Stone sentinels: pass as stone.',
+  '<b>Lightless room.</b> A room of perfect darkness, and the smell of old blood. Light would show what waits in it.':'Lightless room: Light reveals it.',
+  '<b>Sentry gallery.</b> Statues with glowing eyes watch over a gallery. Unseen, you could pass.':'Sentry gallery: pass unseen.',
+  '<b>Silent library.</b> A hushed library. Any sound here would wake what keeps it.':'Silent library: noise wakes its keeper.',
+  'A chasm splits the caverns. Rope bridges cross it; the drop does not forgive.':'Rope bridges cross the chasm.',
+  'Five islands drift in the void, linked by paired portals. A magical current on the last island carries you deeper.':'Chaos: paired portals link five islands. Final current leads deeper.',
+  'There are no god shrines in the Realm of Chaos.':'No shrines in Chaos.',
+  "The Unmaker's Crucible, the last floor. You are safe here until you open the gate.":"Unmaker's Crucible: safe until you open the gate.",
+  'Open the entrance gate when you are ready; it seals behind you for the fight. Defeat all three forms of the Unmaker to reach the Forge of the Elements.':'Entrance gate seals behind you. Defeat all three forms to reach the Forge.'
+};
+function floorEntryNote(note){
+  if(Object.prototype.hasOwnProperty.call(FLOOR_ENTRY_NOTICES,note))return FLOOR_ENTRY_NOTICES[note];
+  if(typeof PLANE_TITLE!=='undefined'){
+    var element=Object.keys(PLANE_TITLE).find(function(el){return note==='Something hums on this floor: <b>a portal to '+PLANE_TITLE[el]+'</b> stands open.';});
+    if(element)return cap(element)+' portal open.';
+  }
+  return note;
+}
 function floorIntro(){
-  log('<b>Floor '+floorNo+'</b> of the '+biomeName()+'.'+(bfloor()===1 && floorNo>1 ? ' Even the air feels different here.' : ''),'c-kill');
-  if(floorMeta.forge) log('You feel heat in the stones. <b>The Elemental Forge</b> is on this floor.','c-kill');
-  if(floorMeta.shrine) log('A distant hum of prayer: a <b>shrine to '+GODS[RUN.shrineGod].name+'</b> is on this floor.','c-kill');
-  if(floorMeta.vault) log('Somewhere an iron vault is locked. Its key walks with one of the monsters.','c-info');
-  if(floorMeta.boss&&!inCaverns()&&!inDeep()&&!floorMeta.unmakerPreview) log(inCrypt() ? '<b>Morty\'s hall.</b> Soul fire burns green over the tombs. Break his phylactery, or Morty will not stay dead.' : '<b>The Warchief\'s hall.</b> Grukk waits on his throne. Bring his core to the gate to open the way on.','c-you');
-  (floorMeta.notes||[]).forEach(function(n){ log(n,'c-info'); });
+  log('<b>'+biomeName()+' · Floor '+floorNo+'</b>.','c-kill');
+  if(floorMeta.forge) log('<b>Elemental Forge</b>.','c-kill');
+  if(floorMeta.shrine) log('<b>'+GODS[RUN.shrineGod].name+' shrine</b>.','c-kill');
+  if(floorMeta.vault) log('Iron vault: key carried by a monster.','c-info');
+  if(floorMeta.boss&&!inCaverns()&&!inDeep()&&!floorMeta.unmakerPreview) log(inCrypt() ? '<b>Morty\'s hall.</b> Break his phylactery to keep him dead.' : '<b>Warchief\'s hall.</b> Bring his core to the gate.','c-you');
+  (floorMeta.notes||[]).forEach(function(n){ log(floorEntryNote(n),'c-info'); });
   playSceneMusic();
 
- if(floorMeta.boss&&inCaverns())log('<b>The Deep Maw\'s hall.</b> The ground here is riddled with burrows. Something vast moves under the stone.','c-you');
+ if(floorMeta.boss&&inCaverns())log('<b>Deep Maw\'s hall.</b> Burrows cover the ground.','c-you');
  if(inDeep()){
-  if(floorMeta.boss)log('<b>The Matron\'s hall.</b> Candles burn scarlet before the idol of the spider goddess. Ritual circles wait on the floor.','c-you');
-  else if(bfloor()===1)log('Warm air rises from below, and somewhere silk rustles in the dark.','c-info');
+  if(floorMeta.boss)log('<b>Matron\'s hall.</b>','c-you');
+  else if(bfloor()===1)log('Silk rustles in the dark.','c-info');
   if(deepMobsOn()&&floorMeta.boss)log('Break her rituals before they finish.','c-you');
  }
 }
@@ -26,8 +57,8 @@ function bossDefeated(e){
   explosionFx(e.x,e.y); playSceneMusic();
   ents.forEach(function(o){ if(o.foe && o.guard) applyStatus(o,'fear',6); });
 
- log('The <b>'+coreName()+'</b> clatters to the floor, still burning with light. The exit gate will answer to it.','c-kill');
- if(affinityCap()!==capBefore)log('Your affinity cap is now <b>'+affinityCap()+'</b>.','c-kill');
+ log('<b>'+coreName()+'</b> dropped. Bring it to the exit gate.','c-kill');
+ if(affinityCap()!==capBefore)log('Affinity cap: <b>'+affinityCap()+'</b>.','c-kill');
 }
 function caveExitSpot(x,y,radius){
   var reachable=coreReachableTiles();
@@ -55,8 +86,8 @@ function caveBossDown(){
     if(!spot)spot=caveExitSpot(player.x,player.y,4);
     if(!spot)spot=caveFallbackExitSpot();
     if(spot){ setT(spot.x, spot.y, EXIT); floorMeta.exitOpen=false; floorMeta.caveExit=spot; if(typeof sparkleFx==='function') sparkleFx(spot.x,spot.y,'earth',30); }
-    log(floorNo<LAST_FLOOR?'Warm air rises through the Maw\'s burrow from the Underdark. Bring the Cavern Core to the opening to clear the way down.':'Fresh air stirs in the Maw\'s burrow. Bring the Cavern Core to the opening to clear the way out of the Caverns.','c-kill');
-    if(!spot)log('The burrow cannot open while every reachable floor tile is occupied.','c-info');
+    log(floorNo<LAST_FLOOR?'Bring the Cavern Core to the burrow to enter the Underdark.':'Bring the Cavern Core to the burrow to leave the Caverns.','c-kill');
+    if(!spot)log('Burrow blocked: clear a reachable floor tile.','c-info');
     if(typeof draw==='function') draw();
   }
 function death(){
@@ -65,7 +96,7 @@ function death(){
  var endedRun=RUN;RUN.over=true;setClip(player,'death');sfx('player-death');stopMusic();
  finishRunHistory(false);
  setTimeout(function(){if(RUN===endedRun&&RUN.over)showEnd(false);},1300);
- runId();if(deleteRunSaves())log('Death is final: this character\'s saves crumble to dust.','c-you');
+ runId();if(deleteRunSaves())log('Death is final. Run saves deleted.','c-you');
 }
 function renderEndSummary(won){
   var el=$('over'); if(!el) return;

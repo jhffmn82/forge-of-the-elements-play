@@ -492,11 +492,10 @@ function drawUnderdarkPlants(now){
 
 /* ---------------------------------------------------------------- the automap: lava */
 
-function drawAutomapLava(){
-  if(!inDeep() || !floorMeta.lava || typeof AUTOMAP_ON==='undefined' || !AUTOMAP_ON) return;
+function drawAutomapLava(frame){
+  if(!frame || !inDeep() || !floorMeta.lava || typeof AUTOMAP_ON==='undefined' || !AUTOMAP_ON) return;
   var c=$('automap'), host=$('map'); if(!c || !host) return;
-  var W=host.clientWidth, H=host.clientHeight, g=c.getContext('2d');
-  var cell=Math.max(3, Math.floor(Math.min((W-40)/MW, (H-40)/MH))), ox=Math.round((W-cell*MW)/2), oy=Math.round((H-cell*MH)/2);
+  var g=c.getContext('2d'), cell=frame.cell, ox=frame.ox, oy=frame.oy;
   g.fillStyle='rgba(255,110,40,0.55)';
   for(var i=0;i<map.length;i++) if(map[i]===LAVA && (revealAll||seen[i])) g.fillRect(ox+(i%MW)*cell, oy+((i/MW)|0)*cell, cell, cell);
   return;
