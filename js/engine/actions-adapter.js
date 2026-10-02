@@ -296,7 +296,9 @@ function resolveWeaponDamage(event,strike){
   var att=event.source,def=event.target,mult=event.multiplier,label=event.label,view=event.view;
   var ranged=strike.ranged,ch=strike.ch,blocked=strike.blocked;
   var base=strike.base,crit=strike.crit,surprise=strike.surprise;
-  var phys=applyDamage(def,base,att.swarm?'dark':att!==player&&att.base&&att.base.attackType||'phys',att,{hit:event.hit,attackRolled:true,actionId:event.actionId,tags:['attack',ranged?'ranged':'melee'].concat(event.tags.has('proc')?['proc']:[])}),extra=0,applied=0,note='',el=null,rawExtra={},bonuses={};
+  var primaryType=att.swarm||att.shadowClone&&!ranged?'dark':att!==player&&att.base&&att.base.attackType||'phys';
+  event.primaryType=primaryType;
+  var phys=applyDamage(def,base,primaryType,att,{hit:event.hit,attackRolled:true,actionId:event.actionId,tags:['attack',ranged?'ranged':'melee'].concat(event.tags.has('proc')?['proc']:[])}),extra=0,applied=0,note='',el=null,rawExtra={},bonuses={};
   function addRaw(type,n){rawExtra[type]=(rawExtra[type]||0)+n;}
   function addBonus(type,n){if(n>0){type=FoteDamage.type(type);bonuses[type]=(bonuses[type]||0)+n;}return n;}
   sfx(hitSfx(att,def,crit,blocked), {at:def._hit, from:def});
@@ -362,8 +364,8 @@ function presentWeaponDamage(event,strike,damage){
   var total=parts.length?parts.reduce(function(n,p){return n+p.damage;},0):phys+extra+applied;
   event.damagePresented=true;event.damage=total;event.landed=total>0;
   var bonus=extra+applied;
-  var elTxt=combatDamageBreakdown(parts.length?parts:[{type:att!==player&&att.base&&att.base.attackType||'phys',damage:total}]);
-  floatText(def.x, def.y, String(total), bonus>0 && el ? elemToType(el) : att!==player&&att.base&&att.base.attackType||'phys', crit);
+  var elTxt=combatDamageBreakdown(parts.length?parts:[{type:event.primaryType||'phys',damage:total}]);
+  floatText(def.x, def.y, String(total), bonus>0 && el ? elemToType(el) : event.primaryType||'phys', crit);
   log((label?combatText(label)+': ':'')+combatText(who)+(att===player?' hit ':' hits ')+combatText(foe)+': '+elTxt+
       (crit?' (crit)':'')+(surprise?' (surprise)':'')+(blocked?' (blocked)':'')+combatActionNotes(event,note.trim())+'.',
       att===player?'c-hit':'c-you');

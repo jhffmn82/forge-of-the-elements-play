@@ -31,7 +31,7 @@
     var character=.04*((stats.foc||10)-10)+(p.arcaneStudy?.10:0)+(p.archmage?.10:0);
     var focus=focusBonus(w,content.focus,c.gearBonus)+focusBonus(o,content.focus,c.gearBonus);
     var rings=ringBonuses(actor,content,c.gearBonus);
-    var spell=Math.max(.3,1+character)*(1+focus)*(1+Math.max(-.5,(rings.wizardry||0)*2/3));
+    var spell=Math.max(.3,1+character)*(1+focus)*(1+Math.max(-.5,(rings.wizardry||0)/2));
     if(o&&(o.icon||'').replace(/^item-/,'')==='tome'&&o.enchant==='fire')spell*=1+c.enchant('tome','fire').spellPower;
     if(itemKey(a)==='robe'&&!a.cursed){
       var robe=content.robe.spell[tierOf(a)]+content.robe.spellPer*Math.max(0,(a.plus||0)+(actor.race==='dwarf'?1:0));
@@ -55,7 +55,8 @@
     (actor.rings||[]).forEach(function(r){
       if(!r||!content.rings[r.ring])return;
       var power=content.gear.ringPower(r);
-      result[r.ring]=(result[r.ring]||0)+content.rings[r.ring].step*power*multiplier;
+      var ring=content.rings[r.ring];
+      result[r.ring]=(result[r.ring]||0)+(ring.step*power+(ring.base||0)*Math.sign(power))*multiplier;
     });
     return result;
   }
@@ -122,7 +123,7 @@
     if(r.accuracy)out.acc+=Math.round(r.accuracy);
     if(r.vitality)out.maxhp=Math.max(1,Math.round(out.maxhp*(1+r.vitality)));
     if(r.wizardry)out.maxmp=Math.max(1,Math.round(out.maxmp*(1+r.wizardry)));
-    if(r.striking)out.dmg=out.dmg.map(function(n){return Math.max(1,n+Math.round(r.striking));});
+    if(r.striking){out.dmg=out.dmg.map(function(n){return Math.max(1,n+Math.round(r.striking));});out.crit+=r.striking/100;}
     out.dmg=out.dmg.map(function(n){return Math.max(1,n);});
     if(r.haste)out.speed=Math.round(out.speed*(1+r.haste));
     if(actor.race==='dwarf'&&!w.unarmed&&itemKey(w)){

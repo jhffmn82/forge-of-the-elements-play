@@ -274,7 +274,7 @@ function bumpProp(p){
     else { m.state='hunt'; log('The prisoner lunges at you!','c-you'); }
     sfx('door-open'); endTurn(); return true;
   }
-  if(p.drink){ var before=player.hp; healPlayer(Math.round(player.maxhp*0.1)); p.drink=false; log('Fountain: +'+Math.round((player.hp-before)*10)/10+' HP.','c-good'); sfx('step-water'); endTurn(); return true; }
+  if(p.drink){ var before=player.hp; healPlayer(Math.round(player.maxhp*0.1)); p.drink=false; log('Fountain: +'+Math.round(player.hp-before)+' HP.','c-good'); sfx('step-water'); endTurn(); return true; }
   if(p.br){ setClip(player,'melee'); lungeFx(player,p.x,p.y); damageProp(p, player, 'phys'); endTurn(); return true; }
   if(p.b){ log('Something is in the way.','c-info'); return true; }
   return false;

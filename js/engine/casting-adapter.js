@@ -4,7 +4,7 @@ var SELF_CASTS={
 "bellow":function(A,r,div){  sfx('warchief-roar');
     ents.forEach(function(e){ if(e.foe && dist(e,player)<=3) applyStatus(e,'stun',1); });
     var h=Math.round(player.maxhp*(.10+.02*r)*div),before=player.hp; healPlayer(h); ringFx(player.x,player.y,'#B8453A',3.5);
-    log('Bellow: +'+Math.round((player.hp-before)*10)/10+' HP; Stun within 3 tiles.','c-good'); },
+    log('Bellow: +'+Math.round(player.hp-before)+' HP; Stun within 3 tiles.','c-good'); },
 "heal":function(A,r,div){
     var prior=player.hp,bonus=(1+.10*r)*(typeof inSanctuary==='function'&&inSanctuary(player)?1+.25*holyGroundStrength(player):1);
     var raw=Math.round(player.maxhp*(.10+.02*r)*div);

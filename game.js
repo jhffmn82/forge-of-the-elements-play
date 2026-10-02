@@ -104,6 +104,8 @@ function fxAt(dur, hold, unseen){          /* each effect starts after the one b
   return t;
 }
 function floatText(x,y,text,type,big){
+  // Keep fractional simulation values out of combat labels.
+  text=String(text).replace(/^([+-]?)(\d+(?:\.\d+)?)(\s*(?:hp|mp))?$/i,function(_,sign,n,unit){return sign+Math.round(Number(n))+(unit||'');});
   var seen=inb(x,y) && (revealAll || vis[idxOf(x,y)]) && turnAnimationOnscreen(x,y);
   var start=fxAt(760,120,!seen), offset=0;
   /* Equal-duration labels rise together. Pick a free vertical position at this

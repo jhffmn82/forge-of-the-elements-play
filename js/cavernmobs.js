@@ -74,6 +74,14 @@ CAVE_ELEMENT_TIERS.forEach(function(r){
 var CAVE_SWAP = {rat:'rootbound', bat:'rootbound', caverat:'rootbound', cavebat:'rootbound', slime:'caveslime', goblin:'stormbeetle', archer:'sparkjelly', brute:'stormbeetle', shaman:'myconid'};
 CAVE_ELEMENT_TIERS.forEach(function(r){CAVE_SWAP[r.old]=r.kind;});
 
+/* Keep wounded health proportional and make old saves and repeated visits safe. */
+function applyCavernEnemyTuning(e){
+  if(!e||!e.foe||e.ally||!e.base||e.base.object||e.hp<=0||e.cavernHp15Adjusted||floorNo<11||floorNo>15||floorMeta.plane||floorMeta.chaosPreview)return;
+  var kinds=['stormbeetle','sparkjelly','shockeel','myconid','shroomling','wormtender','crystalcrawler','rootbound','caveslime','deepmaw'].concat(CAVE_ELEMENT_TIERS.map(function(r){return r.kind;}));
+  if(kinds.indexOf(e.kind)<0||!Number.isFinite(e.maxhp)||e.maxhp<=0)return;
+  var fraction=e.hp/e.maxhp;e.maxhp=Math.max(1,Math.round(e.maxhp*1.15));e.hp=Math.max(1,Math.min(e.maxhp,Math.round(e.maxhp*fraction)));e.cavernHp15Adjusted=true;
+}
+
 
 /* Older saves stored Dungeon copies and the retired Caverns vermin. Preserve
    damage taken, status and timing when refreshing hostile Caverns residents. */
@@ -94,6 +102,7 @@ function refreshCavernResidents(){
     if(vermin){e.ch=b.ch;e.col=b.col;}
     if(!e.small){e.maxhp=sHP(b.hp);e.hp=Math.max(1,Math.ceil(e.maxhp*ratio));e.name=b.name;}
   });
+  residents.forEach(applyCavernEnemyTuning);
 }
 
 /* ---------------------------------------------------------------- helpers */
@@ -163,7 +172,7 @@ function sproutShroomlings(e,cells,count,clock){
   while(sprouts.length<limit&&cells.length){
     var c=cells.length===1?cells[0]:pick(cells);
     cells=cells.filter(function(o){return o.x!==c.x||o.y!==c.y;});
-    var s=spawn('shroomling',c.x,c.y);s.state='hunt';s.noLoot=true;s.owner=e.id;s.t=clock===undefined?e.t:clock;
+    var s=spawn('shroomling',c.x,c.y);s.state='hunt';s.noLoot=true;s.owner=e.id;s.t=clock===undefined?e.t:clock;applyCavernEnemyTuning(s);
     sparkleFx(c.x,c.y,'poison',16);sprouts.push(s);
   }
   return sprouts;
@@ -252,7 +261,7 @@ function sparkJellyAct(e){
   if(!last || last.x!==player.x || last.y!==player.y) return false;
   if(e.hp<=0)return true;e.sparkReady=turn+3; setClip(e,'attack'); sfx('lightning-cast',{from:e});
   boltFx(e.x,e.y,player.x,player.y,'lightning');
-  if(rng()<hostileHitChance(hitChance(e.base.acc+5,evaOf(player)),true)){
+  if(rng()<hostileHitChance(hitChance(accOf(e)+5,evaOf(player)),true)){
     caveZap(player,sDMG(roll(5,8)),e,'Spark Jelly bolt');
   }else{ floatText(player.x,player.y,'miss','miss'); log('Spark Jelly misses.','c-miss'); }
    return true;
@@ -471,6 +480,7 @@ function spawnDeepMaw(arena){
   var e=spawn('deepmaw', sx, sy);
   ents=ents.filter(function(o){ return o!==e; });                 /* it starts underground: out of the world */
   e.state='hunt'; e.elite=true; e.big=true; e.st={};
+  applyCavernEnemyTuning(e);
   floorMeta.bossId=e.id;
   floorMeta.maw={phase:'dormant', arena:arena, mounds:mounds, ent:e, limbs:[], n:0, at:0, cells:[], rubble:[]};
   return e;
@@ -567,7 +577,7 @@ function mawCallTender(M){
     var spots=mawRing(M.mounds[(o+k)%M.mounds.length]).filter(free);
     if(!spots.length) continue;
     var i=spots[Math.floor(rng()*spots.length)], t=spawnRaw('wormtender', i%MW, (i/MW)|0);
-    t.state='hunt'; t.noLoot=true; (M.tenders||(M.tenders=[])).push(t.id);
+    t.state='hunt'; t.noLoot=true;applyCavernEnemyTuning(t); (M.tenders||(M.tenders=[])).push(t.id);
     burst(t.x, t.y, 'earth', 20, 0.06);
     log('<b>Worm Tender summoned!</b>','c-you');
     return;

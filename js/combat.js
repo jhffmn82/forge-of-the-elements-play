@@ -91,11 +91,27 @@ function spellRange(A){
   if(A.useWeaponRange) return Math.max(1, player.range);
   return A.range ? A.range + (player.rangeBonus||0) + (!A.tech && !A.divine && typeof staffRange==='function' ? staffRange() : 0) : 0;
 }
-function accOf(e){
-  if(e===player)return player.acc;
-  var early=e.foe&&!e.ally&&floorNo>=1&&floorNo<=5&&!floorMeta.plane&&!floorMeta.chaosPreview&&
-    ['rat','bat','goblin','archer','brute','slime','pebbleslime','greenslime','shaman','skeleton','mimic','warchief','emberling','tideling','galeling','stoneling','wisp','lumenling'].indexOf(e.kind)>=0;
-  return e.base.acc+(early?8:0);
+function hostileAccuracyBonus(e){
+  if(!e||!e.foe||e.ally||!e.base||e.base.object)return 0;
+  // Keep the opening rolls intact. Later accuracy grows with depth without
+  // altering player aim or the defenses bought by dedicated evasion builds.
+  if(String(e.kind).indexOf('chaos-')===0)return 34;
+  if(floorMeta.plane)return 30;
+  if(floorNo<=2)return !floorMeta.chaosPreview&&['rat','bat','goblin','archer','brute','slime','pebbleslime','greenslime','shaman','skeleton','mimic','warchief','emberling','tideling','galeling','stoneling','wisp','lumenling'].indexOf(e.kind)>=0?8:0;
+  if(floorNo<=5)return [20,24,26][floorNo-3];
+  if(floorNo<=10)return 26+floorNo-6;
+  if(floorNo<=15)return 30+(floorNo-10)*.4;
+  if(floorNo<=20)return 32+(floorNo-15)*.4;
+  return 34;
+}
+function accOf(e){return e===player?player.acc:e.base.acc+hostileAccuracyBonus(e);}
+function hostileCombatDamage(e,value){
+  if(!e||!e.foe||e.ally||!e.base||e.base.object||floorMeta.plane||floorMeta.chaosPreview)return value;
+  // Pressure starts with the depth-three goblin roster, then the Crypt.
+  // Existing Caverns, Underdark and Chaos damage retain their authored tuning.
+  if(floorNo>=3&&floorNo<=5&&['brute','shaman','archer'].indexOf(e.kind)>=0)return value*(floorNo===3?1.35:1.5);
+  if(floorNo>=6&&floorNo<=10)return value*(1.2+(floorNo-6)*.0375);
+  return value;
 }
 function evaOf(e){ return FoteActors.effectiveEvasion(e,e===player?player.eva:e.base.eva,gameEffects,e===player); }
 function armorOf(e){ return e===player ? player.armor : Math.max(0, (e.base.armor||0) - (e.st.hollow?e.st.hollow.n:0)); }

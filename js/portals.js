@@ -357,7 +357,7 @@ function refreshEncounterTuning(){
     }
     if(e.hp<=0)return;
     if(e.foe&&!e.ally&&!floorMeta.plane&&!floorMeta.chaosPreview){
-      var combatTuning={bat:['speed'],brute:['armor','hint'],shade:['speed'],
+      var combatTuning={bat:['speed'],brute:['armor','hint'],shade:['speed','chillTouch','attackType'],bonearcher:['poisons'],
         ghoul:['bleeds','bleedTurns','bleedDamage'],acolyte:['fearTouch','hint']}[e.kind];
       if(combatTuning&&MONSTERS[e.kind]){
         e.base=Object.assign({},e.base);

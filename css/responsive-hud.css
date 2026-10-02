@@ -680,8 +680,9 @@ body.fote-study.study-minimal{
  --minimal-hotbar-top:calc(50dvh + var(--minimal-column-offset) - (9 * var(--minimal-slot) + 8 * var(--minimal-hotbar-gap)) / 2 + var(--minimal-slot) + var(--minimal-hotbar-gap));
  --minimal-pad-reserve:0px;--minimal-hotbar-width:calc(8 * var(--minimal-slot) + 7 * var(--minimal-hotbar-gap));
 }
-body.fote-study.study-minimal.study-small-touch{--minimal-inset:8px;--minimal-bars:min(calc(224px * var(--minimal-status-scale)),calc(100vw - 2 * var(--minimal-inset) - var(--minimal-menu-size) - 12px));--minimal-portrait:calc(60px * var(--minimal-status-scale));--minimal-slot:calc(55px * var(--study-interface-scale,1));--minimal-action-size:max(26px,calc(28px * var(--study-interface-scale,1)));}
+body.fote-study.study-minimal.study-small-touch{--minimal-inset:8px;--minimal-bars:min(calc(224px * var(--minimal-status-scale)),calc(100vw - 2 * var(--minimal-inset) - var(--minimal-menu-size) - 12px));--minimal-portrait:calc(60px * var(--minimal-status-scale));--minimal-slot:calc(55px * var(--study-interface-scale,1));--minimal-action-size:max(44px,calc(48px * var(--study-interface-scale,1)));}
 body.fote-study.study-minimal.study-overlay-pad{--study-overlay-pad-size:calc(176px * var(--study-interface-scale,1));}
+body.fote-study.study-minimal.study-small-touch #app :is(#studyExplore,#bMap) svg{width:max(26px,calc(28px * var(--study-interface-scale,1)));height:max(26px,calc(28px * var(--study-interface-scale,1)));}
 body.fote-study.study-minimal.study-overlay-pad.study-small-touch{--study-overlay-pad-size:calc(148px * var(--study-interface-scale,1));}
 body.fote-study.study-minimal.study-overlay-pad #app #map #dpad button .pad-symbol{width:calc(22px * var(--study-interface-scale,1));height:calc(22px * var(--study-interface-scale,1));}
 body.fote-study.study-minimal.study-overlay-pad #app #map #dpad button[data-d="5"] .pad-symbol{width:calc(19px * var(--study-interface-scale,1));height:calc(19px * var(--study-interface-scale,1));}

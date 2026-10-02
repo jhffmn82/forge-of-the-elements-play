@@ -366,7 +366,7 @@ function resolveAmusement(){
   var prank=pick(['blind','chill']);applyStatus(player,prank,2);log('Wobbles: '+(STATUS_INFO[prank]&&STATUS_INFO[prank].name||prank)+'.','c-you');
  }else if(roll<odds.prank+odds.reward){
   player.amusement=Math.max(0,mood-50);
-  if(player.hp<player.maxhp*.75){var before=player.hp;healPlayer(player.maxhp*.4);log('Wobbles: +'+Math.round((player.hp-before)*10)/10+' HP.','c-good');}
+  if(player.hp<player.maxhp*.75){var before=player.hp;healPlayer(player.maxhp*.4);log('Wobbles: +'+Math.round(player.hp-before)+' HP.','c-good');}
   else if(rng()<.5){var it=randomGear();it.x=player.x;it.y=player.y;items.push(it);log('Wobbles: gear dropped.','c-good');}
   else{var essence=ri(20,40);gainEssence(essence);log('Wobbles: +'+essence+' Essence.','c-good');}
  }

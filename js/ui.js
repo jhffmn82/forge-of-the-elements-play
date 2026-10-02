@@ -504,13 +504,13 @@ function inspectHTML(mx,my){
   if(e && (revealAll||vis[idxOf(mx,my)])){
     if(e.merchantRoom!==undefined)return '<div class="nm">'+e.name+'</div><div class="hint">A traveling Myconid trader. Offers rare sigils, elemental motes and Masterwork equipment for essence.</div><div class="hint">Click or approach to browse the stock.</div>';
     if(e.hungrySpiderRoom!==undefined&&!e.foe&&!e.ally)return '<div class="nm">'+e.name+'</div><div class="hint">Hungry... everything dead.</div><div class="hint">It watches you without attacking.</div>';
-    if(e.ally) return '<div class="nm">'+e.name+'</div><div class="row"><span>HP</span><b>'+Math.max(0,e.hp)+' / '+e.maxhp+'</b></div><div class="hint enemy-lore">'+enemyLore(e)+'</div><div class="hint">Fights for you.</div>';
+    if(e.ally) return '<div class="nm">'+e.name+'</div><div class="row"><span>HP</span><b>'+Math.max(0,Math.round(e.hp))+' / '+Math.round(e.maxhp)+'</b></div><div class="hint enemy-lore">'+enemyLore(e)+'</div><div class="hint">Fights for you.</div>';
     var ch=Math.round(hitChance(player.acc,evaOf(e))*100), back=Math.round(hitChance(accOf(e),evaOf(player))*100);
     var lo=Math.max(1,Math.round(player.dmg[0]-Math.min(armorOf(e),player.dmg[0]*0.5))), hi=Math.max(1,Math.round(player.dmg[1]-Math.min(armorOf(e),player.dmg[1]*0.5)));
     var st=Object.keys(e.st).filter(function(k){ return k.indexOf('imm_')!==0; }).map(function(k){ return '<span class="tag t-'+k+'">'+k+'</span>'; }).join(' ');
     return '<div class="nm">'+e.name+'</div>'+
       '<div class="hint enemy-lore">'+enemyLore(e)+'</div>'+
-      '<div class="row"><span>HP</span><b>'+Math.max(0,e.hp)+' / '+e.maxhp+'</b></div>'+
+      '<div class="row"><span>HP</span><b>'+Math.max(0,Math.round(e.hp))+' / '+Math.round(e.maxhp)+'</b></div>'+
       '<div class="row"><span>Armor &middot; Evasion</span><b>'+armorOf(e)+' &middot; '+evaOf(e)+'</b></div>'+
       (e.base.el?'<div class="row"><span>Element</span><b style="color:'+AFF_COL[e.base.el]+'">'+cap(e.base.el)+'</b></div>':'')+
       '<div class="row"><span>State</span><b>'+(e.st.stun?'stunned':e.st.frozen?'frozen':e.state==='throne'?'on his throne':({hunt:'hunting',wander:'wandering'}[e.state]||e.state))+'</b></div>'+

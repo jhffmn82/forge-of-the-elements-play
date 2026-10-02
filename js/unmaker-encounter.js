@@ -17,7 +17,7 @@
   var hints=[
     'Keeps up to 3 Chaos demons at its side in every form. Shoulder Rush carries it up to 4 tiles toward you. Great Cleave marks the ground up to 2 tiles in front of it: circle its flank. It shrugs off Fear and Stun, but Blind, Root and Slow still work.',
     'Three floating Prism Pylons each mark a line and fire down it 2 turns later; the beam does not follow you. The Unbound takes turns casting Rupture and Inversion Pulse, and demons keep coming. Step off the marked tiles or behind cover. The pylons float, so they never block your way. It shrugs off Fear and Stun.',
-    'Keeps up to 3 Chaos demons at its side in every form. Discord Pulse strikes the red tiles first and the violet tiles next, and you get a turn to move before each. It shrugs off Fear and Stun.'
+    'Keeps up to 3 Chaos demons at its side in every form. Discord Pulse strikes the inner ring first, then the outer ring. You get a turn to move before each: step out, then back in. It shrugs off Fear and Stun.'
   ];
   forms.forEach(function(form,index){
     MONSTERS[form.kind]=Object.assign({hp:4500,acc:85,eva:24,range:1,xp:1500,band:[99,99],w:0,
@@ -177,7 +177,7 @@
     else {var pulse=planPulse(e);tiles=pulse.tiles;outer=pulse.outer;}
     if(!tiles.length)return false;
     var w={unmaker:true,kind:kind,tiles:tiles,outer:outer,origin:origin,armedTurn:turn,beat:1,due:1};s.warning=w;e.windup=w;
-    animation(e,kind==='pulse'?'pulse-inner':kind,'cast');log('<b>'+({cleave:'Great Cleave: circle its flank!',rupture:'Rupture: leave the marked ground!',ring:'Inversion Pulse: get in close!',pulse:'Discord Pulse: red first, then violet. Step out, then back in!'})[kind]+'</b>','c-info',{priority:'warning'});return true;
+    animation(e,kind==='pulse'?'pulse-inner':kind,'cast');log('<b>'+({cleave:'Great Cleave: circle its flank!',rupture:'Rupture: leave the marked ground!',ring:'Inversion Pulse: get in close!',pulse:'Discord Pulse: inner ring, then outer. Step out, then back in!'})[kind]+'</b>','c-info',{priority:'warning'});return true;
   }
   function release(e){
     var s=state(),w=s.warning;if(!w||turn<=w.armedTurn)return true;
@@ -331,21 +331,10 @@
   }
   function drawTelegraphs(now){
     var s=state();if(!s||s.status!=='active')return;var w=s.warning;
-    function paint(tiles,second){if(!tiles)return;tiles.forEach(function(t){if(!(revealAll||vis[idxOf(t[0],t[1])]))return;
-      var x=(t[0]-camX)*TS,y=(t[1]-camY)*TS;ctx.fillStyle=second?'rgba(149,95,245,.19)':'rgba(245,69,46,.32)';ctx.fillRect(x+1,y+1,TS-2,TS-2);
-      ctx.strokeStyle=second?'#C397FF':'#FFAA78';ctx.lineWidth=Math.max(1,TS*.045);ctx.strokeRect(x+2,y+2,TS-4,TS-4);
-    });}
-    ctx.save();if(w){paint(w.outer,true);paint(w.tiles,false);}
+    ctx.save();if(w){drawBossDangerTiles(w.outer,2,now);drawBossDangerTiles(w.tiles,1,now);}
     (s.pylons||[]).forEach(function(p){
       var site=pylonSites[p.id],warning=p.warning;
-      if(warning)warning.tiles.forEach(function(t){
-        if(!(revealAll||vis[idxOf(t[0],t[1])]))return;
-        var x=(t[0]-camX)*TS,y=(t[1]-camY)*TS;
-        ctx.globalAlpha=.25;ctx.fillStyle=site.color;ctx.fillRect(x+2,y+2,TS-4,TS-4);ctx.globalAlpha=1;
-        ctx.strokeStyle=site.color;ctx.lineWidth=Math.max(1,TS*.045);ctx.setLineDash([TS*.12,TS*.07]);ctx.strokeRect(x+3,y+3,TS-6,TS-6);ctx.setLineDash([]);
-        // Insets distinguish a pylon beam from the boss's solid red area.
-        ctx.beginPath();ctx.moveTo(x+TS*.38,y+TS*.5);ctx.lineTo(x+TS*.62,y+TS*.5);ctx.stroke();
-      });
+      if(warning)drawBossDangerTiles(warning.tiles,Math.ceil((warning.fireAt-clock())/100),now);
       if(!(revealAll||vis[idxOf(p.x,p.y)]))return;
       var px=(p.x-camX)*TS,py=(p.y-camY)*TS;
       ctx.strokeStyle=site.color;ctx.lineWidth=Math.max(1,TS*.04);ctx.beginPath();ctx.ellipse(px+TS*.5,py+TS*.83,TS*.35,TS*.13,0,0,Math.PI*2);ctx.stroke();

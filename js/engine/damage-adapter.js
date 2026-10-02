@@ -83,6 +83,7 @@ function damageCreatureRules(event){
 }
 function damageOutgoingRules(event){
   var target=event.target,source=event.source,type=event.type;
+  if(typeof hostileCombatDamage==='function'&&!event.tags.has('reflected'))event.amount=hostileCombatDamage(source,event.amount);
   var holy=event.hit&&event.hit.att===player&&event.hit.view?actionInfusion('holy',event.hit.view):infusion('holy');
   if(holy&&isBuffed()){
     if(holy==='fire'&&source===player&&target!==player)event.amount*=1+enchantValues('holy','fire').damageBonus;
@@ -230,9 +231,9 @@ var gameDamage=FoteDamage.create({
 /* HP changes own their feedback. Callers keep their particles/sounds, but never
  * draw a second number or show the requested heal instead of the HP restored. */
 gameDamage.on('healingApplied',function(event){
-  var n=Math.round(event.restored*10)/10,target=event.target;
+  var n=event.restored,target=event.target;
   if(!(n>0)||event.regen||typeof actorConcealed==='function'&&actorConcealed(target))return;
-  floatText(target.x,target.y,'+'+n,'heal');
+  floatText(target.x,target.y,'+'+Math.round(n),'heal');
   var action=typeof gameActions!=='undefined'&&gameActions.current();
   if(action&&['attack','spell'].indexOf(action.kind)>=0&&!action.damagePresented){
     var heals=action.healingNotes||(action.healingNotes=[]),prior=heals.find(function(h){return h.target===target;});
@@ -262,7 +263,7 @@ function combatText(value){
 }
 function combatDamageNumber(amount,type,prefix){
   type=FoteDamage.type(type)||'phys';
-  var label=FoteDamage.label(type),color=typeof DMG_COL!=='undefined'&&DMG_COL[type]||'currentColor',number=combatText(amount);
+  var label=FoteDamage.label(type),color=typeof DMG_COL!=='undefined'&&DMG_COL[type]||'currentColor',number=combatText(Math.round(amount));
   return '<b style="color:'+color+'" title="'+number+' '+label+' damage" aria-label="'+number+' '+label+' damage">'+combatText(prefix||'')+number+'</b>';
 }
 function combatActionNote(target,note){
@@ -275,7 +276,7 @@ function combatActionNotes(event,note){
   var notes=(event.feedbackNotes||[]).slice();
   if(note&&notes.indexOf(note)<0)notes.push(note);
   (event.healingNotes||[]).forEach(function(h){
-    var who=h.target===event.source?'':(h.target===player?'you':combatText(h.target.name))+' ',amount=Math.round(h.amount*10)/10;
+    var who=h.target===event.source?'':(h.target===player?'you':combatText(h.target.name))+' ',amount=Math.round(h.amount);
     var color=typeof DMG_COL!=='undefined'?DMG_COL.heal:'currentColor';
     notes.push(who+'<b style="color:'+color+'" title="'+amount+' HP restored">+'+amount+' HP</b>');
   });

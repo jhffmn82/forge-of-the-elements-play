@@ -282,7 +282,7 @@ var FoteResponsiveHUD=(function(){
       button.innerHTML=lineIcon(path)+'<span>'+label+'</span>';nav.insertBefore(button,node('studyOptions'));
     }
     const history=document.createElement('button');history.id='studyHistory';history.type='button';history.textContent='Log history';nav.append(history);
-    for(const [id,kind]of [['studyPortrait','character'],['studyInventoryIcon','inventory'],['studyMenuToggle','menu'],['studyOptions','options'],['studySheetOptions','options'],['studyHistory','history'],['studyLogClose','history-close'],['studyChar','character'],['studyGear','inventory'],['studyFaith','faith'],['studyMenuChar','character'],['studyMenuGear','inventory'],['studyMenuFaith','faith']])bindHudResourceCard(node(id),kind);
+    for(const [id,kind]of [['studyPortrait','character'],['studyInventoryIcon','inventory']])bindHudResourceCard(node(id),kind);
     const explore=document.createElement('button');explore.id='studyExplore';explore.type='button';explore.textContent='Explore';
     left.insertBefore(explore,node('dpad'));bindExploreButton(explore);
     const hunger=document.createElement('button');hunger.id='studyHunger';hunger.type='button';hunger.className='study-hunger';
@@ -346,12 +346,12 @@ var FoteResponsiveHUD=(function(){
     const points=Math.max(0,Math.round(player.points||0));
     node('xpBar').classList.toggle('study-points-pending',points>0);
     node('studyChar').innerHTML='<span>Character</span>'+(points?'<span class="study-points" aria-hidden="true">'+points+'</span>':'');
-    node('studyChar').title=points?'Character: '+points+' unspent stat point'+(points===1?'':'s'):'Character';
-    node('studyChar').setAttribute('aria-label',node('studyChar').title);
+    node('studyChar').removeAttribute('title');
+    node('studyChar').setAttribute('aria-label',points?'Character: '+points+' unspent stat point'+(points===1?'':'s'):'Character');
     const statPoints=node('studyStatPoints');statPoints.hidden=!points;statPoints.textContent='+'+points;
     statPoints.title=points+' unspent stat point'+(points===1?'':'s')+'. Open Character.';statPoints.setAttribute('aria-label',statPoints.title);
     statPoints.classList.toggle('study-still',typeof ANIM!=='undefined'&&ANIM.reduce);
-    bindHudResourceCard(statPoints,'points');bindHudResourceCard(node('studyChar'),'character');
+    bindHudResourceCard(statPoints,'points');
     node('studyMenuChar').setAttribute('aria-label',node('studyChar').getAttribute('aria-label'));
     node('studyGear').textContent='Inventory';
     const amusement=node('studyAmusement');if(amusement)paintAmusement(amusement);

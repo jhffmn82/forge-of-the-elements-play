@@ -731,20 +731,27 @@ function gatherBaseLights(now, prp){
 
 
 /* ---- telegraphs: the floor a boss is about to hit glows red, brighter as the blow gets close ---- */
+function drawBossDangerTiles(tiles,due,now){
+  var urgent=due<=1,pulse=ANIM.reduce?0.7:0.5+0.5*Math.sin(now/(urgent?110:220));
+  ctx.save();ctx.globalCompositeOperation='source-over';ctx.setLineDash([]);
+  (tiles||[]).forEach(function(t){
+    if(!(revealAll||vis[idxOf(t[0],t[1])]))return;
+    var px=(t[0]-camX)*TS,py=(t[1]-camY)*TS;
+    ctx.fillStyle='rgba(210,40,30,'+((urgent?0.34:0.2)+0.16*pulse)+')';ctx.fillRect(px+1,py+1,TS-2,TS-2);
+    ctx.strokeStyle='rgba(255,120,90,'+(0.55+0.35*pulse)+')';ctx.lineWidth=Math.max(1.5,TS*0.05);ctx.strokeRect(px+2,py+2,TS-4,TS-4);
+  });ctx.restore();
+}
 function drawBossTelegraphs(now){
   if(typeof FoteUnmakerEncounter!=='undefined')FoteUnmakerEncounter.drawTelegraphs(now);
   ents.forEach(function(e){
     if(!e.windup || !e.windup.tiles) return;
     if(e.windup.unmaker)return;
-    if(e.windup.chaos&&typeof FoteChaosEnemyArt!=='undefined')return;
+    drawBossDangerTiles(e.windup.tiles,e.windup.due,now);
     var urgent = e.windup.due<=1, pulse = ANIM.reduce ? 0.7 : 0.5+0.5*Math.sin(now/(urgent?110:220));
     ctx.save();
     e.windup.tiles.forEach(function(t){
       if(!(revealAll||vis[idxOf(t[0],t[1])])) return;
       var px=(t[0]-camX)*TS, py=(t[1]-camY)*TS;
-      ctx.globalCompositeOperation='source-over';
-      ctx.fillStyle='rgba(210,40,30,'+((urgent?0.34:0.2)+0.16*pulse)+')'; ctx.fillRect(px+1,py+1,TS-2,TS-2);
-      ctx.strokeStyle='rgba(255,120,90,'+(0.55+0.35*pulse)+')'; ctx.lineWidth=Math.max(1.5,TS*0.05); ctx.strokeRect(px+2,py+2,TS-4,TS-4);
       if(e.windup.kind==='charge'){ ctx.fillStyle='rgba(255,210,160,'+(0.5+0.4*pulse)+')'; var cx=px+TS/2, cy=py+TS/2, a=Math.atan2(player.y-e.y+0.0001, player.x-e.x); ctx.beginPath(); ctx.moveTo(cx+Math.cos(a)*TS*0.25, cy+Math.sin(a)*TS*0.25); ctx.lineTo(cx+Math.cos(a+2.4)*TS*0.18, cy+Math.sin(a+2.4)*TS*0.18); ctx.lineTo(cx+Math.cos(a-2.4)*TS*0.18, cy+Math.sin(a-2.4)*TS*0.18); ctx.closePath(); ctx.fill(); }
     });
     ctx.restore();

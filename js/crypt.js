@@ -16,7 +16,7 @@
   /* 2026-09-17: their arrows are grave-tipped. A 4-7 shot was nothing to a mage with Magic Barrier (-5 from
      ranged) or anyone in real armour, so the threat is the poison rather than the hit. */
   M.bonearcher = {name:'Bone Archer', sprite:'m-bone-archer', col:'#D8CEBC', ch:'a', hp:36, dmg:[5,8], acc:64, eva:16, armor:1, speed:100, range:6, xp:26,
-                  band:[7,10], w:14, undead:true, reloads:true, poisons:0.65, art:0.95, sfx:'skeleton'};
+                  band:[7,10], w:14, undead:true, reloads:true, poisons:1, art:0.95, sfx:'skeleton'};
   M.shade      = {name:'Shade', sprite:'m-shade', col:'#5A3E7A', ch:'S', hp:40, dmg:[5,8], acc:66, eva:42, armor:0, speed:130, range:1, xp:30, attackType:'ice',chillTouch:true,
                   band:[7,10], w:10, undead:true, shadowy:true, phases:true, el:'shadow', art:0.95, sfx:'wisp'};
   M.gravebloat = {name:'Grave Bloat', sprite:'m-grave-bloat', col:'#9FBF7A', ch:'B', hp:75, dmg:[8,11], acc:58, eva:4, armor:2, speed:100, range:1, xp:38,
@@ -80,6 +80,7 @@ var CRYPT_SWAP = {rat:'gravebeetle', bat:'shambler', goblin:'shambler', archer:'
 
 /* ---------------------------------------------------------------- poison clouds and Rot */
 function addCloud(cx, cy, r, turns, dmg, source){
+  if(source==='beetle'||source==='bloat'){turns+=1;dmg+=sDMG(1);}
   floorMeta.clouds=floorMeta.clouds||[];
   var cells=[];
   for(var y=cy-r;y<=cy+r;y++) for(var x=cx-r;x<=cx+r;x++) if(inb(x,y) && walkable(x,y)) cells.push(idxOf(x,y));
@@ -201,7 +202,7 @@ function cryptCreatureBehavior(e,target){
       if(typeof FoteEnemyTeamwork==='undefined'&&d<=3 && fleeStep(e)){return true;}
       if(d<=5 && e.boltCd<=0 && clearShot(e,target)){   /* 2026-09-22: no grave bolt through its own skeletons */
         e.boltCd=3; setClip(e,'attack'); boltFx(e.x,e.y,target.x,target.y,'dark');
-        var graveChance=hitChance(b.acc+8,evaOf(target));if(target===player)graveChance=hostileHitChance(graveChance,true);
+        var graveChance=hitChance(accOf(e)+8,evaOf(target));if(target===player)graveChance=hostileHitChance(graveChance,true);
         if(rng()<graveChance){ var gd=applyDamage(target, roll(3,6)+Math.floor(floorNo/2), 'dark', e); floatText(target.x,target.y,String(gd),'dark'); if(gd>0&&target.hp>0&&b.fearTouch)inflictFear(target,e,b.fearTouch); log('Necro-Acolyte → '+(target===player?'you':combatText(target.name))+': '+combatDamageNumber(gd,'dark')+'.','c-you'); if(target.hp<=0) kill(target,e); }
         else log('A grave bolt misses.','c-miss');
          return true;
@@ -328,7 +329,7 @@ function mortyAct(e){
      clear-lane rule for shooters stops at the Necro-Acolyte */
   if(d>=2 && d<=7){
     setClip(e,'attack'); boltFx(e.x,e.y,player.x,player.y,'dark'); sfx('shaman-cast',{from:e});
-    if(rng()<hostileHitChance(hitChance(e.base.acc, evaOf(player)),true)){ var sd=applyDamage(player, roll(6,10)+Math.floor(floorNo/2), 'dark', e); floatText(player.x,player.y,String(sd),'dark'); log('Morty soul bolt: '+combatDamageNumber(sd,'dark')+'.','c-you'); if(player.hp<=0) kill(player,e); }
+    if(rng()<hostileHitChance(hitChance(accOf(e), evaOf(player)),true)){ var sd=applyDamage(player, roll(6,10)+Math.floor(floorNo/2), 'dark', e); floatText(player.x,player.y,String(sd),'dark'); log('Morty soul bolt: '+combatDamageNumber(sd,'dark')+'.','c-you'); if(player.hp<=0) kill(player,e); }
     else log('Morty\'s soul bolt misses.','c-miss');
      return;
   }

@@ -222,7 +222,7 @@ function drawDarknessTelegraphs(now){
 /* ---------------------------------------------------------------- webs: pinned for a turn (you can still attack) */
 function webShot(e, who){
   setClip(e,'attack'); boltFx(e.x,e.y,player.x,player.y,'web'); sfx('trap-web',{from:e});
-  if(rng() < hostileHitChance(hitChance(e.base.acc+8, evaOf(player)),true)){
+  if(rng() < hostileHitChance(hitChance(accOf(e)+8, evaOf(player)),true)){
     var web=gameEffects.apply(player,'web',WEBSHOT.pin);
     if(web.applied)player.syllaWeb=WEBSHOT.slow;
     FoteEnemyFields.web(player.x,player.y,e);
@@ -291,7 +291,7 @@ var DEEP_AI = {
     if(ward(false))return true;
     if(d<=PRIEST.range && clearShot(e,target)){
       if(e.hp<=0)return true;setClip(e,'attack'); boltFx(e.x,e.y,target.x,target.y,'blood'); sfx('shaman-cast',{from:e});
-      var chance=hitChance(e.base.acc+6,evaOf(target));if(target===player)chance=hostileHitChance(chance,true);
+      var chance=hitChance(accOf(e)+6,evaOf(target));if(target===player)chance=hostileHitChance(chance,true);
       if(rng()<chance){
         var bd=deepHurt(target, roll(e.dmg[0], e.dmg[1]), 'dark', e, 'Priestess → you');
         if(bd>0 && e.hp>0 && e.hp<e.maxhp){ var hh=Math.min(gameEffects.has(e,'rot')?Math.floor(bd*.5):bd, e.maxhp-e.hp); e.hp+=hh; floatText(e.x,e.y,'+'+hh,'heal'); }
@@ -307,7 +307,7 @@ var DEEP_AI = {
     if(d<=2 && canActorMove(e) && deepCanFlee(e)){ if(e.hp<=0)return true;fleeStep(e);  return true; }
     if(d>=2 && d<=SAP.range && deepShot(e)){
       if(e.hp<=0)return true;setClip(e,'attack'); boltFx(e.x,e.y,player.x,player.y,'magic'); sfx('shaman-cast',{from:e});
-      if(rng() >= hostileHitChance(hitChance(e.base.acc+10, evaOf(player)),true)){ log('Thought Eater '+(e.sapCd<=0 ? 'mana sap' : 'lash')+' misses.','c-miss'); floatText(player.x,player.y,'miss','miss'); if(e.sapCd<=0) e.sapCd=1;  return true; }
+      if(rng() >= hostileHitChance(hitChance(accOf(e)+10, evaOf(player)),true)){ log('Thought Eater '+(e.sapCd<=0 ? 'mana sap' : 'lash')+' misses.','c-miss'); floatText(player.x,player.y,'miss','miss'); if(e.sapCd<=0) e.sapCd=1;  return true; }
       if(e.sapCd<=0){
         e.sapCd=SAP.cd;
         if(player.mp>=1){
@@ -347,7 +347,7 @@ var DEEP_AI = {
     e.boltCd=(e.boltCd===undefined ? 1 : e.boltCd)-1;
     if(e.boltCd<=0 && d>=2 && d<=IMP.range && deepShot(e)){
       if(e.hp<=0)return true;e.boltCd=IMP.cd; setClip(e,'attack'); boltFx(e.x,e.y,player.x,player.y,'fire'); sfx('shaman-cast',{from:e});
-      if(rng()<hostileHitChance(hitChance(e.base.acc+6, evaOf(player)),true)){
+      if(rng()<hostileHitChance(hitChance(accOf(e)+6, evaOf(player)),true)){
         var fd=deepHurt(player, roll(e.dmg[0], e.dmg[1]), 'fire', e, 'Fire Imp → you');
         if(player.hp>0 && rng()<IMP.burn){ applyStatus(player,'burn',3,underdarkEnemyStat(e,sDMG(2))); log('Burning.','c-you'); }
         ignite(player.x, player.y, null);

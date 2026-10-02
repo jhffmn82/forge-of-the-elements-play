@@ -3,6 +3,14 @@ var FOTE_VERSION = 'Beta 1.4.2';
 /* Keep newest first; describe only changes already present in this build. */
 var FOTE_PATCHES = [
   {version:'Beta 1.4.2', notes:[
+    "Enemy accuracy rises with depth. Heavy armor and dedicated evasion builds retain their defenses; robes with little evasion are hit more reliably.",
+    "Brutes, shamans and goblin archers deal 35% more damage on floor 3 and 50% more on floors 4–5. Floors 1–2 are unchanged. Crypt enemy hits ramp from +20% damage on floor 6 to +35% on floor 10.",
+    "Native Cavern enemies have 15% more HP. Wounded enemies in existing saves retain their health percentage, and repeated loads do not stack the increase.",
+    "Grave Beetle and Grave Bloat clouds last one turn longer and deal one more damage per tick. Bone Archers poison every damaging hit; Shades chill and Necro-Acolytes frighten on damaging attacks, subject to immunity.",
+    "Ring of Warding resistance is halved: +20% at +3. Ring of Wizardry grants +20% maximum Mana and +10% spell damage at +3. Ring of Striking grants +2 weapon damage and +2% crit chance at +0, rising to +5 damage and +5% crit at +3. Patron gear bonuses still apply.",
+    "Shadow clone melee attacks, including the offhand, deal shadow damage. Damage and healing labels and clone health cards show whole numbers.",
+    "Chaos boss attacks and Prism Pylons use the same red pulsing floor warnings as other bosses. Discord Pulse marks its inner ring first, then its outer ring.",
+    "Larger Map and Explore buttons on phones. Removed hover popups from menu navigation and sheet tabs.",
     "The treasure room before Chaos now has a forge, including rooms in existing saves.",
     "Murk's Grave Strength grants summons +5% HP, movement speed, attack speed and damage per rank. Divine Power no longer multiplies this bonus.",
     "Shadow clones now fight in melee with copied weapons and combat stats. They finish fights they have joined, then return to you; they do not seek new fights outside your sight.",

@@ -12,12 +12,12 @@ var RINGS = {
   evasion:    {name:'Ring of Evasion',    step:5,    unit:'evasion',          desc:'Evasion.'},
   accuracy:   {name:'Ring of Accuracy',   step:5,    unit:'accuracy',         desc:'Accuracy.'},
   vitality:   {name:'Ring of Vitality',   step:0.08, unit:'% max HP',         pct:true, desc:'Max HP.'},
-  wizardry:   {name:'Ring of Wizardry',   step:0.08, unit:'% max Mana', pct:true, desc:'Max Mana and spell damage.'},
-  striking:   {name:'Ring of Striking',   step:1,    unit:'weapon damage',    desc:'Weapon damage.'},
+  wizardry:   {name:'Ring of Wizardry',   step:0.05, unit:'% max Mana', pct:true, desc:'Max Mana and spell damage.'},
+  striking:   {name:'Ring of Striking',   step:1, base:1, unit:'weapon damage', desc:'Weapon damage and critical chance.'},
   mending:    {name:'Ring of Mending',    step:1/3, unit:'% of max HP healed a turn',pct:true, desc:'Extra HP regeneration while fed and not poisoned.'},
   sustenance: {name:'Ring of Sustenance', step:0.15, unit:'% less hunger',    pct:true, desc:'You get hungry more slowly.'},
   haste:      {name:'Ring of Haste',      step:0.05, unit:'% speed',          pct:true, desc:'Speed.'},
-  warding:    {name:'Ring of Warding',    step:0.10, unit:'% elemental resistance', pct:true, desc:'Resistance to fire, frost, lightning, poison, light and shadow.'},
+  warding:    {name:'Ring of Warding',    step:0.05, unit:'% elemental resistance', pct:true, desc:'Resistance to fire, frost, lightning, poison, light and shadow.'},
   keeneyes:   {name:'Ring of Keen Eyes',  step:0.08, unit:'% trap spotting',  pct:true, desc:'Spot traps and hidden doors more easily.'},
   luck:       {name:'Ring of Luck',       step:0.25, unit:'% loot from enemies', pct:true, desc:'Enemies drop loot more often.'}
 };
@@ -75,11 +75,12 @@ function drainCursedMending(actor,rate,scale){
   if(actor!==player&&actor.hp<=0)kill(actor,null);
 }
 function ringLine(r){
-  var R=RINGS[r.ring], pw=ringPower(r), v=R.step*pw*gearPassiveBonus();
+  var R=RINGS[r.ring], pw=ringPower(r), v=(R.step*pw+(R.base||0)*Math.sign(pw))*gearPassiveBonus();
   if(r.ring==='mending')return v<0?Number((-v).toFixed(2))+'% of max HP lost a turn':'+'+Number(v.toFixed(2))+R.unit;
   if(r.ring==='sustenance')return v<0?Math.round(-v*100)+'% more hunger':Math.round(v*100)+'% less hunger';
   if(r.ring==='keeneyes'&&v<0)return Math.round(-v*100)+'% less chance to spot traps or find hidden doors';
-  if(r.ring==='wizardry'){var sd=Math.max(-50,v*200/3);return (v>=0?'+':'')+Math.round(v*100)+'% max Mana, '+(sd>=0?'+':'')+Math.round(sd)+'% spell damage';}  /* spellPower() never lets the ring take more than 50% */
+  if(r.ring==='wizardry'){var sd=Math.max(-50,v*50);return (v>=0?'+':'')+Math.round(v*100)+'% max Mana, '+(sd>=0?'+':'')+Number(sd.toFixed(2))+'% spell damage';}  /* spellPower() never lets the ring take more than 50% */
+  if(r.ring==='striking')return (v>=0?'+':'')+Math.round(v)+' weapon damage, '+(v>=0?'+':'')+Number(v.toFixed(2))+'% crit chance';
   return (v>=0?'+':'')+(R.pct?Math.round(v*100):Math.round(v*100)/100)+(R.pct?'':' ')+R.unit;
 }
 function ringDescription(r){
