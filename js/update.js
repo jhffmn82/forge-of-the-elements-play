@@ -3,6 +3,7 @@ var FOTE_VERSION = 'Beta 1.5';
 /* Keep newest first; describe only changes already present in this build. */
 var FOTE_PATCHES = [
   {version:'Beta 1.5', notes:[
+    "Rock Slime armor returns from 7 to 3, and regeneration returns from 3 to 2 HP per turn.",
     "New title page with actual gameplay, clearer still portraits for every race and gender, and larger portraits with readable level, rank and floor labels.",
     "Revised puzzle and special rooms, rare encounters, libraries, storage rooms and map generation. Biome artwork preserves room mechanisms and routes to rewards.",
     "Area effects and hazards are clearer. Chaos boss attacks and Prism Pylons use the same pulsing red warnings as other bosses.",

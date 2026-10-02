@@ -29,7 +29,7 @@ var FoteGreenSlime=(function(){
    if(e.hp<=0||!splittingSlime(e)||e.state!=='hunt'||e.greenPulseAt===clock)return;
    e.greenPulseAt=clock;
    if(gameEffects.has(e,'poison')||gameEffects.has(e,'rot'))return;
-   e.hp=Math.min(e.maxhp,e.hp+(e.kind==='slime'?3:2));
+   e.hp=Math.min(e.maxhp,e.hp+2);
   });
   if(!floorMeta.greenTrail)return;
   var trail=floorMeta.greenTrail;
