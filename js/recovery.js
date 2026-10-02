@@ -56,7 +56,7 @@ function castReginaldLance(x,y){
     var lpath=spearPath(player.x,player.y,x,y).slice(0,5);if(!lpath.length)return false;
     player.favor-=PRAYERS.lance.favor;startPrayerCd('lance');aiming=null;setClip(player,'melee');sfx('swing');
     var lend=lpath[lpath.length-1];boltFx(player.x,player.y,lend.x,lend.y,'phys');
-    var struck=0,hit=new Set();lpath.forEach(function(p){ents.slice().forEach(function(e){if(e.foe&&e.hp>0&&!hit.has(e)&&entityOccupies(e,p.x,p.y)){hit.add(e);attack(player,e,divineStrength(),'Lance');struck++;}});});
+    var struck=0,hit=new Set();lpath.forEach(function(p){ents.slice().forEach(function(e){if(e.foe&&e.hp>0&&!hit.has(e)&&entityOccupies(e,p.x,p.y)){hit.add(e);attack(player,e,divineStrength(),'Lance');struck++;}});if(spellPropHit(p.x,p.y,'phys'))struck++;});
     if(!struck)log('Lance: no targets.','c-info');
     player.hidden=0;endTurn();return true;
   }
@@ -64,6 +64,6 @@ function castBoneSpear(x,y){  if(!canPray('bonespear') || !inb(x,y) || dist(play
   var path=spearPath(player.x,player.y,x,y);if(!path.length)return false;
   if(!spendPrayer('bonespear'))return false;player.castingSpell=true;aiming=null;setClip(player,'cast');sfx('shadow-cast');
   var end=path[path.length-1];boltFx(player.x,player.y,end.x,end.y,'blood');
-  var hit=new Set();path.forEach(function(p){ents.slice().forEach(function(e){if(!e.foe||e.hp<=0||hit.has(e)||!entityOccupies(e,p.x,p.y))return;hit.add(e);if(combatRoll(hitChance(player.acc+10,evaOf(e)),true)){spellHit(e,BONE_SPEAR,Math.round(roll(5*godRank(),5*godRank()+6)*divineStrength()),'dark');finishHit(e);}});});
+  var hit=new Set();path.forEach(function(p){ents.slice().forEach(function(e){if(!e.foe||e.hp<=0||hit.has(e)||!entityOccupies(e,p.x,p.y))return;hit.add(e);if(combatRoll(hitChance(player.acc+10,evaOf(e)),true)){spellHit(e,BONE_SPEAR,Math.round(roll(5*godRank(),5*godRank()+6)*divineStrength()),'dark');finishHit(e);}});spellPropHit(p.x,p.y,'dark');});
   endTurn();return true;
 }

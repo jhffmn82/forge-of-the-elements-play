@@ -122,7 +122,7 @@ var PRAYER_LIVE = {
   'the-brood':function(){return actionDetail('Summon spiderlings whose bites web or poison.',[['Summons','Up to 3 spiderlings'],['Duration',lvTurns(fullDivineDuration(SYLLA.broodLife))]],['Replaces your previous brood.']);},
   'venom-burst':function(){return actionDetail('Poison and blind nearby enemies.',[['Damage',lvDivineDamage(6)+' poison'],['Area','3-tile radius'],['Poison','3 turns'],['Blind','3 turns']]);},
   bonespear:function(){return actionDetail('Pierce every enemy in a line.',[['Damage',lvDivineDamage(6)+' shadow'],['Range','6 tiles']],['Must leave at least 1 HP.']);},
-  arcanelance:function(){return actionDetail('Hit one enemy.',[['Damage',lvDivineDamage(6)+' magic'],['Range','6 tiles']]);},
+  arcanelance:function(){return actionDetail('Hit an enemy or breakable object.',[['Damage',lvDivineDamage(6)+' magic'],['Range','6 tiles']]);},
   arcanenova:function(){return actionDetail('Hit enemies around a target tile.',[['Damage',lvDivineDamage(8)+' magic'],['Range','6 tiles'],['Area','3×3 tiles']]);},
   raisedead:function(){return actionDetail('Call an undead servant.',[['Summons','One servant'],['Duration','Until destroyed or you leave the floor']],['Cannot summon while your servant still stands or your Lich is returning.']);},
   fieldsmelt:function(){return actionDetail('Recycle one carried item for its full Essence value.',[['Cast','Instant']],['Requires being out of combat.']);},

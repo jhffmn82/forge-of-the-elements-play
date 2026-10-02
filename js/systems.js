@@ -364,6 +364,12 @@ function spillBarrel(p){
   if(typeof SURF_CACHE!=='undefined')SURF_CACHE.key=null;
   log(fluid==='water'?'Water spills across the room.':'The barrel spills a poison pool.','c-info');
 }
+/* Damaging spells share prop reactions; frozen treasure still requires fire. */
+function spellPropHit(x,y,type){
+  var p=propAt(x,y);
+  if(!p||!p.br||p.hoard&&type!=='fire')return false;
+  damageProp(p,'player',type);return true;
+}
 function damageProp(p, src, type){
   if(p&&p.curtain)return cutWebCurtain(p,src,type);
   if(p&&p.bush)return cutBushProp(p,src,type);

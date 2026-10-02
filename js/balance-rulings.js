@@ -6,10 +6,13 @@ var ARCANE_LANCE={name:'Arcane Lance',kind:'bolt',type:'magic',range:6,base:[10,
 
 
 function castArcaneLance(x,y){
- if(dist(player,{x:x,y:y})>6||!inb(x,y)||!vis[idxOf(x,y)]||!canPray('arcanelance'))return false;
- var path=boltPath(player.x,player.y,x,y),p=path[path.length-1],target=p&&foeAt(p.x,p.y);if(!target||target.tomb>0)return false;
- aiming=null;spendDivineSpell(5);startPrayerCd('arcanelance');player.castTurn=turn;setClip(player,'cast');sfx('magic-missile');boltFx(player.x,player.y,target.x,target.y,'magic');
- if(combatRoll(hitChance(player.acc+10,evaOf(target)),true)){spellHit(target,ARCANE_LANCE,Math.round(roll(5*godRank(),5*godRank()+6)*divineStrength()),'magic');finishHit(target);}else floatText(target.x,target.y,'miss','miss');endTurn();return true;
+ if(dist(player,{x:x,y:y})>6||!inb(x,y)||!(revealAll||vis[idxOf(x,y)])||!canPray('arcanelance')||(x===player.x&&y===player.y))return false;
+ var path=propProjectilePath(player.x,player.y,x,y),p=path[path.length-1],target=p&&foeAt(p.x,p.y),prop=p&&propAt(p.x,p.y);
+ if(!p||target&&target.tomb>0||!target&&occupied(p.x,p.y,player))return false;
+ if(!target&&!(prop&&prop.br&&!prop.hoard)){log('Nothing to hit there.','c-info');return false;}
+ aiming=null;spendDivineSpell(5);startPrayerCd('arcanelance');player.castTurn=turn;setClip(player,'cast');sfx('magic-missile');boltFx(player.x,player.y,p.x,p.y,'magic');
+ if(!target)spellPropHit(p.x,p.y,'magic');
+ else if(combatRoll(hitChance(player.acc+10,evaOf(target)),true)){spellHit(target,ARCANE_LANCE,Math.round(roll(5*godRank(),5*godRank()+6)*divineStrength()),'magic');finishHit(target);}else floatText(target.x,target.y,'miss','miss');endTurn();return true;
 }
 
 function wobbleBias(r){return r>=3?.05*(r-1):0;}
@@ -128,6 +131,7 @@ function castArcaneNova(x,y){
   if(!inRange(x,y)||!canPray('arcanenova'))return false;
   var A=aiming.A;aiming=null;spendDivineSpell(20);startPrayerCd('arcanenova');player.castTurn=turn;setClip(player,'cast');sfx('cast-generic');
   var prior=AOE_HIT;AOE_HIT=true;try{ents.slice().forEach(function(e){if(e.foe&&e.hp>0&&dist(e,{x:x,y:y})<=1){spellHit(e,A,Math.round(roll(5*godRank(),5*godRank()+8)*divineStrength()),'magic');finishHit(e);}});}finally{AOE_HIT=prior;}
+  effectFootprint(A,x,y).forEach(function(p){spellPropHit(p[0],p[1],'magic');});
   ringFx(x,y,'#7FA8FF',1.5);endTurn();return true;
  }
  return false;

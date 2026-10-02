@@ -673,7 +673,9 @@ body.fote-study.study-touch[data-ui-touch-pad=off] #app #dpad{display:none!impor
 body.fote-study :is(#studyMenuToggle,#studyLogClose,#studyPortrait,#studyStatPoints,#studyPietyBar,#studyInventoryIcon,#studySheetTabs),body.fote-study #studyNav :is(#studyHistory,.study-menu-panel){display:none;}
 body.fote-study.study-minimal{
  --minimal-status-scale:calc(var(--study-interface-scale,1) * var(--ui-status-scale,1.3));
- --minimal-depth-height:calc(18px * var(--study-interface-scale,1) * var(--ui-text-scale,1));
+ --minimal-value-font:max(12px,calc(12px * var(--minimal-status-scale) * var(--ui-text-scale,1)));
+ --minimal-detail-font:max(12px,calc(11px * var(--minimal-status-scale) * var(--ui-text-scale,1)));
+ --minimal-depth-height:calc(var(--minimal-detail-font) * 1.4);
  --minimal-inset:calc(12px * var(--study-interface-scale,1));--minimal-bars:min(calc(244px * var(--minimal-status-scale)),calc(100vw - 2 * var(--minimal-inset) - var(--minimal-menu-size) - 12px));--minimal-portrait:calc(68px * var(--minimal-status-scale));--minimal-slot:calc(52px * var(--study-interface-scale,1));
  --minimal-hotbar-gap:calc(4px * var(--study-interface-scale,1));--minimal-menu-size:calc(44px * var(--study-interface-scale,1));--minimal-action-size:calc(40px * var(--study-interface-scale,1));
  --minimal-menu-gap:calc(8px * var(--study-interface-scale,1));--minimal-column-offset:calc((var(--minimal-menu-size) + var(--minimal-menu-gap)) / 2);--minimal-pad-bottom:calc(var(--minimal-inset) + env(safe-area-inset-bottom,0px));
@@ -708,8 +710,9 @@ body.fote-study.study-minimal #app #bars{
  grid-column:2;grid-row:2;grid-template-rows:calc(20px * var(--minimal-status-scale)) calc(18px * var(--minimal-status-scale)) calc(5px * var(--minimal-status-scale)) calc(5px * var(--minimal-status-scale))!important;gap:calc(4px * var(--minimal-status-scale))!important;pointer-events:auto;
 }
 body.fote-study.study-minimal #app #bars .bar{height:100%!important;grid-column:1;min-width:0;border-radius:3px;}
-body.fote-study.study-minimal #app #bars .bar span{font-size:calc(12px * var(--ui-text-scale,1) * var(--minimal-status-scale))!important;padding:0 8px!important;}
-body.fote-study.study-minimal #app #bars .bar .l{font-size:calc(10px * var(--ui-text-scale,1) * var(--minimal-status-scale));}
+body.fote-study.study-minimal #app #bars .bar span{font:600 var(--minimal-value-font)/1.2 var(--mono)!important;padding:0 8px!important;font-variant-numeric:tabular-nums;}
+body.fote-study.study-minimal #app #bars .bar b{font:inherit;}
+body.fote-study.study-minimal #app #bars .bar .l{font-size:inherit;font-weight:500;letter-spacing:0;}
 body.fote-study.study-minimal #app #bars .xp span{display:none;}
 body.fote-study.study-minimal #app #studyPietyBar{display:block;padding:0;overflow:hidden;border-radius:3px;}
 body.fote-study.study-minimal #app #studyPietyBar[hidden]{display:none;}
@@ -722,7 +725,7 @@ body.fote-study.study-minimal #studyPortraitArt canvas{display:block;width:100%;
 body.fote-study.study-minimal.study-pad-right #app #studyPortrait{grid-column:2;}
 body.fote-study.study-minimal.study-pad-right #app :is(#bars,#studyReadouts){grid-column:1;}
 body.fote-study.study-minimal.study-pad-right #app #statusbar{grid-column:1;justify-content:flex-end;}
-body.fote-study.study-minimal #studyPortraitStats{display:flex;position:absolute;bottom:-3px;left:50%;transform:translateX(-50%);align-items:center;gap:6px;font:calc(11px * var(--ui-text-scale,1) * var(--minimal-status-scale))/1.64 var(--mono);padding:0 5px;border-radius:5px;white-space:nowrap;}
+body.fote-study.study-minimal #studyPortraitStats{display:flex;position:absolute;bottom:-3px;left:50%;transform:translateX(-50%);align-items:center;gap:6px;font:500 var(--minimal-detail-font)/1.4 var(--mono);font-variant-numeric:tabular-nums;padding:0 5px;border-radius:5px;white-space:nowrap;}
 body.fote-study.study-minimal :is(#studyLevel,#studyRank){position:static;font:inherit;padding:0;border:0;background:none;}
 body.fote-study.study-minimal #studyRank[hidden]{display:none;}
 body.fote-study.study-minimal #studyStatPoints{
@@ -730,7 +733,7 @@ body.fote-study.study-minimal #studyStatPoints{
  top:calc(var(--minimal-depth-height) + var(--minimal-portrait) - 46px * var(--study-interface-scale,1));left:calc(-8px * var(--study-interface-scale,1));
  min-width:calc(32px * var(--study-interface-scale,1));height:calc(28px * var(--study-interface-scale,1));padding:0 5px;pointer-events:auto;
  border:1px solid var(--gold);border-radius:14px!important;background:var(--ui-header-face);color:var(--gold);
- font:calc(12px * var(--study-interface-scale,1)) var(--mono);animation:study-stat-points-glow 3.8s ease-in-out infinite;
+ font:500 calc(11px * var(--study-interface-scale,1)) var(--mono);animation:study-stat-points-glow 3.8s ease-in-out infinite;
 }
 body.fote-study.study-minimal.study-pad-right #app #studyStatPoints{left:auto;right:calc(-8px * var(--study-interface-scale,1));}
 body.fote-study.study-minimal #studyStatPoints[hidden]{display:none;}
@@ -741,17 +744,17 @@ body.fote-study.study-minimal #studyStatPoints.study-still{animation:none;}
 body.fote-study.study-minimal #app #studyReadouts{
  display:flex;flex-wrap:wrap;grid-column:2;grid-row:3;align-items:center;gap:calc(4px * var(--study-interface-scale,1)) calc(8px * var(--study-interface-scale,1));padding:0;margin-top:2px;pointer-events:auto;
 }
-body.fote-study.study-minimal #studyDepth{grid-column:1/-1;grid-row:1;min-width:0;height:var(--minimal-depth-height);font:600 calc(14px * var(--ui-text-scale,1) * var(--study-interface-scale,1))/1.15 var(--display);color:var(--ui-gold,var(--gold));text-shadow:0 1px 3px #000;white-space:nowrap;}
+body.fote-study.study-minimal #studyDepth{grid-column:1/-1;grid-row:1;min-width:0;height:var(--minimal-depth-height);font:500 var(--minimal-detail-font)/1.4 var(--mono);color:var(--ui-gold,var(--gold));text-shadow:0 1px 3px #000;white-space:nowrap;}
 body.fote-study.study-minimal.study-pad-right #studyDepth{text-align:right;}
 body.fote-study.study-minimal #app #hud2{display:flex!important;width:auto;flex:0 0 auto;}
 body.fote-study.study-minimal #app #hud2 :is(.study-wallet,.study-piety){display:none!important;}
 body.fote-study.study-minimal #app #hud2 .study-favor{height:max(24px,calc(20px * var(--minimal-status-scale) * var(--ui-text-scale,1)));background:none;border:0;}
 body.fote-study.study-minimal #app #hud2 .study-favor .meter{display:none!important;}
-body.fote-study.study-minimal #app #studyHunger{height:calc(20px * var(--study-interface-scale,1))!important;flex:0 0 auto;padding:0 4px!important;}
+body.fote-study.study-minimal #app #studyHunger{height:max(24px,calc(var(--minimal-detail-font) * 1.4))!important;flex:0 0 auto;padding:0 4px!important;}
 body.fote-study.study-minimal #app #studyHunger.study-fed{display:none;}
-body.fote-study.study-minimal #app #studyHungerText{font-size:calc(11px * var(--ui-text-scale,1) * var(--minimal-status-scale));flex-basis:auto;}
-body.fote-study.study-minimal #app #hud2 .study-favor{font-size:max(13px,calc(12px * var(--ui-text-scale,1) * var(--minimal-status-scale)))!important;}
-body.fote-study.study-minimal #app #hud2 .study-favor .rk{font-size:inherit;font-weight:600;}
+body.fote-study.study-minimal #app #studyHungerText{font:500 var(--minimal-detail-font)/1.4 var(--mono);flex-basis:auto;}
+body.fote-study.study-minimal #app #hud2 .study-favor{font:600 var(--minimal-detail-font)/1.4 var(--mono)!important;font-variant-numeric:tabular-nums;}
+body.fote-study.study-minimal #app #hud2 .study-favor .rk{font:inherit;}
 body.fote-study.study-minimal #app #studyHunger .study-hunger-track{display:none;}
 body.fote-study.study-minimal #app #statusbar{
  display:flex;position:static;inset:auto;max-width:100%;width:100%;min-height:0;
@@ -759,7 +762,7 @@ body.fote-study.study-minimal #app #statusbar{
 }
 body.fote-study.study-minimal #statusbar .sico{width:calc(36px * var(--study-interface-scale,1));height:calc(36px * var(--study-interface-scale,1));}
 body.fote-study.study-minimal #statusbar .sico img{width:calc(32px * var(--study-interface-scale,1));height:calc(32px * var(--study-interface-scale,1));}
-body.fote-study.study-minimal #statusbar .sico .n{font-size:calc(11px * var(--study-interface-scale,1));}
+body.fote-study.study-minimal #statusbar .sico .n{font:600 calc(11px * var(--study-interface-scale,1))/1.2 var(--mono);font-variant-numeric:tabular-nums;}
 body.fote-study.study-minimal #statusbar:empty{display:none;}
 /* One corner log on every device, opposite the pad and clear of the hotbar. */
 body.fote-study.study-minimal #studyRecentLog{

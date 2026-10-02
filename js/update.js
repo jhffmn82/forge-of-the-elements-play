@@ -3,6 +3,8 @@ var FOTE_VERSION = 'Beta 1.4.2';
 /* Keep newest first; describe only changes already present in this build. */
 var FOTE_PATCHES = [
   {version:'Beta 1.4.2', notes:[
+    "Arcane Lance can target breakable objects. Damaging line and area spells also break props, using their normal barrel reactions. Frozen treasure still needs Fire.",
+    "HUD text uses one font with consistent weights and sizes for HP, Mana, level, rank, hunger, Favor and depth.",
     "Vellum gains piety from Mana spent on invocations as well as spells. Communion uses one status icon, with its remaining Ward shown in the tooltip.",
     "Enemy accuracy rises with depth. Heavy armor and dedicated evasion builds retain their defenses; robes with little evasion are hit more reliably.",
     "Brutes, shamans and goblin archers deal 35% more damage on floor 3 and 50% more on floors 4–5. Floors 1–2 are unchanged. Crypt enemy hits ramp from +20% damage on floor 6 to +35% on floor 10.",

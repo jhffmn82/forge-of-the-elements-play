@@ -778,7 +778,7 @@ var PRAYERS = {
     "name": "Arcane Lance",
     "rank": 2,
     "favor": 5,
-    "desc": "Deal magic damage to one enemy within 6 tiles. Costs 5 Favor. No cooldown."
+    "desc": "Fire a magic bolt at an enemy or breakable object within 6 tiles. Costs 5 Favor. No cooldown."
   },
   "luckystreak": {
     "name": "Lucky Streak",

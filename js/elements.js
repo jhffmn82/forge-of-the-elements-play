@@ -60,7 +60,9 @@ function washGround(x,y){
 function markGround(tiles, A){
   if(!iceG) groundReset();
   tiles.forEach(function(t){
-    var x=t[0], y=t[1]; if(!inb(x,y) || !walkable(x,y)) return; var i=idxOf(x,y);
+    var x=t[0], y=t[1]; if(!inb(x,y)) return;
+    spellPropHit(x,y,A.type||elemToType(A.el)||'magic');
+    if(!walkable(x,y)) return; var i=idxOf(x,y);
     if(A.el==='fire' && aff('fire')>=6 && at(x,y)!==WATER){ fireT[i]=Math.max(fireT[i],3); fireSrc[i]=1; }
     if(A.el==='water' && aff('water')>=6) iceG[i]=3;
     if(A.el==='earth' && aff('earth')>=6) rootG[i]=3;
@@ -226,8 +228,11 @@ function castElementTarget(x,y){
 
   }
   else if(A.kind==='chain'){
-    var path=boltPath(player.x,player.y,x,y), end=path.length?path[path.length-1]:{x:x,y:y}, t0=foeAt(end.x,end.y);
-    if(!t0){ log('Chain Lightning needs an enemy to strike.','c-info'); return false; }
+    var path=propProjectilePath(player.x,player.y,x,y), end=path.length?path[path.length-1]:{x:x,y:y}, t0=foeAt(end.x,end.y),prop=propAt(end.x,end.y);
+    if(!t0){
+      if(!prop||!prop.br||prop.hoard||occupied(end.x,end.y,player)){log('Nothing to hit there.','c-info');return false;}
+      beginCast(A);boltFx(player.x,player.y,end.x,end.y,'lightning');spellPropHit(end.x,end.y,'lightning');endTurn();return true;
+    }
     beginCast(A);
     var hit=[t0], cur=t0, amt=spellRoll(A), from={x:player.x,y:player.y};
     for(var j=0;j<5 && cur;j++){
