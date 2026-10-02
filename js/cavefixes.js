@@ -163,10 +163,10 @@ function drawWideCaveProp(p, px, py, alpha){
 function trimGeneratedCavernClusters(seed){
 
   if(typeof inCaverns==='function' && inCaverns() && typeof props!=='undefined'){
-    var moss=props.filter(function(p){ return /^cl-glow-moss/.test(p.name); });
+    var moss=props.filter(function(p){ return !p.keep && /^cl-glow-moss/.test(p.name); });
     var lone=moss.filter(function(p){ return !moss.some(function(q){ return q!==p && Math.abs(q.x-p.x)+Math.abs(q.y-p.y)===1; }); });
     /* crystals, rubble and small mushrooms only where the floor meets the rock (converted Dungeon props included) */
-    var loose=props.filter(function(p){ return /^cl-(crystal-shards|rubble|small-mushrooms)/.test(p.name) && ![[1,0],[-1,0],[0,1],[0,-1]].some(function(d){ return isWallLike(at(p.x+d[0],p.y+d[1])); }); });
+    var loose=props.filter(function(p){ return !p.keep && /^cl-(crystal-shards|rubble|small-mushrooms)/.test(p.name) && ![[1,0],[-1,0],[0,1],[0,-1]].some(function(d){ return isWallLike(at(p.x+d[0],p.y+d[1])); }); });
     lone=lone.concat(loose);
     if(lone.length){ props=props.filter(function(p){ return lone.indexOf(p)<0; }); if(typeof rebuildPropGrid==='function') rebuildPropGrid(); }
   }
@@ -181,6 +181,7 @@ function clearGeneratedCavernProps(seed){
     if(TH){
       var themeTall=TH.tall.map(function(t){ return t[0]; });
       props=props.filter(function(p){
+        if(p.keep)return true;
         var m=p.name.match(/^cl-(small-mushrooms|crystal-shards|rubble|cave-pearls|lost-miner)/);
         if(m) return TH.clusters.indexOf(m[1])>=0 || (m[1]==='lost-miner' && TH.miner);
         var tl=p.name.match(/^(stalagmite-tall|giant-mushroom|pylon|stalagmite-group|geode|mushroom-pair|mine-cart|mine-support)/);
@@ -192,7 +193,7 @@ function clearGeneratedCavernProps(seed){
     var bigs=props.filter(function(p){ return CAVE_BIG.test(p.name); });
     function nearBig(x,y){ return bigs.some(function(b){ var w=b.w||1, h=b.h||1; return x>=b.x-1 && x<=b.x+w && y>=b.y-1 && y<=b.y+h; }); }
     var before=props.length;
-    props=props.filter(function(p){ return !(/^cl-/.test(p.name) && nearBig(p.x,p.y)); });
+    props=props.filter(function(p){ return p.keep || !(/^cl-/.test(p.name) && nearBig(p.x,p.y)); });
     if(props.length!==before && typeof rebuildPropGrid==='function') rebuildPropGrid();
     if(floorMeta.caveDeco) floorMeta.caveDeco.decals=floorMeta.caveDeco.decals.filter(function(d){ return !nearBig(d.x,d.y); });
   }

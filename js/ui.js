@@ -542,6 +542,11 @@ function inspectHTML(mx,my){
         (lever.used?'Already pulled':'Ready to pull')+'</b></div><div class="hint">'+
         (lever.used?lever.result:action+' or bump this lever to '+lever.effect+'.')+'</div>';
     }
+    if(p.sentry||p.sentinel||p.guardianStatue){
+      var guardianRoom=puzzleRoomAt(p.x,p.y),quiet=guardianRoom&&guardianRoom.puzzle.solved;
+      var sentry=p.sentry||guardianRoom&&guardianRoom.puzzle.kind==='sentries';
+      return '<div class="nm">'+(sentry?'Stone Sentry':'Stone Sentinel')+'</div><div class="hint">'+(quiet?'Dormant guardian.':sentry?'Fires at visible targets. Pillars block its bolts; concealment, Shadow mastery or the lever lets you pass.':'Awakens on entry. Stoneskin or Earth mastery lets you pass; the lever disables it.')+'</div>';
+    }
     var pn=({'urn-group':'urns','stack-group':p.kinds && p.kinds.indexOf('pot')>=0 && p.kinds.indexOf('crate')<0 ? 'pots' : 'crates and barrels','urn-shattered':'broken urn','urn-tall':'urn','urn-squat':'urn','urn-ornate':'urn','barrel-explosive':'powder barrel','altar-spikes':'sacrifice altar','drow-altar-blood':'sacrifice altar'})[p.name] || p.name.replace(/-/g,' ');
     var hint = p.breakReward ? 'A blade is embedded in the moss-covered stone.' : p.merchantId!==undefined ? 'Browse the merchant stock. Purchases cost essence.' : p.ritual&&p.prisoner ? 'Captive: '+p.captiveHp+'/'+p.captiveMaxhp+' HP. The ritual drains 2 HP per round. Free them or interrupt the priestess.' : p.ex ? 'Explodes when broken or burned.' : p.br ? 'Breakable. Might hold something.' : p.tablet ? 'A broken tablet. Read it.' :
       p.altar ? 'Offer blood for rewards.' : p.prisoner ? 'Someone is locked inside. Let them out and hope they are grateful.' : p.name==='elemental-lock' ? 'Wants one '+p.element+' mote.' : p.drink ? 'Drink from it.' :

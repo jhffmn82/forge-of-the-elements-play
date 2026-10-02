@@ -1,13 +1,17 @@
 /* Biome rules prepare a prop once, then common creation owns grid registration. */
+function cryptPropName(c){
+  /* Guardian statues carry the puzzle's behavior and must keep their identity. */
+  return c.extra&&(c.extra.sentry||c.extra.sentinel||c.extra.guardianStatue)?c.name:(CRYPT_PROP[c.name]||c.name);
+}
 function propDeepTheme(c){
   if(inDeep()&&floorMeta.deepRegion&&!(c.extra&&(c.extra.keep||c.extra.tablet||c.extra.lever||c.extra.prisoner||c.extra.deep))){
     var table=DEEP_PROP[deepRegionAt(c.x,c.y)]||{};
     if(c.name in table){var mapped=table[c.name];if(mapped===null){c.done=true;return;}c.name=typeof mapped==='string'?mapped:mapped[Math.floor(rng()*mapped.length)];}
   }
 }
-function propCryptPack(c){
+function propCryptPack(c){if(c.extra&&c.extra.keep)return;
   if(!packCryptOn())return;
-  var name=c.name,mapped=CRYPT_PROP[name]||name;
+  var name=c.name,mapped=cryptPropName(c);
   if((mapped==='grave-pillar'||(mapped==='coffin'&&rng()<.5))&&!(c.extra&&c.extra.cp)){c.extra=Object.assign({},c.extra||{},{cp:true});return;}
   c.after.push(function(p){
     if(!p||p.name!=='pedestal')return;
@@ -68,10 +72,10 @@ function propTightRooms(c){
   if(room&&rng()<.4&&(c.name==='urn-group'||c.name==='pedestal'||big)){c.done=true;return;}
   if(!room&&c.name==='pedestal'&&rng()<.35)c.done=true;
 }
-function propGravePosts(c){if(cpOn()&&c.name==='grave-post'){c.name='pedestal';c.extra=Object.assign({},c.extra||{},{cp:true,set:false,top:'none',seed:(c.x*13+c.y*7)%97});}}
-function propCryptTombs(c){
+function propGravePosts(c){if(c.extra&&c.extra.keep)return;if(cpOn()&&c.name==='grave-post'){c.name='pedestal';c.extra=Object.assign({},c.extra||{},{cp:true,set:false,top:'none',seed:(c.x*13+c.y*7)%97});}}
+function propCryptTombs(c){if(c.extra&&c.extra.keep)return;
   if(!cpOn()||c.extra&&c.extra.cp)return;
-  var mapped=CRYPT_PROP[c.name]||c.name,x=c.x,y=c.y;
+  var mapped=cryptPropName(c),x=c.x,y=c.y;
   if(mapped==='sarcophagus'||mapped==='sarcophagus-open'||mapped==='coffin'){
     var kind=mapped==='sarcophagus-open'?'open':rng()<.3?'cracked':'intact';
     var horiz=inb(x+1,y)&&freeCell(x+1,y)&&!nearDoor(x+1,y),vert=inb(x,y+1)&&freeCell(x,y+1)&&!nearDoor(x,y+1),piece;
@@ -82,22 +86,22 @@ function propCryptTombs(c){
   }else if(mapped==='grave-pillar'){c.name='pedestal';c.extra=Object.assign({cp:true,top:rng()<.6?'skull':'none',seed:Math.floor(rng()*97)},c.extra||{});}
 }
 function propCrateStacks(c){
-  if(inCrypt()||floorMeta&&floorMeta.plane||!['crate','barrel','pot'].includes(c.name)||c.extra&&c.extra.pattern!==undefined)return;
+  if(c.extra&&c.extra.keep||inCrypt()||floorMeta&&floorMeta.plane||!['crate','barrel','pot'].includes(c.name)||c.extra&&c.extra.pattern!==undefined)return;
   var name=c.name;c.name='stack-group';c.extra=Object.assign(stackGroupExtra(name),c.extra||{});
   c.after.push(function(p){if(p&&name==='pot'){p.burn=0;p.sfx='pot-break';}});
 }
-function propUrnGroups(c){var mapped=CRYPT_PROP[c.name]||c.name;if(cryptRoomsOn()&&mapped==='urn'&&!(c.extra&&c.extra.pattern!==undefined)){c.name='urn-group';c.extra=Object.assign(urnGroupExtra(),c.extra||{});}}
+function propUrnGroups(c){if(c.extra&&c.extra.keep)return;var mapped=CRYPT_PROP[c.name]||c.name;if(cryptRoomsOn()&&mapped==='urn'&&!(c.extra&&c.extra.pattern!==undefined)){c.name='urn-group';c.extra=Object.assign(urnGroupExtra(),c.extra||{});}}
 function propCryptMushrooms(c){
   if(c.name!=='mushrooms'||!cryptShrooms()||c.extra&&c.extra.keep)return;
   if(inb(c.x,c.y)&&at(c.x,c.y)===FLOOR)blob(c.x,c.y,ri(4,9),function(x,y){if(at(x,y)===FLOOR&&!gAt(x,y)&&!propAt(x,y))setG(x,y,G_GRASS);});c.done=true;
 }
-function propWispPosts(c){
+function propWispPosts(c){if(c.extra&&c.extra.keep)return;
   if(inCrypt()&&!(floorMeta&&floorMeta.plane)&&(c.name==='torch-stand'||c.name==='candelabra')&&!(c.extra&&c.extra.set)&&rng()<.35){
     c.name='grave-post';c.extra=Object.assign({set:true,w:1,h:1,b:1,wisps:true,light:'#7CFFA0',dim:1},c.extra||{});
   }
 }
-function propCryptTheme(c){
-  if(inCrypt()&&CRYPT_PROP[c.name])c.name=CRYPT_PROP[c.name];
+function propCryptTheme(c){if(c.extra&&c.extra.keep)return;
+  if(inCrypt())c.name=cryptPropName(c);
   var x=c.x,y=c.y,extra=c.extra;c.after.push(function(p){if(p&&p.name==='candelabra'&&inCrypt()&&!(extra&&extra.light)){p.violet=hash2(x,y,91)<.6;p.light=p.violet?'#B07CFF':'#7CFFA0';}});
 }
 var propCreation=FoteContent.props([

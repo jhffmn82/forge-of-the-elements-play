@@ -386,7 +386,7 @@ function packMossGroups(list){
 }
 function packPlacementPass(){
   var movedBlocker=false;
-  function scatter(){ return props.filter(function(p){ return !p.set && !p.wall && packKindOf(p); }); }
+  function scatter(){ return props.filter(function(p){ return !p.keep && !p.set && !p.wall && packKindOf(p); }); }
   /* 1. wall-side and clear of the big pieces: moved to the nearest good spot in the same room, or dropped */
   scatter().forEach(function(p){
     var k=packKindOf(p);
@@ -410,10 +410,10 @@ function packPlacementPass(){
   scatter().forEach(function(p){ if(keep.indexOf(packKindOf(p))<0 && !packInHall(p)) packDropScatter(p); });
   rebuildPropGrid();
   /* 3. flower streaks shorter than three go; then at most 0-2 scatter groups a room (none loose in corridors) */
-  packMossGroups(props.filter(function(p){ return packKindOf(p)==='moss'; })).forEach(function(g){ if(g.length<3) g.forEach(packDropScatter); });
+  packMossGroups(props.filter(function(p){ return !p.keep && packKindOf(p)==='moss'; })).forEach(function(g){ if(g.length<3) g.forEach(packDropScatter); });
   rebuildPropGrid();
   var byRoom={}, loose=[];
-  var mossG=packMossGroups(props.filter(function(p){ return packKindOf(p)==='moss' && !packInHall(p); }));
+  var mossG=packMossGroups(props.filter(function(p){ return !p.keep && packKindOf(p)==='moss' && !packInHall(p); }));
   var groups=mossG.concat(scatter().filter(function(p){ return packKindOf(p)!=='moss' && !packInHall(p); }).map(function(p){ return [p]; }));
   groups.forEach(function(g){ var r=roomAt(g[0].x, g[0].y); if(!r){ loose.push(g); return; } (byRoom[r.id]=byRoom[r.id]||{r:r, g:[]}).g.push(g); });
   loose.forEach(function(g){ g.forEach(packDropScatter); });
@@ -433,7 +433,7 @@ function packPlacementPass(){
    of them are cleared (a light that went with a removed glow-mushroom goes with it) */
 function packPlaneClear(){
   var small=/^(fern|root-tangle|glow-mushrooms|crystal-(gold|violet|amber)-small)$/;
-  var drop=props.filter(function(p){ return (small.test(p.name) || (p.name==='pt-cluster' && (p.size||1)<1)) && packNearBig(p.x,p.y); });
+  var drop=props.filter(function(p){ return !p.keep && (small.test(p.name) || (p.name==='pt-cluster' && (p.size||1)<1)) && packNearBig(p.x,p.y); });
   if(drop.length){
     props=props.filter(function(p){ return drop.indexOf(p)<0; });
     floorMeta.planeLights=(floorMeta.planeLights||[]).filter(function(l){ return !drop.some(function(p){ return p.name==='glow-mushrooms' && p.x===l.x && p.y===l.y; }); });

@@ -11,7 +11,7 @@ var LIGHT_FAMILY = [
   [/^kobold-campfire$/,            'campfire']
 ];
 function lightFamily(p){
-  if(!p || p.puzzle) return null;
+  if(!p || p.puzzle || p.keep) return null;
   for(var i=0;i<LIGHT_FAMILY.length;i++) if(LIGHT_FAMILY[i][0].test(p.name)) return LIGHT_FAMILY[i][1];
   return null;
 }

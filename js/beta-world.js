@@ -107,7 +107,7 @@ function applyUnderdarkEnemyTuning(e){
 }
 
 
-function restorePuzzleState(){ents.forEach(betaEnemyBalance);(floorMeta.puzzles||[]).forEach(function(room){if(['sentinels','sentries'].includes(room.puzzle.kind))addPuzzleSwitch(room);if(room.puzzle.kind==='barricade'&&!room.burning&&!room.puzzle.solved)setT(room.puzzle.door.x,room.puzzle.door.y,SEALED);});}
+function restorePuzzleState(){repairCryptPuzzleGuardians();ents.forEach(betaEnemyBalance);(floorMeta.puzzles||[]).forEach(function(room){if(['sentinels','sentries'].includes(room.puzzle.kind))addPuzzleSwitch(room);if(room.puzzle.kind==='barricade'&&!room.burning&&!room.puzzle.solved)setT(room.puzzle.door.x,room.puzzle.door.y,SEALED);});}
 PUZZLE_KINDS.barricade.note='';
 PUZZLE_KINDS.spikes.note='Spikes cover the floor. Stone skin would shrug them off; floating would carry you over.';
 ['sentinels','sentries','darktraps','library'].forEach(function(k){PUZZLE_KINDS[k].note='';});
@@ -125,7 +125,7 @@ function activatePuzzleSwitch(p){
   p.light='#FFE0A0';
  }
  props.forEach(function(o){if(roomAt(o.x,o.y)===room&&(o.sentinel||o.sentry)){o.sentinel=false;o.sentry=false;o.light=null;o.dim=true;}});
- ents=ents.filter(function(e){if(!e.sentinelRoom||e.sentinelRoom.x!==p.roomDoor.x||e.sentinelRoom.y!==p.roomDoor.y)return true;addProp(e.x,e.y,'statue',{keep:true,dim:true});return false;});
+ ents=ents.filter(function(e){if(!e.sentinelRoom||e.sentinelRoom.x!==p.roomDoor.x||e.sentinelRoom.y!==p.roomDoor.y)return true;addProp(e.x,e.y,'statue',{keep:true,dim:true,guardianStatue:true});return false;});
  log('The guardians go still.','c-good');sfx('lever');computeFOV();endTurn();return true;
 }
 

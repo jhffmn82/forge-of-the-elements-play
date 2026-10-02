@@ -659,7 +659,7 @@ function buildArmoryRoom(r){
   var stock=cells.filter(function(c){return !reserved.has(idxOf(c.x,c.y))&&!nearDoor(c.x,c.y);});
   stock.sort(function(a,b){return Math.abs((horizontal?a.y:a.x)-axis)-Math.abs((horizontal?b.y:b.x)-axis)||entranceDistance(b)-entranceDistance(a);});
   var racks=[];
-  stock.forEach(function(c){if(racks.length<2&&freeCell(c.x,c.y)&&!racks.some(function(p){return dist(p,c)<2;})){var p=addProp(c.x,c.y,'weapon-rack',{keep:true});if(p)racks.push(p);}});
+  stock.forEach(function(c){if(racks.length<2&&freeCell(c.x,c.y)&&roomFurnitureKeepsOpen(r,c)&&!racks.some(function(p){return dist(p,c)<2;})){var p=addProp(c.x,c.y,'weapon-rack',{keep:true});if(p)racks.push(p);}});
   var banner=stock.slice().reverse().find(function(c){return freeCell(c.x,c.y);});if(banner)addProp(banner.x,banner.y,'banner-stand');
 }
 
@@ -734,6 +734,18 @@ function buildPrisonRoom(r){
 
 /* Furniture plans share the room's actual floor footprint, including caves.
  * Paths connect the entrances and rewards before decoration is placed. */
+// Test authored furniture before placement so biome path repair can leave it intact.
+function roomFurnitureKeepsOpen(r,c,w,h){
+  w=w||1;h=h||1;var blocked=new Set(),dirs=[[1,0],[-1,0],[0,1],[0,-1]],cells=[];
+  for(var y=c.y;y<c.y+h;y++)for(var x=c.x;x<c.x+w;x++){if(roomAt(x,y)!==r||!freeCell(x,y)||itemAt(x,y))return false;blocked.add(idxOf(x,y));}
+  function pass(x,y){var p=propAt(x,y),t=at(x,y);return roomAt(x,y)===r&&!(p&&p.b&&!p.br)&&(terrainRules.walkable(t,false,true)||isDoorish(t)||t===CHEST);}
+  for(var y=r.y;y<r.y+r.h;y++)for(var x=r.x;x<r.x+r.w;x++)if(pass(x,y))cells.push({x:x,y:y});
+  var start=cells.find(function(p){return !blocked.has(idxOf(p.x,p.y));});if(!start)return false;
+  function reach(avoid){var seen=new Set(),q=[idxOf(start.x,start.y)];for(var head=0;head<q.length;head++){var i=q[head];if(seen.has(i)||avoid&&blocked.has(i))continue;seen.add(i);dirs.forEach(function(d){var x=i%MW+d[0],y=Math.floor(i/MW)+d[1],j=idxOf(x,y);if(pass(x,y)&&!seen.has(j))q.push(j);});}return seen;}
+  var before=reach(false),after=reach(true);
+  if(cells.some(function(p){var i=idxOf(p.x,p.y);return !blocked.has(i)&&before.has(i)&&!after.has(i);}))return false;
+  return props.filter(function(p){return roomAt(p.x,p.y)===r&&(p.lever||p.prisoner||p.altar||p.tablet||p.merchantId!==undefined);}).every(function(p){return dirs.some(function(d){return after.has(idxOf(p.x+d[0],p.y+d[1]));});});
+}
 function specialRoomPlan(r){
   var cells=[],dirs=[[1,0],[-1,0],[0,1],[0,-1]];
   for(var y=r.y;y<r.y+r.h;y++)for(var x=r.x;x<r.x+r.w;x++){var p=propAt(x,y);if(roomAt(x,y)===r&&at(x,y)===FLOOR&&!(p&&p.b))cells.push({x:x,y:y});}
@@ -760,7 +772,7 @@ function specialRoomPlan(r){
   function reserve(c,perimeter){var path=route(hub,c,perimeter);path.forEach(function(i){reserved.add(i);});return path;}
   mouths.forEach(function(c){reserve(c);});
   function publish(){r.storageAisle=Array.from(reserved);}
-  function furniture(c,name,extra){if(!c||reserved.has(idxOf(c.x,c.y))||!freeCell(c.x,c.y)||nearDoor(c.x,c.y))return null;return addProp(c.x,c.y,name,extra);}
+  function furniture(c,name,extra){if(!c||reserved.has(idxOf(c.x,c.y))||!freeCell(c.x,c.y)||nearDoor(c.x,c.y)||((PROPS[name]||{}).b&&!roomFurnitureKeepsOpen(r,c,(PROPS[name]||{}).w,(PROPS[name]||{}).h)))return null;return addProp(c.x,c.y,name,extra);}
   return {cells:cells,mouths:mouths,hub:hub,reserved:reserved,depth:depth,reserve:reserve,path:route,publish:publish,furniture:furniture};
 }
 function cavernMerchantFloor(){
@@ -892,8 +904,8 @@ function buildRitualRoom(r){
   var cage=addProp(captive.x,captive.y,'cage',{keep:true,prisoner:'goblin',prisonerOutcome:'escapee',ritual:true,captiveHp:24,captiveMaxhp:24});
   if(!cage)return;
   r.ritual={cage:{x:cage.x,y:cage.y},hp:24,maxhp:24,active:false,finished:false,cells:plan.cells,mouths:plan.mouths};
-  var altar=cells.find(function(c){return dist(c,captive)>=2&&dist(c,captive)<=4&&freeCell(c.x,c.y)&&freeCell(c.x+1,c.y)&&roomAt(c.x+1,c.y)===r&&!plan.reserved.has(idxOf(c.x,c.y))&&!plan.reserved.has(idxOf(c.x+1,c.y));});
-  if(altar)addSetPiece(altar.x,altar.y,'drow-altar-blood',2,1,{keep:true,ritualAltar:true});
+  var altar=cells.find(function(c){return dist(c,captive)>=2&&dist(c,captive)<=4&&freeCell(c.x,c.y)&&freeCell(c.x+1,c.y)&&roomAt(c.x+1,c.y)===r&&!plan.reserved.has(idxOf(c.x,c.y))&&!plan.reserved.has(idxOf(c.x+1,c.y))&&roomFurnitureKeepsOpen(r,c,2,1);});
+  if(altar)addSetPiece(altar.x,altar.y,'drow-altar-blood',2,1,{keep:true,ritualAltar:true,altar:true});
   var post=cells.filter(function(c){return freeCell(c.x,c.y)&&dist(c,approach)>1;}).sort(function(a,b){return dist(a,altar||captive)-dist(b,altar||captive);})[0];
   if(post){r.ritual.priestPost=post;plan.reserve(post);}
   var chest=cells.find(function(c){return freeCell(c.x,c.y)&&dist(c,captive)>1&&!(post&&dist(c,post)===0);});

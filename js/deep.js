@@ -526,7 +526,7 @@ function deepDress(){
   });
   /* big pieces stand alone */
   var before=props.length;
-  props=props.filter(function(p){ return !(DEEP_PIECES[p.name] && DEEP_PIECES[p.name].cluster && deepNearBig(p.x,p.y)); });
+  props=props.filter(function(p){ return p.keep || !(DEEP_PIECES[p.name] && DEEP_PIECES[p.name].cluster && deepNearBig(p.x,p.y)); });
   if(props.length!==before) rebuildPropGrid();
 }
 /* web curtains across the spider caves' narrow tunnels: one blow cuts one, fire takes it */

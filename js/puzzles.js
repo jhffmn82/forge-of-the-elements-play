@@ -70,6 +70,7 @@ function pzLoot(cells, n){
   }
 }
 function puzzlePropKeepsRewardsOpen(room,cell){
+  if(!roomFurnitureKeepsOpen(room,cell))return false;
   var door=room.puzzle.door,before=bfsFrom(door.x,door.y),index=idxOf(cell.x,cell.y),old=map[index];
   map[index]=WALL;
   var after=bfsFrom(door.x,door.y);map[index]=old;
@@ -149,7 +150,7 @@ function placeSigilRoom(kind){
     pzLoot(guardianRewardCells(cells), 3);
     addPuzzleSwitch(room);
     placeGuardianCover(room);
-    var guards=0;cells.filter(function(p){return freeCell(p.x,p.y);}).forEach(function(g){if(guards<2&&puzzlePropKeepsRewardsOpen(room,g)&&addProp(g.x,g.y,'statue',{keep:true,sentinel:true}))guards++;});
+    var guards=0;cells.filter(function(p){return freeCell(p.x,p.y);}).forEach(function(g){if(guards<2&&puzzlePropKeepsRewardsOpen(room,g)&&addProp(g.x,g.y,'statue',{keep:true,guardianStatue:true,sentinel:true}))guards++;});
   } else if(kind==='darktraps'){
     room.dark=true;
     var loot2=cells.slice(0,3);
@@ -162,7 +163,7 @@ function placeSigilRoom(kind){
     addPuzzleSwitch(room);
     placeGuardianCover(room);
     var eyes=edgeCells(room).filter(function(p){ return freeCell(p.x,p.y) && Math.abs(p.x-door.x)+Math.abs(p.y-door.y)>2; });
-    var eyesPlaced=0;shuffled(eyes).forEach(function(p){if(eyesPlaced<2&&puzzlePropKeepsRewardsOpen(room,p)&&addProp(p.x,p.y,'statue',{keep:true,sentry:true,light:'#FF5A4A'}))eyesPlaced++;});
+    var eyesPlaced=0;shuffled(eyes).forEach(function(p){if(eyesPlaced<2&&puzzlePropKeepsRewardsOpen(room,p)&&addProp(p.x,p.y,'statue',{keep:true,guardianStatue:true,sentry:true,light:'#FF5A4A'}))eyesPlaced++;});
   } else if(kind==='library'){
     room.dark=true;
     addPuzzleSwitch(room);
@@ -205,6 +206,37 @@ function buildCrystalVault(){
 
 /* ---------------------------------------------------------------- helpers */
 function puzzleRoomAt(x,y){ var r=roomAt(x,y); return r && r.puzzle ? r : null; }
+function repairCryptPuzzleGuardians(){
+  if(!inCrypt()||!floorMeta||floorMeta.plane)return false;
+  var changed=false;
+  (floorMeta.puzzles||[]).forEach(function(room){
+    var kind=room.puzzle.kind;if(kind!=='sentries'&&kind!=='sentinels')return;
+    props.filter(function(p){return p.pillar&&p.cp&&roomAt(p.x,p.y)===room&&(p.name==='pedestal'||p.name==='grave-pillar');}).forEach(function(p){
+      p.name='pillar';p.b=1;p.keep=true;p.set=false;p.w=1;p.h=1;
+      delete p.cp;delete p.top;delete p.seed;delete p.artName;
+      changed=true;
+    });
+    var candidates=props.filter(function(p){
+      return p.x>=room.x&&p.x<room.x+room.w&&p.y>=room.y&&p.y<room.y+room.h&&
+        (p.sentry||p.sentinel||p.guardianStatue||(p.cp&&(p.name==='sarc'||p.name==='sarcophagus')));
+    });
+    /* The old conversion left one or two recognizable tomb stand-ins. Do not guess
+       when a saved room contains a different or ambiguous arrangement. */
+    if(!candidates.length||candidates.length>2)return;
+    candidates.forEach(function(p){
+      var field=kind==='sentries'?'sentry':'sentinel';
+      var disabled=!!room.puzzle.disabled;
+      if(p.name==='statue'&&(disabled?p.guardianStatue&&!p.sentry&&!p.sentinel:p[field])&&!p.set&&(p.w||1)===1&&(p.h||1)===1)return;
+      p.name='statue';p.b=1;p.keep=true;p.guardianStatue=true;p.set=false;p.w=1;p.h=1;
+      p.sentry=!disabled&&field==='sentry';p.sentinel=!disabled&&field==='sentinel';
+      if(disabled){p.light=null;p.dim=true;}else if(field==='sentry')p.light='#FF5A4A';else delete p.light;
+      delete p.cp;delete p.horiz;delete p.kind;delete p.top;delete p.seed;delete p.artName;
+      changed=true;
+    });
+  });
+  if(changed)rebuildPropGrid();
+  return changed;
+}
 function solvePuzzle(room, how){
   if(room && room.puzzle.kind==='barricade'&&!room.burning){setT(room.puzzle.door.x,room.puzzle.door.y,OPEN);burst(room.puzzle.door.x,room.puzzle.door.y,'fire',24,.06);}
   if(!room || room.puzzle.solved) return;

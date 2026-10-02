@@ -346,7 +346,7 @@ function spillBarrel(p){
     if(t!==FLOOR&&t!==WATER)continue;
     if(fluid==='water'){
       if(room?roomAt(x,y)!==room:Math.max(Math.abs(x-p.x),Math.abs(y-p.y))>1)continue;
-      setT(x,y,WATER);setG(x,y,0);fireT[i]=0;fireSrc[i]=0;delete floorMeta.ooze[i];flooded.push([x,y]);
+      setT(x,y,WATER);if(gAt(x,y)!==G_TELL)setG(x,y,0);fireT[i]=0;fireSrc[i]=0;delete floorMeta.ooze[i];flooded.push([x,y]);
     }else{
       if(Math.max(Math.abs(x-p.x),Math.abs(y-p.y))>1||t===WATER)continue;
       if(room&&roomAt(x,y)!==room)continue;

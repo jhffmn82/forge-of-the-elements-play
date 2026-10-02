@@ -355,7 +355,7 @@ function buildCryptPropTest(){
    spot in the same room, and removed only if there is nowhere to put it. Doors, keys and levers still gate as designed:
    this compares reachability with props against reachability without them, so only prop-caused blockage is touched. */
 function propsKeepOpen(){
-  function decoration(p){return p.b&&!p.br&&!p.hoard&&!p.lever&&!p.prisoner&&!p.altar&&!p.sentinel&&!p.sentry&&!p.tablet;}
+  function decoration(p){return !p.keep&&p.b&&!p.br&&!p.hoard&&!p.lever&&!p.prisoner&&!p.altar&&!p.sentinel&&!p.sentry&&!p.tablet;}
   function target(i){var x=i%MW,y=Math.floor(i/MW),p=propAt(x,y);
     var approach=[[1,0],[-1,0],[0,1],[0,-1]].some(function(d){var q=propAt(x+d[0],y+d[1]);return q&&(q.lever||q.prisoner||q.altar||q.tablet);});
     return !p||!p.b||p.br||!!itemAt(x,y)||objectTile(map[i])||approach;
