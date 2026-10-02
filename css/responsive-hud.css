@@ -744,12 +744,13 @@ body.fote-study.study-minimal #studyDepth{grid-column:1/-1;grid-row:1;min-width:
 body.fote-study.study-minimal.study-pad-right #studyDepth{text-align:right;}
 body.fote-study.study-minimal #app #hud2{display:flex!important;width:auto;flex:0 0 auto;}
 body.fote-study.study-minimal #app #hud2 :is(.study-wallet,.study-piety){display:none!important;}
-body.fote-study.study-minimal #app #hud2 .study-favor{height:calc(20px * var(--study-interface-scale,1));background:none;border:0;}
+body.fote-study.study-minimal #app #hud2 .study-favor{height:max(24px,calc(20px * var(--minimal-status-scale) * var(--ui-text-scale,1)));background:none;border:0;}
 body.fote-study.study-minimal #app #hud2 .study-favor .meter{display:none!important;}
 body.fote-study.study-minimal #app #studyHunger{height:calc(20px * var(--study-interface-scale,1))!important;flex:0 0 auto;padding:0 4px!important;}
 body.fote-study.study-minimal #app #studyHunger.study-fed{display:none;}
 body.fote-study.study-minimal #app #studyHungerText{font-size:calc(11px * var(--ui-text-scale,1) * var(--minimal-status-scale));flex-basis:auto;}
-body.fote-study.study-minimal #app #hud2 .study-favor{font-size:calc(11px * var(--ui-text-scale,1) * var(--minimal-status-scale));}
+body.fote-study.study-minimal #app #hud2 .study-favor{font-size:max(13px,calc(12px * var(--ui-text-scale,1) * var(--minimal-status-scale)))!important;}
+body.fote-study.study-minimal #app #hud2 .study-favor .rk{font-size:inherit;font-weight:600;}
 body.fote-study.study-minimal #app #studyHunger .study-hunger-track{display:none;}
 body.fote-study.study-minimal #app #statusbar{
  display:flex;position:static;inset:auto;max-width:100%;width:100%;min-height:0;
@@ -766,13 +767,12 @@ body.fote-study.study-minimal #studyRecentLog{
  font:calc(13px * var(--ui-text-scale,1) * var(--study-interface-scale,1))/1.35 var(--mono);color:var(--ink);
  position:absolute;z-index:46;grid-column:auto;grid-row:auto;top:auto;
  left:calc(var(--minimal-inset) + env(safe-area-inset-left,0px));right:auto;
- bottom:calc(var(--minimal-inset) + env(safe-area-inset-bottom,0px));
+ bottom:calc(var(--minimal-inset) + var(--minimal-slot) + 12px + env(safe-area-inset-bottom,0px));
  width:calc(100vw - var(--minimal-pad-reserve) - var(--minimal-log-bar-reserve) - 3 * var(--minimal-inset));
- max-width:none;height:min(42dvh,calc(240px * var(--study-interface-scale,1)));max-height:none;
+ max-width:32ch;height:min(42dvh,calc(240px * var(--study-interface-scale,1)));max-height:none;
  margin:0;justify-content:flex-start;text-align:left;font-size:max(12px,calc(13px * var(--ui-text-scale,1) * var(--study-interface-scale,1)));
 }
 body.fote-study.study-minimal.study-control-pad-left #studyRecentLog{left:auto;right:calc(var(--minimal-inset) + env(safe-area-inset-right,0px));text-align:right;}
-body.fote-study.study-minimal:not(.study-hotbar-vertical) #studyRecentLog{bottom:calc(var(--minimal-inset) + var(--minimal-slot) + 12px + env(safe-area-inset-bottom,0px));}
 body.fote-study.study-minimal.study-hotbar-vertical:not(.study-pad-right).study-control-pad-left #studyRecentLog{--minimal-log-bar-reserve:calc(var(--minimal-slot) + 12px);right:calc(var(--minimal-inset) + var(--minimal-log-bar-reserve) + env(safe-area-inset-right,0px));}
 body.fote-study.study-minimal.study-hotbar-vertical.study-pad-right:not(.study-control-pad-left) #studyRecentLog{--minimal-log-bar-reserve:calc(var(--minimal-slot) + 12px);left:calc(var(--minimal-inset) + var(--minimal-log-bar-reserve) + env(safe-area-inset-left,0px));}
 body.fote-study.study-minimal:not(.study-finger) #studyRecentLog{width:min(46vw,calc(640px * var(--study-interface-scale,1)));}
