@@ -1,7 +1,7 @@
 /* Dungeon slimes reproduce from full health; green slimes also leave a trail. */
 var FoteGreenSlime=(function(){
  'use strict';
- MONSTERS.greenslime={name:'Green Slime',sprite:'m-green-slime',col:'#75a64e',ch:'s',hp:20,dmg:[1,2],acc:48,eva:0,armor:0,speed:70,range:1,xp:10,
+ MONSTERS.greenslime={name:'Green Slime',sprite:'m-green-slime',col:'#75a64e',ch:'s',hp:24,dmg:[1,2],acc:48,eva:0,armor:0,speed:70,range:1,xp:10,
   band:[1,4],biome:[0],w:12,living:true,sporeproof:true,greenSlime:true,art:.7,artLeft:true,sfx:'slime',
   hint:'Heals 2 HP per turn. Splits when hit at full health. Leaves a 10-turn poison trail.'};
  DROPS.greenslime={chance:.12,table:{essence:1}};

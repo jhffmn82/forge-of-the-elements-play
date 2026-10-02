@@ -8,20 +8,20 @@
 /* ---------------------------------------------------------------- the bestiary */
 (function(){
   var M=MONSTERS;
-  M.shambler   = {name:'Shambler', sprite:'m-shambler', col:'#8FA37A', ch:'z', hp:40, dmg:[5,8], acc:60, eva:8, armor:1, speed:100, range:1, xp:22,
+  M.shambler   = {name:'Shambler', sprite:'m-shambler', col:'#8FA37A', ch:'z', hp:48, dmg:[5,8], acc:60, eva:8, armor:1, speed:100, range:1, xp:22,
                   band:[6,8], w:22, undead:true, rises:true, rots:true, art:0.95, sfx:'zombie'};   /* rots: 2026-09-28 (Justin), its hits rot like a Grave Bloat's */
-  M.gravebeetle= {name:'Grave Beetle', sprite:'m-grave-beetle', col:'#3E5A3A', ch:'b', hp:40, dmg:[5,8], acc:62, eva:12, armor:3, speed:100, range:1, xp:20,
+  M.gravebeetle= {name:'Grave Beetle', sprite:'m-grave-beetle', col:'#3E5A3A', ch:'b', hp:48, dmg:[5,8], acc:62, eva:12, armor:3, speed:100, range:1, xp:20,
                   band:[6,8], w:18, fumes:true, living:true, art:0.8, sfx:'slime'};
   M.skeleton.band=[6,10]; M.skeleton.w=18; M.skeleton.boneType=true; M.skeleton.sprite='m-crypt-skeleton';   /* Justin's Crypt sprite set, 2026-09-17 */
   /* 2026-09-17: their arrows are grave-tipped. A 4-7 shot was nothing to a mage with Magic Barrier (-5 from
      ranged) or anyone in real armour, so the threat is the poison rather than the hit. */
-  M.bonearcher = {name:'Bone Archer', sprite:'m-bone-archer', col:'#D8CEBC', ch:'a', hp:36, dmg:[5,8], acc:64, eva:16, armor:1, speed:100, range:6, xp:26,
+  M.bonearcher = {name:'Bone Archer', sprite:'m-bone-archer', col:'#D8CEBC', ch:'a', hp:43, dmg:[5,8], acc:64, eva:16, armor:1, speed:100, range:6, xp:26,
                   band:[7,10], w:14, undead:true, reloads:true, poisons:1, art:0.95, sfx:'skeleton'};
-  M.shade      = {name:'Shade', sprite:'m-shade', col:'#5A3E7A', ch:'S', hp:40, dmg:[5,8], acc:66, eva:42, armor:0, speed:130, range:1, xp:30, attackType:'ice',chillTouch:true,
+  M.shade      = {name:'Shade', sprite:'m-shade', col:'#5A3E7A', ch:'S', hp:48, dmg:[5,8], acc:66, eva:42, armor:0, speed:130, range:1, xp:30, attackType:'ice',chillTouch:true,
                   band:[7,10], w:10, undead:true, shadowy:true, phases:true, el:'shadow', art:0.95, sfx:'wisp'};
-  M.gravebloat = {name:'Grave Bloat', sprite:'m-grave-bloat', col:'#9FBF7A', ch:'B', hp:75, dmg:[8,11], acc:58, eva:4, armor:2, speed:100, range:1, xp:38,
+  M.gravebloat = {name:'Grave Bloat', sprite:'m-grave-bloat', col:'#9FBF7A', ch:'B', hp:90, dmg:[8,11], acc:58, eva:4, armor:2, speed:100, range:1, xp:38,
                   band:[8,10], w:10, undead:true, bursts:true, rots:true, art:1.1, sfx:'zombie'};
-  M.acolyte    = {name:'Necro-Acolyte', sprite:'m-necro-acolyte', col:'#6A3E8A', ch:'n', hp:36, dmg:[5,8], acc:62, eva:14, armor:0, speed:100, range:1, xp:40,
+  M.acolyte    = {name:'Necro-Acolyte', sprite:'m-necro-acolyte', col:'#6A3E8A', ch:'n', hp:43, dmg:[5,8], acc:62, eva:14, armor:0, speed:100, range:1, xp:40,
                   band:[9,10], w:8, living:true, spellcaster:true, summoner:true, fearTouch:1, art:0.95, sfx:'shaman',hint:'Summons Skeletons and wards allies. Attacks cause Fear for 1 turn.'};
   M.morty      = {name:'Morty the Mostly-Dead', sprite:'m-morty', col:'#7A4FB0', ch:'M', hp:170, dmg:[8,13], acc:70, eva:18, armor:3, speed:100, range:1, xp:450,
                   band:[10,10], w:0, boss:true, elite:true, undead:true, spellcaster:true, art:1.2, sfx:'morty'};
@@ -196,7 +196,7 @@ function cryptCreatureBehavior(e,target){
       if(typeof FoteEnemyTeamwork!=='undefined'&&FoteEnemyTeamwork.retreat(e,target))return true;
       var minion=ents.filter(function(o){ return o.id===e.minion && o.hp>0; })[0];
       if(!minion && e.sumCd<=0){
-        var c=nearFree(e.x,e.y,2); if(c){ var sk=spawnRaw('skeleton', c.x, c.y); sk.state='hunt'; sk.noLoot=true; e.minion=sk.id; e.sumCd=6; setClip(e,'attack'); sfx('shaman-cast',{from:e}); sparkleFx(c.x,c.y,'dark',24); log('Necro-Acolyte summons Skeleton.','c-you');  return true; }
+        var c=nearFree(e.x,e.y,2); if(c){ var sk=spawnRaw('skeleton', c.x, c.y); sk.base=Object.assign({},sk.base,{hp:MONSTERS.skeleton.summonHp}); sk.hp=sk.maxhp=sHP(sk.base.hp); sk.state='hunt'; sk.noLoot=true; e.minion=sk.id; e.sumCd=6; setClip(e,'attack'); sfx('shaman-cast',{from:e}); sparkleFx(c.x,c.y,'dark',24); log('Necro-Acolyte summons Skeleton.','c-you');  return true; }
       }
       if(FoteEnemyTeamwork.boneWard(e))return true;
       if(typeof FoteEnemyTeamwork==='undefined'&&d<=3 && fleeStep(e)){return true;}
@@ -354,7 +354,7 @@ function turnMortyReturn(context){
   var pa=floorMeta.phylAt, c=pa ? (occupied(pa.x,pa.y+1) ? nearFree(pa.x,pa.y+1,3) : {x:pa.x,y:pa.y+1}) : null;
   if(!c) return;
   var m=spawnRaw('morty', c.x, c.y); m.state='hunt'; m.elite=true; m.hp=Math.round(R.maxhp*0.6); m.maxhp=R.maxhp; m.turnN=1; floorMeta.bossId=m.id;
-  for(var i=0;i<2;i++){ var s=nearFree(c.x,c.y,2); if(s){ var sk=spawnRaw('skeleton', s.x, s.y); sk.state='hunt'; sk.noLoot=true; } }
+  for(var i=0;i<2;i++){ var s=nearFree(c.x,c.y,2); if(s){ var sk=spawnRaw('skeleton', s.x, s.y); sk.base=Object.assign({},sk.base,{hp:MONSTERS.skeleton.summonHp}); sk.hp=sk.maxhp=sHP(sk.base.hp); sk.state='hunt'; sk.noLoot=true; } }
   sparkleFx(c.x,c.y,'dark',60); log('<b>Morty revives; 2 Skeletons summoned!</b>','c-you');
 
 }
