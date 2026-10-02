@@ -23,9 +23,9 @@
   M.shockeel      = {name:'Shock Eel', sprite:'m-shock-eel', col:'#3F7A6A', ch:'e', hp:61, dmg:[6,9], acc:66, eva:18, armor:1, speed:100, range:1, xp:40,
                      band:[11,14], w:0, aquatic:true, el:'air', living:true, art:0.95, artLeft:true, sfx:'slime'};   /* w:0 - placed in water by eelPlacement() */
   M.myconid       = {name:'Myconid', sprite:'m-myconid', col:'#7FA8A0', ch:'f', hp:61, dmg:[6,9], acc:60, eva:10, armor:1, speed:100, range:1, xp:38,
-                     band:[11,15], w:16, spores:true, sporeproof:true, el:'earth', living:true, spellcaster:true, art:0.95, sfx:'shaman'};
+                     band:[11,15], w:16, spores:true, sporeproof:true, el:'earth', living:true, spellcaster:true, art:0.95, artLeft:true, sfx:'shaman'};
   M.shroomling    = {name:'Shroomling', sprite:'m-myconid', col:'#9FC0B0', ch:'f', hp:18, dmg:[4,6], acc:58, eva:12, armor:0, speed:100, range:1, xp:6,
-                     band:[0,0], w:0, sporeproof:true, living:true, art:0.5, sfx:'slime'};
+                     band:[0,0], w:0, sporeproof:true, living:true, art:0.5, artLeft:true, sfx:'slime'};
   /* 2026-09-28 (Justin): the Deep Maw's brood. A Myconid in every way but its name and its colours (the Maw's own
      earth-brown and bruised pink); only the Maw calls it up, see mawCallTender */
   M.wormtender    = Object.assign({}, M.myconid, {name:'Worm Tender', hp:55, sprite:'m-worm-tender', col:'#A8705A', band:[0,0], w:0,
@@ -317,7 +317,9 @@ function myconidAct(e){
   e.sporeCd=(e.sporeCd===undefined ? 1 : e.sporeCd)-1;
   e.sproutCd=(e.sproutCd===undefined ? 3 : e.sproutCd)-1;
   if(d>=2 && d<=5 && e.sporeCd<=0){   /* it lobs them: close in and it just swats */
-    if(e.hp<=0)return true;e.sporeCd=4; setClip(e,'attack'); sfx('trap-gas',{from:e});
+    if(e.hp<=0)return true;e.sporeCd=4;
+    if(player.x!==e.x)e.facingLeft=player.x<e.x;
+    setClip(e,'attack'); sfx('trap-gas',{from:e});
     boltFx(e.x,e.y,player.x,player.y,'poison');
     addCloud(player.x, player.y, 1, 5, sDMG(2+Math.floor(floorNo/4)), 'spores');
     floorMeta.clouds[floorMeta.clouds.length-1].owner=e.id;   /* so the Deep Maw's death can settle its Worm Tenders' clouds */
@@ -327,7 +329,7 @@ function myconidAct(e){
   if(e.sproutCd<=0 && d>1){
     var c=nearFree(player.x,player.y,1);
     if(c&&sproutShroomlings(e,[c],1).length){
-      e.sproutCd=6;setClip(e,'attack');
+      e.sproutCd=6;if(player.x!==e.x)e.facingLeft=player.x<e.x;setClip(e,'attack');
       if(caveVis(e.x,e.y)) log(e.base.name+': Shroomling summoned.','c-info');
        return true;
     }

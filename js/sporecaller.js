@@ -30,6 +30,7 @@ var FoteSporecaller=(function(){
   var cells=cellsAt(center);if(!cells.length||cells.indexOf(idxOf(target.x,target.y))<0)return false;
   fields().push({owner:e.id,x:center.x,y:center.y,cells:cells,armedTurn:turn,fireAt:worldNow()+100,rooted:[]});
   e.sporeFieldReadyAt=worldNow()+FIELD_COOLDOWN;
+  if(target.x!==e.x)e.facingLeft=target.x<e.x;
   setClip(e,'attack');sfx('shaman-cast',{from:e});
   if(visible(e)||visible(target))log('<b>Spore field:</b> leave marked ground!','c-you',{priority:'warning'});
   return true;
@@ -44,6 +45,7 @@ var FoteSporecaller=(function(){
   healing=Math.min(target.maxhp-target.hp,healing);target.hp+=healing;
   if(!gameEffects.has(target,'sporecoat'))gameEffects.apply(target,'sporecoat',3,undefined,{durationModifiers:false,data:{n:Math.min(12,Math.max(3,Math.round(target.maxhp*.15)))}});
   e.sporeSupportReadyAt=worldNow()+SUPPORT_COOLDOWN;
+  if(target.x!==e.x)e.facingLeft=target.x<e.x;
   setClip(e,'attack');sfx('shaman-cast',{from:e});boltFx(e.x,e.y,target.x,target.y,'poison');sparkleFx(target.x,target.y,'heal',12);
   floatText(target.x,target.y,'Sporecoat','heal');
   if(visible(e)||visible(target))log('<b>Sporecaller:</b> '+target.name+': Sporecoat'+(healing?'; +'+healing+' HP':'')+'.','c-you');

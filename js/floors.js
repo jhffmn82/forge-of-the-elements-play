@@ -95,6 +95,7 @@ function presentRestoredFloor(at){
   if(typeof FoteShadowClone!=='undefined')FoteShadowClone.arrive();
   if(typeof syncMurkSummons==='function')syncMurkSummons();
   if(typeof repairBossCore==='function')repairBossCore();
+  arriveFallenEnemies();
   computeFOV(); resize(); updateUI(); draw();
 }
 function findTile(t){ for(var i=0;i<map.length;i++) if(map[i]===t) return {x:i%MW, y:(i/MW)|0}; return null; }

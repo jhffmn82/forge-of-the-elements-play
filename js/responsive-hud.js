@@ -20,11 +20,15 @@ var FoteResponsiveHUD=(function(){
     node('studyOptions').innerHTML=lineIcon('<path d="M4 6h3m4 0h9M4 12h9m4 0h3M4 18h3m4 0h9"/><circle cx="9" cy="6" r="2"/><circle cx="15" cy="12" r="2"/><circle cx="9" cy="18" r="2"/>')+'<span>Options</span>';
     node('studyHistory').innerHTML=lineIcon('<path d="M5 5h14v14H5zM8 9h8m-8 3h8m-8 3h5"/>')+'<span>Combat log</span>';
   }
+  const portraitImages=new Map();
   function paintPortrait(){
-    if(!mounted||!player||typeof paintDollPortrait!=='function')return;
-    const art=node('studyPortraitArt'),size=Math.round(art.getBoundingClientRect().width)||(document.body.classList.contains('study-small-touch')?60:68);
-    const ready=paintDollPortrait(art,size);
-    if(!ready&&!portraitRetry)portraitRetry=setTimeout(()=>{portraitRetry=0;paintPortrait();},200);
+    if(!mounted||!player)return;
+    const art=node('studyPortraitArt');if(!art)return;
+    const look=String(player.look||'');
+    if(!/^(human|elf|dwarf|gloomling|fae-(air|fire|water|earth))-[fm]$/.test(look))return;
+    let image=portraitImages.get(look);
+    if(!image){image=new Image();image.src='art/portraits/'+look+'.webp';image.alt='';image.setAttribute('aria-hidden','true');image.style.cssText='width:100%;height:100%;object-fit:contain;image-rendering:pixelated';portraitImages.set(look,image);}
+    if(art.firstChild!==image||art.childNodes.length!==1)art.replaceChildren(image);
   }
   function roundedSectorPath(angle,outer,inner,spread){
     const start=(angle-spread)*Math.PI/180,end=(angle+spread)*Math.PI/180;
@@ -89,7 +93,9 @@ var FoteResponsiveHUD=(function(){
       else width=Math.min(width,hotbar.left-inset-x);
     }else height=Math.min(height,hotbar.top-inset-y);
     const inventory=node('studyInventoryIcon');
-    if(inventory){
+    if(inventory&&inventory.parentElement===node('studyActionBar')){
+      inventory.style.left='';inventory.style.top='';
+    }else if(inventory){
       const bar=node('hotbar').getBoundingClientRect(),size=node('hotbar').querySelector('.slot')?.getBoundingClientRect().width||44;
       const vertical=document.body.classList.contains('study-hotbar-vertical');
       const gap=parseFloat(getComputedStyle(node('hotbar')).rowGap)||4;
@@ -190,7 +196,7 @@ var FoteResponsiveHUD=(function(){
     document.body.classList.toggle('study-pad-right',UI_SIDE==='right');
     const padSide=typeof UI_PAD_SIDE==='string'?UI_PAD_SIDE:'left';
     document.body.classList.toggle('study-control-pad-left',padSide==='left');
-    const hotbarLayout=typeof uiHotbarLayout==='function'?uiHotbarLayout():UI_HOTBAR_LAYOUT;
+    const hotbarLayout=typeof uiHotbarLayout==='function'?uiHotbarLayout():(typeof UI_HOTBAR_LAYOUT==='string'?UI_HOTBAR_LAYOUT:'horizontal');
     const vertical=hotbarLayout==='vertical';
     document.body.classList.toggle('study-hotbar-vertical',vertical);
     document.body.classList.toggle('study-overlay-pad',finger?UI_TOUCH_PAD:UI_DESKTOP_PAD);
@@ -209,13 +215,18 @@ var FoteResponsiveHUD=(function(){
     const panels=node('studySheetTabs');
     const panelButtons=['studyChar','studyGear','studyFaith','studySheetOptions'].map(node);
     if(panelButtons.some((button,index)=>panels.children[index]!==button))panels.append(...panelButtons);
-    const mapToggle=node('bMap');if(mapToggle.parentElement!==app)app.append(mapToggle);
+    const actions=node('studyActionBar');
+    const actionButtons=[node('studyMenuToggle'),node('bMap'),explore];
+    const inventory=node('studyInventoryIcon');
+    const phoneVertical=document.body.classList.contains('study-small-touch')&&document.body.classList.contains('study-hotbar-vertical');
+    if(phoneVertical)actionButtons.push(inventory);
+    else if(inventory.parentElement!==app)app.append(inventory);
+    if(actionButtons.some((button,index)=>actions.children[index]!==button))actions.append(...actionButtons);
     if(hud.parentElement!==app)app.append(hud);
     if(status&&status.parentElement!==hud)hud.append(status);
     if(recent&&recent.parentElement!==app)app.append(recent);
     if(hotbar.parentElement!==app)app.append(hotbar);
     if(pad.parentElement!==node('map'))node('map').append(pad);
-    if(explore.parentElement!==app)app.append(explore);
   }
   function relayout(){
     if(!mounted||frame)return;
@@ -254,6 +265,7 @@ var FoteResponsiveHUD=(function(){
     const menu=document.createElement('button');menu.id='studyMenuToggle';menu.type='button';
     menu.setAttribute('aria-label','Menu');menu.setAttribute('aria-controls','top');menu.setAttribute('aria-expanded','false');
     menu.innerHTML='<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 7h12M6 12h12M6 17h12"/></svg>';app.append(menu);
+    const actions=document.createElement('nav');actions.id='studyActionBar';actions.setAttribute('aria-label','Game actions');app.append(actions);
     const logClose=document.createElement('button');logClose.id='studyLogClose';logClose.type='button';logClose.textContent='Close history';app.append(logClose);
     const position=document.createElement('span');position.className='study-position';
     const floor=document.createElement('span');floor.className='study-floor';floor.append('Floor ',node('hFloor'));
@@ -317,7 +329,7 @@ var FoteResponsiveHUD=(function(){
     bindHudResourceCard(node('bars').querySelector('.hp'),'hp');
     bindHudResourceCard(node('bars').querySelector('.mp'),'mp');
     bindHudResourceCard(node('xpBar'),'xp');
-    node('studyLevel').textContent='LV '+player.level;
+    node('studyLevel').innerHTML='<small>LV</small><b>'+num(player.level)+'</b>';
     node('studyRank').hidden=!player.god;node('studyPietyBar').hidden=!player.god;
     paintPortrait();
     node('studyPortrait').setAttribute('aria-label','Character, level '+player.level+(player.god?', '+GODS[player.god].name+', rank '+godRank():''));
@@ -326,7 +338,7 @@ var FoteResponsiveHUD=(function(){
       const g=GODS[player.god],rank=godRank(),next=PIETY_RANKS[rank]||null,prev=PIETY_RANKS[rank-1]||0;
       const pct=next?clamp((player.piety-prev)/(next-prev),0,1)*100:100;
       const detail=g.name+', rank '+rank+'. Piety '+num(player.piety)+(next?' / '+num(next)+' for rank '+(rank+1):', maximum rank');
-      node('studyRank').textContent='R'+rank;node('studyRank').style.color=g.color;
+      node('studyRank').innerHTML='<small>R</small><b>'+rank+'</b>';node('studyRank').style.color=g.color;
       node('studyPietyFill').style.width=pct+'%';node('studyPietyFill').style.background=g.color;
       node('studyPietyBar').title=detail;node('studyPietyBar').setAttribute('aria-label',detail);bindHudResourceCard(node('studyPietyBar'),'piety');
       faith='<button class="chip faithchip study-piety" data-study-panel="Faith" style="color:'+g.color+'" title="'+esc(detail)+'" aria-label="'+esc(detail)+'"><span class="gdot"></span><span class="rk">R'+rank+'</span><span class="meter"><i style="width:'+pct+'%;background:linear-gradient(90deg,'+hexA(g.color,.55)+','+g.color+')"></i></span></button>'+

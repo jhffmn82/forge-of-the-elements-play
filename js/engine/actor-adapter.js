@@ -56,7 +56,7 @@ function stepEnt(e,dx,dy){
     if(!e.base.flying){
       if(gAt(x,y)===G_GRASS)setG(x,y,G_SHORT);
       var trap=feats.find(function(f){return f.x===x&&f.y===y;});if(trap)triggerTrap(trap,e);
-      if(e.hp>0&&plates)pressPlateAt(x,y,e);
+      if(e.hp>0&&ents.includes(e)&&plates)pressPlateAt(x,y,e);
     }
     return true;
   }

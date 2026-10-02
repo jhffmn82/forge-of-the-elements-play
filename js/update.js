@@ -1,22 +1,23 @@
 /* Release history and title-screen freshness checks. Saves are never cleared. */
-var FOTE_VERSION = 'Beta 1.4.2';
+var FOTE_VERSION = 'Beta 1.5';
 /* Keep newest first; describe only changes already present in this build. */
 var FOTE_PATCHES = [
+  {version:'Beta 1.5', notes:[
+    "New title page with actual gameplay, clearer still portraits for every race and gender, and larger portraits with readable level, rank and floor labels.",
+    "Revised puzzle and special rooms, rare encounters, libraries, storage rooms and map generation. Biome artwork preserves room mechanisms and routes to rewards.",
+    "Area effects and hazards are clearer. Chaos boss attacks and Prism Pylons use the same pulsing red warnings as other bosses.",
+    "The responsive HUD puts the wrapped log opposite the control pad and above the hotbar. Menu, Map and Explore share matching circles opposite the portrait. With a vertical phone hotbar, Inventory joins that row beside eight larger ability buttons. The map overlay is smaller and centered; Options is also available in the character tabs.",
+    "Bosses ignore pits. Ordinary enemies that fall through a pit survive and arrive on the next floor, without granting kill rewards.",
+    "Skeleton base HP is 32, up from 16. Other regular Crypt and Underdark enemies have 20% more base HP; Cavern enemies have 10% more base HP in addition to the earlier Cavern adjustment. Dungeon HP, bosses, minor summons and Chaos HP are unchanged.",
+    "Brutes, shamans and goblin archers deal 35% more damage on floor 3 and 50% more on floors 4–5. Floors 1–2 are unchanged. Crypt damage ramps from +20% on floor 6 to +35% on floor 10.",
+    "Enemy accuracy rises with depth, making lightly protected characters more vulnerable while keeping armor and evasion investment useful.",
+    "Crypt Wraiths act at normal speed. Grave Beetle and Grave Bloat clouds last one turn longer and deal one more damage per tick. Bone Archers poison, Shades chill and Necro-Acolytes frighten on damaging attacks, subject to immunity. Myconids and their variants face their movement and casting targets correctly.",
+    "At +3, Ring of Warding gives +20% resistance and Ring of Wizardry gives +20% maximum Mana and +10% spell damage. Ring of Striking gives +2 weapon damage and +2% crit chance at +0, rising to +5 damage and +5% crit at +3.",
+    "Vellum gains piety from Mana spent on invocations. Communion is instant and uses one status icon. Its Mana cost, Ward, duration and cooldown are unchanged.",
+    "Arcane Lance can target breakable objects. Damaging line and area spells also break props using their normal reactions. Frozen treasure still needs Fire.",
+    "Shadow clone melee attacks deal shadow damage. Combat damage, healing and clone health labels show whole numbers. Menu navigation and sheet tabs no longer show hover popups."
+  ]},
   {version:'Beta 1.4.2', notes:[
-    "Roaming Skeleton base HP is 32, up from 16. Other regular enemies have 20% more base HP in the Crypt and Underdark, and 10% more in the Caverns. Dungeon enemies, bosses, minor summons and Chaos enemies are unchanged.",
-    "Vellum’s Communion invocation is instant; its Mana cost, shield, duration and cooldown are unchanged.",
-    "Crypt Wraiths lose their extra speed, acting at normal speed. Their HP, damage and Chill effect are unchanged.",
-    "Arcane Lance can target breakable objects. Damaging line and area spells also break props, using their normal barrel reactions. Frozen treasure still needs Fire.",
-    "HUD text uses one font with consistent weights and sizes for HP, Mana, level, rank, hunger, Favor and depth.",
-    "Vellum gains piety from Mana spent on invocations as well as spells. Communion uses one status icon, with its remaining Ward shown in the tooltip.",
-    "Enemy accuracy rises with depth. Heavy armor and dedicated evasion builds retain their defenses; robes with little evasion are hit more reliably.",
-    "Brutes, shamans and goblin archers deal 35% more damage on floor 3 and 50% more on floors 4–5. Floors 1–2 are unchanged. Crypt enemy hits ramp from +20% damage on floor 6 to +35% on floor 10.",
-    "Native Cavern enemies have 15% more HP. Wounded enemies in existing saves retain their health percentage, and repeated loads do not stack the increase.",
-    "Grave Beetle and Grave Bloat clouds last one turn longer and deal one more damage per tick. Bone Archers poison every damaging hit; Shades chill and Necro-Acolytes frighten on damaging attacks, subject to immunity.",
-    "Ring of Warding resistance is halved: +20% at +3. Ring of Wizardry grants +20% maximum Mana and +10% spell damage at +3. Ring of Striking grants +2 weapon damage and +2% crit chance at +0, rising to +5 damage and +5% crit at +3. Patron gear bonuses still apply.",
-    "Shadow clone melee attacks, including the offhand, deal shadow damage. Damage and healing labels and clone health cards show whole numbers.",
-    "Chaos boss attacks and Prism Pylons use the same red pulsing floor warnings as other bosses. Discord Pulse marks its inner ring first, then its outer ring.",
-    "Larger Map and Explore buttons on phones. Removed hover popups from menu navigation and sheet tabs.",
     "The treasure room before Chaos now has a forge, including rooms in existing saves.",
     "Murk's Grave Strength grants summons +5% HP, movement speed, attack speed and damage per rank. Divine Power no longer multiplies this bonus.",
     "Shadow clones now fight in melee with copied weapons and combat stats. They finish fights they have joined, then return to you; they do not seek new fights outside your sight.",

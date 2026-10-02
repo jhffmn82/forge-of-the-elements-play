@@ -118,6 +118,49 @@ function entryItemsAndTerrain(){
   if(t===CHASM && !(player.levitate>0)) fallIntoChasm();
 }
 function removeItem(it){ var i=items.indexOf(it); if(i>=0) items.splice(i,1); }
+/* A fall changes floors, not kill credit. RUN carries waiting arrivals through saves. */
+function fallEnemyToNextFloor(e){
+  if(!RUN||!e||e===player||!e.foe||e.ally||e.hp<=0||!ents.includes(e)||
+    e.base&&e.base.boss||e.caveBoss||e.parent||gameEffects.airborne(e)||floorNo>=LAST_FLOOR)return false;
+  var destination=floorNo+1,waiting=RUN.fallenEnemies||(RUN.fallenEnemies={});
+  (waiting[destination]||(waiting[destination]=[])).push({entity:e,turn:turn,clock:worldNow()});
+  ents=ents.filter(function(other){return other!==e;});
+  // Floor keys must stay with the vault they open.
+  if(e.keyholder){
+    var keySpot=coreDropSpot(e);items.push({x:keySpot.x,y:keySpot.y,kind:'key',key:'iron'});
+    e.keyholder=false;e.name=e.name.replace(/ \(key holder\)$/,'');
+  }
+  if(e.pebbleSlam)clearPebbleSlam(e);
+  if(typeof FoteEnemyPerception!=='undefined')FoteEnemyPerception.forget(e);
+  e.state='wander';e.lastSeen=null;e.goal=null;
+  ['windup','zap','grasp','brand','erupt','channel','prisonTarget','bellGoal','guard','_lx','_ly'].forEach(function(key){delete e[key];});
+  return true;
+}
+function arriveFallenEnemies(){
+  var waiting=RUN&&RUN.fallenEnemies&&RUN.fallenEnemies[floorNo];
+  if(!waiting||!waiting.length||floorMeta.plane||floorMeta.chaosEntryPreview)return;
+  var remaining=[];
+  waiting.forEach(function(fall){
+    var e=fall.entity;if(!e||e.hp<=0||ents.includes(e))return;
+    var spot=null,score=Infinity,n=entitySize(e);
+    for(var y=0;y<MH;y++)for(var x=0;x<MW;x++){
+      var room=roomAt(x,y),probe=Object.assign({},e,{x:x,y:y});
+      if(room&&(room.pocket||room.special||room.puzzle)||!actorFootprintAllowed(probe,x,y,{avoidFire:true}))continue;
+      var safe=true;
+      for(var yy=y;yy<y+n&&safe;yy++)for(var xx=x;xx<x+n;xx++){
+        if(at(xx,yy)!==FLOOR||feats.some(function(f){return f.x===xx&&f.y===yy;})){safe=false;break;}
+      }
+      var distance=Math.abs(x-e.x)+Math.abs(y-e.y);
+      if(safe&&distance<score){score=distance;spot={x:x,y:y};}
+    }
+    if(!spot){remaining.push(fall);return;}
+    FoteTransitions.resumeClocks({ents:[e],turn:fall.turn,clock:fall.clock},turn,player.t);
+    e.x=spot.x;e.y=spot.y;e.t=player.t+100;e._lx=undefined;e._ly=undefined;
+    ents.push(e);
+    betaEnemyBalance(e);
+  });
+  if(remaining.length)RUN.fallenEnemies[floorNo]=remaining;else delete RUN.fallenEnemies[floorNo];
+}
 function fallIntoChasm(){
   log('You fall!','c-you'); sfx('trap-pit');
   var d=Math.round(player.maxhp*0.15); dealDirectDamage(player,d,'phys',null,{tags:['environment','fall']});
@@ -534,7 +577,12 @@ function triggerTrap(tr,e){
     tell('You are whisked away by a teleport rune!', who+' is whisked away by a teleport rune!'); }
   else if(tr.kind==='pit'){
     if(isP){ log('The floor gives way!','c-you'); fallIntoChasm(); }
-    else { trapNews(tr, 'The '+e.name+' falls into a pit!'); trapKill(); }
+    else {
+      if(!fallEnemyToNextFloor(e))return;
+      trapNews(tr,e.name+' falls to the next floor.');
+      if(info.once)feats=feats.filter(function(f){return f!==tr;});
+      return;
+    }
   }
   if(info.once) feats=feats.filter(function(f){ return f!==tr; });
   if(e.hp<=0){ if(isP){  if(player.hp<=0) death(); } else trapKill(); }
@@ -671,6 +719,7 @@ function generateNextFloor(fell){
   if(!fell) sfx('stairs');
   player.levitate=0; aiming=null;
   generate(worldSeed);
+  arriveFallenEnemies();
   if(typeof FoteShadowClone!=='undefined')FoteShadowClone.arrive();
   player._lx=undefined;
   resize();

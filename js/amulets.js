@@ -100,7 +100,7 @@ function amuletHook(x,y,check){
   var foe=foeAt(x,y);
   var path=boltPathRaw(player.x,player.y,x,y);
   if(foe){
-    if(foe.base.boss){ if(!check) return false; log(foe.name+' is far too heavy to drag.','c-info'); return false; }
+    if(foe.base.boss||foe.caveBoss){ if(!check) return false; log(foe.name+' is far too heavy to drag.','c-info'); return false; }
     /* the first free tile next to you on the line */
     var land=null;
     for(var i=0;i<path.length-1;i++){ var t=path[i]; if(!walkable(t.x,t.y) || occupied(t.x,t.y)){ break; } land=t; break; }
@@ -109,7 +109,7 @@ function amuletHook(x,y,check){
     if(check) return true;
     sparkleFx(foe.x,foe.y,'phys',10); foe.x=land.x; foe.y=land.y; foe._lx=undefined; foe.state='hunt';
     applyStatus(foe,'stun',1); log('Hook: '+foe.name+' pulled.','c-good'); sfx('swing');
-    if(at(foe.x,foe.y)===CHASM && !foe.base.flying){ log('The '+foe.name+' tumbles into the chasm!','c-kill'); kill(foe, player); }
+    if(at(foe.x,foe.y)===CHASM&&fallEnemyToNextFloor(foe))log(foe.name+' falls to the next floor.','c-info');
     return true;
   }
   var t0=at(x,y);
