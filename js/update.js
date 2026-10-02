@@ -3,7 +3,7 @@ var FOTE_VERSION = 'Beta 1.4.2';
 /* Keep newest first; describe only changes already present in this build. */
 var FOTE_PATCHES = [
   {version:'Beta 1.4.2', notes:[
-    "Roaming Skeleton base HP is 32, up from 16. Other regular enemy definitions in the Dungeon, Crypt, Caverns and Underdark have 20% more base HP. Bosses, minor summons and Chaos enemies are excluded.",
+    "Roaming Skeleton base HP is 32, up from 16. Other regular enemy definitions in the Crypt, Caverns and Underdark have 20% more base HP. Dungeon enemies, bosses, minor summons and Chaos enemies are unchanged.",
     "Arcane Lance can target breakable objects. Damaging line and area spells also break props, using their normal barrel reactions. Frozen treasure still needs Fire.",
     "HUD text uses one font with consistent weights and sizes for HP, Mana, level, rank, hunger, Favor and depth.",
     "Vellum gains piety from Mana spent on invocations as well as spells. Communion uses one status icon, with its remaining Ward shown in the tooltip.",
