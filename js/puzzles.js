@@ -198,7 +198,7 @@ function buildCrystalVault(){
            : i===1 ? (rng()<0.5 && typeof makeRing==='function' ? {kind:'ring', it:makeRing(null,false)} : typeof makeAmulet==='function' ? {kind:'amulet', it:makeAmulet(null,false)} : {kind:'essence', n:60})
            : (rng()<0.5 ? {kind:'mote', el:pick(ELEMENTS)} : {kind:'essence', n:ri(60,90)+floorNo*10});
     it.x=p.x; it.y=p.y; it.crystal=true; items.push(it); set.push(it);
-    addProp(p.x,p.y, 'crystal-violet', {flat:1, light:'#9FE8FF', dim:1, keep:true});   /* a crystal marks each treasure */
+    addProp(p.x,p.y, 'crystal-violet', {flat:1, light:'#9FE8FF', dim:1, keep:true, crystalVault:true});   /* a crystal marks each treasure */
   });
   var c=mainRoomCell(); if(c) items.push({x:c.x, y:c.y, kind:'key', key:'crystal'});
   floorMeta.notes.push('<b>A crystal vault</b> glints somewhere on this floor. Its crystal key lies about; inside, you may take one treasure.');
@@ -340,18 +340,32 @@ function turnPuzzleHazards(context){ (floorMeta.puzzles||[]).forEach(refreshBurn
 /* ---------------------------------------------------------------- the crystal vault */
 
 
-var _grabPz = grab;
-grab = function(){
-  var here=items.filter(function(it){ return it.x===player.x && it.y===player.y && it.crystal; });
-  var got=_grabPz();
-  if(got && here.length && here.some(function(it){ return items.indexOf(it)<0; })){
-    var rest=items.filter(function(it){ return it.crystal; });
-    rest.forEach(function(it){ burst(it.x,it.y,'ice',20,0.06); removeItem(it); });
-    props.filter(function(p){ return p.light==='#9FE8FF'; }).forEach(function(p){ removeProp(p); });   /* match the marker light, not the prop name */
-    if(rest.length){ log('The other treasures shatter into glittering dust.','c-you'); sfx('ice-melt'); }
-  }
-  return got;
-};
+function crystalVaultMarkers(room){
+  return props.filter(function(p){return roomAt(p.x,p.y)===room&&(p.crystalVault||p.light==='#9FE8FF');});
+}
+function dissolveCrystalVault(room,animate){
+  var rest=items.filter(function(it){return it.crystal&&roomAt(it.x,it.y)===room;});
+  rest.forEach(function(it){if(animate)burst(it.x,it.y,'ice',20,0.06);removeItem(it);});
+  crystalVaultMarkers(room).forEach(removeProp);
+  room.crystalClaimed=true;
+  if(animate&&rest.length){log('The other treasures shatter.','c-you');sfx('ice-melt');}
+}
+function claimCrystalVaultTreasure(it){
+  if(!it||!it.crystal||items.indexOf(it)>=0)return false;
+  var room=roomAt(it.x,it.y);
+  if(!room||room.special!=='crystal'||room.crystalClaimed)return false;
+  dissolveCrystalVault(room,true);return true;
+}
+function repairCrystalVaultClaims(){
+  var changed=false;
+  (rooms||[]).filter(function(room){return room.special==='crystal';}).forEach(function(room){
+    var markers=crystalVaultMarkers(room),rewards=items.filter(function(it){return it.crystal&&roomAt(it.x,it.y)===room;});
+    /* Older automatic pickups left a marker with no matching reward. */
+    var claimed=room.crystalClaimed||markers.some(function(p){return !rewards.some(function(it){return it.x===p.x&&it.y===p.y;});});
+    if(claimed&&(markers.length||rewards.length)){dissolveCrystalVault(room,false);changed=true;}
+  });
+  return changed;
+}
 
 /* ---------------------------------------------------------------- Search */
 function searchAround(resting, quiet){

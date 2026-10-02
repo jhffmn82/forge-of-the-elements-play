@@ -97,12 +97,15 @@ function closeAdjacentDoors(){
 function entryItemsAndTerrain(){
   var here=items.filter(function(it){ return it.x===player.x && it.y===player.y; });
   here.forEach(function(it){
-    if(it.kind==='essence'){ removeItem(it); gainEssence(it.n); floatText(player.x,player.y,'+'+it.n,'magic'); log('Picked up '+it.n+' essence.','c-good'); sfx('pickup-essence',{vol:0.5}); }
-    else if(it.kind==='mote'){ removeItem(it); player.motes[it.el]=(player.motes[it.el]||0)+1; log('Picked up <b>'+it.el+' mote</b>.','c-kill'); sfx('pickup-mote'); sparkleFx(player.x,player.y,TRAIL_EL(it.el),16); }
-    else if(it.kind==='key'){ removeItem(it); player.keys[it.key]=(player.keys[it.key]||0)+1; log('Picked up <b>'+it.key+' key</b>.','c-kill'); sfx('pickup-key'); }
+    if(items.indexOf(it)<0)return;
+    var collected=false;
+    if(it.kind==='essence'){ removeItem(it); gainEssence(it.n); floatText(player.x,player.y,'+'+it.n,'magic'); log('Picked up '+it.n+' essence.','c-good'); sfx('pickup-essence',{vol:0.5}); collected=true; }
+    else if(it.kind==='mote'){ removeItem(it); player.motes[it.el]=(player.motes[it.el]||0)+1; log('Picked up <b>'+it.el+' mote</b>.','c-kill'); sfx('pickup-mote'); sparkleFx(player.x,player.y,TRAIL_EL(it.el),16); collected=true; }
+    else if(it.kind==='key'){ removeItem(it); player.keys[it.key]=(player.keys[it.key]||0)+1; log('Picked up <b>'+it.key+' key</b>.','c-kill'); sfx('pickup-key'); collected=true; }
     else if(it.kind==='heart')log('<b>Heart</b>: +25% max HP when needed.','c-info');
     else if(it.kind==='managlobe')log('<b>Mana globe</b>: +25% max Mana when needed.','c-info');
     else log('<b>'+itemLabel(it)+'</b> · G to pick up.','c-info');
+    if(collected&&it.crystal)claimCrystalVaultTreasure(it);
   });
   if(!(player.levitate>0)){
     var tr=feats.filter(function(f){ return f.x===player.x && f.y===player.y; })[0];
@@ -598,9 +601,10 @@ function grab(){
   if(gameTurns.busy())return false;
   var got=false;
   items.filter(function(it){ return it.x===player.x && it.y===player.y; }).forEach(function(it){
+    if(items.indexOf(it)<0)return;
     if(it.rareLamp!==undefined){if(releaseSealedLamp(it))got=true;return;}
     var e=bagEntryFor(it); if(!e) return;
-    if(addBag(e[0],e[1],e[2])){ removeItem(it); got=true; log('You pick up <b>'+itemLabel(it)+'</b>.','c-good'); sfx('pickup-item'); }
+    if(addBag(e[0],e[1],e[2])){ removeItem(it); got=true; log('You pick up <b>'+itemLabel(it)+'</b>.','c-good'); sfx('pickup-item'); if(it.crystal)claimCrystalVaultTreasure(it); }
   });
   if(!got) log('Nothing here to pick up.','c-info');
   return got;

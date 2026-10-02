@@ -79,6 +79,7 @@ function repairStairApproachTraps(){
 function presentRestoredFloor(at){
   if(typeof repairWallMemorials==='function')repairWallMemorials();
   repairCryptPuzzleGuardians();
+  repairCrystalVaultClaims();
   repairStairApproachTraps();
   if(floorMeta && floorMeta.shrineGod) RUN.shrineGod=floorMeta.shrineGod;
   if(typeof repairCoreProgress==='function')repairCoreProgress();

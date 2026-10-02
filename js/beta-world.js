@@ -107,7 +107,7 @@ function applyUnderdarkEnemyTuning(e){
 }
 
 
-function restorePuzzleState(){repairCryptPuzzleGuardians();ents.forEach(betaEnemyBalance);(floorMeta.puzzles||[]).forEach(function(room){if(['sentinels','sentries'].includes(room.puzzle.kind))addPuzzleSwitch(room);if(room.puzzle.kind==='barricade'&&!room.burning&&!room.puzzle.solved)setT(room.puzzle.door.x,room.puzzle.door.y,SEALED);});}
+function restorePuzzleState(){repairCryptPuzzleGuardians();repairCrystalVaultClaims();ents.forEach(betaEnemyBalance);(floorMeta.puzzles||[]).forEach(function(room){if(['sentinels','sentries'].includes(room.puzzle.kind))addPuzzleSwitch(room);if(room.puzzle.kind==='barricade'&&!room.burning&&!room.puzzle.solved)setT(room.puzzle.door.x,room.puzzle.door.y,SEALED);});}
 PUZZLE_KINDS.barricade.note='';
 PUZZLE_KINDS.spikes.note='Spikes cover the floor. Stone skin would shrug them off; floating would carry you over.';
 ['sentinels','sentries','darktraps','library'].forEach(function(k){PUZZLE_KINDS[k].note='';});
