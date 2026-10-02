@@ -217,6 +217,22 @@ function hudResourceCard(kind){
   function number(n){return Math.round(n||0).toLocaleString('en-US');}
   function escape(s){return String(s).replace(/[&<>"']/g,function(ch){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch];});}
   function row(label,value){return '<div class="row"><span>'+label+'</span><b>'+value+'</b></div>';}
+  if(kind==='character')return '<div class="nm">Character</div>'+row('Level',number(player.level))+(player.god?row(escape(GODS[player.god].name),'Rank '+godRank()):'')+(player.points>0?row('Unspent points',number(player.points)):'')+'<div class="hint">Open attributes and passives.</div>';
+  if(kind==='points')return '<div class="nm">Attribute points</div>'+row('Unspent',number(player.points))+'<div class="hint">Open Character to spend them.</div>';
+  if(kind==='inventory')return '<div class="nm">Inventory</div>'+row('Bag',(player.bag||[]).length+' / '+BAG_MAX)+'<div class="hint">Open equipment, items and motes.</div>';
+  if(kind==='faith')return '<div class="nm">Faith</div>'+(player.god?row(escape(GODS[player.god].name),'Rank '+godRank()):'<div class="hint">No god followed.</div>')+'<div class="hint">Open divine abilities and offerings.</div>';
+  if(kind==='menu')return '<div class="nm">Menu</div><div class="hint">Character, Inventory, Faith, Options and combat log.</div>';
+  if(kind==='options')return '<div class="nm">Options</div><div class="hint">Controls, display and audio.</div>';
+  if(kind==='history')return '<div class="nm">Combat log</div><div class="hint">Read the full log.</div>';
+  if(kind==='history-close')return '<div class="nm">Close log</div><div class="hint">Return to the dungeon.</div>';
+  if(kind==='sound')return '<div class="nm">Sound</div>'+row('Audio',AUDIO.muted?'Off':'On')+'<div class="hint">'+(AUDIO.muted?'Unmute':'Mute')+' game audio.</div>';
+  if(kind==='map')return '<div class="nm">Map</div><div class="hint">'+(typeof AUTOMAP_ON!=='undefined'&&AUTOMAP_ON?'Hide the map overlay.':'Show the explored dungeon.')+'</div>';
+  if(kind==='explore'){
+    var exploring=typeof autoExploreActive==='function'&&autoExploreActive(),complete=typeof floorMeta!=='undefined'&&floorMeta&&floorMeta.exploreComplete;
+    return '<div class="nm">'+(exploring?'Stop exploring':complete?'Next floor':'Explore')+'</div><div class="hint">'+(exploring?'Stop travelling.':complete?'Walk to the stairs and descend.':'Walk through unexplored areas.')+'</div>';
+  }
+  if(kind.indexOf('move:')===0)return '<div class="nm">Move '+escape(kind.slice(5))+'</div><div class="hint">Move one tile.</div>';
+  if(kind==='search')return '<div class="nm">Wait and search</div><div class="hint">Spend a turn searching nearby.</div>';
   if(kind==='hp')return '<div class="nm">Health</div>'+row('HP',number(player.hp)+' / '+number(player.maxhp))+(playerShield()>0?row('Shield',number(playerShield()))+'<div class="hint">'+escape(shieldParts().join(', '))+'. Shields absorb damage before HP.</div>':'');
   if(kind==='mp')return '<div class="nm">Mana</div>'+row('Mana',number(Math.floor(player.mp))+' / '+number(player.maxmp));
   if(kind==='xp')return '<div class="nm">Experience</div>'+row('Level',player.level)+row('XP',number(player.xp)+' / '+number(player.xpNext))+'<div class="hint">'+(player.level>=20?'Maximum level reached. Further XP still counts toward your run total.':number(Math.max(0,player.xpNext-player.xp))+' XP to the next level.')+'</div>';
@@ -242,7 +258,7 @@ function bindHudResourceCard(element,kind){
   if(element._hudResourceCard===kind)return;
   element._hudResourceCard=kind;if(element.tabIndex<0)element.tabIndex=0;
   hoverCard(element,function(){return hudResourceCard(kind);});
-  element.addEventListener('focus',function(){var r=element.getBoundingClientRect();showCard(hudResourceCard(kind),{clientX:r.left,clientY:r.bottom,isTrusted:false});});
+  element.addEventListener('focus',function(){if(document.body.classList.contains('touch'))return;var r=element.getBoundingClientRect();showCard(hudResourceCard(kind),{clientX:r.left,clientY:r.bottom,isTrusted:false});});
   element.addEventListener('blur',hideCard);
   element.addEventListener('click',hideCard);
 }

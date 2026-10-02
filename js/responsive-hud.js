@@ -13,8 +13,10 @@ var FoteResponsiveHUD=(function(){
     const explore=node('studyExplore'),map=node('bMap');
     explore.dataset.iconOnly='true';
     syncExploreButton(explore);
+    bindHudResourceCard(explore,'explore');
     map.innerHTML=lineIcon('<path d="m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3zM9 3v15m6-12v15"/>');
     map.setAttribute('aria-label','Map');
+    bindHudResourceCard(map,'map');
     node('studyOptions').innerHTML=lineIcon('<path d="M4 6h3m4 0h9M4 12h9m4 0h3M4 18h3m4 0h9"/><circle cx="9" cy="6" r="2"/><circle cx="15" cy="12" r="2"/><circle cx="9" cy="18" r="2"/>')+'<span>Options</span>';
     node('studyHistory').innerHTML=lineIcon('<path d="M5 5h14v14H5zM8 9h8m-8 3h8m-8 3h5"/>')+'<span>Combat log</span>';
   }
@@ -40,6 +42,7 @@ var FoteResponsiveHUD=(function(){
     node('dpad').querySelectorAll('button[data-d]').forEach(button=>{
       const direction=directions[button.dataset.d];
       button.setAttribute('aria-label',direction?'Move '+direction[0]:'Wait and search');
+      bindHudResourceCard(button,direction?'move:'+direction[0]:'search');
       button.classList.toggle('pad-diagonal',!!direction&&Math.abs(direction[1])%90===45);
       let sector='';
       if(direction){
@@ -62,6 +65,7 @@ var FoteResponsiveHUD=(function(){
     button.innerHTML=audioSymbol+'<span>Sound</span><small>'+(AUDIO.muted?'Off':'On')+'</small>';button.classList.toggle('study-muted',AUDIO.muted);
     button.title=AUDIO.muted?'Audio off. Click to unmute.':'Audio on. Click to mute.';
     button.setAttribute('aria-label',button.title);button.setAttribute('aria-pressed',String(AUDIO.muted));
+    bindHudResourceCard(button,'sound');
   }
   function syncSheet(){
     if(!mounted)return;
@@ -99,6 +103,7 @@ var FoteResponsiveHUD=(function(){
   }
   function hasOverlay(){return menuOpen||document.body.classList.contains('study-log-history');}
   function setMenu(on,restoreFocus){
+    hideCard();
     on=!!on;
     if(on){
       if(typeof stopTravel==='function')stopTravel();
@@ -252,6 +257,7 @@ var FoteResponsiveHUD=(function(){
       button.innerHTML=lineIcon(path)+'<span>'+label+'</span>';nav.insertBefore(button,node('studyOptions'));
     }
     const history=document.createElement('button');history.id='studyHistory';history.type='button';history.textContent='Log history';nav.append(history);
+    for(const [id,kind]of [['studyPortrait','character'],['studyInventoryIcon','inventory'],['studyMenuToggle','menu'],['studyOptions','options'],['studyHistory','history'],['studyLogClose','history-close'],['studyChar','character'],['studyGear','inventory'],['studyFaith','faith'],['studyMenuChar','character'],['studyMenuGear','inventory'],['studyMenuFaith','faith']])bindHudResourceCard(node(id),kind);
     const explore=document.createElement('button');explore.id='studyExplore';explore.type='button';explore.textContent='Explore';
     left.insertBefore(explore,node('dpad'));bindExploreButton(explore);
     const hunger=document.createElement('button');hunger.id='studyHunger';hunger.type='button';hunger.className='study-hunger';
@@ -272,6 +278,7 @@ var FoteResponsiveHUD=(function(){
   function renderReadouts(){
     if(!mounted||!player)return;
     syncExploreButton(node('studyExplore'));
+    bindHudResourceCard(node('studyExplore'),'explore');
     const hungry=player.hunger<=0?'Starving':player.hunger<300?'Hungry':'Fed';
     node('studyHungerText').textContent=hungry;
     node('studyHungerFill').style.width=clamp(player.hunger/HUNGER_MAX*100,0,100)+'%';
@@ -317,7 +324,8 @@ var FoteResponsiveHUD=(function(){
     const statPoints=node('studyStatPoints');statPoints.hidden=!points;statPoints.textContent='+'+points;
     statPoints.title=points+' unspent stat point'+(points===1?'':'s')+'. Open Character.';statPoints.setAttribute('aria-label',statPoints.title);
     statPoints.classList.toggle('study-still',typeof ANIM!=='undefined'&&ANIM.reduce);
-    node('studyMenuChar').setAttribute('aria-label',node('studyChar').title);
+    bindHudResourceCard(statPoints,'points');bindHudResourceCard(node('studyChar'),'character');
+    node('studyMenuChar').setAttribute('aria-label',node('studyChar').getAttribute('aria-label'));
     node('studyGear').textContent='Inventory';
     const amusement=node('studyAmusement');if(amusement)paintAmusement(amusement);
   }

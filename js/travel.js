@@ -157,7 +157,8 @@ function syncExploreButton(button){
   }else button.textContent=label;
   button.setAttribute('aria-label',label);
   button.dataset.exploreMode=stairs?'stairs':'explore';button.setAttribute('aria-pressed',String(active));
-  button.title=(active?'Stop travelling':stairs?'Walk to the stairs down and descend':'Explore nearby unseen areas')+(typeof bindKey==='function'?' ('+keyLabel(bindKey('explore'))+')':'');
+  if(button._hudResourceCard)button.removeAttribute('title');
+  else button.title=(active?'Stop travelling':stairs?'Walk to the stairs down and descend':'Explore nearby unseen areas')+(typeof bindKey==='function'?' ('+keyLabel(bindKey('explore'))+')':'');
 }
 function bindExploreButton(button){
   if(!button||button.dataset.autoExplore)return;
