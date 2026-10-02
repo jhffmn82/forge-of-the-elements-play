@@ -91,7 +91,12 @@ function spellRange(A){
   if(A.useWeaponRange) return Math.max(1, player.range);
   return A.range ? A.range + (player.rangeBonus||0) + (!A.tech && !A.divine && typeof staffRange==='function' ? staffRange() : 0) : 0;
 }
-function accOf(e){ return e===player ? player.acc : (e.base.acc + (e.ally?0:0)); }
+function accOf(e){
+  if(e===player)return player.acc;
+  var early=e.foe&&!e.ally&&floorNo>=1&&floorNo<=5&&!floorMeta.plane&&!floorMeta.chaosPreview&&
+    ['rat','bat','goblin','archer','brute','slime','pebbleslime','greenslime','shaman','skeleton','mimic','warchief','emberling','tideling','galeling','stoneling','wisp','lumenling'].indexOf(e.kind)>=0;
+  return e.base.acc+(early?8:0);
+}
 function evaOf(e){ return FoteActors.effectiveEvasion(e,e===player?player.eva:e.base.eva,gameEffects,e===player); }
 function armorOf(e){ return e===player ? player.armor : Math.max(0, (e.base.armor||0) - (e.st.hollow?e.st.hollow.n:0)); }
 
@@ -285,7 +290,7 @@ function basicMonsterBehavior(e){
       if(e.castCd<=0 && clearShot(e,player)){   /* a shaman behind its own goblins holds the bolt */
         e.castCd=e.base.castEvery; setClip(e,'attack'); sfx('shaman-cast',{from:e});
         boltFx(e.x,e.y,player.x,player.y,'fire');
-        if(rng() < hostileHitChance(hitChance(e.base.acc+10, evaOf(player)),true)){
+        if(rng() < hostileHitChance(hitChance(accOf(e)+10, evaOf(player)),true)){
           var fd=applyDamage(player, roll(5,8)+floorNo, 'fire', e); floatText(player.x,player.y,String(fd),'fire'); var brn=rng()<0.5; if(brn) applyStatus(player,'burn',3,sDMG(2));
           log(combatText(e.name)+' → you: '+combatDamageNumber(fd,'fire')+(brn?'; Burning':'')+'.','c-you');
           if(player.hp<=0) kill(player,e);
@@ -517,11 +522,12 @@ function castBoltTarget(x,y){
   /* 2026-09-18: inRange() folds distance, bounds and line of sight together; say which one failed. */
   if(!inRange(x,y)){ log(((revealAll||vis[idxOf(x,y)]) ? 'Out of range.' : 'You cannot see that tile.'),'c-info'); sfx('ui-error'); return false; }
   if(A.kind==='summon') return castRaiseDead(x,y,A);
-  var path=boltPath(player.x,player.y,x,y), end=path.length?path[path.length-1]:{x:x,y:y};
+  var path=propAt(x,y)?propProjectilePath(player.x,player.y,x,y):boltPath(player.x,player.y,x,y), end=path.length?path[path.length-1]:{x:x,y:y};
   var f=foeAt(end.x,end.y);
+  var worldProp=propAt(end.x,end.y),breakableHit=worldProp&&worldProp.br&&!worldProp.hoard&&A.kind==='bolt'&&A.base;
   var terrain = !f && (at(end.x,end.y)===ICEDOOR || at(end.x,end.y)===THORNS || propAt(end.x,end.y) || gAt(end.x,end.y)===G_GRASS);
   if(key==='challenge'){ if(!f){ log('Challenge whom?','c-info'); return false; } }
-  if(!f && !(terrain && (A.type==='fire'||A.type==='phys'||A.type==='ice'||A.type==='lightning'))){ log(path.length && end.x!==x ? 'Something is in the way.' : 'Nothing to hit there.','c-info'); return false; }
+  if(!f && !(terrain && (breakableHit||A.type==='fire'||A.type==='phys'||A.type==='ice'||A.type==='lightning'))){ log(path.length && end.x!==x ? 'Something is in the way.' : 'Nothing to hit there.','c-info'); return false; }
   aiming=null; spendSpellMana(A); if(A.divine) startInvokeCd(key); else if(A.cd) startDivineCd(key,A.cd);   /* Challenge: an aimed invoke's cooldown starts on payment; 2026-09-29 (Justin): so does Sap's 8 turns */
   if(!A.tech && !A.divine && typeof spellConduct==='function') spellConduct(A);
   setClip(player, A.tech && A.useWeaponRange && player.range<=1 ? 'melee' : 'cast');
@@ -538,7 +544,7 @@ function castBoltTarget(x,y){
     /* spells against the world */
     if(A.type==='fire') { ignite(end.x,end.y,'player'); burnWorld(end.x,end.y); }
     if(A.type==='ice' && at(end.x,end.y)===WATER){ setG(end.x,end.y,G_ICE); }
-    if(propAt(end.x,end.y) && (A.type==='phys'||A.type==='lightning')) damageProp(propAt(end.x,end.y), 'player', A.type);
+    if(propAt(end.x,end.y) && (breakableHit||A.type==='phys'||A.type==='lightning')) damageProp(propAt(end.x,end.y), 'player', A.type);
     endTurn(); return true;
   }
   var hit = A.always || combatRoll(hitChance(player.acc+10, evaOf(f)),true);

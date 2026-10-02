@@ -85,7 +85,7 @@
       floorMeta.notes=['Five islands drift in the void, linked by paired portals. A magical current on the last island carries you deeper.','There are no god shrines in the Realm of Chaos.'];
       if(options.encounters!==false)root.FoteChaosEncounters.populate(preview,{seed:seed});
     }
-    player.t=clock;ents.forEach(function(e){e.t=clock;});
+    player.t=clock;if(typeof arriveRarePet==='function')arriveRarePet();ents.forEach(function(e){e.t=clock;});
     if(typeof computeFOV==='function')computeFOV();
     return preview;
   }

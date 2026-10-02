@@ -318,8 +318,8 @@ function buildCryptShowcase(){
 function turnGraveOoze(context){
   if(!floorMeta || !floorMeta.ooze || !player || player.hp<=0) return;
   ents.slice().forEach(function(e){
-    if(e.hp<=0 || !isOozeAt(e.x,e.y)) return;
-    if(e!==player && (e.base.undead || e.base.object || e.base.ooze || e.base.flying)) return;
+    if(e.hp<=0 || !isOozeAt(e.x,e.y)||gameEffects.airborne(e)) return;
+    if(e!==player && (e.base.undead || e.base.object || e.base.ooze || e.base.sporeproof || e.base.flying)) return;
     var d=dealDirectDamage(e,1,'poison',null); e._hit=Math.max(performance.now(), fxClock);   /* a flat tick like poison status: guards and wards don't soak it */
     floatText(e.x,e.y,String(d),'poison');
     if(e===player){ log('Grave ooze: '+combatDamageNumber(d,'poison')+'.','c-you'); if(player.hp<=0){  if(player.hp<=0) death(); } }
@@ -569,7 +569,7 @@ function buildGeneratedCryptOoze(seed){
   }
   /* a floor with no pools gets one or two of its own, away from the start */
   for(var k=0; k<(n?0:2); k++){
-    var r=pick(rooms.filter(function(q){ return q.role!=='start' && q.role!=='boss' && !q.hall && q.w*q.h>=16; }));
+    var r=pick(rooms.filter(function(q){ return q.role!=='start' && q.role!=='boss' && !q.hall&&!q.hiddenSigil&&!q.rareEvent && q.w*q.h>=16; }));
     if(!r) break;
     blob(r.x+ri(1,Math.max(1,r.w-2)), r.y+ri(1,Math.max(1,r.h-2)), ri(3,7), function(xx,yy){ var j=idxOf(xx,yy); if(at(xx,yy)===FLOOR && !propAt(xx,yy) && !itemAt(xx,yy) && !feats.some(function(f){ return f.x===xx&&f.y===yy; })){ floorMeta.ooze[j]=1; ground[j]=0; } });
   }

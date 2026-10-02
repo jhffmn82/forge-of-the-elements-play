@@ -58,7 +58,7 @@
      draws at a .98 fit ahead of the named prop passes. scale: the prop shrinks around its floor anchor (anchor: a share
      of the tile down from its top); bones at half size since 2026-09-26. Placement, footprint, breakability, lighting
      and loot stay the prop's, and a prop with authored art (artName) keeps it. */
-  var FIT={'bed-straw':{paint:true},chains:{paint:true,scale:.5,anchor:.5},bones:{paint:true,scale:.5,anchor:.5},
+  var FIT={'sword-in-stone':{paint:true},'bed-straw':{paint:true},chains:{paint:true,scale:.5,anchor:.5},bones:{paint:true,scale:.5,anchor:.5},
     'bone-pile':{scale:.5,anchor:.5},pot:{scale:.8,anchor:.96}};
   function fit(p){
     if(!p||p.artName)return null;

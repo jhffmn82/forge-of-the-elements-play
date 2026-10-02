@@ -59,6 +59,13 @@ var renderLightSources=FoteRendering.sequence([
   renderPass('stormward',addStormwardLight),renderPass('underdark-strength-and-lava',addUnderdarkLights)
 ]);
 function drawPropSurface(p,x,y,alpha){
+  if(p.fluid){
+    var barrel=objArt('props','barrel');
+    if(barrel){drawObj(barrel,x,y,{feet:true,fit:.9,alpha:alpha});
+      ctx.save();ctx.globalAlpha=alpha;ctx.fillStyle=p.fluid==='water'?'#54BDF0':'#A6D94F';
+      ctx.fillRect(x+TS*.32,y+TS*.48,TS*.36,TS*.09);ctx.restore();return true;}
+  }
+
   // An explicit set-piece sprite owns its appearance before any name-based
   // legacy decoration. Placement and depth remain the ordinary set renderer.
   if(p.artName)return p.set?drawSetSprite(p,alpha):false;
@@ -84,6 +91,7 @@ function gatherLights(now,position){var lights=gatherBaseLights(now,position);re
  * through packedSetArt, so only the shrine redirect has a bounded guard. */
 var renderShrineLookup=false;
 function objArt(group,name){
+  if(group==='chests'&&name==='chest-gold')name='chest-ornate';
   var art=typeof FoteChaosPreviewArt!=='undefined'?FoteChaosPreviewArt.lookup(group,name):null;
   if(!renderShrineLookup&&typeof name==='string'&&name.indexOf('shrine-')===0){
     renderShrineLookup=true;try{art=setArt(name);}finally{renderShrineLookup=false;}

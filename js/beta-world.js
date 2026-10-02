@@ -5,6 +5,7 @@ function puzzleAtDoor(x,y){return (floorMeta.puzzles||[]).find(function(r){retur
 function addPuzzleSwitch(room){
  if(room.puzzle.switch)return;
  var cells=farFrom(pzCells(room).filter(function(c){return walkable(c.x,c.y)&&!propAt(c.x,c.y)&&!items.some(function(i){return i.x===c.x&&i.y===c.y;});}),room.puzzle.door);
+ cells=cells.filter(function(c){return puzzlePropKeepsRewardsOpen(room,c);});
  if(!cells.length)return;var p=cells[0];addProp(p.x,p.y,'lever-up',{keep:true,lever:true,puzzleSwitch:true,roomDoor:room.puzzle.door});room.puzzle.switch={x:p.x,y:p.y};
 }
 
@@ -12,10 +13,12 @@ function addPuzzleSwitch(room){
 function puzzleSpellTiles(A,tiles){
  (floorMeta.puzzles||[]).forEach(function(room){
   var touches=tiles.some(function(p){return roomAt(p[0],p[1])===room||(p[0]===room.puzzle.door.x&&p[1]===room.puzzle.door.y);});if(!touches)return;
+  if((A.el==='fire'||A.type==='fire')&&room.puzzle.kind==='hoard'&&!room.puzzle.solved)solvePuzzle(room,'the frozen chamber thaws.');
   if(A.el==='light'&&room.puzzle.kind==='darktraps'&&!room.puzzle.solved)solvePuzzle(room,'light reveals the hidden traps.');
-  if((A.el==='water'||A.type==='ice')&&room.puzzle.kind==='baths'){room.puzzle.solved=true;room.cooledUntil=Number.MAX_SAFE_INTEGER;pzCells(room).forEach(function(p){if(at(p.x,p.y)===FLOOR)setT(p.x,p.y,WATER);});log('The scalding stone cools.','c-good');sfx('ice-melt');}
+  if(!room.puzzle.solved&&((room.burning&&(A.el==='water'||A.type==='ice'))||(room.puzzle.kind==='baths'&&(A.el==='poison'||A.type==='poison'))))solvePuzzle(room,room.burning?'the flames die away.':'the poison cools the scalding stone.');
  });
  if(A.el==='fire')tiles.forEach(function(p){burnWorld(p[0],p[1]);var prop=propAt(p[0],p[1]);if(prop&&prop.hoard){removeProp(prop);burst(p[0],p[1],'ice',16,.05);}});
+ (floorMeta.puzzles||[]).forEach(function(room){if(room.puzzle.kind==='hoard'&&!room.puzzle.solved&&!props.some(function(p){return p.hoard&&roomAt(p.x,p.y)===room;}))solvePuzzle(room,'the last of the ice melts away.');});
 }
 /* Snapshot footprints before raising terrain so previews and damage agree. */
 function glacialTombTiles(x,y){
@@ -104,8 +107,8 @@ function applyUnderdarkEnemyTuning(e){
 }
 
 
-function restorePuzzleState(){ents.forEach(betaEnemyBalance);(floorMeta.puzzles||[]).forEach(function(room){if(['sentinels','sentries'].includes(room.puzzle.kind))addPuzzleSwitch(room);if(room.puzzle.kind==='barricade'&&!room.puzzle.solved)setT(room.puzzle.door.x,room.puzzle.door.y,SEALED);});}
-PUZZLE_KINDS.barricade.note='A timber barricade seals the doorway. Fire would clear it.';
+function restorePuzzleState(){ents.forEach(betaEnemyBalance);(floorMeta.puzzles||[]).forEach(function(room){if(['sentinels','sentries'].includes(room.puzzle.kind))addPuzzleSwitch(room);if(room.puzzle.kind==='barricade'&&!room.burning&&!room.puzzle.solved)setT(room.puzzle.door.x,room.puzzle.door.y,SEALED);});}
+PUZZLE_KINDS.barricade.note='';
 PUZZLE_KINDS.spikes.note='Spikes cover the floor. Stone skin would shrug them off; floating would carry you over.';
 ['sentinels','sentries','darktraps','library'].forEach(function(k){PUZZLE_KINDS[k].note='';});
 
@@ -116,6 +119,11 @@ function balanceGeneratedEnemies(){ents.forEach(betaEnemyBalance);return;}
 function activatePuzzleSwitch(p){
  var room=puzzleAtDoor(p.roomDoor.x,p.roomDoor.y);if(!room||room.puzzle.disabled)return true;
  room.puzzle.disabled=true;room.puzzle.solved=true;p.used=true;p.name='lever-down';
+ if(room.puzzle.kind==='library'){
+  room.dark=false;
+  ents=ents.filter(function(e){if(!e.libraryRoom||e.libraryRoom.x!==p.roomDoor.x||e.libraryRoom.y!==p.roomDoor.y)return true;burst(e.x,e.y,'light',16,.05);return false;});
+  p.light='#FFE0A0';
+ }
  props.forEach(function(o){if(roomAt(o.x,o.y)===room&&(o.sentinel||o.sentry)){o.sentinel=false;o.sentry=false;o.light=null;o.dim=true;}});
  ents=ents.filter(function(e){if(!e.sentinelRoom||e.sentinelRoom.x!==p.roomDoor.x||e.sentinelRoom.y!==p.roomDoor.y)return true;addProp(e.x,e.y,'statue',{keep:true,dim:true});return false;});
  log('The guardians go still.','c-good');sfx('lever');computeFOV();endTurn();return true;
@@ -123,6 +131,6 @@ function activatePuzzleSwitch(p){
 
 /* Named floor-content helpers; selected by content-adapter.js. */
 function finishSigilRoom(kind){var room=(floorMeta.puzzles||[]).slice(-1)[0];if(!room||room.puzzle.kind!==kind)return;
- if(kind==='barricade')setT(room.puzzle.door.x,room.puzzle.door.y,SEALED);
+ if(kind==='barricade'&&!room.burning)setT(room.puzzle.door.x,room.puzzle.door.y,SEALED);
  if(kind==='sentinels'||kind==='sentries')addPuzzleSwitch(room);
 }

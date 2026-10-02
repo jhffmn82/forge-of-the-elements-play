@@ -201,22 +201,6 @@
     return FoteActions.resistance(type,Object.assign({},c,{wet:!!isWet(e),chilled:!!e.st.chill,sanctuary:inSanctuary(e),divine:holyGroundStrength(e),
       poisonward:e.buffs.poisonward>0,shadeward:e.buffs.shadeward>0,stormward:e.buffs.stormward>0,fireward:e.buffs.fireward>0,starward:e.buffs.starward>0}));
   }
-  function arrivalSpot(e){
-    // Search outward through legal movement cells. A random tile in a square
-    // can put the clone across a wall, ahead of the player's exploration.
-    var queue=[{x:player.x,y:player.y,steps:0}],visited=new Set([idxOf(player.x,player.y)]);
-    for(var head=0;head<queue.length;head++){
-      var p=queue[head],probe=Object.assign({},e,{x:p.x,y:p.y});
-      if(p.steps>0&&!occupied(p.x,p.y)&&!feats.some(function(f){return f.x===p.x&&f.y===p.y;}))return p;
-      if(p.steps>=4)continue;
-      FoteActors.neighbors.forEach(function(d){
-        var x=p.x+d[0],y=p.y+d[1],index=idxOf(x,y);
-        if(visited.has(index)||!actorCellAllowed(probe,x,y,d[0],d[1],{terrainOnly:true,avoidFire:true}))return;
-        visited.add(index);queue.push({x:x,y:y,steps:p.steps+1});
-      });
-    }
-    return null;
-  }
   function arrive(){
     if(!RUN)return;
     var e=RUN.shadowClone;
@@ -224,7 +208,7 @@
     if(e.hp<=0){delete RUN.shadowClone;return;}
     if(ents.includes(e))return;
     delete e.cloneTargetId;e.lastSeen=null;
-    var spot=arrivalSpot(e);if(!spot)return;
+    var spot=allyArrivalSpot(e);if(!spot)return;
     e.x=spot.x;e.y=spot.y;e.t=player.t+Math.max(1,cost(e));e.clonePulseAt=worldNow();e._lx=e._ly=undefined;delete e._clip;ents.push(e);
   }
   MONSTERS.shadowclone={name:'Shadow Clone',hp:1,dmg:[0,0],acc:0,eva:0,speed:100,armor:0,xp:0,band:[99,99],w:0,ch:'@',col:'#7962AA',living:true};

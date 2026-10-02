@@ -148,11 +148,17 @@ function deepRegionalize(){
    stops it: healPlayer() is the one path for heals (potions, Heal, afterglow, lifesteal...), and a heart
    picked up off the floor counts too. Natural regeneration, well under 1 HP a turn and nothing at all while a
    hunter can see you, does not. */
-function inflictBleed(t, src, turns){
+function inflictBleed(t, src, turns, damage){
   if(!t || t.hp<=0 || (t!==player && !(t.base && t.base.living))) return;
   var fresh=!(t.st && t.st.bleed);
-  applyStatus(t, 'bleed', turns||BLEED.turns, underdarkEnemyStat(src,sDMG(BLEED.base + floorNo*BLEED.per)));
-  if(fresh){ floatText(t.x, t.y, 'bleeding', 'blood'); if(t===player) log('<b>Bleeding.</b> Heal to stop it.','c-you'); }
+  var result=applyStatus(t, 'bleed', turns||BLEED.turns, damage===undefined?underdarkEnemyStat(src,sDMG(BLEED.base + floorNo*BLEED.per)):sDMG(damage));
+  if(result.applied&&fresh){ floatText(t.x, t.y, 'bleeding', 'blood'); if(t===player) log('<b>Bleeding.</b> Heal to stop it.','c-you'); }
+}
+function inflictFear(t,src,turns){
+  if(!turns||!t||t.hp<=0)return;
+  var result=gameEffects.apply(t,'fear',turns,undefined,{data:{sourceId:src.id,sourceX:src.x,sourceY:src.y}});
+  if(result.applied&&!result.previous){floatText(t.x,t.y,'afraid','dark');if(t===player)log('You: Afraid.','c-you');}
+  return result;
 }
 function deepStanch(t){ if(t && t.st && t.st.bleed){ delete t.st.bleed; if(t===player) log('The bleeding stops.','c-good'); else if(deepVis(t.x,t.y)) log('The '+t.name+' stops bleeding.','c-info'); } }
 

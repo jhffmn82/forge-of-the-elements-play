@@ -116,6 +116,7 @@ function finishCreatureDeath(event){
 function kill(e,by){
   if(!e)return;
   if(e===player){death();return;}
+  if(e.rarePet&&RUN)RUN.rareSpiderPet=null;
   if(e.parent||resolvingDeaths.has(e))return;
   if(ents.indexOf(e)<0&&!(e.kind==='deepmaw'&&floorMeta.maw&&floorMeta.maw.phase!=='dead'))return;
   if(e.foe&&!(by&&by.ally))by=player;

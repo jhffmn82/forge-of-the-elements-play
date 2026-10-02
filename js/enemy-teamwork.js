@@ -95,7 +95,7 @@ var FoteEnemyTeamwork=(function(){
   if(retreat(e,target))return true;
   if(dist(e,target)<=e.base.castRange&&e.castCd<=0&&clearShot(e,target)){
    e.castCd=e.base.castEvery;setClip(e,'attack');sfx('shaman-cast',{from:e});boltFx(e.x,e.y,target.x,target.y,'fire');
-   var chance=hitChance(e.base.acc+10,evaOf(target));if(target===player)chance=hostileHitChance(chance,true);
+   var chance=hitChance(accOf(e)+10,evaOf(target));if(target===player)chance=hostileHitChance(chance,true);
    if(rng()<chance){
     var damage=applyDamage(target,roll(5,8)+floorNo,'fire',e);floatText(target.x,target.y,String(damage),'fire');
     var burn=target.hp>0&&rng()<.5;if(burn)applyStatus(target,'burn',3,sDMG(2));

@@ -36,8 +36,40 @@ function repairStairApproachTraps(){
   var before=feats.length;
   feats=feats.filter(function(f){
     var index=idxOf(f.x,f.y);
+    var room=roomAt(f.x,f.y);if(room&&room.trapBypass&&room.trapBypass.indexOf(index)>=0)return false;
     return !travelTiles.has(index)&&(!(f.kind==='teleport'||f.kind==='pit')||!protectedTiles.has(index));
   });
+  // A junction ends the local passage walk, but several displacing traps can
+  // still seal all routes beyond it. Preserve one route from arrival to each
+  // exit, clearing the fewest pits/runes rather than emptying the room.
+  if(typeof player!=='undefined'&&player&&inb(player.x,player.y)){
+    var danger=new Set(feats.filter(function(f){return f.kind==='pit'||f.kind==='teleport';}).map(function(f){return idxOf(f.x,f.y);}));
+    if(danger.size){
+      var cost=new Int32Array(map.length).fill(2147483647),parent=new Int32Array(map.length).fill(-1);
+      var origin=idxOf(player.x,player.y),queue=[origin];cost[origin]=0;
+      for(var head=0;head<queue.length;head++){
+        var here=queue[head],x=here%MW,y=Math.floor(here/MW);
+        directions.map(function(d){return{x:x+d[0],y:y+d[1]};}).filter(function(cell){
+          if(open(cell.x,cell.y))return true;
+          if(!inb(cell.x,cell.y)||typeof terrainRules==='undefined')return false;
+          var p=propAt(cell.x,cell.y);
+          var t=at(cell.x,cell.y),room=typeof rooms!=='undefined'&&rooms.find(function(r){return r.puzzle&&cell.x>=r.x&&cell.x<r.x+r.w&&cell.y>=r.y&&cell.y<r.y+r.h;});
+          var solvedPath=t===CHASM&&room&&room.puzzle.kind==='chasm';
+          return !(p&&p.b&&!p.br&&!p.hoard)&&(terrainRules.walkable(t,false,true)||isDoorish(t)||[CHEST,FORGE,SHRINE,EXIT,STAIRS,UPSTAIRS,PORTAL].includes(t)||solvedPath);
+        }).forEach(function(cell){
+          var next=idxOf(cell.x,cell.y),score=cost[here]+(danger.has(next)?1:0);
+          if(score>=cost[next])return;
+          cost[next]=score;parent[next]=here;queue.push(next);
+        });
+      }
+      var clear=new Set();
+      travelTiles.forEach(function(target){
+        if(cost[target]===2147483647||cost[target]===0)return;
+        for(var step=target;step!==origin&&step>=0;step=parent[step])if(danger.has(step))clear.add(step);
+      });
+      feats=feats.filter(function(f){return !(f.kind==='pit'||f.kind==='teleport')||!clear.has(idxOf(f.x,f.y));});
+    }
+  }
   return feats.length!==before;
 }
 
@@ -56,7 +88,7 @@ function presentRestoredFloor(at){
   fx=[]; PARTS.length=0; aiming=null;
   var spot = at && walkable(at.x,at.y) && !ents.some(function(e){ return e!==player && e.x===at.x && e.y===at.y; }) ? at : (at ? nearFree(at.x,at.y,3) : null);
   if(spot){ player.x=spot.x; player.y=spot.y; }
-  player._lx=undefined;
+  player._lx=undefined;arriveRarePet();
   if(typeof FoteShadowClone!=='undefined')FoteShadowClone.arrive();
   if(typeof syncMurkSummons==='function')syncMurkSummons();
   if(typeof repairBossCore==='function')repairBossCore();

@@ -62,9 +62,9 @@
   var elements=['fire','ice','lightning'];
   function sound(from,name,volume){if(typeof sfx==='function')sfx(name,{vol:volume===undefined?.7:volume,from:from});}
   function castSound(element){return element==='poison'?'status-poison':element==='web'?'trap-web':element+'-cast';}
-  function active(){return !!(floorMeta&&floorMeta.chaosPreview);}
+  function active(){return !!(floorMeta&&(floorMeta.chaosPreview||(floorMeta.ritualChaos||floorMeta.chaosIncursion)));}
   function state(){return floorMeta.chaosCombat||(floorMeta.chaosCombat={version:1,damageVersion:2,hazards:[],nextHazard:1});}
-  function regionAt(x,y){return active()&&inb(x,y)?floorMeta.chaosPreview.regionByCell[idxOf(x,y)]:null;}
+  function regionAt(x,y){return active()&&inb(x,y)?floorMeta.chaosPreview?floorMeta.chaosPreview.regionByCell[idxOf(x,y)]:'ritual-incursion':null;}
   function sameRegion(a,b){return !!regionAt(a.x,a.y)&&regionAt(a.x,a.y)===regionAt(b.x,b.y);}
   function now(){return worldNow();}
   function kindsForBiome(biome){return (groups[biome]||[]).map(function(slug){return 'chaos-'+slug;});}
@@ -74,7 +74,7 @@
     // spawnRaw remains the sole actor constructor. Its incidental castCd roll
     // is isolated so authoring a preview cannot consume combat/loot randomness.
     var previous=rng,e;
-    try{rng=mulberry32((floorMeta.chaosPreview.seed^x*73856093^y*19349663^nextId)>>>0);e=spawnRaw(kind,x,y);}finally{rng=previous;}
+    try{rng=mulberry32(((floorMeta.chaosPreview?floorMeta.chaosPreview.seed:worldSeed)^x*73856093^y*19349663^nextId)>>>0);e=spawnRaw(kind,x,y);}finally{rng=previous;}
     e.state=options.state||'asleep';e.castCd=options.castCd===undefined?1:options.castCd;e.chaosRegionId=region;
     e.chaosCooldown=now()+100;e.chaosNextElement='fire';e.chaosBorn=0;e.beta11Balanced=true;
     if(options.offspring){e.noLoot=true;e.chaosOwnerId=options.ownerId;}

@@ -1,6 +1,6 @@
 /* =====================================================================
    automap.js - a Diablo-style map overlay (2026-09-17).
-   V (rebindable in Options) or the Map button toggles a faded outline of everything you have explored,
+   M (rebindable in Options) or the Map button toggles a faded outline of everything you have explored,
    drawn over the game view: walls, doors, stairs, the Forge and shrine, chests, found traps and you.
    It never shows what you have not seen, and a secret door you have not found still draws as wall.
    ===================================================================== */
@@ -19,9 +19,10 @@ var AUTOMAP_ON = false;
   document.head.appendChild(st);
   function mount(){
     var map=$('map'); if(!map) return false;
-    if(!$('automap')){ var c=document.createElement('canvas'); c.id='automap'; map.appendChild(c); var t=document.createElement('div'); t.id='automapTag'; t.textContent='Map · V to close'; map.appendChild(t); }
+    var shortcut=typeof keyLabel==='function'&&typeof bindKey==='function'?keyLabel(bindKey('map')):'M';
+    if(!$('automap')){ var c=document.createElement('canvas'); c.id='automap'; map.appendChild(c); var t=document.createElement('div'); t.id='automapTag'; t.textContent='Map · '+shortcut+' to close'; map.appendChild(t); }
     var tb=$('topbtns');
-    if(tb && !$('bMap')){ var b=document.createElement('button'); b.id='bMap'; b.textContent='Map'; b.title='Map overlay (V)'; b.onclick=function(){ toggleAutomap(); }; tb.insertBefore(b, tb.firstChild); }
+    if(tb && !$('bMap')){ var b=document.createElement('button'); b.id='bMap'; b.textContent='Map'; b.title='Map overlay ('+shortcut+')'; b.onclick=function(){ toggleAutomap(); }; tb.insertBefore(b, tb.firstChild); }
     if($('bMap'))$('bMap').setAttribute('aria-pressed',String(AUTOMAP_ON));
     return !!(tb && $('bMap'));
   }
@@ -32,7 +33,7 @@ function toggleAutomap(force){
   AUTOMAP_ON = force===undefined ? !AUTOMAP_ON : !!force;
   var c=$('automap'), t=$('automapTag'), b=$('bMap');
   if(c) c.classList.toggle('on', AUTOMAP_ON);
-  if(t){ t.classList.toggle('on', AUTOMAP_ON); t.textContent='Map · '+(typeof keyLabel==='function' && typeof bindKey==='function' ? keyLabel(bindKey('map')) : 'V')+' to close'; }
+  if(t){ t.classList.toggle('on', AUTOMAP_ON); t.textContent='Map · '+(typeof keyLabel==='function' && typeof bindKey==='function' ? keyLabel(bindKey('map')) : 'M')+' to close'; }
   if(b){b.classList.toggle('on', AUTOMAP_ON);b.setAttribute('aria-pressed',String(AUTOMAP_ON));}
   if(typeof sfx==='function') sfx(AUTOMAP_ON ? 'ui-open' : 'ui-close');
   drawAutomap();
@@ -80,7 +81,7 @@ function drawBaseAutomap(){
 
 window.addEventListener('keydown', function(ev){
   var tgt=ev.target && ev.target.tagName; if(tgt==='INPUT'||tgt==='SELECT'||tgt==='TEXTAREA') return;
-  if(ev.key!=='v' && ev.key!=='V') return;
+  if(ev.key!=='m' && ev.key!=='M') return;
   if((typeof modalOpen!=='undefined' && modalOpen) || openSheet) return;
   if($('title') && $('title').classList.contains('on')) return;
   if($('create') && $('create').classList.contains('on')) return;

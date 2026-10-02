@@ -1,9 +1,9 @@
 /* Dungeon slimes reproduce from full health; green slimes also leave a trail. */
 var FoteGreenSlime=(function(){
  'use strict';
- MONSTERS.greenslime={name:'Green Slime',sprite:'m-green-slime',col:'#75a64e',ch:'s',hp:12,dmg:[1,2],acc:48,eva:0,armor:0,speed:70,range:1,xp:10,
+ MONSTERS.greenslime={name:'Green Slime',sprite:'m-green-slime',col:'#75a64e',ch:'s',hp:20,dmg:[1,2],acc:48,eva:0,armor:0,speed:70,range:1,xp:10,
   band:[1,4],biome:[0],w:12,living:true,sporeproof:true,greenSlime:true,art:.7,artLeft:true,sfx:'slime',
-  hint:'Regenerates 2 HP per turn. Damage at full HP splits it into two slimes sharing its remaining HP. Either can split again at full HP. Leaves a 10-turn poison trail.'};
+  hint:'Heals 2 HP per turn. Splits when hit at full health. Leaves a 10-turn poison trail.'};
  DROPS.greenslime={chance:.12,table:{essence:1}};
  if(MONSTERS.pebbleslime)MONSTERS.pebbleslime.w=0;
  function splittingSlime(e){return e.base&&(e.base.greenSlime||e.kind==='slime');}
@@ -29,7 +29,7 @@ var FoteGreenSlime=(function(){
    if(e.hp<=0||!splittingSlime(e)||e.state!=='hunt'||e.greenPulseAt===clock)return;
    e.greenPulseAt=clock;
    if(gameEffects.has(e,'poison')||gameEffects.has(e,'rot'))return;
-   e.hp=Math.min(e.maxhp,e.hp+2);
+   e.hp=Math.min(e.maxhp,e.hp+(e.kind==='slime'?3:2));
   });
   if(!floorMeta.greenTrail)return;
   var trail=floorMeta.greenTrail;

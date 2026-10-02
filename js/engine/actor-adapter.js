@@ -124,6 +124,22 @@ function allyFollowStep(e){
   if(distance>=0&&distance<=1)return false;
   return actorPathStep(e,player,field)||stepToward(e,player.x,player.y);
 }
+function allyArrivalSpot(e){
+    // Search outward through legal movement cells. A random tile in a square
+    // can put an ally across a wall, ahead of the player's exploration.
+    var queue=[{x:player.x,y:player.y,steps:0}],visited=new Set([idxOf(player.x,player.y)]);
+    for(var head=0;head<queue.length;head++){
+      var p=queue[head],probe=Object.assign({},e,{x:p.x,y:p.y});
+      if(p.steps>0&&!occupied(p.x,p.y)&&!feats.some(function(f){return f.x===p.x&&f.y===p.y;}))return p;
+      if(p.steps>=4)continue;
+      FoteActors.neighbors.forEach(function(d){
+        var x=p.x+d[0],y=p.y+d[1],index=idxOf(x,y);
+        if(visited.has(index)||!actorCellAllowed(probe,x,y,d[0],d[1],{terrainOnly:true,avoidFire:true}))return;
+        visited.add(index);queue.push({x:x,y:y,steps:p.steps+1});
+      });
+    }
+    return null;
+  }
 function fleeStep(e,threat){
   if(!canActorMove(e))return false;threat=threat||player;
   var step=FoteActors.bestStep(e,function(x,y){return dist({x:x,y:y},threat);},function(x,y,dx,dy){return actorCellAllowed(e,x,y,dx,dy);},true);
@@ -185,8 +201,12 @@ var gameActors=FoteActors.create({
   cost:actCost,before:actorPrepare,after:actorFinish,
   blocked:function(e){return MAPVIEW.on&&e.foe?'map-view':FoteActors.blocked(e,gameEffects);},
   behaviors:[
+    actorBehavior('hungry-spider',function(e){return typeof hungrySpiderAct==='function'&&hungrySpiderAct(e);},function(){return true;}),
+    actorBehavior('escapee',function(e){return !!e.escapee;},escapeeAct),
+    actorBehavior('prison-pursuit',function(e){return !!e.prisonTarget;},prisonPursuit),
     actorBehavior('fear',function(e){return gameEffects.hasTag(e,'fear');},function(e){var threat=canSeePlayer(e)?player:e.lastSeen;if(threat)fleeStep(e,threat);return true;}),
     actorBehavior('immovable-object',function(e){return e.parent||e.base.object||e.kind==='mawlimb';},function(){return true;}),
+    actorBehavior('ritual-channel',function(e){return e.kind==='drowpriestess';},ritualChannel),
     actorBehavior('perception',function(e){return e.foe&&!e.ally&&typeof FoteEnemyPerception!=='undefined';},function(e){return FoteEnemyPerception.takeTurn(e);}),
     actorBehavior('morty',function(e){return e.kind==='morty';},function(e){mortyAct(e);return true;}),
     actorBehavior('deep-maw',function(e){return e.kind==='deepmaw';},function(e){mawAct(e);return true;}),

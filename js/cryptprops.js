@@ -355,18 +355,36 @@ function buildCryptPropTest(){
    spot in the same room, and removed only if there is nowhere to put it. Doors, keys and levers still gate as designed:
    this compares reachability with props against reachability without them, so only prop-caused blockage is touched. */
 function propsKeepOpen(){
+  function decoration(p){return p.b&&!p.br&&!p.hoard&&!p.lever&&!p.prisoner&&!p.altar&&!p.sentinel&&!p.sentry&&!p.tablet;}
+  function target(i){var x=i%MW,y=Math.floor(i/MW),p=propAt(x,y);
+    var approach=[[1,0],[-1,0],[0,1],[0,-1]].some(function(d){var q=propAt(x+d[0],y+d[1]);return q&&(q.lever||q.prisoner||q.altar||q.tablet);});
+    return !p||!p.b||p.br||!!itemAt(x,y)||objectTile(map[i])||approach;
+  }
   function reach(ignoreProps){
-    if(ignoreProps) props.forEach(function(p){ if(p.b){ p._bSave=1; p.b=0; } });
+    if(ignoreProps) props.forEach(function(p){ if(decoration(p)){ p._bSave=1; p.b=0; } });
     if(ignoreProps) rebuildPropGrid();
-    var d=bfsFrom(player.x, player.y);
+    // Optional doors remain gated in play; here they are traversable so their
+    // rewards cannot be sealed by unrelated furniture after opening the gate.
+    var d=new Int32Array(map.length).fill(-1),q=[idxOf(player.x,player.y)];d[q[0]]=0;
+    for(var head=0;head<q.length;head++){
+      var here=q[head],x=here%MW,y=Math.floor(here/MW);
+      [[1,0],[-1,0],[0,1],[0,-1]].forEach(function(o){
+        var nx=x+o[0],ny=y+o[1];if(!inb(nx,ny))return;
+        var next=idxOf(nx,ny),t=at(nx,ny),p=propAt(nx,ny);
+        if(d[next]>=0||p&&p.b&&!p.br)return;
+        if(!(terrainRules.walkable(t,false,true)||isDoorish(t)||t===CHEST))return;
+        d[next]=d[here]+1;q.push(next);
+      });
+    }
     if(ignoreProps){ props.forEach(function(p){ if(p._bSave){ p.b=1; delete p._bSave; } }); rebuildPropGrid(); }
     return d;
   }
-  for(var pass=0; pass<12; pass++){
+  var limit=props.length+1;
+  for(var pass=0; pass<limit; pass++){
     var withProps=reach(false), without=reach(true), bad=null;
-    for(var i=0;i<map.length && !bad;i++){ var x=i%MW, y=(i/MW)|0; if(!walkable(x,y)) continue; if(withProps[i]<0 && without[i]>=0) bad={x:x,y:y}; }
+    for(var i=0;i<map.length && !bad;i++){ if(target(i)&&without[i]>=0 && withProps[i]<0) bad={x:i%MW,y:Math.floor(i/MW)}; }
     if(!bad) return;
-    var blockers=props.filter(function(p){ return p.b; })
+    var blockers=props.filter(decoration)
                       .sort(function(a,b){ return (Math.abs(a.x-bad.x)+Math.abs(a.y-bad.y))-(Math.abs(b.x-bad.x)+Math.abs(b.y-bad.y)); });
     var p=blockers[0]; if(!p) return;
     /* try to move it elsewhere in its own room first */
@@ -382,8 +400,8 @@ function propsKeepOpen(){
         }
         if(!ok) continue;
         var ox=p.x, oy=p.y; p.x=c.x; p.y=c.y; rebuildPropGrid();
-        var d2=bfsFrom(player.x,player.y), still=false;
-        for(var j=0;j<map.length && !still;j++){ if(walkable(j%MW,(j/MW)|0) && d2[j]<0 && without[j]>=0) still=true; }
+        var d2=reach(false), still=false;
+        for(var j=0;j<map.length && !still;j++){ if(target(j)&&d2[j]<0 && without[j]>=0) still=true; }
         if(!still) moved=true; else { p.x=ox; p.y=oy; rebuildPropGrid(); }
       }
     }

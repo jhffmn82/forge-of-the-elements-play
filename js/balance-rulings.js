@@ -51,8 +51,8 @@ function lastLaugh(){
  * when cast; overlapping sources use the stronger field, never two bonuses. */
 function holyGroundAt(x,y){
   if(!inb(x,y))return null;
-  var now=typeof worldNow==='function'?worldNow():player.t,s=floorMeta.sanctuary,field=null;
-  if(s&&s.until>now&&dist({x:x,y:y},s)<=3&&walkable(x,y))field={power:s.power||divineStrength(),damage:s.damage};
+  var now=typeof worldNow==='function'?worldNow():player.t,s=floorMeta.sanctuary,field=floorMeta.consecratedGround&&floorMeta.consecratedGround[idxOf(x,y)]||null;
+  if(s&&s.until>now&&dist({x:x,y:y},s)<=3&&walkable(x,y)&&(!field||(s.power||divineStrength())>field.power))field={power:s.power||divineStrength(),damage:s.damage};
   var i=idxOf(x,y),cell=floorMeta.holyGround&&floorMeta.holyGround[i];
   if(typeof holyG!=='undefined'&&holyG&&holyG[i]){
     var light={power:cell&&cell.power||spellPower(),damage:cell&&cell.damage};

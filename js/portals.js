@@ -138,6 +138,8 @@ function generatePlaneBase(el, seed){
   for(var j=0;j<W*H;j++){ var ox=j%W, oy=(j/W)|0; if(walkable(ox,oy) && !propAt(ox,oy) && map[j]!==PORTAL && Math.abs(ox-player.x)+Math.abs(oy-player.y)>9) open.push({x:ox,y:oy}); }
   var n=12+bfloor()*2;
   for(var k=0;k<n && open.length;k++){
+    // Hound companions may already occupy a later entry in the candidate list.
+    open=open.filter(function(c){return !occupied(c.x,c.y);});if(!open.length)break;
     var c=open.splice(Math.floor(rr()*open.length),1)[0];
     var kind=roster.mobs[Math.floor(rr()*roster.mobs.length)], e=spawn(kind, c.x, c.y);
     e.state = rr()<0.6 ? 'asleep' : 'wander';
@@ -354,6 +356,14 @@ function refreshEncounterTuning(){
       if(form&&form.art)e.base=Object.assign({},e.base,{art:form.art});
     }
     if(e.hp<=0)return;
+    if(e.foe&&!e.ally&&!floorMeta.plane&&!floorMeta.chaosPreview){
+      var combatTuning={bat:['speed'],brute:['armor','hint'],shade:['speed'],
+        ghoul:['bleeds','bleedTurns','bleedDamage'],acolyte:['fearTouch','hint']}[e.kind];
+      if(combatTuning&&MONSTERS[e.kind]){
+        e.base=Object.assign({},e.base);
+        combatTuning.forEach(function(key){e.base[key]=MONSTERS[e.kind][key];});
+      }
+    }
     if(e.kind==='ghoul'){
       var ghoulBase=MONSTERS.ghoul;
       if(e.base.hp>0&&e.base.hp!==ghoulBase.hp){
@@ -369,15 +379,15 @@ function refreshEncounterTuning(){
       e.col=ghoulBase.col;
     }
     if(e.kind==='drowblade'&&!e.base.spawnInvisible){e.base=Object.assign({},e.base,{spawnInvisible:true});if(e.state==='hunt')e.visibilityRevealed=true;}
-    if(e.kind==='slime'||e.kind==='greenslime'){
+    if(['slime','greenslime','pebbleslime','caveslime'].indexOf(e.kind)>=0&&e.foe&&!e.ally&&!floorMeta.plane&&!floorMeta.chaosPreview){
       var slimeBase=MONSTERS[e.kind];
       if(e.base.hp>0&&e.base.hp!==slimeBase.hp){
         var slimeHealth=e.hp/e.maxhp;e.maxhp=Math.max(1,Math.round(e.maxhp*slimeBase.hp/e.base.hp));
         e.hp=Math.max(1,Math.min(e.maxhp,Math.round(e.maxhp*slimeHealth)));
       }
-      e.base=Object.assign({},e.base,{hp:slimeBase.hp,xp:slimeBase.xp,sprite:slimeBase.sprite,hint:slimeBase.hint,artLeft:slimeBase.artLeft});
+      e.base=Object.assign({},e.base,{hp:slimeBase.hp,armor:slimeBase.armor,xp:slimeBase.xp,sprite:slimeBase.sprite,hint:slimeBase.hint,artLeft:slimeBase.artLeft});
       if(e.slimeDescendant||e.small||e.slimeOffspring||e.greenOffspring||e.noLoot){e.noXp=true;e.slimeDescendant=true;}
-      if(e.small||e.slimeOffspring||e.greenOffspring){
+      if((e.kind==='slime'||e.kind==='greenslime')&&(e.small||e.slimeOffspring||e.greenOffspring)){
         e.name=slimeBase.name;e.base=Object.assign({},slimeBase);e.maxhp=Math.max(e.hp,sHP(slimeBase.hp));
         e.dmg=slimeBase.dmg.map(function(n){return sDMG(n);});e.beta11Balanced=false;
         delete e.small;delete e.slimeOffspring;delete e.greenOffspring;

@@ -38,7 +38,8 @@
   /* Old save aliases only. Dungeon vermin remain unchanged on floors 1-5. */
   M.caverat       = Object.assign({}, M.rat, {name:'Cave Rat',hp:38,dmg:[6,9],acc:66,eva:24,speed:135,xp:30,art:.85,band:[11,13],w:0});
   M.cavebat       = Object.assign({}, M.bat, {name:'Grotto Bat',hp:30,dmg:[4,6],acc:66,eva:28,speed:130,xp:28,art:.85,band:[11,12], w:0});
-  M.caveslime     = Object.assign({}, M.slime, {name:'Basalt Slime',hp:64,dmg:[7,10],acc:62,armor:5,xp:38,art:1,band:[11,15], w:10});
+  M.caveslime     = Object.assign({}, M.slime, {name:'Basalt Slime',hp:72,dmg:[7,10],acc:62,armor:5,xp:38,art:1,band:[11,15], w:10,
+                     hint:'Splits when wounded. Spits roots.'});
   delete M.caverat.biome; delete M.cavebat.biome; delete M.caveslime.biome;
   /* The Deep Maw: tuned by hand for floor 15, so no floor curve (fixed, like the plane elites) */
   M.deepmaw       = {name:'The Deep Maw', sprite:'m-deep-maw', col:'#B07A4A', ch:'W', hp:720, dmg:[24,34], acc:70, eva:0, armor:4, speed:100, range:1, xp:600,
@@ -428,7 +429,7 @@ function eelPlacement(){
   var placed=0;
   bodies.forEach(function(cells){
     if(placed>=3 || rng()>0.75) return;
-    var free=cells.filter(function(c){ var x=c%MW, y=(c/MW)|0; return !occupied(x,y) && !(vis && vis[c]) && !(player && dist(player,{x:x,y:y})<8); });
+    var free=cells.filter(function(c){ var x=c%MW, y=(c/MW)|0; return !(roomAt(x,y)&&(roomAt(x,y).chestAmbush||roomAt(x,y).merchant)) && !occupied(x,y) && !(vis && vis[c]) && !(player && dist(player,{x:x,y:y})<8); });
     if(!free.length) return;
     var c=free[Math.floor(rng()*free.length)], e=spawn('shockeel', c%MW, (c/MW)|0);
     e.state = rng()<0.5 ? 'asleep' : 'wander'; e.t=player ? player.t : 0; placed++;

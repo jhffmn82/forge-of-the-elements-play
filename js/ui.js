@@ -14,6 +14,15 @@
   #modal header h2{font-family:var(--display);color:var(--gold);font-size:22px;margin:0}
   #modal .mbody{padding:14px 16px;overflow-y:auto;line-height:1.5;font-size:12.5px;color:var(--ink)}
   #modal .mbody p{margin:0 0 8px}
+  .merchant-summary{position:sticky;top:-14px;z-index:2;display:flex;justify-content:space-between;gap:12px;padding:12px 0;background:var(--panel,#211b16);border-bottom:1px solid var(--edge);margin-bottom:14px}
+  .merchant-summary b{color:var(--gold);white-space:nowrap}.merchant-summary span{color:var(--dim)}
+  .merchant-section{margin:18px 0 22px}.merchant-section h3{margin:0 0 8px;color:var(--gold);font:18px var(--display)}
+  .merchant-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .merchant-card{display:grid;grid-template-columns:32px minmax(0,1fr) auto 70px;align-items:center;gap:8px;padding:10px;border:1px solid var(--edge);border-radius:6px;background:rgba(0,0,0,.12)}
+  .merchant-card.sold{opacity:.55}.merchant-card .merchant-name{line-height:1.35;overflow-wrap:anywhere}.merchant-price{text-align:right;white-space:nowrap;color:var(--gold);font-size:12px}.merchant-price small{display:block;color:var(--dim);font-size:10px}
+  .merchant-card button{margin:0;min-height:32px;padding:5px 8px}.merchant-card details{grid-column:2/-1;font-size:12px}.merchant-card summary{cursor:pointer;color:var(--dim)}
+  .merchant-card details[open]{padding-top:5px}.merchant-card .pico{display:block}.merchant-card [data-merchant-icon]{display:flex;align-items:center;justify-content:center}
+  @media(max-width:850px){.merchant-grid{grid-template-columns:1fr}.merchant-summary{flex-wrap:wrap}.merchant-card{grid-template-columns:28px minmax(0,1fr) auto 62px}}
   #modal footer{padding:10px 16px;border-top:1px solid var(--edge);display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
   #modal footer button.primary, .btn-primary{background:linear-gradient(180deg,#8A4A1E,#5A2E12);border-color:#B8653A;color:#FFE9C8}
   #modal footer button:disabled, button:disabled{opacity:.38;cursor:default;border-color:var(--edge)!important;color:var(--dim)!important}
@@ -208,7 +217,7 @@ function itemIcon(name, size){ return iconCanvas(null, size, '\u2726'); }
   var top=$('top');
   if(top && !$('topbtns')){
     var tb=document.createElement('div'); tb.id='topbtns';
-    tb.innerHTML='<button id="bMute" title="Sound on/off (m)">Sound</button><button id="bMusic" title="Music on/off (n)">Music</button>';
+    tb.innerHTML='<button id="bMute" title="Sound on/off (v)">Sound</button><button id="bMusic" title="Music on/off (n)">Music</button>';
     top.appendChild(tb);
   }
 })();
@@ -492,8 +501,10 @@ function inspectHTML(mx,my){
   var e=ents.find(function(o){return entityOccupies(o,mx,my)&&o!==player&&!actorConcealed(o);});
   if(e && e.parent) e=e.parent;   /* a big elite's other cells report the creature itself, not its proxy */
   if(e && (revealAll||vis[idxOf(mx,my)])){
+    if(e.merchantRoom!==undefined)return '<div class="nm">'+e.name+'</div><div class="hint">A traveling Myconid trader. Offers rare sigils, elemental motes and Masterwork equipment for essence.</div><div class="hint">Click or approach to browse the stock.</div>';
+    if(e.hungrySpiderRoom!==undefined&&!e.foe&&!e.ally)return '<div class="nm">'+e.name+'</div><div class="hint">Hungry... everything dead.</div><div class="hint">It watches you without attacking.</div>';
     if(e.ally) return '<div class="nm">'+e.name+'</div><div class="row"><span>HP</span><b>'+Math.max(0,e.hp)+' / '+e.maxhp+'</b></div><div class="hint enemy-lore">'+enemyLore(e)+'</div><div class="hint">Fights for you.</div>';
-    var ch=Math.round(hitChance(player.acc,evaOf(e))*100), back=Math.round(hitChance(e.base.acc,evaOf(player))*100);
+    var ch=Math.round(hitChance(player.acc,evaOf(e))*100), back=Math.round(hitChance(accOf(e),evaOf(player))*100);
     var lo=Math.max(1,Math.round(player.dmg[0]-Math.min(armorOf(e),player.dmg[0]*0.5))), hi=Math.max(1,Math.round(player.dmg[1]-Math.min(armorOf(e),player.dmg[1]*0.5)));
     var st=Object.keys(e.st).filter(function(k){ return k.indexOf('imm_')!==0; }).map(function(k){ return '<span class="tag t-'+k+'">'+k+'</span>'; }).join(' ');
     return '<div class="nm">'+e.name+'</div>'+
@@ -531,7 +542,7 @@ function inspectHTML(mx,my){
         (lever.used?lever.result:action+' or bump this lever to '+lever.effect+'.')+'</div>';
     }
     var pn=({'urn-group':'urns','stack-group':p.kinds && p.kinds.indexOf('pot')>=0 && p.kinds.indexOf('crate')<0 ? 'pots' : 'crates and barrels','urn-shattered':'broken urn','urn-tall':'urn','urn-squat':'urn','urn-ornate':'urn','barrel-explosive':'powder barrel','altar-spikes':'sacrifice altar','drow-altar-blood':'sacrifice altar'})[p.name] || p.name.replace(/-/g,' ');
-    var hint = p.ex ? 'Explodes when broken or burned.' : p.br ? 'Breakable. Might hold something.' : p.tablet ? 'A broken tablet. Read it.' :
+    var hint = p.breakReward ? 'A blade is embedded in the moss-covered stone.' : p.merchantId!==undefined ? 'Browse the merchant stock. Purchases cost essence.' : p.ritual&&p.prisoner ? 'Captive: '+p.captiveHp+'/'+p.captiveMaxhp+' HP. The ritual drains 2 HP per round. Free them or interrupt the priestess.' : p.ex ? 'Explodes when broken or burned.' : p.br ? 'Breakable. Might hold something.' : p.tablet ? 'A broken tablet. Read it.' :
       p.altar ? 'Offer blood for rewards.' : p.prisoner ? 'Someone is locked inside. Let them out and hope they are grateful.' : p.name==='elemental-lock' ? 'Wants one '+p.element+' mote.' : p.drink ? 'Drink from it.' :
       p.bush ? 'Cut it down. Sometimes a heart is tucked underneath.' : '';
     /* 2026-09-19: Justin - scenery you cannot do anything with gets no card at all */
@@ -544,6 +555,7 @@ function inspectHTML(mx,my){
   /* Map cards belong to things you can inspect or use, not terrain. */
   if([2,3,4,5,7,9,10,11,12,13,14,18,19,20].indexOf(t)<0) return '';
   var label=TILE_NAMES[t]||'Floor';
+  if(t===CHEST&&chestKind[idxOf(mx,my)]==='chest-gold')label='Gold chest';
   if(t===SHRINE) label='Shrine to '+GODS[RUN.shrineGod].name;
   if(typeof PORTAL!=='undefined' && t===PORTAL && floorMeta.portal && typeof PLANE_TITLE!=='undefined') label='Portal to '+PLANE_TITLE[floorMeta.portal];
   var tileHint=t===EXIT ? (floorMeta.exitOpen ? 'Open. Step through to go on.' : 'Sealed. Bring '+bossNameForFloor().replace(/^The /,'the ')+'\'s '+coreName()+' here to open it.') : TILE_HINTS[t];
@@ -587,7 +599,7 @@ window.addEventListener('keydown', function(ev){
   if(editing)return;
   if(RUN && (RUN.over || RUN.victory)){ ev.stopImmediatePropagation(); return; }
   var k=ev.key;
-  if(k==='m'){ audioInit(); toggleMute(); syncAudioButtons(); ev.stopImmediatePropagation(); return; }
+  if(k==='v'){ audioInit(); toggleMute(); syncAudioButtons(); ev.stopImmediatePropagation(); return; }
   if(k==='n'){ audioInit(); toggleMusic(); syncAudioButtons(); ev.stopImmediatePropagation(); return; }
   if(openSheet && k!=='Escape' && k!=='p' && k!=='i' && k!=='Tab') return;
   if(k==='p'){ showSheet('Faith'); ev.stopImmediatePropagation(); return; }

@@ -63,7 +63,7 @@ var planeGeneration=FoteTransitions.stages([
   {name:'plane-clusters',run:function(c){dressPlaneClusters(c.element,c.seed);}},
   {name:'elemental-plane-hazards',run:function(c){dressElementalPlane(c.element,c.seed);}}
 ]);
-function buildPlaneFloor(element,seed){resetMapDimensions();planeGeneration.run({element:element,seed:seed});if(typeof FoteShadowClone!=='undefined')FoteShadowClone.arrive();}
+function buildPlaneFloor(element,seed){resetMapDimensions();planeGeneration.run({element:element,seed:seed});if(typeof FoteShadowClone!=='undefined')FoteShadowClone.arrive();arriveRarePet();}
 
 var tileEntry=FoteTransitions.stages([
   {name:'persistent-webs',run:function(){if(typeof FoteEnemyFields!=='undefined')FoteEnemyFields.enter(player);}},

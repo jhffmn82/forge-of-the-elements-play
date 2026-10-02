@@ -54,6 +54,8 @@ function clickIntent(x, y){
     if(player.range>1 && dist(player,foe)<=player.range) return {kind:'shoot', foe:foe};
     return {kind:'move', foe:foe};
   }
+  var spider=ents.find(function(e){return e.hp>0&&e.hungrySpiderRoom!==undefined&&!e.foe&&!e.ally&&e.x===x&&e.y===y;});if(spider)return {kind:'hungry-spider',spider:spider};
+  var merchant=ents.find(function(e){return e.hp>0&&e.merchantRoom!==undefined&&e.x===x&&e.y===y;}),stall=propAt(x,y);if(merchant||stall&&stall.merchantId!==undefined)return {kind:'merchant',merchant:merchant?merchant.merchantRoom:stall.merchantId};
   var t=at(x,y);
   if(x===player.x && y===player.y){
     if(items.some(function(it){ return it.x===x && it.y===y && it.kind!=='heart' && it.kind!=='managlobe'; })) return {kind:'grab'};
@@ -68,6 +70,7 @@ function clickIntent(x, y){
   var restorationForge=typeof FoteUnmakerEncounter!=='undefined'&&FoteUnmakerEncounter.forgeInfo(x,y);
   if(restorationForge)return {kind:restorationForge.ready?'use':'inspect',restorationForge:restorationForge};
   if(lever) return {kind:lever.used?'inspect':'use',lever:pr};
+  if(pr&&pr.br&&!pr.hoard&&player.range>1&&dist(player,pr)>1)return {kind:'shoot',prop:pr};
   if(pr && pr.br && !pr.hoard) return {kind:'break'};
   if(t===EXIT) return {kind: floorMeta.exitOpen ? 'exit' : 'use'};
   if(t===DOOR || t===OPEN || t===LOCKED || t===SEALED || t===ICEDOOR || t===THORNS || t===TOLL) return {kind:'door'};
@@ -302,6 +305,12 @@ function handleMapClick(ev){
     }
     return true;
   }
+  if(it.kind==='hungry-spider'){if(dist(player,p)<=1)interactHungrySpider(it.spider);else startTravel(travelPath(p.x,p.y,true),function(){if(dist(player,p)<=1)interactHungrySpider(it.spider);});return true;}
+  if(it.kind==='merchant'){
+    if(dist(player,p)<=1){openCavernMerchant(it.merchant);return true;}
+    var approaches=[];for(var dy=-1;dy<=1;dy++)for(var dx=-1;dx<=1;dx++){if(!dx&&!dy)continue;var x=p.x+dx,y=p.y+dy;if(!knownTile(x,y)||!travelWalkable(x,y))continue;var route=travelPath(x,y,false);if(route)approaches.push(route);}
+    approaches.sort(function(a,b){return a.length-b.length;});if(approaches.length)startTravel(approaches[0],function(){if(dist(player,p)<=1)openCavernMerchant(it.merchant);});return true;
+  }
   if(it.lever){
     var nearLever=function(){return Math.max(Math.abs(p.x-player.x),Math.abs(p.y-player.y))===1;};
     var pullLever=function(){
@@ -311,6 +320,7 @@ function handleMapClick(ev){
     return true;
   }
   if(it.kind==='cast'){castClickSpell(it.foe,p);return true;}
+  if(it.kind==='shoot'&&it.prop){shootProp(it.prop);return true;}
   if(it.kind==='shoot') return false;            /* the game's own click shoots */
   if(it.kind==='close'){ closeDoorAt(p.x, p.y); return true; }
   if(it.kind==='break'){

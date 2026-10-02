@@ -123,7 +123,7 @@ var ARCING=false;
 
 /* rank 6 ground ticks once a world turn */
 function groundTick(){
-  holyGroundPulse();
+  rareRoomPulse();holyGroundPulse();
   if(!iceG || iceG.length!==MW*MH) return;
   ents.slice().forEach(function(e){
     if(!e.foe || e.hp<=0) return; var i=idxOf(e.x,e.y);

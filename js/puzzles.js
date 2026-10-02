@@ -16,10 +16,10 @@
 var PUZZLE_KINDS = {
   chasm:     {el:'air',    sigil:'levitate', name:'Chasm vault',      note:'A chasm splits a side room with treasure beyond. Floating would carry you over.'},
   drowned:   {el:'air',    sigil:'levitate', name:'Drowned cellar',   note:'A flooded cellar: swimming across is possible, but the cold water takes its toll.'},
-  barricade: {el:'fire',   sigil:'firestorm',name:'Barricade',        note:'A doorway choked with dry thorns and timber. Fire would clear it; pushing through hurts.'},
+  barricade: {el:'water',  sigil:null,name:'Burning chamber', note:''},
   hoard:     {el:'fire',   sigil:'firestorm',name:'Frozen hoard',     note:'Treasure sealed in blocks of ice. Weapons only glance off them; fire will melt them.'},
   everburn:  {el:'water',  sigil:'identify', name:'Everburning door', note:'A doorway wreathed in flame that never dies. Water would put it out.'},
-  baths:     {el:'water',  sigil:null, name:'Scalding baths',   note:'Steam rolls from a room of scalding stone. Something cold would let you cross.'},
+  baths:     {el:'earth',  sigil:null, name:'Scalding baths', note:''},
   spikes:    {el:'earth',  sigil:'stoneskin',name:'Spike gauntlet',   note:'A room bristling with spikes. Skin of stone would shrug them off.'},
   sentinels: {el:'earth',  sigil:'stoneskin',name:'Stone sentinels',  note:'Two stone sentinels guard a hoard. They let their own kind pass.'},
   darktraps: {el:'light',  sigil:'heal',     name:'Lightless room',   note:'A room of perfect darkness, and the smell of old blood. Light would show what waits in it.'},
@@ -35,7 +35,7 @@ function puzzlePlan(){
   RUN.puzzlePlans=RUN.puzzlePlans||{}; if(b>0 && RUN.puzzlePlans[b]) return RUN.puzzlePlans[b];
   var base=b*5, r=mulberry32(((RUN.seed||worldSeed)^(0x9a221e+b*977))>>>0), floors=[base+2,base+3,base+4];
   for(var i=floors.length-1;i>0;i--){ var j=Math.floor(r()*(i+1)); var t=floors[i]; floors[i]=floors[j]; floors[j]=t; }
-  var kinds=Object.keys(PUZZLE_KINDS), plan={};
+  var kinds=Object.keys(PUZZLE_KINDS).filter(function(k){return k!=='everburn'&&(k!=='library'||b<2);}), plan={};
   var k1=kinds[Math.floor(r()*kinds.length)], k2;
   do { k2=kinds[Math.floor(r()*kinds.length)]; } while(PUZZLE_KINDS[k2].el===PUZZLE_KINDS[k1].el);
   plan[floors[0]]={sigilRoom:k1}; plan[floors[1]]={sigilRoom:k2};
@@ -69,8 +69,42 @@ function pzLoot(cells, n){
              : {x:p.x,y:p.y,kind:'mote',el:pick(ELEMENTS)});
   }
 }
+function puzzlePropKeepsRewardsOpen(room,cell){
+  var door=room.puzzle.door,before=bfsFrom(door.x,door.y),index=idxOf(cell.x,cell.y),old=map[index];
+  map[index]=WALL;
+  var after=bfsFrom(door.x,door.y);map[index]=old;
+  var lever=room.puzzle.switch;
+  if(lever&&![[1,0],[-1,0],[0,1],[0,-1]].some(function(d){return after[idxOf(lever.x+d[0],lever.y+d[1])]>=0;}))return false;
+  return items.filter(function(it){return it.x>=room.x&&it.x<room.x+room.w&&it.y>=room.y&&it.y<room.y+room.h;}).every(function(it){var i=idxOf(it.x,it.y);return before[i]<0||after[i]>=0;});
+}
+function guardianRewardCells(cells){
+  var chosen=[];
+  cells.forEach(function(c){if(chosen.length<3&&!chosen.some(function(p){return dist(p,c)<2;}))chosen.push(c);});
+  cells.forEach(function(c){if(chosen.length<3&&!chosen.includes(c))chosen.push(c);});return chosen;
+}
+function placeChallengeChest(room){
+  if(['sentries','sentinels','barricade','baths','library'].indexOf(room.puzzle.kind)<0)return;
+  var rewards=items.filter(function(it){return roomAt(it.x,it.y)===room&&at(it.x,it.y)===FLOOR&&!propAt(it.x,it.y);});
+  var reward=farFrom(rewards,room.puzzle.door)[0];if(!reward)return;
+  items.splice(items.indexOf(reward),1);
+  setT(reward.x,reward.y,CHEST);chestKind[idxOf(reward.x,reward.y)]='chest-gold';
+  room.puzzle.goldChest={x:reward.x,y:reward.y};
+}
+function placeGuardianCover(room){
+  var horizontal=room.w>=room.h,candidates=[];
+  for(var n=-1;n<=1;n+=2)candidates.push(horizontal?{x:room.cx,y:room.cy+n}:{x:room.cx+n,y:room.cy});
+  candidates.forEach(function(c){if(freeCell(c.x,c.y)&&puzzlePropKeepsRewardsOpen(room,c))addProp(c.x,c.y,'pillar',{keep:true,pillar:true});});
+}
+function guardianHasShot(p,target){
+  var path=propProjectilePath(p.x,p.y,target.x,target.y),end=path[path.length-1];
+  return !!end&&end.x===target.x&&end.y===target.y;
+}
 function placeSigilRoom(kind){
-  var pk=carvePocket(4,3,6,5)||carvePocket(3,3,5,4); if(!pk) return;
+  // Cached plans from older runs use the same burning-room generator.
+  if(kind==='everburn')kind='barricade';
+  if(kind==='library'&&bidx()>=2)kind='sentries';
+  var gallery=kind==='sentries'||kind==='sentinels'||kind==='library';
+  var pk=(gallery&&carvePocket(6,5,7,6))||carvePocket(4,3,6,5)||carvePocket(3,3,5,4); if(!pk) return;
   var room=pk.room, P=PUZZLE_KINDS[kind], door=pk.door;
   room.special='puzzle'; room.puzzle={kind:kind, solved:false, door:door};
   floorMeta.puzzles.push(room);
@@ -88,12 +122,15 @@ function placeSigilRoom(kind){
     room.deep=true;
     pzLoot(dry, 3);
   } else if(kind==='barricade'){
-    setT(door.x,door.y,THORNS);
+    room.burning=true;
     pzLoot(cells, 3);
   } else if(kind==='hoard'){
     var spots=cells.slice(0,3);
     pzLoot(spots, 3);
     spots.forEach(function(p){ addProp(p.x,p.y,'ice-block',{br:0, keep:true, hoard:true, hits:0}); });
+    var fuel=cells.filter(function(c){return freeCell(c.x,c.y)&&Math.abs(c.x-door.x)+Math.abs(c.y-door.y)>=3;}).sort(function(a,b){return dist(a,{x:room.cx,y:room.cy})-dist(b,{x:room.cx,y:room.cy});})[0];
+    if(fuel){addProp(fuel.x,fuel.y,'barrel-explosive',{keep:true,puzzleSolution:true});room.puzzle.fireBarrel={x:fuel.x,y:fuel.y};}
+
   } else if(kind==='everburn'){
     floorMeta.everburn={x:door.x, y:door.y};
     pzLoot(cells, 3);
@@ -109,9 +146,10 @@ function placeSigilRoom(kind){
     pzCells(room).forEach(function(p){ if(!loot.some(function(l){ return l.x===p.x&&l.y===p.y; }) && at(p.x,p.y)===FLOOR) feats.push({x:p.x,y:p.y,kind:'spikes',found:true,puzzle:true}); });
     pzLoot(loot, 3);
   } else if(kind==='sentinels'){
-    pzLoot(cells.slice(0,3), 3);
-    var guard=cells.slice(3).filter(function(p){ return freeCell(p.x,p.y); }).slice(0,2);
-    guard.forEach(function(g){ addProp(g.x,g.y,'statue',{keep:true, sentinel:true}); });
+    pzLoot(guardianRewardCells(cells), 3);
+    addPuzzleSwitch(room);
+    placeGuardianCover(room);
+    var guards=0;cells.filter(function(p){return freeCell(p.x,p.y);}).forEach(function(g){if(guards<2&&puzzlePropKeepsRewardsOpen(room,g)&&addProp(g.x,g.y,'statue',{keep:true,sentinel:true}))guards++;});
   } else if(kind==='darktraps'){
     room.dark=true;
     var loot2=cells.slice(0,3);
@@ -120,14 +158,31 @@ function placeSigilRoom(kind){
       .forEach(function(p){ feats.push({x:p.x,y:p.y,kind:pick(['fire','spark','dart']),found:false,heavy:true,puzzle:true}); });
     addProp(pk.inside.x+(pk.inside.x===door.x?1:0), pk.inside.y+(pk.inside.y===door.y?1:0), 'bones', {});
   } else if(kind==='sentries'){
-    pzLoot(cells.slice(0,3), 3);
+    pzLoot(guardianRewardCells(cells), 3);
+    addPuzzleSwitch(room);
+    placeGuardianCover(room);
     var eyes=edgeCells(room).filter(function(p){ return freeCell(p.x,p.y) && Math.abs(p.x-door.x)+Math.abs(p.y-door.y)>2; });
-    shuffled(eyes).slice(0,2).forEach(function(p){ addProp(p.x,p.y,'statue',{keep:true, sentry:true, light:'#FF5A4A'}); });
+    var eyesPlaced=0;shuffled(eyes).forEach(function(p){if(eyesPlaced<2&&puzzlePropKeepsRewardsOpen(room,p)&&addProp(p.x,p.y,'statue',{keep:true,sentry:true,light:'#FF5A4A'}))eyesPlaced++;});
   } else if(kind==='library'){
-    edgeCells(room).filter(function(p){ return freeCell(p.x,p.y) && Math.abs(p.x-door.x)+Math.abs(p.y-door.y)>2; }).slice(0,4).forEach(function(p){ addProp(p.x,p.y,'bookshelf',{keep:true}); });
+    room.dark=true;
+    addPuzzleSwitch(room);
+    var sleepers=0;
+    farFrom(pzCells(room).filter(function(c){return freeCell(c.x,c.y)&&!occupied(c.x,c.y);}),door).forEach(function(c){
+      if(sleepers>=2)return;
+      var keeper=spawn(bidx()===0?'duskling':'stalker',c.x,c.y);
+      keeper.state='asleep';keeper.libraryRoom={x:door.x,y:door.y};sleepers++;
+    });
     var lc=cells.filter(function(p){ return freeCell(p.x,p.y); });
     for(var i=0;i<3 && i<lc.length;i++) items.push(i===0 ? {x:lc[i].x,y:lc[i].y,kind:'sigil',use:randomSigilUse()} : {x:lc[i].x,y:lc[i].y,kind:'essence',n:ri(25,40)+floorNo*4});
+    edgeCells(room).filter(function(p){ return freeCell(p.x,p.y) && Math.abs(p.x-door.x)+Math.abs(p.y-door.y)>2; }).slice(0,4).forEach(function(p){if(puzzlePropKeepsRewardsOpen(room,p))addProp(p.x,p.y,'bookshelf',{keep:true});});
+
   }
+  if(kind==='baths'||room.burning){
+    var supply=pzCells(room).filter(function(c){return freeCell(c.x,c.y)&&Math.abs(c.x-door.x)+Math.abs(c.y-door.y)>=3;}).sort(function(a,b){return dist(a,{x:room.cx,y:room.cy})-dist(b,{x:room.cx,y:room.cy});})[0];
+    if(supply){var barrelKind=kind==='baths'?'barrel-poison':'barrel-water',barrel=addProp(supply.x,supply.y,barrelKind,{keep:true,burn:0,puzzleSolution:true});if(barrel)room.puzzle.solution={kind:barrelKind,x:supply.x,y:supply.y};}
+    if(room.burning)refreshBurningRoom(room);
+  }
+  placeChallengeChest(room);
   placeSolution(kind);
   floorMeta.notes.push('<b>'+P.name+'.</b> '+P.note);
   floorMeta.entrances=(floorMeta.entrances||[]);
@@ -151,10 +206,14 @@ function buildCrystalVault(){
 /* ---------------------------------------------------------------- helpers */
 function puzzleRoomAt(x,y){ var r=roomAt(x,y); return r && r.puzzle ? r : null; }
 function solvePuzzle(room, how){
-  if(room && room.puzzle.kind==='barricade'){setT(room.puzzle.door.x,room.puzzle.door.y,OPEN);burst(room.puzzle.door.x,room.puzzle.door.y,'fire',24,.06);}
+  if(room && room.puzzle.kind==='barricade'&&!room.burning){setT(room.puzzle.door.x,room.puzzle.door.y,OPEN);burst(room.puzzle.door.x,room.puzzle.door.y,'fire',24,.06);}
   if(!room || room.puzzle.solved) return;
   var k=room.puzzle.kind, P=PUZZLE_KINDS[k];
   room.puzzle.solved=true;
+  if(k==='baths'||room.burning){
+    room.cooledUntil=Number.MAX_SAFE_INTEGER;
+    pzCells(room).forEach(function(c){var i=idxOf(c.x,c.y);fireT[i]=0;fireSrc[i]=0;if(room.burning&&at(c.x,c.y)===FLOOR){setT(c.x,c.y,WATER);setG(c.x,c.y,0);}});
+  }
   if(k==='everburn'){ var e=floorMeta.everburn; if(e){ fireT[idxOf(e.x,e.y)]=0; floorMeta.everburn=null; burst(e.x,e.y,'ice',24,0.06); } }
   if(k==='darktraps'){ room.dark=false; feats.forEach(function(f){ if(f.puzzle && roomAt(f.x,f.y)===room) f.found=true; }); }
   if(k==='hoard'){ props.filter(function(p){ return p.hoard; }).forEach(function(p){ removeProp(p); burst(p.x,p.y,'ice',16,0.05); }); }
@@ -199,7 +258,11 @@ function drawTrap(f,px,py,alpha,now){
 
 /* ---------------------------------------------------------------- the turn: rooms that act */
 
-function turnPuzzleHazards(context){  if(player.windCarry && at(player.x,player.y)===CHASM) player.levitate=Math.max(player.levitate,1);
+function refreshBurningRoom(room){
+  if(!room.burning||room.puzzle.solved)return;
+  pzCells(room).forEach(function(c){if(at(c.x,c.y)===FLOOR)fireT[idxOf(c.x,c.y)]=Math.max(fireT[idxOf(c.x,c.y)],3);});
+}
+function turnPuzzleHazards(context){ (floorMeta.puzzles||[]).forEach(refreshBurningRoom);  if(player.windCarry && at(player.x,player.y)===CHASM) player.levitate=Math.max(player.levitate,1);
   var e=floorMeta.everburn;
   if(e){ fireT[idxOf(e.x,e.y)]=Math.max(fireT[idxOf(e.x,e.y)],3); }
   var room=puzzleRoomAt(player.x,player.y);
@@ -213,7 +276,7 @@ function turnPuzzleHazards(context){  if(player.windCarry && at(player.x,player.
   }
   else if(k==='sentries' && !(player.hidden>0) && aff('shadow')<3){
     props.filter(function(p){ return p.sentry && roomAt(p.x,p.y)===room; }).forEach(function(p){
-      if(player.hp<=0) return;
+      if(player.hp<=0||!guardianHasShot(p,player)) return;
       boltFx(p.x,p.y,player.x,player.y,'light');
       var d=applyDamage(player, roll(2,4)+floorNo, 'light', null); floatText(player.x,player.y,String(d),'light');
       log('A sentry\'s eyes flare: '+d+' damage.','c-you');
@@ -233,13 +296,6 @@ function turnPuzzleHazards(context){  if(player.windCarry && at(player.x,player.
       SHAKE=8; log('<b>The stone sentinels wake!</b>','c-you'); sfx('golem-alert',{from:woke});
     }
   }
-  else if(k==='library' && (player.god==='reginald'||(!(player.hidden>0) && aff('shadow')<3)) && player.movedLast){
-    room.puzzle.solved=true;
-    ents.forEach(function(o){ if(o.foe && dist(o,player)<=20){ o.state='hunt'; o.lastSeen={x:player.x,y:player.y}; } });
-    for(var i=0;i<2;i++){ var c=nearFree(player.x,player.y,3); if(c){ var w=spawn('wisp',c.x,c.y); w.name='Library Shade'; w.state='hunt'; w.t=player.t; } }
-    log('<b>Your footsteps echo through the library.</b> Its keepers come for you.','c-you'); sfx('trap-alarm');
-  }
-  else if(k==='library' && (player.hidden>0 || mastered(k))){ solvePuzzle(room, 'you move through the stacks without a sound.'); }
   else if(k==='sentries' && (player.hidden>0 || mastered(k))){ solvePuzzle(room, 'the sentries stare straight through you.'); }
   else if(k==='chasm' && (player.levitate>0 || mastered(k)) && at(player.x,player.y)!==CHASM){ var far=farFrom(pzCells(room),room.puzzle.door)[0]; if(far && dist(player,far)<=1) solvePuzzle(room, 'you cross the chasm.'); }
   else if(k==='drowned' && (player.levitate>0 || mastered(k))){ solvePuzzle(room, 'you cross the water untouched.'); }

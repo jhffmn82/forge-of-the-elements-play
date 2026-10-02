@@ -31,7 +31,7 @@ function dropBagItem(index){
   if(gameTurns.busy())return false;
   var b=player.bag[index];if(!b)return false;
   var it=FoteInventory.gear(b.kind)?{kind:b.kind,it:b.data}:b.kind==='sigil'?{kind:'sigil',use:b.data.use}:b.kind==='food'?{kind:'food',food:b.data.food}:null;
-  if(!it)return false;it.x=player.x;it.y=player.y;items.push(it);consume(index);log('You drop '+itemLabel(it)+'.','c-info');return true;
+  if(!it)return false;it.x=player.x;it.y=player.y;items.push(it);consume(index);log('You drop '+itemLabel(it)+'.','c-info');rareRoomFoodDropped(it);return true;
 }
 function commitEquipment(plan){
   var item=plan.item;Object.assign(item,plan.normalized);

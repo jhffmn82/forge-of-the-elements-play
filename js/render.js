@@ -638,8 +638,9 @@ function drawGlobe(it, px, py, alpha, now){
 }
 
 /* how big each kind of loot is on the floor, as a share of a tile: small things stay small */
-var ITEM_FIT = {ring:0.42, amulet:0.46, essence:0.42, mote:0.42, key:0.46, sigil:0.5, food:0.52, off:0.58, armor:0.62, weapon:0.68};   /* between the old full-tile size and the too-small trim */
+var ITEM_FIT = {relic:0.5,ring:0.42, amulet:0.46, essence:0.42, mote:0.42, key:0.46, sigil:0.5, food:0.52, off:0.58, armor:0.62, weapon:0.68};   /* between the old full-tile size and the too-small trim */
 function itemArtName(it){
+  if(it.rareLamp!==undefined)return 'sealed-lamp';
   if(it.kind==='core') return it.name==='Crypt Core' ? 'item-core-crypt' : 'item-core-dungeon';
   if(it.kind==='essence') return 'item-essence';
   if(it.kind==='mote') return 'mote-'+it.el;
@@ -1173,7 +1174,7 @@ function drawScene(){
     var o=spriteOn ? objArt('props',artName)||objArt('structures',artName)||objArt('chests',artName)||objArt('terrain',artName) : null;   /* an opened chest's art lives with the chests */
     if(p.name==='elemental-lock' && p.opened) pa*=0.6;
     if(p.name==='vines'){ drawVines(p.x, p.y, ppx, ppy, pa, now); return; }
-    if(p.pillar){ drawPillar(p, ppx, ppy, pa, now); return; }
+    if(p.pillar && !o){ drawPillar(p, ppx, ppy, pa, now); return; }
     if(typeof drawPropSurface==='function' && drawPropSurface(p, ppx, ppy, pa)) return;   /* flat bones and rubble (surface.js) */
     if(typeof propShadow==='function' && !p.flat && !/^(soul-urn|soul-brazier|kobold-campfire)$/.test(p.name)) propShadow(p.x, p.y, ppx, ppy, pa, p.name);   /* contact shadow (surface.js) */
     if(!drawObj(o, ppx, ppy, {feet:!p.flat, fit: p.flat?0.82 : (p.name==='bookshelf'||p.name==='statue'||p.name==='boss-throne')?1.12 : /^(urn|coffin|sarcophagus|tomb)/.test(p.name)?1.08 : 0.9, alpha:pa, flash:flashOf(p)})){
@@ -1281,6 +1282,7 @@ function drawScene(){
         ctx.fillRect(barX,barY,barW*clamp(e.hp/e.maxhp,0,1),3);
       }
       var ix=px0+TS*0.02;
+      if(e.merchantRoom!==undefined&&!e.foe&&e.hp>0&&(revealAll||vis[idxOf(e.x,e.y)]))mark('?',px0+TS*.39,py0-TS*.16,'#FFD24A');
       if(e.surprised && e.foe) { mark('!',px0+TS*0.78,py0+TS*0.02,'#FFD24A'); }
       if(e.state==='asleep') { mark('z',px0+TS*0.78,py0+TS*0.08+(ANIM.reduce?0:Math.sin(now/400+e.id)*2),'#CFE0FF'); }
       if(e.keyholder){ if(spriteOn)drawObj(objArt('items','item-key-iron'), px0+TS*0.52, py0-TS*0.34, {fit:0.4});else mark('k',px0+TS*.8,py0-TS*.2,'#E8B44A'); }

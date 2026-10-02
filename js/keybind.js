@@ -10,7 +10,7 @@ var BIND_ACTIONS = [
   ['wait','Wait a turn','.'],['rest','Rest','r'],['search','Search','f'],['explore','Explore','o'],['grab','Pick up','g'],
   ['stairs','Go down the stairs','>'],['upstairs','Go up the stairs','<'],['close','Close a door','C'],
   ['h1','Hotbar 1','1'],['h2','Hotbar 2','2'],['h3','Hotbar 3','3'],['h4','Hotbar 4','4'],['h5','Hotbar 5','5'],['h6','Hotbar 6','6'],['h7','Hotbar 7','7'],['h8','Hotbar 8','8'],
-  ['char','Character','Tab'],['gear','Equipment','i'],['faith','Faith','p'],['map','Map overlay','v'],['mute','Sound on/off','m'],['music','Music on/off','n']
+  ['char','Character','Tab'],['gear','Equipment','i'],['faith','Faith','p'],['map','Map overlay','m'],['mute','Sound on/off','v'],['music','Music on/off','n']
 ];
 var BINDS = {};
 try { BINDS = JSON.parse(localStorage.getItem('astra-temple-binds')||'{}') || {}; } catch(e){ BINDS={}; }

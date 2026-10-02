@@ -63,6 +63,7 @@ function turnRegeneration(context){
 }
 function turnWorldPulse(clock){
   turnDeathRemains(clock);
+  turnRitualRooms(clock);
   [player].concat(ents.filter(function(e){return e!==player;})).forEach(function(e){
     if(e.tomb>0){e.tomb--;if(!e.tomb){log('The ice around '+e.name+' shatters.','c-info');sfx('ice-melt',{from:e});}return;}
     worldStatusPulse(e,clock);

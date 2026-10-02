@@ -29,9 +29,15 @@ function createProp(x,y,name,extra){
   var d=PROPS[name]||{}, p={x:x,y:y,name:name};
   for(var k in d) p[k]=d[k];
   for(var e in (extra||{})) p[e]=extra[e];
+  if(p.b&&typeof DEEP_GEN!=='undefined'&&DEEP_GEN){
+    for(var py=y;py<y+(p.h||1);py++)for(var px=x;px<x+(p.w||1);px++){
+      var room=roomAt(px,py);
+      if(room&&room.storageAisle&&room.storageAisle.indexOf(idxOf(px,py))>=0)return null;
+    }
+  }
   props.push(p); propGrid[idxOf(x,y)]=props.length-1; return p;
 }
-function removeProp(p){ var i=props.indexOf(p); if(i<0) return; props.splice(i,1); rebuildPropGrid(); }
+function removeProp(p){ var i=props.indexOf(p); if(i<0) return; props.splice(i,1); rebuildPropGrid(); if(p.breakReward){var reward=clone(p.breakReward);reward.x=p.x;reward.y=p.y;items.push(reward);delete p.breakReward;} }
 
 /* ---- movement and sight rules ---- */
 
@@ -215,7 +221,7 @@ function generateOnce(seed){
   start.role='start';
   var used={}; used[start.id]=1; used[goal.id]=1;
   function freeRoom(minArea, pred){
-    var c=rooms.filter(function(r){ return !used[r.id] && r.w*r.h>=minArea && (!pred||pred(r)); });
+    var c=rooms.filter(function(r){ return !r.pocket && !used[r.id] && r.w*r.h>=minArea && (!pred||pred(r)); });
     if(!c.length) return null;
     var r=pick(c); used[r.id]=1; return r;
   }
@@ -234,25 +240,37 @@ function generateOnce(seed){
   var puzzles = fb===1 ? [] : fb===2 ? ['icedoor','plates'] : fb===3 ? ['elemlock','thorns','chasm'] : fb===4 ? ['chasm','plates','elemlock','icedoor'] : ['thorns'];
   if(puzzles.length){ var pz=pick(puzzles); if(fb===4 && rng()<0.5) pick(puzzles.filter(function(p){return p!==pz;})); }
   if(floorNo>=3 && rng()<0.55) buildTollRoom();
-  if(rng()<0.45) buildHiddenRoom();
+  var hiddenRoll=rng()<0.45,hiddenTheme=hiddenSigilTheme();if(hiddenRoll||hiddenTheme)buildHiddenRoom(hiddenTheme);
 
   /* ---- special rooms ---- */
   var specials = [
     ['garden',1,9,3], ['storage',1,9,3], ['library',1,12,2], ['nest',1,12,2], ['armory',2,12,2], ['prison',2,12,1.5],
     ['zoo',2,20,1.2], ['sacrifice',2,12,1.2], ['statues',3,16,1], ['treasury',3,16,1], ['barracks',2,16,1.5], ['dark',3,16,0.8], ['traps',2,16,1.3]
   ].filter(function(s){ return floorNo>=s[1] && !(floorMeta.boss && (s[0]==='zoo'||s[0]==='treasury')); });
+  if(bidx()===2){
+    specials=specials.filter(function(s){return s[0]!=='zoo';});
+    specials.push(['flooded-cache',11,20,1.5]);
+    if(!floorMeta.boss)specials.push(['myconid-nursery',11,20,.6],['beetle-nest',11,20,.6]);
+  }
+  if(inDeep()&&!floorMeta.boss){specials=specials.filter(function(s){return s[0]!=='sacrifice';});specials=specials.map(function(s){return s[0]==='barracks'?['watchpost',16,25,s[3]]:s;});specials.push(['ritual',16,25,1.2]);}
+  var ritualDone=false;
+  function zooFamily(kind){return kind==='zoo'||kind==='myconid-nursery'||kind==='beetle-nest';}
   var nSpecial = floorMeta.boss ? 1 : (floorNo===1 ? 2 : 2 + (rng()<0.5?1:0));
   var zooDone=false;
   for(i=0;i<nSpecial;i++){
-    var pool=specials.filter(function(s){ return !(s[0]==='zoo'&&zooDone); });
+    var pool=specials.filter(function(s){ return !(zooFamily(s[0])&&zooDone)&&!(s[0]==='ritual'&&ritualDone); });
     var tot=pool.reduce(function(a,s){return a+s[3];},0), roll2=rng()*tot, chosen=pool[0];
     for(j=0;j<pool.length;j++){ roll2-=pool[j][3]; if(roll2<=0){ chosen=pool[j]; break; } }
-    var room=freeRoom(chosen[2]);
+    if(i===0&&cavernMerchantFloor()===floorNo)chosen=['merchant',11,25,1];
+    if(i===0&&swordStoneFloor()===floorNo)chosen=['sword-in-stone',2,25,1];
+    var rareKind=i===0?uniqueRareKind():null;if(rareKind)chosen=[rareKind,1,25,1];
+    var room=freeRoom(chosen[2],(chosen[0]==='ritual'||chosen[0]==='watchpost'||chosen[0]==='dark-wizard-library')?function(r){return !r.region;}:null);
     if(!room) continue;
     buildSpecial(chosen[0], room);
-    if(chosen[0]==='zoo') zooDone=true;
+    if(zooFamily(chosen[0])) zooDone=true;
+    if(chosen[0]==='ritual')ritualDone=true;
   }
-  rooms.forEach(function(r){ if(!used[r.id]) decoratePlain(r); });
+  rooms.forEach(function(r){ if(!used[r.id]&&!r.hiddenSigil&&!r.rareEvent) decoratePlain(r); });
 
   /* ---- terrain patches ---- */
   var gn=ri(2,4); for(i=0;i<gn;i++){ var gr=pick(rooms); blob(gr.x+ri(0,gr.w-1), gr.y+ri(0,gr.h-1), ri(5,14), function(xx,yy){ if(at(xx,yy)===FLOOR && !gAt(xx,yy) && !propAt(xx,yy)) setG(xx,yy,G_GRASS); }); }
@@ -262,22 +280,22 @@ function generateOnce(seed){
 
   /* ---- chests ---- */
   var nChest = floorNo===1 ? 2 : 2;
-  for(i=0;i<nChest;i++){ var cr=pick(rooms.filter(function(r){ return r.role!=='start'; })); var cx2=cr.x+ri(0,cr.w-1), cy2=cr.y+ri(0,cr.h-1);
-    if(freeCell(cx2,cy2) && !nearDoor(cx2,cy2)) { setT(cx2,cy2,CHEST); chestKind[idxOf(cx2,cy2)] = rng()<0.12&&floorNo>=2 ? 'mimic' : 'chest-wood'; } }
+  for(i=0;i<nChest;i++){ var cr=pick(rooms.filter(function(r){ return r.role!=='start'&&!r.merchant&&!r.consecratedStone&&!r.hiddenSigil&&!r.rareEvent; })); var cx2=cr.x+ri(0,cr.w-1), cy2=cr.y+ri(0,cr.h-1);
+    if(freeCell(cx2,cy2) && !nearDoor(cx2,cy2) && !nearExplosive(cx2,cy2)) { setT(cx2,cy2,CHEST); chestKind[idxOf(cx2,cy2)] = rng()<0.12&&floorNo>=2 ? 'mimic' : 'chest-wood'; } }
 
   /* ---- traps (in rooms, never in doorways or corridors) ---- */
   var trapKinds=Object.keys(TRAPS).filter(function(k){ return TRAPS[k].minFloor<=floorNo; });
   var nTraps = Math.round((2 + floorNo*2)*0.8);
   for(i=0;i<nTraps*3 && feats.filter(function(f){ return !f.room; }).length<nTraps;i++){
-    var tr=pick(rooms); if(tr.role==='start') continue;
+    var tr=pick(rooms); if(tr.role==='start'||tr.chestAmbush||tr.ritual||tr.residentKinds||tr.merchant||tr.consecratedStone||tr.hiddenSigil||tr.rareEvent||tr.special==='flooded-cache') continue;
     var tx=tr.x+ri(0,tr.w-1), ty=tr.y+ri(0,tr.h-1);
-    if(at(tx,ty)!==FLOOR || propAt(tx,ty) || nearDoor(tx,ty) || feats.some(function(f){return Math.abs(f.x-tx)+Math.abs(f.y-ty)<3;})) continue;
+    if(roomAt(tx,ty)!==tr||at(tx,ty)!==FLOOR || propAt(tx,ty) || nearDoor(tx,ty) || feats.some(function(f){return Math.abs(f.x-tx)+Math.abs(f.y-ty)<3;})) continue;
     feats.push({x:tx,y:ty,kind:pick(trapKinds),found:false});
   }
 
   /* ---- items ---- */
   var open=[];
-  for(y=0;y<MH;y++) for(x=0;x<MW;x++) if(freeCell(x,y) && !nearDoor(x,y) && inRoom(x,y)) open.push({x:x,y:y});
+  for(y=0;y<MH;y++) for(x=0;x<MW;x++) if(freeCell(x,y) && !nearDoor(x,y) && inRoom(x,y)&&!roomAt(x,y).merchant&&!roomAt(x,y).hiddenSigil&&!roomAt(x,y).rareEvent) open.push({x:x,y:y});
   if(open.length<(floorMeta.boss?12:30)) return false;
   function drop(it){ var c=pick(open); if(!freeCell(c.x,c.y)) return; it.x=c.x; it.y=c.y; items.push(it); }
   for(i=0;i<3;i++) drop({kind:'essence', n:ri(5,12)+floorNo*2});
@@ -298,12 +316,13 @@ function generateOnce(seed){
   for(i=0;i<count*4 && ents.filter(function(e){return e.foe;}).length<count;i++){
     var s=pick(open); if(!walkable(s.x,s.y) || occupied(s.x,s.y)) continue;
     if(Math.abs(s.x-player.x)+Math.abs(s.y-player.y) < 12) continue;
-    var rm=roomAt(s.x,s.y); if(rm && (rm.role==='boss'||rm.special==='zoo'||rm.role==='forge'||rm.role==='shrine')) continue;
+    var rm=roomAt(s.x,s.y); if(rm && (rm.role==='boss'||rm.special==='zoo'||rm.chestAmbush||rm.ritual||rm.residentKinds||rm.merchant||rm.consecratedStone||rm.hiddenSigil||rm.rareEvent||rm.special==='flooded-cache'||rm.role==='forge'||rm.role==='shrine')) continue;
     var kind=rollMonster(), base=MONSTERS[kind];
     var n = base.pack ? ri(base.pack[0],base.pack[1]) : 1;
     for(var q=0;q<n;q++){
       var spot = q===0 ? s : nearFree(s.x,s.y,2);
       if(!spot) break;
+      if(roomAt(spot.x,spot.y)&&(roomAt(spot.x,spot.y).chestAmbush||roomAt(spot.x,spot.y).ritual||roomAt(spot.x,spot.y).residentKinds||roomAt(spot.x,spot.y).merchant||roomAt(spot.x,spot.y).consecratedStone||roomAt(spot.x,spot.y).hiddenSigil||roomAt(spot.x,spot.y).rareEvent))continue;
       var mm=spawn(kind, spot.x, spot.y);
       mm.state = inRoom(spot.x,spot.y) ? (rng()<0.8?'asleep':'wander') : 'wander';
     }
@@ -329,7 +348,7 @@ function generateOnce(seed){
   }
   if(rng() < 0.30 + 0.05*floorNo && !floorMeta.boss){
     var rk=rollRare();
-    for(var ra=0; rk && ra<40; ra++){ var rs=pick(open); if(Math.abs(rs.x-player.x)+Math.abs(rs.y-player.y)<14 || !walkable(rs.x,rs.y) || occupied(rs.x,rs.y)) continue; spawn(rk,rs.x,rs.y).state='wander'; break; }
+    for(var ra=0; rk && ra<40; ra++){ var rs=pick(open); if(Math.abs(rs.x-player.x)+Math.abs(rs.y-player.y)<14 || !walkable(rs.x,rs.y) || occupied(rs.x,rs.y) || roomAt(rs.x,rs.y)&&(roomAt(rs.x,rs.y).chestAmbush||roomAt(rs.x,rs.y).ritual||roomAt(rs.x,rs.y).residentKinds||roomAt(rs.x,rs.y).merchant||roomAt(rs.x,rs.y).consecratedStone||roomAt(rs.x,rs.y).hiddenSigil||roomAt(rs.x,rs.y).rareEvent)) continue; spawn(rk,rs.x,rs.y).state='wander'; break; }
   }
   populateSpecialMonsters();
 
@@ -385,6 +404,10 @@ function nearDoor(x,y){
   /* corridor mouths too: a floor cell outside every room next to this one */
   var nb=[[1,0],[-1,0],[0,1],[0,-1]];
   for(var i=0;i<4;i++){ var nx=x+nb[i][0], ny=y+nb[i][1]; if((at(nx,ny)===FLOOR) && !inRoom(nx,ny) && inRoom(x,y)) return true; }
+  return false;
+}
+function nearExplosive(x,y){
+  for(var dy=-1;dy<=1;dy++)for(var dx=-1;dx<=1;dx++){var p=propAt(x+dx,y+dy);if(p&&(p.ex||p.fluid==='poison'))return true;}
   return false;
 }
 function blob(x,y,size,paint){
@@ -445,7 +468,7 @@ function carveRectangularPassage(room){
     else if(side===2){ sx=room.x-1; sy=room.y+ri(1,Math.max(1,room.h-2)); dx=-1; }
     else { sx=room.x+room.w; sy=room.y+ri(1,Math.max(1,room.h-2)); dx=1; }
     var inside={x:sx-dx, y:sy-dy};
-    if(at(inside.x,inside.y)!==FLOOR || propAt(inside.x,inside.y)) continue;
+    if(at(inside.x,inside.y)!==FLOOR || propAt(inside.x,inside.y) || nearExplosive(inside.x,inside.y)) continue;
     var ok=true, cells=[];
     for(var i=0;i<len && ok;i++){
       var cx=sx+dx*i, cy=sy+dy*i;
@@ -480,7 +503,7 @@ function carvePocket(minW,minH,maxW,maxH, avoid){
     if(!ok) continue;
     /* the door must sit between the pocket and the host only */
     var inside = side===0 ? {x:dx,y:dy+1} : side===1 ? {x:dx,y:dy-1} : side===2 ? {x:dx+1,y:dy} : {x:dx-1,y:dy};
-    if(at(inside.x,inside.y)!==FLOOR || propAt(inside.x,inside.y)) continue;
+    if(at(inside.x,inside.y)!==FLOOR || propAt(inside.x,inside.y) || nearExplosive(inside.x,inside.y)) continue;
     for(y=ry;y<ry+h;y++) for(x=rx;x<rx+w;x++) setT(x,y,FLOOR);
     var room={x:rx,y:ry,w:w,h:h,cx:rx+(w>>1),cy:ry+(h>>1),id:1000+rooms.length,pocket:true};
     rooms.push(room);
@@ -527,7 +550,7 @@ function buildLockedVault(){
   setT(pk.door.x,pk.door.y,LOCKED); pk.room.special='vault';
   floorMeta.vault=true; floorMeta.entrances=(floorMeta.entrances||[]).concat([pk.inside]);
   lootRoom(pk.room, true);
-  addProp(pk.room.x, pk.room.y, 'torch-stand');
+  decorateEdges(pk.room, ['torch-stand'], 1, true);
 }
 function buildTollRoom(){
   var pk=carvePocket(3,3,5,4); if(!pk) return;
@@ -537,11 +560,12 @@ function buildTollRoom(){
   var c=shuffled(interiorCells(pk.room).concat(edgeCells(pk.room))).filter(function(p){ return freeCell(p.x,p.y); });
   if(c.length) items.push({x:c[0].x,y:c[0].y,kind:'mote',el:pick(ELEMENTS)});
 }
-function buildHiddenRoom(){
-  var pk=carvePocket(2,2,4,3); if(!pk) return;
-  setT(pk.door.x,pk.door.y,SECRET); pk.room.special='hidden';
+function buildHiddenRoom(spec){
+  var pk=spec?carvePocket(spec.slimes?4:3,spec.slimes?4:3,spec.slimes?4:5,spec.slimes?4:4,function(host){return !!host.role||!!host.pocket;}):carvePocket(2,2,4,3); if(!pk) return;
+  setT(pk.door.x,pk.door.y,SECRET); pk.room.special='hidden';pk.room.secretDoor=pk.door;pk.room.secretTell=pk.inside;
   /* never blind searching: a visible tell on the floor beside the secret wall */
   setG(pk.inside.x,pk.inside.y,G_TELL);
+  if(spec){dressHiddenSigil(pk,spec);return pk;}
   var c=shuffled(interiorCells(pk.room).concat(edgeCells(pk.room)));
   if(c.length){ setT(c[0].x,c[0].y,CHEST); chestKind[idxOf(c[0].x,c[0].y)]='chest-wood'; }
   if(c.length>1) items.push({x:c[1].x,y:c[1].y,kind:'essence',n:ri(15,30)});
@@ -549,38 +573,420 @@ function buildHiddenRoom(){
 
 
 /* ---- special rooms inside ordinary rooms ---- */
+function buildStorageRoom(r,edges){
+  var cells=[],directions=[[1,0],[-1,0],[0,1],[0,-1]];
+  for(var y=r.y;y<r.y+r.h;y++)for(var x=r.x;x<r.x+r.w;x++){var existing=propAt(x,y);if(roomAt(x,y)===r&&at(x,y)===FLOOR&&!(existing&&existing.b))cells.push({x:x,y:y});}
+  if(!cells.length)return;
+  var available=new Set(cells.map(function(c){return idxOf(c.x,c.y);}));
+  var mouths=cells.filter(function(c){return directions.some(function(d){var x=c.x+d[0],y=c.y+d[1];return roomAt(x,y)!==r&&(walkable(x,y)||isDoorish(at(x,y)));});});
+  var horizontal=r.w>=r.h,axis=horizontal?r.cy:r.cx;
+  var lanes=cells.filter(function(c){var v=horizontal?c.y:c.x;return v===axis||v===axis+1;}),hub=lanes[0]||cells[0];
+  function distance(c){return mouths.length?Math.min.apply(null,mouths.map(function(m){return Math.abs(c.x-m.x)+Math.abs(c.y-m.y);})):Math.abs(c.x-hub.x)+Math.abs(c.y-hub.y);}
+  var prizes=edges.filter(function(c){return available.has(idxOf(c.x,c.y));}).sort(function(a,b){return distance(b)-distance(a);});
+  var chest=prizes[0]||cells.filter(function(c){return freeCell(c.x,c.y);}).sort(function(a,b){return distance(b)-distance(a);})[0];if(!chest)return;
+  var reserved=new Set(lanes.map(function(c){return idxOf(c.x,c.y);}));
+  // Join entrances and the supply chest to the two-cell service aisle, including
+  // irregular cave mouths. Furniture never occupies those connecting paths.
+  function route(from,blocked){
+    var start=idxOf(from.x,from.y),goal=idxOf(hub.x,hub.y),q=[start],parent=new Map([[start,start]]);
+    for(var h=0;h<q.length;h++){
+      var i=q[h];if(i===goal)break;
+      directions.forEach(function(d){var x=i%MW+d[0],y=Math.floor(i/MW)+d[1],n=idxOf(x,y);
+        var prop=propAt(x,y);
+        if(available.has(n)&&!(prop&&prop.b)&&!parent.has(n)&&(!blocked||!blocked(x,y))){parent.set(n,i);q.push(n);}
+      });
+    }
+    if(!parent.has(goal))return null;
+    var out=[];for(var step=goal;step!==start;step=parent.get(step))out.push(step);out.push(start);return out;
+  }
+  mouths.concat([chest]).forEach(function(c){(route(c)||[]).forEach(function(i){reserved.add(i);});});
+  setT(chest.x,chest.y,CHEST);chestKind[idxOf(chest.x,chest.y)]='crate-supply';
+  var bombs=rng()<0.6?1:2,placed=[];
+  var powder=cells.filter(function(c){
+    if(reserved.has(idxOf(c.x,c.y))||nearDoor(c.x,c.y)||Math.max(Math.abs(c.x-chest.x),Math.abs(c.y-chest.y))<=1)return false;
+    for(var yy=c.y-3;yy<=c.y+3;yy++)for(var xx=c.x-3;xx<=c.x+3;xx++)if([STAIRS,UPSTAIRS,EXIT,PORTAL,FORGE,SHRINE].indexOf(at(xx,yy))>=0)return false;
+    // A powder blast may threaten one side of the aisle, but never every way
+    // between its entrances and reward. The hub itself remains outside it.
+    function blast(x,y){return Math.max(Math.abs(x-c.x),Math.abs(y-c.y))<=1;}
+    if(blast(hub.x,hub.y))return false;
+    return mouths.concat([chest]).every(function(m){return !blast(m.x,m.y)&&!!route(m,blast);});
+  }).sort(function(a,b){return Math.abs((horizontal?a.y:a.x)-axis)-Math.abs((horizontal?b.y:b.x)-axis);});
+  for(var bi=0;bi<powder.length&&placed.length<bombs;bi++){
+    var b=powder[bi];if(placed.some(function(p){return Math.max(Math.abs(p.x-b.x),Math.abs(p.y-b.y))<=2;}))continue;
+    if(!freeCell(b.x,b.y)||reserved.has(idxOf(b.x,b.y)))continue;
+    function blast(x,y){return Math.max(Math.abs(x-b.x),Math.abs(y-b.y))<=1;}
+    var bypasses=mouths.concat([chest]).map(function(m){return route(m,blast);});
+    if(bypasses.some(function(path){return !path;}))continue;
+    var barrelKind=pick(['barrel-explosive','barrel-poison','barrel-water']);
+    if(addProp(b.x,b.y,barrelKind)){
+      placed.push(b);bypasses.forEach(function(path){path.forEach(function(i){reserved.add(i);});});
+    }
+  }
+  var stock=edges.filter(function(c){return freeCell(c.x,c.y)&&!reserved.has(idxOf(c.x,c.y));});
+  r.storageAisle=Array.from(reserved);
+  stock.sort(function(a,b){var av=horizontal?a.y:a.x,bv=horizontal?b.y:b.x;return av-bv||(horizontal?a.x-b.x:a.y-b.y);});
+  var names=['barrel','crate','pot','crate','barrel','pot'],count=Math.min(7,Math.floor(edges.length*0.6));
+  for(var si=0;si<stock.length&&si<count;si++)addProp(stock[si].x,stock[si].y,names[si%names.length]);
+}
+
+function buildArmoryRoom(r){
+  var cells=[],dirs=[[1,0],[-1,0],[0,1],[0,-1]],horizontal=r.w>=r.h;
+  for(var y=r.y;y<r.y+r.h;y++)for(var x=r.x;x<r.x+r.w;x++)if(roomAt(x,y)===r&&freeCell(x,y))cells.push({x:x,y:y});
+  if(!cells.length)return;
+  var remaining=new Map(cells.map(function(c){return [idxOf(c.x,c.y),c];})),groups=[];
+  while(remaining.size){var first=remaining.keys().next().value,q=[first],group=[];remaining.delete(first);
+    for(var h=0;h<q.length;h++){var i=q[h];group.push({x:i%MW,y:Math.floor(i/MW)});dirs.forEach(function(d){var j=idxOf(i%MW+d[0],Math.floor(i/MW)+d[1]);if(remaining.has(j)){remaining.delete(j);q.push(j);}});}groups.push(group);
+  }
+  cells=groups.sort(function(a,b){return b.length-a.length;})[0];
+  var available=new Set(cells.map(function(c){return idxOf(c.x,c.y);})),axis=horizontal?r.cy:r.cx;
+  var aisle=cells.filter(function(c){var v=horizontal?c.y:c.x;return v===axis||v===axis+1;}),hub=aisle[0]||cells[0];
+  var mouths=cells.filter(function(c){return dirs.some(function(d){return roomAt(c.x+d[0],c.y+d[1])!==r&&(walkable(c.x+d[0],c.y+d[1])||isDoorish(at(c.x+d[0],c.y+d[1])));});});
+  function entranceDistance(c){return mouths.length?Math.min.apply(null,mouths.map(function(m){return Math.abs(c.x-m.x)+Math.abs(c.y-m.y);})):Math.abs(c.x-hub.x)+Math.abs(c.y-hub.y);}
+  var prizes=cells.slice().sort(function(a,b){return entranceDistance(b)-entranceDistance(a);}),rewards=[prizes[0]];
+  if(prizes.length>1)rewards.push(prizes.slice(1).sort(function(a,b){return dist(b,rewards[0])-dist(a,rewards[0])||entranceDistance(b)-entranceDistance(a);})[0]);
+  var reserved=new Set(aisle.map(function(c){return idxOf(c.x,c.y);}));
+  function reserveRoute(c){
+    var start=idxOf(c.x,c.y),goal=idxOf(hub.x,hub.y),q=[start],parent=new Map([[start,start]]);
+    for(var h=0;h<q.length&&!parent.has(goal);h++){var i=q[h];dirs.forEach(function(d){var j=idxOf(i%MW+d[0],Math.floor(i/MW)+d[1]);if(available.has(j)&&!parent.has(j)){parent.set(j,i);q.push(j);}});}
+    if(!parent.has(goal))return false;
+    for(var i=goal;i!==start;i=parent.get(i))reserved.add(i);reserved.add(start);return true;
+  }
+  mouths.concat(rewards).forEach(reserveRoute);
+  r.storageAisle=Array.from(reserved);
+  rewards.forEach(function(c){var it=randomGear();it.x=c.x;it.y=c.y;items.push(it);});
+  // Two racks sit beside the service aisle. They obstruct shots while both
+  // ends of the aisle and the approaches to the displayed gear stay open.
+  var stock=cells.filter(function(c){return !reserved.has(idxOf(c.x,c.y))&&!nearDoor(c.x,c.y);});
+  stock.sort(function(a,b){return Math.abs((horizontal?a.y:a.x)-axis)-Math.abs((horizontal?b.y:b.x)-axis)||entranceDistance(b)-entranceDistance(a);});
+  var racks=[];
+  stock.forEach(function(c){if(racks.length<2&&freeCell(c.x,c.y)&&!racks.some(function(p){return dist(p,c)<2;})){var p=addProp(c.x,c.y,'weapon-rack',{keep:true});if(p)racks.push(p);}});
+  var banner=stock.slice().reverse().find(function(c){return freeCell(c.x,c.y);});if(banner)addProp(banner.x,banner.y,'banner-stand');
+}
+
+var LIBRARY_THEMES={
+  elemental:{motes:ELEMENTS,gear:['tome','orb'],sigils:['firestorm','identify','levitate','stoneskin','heal','vanish','firestorm2','identify2','levitate2','stoneskin2','heal2','vanish2','cinder','magma','sunburst','smoke','storm','mire','purify','mana']},
+  holy:{motes:['light','water','earth'],gear:['tome','holy'],sigils:['heal','identify','stoneskin','purify','heal2','stoneskin2','aegis']},
+  explorer:{motes:['air','earth','shadow'],gear:['tome'],sigils:['levitate','stoneskin','vanish','mapping','blink','recall','haste','levitate2','stoneskin2','vanish2']},
+  forbidden:{motes:['shadow','fire','water'],gear:['tome','orb','dagger'],sigils:['vanish','firestorm','identify','smoke','mana','vanish2','firestorm2','identify2']}
+};
+function librarySigil(theme,element){
+  var pool=LIBRARY_THEMES[theme].sigils.filter(function(k){return SIGILS[k]&&(!element||SIGILS[k].motes.includes(element));});
+  var roll=rng(),grade=roll<.85?'singles':roll<.95?'pairs':roll<.99?'plus':'grand';
+  var preferred=pool.filter(function(k){return SIGIL_ORDER[grade].includes(k)||(grade==='plus'&&SIGIL_ORDER.triple.includes(k));});
+  return pick(preferred.length?preferred:pool.filter(function(k){return SIGIL_ORDER.singles.includes(k);}));
+}
+function buildLibraryRoom(r){
+  var theme=pick(Object.keys(LIBRARY_THEMES)),spec=LIBRARY_THEMES[theme],element=theme==='elemental'?pick(ELEMENTS):null;
+  r.libraryTheme=theme;r.libraryElement=element;
+  var cells=[],dirs=[[1,0],[-1,0],[0,1],[0,-1]];
+  for(var y=r.y;y<r.y+r.h;y++)for(var x=r.x;x<r.x+r.w;x++)if(roomAt(x,y)===r&&freeCell(x,y))cells.push({x:x,y:y});
+  if(!cells.length)return;
+  var available=new Set(cells.map(function(c){return idxOf(c.x,c.y);})),hub=cells.slice().sort(function(a,b){return dist(a,{x:r.cx,y:r.cy})-dist(b,{x:r.cx,y:r.cy});})[0];
+  var parent=new Map([[idxOf(hub.x,hub.y),idxOf(hub.x,hub.y)]]),q=[idxOf(hub.x,hub.y)];
+  for(var h=0;h<q.length;h++){var i=q[h];dirs.forEach(function(d){var j=idxOf(i%MW+d[0],Math.floor(i/MW)+d[1]);if(available.has(j)&&!parent.has(j)){parent.set(j,i);q.push(j);}});}
+  cells=cells.filter(function(c){return parent.has(idxOf(c.x,c.y));});
+  var reserved=new Set();function reserve(c){var i=idxOf(c.x,c.y);while(parent.has(i)){reserved.add(i);var next=parent.get(i);if(next===i)break;i=next;}}
+  var mouths=cells.filter(function(c){return dirs.some(function(d){return roomAt(c.x+d[0],c.y+d[1])!==r&&(walkable(c.x+d[0],c.y+d[1])||isDoorish(at(c.x+d[0],c.y+d[1])));});});
+  cells.forEach(function(c){if(Math.abs(c.x-hub.x)<=1&&Math.abs(c.y-hub.y)<=1)reserve(c);});mouths.forEach(reserve);
+  var prizes=cells.slice().sort(function(a,b){return dist(b,hub)-dist(a,hub);});
+  var rewards=[],roll=rng();
+  if(roll<.6||roll>=.85)rewards.push({kind:'sigil',use:librarySigil(theme,element)});
+  if(roll>=.6)rewards.push({kind:'mote',el:element||pick(spec.motes)});
+  if(rng()<.3){var gear=pick(spec.gear);rewards.push(gear==='dagger'?{kind:'weapon',it:clone(WEAPONS.dagger)}:{kind:'off',it:clone(OFFHANDS[gear])});}
+  rewards.forEach(function(it,n){var c=prizes[Math.min(n,prizes.length-1)];it.x=c.x;it.y=c.y;items.push(it);reserve(c);});
+  r.storageAisle=Array.from(reserved);
+  // Subjects have different shelf arrangements around the reserved reading area.
+  var stock=cells.filter(function(c){if(reserved.has(idxOf(c.x,c.y))||nearDoor(c.x,c.y))return false;
+    if(theme==='holy')return c.x===r.x||c.x===r.x+r.w-1;
+    if(theme==='explorer')return (c.x-r.x)%3===0;
+    if(theme==='forbidden')return c.y< hub.y&&(c.x-r.x)%2===0||c.y===r.y+r.h-1;
+    return c.y===r.y||c.y===r.y+r.h-1;
+  });
+  stock.sort(function(a,b){return a.y-b.y||a.x-b.x;});
+  for(var n=0;n<stock.length&&n<Math.max(3,Math.floor((r.w+r.h)/2));n++)addProp(stock[n].x,stock[n].y,'bookshelf');
+  var desk=cells.find(function(c){return !reserved.has(idxOf(c.x,c.y))&&freeCell(c.x,c.y)&&dist(c,hub)<=3;});if(desk)addProp(desk.x,desk.y,'table-candle');
+}
+
+function buildPrisonRoom(r){
+  var edges=edgeCells(r).filter(function(c){return freeCell(c.x,c.y)&&!nearDoor(c.x,c.y);});
+  var cages=[],reserved=new Set(),hub={x:r.cx,y:r.cy};
+  edges.sort(function(a,b){return a.y-b.y||a.x-b.x;});
+  for(var n=0;n<edges.length&&cages.length<2;n++){
+    var c=edges[n];if(cages.some(function(p){return dist(p,c)<3;}))continue;
+    var approaches=[[1,0],[-1,0],[0,1],[0,-1]].map(function(d){return {x:c.x+d[0],y:c.y+d[1]};}).filter(function(q){return roomAt(q.x,q.y)===r&&freeCell(q.x,q.y);});
+    if(!approaches.length)continue;
+    var cage=addProp(c.x,c.y,'cage',{keep:true});if(!cage)continue;cages.push(cage);
+    approaches.forEach(function(q){reserved.add(idxOf(q.x,q.y));});
+  }
+  if(cages.length&&rng()<.85)cages[0].prisoner=pick(['goblin','archer']);
+  // Keep release space and connected approaches clear through biome dressing.
+  var field=bfsFrom(hub.x,hub.y);
+  var targets=Array.from(reserved);
+  for(var y=r.y;y<r.y+r.h;y++)for(var x=r.x;x<r.x+r.w;x++){
+    if(roomAt(x,y)!==r||!walkable(x,y))continue;
+    if(x===r.cx||x===r.cx+1||[[1,0],[-1,0],[0,1],[0,-1]].some(function(d){return roomAt(x+d[0],y+d[1])!==r&&walkable(x+d[0],y+d[1]);}))targets.push(idxOf(x,y));
+  }
+  targets.forEach(function(i){var limit=MW*MH;while(field[i]>0&&limit-->0){reserved.add(i);var x=i%MW,y=Math.floor(i/MW),next=[[1,0],[-1,0],[0,1],[0,-1]].map(function(d){return idxOf(x+d[0],y+d[1]);}).find(function(j){return field[j]===field[i]-1;});if(next===undefined)break;i=next;}reserved.add(i);});
+  r.storageAisle=Array.from(reserved);
+  var furniture=['table-candle','chains','bones'];var count=0;
+  edges.forEach(function(c){if(count<3&&freeCell(c.x,c.y)&&!reserved.has(idxOf(c.x,c.y))){addProp(c.x,c.y,furniture[count++]);}});
+}
+
+/* Furniture plans share the room's actual floor footprint, including caves.
+ * Paths connect the entrances and rewards before decoration is placed. */
+function specialRoomPlan(r){
+  var cells=[],dirs=[[1,0],[-1,0],[0,1],[0,-1]];
+  for(var y=r.y;y<r.y+r.h;y++)for(var x=r.x;x<r.x+r.w;x++){var p=propAt(x,y);if(roomAt(x,y)===r&&at(x,y)===FLOOR&&!(p&&p.b))cells.push({x:x,y:y});}
+  var available=new Map(cells.map(function(c){return [idxOf(c.x,c.y),c];})),groups=[],remaining=new Set(available.keys());
+  while(remaining.size){var origin=remaining.values().next().value,q=[origin],group=[];remaining.delete(origin);
+    for(var h=0;h<q.length;h++){var i=q[h];group.push(available.get(i));dirs.forEach(function(d){var j=idxOf(i%MW+d[0],Math.floor(i/MW)+d[1]);if(remaining.has(j)){remaining.delete(j);q.push(j);}});}groups.push(group);
+  }
+  cells=groups.sort(function(a,b){return b.length-a.length;})[0]||[];
+  available=new Map(cells.map(function(c){return [idxOf(c.x,c.y),c];}));
+  var mouths=cells.filter(function(c){return dirs.some(function(d){return roomAt(c.x+d[0],c.y+d[1])!==r&&(walkable(c.x+d[0],c.y+d[1])||isDoorish(at(c.x+d[0],c.y+d[1])));});});
+  var hub=mouths[0]||cells[0],reserved=new Set();
+  function depth(c){return mouths.length?Math.min.apply(null,mouths.map(function(m){return Math.abs(m.x-c.x)+Math.abs(m.y-c.y);})):dist(c,hub);}
+  function route(from,to,perimeter,avoid){
+    if(!from||!to)return [];
+    var start=idxOf(from.x,from.y),goal=idxOf(to.x,to.y),cost=new Map([[start,0]]),parent=new Map(),pending=[start];
+    while(pending.length){pending.sort(function(a,b){return cost.get(a)-cost.get(b);});var i=pending.shift();if(i===goal)break;
+      dirs.forEach(function(d){var j=idxOf(i%MW+d[0],Math.floor(i/MW)+d[1]),c=available.get(j);if(!c||avoid&&avoid.has(j)&&j!==goal)return;
+        var edge=dirs.some(function(o){return !available.has(idxOf(c.x+o[0],c.y+o[1]));}),n=cost.get(i)+(perimeter&&!edge?6:1);
+        if(cost.has(j)&&cost.get(j)<=n)return;cost.set(j,n);parent.set(j,i);pending.push(j);
+      });
+    }
+    if(!cost.has(goal))return [];var result=[goal];for(var step=goal;step!==start;){step=parent.get(step);result.push(step);}return result;
+  }
+  function reserve(c,perimeter){var path=route(hub,c,perimeter);path.forEach(function(i){reserved.add(i);});return path;}
+  mouths.forEach(function(c){reserve(c);});
+  function publish(){r.storageAisle=Array.from(reserved);}
+  function furniture(c,name,extra){if(!c||reserved.has(idxOf(c.x,c.y))||!freeCell(c.x,c.y)||nearDoor(c.x,c.y))return null;return addProp(c.x,c.y,name,extra);}
+  return {cells:cells,mouths:mouths,hub:hub,reserved:reserved,depth:depth,reserve:reserve,path:route,publish:publish,furniture:furniture};
+}
+function cavernMerchantFloor(){
+  if(!inCaverns()||floorMeta.boss)return -1;
+  var event=mulberry32((rareRunSeed()^0x4D455243)>>>0);
+  return event()<.30?11+Math.floor(event()*4):-1;
+}
+function swordStoneFloor(){
+  if(bidx()!==0||floorMeta.plane||floorMeta.boss)return -1;
+  var event=mulberry32((rareRunSeed()^0x53574F52)>>>0);
+  return event()<.05?2+Math.floor(event()*3):-1;
+}
+function buildSwordStoneRoom(r){
+  var plan=specialRoomPlan(r),cells=plan.cells.filter(function(c){
+    if(!freeCell(c.x,c.y)||nearDoor(c.x,c.y)||plan.reserved.has(idxOf(c.x,c.y)))return false;
+    var avoid=new Set([idxOf(c.x,c.y)]);
+    return plan.cells.every(function(p){return p===c||plan.path(plan.hub,p,false,avoid).length>0;});
+  }).sort(function(a,b){return dist(a,{x:r.cx,y:r.cy})-dist(b,{x:r.cx,y:r.cy});}),stone=cells[0];
+  if(!stone){r.special='garden';return buildGardenRoom(r);}
+  var blade=tierNormalize(Object.assign(clone(WEAPONS.sword),{key:'sword',tier:3,plus:3,enchant:'light',unid:false,cursed:false}));
+  var prop=addProp(stone.x,stone.y,'sword-in-stone',{keep:true,b:1,br:1,burn:0,breakReward:{kind:'weapon',it:blade}});
+  if(!prop){r.special='garden';return buildGardenRoom(r);}
+  floorMeta.consecratedGround=floorMeta.consecratedGround||{};
+  var field=[];plan.cells.forEach(function(c){if(dist(c,stone)>2)return;var i=idxOf(c.x,c.y);floorMeta.consecratedGround[i]={power:1,damage:3};field.push(i);if(c!==stone){plan.reserved.add(i);setG(c.x,c.y,G_MOSS);}});
+  r.consecratedStone={x:stone.x,y:stone.y,radius:2,cells:field};
+  plan.publish();
+  plan.cells.filter(function(c){return dist(c,stone)>2;}).slice(0,4).forEach(function(c){plan.furniture(c,'candles',{keep:true});});
+}
+function merchantStock(){
+  var stock=[{item:{kind:'ring',it:makeRing(null,false)},price:5000},{item:{kind:'amulet',it:makeAmulet(null,false)},price:5000}],types=['weapon','armor','off'];
+  types.forEach(function(kind){var gear;for(var n=0;n<100;n++){gear=rollEquipmentCandidate();if(gear.kind===kind)break;}gear.it.tier=3;gear.it.unid=false;gear.it.cursed=false;tierNormalize(gear.it);stock.push({item:gear,price:5000});});
+  ELEMENTS.forEach(function(el){stock.push({item:{kind:'mote',el:el},price:100});});
+  var groups=[SIGIL_ORDER.singles,SIGIL_ORDER.singles,SIGIL_ORDER.pairs,SIGIL_ORDER.plus,SIGIL_ORDER.triple,SIGIL_ORDER.grand],seen=new Set();
+  groups.forEach(function(group){var candidates=group.filter(function(k){return SIGILS[k]&&!seen.has(k);});if(!candidates.length)candidates=Object.keys(SIGILS).filter(function(k){return !seen.has(k);});var key=pick(candidates);seen.add(key);stock.push({item:{kind:'sigil',use:key},price:2*sigilEssence(key)});});
+  return stock;
+}
+function buildMerchantCamp(r){
+  var plan=specialRoomPlan(r),cells=plan.cells.filter(function(c){return freeCell(c.x,c.y)&&!nearDoor(c.x,c.y)&&!plan.reserved.has(idxOf(c.x,c.y));}).sort(function(a,b){return plan.depth(b)-plan.depth(a);}),stall,vendor,approach;
+  function clearAround(a,b){
+    var blocked=new Set([idxOf(a.x,a.y),idxOf(b.x,b.y)]),open=new Set(plan.cells.map(function(c){return idxOf(c.x,c.y);})),q=[idxOf(plan.hub.x,plan.hub.y)],seen=new Set();
+    for(var h=0;h<q.length;h++){var i=q[h];if(seen.has(i)||blocked.has(i))continue;seen.add(i);[[1,0],[-1,0],[0,1],[0,-1]].forEach(function(d){var j=idxOf(i%MW+d[0],Math.floor(i/MW)+d[1]);if(open.has(j)&&!blocked.has(j)&&!seen.has(j))q.push(j);});}
+    return seen.size===open.size-2;
+  }
+  for(var n=0;n<cells.length&&!stall;n++)for(var j=0;j<cells.length&&!stall;j++)if(dist(cells[n],cells[j])===1&&clearAround(cells[n],cells[j])){
+    var a=plan.cells.find(function(c){return dist(c,cells[n])===1&&dist(c,cells[j])>0&&freeCell(c.x,c.y);});if(a){stall=cells[n];vendor=cells[j];approach=a;}
+  }
+  if(!stall){r.special='storage';return buildStorageRoom(r,shuffled(edgeCells(r)));}
+  var blocked=new Set([idxOf(stall.x,stall.y),idxOf(vendor.x,vendor.y)]);
+  plan.path(plan.hub,approach,false,blocked).forEach(function(i){plan.reserved.add(i);});plan.reserved.add(idxOf(vendor.x,vendor.y));plan.publish();
+  var table=addProp(stall.x,stall.y,'table-candle',{keep:true,merchantId:r.id});if(!table){r.special='storage';return buildStorageRoom(r,shuffled(edgeCells(r)));}
+  r.merchant={stock:merchantStock(),stall:{x:stall.x,y:stall.y},vendorPost:vendor};r.merchantRoutes=Array.from(plan.reserved);
+  var names=['kobold-campfire','kobold-crate','mushrooms'],placed=0;cells.forEach(function(c){if(placed<names.length&&dist(c,vendor)>0&&plan.furniture(c,names[placed],{keep:true}))placed++;});
+}
+function buildWatchpostRoom(r){
+  r.barracks=true;r.residentKinds=['drowblade'];r.residentCount=8;r.residentState='wander';
+  var plan=specialRoomPlan(r),cells=plan.cells.filter(function(c){return freeCell(c.x,c.y);}).sort(function(a,b){return plan.depth(b)-plan.depth(a);}),chest=cells.find(function(c){var main=plan.path(plan.hub,c);var flank=plan.path(plan.hub,c,true,new Set(main.slice(1,-1))),reserved=new Set(Array.from(plan.reserved).concat(main,flank));return main.length>2&&flank.length>0&&cells.some(function(p){return !reserved.has(idxOf(p.x,p.y))&&!nearDoor(p.x,p.y);});});
+  if(!chest){r.special='barracks';r.residentKinds=null;r.residentCount=null;r.residentState=null;return buildBarracksRoom(r);}
+  r.watchApproach=plan.reserve(chest);var flank=plan.path(plan.hub,chest,true,new Set(r.watchApproach.slice(1,-1)));flank.forEach(function(i){plan.reserved.add(i);});r.watchRoutes=Array.from(plan.reserved);r.watchFlank=flank.filter(function(i){return r.watchApproach.indexOf(i)<0;});plan.publish();
+  setT(chest.x,chest.y,CHEST);chestKind[idxOf(chest.x,chest.y)]='crate-supply';r.supplyChest={x:chest.x,y:chest.y};
+  var cover=[];cells.slice().sort(function(a,b){return dist(a,{x:r.cx,y:r.cy})-dist(b,{x:r.cx,y:r.cy});}).forEach(function(c){
+    if(cover.length<2&&!cover.some(function(p){return dist(p,c)<2;})&&plan.furniture(c,'pillar',{pillar:true,keep:true}))cover.push(c);
+  });
+  r.watchCover=cover;r.residentPosts=[];
+  cells.filter(function(c){return freeCell(c.x,c.y)&&!nearDoor(c.x,c.y)&&dist(c,chest)>1;}).sort(function(a,b){return (cover.length?Math.min.apply(null,cover.map(function(p){return dist(a,p);})):plan.depth(a))-(cover.length?Math.min.apply(null,cover.map(function(p){return dist(b,p);})):plan.depth(b));}).forEach(function(c){if(r.residentPosts.length<3&&!r.residentPosts.some(function(p){return dist(p,c)<2;}))r.residentPosts.push(c);});
+  var placed=0;cells.forEach(function(c){if(placed<2&&plan.furniture(c,placed?'weapon-rack':'crate'))placed++;});
+}
+function buildBarracksRoom(r){
+  r.barracks=true;var plan=specialRoomPlan(r);if(!plan.cells.length)return;
+  var horizontal=r.w>=r.h,axis=horizontal?r.cy:r.cx;
+  plan.cells.filter(function(c){return (horizontal?c.y:c.x)===axis;}).forEach(function(c){plan.reserve(c);});plan.publish();
+  var edges=plan.cells.filter(function(c){return (horizontal?c.y===r.y||c.y===r.y+r.h-1:c.x===r.x||c.x===r.x+r.w-1);}).sort(function(a,b){return plan.depth(b)-plan.depth(a);});
+  var names=['weapon-rack','table-candle','crate','barrel'],placed=0;
+  edges.concat(plan.cells).forEach(function(c){if(placed<names.length&&plan.furniture(c,names[placed]))placed++;});
+  var posts=plan.cells.filter(function(c){return freeCell(c.x,c.y)&&!nearDoor(c.x,c.y);}).sort(function(a,b){return plan.depth(b)-plan.depth(a);});
+  r.residentPosts=[];posts.forEach(function(c){if(r.residentPosts.length<3&&!r.residentPosts.some(function(p){return dist(p,c)<2;}))r.residentPosts.push({x:c.x,y:c.y});});
+}
+function buildTreasuryRoom(r){
+  var plan=specialRoomPlan(r);if(!plan.cells.length)return;
+  var prizes=plan.cells.filter(function(c){return freeCell(c.x,c.y);}).sort(function(a,b){return plan.depth(b)-plan.depth(a);}),chest=prizes[0];if(!chest)return;plan.reserve(chest);
+  setT(chest.x,chest.y,CHEST);chestKind[idxOf(chest.x,chest.y)]='chest-ornate';
+  r.guardAt=nearFreeRoomCell(r,chest);
+  var rewardCells=prizes.filter(function(c){return freeCell(c.x,c.y)&&!(r.guardAt&&dist(c,r.guardAt)===0);}),rewards=[randomGear(),{kind:'essence',n:ri(20,35)}];
+  rewards.forEach(function(it,n){var c=rewardCells[n];if(c){it.x=c.x;it.y=c.y;items.push(it);plan.reserve(c);}});
+  if(r.guardAt)plan.reserve(r.guardAt);plan.publish();
+  var placed=0;prizes.forEach(function(c){if(placed<2&&plan.furniture(c,'torch-stand'))placed++;});
+}
+function buildTrapRoom(r){
+  r.trapRoom=true;var plan=specialRoomPlan(r);if(!plan.cells.length)return;
+  var prizes=plan.cells.filter(function(c){return freeCell(c.x,c.y);}).sort(function(a,b){return plan.depth(b)-plan.depth(a);}),chest=prizes[0];if(!chest)return;
+  plan.reserve(chest,true);plan.publish();r.trapBypass=Array.from(plan.reserved);
+  setT(chest.x,chest.y,CHEST);chestKind[idxOf(chest.x,chest.y)]=floorNo>=3?'chest-ornate':'chest-iron';
+  var kinds=Object.keys(TRAPS).filter(function(k){return TRAPS[k].minFloor<=floorNo&&k!=='teleport';});
+  plan.cells.forEach(function(c){if(at(c.x,c.y)===FLOOR&&!nearDoor(c.x,c.y)&&!plan.reserved.has(idxOf(c.x,c.y))&&rng()<.34)feats.push({x:c.x,y:c.y,kind:pick(kinds),found:false,room:true});});
+  var reward=prizes.find(function(c){return freeCell(c.x,c.y)&&!plan.reserved.has(idxOf(c.x,c.y));})||prizes.find(function(c){return freeCell(c.x,c.y);});
+  if(reward){items.push({x:reward.x,y:reward.y,kind:'essence',n:ri(15,30)});plan.reserve(reward,true);}
+  plan.publish();r.trapBypass=Array.from(plan.reserved);
+  // Scorch and bones suggest the risky shortcut, without marking every trap.
+  shuffled(plan.cells.filter(function(c){return at(c.x,c.y)===FLOOR&&!plan.reserved.has(idxOf(c.x,c.y));})).slice(0,3).forEach(function(c){setG(c.x,c.y,rng()<.5?G_SCORCH:G_BONES);});
+}
+function buildGardenRoom(r){
+  var plan=specialRoomPlan(r);if(!plan.cells.length)return;
+  var pond=plan.cells.filter(function(c){return freeCell(c.x,c.y)&&!plan.reserved.has(idxOf(c.x,c.y));}).sort(function(a,b){return plan.depth(b)-plan.depth(a);})[0];
+  if(pond){setT(pond.x,pond.y,WATER);setG(pond.x,pond.y,0);r.gardenPond={x:pond.x,y:pond.y};}
+  var food=plan.cells.filter(function(c){return freeCell(c.x,c.y);}).sort(function(a,b){return (pond?dist(a,pond)-dist(b,pond):plan.depth(b)-plan.depth(a));})[0];
+  if(rng()<.5&&food){items.push({x:food.x,y:food.y,kind:'food',food:randomFood()});plan.reserve(food);}
+  plan.publish();
+  plan.cells.forEach(function(c){if(at(c.x,c.y)===FLOOR&&!plan.reserved.has(idxOf(c.x,c.y))&&(pond?dist(c,pond)<=3:true)&&rng()<.65)setG(c.x,c.y,G_GRASS);});
+  var names=['mushrooms','vines','mushrooms','vines'],limit=ri(2,4),placed=0;
+  plan.cells.slice().sort(function(a,b){return (pond?dist(a,pond)-dist(b,pond):plan.depth(b)-plan.depth(a));}).forEach(function(c){if(placed<limit&&plan.furniture(c,names[placed]))placed++;});
+}
+function buildStatueRoom(r){
+  r.statues=true;var plan=specialRoomPlan(r);if(!plan.cells.length)return;
+  var horizontal=r.w>=r.h,axis=horizontal?r.cy:r.cx;
+  plan.cells.filter(function(c){return (horizontal?c.y:c.x)===axis;}).forEach(function(c){plan.reserve(c);});
+  var reward=plan.cells.filter(function(c){return freeCell(c.x,c.y);}).sort(function(a,b){return plan.depth(b)-plan.depth(a);})[0];
+  if(reward){items.push({x:reward.x,y:reward.y,kind:'essence',n:ri(15,25)});plan.reserve(reward);}plan.publish();
+  var limit=Math.min(4,Math.floor(interiorCells(r).length/3)),placed=[];
+  plan.cells.slice().sort(function(a,b){return Math.abs((horizontal?a.y:a.x)-axis)-Math.abs((horizontal?b.y:b.x)-axis)||plan.depth(b)-plan.depth(a);}).forEach(function(c){
+    if(placed.length<limit&&!placed.some(function(p){return dist(p,c)<2;})&&plan.furniture(c,placed.length===1?'statue-broken':'statue'))placed.push(c);
+  });
+}
+function buildRitualRoom(r){
+  FoteChaosEnemyArt.ensureAssets(['m-chaos-horned-reaver','m-chaos-gorehound']).catch(function(error){console.error(error);});
+  var plan=specialRoomPlan(r),cells=plan.cells.filter(function(c){return freeCell(c.x,c.y)&&!nearDoor(c.x,c.y);}).sort(function(a,b){return plan.depth(b)-plan.depth(a);});
+  var captive=cells.find(function(c){return cells.some(function(a){return Math.abs(a.x-c.x)+Math.abs(a.y-c.y)===1;});});
+  if(!captive)return;
+  var approach=cells.find(function(c){return Math.abs(c.x-captive.x)+Math.abs(c.y-captive.y)===1;});
+  plan.reserve(approach);plan.publish();
+  var cage=addProp(captive.x,captive.y,'cage',{keep:true,prisoner:'goblin',prisonerOutcome:'escapee',ritual:true,captiveHp:24,captiveMaxhp:24});
+  if(!cage)return;
+  r.ritual={cage:{x:cage.x,y:cage.y},hp:24,maxhp:24,active:false,finished:false,cells:plan.cells,mouths:plan.mouths};
+  var altar=cells.find(function(c){return dist(c,captive)>=2&&dist(c,captive)<=4&&freeCell(c.x,c.y)&&freeCell(c.x+1,c.y)&&roomAt(c.x+1,c.y)===r&&!plan.reserved.has(idxOf(c.x,c.y))&&!plan.reserved.has(idxOf(c.x+1,c.y));});
+  if(altar)addSetPiece(altar.x,altar.y,'drow-altar-blood',2,1,{keep:true,ritualAltar:true});
+  var post=cells.filter(function(c){return freeCell(c.x,c.y)&&dist(c,approach)>1;}).sort(function(a,b){return dist(a,altar||captive)-dist(b,altar||captive);})[0];
+  if(post){r.ritual.priestPost=post;plan.reserve(post);}
+  var chest=cells.find(function(c){return freeCell(c.x,c.y)&&dist(c,captive)>1&&!(post&&dist(c,post)===0);});
+  if(chest){plan.reserve(chest);setT(chest.x,chest.y,CHEST);chestKind[idxOf(chest.x,chest.y)]='chest-gold';}
+  plan.publish();
+  cells.forEach(function(c){if(at(c.x,c.y)===FLOOR&&dist(c,captive)<=3)setG(c.x,c.y,G_SCORCH);});
+  var placed=0;cells.forEach(function(c){if(placed<2&&plan.furniture(c,'brazier-lit'))placed++;});
+}
+function ritualPriestAvailable(e){return !!(e&&e.hp>0&&!e.ally&&!e.tomb&&!['stun','frozen','stone','fear','silence'].some(function(tag){return gameEffects.hasTag(e,tag);}));}
+function ritualChannel(e){
+  var r=rooms.find(function(r){return r.ritual&&r.ritual.priestId===e.id&&!r.ritual.finished;});
+  if(!r||!ritualPriestAvailable(e))return false;
+  if(r.ritual.priestPost&&dist(e,r.ritual.priestPost)>0){stepToward(e,r.ritual.priestPost.x,r.ritual.priestPost.y);return true;}
+  return true;
+}
+function turnRitualRooms(clock){
+  rooms.forEach(function(r){var z=r.ritual;if(!z||z.finished||z.lastPulse===clock)return;z.lastPulse=clock;
+    var cage=propAt(z.cage.x,z.cage.y),priest=ents.find(function(e){return e.id===z.priestId&&e.hp>0;});
+    if(!cage||!cage.prisoner){z.finished=true;z.outcome='rescued';return;}
+    if(!priest||priest.ally){z.finished=true;z.outcome='interrupted';if(z.active)log('The ritual breaks. The captive is still alive.','c-good');return;}
+    if(!z.active){if(vis[idxOf(cage.x,cage.y)]||vis[idxOf(priest.x,priest.y)]){z.active=true;priest.state='hunt';log('A priestess draws blood from a captive. The ritual has begun.','c-you');}return;}
+    if(!ritualPriestAvailable(priest)||dist(priest,z.priestPost)>0)return;
+    z.hp=Math.max(0,z.hp-2);cage.captiveHp=z.hp;floatText(cage.x,cage.y,'-2','blood');
+    if(z.hp>0)return;
+    cage.prisoner=null;z.finished=true;z.outcome='summoned';floorMeta.ritualChaos=true;
+    var candidates=shuffled(z.cells).filter(function(c){return freeCell(c.x,c.y)&&walkable(c.x,c.y)&&dist(c,player)>1&&!nearDoor(c.x,c.y)&&!z.mouths.some(function(m){return dist(c,m)<=1;});});
+    ['chaos-horned-reaver','chaos-gorehound'].forEach(function(kind){var c=candidates.shift();if(!c)return;var e=FoteChaosEnemies.spawn(kind,c.x,c.y,{state:'hunt'});if(e){e.lastSeen={x:player.x,y:player.y};e.t=clock+100;}});
+    log('The captive falls. A Horned Reaver and Gorehound tear through the ritual!','c-you');sfx('portal',{from:cage});
+  });
+}
+function buildCavernCacheRoom(kind,r){
+  var plan=specialRoomPlan(r),cells=plan.cells.filter(function(c){return freeCell(c.x,c.y);}).sort(function(a,b){return plan.depth(b)-plan.depth(a);}),chest=cells[0];
+  if(!chest)return;
+  plan.reserve(chest,true);plan.publish();
+  setT(chest.x,chest.y,CHEST);chestKind[idxOf(chest.x,chest.y)]='chest-gold';
+  r.cacheChest={x:chest.x,y:chest.y};
+  if(kind==='flooded-cache'){
+    plan.cells.forEach(function(c){if(freeCell(c.x,c.y)&&!plan.reserved.has(idxOf(c.x,c.y))&&!nearDoor(c.x,c.y)){setT(c.x,c.y,WATER);setG(c.x,c.y,0);}});
+    cells.forEach(function(c){if(at(c.x,c.y)===FLOOR&&plan.depth(c)>2)plan.furniture(c,'kobold-crate');});
+  }else{
+    r.chestAmbush={theme:kind,chest:{x:chest.x,y:chest.y},fired:false,cells:plan.cells.map(function(c){return {x:c.x,y:c.y};}),mouths:plan.mouths.map(function(c){return {x:c.x,y:c.y};})};
+    var placed=0;
+    cells.forEach(function(c){
+      if(placed<3&&plan.furniture(c,kind==='myconid-nursery'?'mushrooms':'rubble'))placed++;
+      if(at(c.x,c.y)===FLOOR&&!propAt(c.x,c.y))setG(c.x,c.y,kind==='myconid-nursery'?G_GRASS:G_BONES);
+    });
+  }
+}
+function releaseChestAmbush(x,y){
+  var r=rooms.find(function(r){var a=r.chestAmbush;return a&&!a.fired&&a.chest.x===x&&a.chest.y===y;});
+  if(!r)return 0;
+  var a=r.chestAmbush;a.fired=true;
+  var cells=shuffled(a.cells).filter(function(c){return freeCell(c.x,c.y)&&walkable(c.x,c.y)&&dist(c,player)>1&&!nearDoor(c.x,c.y)&&!a.mouths.some(function(m){return dist(c,m)<=1;});});
+  var count=Math.min(9,3+floorNo+Math.floor(r.w*r.h/16),cells.length),spawned=0;
+  for(var i=0;i<count;i++){
+    var c=cells[i];if(occupied(c.x,c.y))continue;
+    var m=spawn(a.theme==='beetle-nest'?'stormbeetle':i%3===2?'shroomling':'myconid',c.x,c.y);
+    m.state='hunt';m.lastSeen={x:player.x,y:player.y};m.t=player.t+100;spawned++;
+  }
+  if(spawned)log(a.theme==='beetle-nest'?'Beetles pour from the nest!':'The nursery stirs. Myconids close in!','c-you');
+  return spawned;
+}
 function buildDefaultSpecial(kind, r){
   r.special=kind;
   var e=shuffled(edgeCells(r)), inner=shuffled(interiorCells(r)), i;
-  function place(list, names, n, extra){ for(var k=0;k<n && list.length;k++){ var c=list.pop(); addProp(c.x,c.y,names[k%names.length],extra); } }
-  function put(it){ var c=inner.pop()||e.pop(); if(!c||!freeCell(c.x,c.y)) return; it.x=c.x; it.y=c.y; items.push(it); }
-  if(kind==='garden'){
-    for(i=0;i<inner.length;i++) if(rng()<0.65) setG(inner[i].x,inner[i].y,G_GRASS);
-    place(e,['mushrooms','vines'],ri(2,4));
-    if(rng()<0.5) put({kind:'food',food:randomFood()});
-    if(inner.length) { var w=inner.pop(); setT(w.x,w.y,WATER); setG(w.x,w.y,0); }
+  function place(list, names, n, extra){ for(var k=0;k<n && list.length;){ var c=list.pop(); if(freeCell(c.x,c.y)&&addProp(c.x,c.y,names[k%names.length],extra))k++; } }
+  function put(it){ var c;while(inner.length||e.length){c=inner.pop()||e.pop();if(freeCell(c.x,c.y))break;c=null;}if(!c)return;it.x=c.x;it.y=c.y;items.push(it); }
+  if(['hungry-spider','sealed-lamp','dark-wizard-library'].includes(kind)){
+    buildUniqueRareRoom(kind,r);
+  } else if(kind==='sword-in-stone'){
+    buildSwordStoneRoom(r);
+  } else if(kind==='merchant'){
+    buildMerchantCamp(r);
+  } else if(kind==='watchpost'){
+    buildWatchpostRoom(r);
+  } else if(kind==='ritual'){
+    buildRitualRoom(r);
+  } else if(kind==='flooded-cache'||kind==='myconid-nursery'||kind==='beetle-nest'){
+    buildCavernCacheRoom(kind,r);
+  } else if(kind==='garden'){
+    buildGardenRoom(r);
   } else if(kind==='storage'){
-    place(e,['barrel','crate','pot','crate','barrel','pot'],Math.min(7,Math.floor(e.length*0.6)));
-    place(e,['barrel-explosive'],rng()<0.6?1:2);
-    if(e.length){ var sc=e.pop(); setT(sc.x,sc.y,CHEST); chestKind[idxOf(sc.x,sc.y)]='crate-supply'; }
+    buildStorageRoom(r,e);
   } else if(kind==='library'){
-    var top=e.filter(function(c){ return c.y===r.y; }); e=e.filter(function(c){ return c.y!==r.y; });
-    place(top,['bookshelf'],top.length);
-    place(e,['table-candle'],1);
-    put({kind:'sigil',use: rng()<0.5 ? 'identify' : randomSigilUse()});   /* one sigil among the books */
-    if(rng()<0.3) put({kind:'off',it:clone(OFFHANDS.tome)});
+    buildLibraryRoom(r);
   } else if(kind==='armory'){
-    place(e,['weapon-rack','weapon-rack','banner-stand'],3);
-    put(randomGear()); put(randomGear());
+    buildArmoryRoom(r);
   } else if(kind==='nest'){
     place(inner,['bones','bones'],2);   /* 2026-09-19: the straw bedding looked bad - gone */
     put({kind:'essence',n:ri(10,20)});
     r.nest=true;
   } else if(kind==='prison'){
-    place(e,['cage','cage','chains'],3);
-    place(inner,['bones','chains'],2);
-    var cages=props.filter(function(p){ return p.name==='cage' && roomAt(p.x,p.y)===r; });
-    if(cages.length) cages[0].prisoner=pick(['goblin','archer']);
+    buildPrisonRoom(r);
   } else if(kind==='zoo'){
     r.zoo=true;
     for(i=0;i<3 && inner.length;i++) put({kind:'essence',n:ri(15,30)});
@@ -596,29 +1002,13 @@ function buildDefaultSpecial(kind, r){
     altars[idxOf(r.cx,r.cy)]={passes:0};
     place(e,['brazier-lit','chains','brazier-lit'],3);
   } else if(kind==='statues'){
-    place(inner,['statue','statue-broken','statue'],Math.min(4,Math.floor(inner.length/3)));
-    put({kind:'essence',n:ri(15,25)});
-    r.statues=true;
+    buildStatueRoom(r);
   } else if(kind==='treasury'){
-    var t2=inner.pop(); if(t2){ setT(t2.x,t2.y,CHEST); chestKind[idxOf(t2.x,t2.y)]='chest-ornate'; r.guardAt=nearFreeRoomCell(r,t2); }
-    put(randomGear()); put({kind:'essence',n:ri(20,35)});
-    place(e,['torch-stand','torch-stand'],2);
+    buildTreasuryRoom(r);
   } else if(kind==='barracks'){
-    place(e,['weapon-rack','table-candle','crate','barrel'],4);
-    r.barracks=true;
+    buildBarracksRoom(r);
   } else if(kind==='traps'){
-    r.trapRoom=true;
-    var kinds=Object.keys(TRAPS).filter(function(k){ return TRAPS[k].minFloor<=floorNo && k!=='teleport'; });
-    /* the prize goes against the far wall */
-    var far=null, fd=-1;
-    interiorCells(r).forEach(function(c){ var d=Math.min.apply(null, [c.y-r.y, r.y+r.h-1-c.y, c.x-r.x, r.x+r.w-1-c.x]); if(d>fd && !nearDoor(c.x,c.y)){ fd=d; far=c; } });
-    if(far){ setT(far.x,far.y,CHEST); chestKind[idxOf(far.x,far.y)]= floorNo>=3 ? 'chest-ornate' : 'chest-iron'; }
-    interiorCells(r).forEach(function(c){
-      if((far && c.x===far.x && c.y===far.y) || nearDoor(c.x,c.y) || at(c.x,c.y)!==FLOOR) return;
-      if(rng()<0.34) feats.push({x:c.x, y:c.y, kind:pick(kinds), found:false, room:true});
-    });
-    put({kind:'essence',n:ri(15,30)});
-    for(i=0;i<3 && inner.length;i++){ var sc=inner.pop(); if(at(sc.x,sc.y)===FLOOR) setG(sc.x,sc.y, rng()<0.5?G_SCORCH:G_BONES); }
+    buildTrapRoom(r);
   } else if(kind==='dark'){
     r.dark=true;
     var dc=inner.pop(); if(dc){ setT(dc.x,dc.y,CHEST); chestKind[idxOf(dc.x,dc.y)]='chest-crystal'; }
@@ -631,12 +1021,25 @@ function nearFreeRoomCell(r, p){
 }
 function populateRoomResidents(){
   rooms.forEach(function(r){
-    var cells=shuffled(interiorCells(r).concat(edgeCells(r))).filter(function(p){ return walkable(p.x,p.y) && !occupied(p.x,p.y); });
-    function sp(kind, state){ var c=cells.pop(); if(!c) return null; var m=spawn(kind,c.x,c.y); m.state=state||'asleep'; return m; }
+    rareRoomResidents(r);
+    var cells=shuffled(interiorCells(r).concat(edgeCells(r))).filter(function(p){ return roomAt(p.x,p.y)===r&&walkable(p.x,p.y) && !occupied(p.x,p.y); });
+    var posts=(r.residentPosts||[]).slice();
+    function sp(kind, state){ var c;while(posts.length&&!c){var post=posts.shift();if(walkable(post.x,post.y)&&!occupied(post.x,post.y))c=post;}while(!c&&cells.length){var next=cells.pop();if(walkable(next.x,next.y)&&!occupied(next.x,next.y))c=next;}if(!c)return null;var m=spawn(kind,c.x,c.y,{skipDeep:!!r.residentKinds});m.state=state||'asleep';return m; }
+    if(r.merchant){var post=r.merchant.vendorPost;if(post&&walkable(post.x,post.y)&&!occupied(post.x,post.y)&&!propAt(post.x,post.y)){var trader=spawnRaw('myconid',post.x,post.y);trader.name='Myconid Merchant';trader.state='idle';trader.foe=false;trader.ally=false;trader.noXp=true;trader.noLoot=true;trader.base=Object.assign({},trader.base,{object:true,sprite:'m-myconid-merchant'});trader.merchantRoom=r.id;r.merchant.vendorId=trader.id;}}
+    if(r.ritual){
+      var post=r.ritual.priestPost;
+      if(post&&(!walkable(post.x,post.y)||occupied(post.x,post.y)||propAt(post.x,post.y)))post=r.ritual.cells.filter(function(c){return walkable(c.x,c.y)&&!occupied(c.x,c.y)&&!propAt(c.x,c.y);}).sort(function(a,b){return dist(a,r.ritual.priestPost)-dist(b,r.ritual.priestPost);})[0];
+      if(post){r.ritual.priestPost=post;var priest=deepSpawnRaw('drowpriestess',post.x,post.y);priest.state='asleep';priest.guard=true;r.ritual.priestId=priest.id;}
+      for(var n=0;n<2;n++){var blade=sp('drowblade');if(blade)blade.guard=true;}
+    }
     if(r.zoo){ var n=Math.min(9, 3+floorNo+Math.floor(r.w*r.h/16)); for(var i=0;i<n;i++) sp(rollMonster()); }
     if(r.nest){ for(var j=0;j<ri(3,4);j++) sp('rat'); }
-    if(r.barracks){ for(var k=0;k<ri(2,3);k++) sp(pick(['goblin','goblin','archer'])); }
-    if(r.guardAt){ var g=spawn('brute',r.guardAt.x,r.guardAt.y); g.state='asleep'; g.name='Vault Guardian'; g.elite=true; g.maxhp=g.hp=Math.round(g.hp*1.4); }
+    if(r.barracks){var band=r.residentKinds||['goblin','goblin','archer'];for(var k=0,n=r.residentCount||ri(2,3);k<n;k++){var resident=sp(r.residentKinds?band[k%band.length]:pick(band),r.residentState);if(resident&&r.residentKinds)resident.guard=true;}}
+    if(r.guardAt){
+      var post=r.guardAt;
+      if(!walkable(post.x,post.y)||occupied(post.x,post.y))post=cells.filter(function(c){return walkable(c.x,c.y)&&!occupied(c.x,c.y);}).sort(function(a,b){return dist(a,r.guardAt)-dist(b,r.guardAt);})[0];
+      if(post){var g=spawn('brute',post.x,post.y);g.state='asleep';g.name='Vault Guardian';g.elite=true;g.maxhp=g.hp=Math.round(g.hp*1.4);}
+    }
     if(r.dark){ for(var d=0;d<2;d++) sp(pick(['goblin','bat'])); }
     if(r.role==='boss'){
       var boss=spawn('warchief', floorMeta.bossAt.x, floorMeta.bossAt.y); boss.state='throne'; boss.elite=true; floorMeta.bossId=boss.id;

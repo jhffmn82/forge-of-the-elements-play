@@ -24,7 +24,7 @@ function cryptUrn(kindRoll){
 }
 function placeUrnChamber(r){
   /* clear what the generic storage room put down (keep chests and anything placed on purpose) */
-  props.filter(function(p){ return !p.keep && p.x>=r.x && p.x<r.x+r.w && p.y>=r.y && p.y<r.y+r.h; }).forEach(function(p){ removeProp(p); });
+  props.filter(function(p){ return !p.keep && !p.ex&&!p.fluid && p.x>=r.x && p.x<r.x+r.w && p.y>=r.y && p.y<r.y+r.h; }).forEach(function(p){ removeProp(p); });
   var cx=r.x+(r.w>>1);
   /* the recessed tomb: centred on the upper wall, which must be solid face for three cells */
   var faceOK=true; for(var x=cx-1;x<=cx+1;x++) if(!isWallLike(at(x,r.y-1)) || isWallLike(at(x,r.y))) faceOK=false;

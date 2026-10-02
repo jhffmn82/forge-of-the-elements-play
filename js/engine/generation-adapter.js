@@ -15,7 +15,6 @@ var floorGeneration=FoteGeneration.create({
     {name:'crypt-hall',run:clearGeneratedCryptHall},
     {name:'crypt-ooze',run:buildGeneratedCryptOoze},
     {name:'crypt-wall-vegetation',run:growGeneratedCryptWalls},
-    {name:'crypt-paths',run:openGeneratedCryptPaths},
     {name:'portal-placement',run:placeGeneratedPortal},
     {name:'ranged-gear-migration',run:migrateGeneratedRangedGear},
     {name:'cavern-terrain',run:finishGeneratedCaverns},
@@ -26,7 +25,8 @@ var floorGeneration=FoteGeneration.create({
     {name:'floor-vegetation',run:growGeneratedVegetation},
     {name:'vegetation-memory',run:rememberGeneratedVegetation},
     {name:'lighting-rules',run:lightGeneratedFloor},
-    {name:'deep-regions',run:finishGeneratedDeep}
+    {name:'deep-regions',run:finishGeneratedDeep},
+    {name:'crypt-paths',run:openGeneratedCryptPaths}
   ],
   finishStages:[
     {name:'deep-monster-regions',run:regionalizeGeneratedDeep},
@@ -34,7 +34,9 @@ var floorGeneration=FoteGeneration.create({
     {name:'concealment-reset',run:resetGeneratedConcealment},
     {name:'wall-memorials',run:repairGeneratedMemorials},
     {name:'biome-balance',run:balanceGeneratedEnemies},
-    {name:'stair-approach-traps',run:repairStairApproachTraps}
+    {name:'stair-approach-traps',run:repairStairApproachTraps},
+    {name:'secret-floor-hints',run:function(){if(typeof repairRareRoomHints==='function')repairRareRoomHints();}},
+    {name:'rare-companion-arrival',run:function(){if(typeof arriveRarePet==='function')arriveRarePet();}}
   ]
 });
 // Dimension changes never allocate floor arrays. Builders install a new map

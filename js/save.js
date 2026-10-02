@@ -63,6 +63,7 @@ function repairInterruptedPlayerDeath(){
   return true;
 }
 function restoreRunReferences(){
+  arriveRarePet();
   if(typeof FoteShadowClone!=='undefined')FoteShadowClone.arrive();
   if(player.buffs)delete player.buffs.unbound;
   Object.keys(player.cds||{}).forEach(function(key){

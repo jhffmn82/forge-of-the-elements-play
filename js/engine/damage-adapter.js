@@ -146,7 +146,7 @@ function damageDefenses(event){
 }
 function commitDamage(event){
   var target=event.target,d=event.damage,hpBefore=target.hp;
-  target.hp-=d;
+  target.hp-=d;if(typeof rareSpiderDamaged==='function')rareSpiderDamaged(event);
   if(event.hit&&d>0)event.hit.landed=true;
   if(typeof FoteEnemyPerception!=='undefined')FoteEnemyPerception.damaged(event);
   else if(d>0&&target!==player&&target.foe&&!target.ally&&target.hp>0&&['asleep','wander','hunt'].indexOf(target.state)>=0){

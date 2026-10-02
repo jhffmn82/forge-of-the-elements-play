@@ -4,7 +4,7 @@
   'use strict';
   var names=['prism-seer','folded-horror','rift-skitter','lens-bearer','plague-bloat','brood-carrier','bile-spitter','rotling','horned-reaver','gorehound','ironbound','chain-reaver','lash-dancer','razor-dancer','silk-weaver','hookfang'].map(function(n){return 'm-chaos-'+n;});
   var loaded=Object.create(null),pending=Object.create(null);
-  function active(){return !!(typeof floorMeta!=='undefined'&&floorMeta&&floorMeta.chaosPreview&&/^(chaos-mixed|unmaker-crucible)$/.test(floorMeta.chaosPreview.biome));}
+  function active(){return !!(typeof floorMeta!=='undefined'&&floorMeta&&((floorMeta.ritualChaos||floorMeta.chaosIncursion)||floorMeta.chaosPreview&&/^(chaos-mixed|unmaker-crucible)$/.test(floorMeta.chaosPreview.biome)));}
   function definitions(){return Object.assign({},root.CHAOS_ENEMY_ATLAS||{},root.UNMAKER_ATLAS||{});}
   function valid(spec){
     return spec&&typeof spec.file==='string'&&/^mob-m-(?:chaos|unmaker)-[a-z-]+\.webp$/.test(spec.file)&&Number.isInteger(spec.cell)&&spec.cell>0&&
@@ -33,7 +33,11 @@
     var selected=requested||names,key=selected.slice().sort().join(',');if(pending[key])return pending[key];var specs=definitions();
     pending[key]=Promise.all(selected.map(function(name){return load(name,specs[name]);})).then(function(){delete pending[key];},function(error){delete pending[key];throw error;});return pending[key];
   }
-  function sheet(name){return active()&&loaded[name]?loaded[name].sheet:null;}
+  function sheet(name){
+    if(!active())return null;
+    if(!loaded[name]&&definitions()[name])ensureAssets([name]).catch(function(error){console.error(error);});
+    return loaded[name]?loaded[name].sheet:null;
+  }
   function visible(x,y){return inb(x,y)&&(revealAll||vis[idxOf(x,y)]);}
   function drawHazards(now){
     if(!active())return;

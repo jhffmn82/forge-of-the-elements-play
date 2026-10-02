@@ -17,12 +17,12 @@
      ranged) or anyone in real armour, so the threat is the poison rather than the hit. */
   M.bonearcher = {name:'Bone Archer', sprite:'m-bone-archer', col:'#D8CEBC', ch:'a', hp:36, dmg:[5,8], acc:64, eva:16, armor:1, speed:100, range:6, xp:26,
                   band:[7,10], w:14, undead:true, reloads:true, poisons:0.65, art:0.95, sfx:'skeleton'};
-  M.shade      = {name:'Shade', sprite:'m-shade', col:'#5A3E7A', ch:'S', hp:40, dmg:[5,8], acc:66, eva:42, armor:0, speed:100, range:1, xp:30, attackType:'ice',chillTouch:true,
+  M.shade      = {name:'Shade', sprite:'m-shade', col:'#5A3E7A', ch:'S', hp:40, dmg:[5,8], acc:66, eva:42, armor:0, speed:130, range:1, xp:30, attackType:'ice',chillTouch:true,
                   band:[7,10], w:10, undead:true, shadowy:true, phases:true, el:'shadow', art:0.95, sfx:'wisp'};
   M.gravebloat = {name:'Grave Bloat', sprite:'m-grave-bloat', col:'#9FBF7A', ch:'B', hp:75, dmg:[8,11], acc:58, eva:4, armor:2, speed:100, range:1, xp:38,
                   band:[8,10], w:10, undead:true, bursts:true, rots:true, art:1.1, sfx:'zombie'};
   M.acolyte    = {name:'Necro-Acolyte', sprite:'m-necro-acolyte', col:'#6A3E8A', ch:'n', hp:36, dmg:[5,8], acc:62, eva:14, armor:0, speed:100, range:1, xp:40,
-                  band:[9,10], w:8, living:true, spellcaster:true, summoner:true, art:0.95, sfx:'shaman'};
+                  band:[9,10], w:8, living:true, spellcaster:true, summoner:true, fearTouch:1, art:0.95, sfx:'shaman',hint:'Summons Skeletons and wards allies. Attacks cause Fear for 1 turn.'};
   M.morty      = {name:'Morty the Mostly-Dead', sprite:'m-morty', col:'#7A4FB0', ch:'M', hp:170, dmg:[8,13], acc:70, eva:18, armor:3, speed:100, range:1, xp:450,
                   band:[10,10], w:0, boss:true, elite:true, undead:true, spellcaster:true, art:1.2, sfx:'morty'};
   M.phylactery = {name:'Phylactery', sprite:'m-phylactery', col:'#6FE08A', ch:'&', hp:60, dmg:[0,0], acc:0, eva:0, armor:12, speed:100, range:0, xp:60,
@@ -202,7 +202,7 @@ function cryptCreatureBehavior(e,target){
       if(d<=5 && e.boltCd<=0 && clearShot(e,target)){   /* 2026-09-22: no grave bolt through its own skeletons */
         e.boltCd=3; setClip(e,'attack'); boltFx(e.x,e.y,target.x,target.y,'dark');
         var graveChance=hitChance(b.acc+8,evaOf(target));if(target===player)graveChance=hostileHitChance(graveChance,true);
-        if(rng()<graveChance){ var gd=applyDamage(target, roll(3,6)+Math.floor(floorNo/2), 'dark', e); floatText(target.x,target.y,String(gd),'dark'); log('Necro-Acolyte → '+(target===player?'you':combatText(target.name))+': '+combatDamageNumber(gd,'dark')+'.','c-you'); if(target.hp<=0) kill(target,e); }
+        if(rng()<graveChance){ var gd=applyDamage(target, roll(3,6)+Math.floor(floorNo/2), 'dark', e); floatText(target.x,target.y,String(gd),'dark'); if(gd>0&&target.hp>0&&b.fearTouch)inflictFear(target,e,b.fearTouch); log('Necro-Acolyte → '+(target===player?'you':combatText(target.name))+': '+combatDamageNumber(gd,'dark')+'.','c-you'); if(target.hp<=0) kill(target,e); }
         else log('A grave bolt misses.','c-miss');
          return true;
       }

@@ -113,6 +113,7 @@ function gearName(item){
   return name+(item.cursed?' (cursed)':'');
 }
 function itemLabel(item){
+  if(item.kind==='relic')return item.name;
   if(item.kind==='core')return 'the '+item.name;
   if(item.kind==='heart')return 'a heart (heals 25% of max HP)';
   if(item.kind==='managlobe')return 'a mana globe (restores 25% of max mana)';
