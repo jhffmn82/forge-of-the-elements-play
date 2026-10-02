@@ -124,7 +124,7 @@ function spawn(kind,x,y,options){
   if(inCrypt()&&CRYPT_SWAP[kind])kind=CRYPT_SWAP[kind];
   return spawnRaw(kind,x,y);
 }
-function deepSpawnRaw(kind,x,y){return spawn(kind,x,y,{skipDeep:true});}
+function deepSpawnRaw(kind,x,y){var e=spawn(kind,x,y,{skipDeep:true});betaEnemyBalance(e);return e;}
 
 /* Geometry selects its biome implementation explicitly. */
 function roomAt(x,y){var grid=floorMeta&&floorMeta.caveRoom;return grid&&grid.length===MW*MH?findCaveRoom(x,y):findRectangularRoom(x,y);}

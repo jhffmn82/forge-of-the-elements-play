@@ -190,7 +190,7 @@ function livingFlameBehavior(e){
     var d=applyDamage(tgt, rolled, 'fire', e); floatText(tgt.x,tgt.y,String(d),'fire');
     if(tgt.hp>0 && rng()<0.22) applyStatus(tgt,'burn',3,burnDmg());
     if(tgt.hp<=0) kill(tgt,e);
-  } else if(dist(e,player)>2 && canActorMove(e)) stepToward(e, player.x, player.y);
+  } else if(canActorMove(e)) allyFollowStep(e);
 
 
 }

@@ -10,16 +10,16 @@ var FoteResponsiveHUD=(function(){
   const audioSymbol='<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z"/><path class="study-sound-waves" d="M16 8c2 2 2 6 0 8m3-11c4 4 4 10 0 14"/><path class="study-sound-off" d="m16 9 6 6m0-6-6 6"/></svg>';
   const lineIcon=path=>'<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">'+path+'</svg>';
   function syncNavigation(){
-    const minimal=document.body.classList.contains('study-minimal'),explore=node('studyExplore'),map=node('bMap');
-    if(minimal)explore.dataset.iconOnly='true';else delete explore.dataset.iconOnly;
+    const explore=node('studyExplore'),map=node('bMap');
+    explore.dataset.iconOnly='true';
     syncExploreButton(explore);
-    map.innerHTML=minimal?lineIcon('<path d="m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3zM9 3v15m6-12v15"/>'):'Map';
+    map.innerHTML=lineIcon('<path d="m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3zM9 3v15m6-12v15"/>');
     map.setAttribute('aria-label','Map');
-    node('studyOptions').innerHTML=minimal?lineIcon('<path d="M4 6h3m4 0h9M4 12h9m4 0h3M4 18h3m4 0h9"/><circle cx="9" cy="6" r="2"/><circle cx="15" cy="12" r="2"/><circle cx="9" cy="18" r="2"/>')+'<span>Options</span>':'Options';
-    node('studyHistory').innerHTML=minimal?lineIcon('<path d="M5 5h14v14H5zM8 9h8m-8 3h8m-8 3h5"/>')+'<span>Combat log</span>':'Log history';
+    node('studyOptions').innerHTML=lineIcon('<path d="M4 6h3m4 0h9M4 12h9m4 0h3M4 18h3m4 0h9"/><circle cx="9" cy="6" r="2"/><circle cx="15" cy="12" r="2"/><circle cx="9" cy="18" r="2"/>')+'<span>Options</span>';
+    node('studyHistory').innerHTML=lineIcon('<path d="M5 5h14v14H5zM8 9h8m-8 3h8m-8 3h5"/>')+'<span>Combat log</span>';
   }
   function paintPortrait(){
-    if(!mounted||!player||!document.body.classList.contains('study-minimal')||typeof paintDollPortrait!=='function')return;
+    if(!mounted||!player||typeof paintDollPortrait!=='function')return;
     const art=node('studyPortraitArt'),size=Math.round(art.getBoundingClientRect().width)||(document.body.classList.contains('study-small-touch')?60:68);
     const ready=paintDollPortrait(art,size);
     if(!ready&&!portraitRetry)portraitRetry=setTimeout(()=>{portraitRetry=0;paintPortrait();},200);
@@ -59,7 +59,7 @@ var FoteResponsiveHUD=(function(){
   function syncAudioButton(){
     if(!mounted)return;
     const button=node('bMute');if(!button)return;
-    button.innerHTML=audioSymbol+(document.body.classList.contains('study-minimal')?'<span>Sound</span><small>'+(AUDIO.muted?'Off':'On')+'</small>':'');button.classList.toggle('study-muted',AUDIO.muted);
+    button.innerHTML=audioSymbol+'<span>Sound</span><small>'+(AUDIO.muted?'Off':'On')+'</small>';button.classList.toggle('study-muted',AUDIO.muted);
     button.title=AUDIO.muted?'Audio off. Click to unmute.':'Audio on. Click to mute.';
     button.setAttribute('aria-label',button.title);button.setAttribute('aria-pressed',String(AUDIO.muted));
   }
@@ -75,26 +75,17 @@ var FoteResponsiveHUD=(function(){
   }
   function positionSheet(){
     if(!mounted)return;
-    const map=node('map').getBoundingClientRect(),phone=document.body.classList.contains('study-finger')&&!document.body.classList.contains('study-large-landscape');
+    const map=node('map').getBoundingClientRect();
     const right=document.body.classList.contains('study-pad-right');
-    // Phone sheets cover the map and movement/log column, leaving abilities reachable.
-    let x=phone&&right?0:map.left,width=phone?(right?map.right:innerWidth-map.left):map.width;
-    if(document.body.classList.contains('study-unified')&&document.body.classList.contains('study-small-touch')){
-      const vertical=document.body.classList.contains('study-hotbar-vertical');
-      x=vertical&&right?map.left:0;width=vertical?(right?innerWidth-map.left:map.right):innerWidth;
-    }
-    let y=map.top,height=map.height;
-    if(document.body.classList.contains('study-minimal')){
-      const inset=8,hotbar=node('hotbar').getBoundingClientRect();
-      x=map.left+inset;y=map.top+inset;width=map.width-inset*2;height=map.height-inset*2;
-      // Keep the same live hotbar usable beside an open sheet.
-      if(document.body.classList.contains('study-hotbar-vertical')){
-        if(right){x=Math.max(x,hotbar.right+inset);width=map.right-inset-x;}
-        else width=Math.min(width,hotbar.left-inset-x);
-      }else height=Math.min(height,hotbar.top-inset-y);
-    }
+    const inset=8,hotbar=node('hotbar').getBoundingClientRect();
+    let x=map.left+inset,y=map.top+inset,width=map.width-inset*2,height=map.height-inset*2;
+    // Keep the same live hotbar usable beside an open sheet.
+    if(document.body.classList.contains('study-hotbar-vertical')){
+      if(right){x=Math.max(x,hotbar.right+inset);width=map.right-inset-x;}
+      else width=Math.min(width,hotbar.left-inset-x);
+    }else height=Math.min(height,hotbar.top-inset-y);
     const inventory=node('studyInventoryIcon');
-    if(inventory&&document.body.classList.contains('study-minimal')){
+    if(inventory){
       const bar=node('hotbar').getBoundingClientRect(),size=node('hotbar').querySelector('.slot')?.getBoundingClientRect().width||44;
       const vertical=document.body.classList.contains('study-hotbar-vertical');
       const gap=parseFloat(getComputedStyle(node('hotbar')).rowGap)||4;
@@ -108,7 +99,7 @@ var FoteResponsiveHUD=(function(){
   }
   function hasOverlay(){return menuOpen||document.body.classList.contains('study-log-history');}
   function setMenu(on,restoreFocus){
-    on=!!on&&document.body.classList.contains('study-minimal');
+    on=!!on;
     if(on){
       if(typeof stopTravel==='function')stopTravel();
       if(typeof stopRest==='function')stopRest();
@@ -117,7 +108,7 @@ var FoteResponsiveHUD=(function(){
     menuOpen=on;document.body.classList.toggle('study-menu-open',on);
     const button=node('studyMenuToggle'),top=node('top');
     if(button)button.setAttribute('aria-expanded',String(on));
-    if(top){top.inert=document.body.classList.contains('study-minimal')&&!on;top.setAttribute('aria-hidden',String(top.inert));}
+    if(top){top.inert=!on;top.setAttribute('aria-hidden',String(top.inert));}
     if(mounted)syncTouchControls();
     if(on)node('studyNav').querySelector('button').focus();else if(restoreFocus&&button)button.focus();
   }
@@ -129,6 +120,8 @@ var FoteResponsiveHUD=(function(){
     node('studyHistory').onclick=()=>{setMenu(false);FoteCombatLog.showHistory();node('studyLogClose').focus();};
     node('studyLogClose').onclick=()=>{FoteCombatLog.hideHistory();node('studyMenuToggle').focus();};
     node('studyPortrait').onclick=()=>showSheet('Char');
+    node('studyStatPoints').onclick=()=>{showSheet('Char');node('studyChar').focus();};
+    node('studyStatPoints').onkeydown=event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();event.stopPropagation();node('studyStatPoints').click();}};
     node('studyInventoryIcon').onclick=()=>showSheet('Equip');
     node('studyPietyBar').onclick=()=>showSheet('Faith');
     window.addEventListener('keydown',event=>{
@@ -143,7 +136,7 @@ var FoteResponsiveHUD=(function(){
       }
     },true);
     window.addEventListener('click',event=>{
-      if(!document.body.classList.contains('study-minimal')||!hasOverlay())return;
+      if(!hasOverlay())return;
       const target=event.target;
       if(target.closest('#studyMenuToggle')||menuOpen&&target.closest('#top')||!menuOpen&&target.closest('#log,#studyLogClose'))return;
       // The dismissing map/control tap must not also issue a game command.
@@ -154,61 +147,47 @@ var FoteResponsiveHUD=(function(){
     if(!mounted)return;
     const w=innerWidth,h=innerHeight,inputOverride=new URLSearchParams(location.search).get('touch');
     const finger=inputOverride==='1'||(inputOverride!=='0'&&(window.MOBILE||navigator.maxTouchPoints>0||matchMedia('(pointer:coarse)').matches));
-    const wide=w>h,large=wide&&h>=600&&w>=960,unified=finger&&wide&&UI_TOUCH_LAYOUT==='unified';
-    const minimal=typeof uiHudMode==='function'&&uiHudMode()==='minimal';
+    const wide=w>h,large=wide&&h>=600&&w>=960;
     // Grow actual control dimensions with the viewport; DPR belongs to the painters.
     const scale=Math.max(1,Math.min(1.5,w/960,h/600));
     document.body.style.setProperty('--study-interface-scale',String(Math.round(scale*1000)/1000));
-    document.body.classList.toggle('study-minimal',minimal);
-    // study-desktop selects the shared map/sidebar geometry, independently of input type.
-    document.body.classList.toggle('study-finger',finger&&(minimal||!unified));
-    document.body.classList.toggle('study-desktop',!minimal&&(!finger||unified));
+    document.body.classList.add('study-minimal');
+    document.body.classList.toggle('study-finger',finger);
+    document.body.classList.remove('study-desktop','study-unified','study-wide');
     document.body.classList.toggle('study-touch',finger);
-    document.body.classList.toggle('study-unified',!minimal&&unified);
     document.body.classList.toggle('study-small-touch',finger&&!large);
-    document.body.classList.toggle('study-wide',!minimal&&wide);
     document.body.classList.toggle('study-short',wide&&h<360);
     document.body.classList.toggle('study-large-landscape',large);
     document.body.classList.toggle('study-portrait',w<600&&!wide);
     document.body.classList.toggle('study-tablet',w>=600&&!wide);
     document.body.classList.toggle('study-pad-right',UI_SIDE==='right');
-    const padSide=typeof UI_PAD_SIDE==='string'?UI_PAD_SIDE:'auto';
-    document.body.classList.toggle('study-control-pad-left',padSide==='left'||padSide==='auto'&&UI_SIDE==='right');
+    const padSide=typeof UI_PAD_SIDE==='string'?UI_PAD_SIDE:'left';
+    document.body.classList.toggle('study-control-pad-left',padSide==='left');
     const hotbarLayout=typeof uiHotbarLayout==='function'?uiHotbarLayout():UI_HOTBAR_LAYOUT;
-    const shared=minimal||!finger||unified,vertical=shared&&(hotbarLayout==='vertical'||(hotbarLayout==='auto'&&!minimal&&(!finger||!large)));
+    const vertical=hotbarLayout==='vertical';
     document.body.classList.toggle('study-hotbar-vertical',vertical);
-    document.body.classList.toggle('study-overlay-pad',shared&&(minimal||wide)&&(finger?UI_TOUCH_PAD:UI_DESKTOP_PAD));
-    composeColumns(finger&&wide&&!large&&!unified,shared,minimal);
+    document.body.classList.toggle('study-overlay-pad',finger?UI_TOUCH_PAD:UI_DESKTOP_PAD);
+    composeColumns();
     syncNavigation();
     renderReadouts();
-    if(typeof FoteCombatLog!=='undefined')FoteCombatLog.setTransient(minimal);
+    if(typeof FoteCombatLog!=='undefined')FoteCombatLog.setTransient(true);
     setMenu(false);syncAudioButton();syncSheet();
     syncTouchControls();
-    document.documentElement.style.setProperty('--study-top',minimal?'0px':node('top').getBoundingClientRect().bottom+'px');
+    document.documentElement.style.setProperty('--study-top','0px');
     resize();positionSheet();
   }
-  function composeColumns(phone,shared,minimal){
-    const left=node('studyLeft'),right=node('studyRight'),hotbar=node('hotbar'),pad=node('dpad'),explore=node('studyExplore');
+  function composeColumns(){
+    const hotbar=node('hotbar'),pad=node('dpad'),explore=node('studyExplore');
     const app=node('app'),hud=node('studyHud'),status=node('statusbar'),recent=node('studyRecentLog');
-    const information=minimal?app:left;
-    const panels=minimal?node('studySheetTabs'):node('studyNav');
+    const panels=node('studySheetTabs');
     ['studyChar','studyGear','studyFaith'].forEach(id=>{const button=node(id);if(button.parentElement!==panels)panels.append(button);});
-    if(!minimal)['studyChar','studyGear','studyFaith'].reverse().forEach(id=>panels.prepend(node(id)));
-    const mapToggle=node('bMap'),mapParent=minimal?app:node('studyNav');
-    if(mapToggle.parentElement!==mapParent){if(minimal)mapParent.append(mapToggle);else mapParent.insertBefore(mapToggle,node('bMute'));}
-    if(hud.parentElement!==information)information.append(hud);
-    if(status&&status.parentElement!==(minimal?hud:node('map')))(minimal?hud:node('map')).append(status);
+    const mapToggle=node('bMap');if(mapToggle.parentElement!==app)app.append(mapToggle);
+    if(hud.parentElement!==app)app.append(hud);
+    if(status&&status.parentElement!==hud)hud.append(status);
     if(recent&&recent.parentElement!==hud)hud.append(recent);
-    const abilities=minimal?app:phone?left:right,movement=shared?node('map'):phone?right:left;
-    // Move the existing controls only at a device breakpoint; retain their handlers and state.
-    if(hotbar.parentElement!==abilities)abilities.append(hotbar);
-    if(pad.parentElement!==movement)movement.append(pad);
-    if(minimal){if(explore.parentElement!==app)app.append(explore);}
-    else if(phone){
-      if(explore.parentElement!==node('top'))node('top').insertBefore(explore,node('studyNav'));
-    }else if(explore.parentElement!==left)left.append(explore);
-    left.setAttribute('aria-label',phone?'Player information and abilities':'Player information and movement');
-    right.setAttribute('aria-label',phone?'Combat log and movement':'Combat log and abilities');
+    if(hotbar.parentElement!==app)app.append(hotbar);
+    if(pad.parentElement!==node('map'))node('map').append(pad);
+    if(explore.parentElement!==app)app.append(explore);
   }
   function relayout(){
     if(!mounted||frame)return;
@@ -232,6 +211,7 @@ var FoteResponsiveHUD=(function(){
     const readouts=document.createElement('div');readouts.id='studyReadouts';hud.append(node('bars'),readouts);readouts.append(node('hud2'));
     const portrait=document.createElement('button');portrait.id='studyPortrait';portrait.type='button';portrait.title='Character';
     portrait.innerHTML='<span id="studyPortraitArt"></span><span id="studyPortraitStats"><span id="studyLevel"></span><span id="studyRank"></span></span>';hud.prepend(portrait);
+    const statPoints=document.createElement('button');statPoints.id='studyStatPoints';statPoints.type='button';statPoints.hidden=true;statPoints.setAttribute('aria-controls','shade');hud.append(statPoints);
     const piety=document.createElement('button');piety.id='studyPietyBar';piety.type='button';piety.className='bar study-piety-bar';
     piety.innerHTML='<i id="studyPietyFill"></i>';node('bars').append(piety);
     const inventory=document.createElement('button');inventory.id='studyInventoryIcon';inventory.type='button';inventory.title='Inventory';inventory.setAttribute('aria-label','Inventory');
@@ -255,9 +235,22 @@ var FoteResponsiveHUD=(function(){
       const button=node('tabs').querySelector('[data-p="'+panel+'"]');
       button.type='button';button.id=id;button.textContent=label;nav.append(button);
     }
-    const panelClick=event=>{const button=event.target.closest('[data-p]');if(button&&!(event.currentTarget===sheetTabs&&button.dataset.p===openSheet))showSheet(button.dataset.p);};
+    const panelClick=event=>{
+      const button=event.target.closest('[data-p]');
+      if(!button||event.currentTarget===sheetTabs&&button.dataset.p===openSheet)return;
+      const fromMenu=menuOpen;showSheet(button.dataset.p);
+      if(fromMenu){const tab=sheetTabs.querySelector('[data-p="'+openSheet+'"]');(tab||node('close')).focus();}
+    };
     nav.addEventListener('click',panelClick);sheetTabs.addEventListener('click',panelClick);
     node('top').append(nav);nav.append(node('bMap'),node('bMute'));
+    for(const [label,panel,id,path] of [
+      ['Character','Char','studyMenuChar','<circle cx="12" cy="7" r="3"/><path d="M5 21v-3a7 7 0 0 1 14 0v3"/>'],
+      ['Inventory','Equip','studyMenuGear','<path d="M8 6V4h8v2M6 7a3 3 0 0 1 3-2h6a3 3 0 0 1 3 2l2 12H4zM8 13h8v5H8z"/>'],
+      ['Faith','Faith','studyMenuFaith','<path d="m12 3 3 6 6 3-6 3-3 6-3-6-6-3 6-3z"/>']
+    ]){
+      const button=document.createElement('button');button.id=id;button.type='button';button.className='study-menu-panel';button.dataset.p=panel;
+      button.innerHTML=lineIcon(path)+'<span>'+label+'</span>';nav.insertBefore(button,node('studyOptions'));
+    }
     const history=document.createElement('button');history.id='studyHistory';history.type='button';history.textContent='Log history';nav.append(history);
     const explore=document.createElement('button');explore.id='studyExplore';explore.type='button';explore.textContent='Explore';
     left.insertBefore(explore,node('dpad'));bindExploreButton(explore);
@@ -290,10 +283,9 @@ var FoteResponsiveHUD=(function(){
     bindHudResourceCard(node('bars').querySelector('.hp'),'hp');
     bindHudResourceCard(node('bars').querySelector('.mp'),'mp');
     bindHudResourceCard(node('xpBar'),'xp');
-    const minimal=document.body.classList.contains('study-minimal');
     node('studyLevel').textContent='LV '+player.level;
     node('studyRank').hidden=!player.god;node('studyPietyBar').hidden=!player.god;
-    if(minimal)paintPortrait();
+    paintPortrait();
     node('studyPortrait').setAttribute('aria-label','Character, level '+player.level+(player.god?', '+GODS[player.god].name+', rank '+godRank():''));
     let faith='';
     if(player.god){
@@ -319,10 +311,14 @@ var FoteResponsiveHUD=(function(){
     bindHudResourceCard(node('hud2').querySelector('.study-motes'),'motes');
     const points=Math.max(0,Math.round(player.points||0));
     node('xpBar').classList.toggle('study-points-pending',points>0);
-    node('studyChar').innerHTML='<span>'+(minimal?'Character':'Char')+'</span>'+(points?'<span class="study-points" aria-hidden="true">'+points+'</span>':'');
+    node('studyChar').innerHTML='<span>Character</span>'+(points?'<span class="study-points" aria-hidden="true">'+points+'</span>':'');
     node('studyChar').title=points?'Character: '+points+' unspent stat point'+(points===1?'':'s'):'Character';
     node('studyChar').setAttribute('aria-label',node('studyChar').title);
-    node('studyGear').textContent=minimal?'Inventory':'Gear';
+    const statPoints=node('studyStatPoints');statPoints.hidden=!points;statPoints.textContent='+'+points;
+    statPoints.title=points+' unspent stat point'+(points===1?'':'s')+'. Open Character.';statPoints.setAttribute('aria-label',statPoints.title);
+    statPoints.classList.toggle('study-still',typeof ANIM!=='undefined'&&ANIM.reduce);
+    node('studyMenuChar').setAttribute('aria-label',node('studyChar').title);
+    node('studyGear').textContent='Inventory';
     const amusement=node('studyAmusement');if(amusement)paintAmusement(amusement);
   }
   function paintAmusement(effect){
@@ -333,7 +329,7 @@ var FoteResponsiveHUD=(function(){
   function renderStatusMeter(){
     if(!mounted||!player)return;
     const bar=node('statusbar');if(!bar)return;
-    const parent=document.body.classList.contains('study-minimal')?node('studyHud'):node('map');
+    const parent=node('studyHud');
     if(bar.parentElement!==parent)parent.append(bar);
     if(player.god!=='wobbles')return;
     const existing=node('studyAmusement');if(existing){paintAmusement(existing);return;}

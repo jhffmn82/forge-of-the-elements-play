@@ -108,8 +108,8 @@ function finishAttackReactions(event){
   if(att!==player&&att.base&&landed&&def.hp>0){var b=att.base;
     if(b.chillTouch&&event.primaryDamage>0&&dist(att,def)<=1){addChill(def);floatText(def.x,def.y,'chilled','ice');}
     if(b.bleeds&&rng()<b.bleeds)inflictBleed(def,att);
-    if(b.fangs&&dist(att,def)<=1&&rng()<b.fangs){if(applyStatus(def,'poison',DRIDER.poison[0],sDMG(DRIDER.poison[1])).applied){floatText(def.x,def.y,'poisoned','poison');if(def===player)log('You: Poisoned.','c-you');}}
-    if(b.emberBite&&rng()<b.emberBite&&!(def.st&&def.st.burn)){if(applyStatus(def,'burn',3,sDMG(2+Math.floor(floorNo/5))).applied&&def===player)log('You: Burning.','c-you');}}
+    if(b.fangs&&dist(att,def)<=1&&rng()<b.fangs){if(applyStatus(def,'poison',DRIDER.poison[0],underdarkEnemyStat(att,sDMG(DRIDER.poison[1]))).applied){floatText(def.x,def.y,'poisoned','poison');if(def===player)log('You: Poisoned.','c-you');}}
+    if(b.emberBite&&rng()<b.emberBite&&!(def.st&&def.st.burn)){if(applyStatus(def,'burn',3,underdarkEnemyStat(att,sDMG(2+Math.floor(floorNo/5)))).applied&&def===player)log('You: Burning.','c-you');}}
   if(event.dark&&landed)player.syllaDark=0;
   if(!landed)return;
   if(att.broodling&&def!==player&&def.hp>0)broodBite(def);
@@ -336,7 +336,7 @@ function resolveWeaponDamage(event,strike){
     el = att.base.el;
     var add = applyDamage(def,base*.5,elemToType(el),att,{attackRolled:true,tags:['proc','elemental-attack'],actionId:event.actionId});
     if(add>0&&def.hp>0&&rng() < 0.22){
-      if(el==='fire'&&applyStatus(def,'burn',3,sDMG(2)).applied)note=' Burning';
+      if(el==='fire'&&applyStatus(def,'burn',3,underdarkEnemyStat(att,sDMG(2))).applied)note=' Burning';
       else if(el==='water'){var chilled=addChill(def);if(chilled.applied)note=chilled.key==='frozen'?' Frozen':' Chilled';}
       else if(el==='earth'&&applyStatus(def,'root',2).applied)note=' Rooted';
       else if(el==='shadow'&&applyStatus(def,'fear',2).applied)note=' Afraid';

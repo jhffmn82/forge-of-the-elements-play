@@ -15,8 +15,8 @@
      spawnMatron(arena)    defined here; safe to call more than once (only the first call spawns her).
    Without any of it (the world branch not merged) everything falls back: a mixed roster everywhere, and the
    Matron in the boss room (or the largest room) with no circles, channelling where she stands.
-   ALL NUMBERS ARE PLACEHOLDERS for Justin's balance pass. The floor curve in spawn() (+5% HP, +3% damage a
-   floor) is on top of the base stats, so at floor 16 a Drow Blade is 30*1.75 = 52 HP and hits 9-13.
+   Base stats are fixed by roster. betaEnemyBalance applies the existing biome tuning, then the native
+   Underdark's 25% HP/damage increase once; fixed ability damage uses underdarkEnemyStat at its owner.
    ===================================================================== */
 
 function deepMobsOn(){ return typeof bidx==='function' && bidx()===3 && !(floorMeta && floorMeta.plane); }
@@ -151,7 +151,7 @@ function deepRegionalize(){
 function inflictBleed(t, src, turns){
   if(!t || t.hp<=0 || (t!==player && !(t.base && t.base.living))) return;
   var fresh=!(t.st && t.st.bleed);
-  applyStatus(t, 'bleed', turns||BLEED.turns, sDMG(BLEED.base + floorNo*BLEED.per));
+  applyStatus(t, 'bleed', turns||BLEED.turns, underdarkEnemyStat(src,sDMG(BLEED.base + floorNo*BLEED.per)));
   if(fresh){ floatText(t.x, t.y, 'bleeding', 'blood'); if(t===player) log('<b>Bleeding.</b> Heal to stop it.','c-you'); }
 }
 function deepStanch(t){ if(t && t.st && t.st.bleed){ delete t.st.bleed; if(t===player) log('The bleeding stops.','c-good'); else if(deepVis(t.x,t.y)) log('The '+t.name+' stops bleeding.','c-info'); } }
@@ -310,7 +310,7 @@ var DEEP_AI = {
           floatText(player.x,player.y,'-'+n+' mp','magic'); if(h>0) floatText(e.x,e.y,'+'+h,'heal');
           log('Thought Eater: −'+n+' Mana'+(h>0 ? '; +'+h+' HP' : '')+'.','c-you');
           /* 2026-09-23 (Justin): the sap hurts too - half the mana taken lands as magic damage (past armour, Spell Ward may turn it) */
-          if(n>0) deepHurt(player, Math.round(n*0.5), 'magic', e, 'Thought Eater → you');
+          if(n>0) deepHurt(player, underdarkEnemyStat(e,Math.round(n*0.5)), 'magic', e, 'Thought Eater → you');
         } else {
           applyStatus(player,'stun',1); floatText(player.x,player.y,'dazed','magic');
           log('Thought Eater: you Stunned (1 turn).','c-you');
@@ -343,7 +343,7 @@ var DEEP_AI = {
       if(e.hp<=0)return true;e.boltCd=IMP.cd; setClip(e,'attack'); boltFx(e.x,e.y,player.x,player.y,'fire'); sfx('shaman-cast',{from:e});
       if(rng()<hostileHitChance(hitChance(e.base.acc+6, evaOf(player)),true)){
         var fd=deepHurt(player, roll(e.dmg[0], e.dmg[1]), 'fire', e, 'Fire Imp → you');
-        if(player.hp>0 && rng()<IMP.burn){ applyStatus(player,'burn',3,sDMG(2)); log('Burning.','c-you'); }
+        if(player.hp>0 && rng()<IMP.burn){ applyStatus(player,'burn',3,underdarkEnemyStat(e,sDMG(2))); log('Burning.','c-you'); }
         ignite(player.x, player.y, null);
       } else {
         log('Fire Imp misses; ground ignited.','c-miss');
@@ -503,7 +503,7 @@ function matronFinish(e, M){
   var R=M.rit; matronEndRitual(M);
   SHAKE=10; ringFx(e.x, e.y, '#D0203A', 6); sfx('explosion',{from:e});
   if(R.kind==='tithe'){
-    var raw=Math.min(roll(MATRON.tithe[0], MATRON.tithe[1]), Math.round(player.maxhp*MATRON.titheCap));   /* never a one-shot */
+    var raw=Math.min(underdarkEnemyStat(e,roll(MATRON.tithe[0], MATRON.tithe[1])), Math.round(player.maxhp*MATRON.titheCap));   /* never a one-shot */
     boltFx(player.x, player.y, e.x, e.y, 'blood'); burst(player.x, player.y, 'blood', 40, 0.08);
     var d=deepHurt(player, raw, 'dark', e, 'Blood Tithe → you');
     if(player.hp>0) inflictBleed(player, e, 3);
@@ -522,9 +522,9 @@ function matronVenomTick(){
   ents.slice().forEach(function(t){
     if(t!==player && !t.ally) return;
     if(V.cells.indexOf(idxOf(t.x,t.y))<0) return;
-    var raw=roll(MATRON.venom[0], MATRON.venom[1]); if(t===player) raw=Math.min(raw, Math.round(player.maxhp*MATRON.venomCap));
+    var raw=underdarkEnemyStat(e,roll(MATRON.venom[0], MATRON.venom[1])); if(t===player) raw=Math.min(raw, Math.round(player.maxhp*MATRON.venomCap));
     deepHurt(t, raw, 'poison', e, t===player ? 'Venom Rain → you' : null);
-    if(t.hp>0) applyStatus(t, 'poison', 3, sDMG(3));
+    if(t.hp>0) applyStatus(t, 'poison', 3, underdarkEnemyStat(e,sDMG(3)));
   });
 }
 function matronAct(e){

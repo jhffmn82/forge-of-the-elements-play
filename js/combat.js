@@ -465,7 +465,7 @@ function basicAllyBehavior(e){
       if(e.x===ox && e.y===oy) allyFollowStep(e);      /* the direct step was blocked: path instead */
     }
   }
-  else if(dist(e,player)>2 && canActorMove(e)){ allyFollowStep(e); }
+  else if(canActorMove(e)){ allyFollowStep(e); }
 
 
   return true;

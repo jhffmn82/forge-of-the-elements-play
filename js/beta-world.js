@@ -79,9 +79,28 @@ function applyEarlyFloorEnemyTuning(e,deferHealth){
 }
 function betaEnemyBalance(e){
  applyEarlyFloorEnemyTuning(e);
- if(!e.foe||e.ally||e.beta11Balanced||floorMeta.plane)return;e.beta11Balanced=true;
- var b=Math.floor((floorNo-1)/5),extra=e.kind==='greenslime'?0:([1,2,0,3,0][b]||0);e.dmg=(e.dmg||e.base.dmg).map(function(v){return v+extra;});
- if(b===3){var max=e.maxhp;e.maxhp=Math.round(max*1.2);e.hp=e.hp>0?Math.max(1,e.hp+e.maxhp-max):0;}
+ if(!e.foe||e.ally||floorMeta.plane)return;
+ if(!e.beta11Balanced){
+  e.beta11Balanced=true;
+  var b=Math.floor((floorNo-1)/5),extra=e.kind==='greenslime'?0:([1,2,0,3,0][b]||0);e.dmg=(e.dmg||e.base.dmg).map(function(v){return v+extra;});
+  if(b===3){var max=e.maxhp;e.maxhp=Math.round(max*1.2);e.hp=e.hp>0?Math.max(1,e.hp+e.maxhp-max):0;}
+ }
+ applyUnderdarkEnemyTuning(e);
+}
+
+/* Native hostiles only: the saved marker belongs to actor stats, while fixed
+ * ability and status damage use the same integer scaling at their owner. */
+function isUnderdarkEnemy(e){
+ return !!(e&&e.foe&&!e.ally&&typeof DEEP_KINDS!=='undefined'&&(e.kind==='matron'||DEEP_KINDS.indexOf(e.kind)>=0)&&
+  floorNo>=16&&floorNo<=20&&!(floorMeta&&(floorMeta.plane||floorMeta.chaosPreview)));
+}
+function underdarkEnemyStat(e,value){return isUnderdarkEnemy(e)?Math.max(value>0?1:0,Math.round(value*1.25)):value;}
+function applyUnderdarkEnemyTuning(e){
+ if(!isUnderdarkEnemy(e)||e.underdark25Adjusted||!Number.isFinite(e.maxhp)||e.maxhp<=0)return;
+ var max=e.maxhp,fraction=e.hp/max;e.maxhp=underdarkEnemyStat(e,max);
+ if(e.hp>0)e.hp=Math.max(1,Math.min(e.maxhp,Math.round(e.maxhp*fraction)));
+ e.dmg=(e.dmg||e.base.dmg).map(function(value){return underdarkEnemyStat(e,value);});
+ e.underdark25Adjusted=true;
 }
 
 

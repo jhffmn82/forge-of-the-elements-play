@@ -14,7 +14,7 @@
     var later=options.setTimer||function(fn,ms){return setTimeout(fn,ms);};
     var cancel=options.clearTimer||function(id){clearTimeout(id);};
     var recent=null,enabled=false,history=false,entries=[],sequence=0,batch=0,pending=false,inTurn=false,turnEnded=false;
-    var timer=null,closeTimer=null,ordinaryAge=11000,warningAge=15000,fadeAge=3000,limit=6;
+    var timer=null,closeTimer=null,ordinaryAge=14000,warningAge=18000,fadeAge=3000,limit=7;
     function clearTimer(){if(timer!==null){cancel(timer);timer=null;}}
     function clearClose(){if(closeTimer!==null){cancel(closeTimer);closeTimer=null;}}
     function trim(){
@@ -57,9 +57,9 @@
     }
     function beginBatch(){
       clearClose();batch++;pending=true;turnEnded=false;
-      // Keep this command and the preceding command, including quiet turns.
+      // Keep this command and the preceding two, including quiet turns.
       // Warnings receive more reading time, but never outlive this turn window.
-      entries=entries.filter(function(e){return e.batch>=batch-1&&e.expiresAt>now();});refresh();
+      entries=entries.filter(function(e){return e.batch>=batch-2&&e.expiresAt>now();});refresh();
     }
     function settle(){
       clearClose();

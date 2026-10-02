@@ -160,6 +160,7 @@ function setMotion(mode){
   try{localStorage.setItem('astra-temple-motion',mode);}catch(e){}
   var b=document.getElementById('bMotion');
   if(b) b.textContent = 'Motion: '+(mode==='auto' ? (OS_REDUCE?'auto (off)':'auto (on)') : mode);
+  if(typeof FoteResponsiveHUD!=='undefined')FoteResponsiveHUD.renderReadouts();
 }
 function faceOf(dx,dy){
   /* Diagonal steps turn the side-facing body and equipment with their horizontal direction. */
@@ -242,7 +243,10 @@ function resize(){
      ResizeObserver below holds this function itself - a wrapper was skipped whenever a sheet closed. */
   var zm=(typeof MAP_ZOOM_MUL!=='undefined' && MAP_ZOOM_MUL[MAP_ZOOM]) || 1;
   if(zm!==1) z=[Math.max(7, Math.round(z[0]*zm)), Math.max(6, Math.round(z[1]*zm))];
-  TS = clamp(Math.floor(Math.min(W/z[0], H/z[1])), 14, 72);
+  /* Floating controls do not reserve map space. Landscape zoom is measured in
+     rows, so phones, tablets and PCs keep the same coverage vertically. */
+  var fitRows=innerWidth>innerHeight && typeof uiHudMode==='function' && uiHudMode()==='minimal';
+  TS = fitRows ? Math.max(14,Math.floor(H/z[1])) : clamp(Math.floor(Math.min(W/z[0], H/z[1])), 14, 72);
   /* Cover landscape's map panel with whole tiles and clip the excess at its
      edges. Rounding down left a visible frame around the centered canvas.
      Keep CSS pixels tied to TS so tapping still picks the drawn tile. */

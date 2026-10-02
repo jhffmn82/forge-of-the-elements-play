@@ -27,10 +27,20 @@ function actorFootprintAllowed(e,x,y,options){
   }
   return true;
 }
+function actorCornerCellAllowed(e,x,y,options){
+  // Companions may round furniture on open floor, as the player does. The
+  // destination still uses full collision; walls, pillars and gaps stay solid.
+  if(!e.ally)return walkable(x,y);
+  if(!inb(x,y)||at(x,y)===CHASM||deepLava(x,y))return false;
+  if(options&&options.avoidFire&&fireT[idxOf(x,y)]>0&&e.base.el!=='fire')return false;
+  if(walkable(x,y))return true;
+  var prop=typeof propAt==='function'&&propAt(x,y);
+  return !!(prop&&prop.b&&!prop.pillar&&!prop.set&&typeof terrainRules!=='undefined'&&terrainRules.walkable(at(x,y),false,floorMeta.exitOpen));
+}
 function actorCellAllowed(e,x,y,dx,dy,options){
   if(!actorFootprintAllowed(e,x,y,options))return false;
   if(dx&&dy){
-    if(entitySize(e)===1){if(!walkable(e.x+dx,e.y)&&!walkable(e.x,e.y+dy))return false;}
+    if(entitySize(e)===1){if(!actorCornerCellAllowed(e,e.x+dx,e.y,options)&&!actorCornerCellAllowed(e,e.x,e.y+dy,options))return false;}
     else if(!actorFootprintAllowed(e,e.x+dx,e.y,options)&&!actorFootprintAllowed(e,e.x,e.y+dy,options))return false;
   }
   return true;
@@ -61,6 +71,9 @@ function actorFootprintField(e,target,options){
   function allowed(x,y){var i=idxOf(x,y);if(!judged[i])judged[i]=actorFootprintAllowed(e,x,y,options)?1:2;return judged[i]===1;}
   for(var y=target.y-n;y<=target.y+entitySize(target);y++)for(var x=target.x-n;x<=target.x+entitySize(target);x++){
     if(!inb(x,y)||dist({x:x,y:y,base:e.base},target)!==1||!allowed(x,y))continue;
+    // A diagonal behind two walls is not a reachable place beside the target.
+    // Use the same corner rule as the eventual movement step.
+    if(n===1&&entitySize(target)===1&&x!==target.x&&y!==target.y&&!actorCornerCellAllowed(e,x,target.y,options)&&!actorCornerCellAllowed(e,target.x,y,options))continue;
     field[idxOf(x,y)]=0;queue.push({x:x,y:y});
   }
   for(var head=0;head<queue.length;head++){
@@ -71,7 +84,10 @@ function actorFootprintField(e,target,options){
     for(var k=0;k<neighbors.length;k++){
       var dx=neighbors[k][0],dy=neighbors[k][1],nx=p.x+dx,ny=p.y+dy;
       if(!inb(nx,ny)||field[idxOf(nx,ny)]>=0||!allowed(nx,ny))continue;
-      if(dx&&dy&&!allowed(nx,p.y)&&!allowed(p.x,ny))continue;
+      if(dx&&dy){
+        if(n===1&&e.ally){if(!actorCornerCellAllowed(e,nx,p.y,options)&&!actorCornerCellAllowed(e,p.x,ny,options))continue;}
+        else if(!allowed(nx,p.y)&&!allowed(p.x,ny))continue;
+      }
       field[idxOf(nx,ny)]=field[idxOf(p.x,p.y)]+1;queue.push({x:nx,y:ny});
     }
   }
@@ -100,7 +116,14 @@ function chaseStep(e){
   if(typeof FoteEnemyPerception!=='undefined')FoteEnemyPerception.remember(e,player,'sight');
   if(!PDIST||PDIST.targetX!==player.x||PDIST.targetY!==player.y)refreshPlayerDistance();return actorPathStep(e,player,PDIST)||stepToward(e,player.x,player.y);
 }
-function allyFollowStep(e){if(!PDIST||PDIST.targetX!==player.x||PDIST.targetY!==player.y)refreshPlayerDistance();return actorPathStep(e,player,PDIST)||stepToward(e,player.x,player.y);}
+function allyFollowStep(e){
+  if(!PDIST||PDIST.targetX!==player.x||PDIST.targetY!==player.y)refreshPlayerDistance();
+  var field=entitySize(e)>1||e.base.aquatic||PDIST[idxOf(e.x,e.y)]<0?actorFootprintField(e,player):PDIST,distance=field[idxOf(e.x,e.y)];
+  // Stay within two legal steps, rather than two tiles through a wall.
+  // The field's zero is a reachable tile adjacent to the player.
+  if(distance>=0&&distance<=1)return false;
+  return actorPathStep(e,player,field)||stepToward(e,player.x,player.y);
+}
 function fleeStep(e,threat){
   if(!canActorMove(e))return false;threat=threat||player;
   var step=FoteActors.bestStep(e,function(x,y){return dist({x:x,y:y},threat);},function(x,y,dx,dy){return actorCellAllowed(e,x,y,dx,dy);},true);

@@ -187,8 +187,7 @@ function equipResourcesHTML(sectionClass){
     return '<span class="mote keychip"><span class="kart" data-kicon="'+k[2]+'"></span>'+k[1]+' &times;'+count(player.keys&&player.keys[k[0]])+'</span>';
   }).join('');
   return '<div class="'+sectionClass+'">Keys</div><div class="pouch">'+keys+'</div>'+
-    '<div class="'+sectionClass+'">Pouch &middot; '+count(player.essence)+' essence</div><div class="pouch">'+motes+'</div>'+
-    '<label class="optrow"><span>Traditional UI</span><input id="gearTraditionalUI" type="checkbox"'+(uiHudMode()==='traditional'?' checked':'')+'></label>';
+    '<div class="'+sectionClass+'">Pouch &middot; '+count(player.essence)+' essence</div><div class="pouch">'+motes+'</div>';
 }
 function equipHTML(){
   var w=player.weapon, off=player.twoHanded?null:player.off, ar=player.armorItem, r=player.rings||[null,null], stow=player.ranged;
@@ -233,8 +232,6 @@ function slotCard(key){
   return bagCard({kind:'off', data:it}) + (player.block?'<div class="row"><span>Your block</span><b>'+Math.round(player.block*100)+'%</b></div>':'') + (player.parry?'<div class="row"><span>Your parry</span><b>'+Math.round(player.parry*100)+'%</b></div>':'');
 }
 function wireEquip(root){
-  var traditional=root.querySelector('#gearTraditionalUI');
-  if(traditional)traditional.onchange=function(){setUIHudMode(traditional.checked?'traditional':'minimal');};
   /* the doll box is wider now, so the figure is drawn bigger to match (2026-09-17) */
   if(typeof paintDoll==='function') paintDoll($('dollArt'), 210); else paintArt($('dollArt'),'cast',playerCastLook(),210);
   root.querySelectorAll('[data-mote]').forEach(function(e){ paintArt(e,'items','mote-'+e.getAttribute('data-mote'),16); });

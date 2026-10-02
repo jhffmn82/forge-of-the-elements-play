@@ -146,7 +146,7 @@
       }
       delete e.cloneTargetId;e.lastSeen=null;
     }
-    if(dist(e,player)>2&&canActorMove(e))allyFollowStep(e);
+    if(canActorMove(e))allyFollowStep(e);
     return true;
   }
   function block(e,source,raw){
