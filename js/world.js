@@ -511,6 +511,17 @@ function carvePocket(minW,minH,maxW,maxH, avoid){
   }
   return null;
 }
+// Old floors may contain a door at a corridor end, with solid rock behind it.
+// Keep the walkable alcove (and any occupant), but remove its misleading door.
+function repairDeadEndDoors(){
+  var repaired=0;
+  for(var y=1;y<MH-1;y++)for(var x=1;x<MW-1;x++){
+    var t=at(x,y);if(t!==DOOR&&t!==OPEN)continue;
+    var exits=[[1,0],[-1,0],[0,1],[0,-1]].filter(function(d){var n=at(x+d[0],y+d[1]);return n!==WALL&&n!==SECRET&&n!==CHASM;});
+    if(exits.length<=1){setT(x,y,FLOOR);repaired++;}
+  }
+  return repaired;
+}
 function lootRoom(r, rich){
   var inner=shuffled(interiorCells(r).concat(edgeCells(r)));
   if(!inner.length) return;

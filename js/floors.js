@@ -78,6 +78,7 @@ function repairStairApproachTraps(){
 
 function presentRestoredFloor(at){
   if(typeof repairWallMemorials==='function')repairWallMemorials();
+  if(typeof repairDeadEndDoors==='function')repairDeadEndDoors();
   repairCryptPuzzleGuardians();
   repairCrystalVaultClaims();
   repairStairApproachTraps();

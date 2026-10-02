@@ -83,8 +83,9 @@ function carveCorridor(ax,ay,bx,by,force){
 }
 function doorSpot(x,y,horizontalWall){
   if(at(x,y)!==FLOOR) return false;
-  if(horizontalWall) return at(x-1,y)===WALL && at(x+1,y)===WALL;
-  return at(x,y-1)===WALL && at(x,y+1)===WALL;
+  function passage(t){return t===FLOOR||t===DOOR||t===OPEN;}
+  if(horizontalWall) return at(x-1,y)===WALL && at(x+1,y)===WALL && passage(at(x,y-1)) && passage(at(x,y+1));
+  return at(x,y-1)===WALL && at(x,y+1)===WALL && passage(at(x-1,y)) && passage(at(x+1,y));
 }
 
 /* ============ field of view ============ */
