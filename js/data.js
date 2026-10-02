@@ -227,7 +227,7 @@ var GODS = {
       "Repelling Force: weapon hits and single-target spells have a 10% chance per rank to knock the enemy back 2 tiles.",
       "Perfect Invocation: gain Divine Power equal to your bonus Spell Power."
     ],
-    "gain": "Spell kills, mana spent on spells and mana globes picked up. Communion earns Favor from damaging attacks."
+    "gain": "Spell kills, mana spent on spells or invocations, and mana globes picked up. Communion earns Favor from damaging attacks."
   },
   "wobbles": {
     "name": "Wobbles, the Giggling Chaos",

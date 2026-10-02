@@ -40,10 +40,16 @@ function shieldParts(){
 
 /* Receipts are transient command state, never inferred from a previous saved cost. */
 var SPELL_PAYMENTS=new WeakMap();
+function vellumManaPiety(cost){
+  if(player.god!=='vellum'||!(cost>0))return;
+  player.manaSpent=(player.manaSpent||0)+cost;
+  while(player.manaSpent>=20){player.manaSpent-=20;gainPiety(1);}
+}
 function spendSpellMana(A){
   var cost=costOf(A);
   player.mp-=cost;player._actualSpellCost=cost;
   SPELL_PAYMENTS.set(player,{ability:A,cost:cost,eligible:!A.tech&&!A.divine,conducted:false});
+  if(A.divine)vellumManaPiety(cost);
   if(!A.tech)player.castingSpell=true;
   if(typeof stackDiscipline==='function')stackDiscipline();
   return cost;
@@ -53,8 +59,7 @@ function spellConduct(A){
   if(!receipt||receipt.ability!==A||!receipt.eligible||receipt.conducted)return false;
   receipt.conducted=true;player.castingSpell=true;player._lastSpellCost=receipt.cost;
   if(player.god==='vellum'){
-    player.castTurn=turn;player.manaSpent=(player.manaSpent||0)+receipt.cost;
-    while(player.manaSpent>=20){player.manaSpent-=20;gainPiety(1);}
+    player.castTurn=turn;vellumManaPiety(receipt.cost);
   }
   if(infusion('tome')==='light'&&receipt.cost>0){
     var values=enchantValues('tome','light'),cap=Math.round(player.maxhp*values.shieldCap);
