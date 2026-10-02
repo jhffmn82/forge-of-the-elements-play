@@ -17,7 +17,7 @@
      ranged) or anyone in real armour, so the threat is the poison rather than the hit. */
   M.bonearcher = {name:'Bone Archer', sprite:'m-bone-archer', col:'#D8CEBC', ch:'a', hp:43, dmg:[5,8], acc:64, eva:16, armor:1, speed:100, range:6, xp:26,
                   band:[7,10], w:14, undead:true, reloads:true, poisons:1, art:0.95, sfx:'skeleton'};
-  M.shade      = {name:'Shade', sprite:'m-shade', col:'#5A3E7A', ch:'S', hp:48, dmg:[5,8], acc:66, eva:42, armor:0, speed:130, range:1, xp:30, attackType:'ice',chillTouch:true,
+  M.shade      = {name:'Shade', sprite:'m-shade', col:'#5A3E7A', ch:'S', hp:48, dmg:[5,8], acc:66, eva:42, armor:0, speed:100, range:1, xp:30, attackType:'ice',chillTouch:true,
                   band:[7,10], w:10, undead:true, shadowy:true, phases:true, el:'shadow', art:0.95, sfx:'wisp'};
   M.gravebloat = {name:'Grave Bloat', sprite:'m-grave-bloat', col:'#9FBF7A', ch:'B', hp:90, dmg:[8,11], acc:58, eva:4, armor:2, speed:100, range:1, xp:38,
                   band:[8,10], w:10, undead:true, bursts:true, rots:true, art:1.1, sfx:'zombie'};

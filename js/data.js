@@ -463,12 +463,13 @@ var ABILITIES = {
   },
   "arcaneward": {
     "name": "Communion",
+    "instant": true,
     "cost": 8,
     "kind": "self",
     "icon": "ic-arcane-ward",
     "divine": true,
     "god": "vellum",
-    "desc": "Gain a shield and Communion for 8 turns. Damaging actions earn Favor."
+    "desc": "Gain a shield and Communion for 8 turns. Damaging actions earn Favor. Instant."
   },
   "challenge": {
     "name": "Challenge",
