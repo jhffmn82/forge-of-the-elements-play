@@ -217,17 +217,17 @@ var GODS = {
     "color": "#7FA8FF",
     "loves": "elf",
     "rule": "No shields, bows, staves or other two-handed weapons, and no armor heavier than leather.",
-    "invoke": "arcaneward",
+    "invoke": "arcanelance",
     "prayers": [
-      "arcanelance",
-      "arcanenova"
+      "manaward",
+      "arcaneblink"
     ],
     "boons": [
-      "Arcane Attunement: the bonuses and enchantments on your gear are 5% stronger per rank.",
       "Repelling Force: weapon hits and single-target spells have a 10% chance per rank to knock the enemy back 2 tiles.",
-      "Perfect Invocation: gain Divine Power equal to your bonus Spell Power."
+      "Perfect Invocation: gain Spell Power equal to your bonus Divine Power.",
+      "Arcane Attunement: the bonuses and enchantments on your gear are 25% stronger."
     ],
-    "gain": "Spell kills, mana spent on spells or invocations, and mana globes picked up. Communion earns Favor from damaging attacks."
+    "gain": "Spell kills and mana spent on spells or invocations earn Piety and Favor. Mana globes earn Piety."
   },
   "wobbles": {
     "name": "Wobbles, the Giggling Chaos",
@@ -461,15 +461,18 @@ var ABILITIES = {
     "god": "murk",
     "desc": "Summon one undead servant."
   },
-  "arcaneward": {
-    "name": "Communion",
-    "instant": true,
-    "cost": 8,
-    "kind": "self",
-    "icon": "ic-arcane-ward",
+  "arcanelance": {
+    "name": "Arcane Lance",
+    "cost": 7,
+    "kind": "bolt",
+    "range": 3,
+    "type": "magic",
+    "base": [5, 5],
+    "divinePowerOnly": true,
+    "icon": "pr-arcanelance",
     "divine": true,
     "god": "vellum",
-    "desc": "Gain a shield and Communion for 8 turns. Damaging actions earn Favor. Instant."
+    "desc": "Strike one enemy within 3 tiles for 5 magic damage per god rank, scaled by Divine Power."
   },
   "challenge": {
     "name": "Challenge",
@@ -669,7 +672,7 @@ var INVOKE_OF = {
   "murk": "unholyaura",
   "reginald": "challenge",
   "anvil": "temper",
-  "vellum": "arcaneward",
+  "vellum": "arcanelance",
   "wobbles": "rolldice",
   "sylla": "intothedark"
 };
@@ -775,11 +778,15 @@ var PRAYERS = {
     "health": 5,
     "desc": "Deal shadow damage to every enemy in a line up to 6 tiles long. Costs 5 HP; must leave at least 1 HP. No cooldown."
   },
-  "arcanelance": {
-    "name": "Arcane Lance",
+  "manaward": {
+    "name": "Mana Ward",
     "rank": 2,
     "favor": 5,
-    "desc": "Fire a magic bolt at an enemy or breakable object within 6 tiles. Costs 5 Favor. No cooldown."
+    "instant": true,
+    "shieldPerRank": 5,
+    "duration": 4,
+    "manaPerHP": 1,
+    "desc": "Gain a shield for 4 turns. Each HP absorbed restores 1 Mana, up to your maximum. Takes no turn."
   },
   "luckystreak": {
     "name": "Lucky Streak",
@@ -787,17 +794,18 @@ var PRAYERS = {
     "favor": 10,
     "desc": "For 8 turns, once per turn, reroll a failed hit, crit, evasion, block, parry or enchantment roll. Takes no turn."
   },
-  "arcanenova": {
-    "name": "Arcane Nova",
+  "arcaneblink": {
+    "name": "Blink",
     "rank": 4,
     "favor": 20,
-    "desc": "Deal magic damage in a 3x3 area within 6 tiles."
+    "range": 5,
+    "desc": "Teleport to a visible, empty walkable tile within 5 tiles."
   }
 };
 
 /* Legacy save names share current metadata; they never retain old mechanics. */
-PRAYERS.manatide=PRAYERS.arcanelance;
-PRAYERS.unbound=PRAYERS.arcanenova;
+PRAYERS.arcanelance=PRAYERS.manatide=PRAYERS.manaward;
+PRAYERS.arcanenova=PRAYERS.unbound=PRAYERS.arcaneblink;
 PRAYERS.corpsefeast=PRAYERS.bonespear;
 PRAYERS.offering=PRAYERS.fieldsmelt;
 PRAYERS.reforge=PRAYERS.anviltoll;
@@ -815,12 +823,12 @@ var DIVINE_COOLDOWNS = {
     raisedead:20, bonespear:0,             /* Mother Murk */
     laststand:15, lance:2,                 /* Sir Reginald */
     fieldsmelt:20, anviltoll:8,            /* Old Anvil */
-    arcanelance:0, arcanenova:8,           /* Vellum */
+    manaward:8, arcaneblink:20,           /* Vellum */
     luckystreak:12, rolldice2:20,           /* Wobbles (rolldice2 is Tempt Fate) */
     'the-brood':20, 'venom-burst':8        /* Sylla */
   },
   invokes: {                              /* the Cleric's invoke for each god (INVOKE_OF) */
-    ironbody:18, bellow:0, heal:0, unholyaura:12, challenge:0, temper:18, arcaneward:12, rolldice:0, intothedark:5
+    ironbody:18, bellow:0, heal:0, unholyaura:12, challenge:0, temper:18, arcanelance:12, rolldice:0, intothedark:5
   }
 };
 

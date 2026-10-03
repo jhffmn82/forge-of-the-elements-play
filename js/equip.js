@@ -396,10 +396,15 @@ function paintDoll(el, size, who){
   /* 2026-09-27 (Justin, equip plan step 5): the figure went through a 256px canvas and was then scaled again, a second
      smoothing pass (held items reached x4, x10 on a phone), and the 210px canvas cut the axe blade off the 275px figure.
      It is drawn once now, straight into a canvas as wide as the figure whose backing store is exactly its CSS size times
-     the pixel ratio. It is never shrunk to fit (D1): the phone Gear tab gives the doll room of its own, and a desktop
-     box narrower than the figure crops its sides, centred, as before. The doll is still: its dead repaint timer is gone
+     the pixel ratio. The allotted creation or Gear box bounds the whole canvas, so a shorter box cannot clip the
+     crown or held equipment. The doll is still: its dead repaint timer is gone
      (D13). */
   var S=size||150, d=window.devicePixelRatio||1;
+  /* Fit before painting, preserving aspect and drawing at the final device
+   * resolution. A CSS shrink after painting would filter the figure twice. */
+  var fitW=el.clientWidth,fitH=el.clientHeight;
+  if(fitW>0)S=Math.min(S,fitW/(m.cell*1.1/m.stand));
+  if(fitH>0)S=Math.min(S,fitH/1.31);
   /* 1.4 (grips): a sword hanging from a short figure's hand reaches past its feet, so the doll keeps a strip of room below
      the figure (pad); the figure itself sits where it always did */
   var sc=(S*1.1)/m.stand, w=m.cell*sc, pad=S*0.06, c=document.createElement('canvas');

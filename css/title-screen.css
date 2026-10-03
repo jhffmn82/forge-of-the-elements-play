@@ -21,6 +21,9 @@ body[data-ui-theme] #title .menu .title-primary{border-color:#986634;color:#ffe3
 #title .menu .sub{font-family:var(--mono);font-size:10px;color:#b9afa1;display:block;letter-spacing:0;line-height:1.4;}
 body[data-ui-theme] #title .menu #tUpdate{margin-top:7px;min-height:44px;padding:5px 0;border:1px solid transparent;box-shadow:none;background:none;color:#897d6b;font-family:var(--mono);font-size:10px;letter-spacing:.025em;}
 #title #tUpdate .sub{font-size:9px;color:#706658;}
+#title #tUpdate #versionStatus.update-available{color:#ffe0a0;font-size:11px;text-shadow:0 0 7px #e8b44a,0 0 16px #e8b44a88;animation:titleUpdateGlow 2s ease-in-out infinite;}
+@keyframes titleUpdateGlow{50%{text-shadow:0 0 3px #e8b44a,0 0 9px #e8b44a66;}}
+@media(prefers-reduced-motion:reduce){#title #tUpdate #versionStatus.update-available{animation:none;}}
 body[data-ui-theme] #title .title-playback{position:absolute;z-index:2;right:max(20px,env(safe-area-inset-right,0px));bottom:max(16px,env(safe-area-inset-bottom,0px));min-height:44px;padding:8px 13px;border:1px solid #75634877;border-radius:4px;background:#100e0ca6;color:#d5c9b8;font:11px var(--mono);cursor:pointer;}
 #title .title-playback:hover{border-color:#bc8a49;}
 @media(max-height:700px){

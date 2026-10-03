@@ -1,10 +1,9 @@
 # Forge of the Elements
 
-**Playtest candidate.** Presentation and balance changes are being tested here ahead of 1.5. The public `/forge` and itch.io builds retain their released versions.
+**Beta 1.5 is the current public build.**
 
 A browser roguelike: explore elemental dungeons, shape your build at the Forge, and face each biome's boss.
-Beta 1.4.2 adds a forge before Chaos, balances Murk's summons, makes shadow clones melee fighters,
-repairs blocked travel tiles, and shows current ability values.
+This update improves mobile controls, recorded audio recovery, portraits and item icons, and Vellum's caster abilities.
 
 ## Play on a PC
 
@@ -25,4 +24,4 @@ Or just open the play link above in Chrome on the device - the game lays itself 
 ## This repository
 
 Generated output only: the playable build, published by `tools/publish.py` from the source project. Last
-build: **2026-10-02T18:34:19.174571+00:00**.
+build: **2026-10-03T19:52:38.904297+00:00**.

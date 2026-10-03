@@ -108,6 +108,7 @@ var FoteResponsiveHUD=(function(){
     sheet.style.setProperty('--sheet-x',x+'px');sheet.style.setProperty('--sheet-y',y+'px');
     sheet.style.setProperty('--sheet-w',Math.max(0,width)+'px');sheet.style.setProperty('--sheet-h',Math.max(0,height)+'px');
     positionRecentLog();
+    syncPickupButton();
   }
   function positionRecentLog(){
     const recent=node('studyRecentLog');if(!recent)return;
@@ -256,6 +257,19 @@ var FoteResponsiveHUD=(function(){
     controls.classList.toggle('unavailable',blocked);
     controls.setAttribute('aria-hidden',String(blocked));
     controls.querySelectorAll('button').forEach(button=>{button.disabled=blocked;button.tabIndex=blocked?-1:0;});
+    syncPickupButton();
+  }
+  function syncPickupButton(){
+    const button=node('studyPickup');if(!button)return;
+    const available=player&&player.hp>0&&items.some(it=>it.x===player.x&&it.y===player.y&&(it.rareLamp!==undefined||bagEntryFor(it)));
+    const blocked=!available||!document.body.classList.contains('study-touch')||!document.body.classList.contains('study-overlay-pad')||uiOpen()||!!aiming||(typeof BOWAIM!=='undefined'&&!!BOWAIM)||(RUN&&(RUN.over||RUN.victory));
+    button.hidden=blocked;button.disabled=blocked;button.tabIndex=blocked?-1:0;
+    if(blocked)return;
+    const pad=node('dpad').getBoundingClientRect(),bar=node('hotbar').getBoundingClientRect();
+    const left=document.body.classList.contains('study-control-pad-left');
+    const x=pad.width?(left?pad.right+8:pad.left-button.offsetWidth-8):8;
+    button.style.left=Math.max(8,Math.min(innerWidth-button.offsetWidth-8,x))+'px';
+    button.style.top=Math.max(8,Math.min(innerHeight-button.offsetHeight-8,pad.height?pad.bottom-button.offsetHeight:bar.top-button.offsetHeight-8))+'px';
   }
   function mount(){
     if(mounted)return;
@@ -273,6 +287,14 @@ var FoteResponsiveHUD=(function(){
     piety.innerHTML='<i id="studyPietyFill"></i><span id="studyPietyText"></span>';node('bars').append(piety);
     const inventory=document.createElement('button');inventory.id='studyInventoryIcon';inventory.type='button';inventory.title='Inventory';inventory.setAttribute('aria-label','Inventory');
     inventory.innerHTML='<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M6 7a3 3 0 0 1 3-2h6a3 3 0 0 1 3 2l2 12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><path d="M8 13h8v5H8zM7 9h10"/></svg>';app.append(inventory);
+    const pickup=document.createElement('button');pickup.id='studyPickup';pickup.type='button';pickup.hidden=true;
+    pickup.innerHTML=lineIcon('<path d="M18.5 2.5Q20 2 20.5 3L22 7Q22.5 8 21.5 9L17 13.5Q15.5 14.5 14.5 13Q14 12.5 15 11L16.5 8.8Q17.5 7 16 6.8Q13.5 6.5 12.5 9L11 12.5Q10 14 9 13Q8.5 12.5 9 11L10.2 8.7Q8.7 10.2 8 12.8Q7.5 14.5 6 14Q5 13.8 5.4 12L6.8 8.8Q4.4 11.5 4 15.5Q3.8 17 2.4 16.6Q1.5 16.4 1.7 15Q2.2 8 8 4.5Q12 2.7 18.5 2.5Z"/><path d="m12 17 3 3-3 3-3-3z" fill="currentColor" stroke="none"/>');
+    pickup.setAttribute('aria-label','Pick up items here');pickup.dataset.gameUi='true';app.append(pickup);bindHudResourceCard(pickup,'pickup');
+    pickup.onclick=()=>{
+      if(uiOpen()||aiming||(typeof BOWAIM!=='undefined'&&BOWAIM)||!player||player.hp<=0||(RUN&&(RUN.over||RUN.victory))||animBusy())return;
+      if(typeof stopTravel==='function')stopTravel();
+      if(grab())endTurn();
+    };
     const sheetTabs=document.createElement('nav');sheetTabs.id='studySheetTabs';sheetTabs.setAttribute('aria-label','Character panels');node('shade').querySelector('header').prepend(sheetTabs);
     const left=document.createElement('aside');left.id='studyLeft';left.setAttribute('aria-label','Player information and movement');
     const right=document.createElement('aside');right.id='studyRight';right.setAttribute('aria-label','Combat log and abilities');
@@ -332,6 +354,7 @@ var FoteResponsiveHUD=(function(){
   }
   function renderReadouts(){
     if(!mounted||!player)return;
+    syncPickupButton();
     const classic=document.body.classList.contains('study-classic');
     syncExploreButton(node('studyExplore'));
     node('studyDepth').textContent=node('hBiome').textContent+' · Floor '+node('hFloor').textContent;

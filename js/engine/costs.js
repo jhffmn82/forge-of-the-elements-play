@@ -33,16 +33,22 @@
     if(c.slow)cost=Math.round(cost/c.slow);
     return cost;
   }
-  function shields(actor){
+  function manaWard(rule,rank,divine){
+    return {shield:Math.max(0,Math.round(rule.shieldPerRank*rank*divine)),duration:rule.duration,manaPerHP:rule.manaPerHP};
+  }
+  function shields(actor,raw){
     var buffs=actor.buffs||{};
+    function amount(value){value=Math.max(0,value||0);return raw?value:Math.floor(value);}
     return [
-      {key:'iceArmor',name:'Ice Armor',amount:Math.max(0,Math.floor(actor.iceArmor||0))},
+      {key:'iceArmor',name:'Ice Armor',amount:amount(actor.iceArmor)},
       {key:'ward',name:'Ward',amount:buffs.arcaneward>0||buffs.communion>0?Math.max(0,actor.ward||0):0},
-      {key:'mward',name:'Tome Ward',amount:Math.max(0,Math.floor(actor.mward||0))},
-      {key:'guard',name:'Guard',amount:Math.max(0,Math.floor(actor.guard||0))},
-      {key:'hideShield',name:'Iron Hide',amount:Math.max(0,Math.floor(actor.hideShield||0))}
+      {key:'manaWard',name:'Mana Ward',amount:buffs.manaward>0?amount(actor.manaWard):0},
+      {key:'mward',name:'Tome Ward',amount:amount(actor.mward)},
+      {key:'guard',name:'Guard',amount:amount(actor.guard)},
+      {key:'hideShield',name:'Iron Hide',amount:amount(actor.hideShield)}
     ];
   }
-  var api=Object.freeze({action:action,movement:movement,shields:shields});
+  function shieldTotal(actor,keys){return shields(actor,true).reduce(function(total,pool){return total+(!keys||keys.indexOf(pool.key)>=0?pool.amount:0);},0);}
+  var api=Object.freeze({action:action,movement:movement,shields:shields,shieldTotal:shieldTotal,manaWard:manaWard});
   root.FoteCosts=api;if(typeof module==='object'&&module.exports)module.exports=api;
 })(typeof globalThis==='object'?globalThis:this);

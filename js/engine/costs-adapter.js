@@ -49,7 +49,12 @@ function spendSpellMana(A){
   var cost=costOf(A);
   player.mp-=cost;player._actualSpellCost=cost;
   SPELL_PAYMENTS.set(player,{ability:A,cost:cost,eligible:!A.tech&&!A.divine,conducted:false});
-  if(A.divine)vellumManaPiety(cost);
+  if(A.divine){
+    vellumManaPiety(cost);
+    // The released progression owner recognizes spell kills by their paid
+    // cast turn. A damaging divine bolt must receive that same native receipt.
+    if(A.divinePowerOnly&&player.god==='vellum')player.castTurn=turn;
+  }
   if(!A.tech)player.castingSpell=true;
   if(typeof stackDiscipline==='function')stackDiscipline();
   return cost;

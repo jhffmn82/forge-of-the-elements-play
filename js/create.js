@@ -158,7 +158,7 @@ function renderCreate(){
      '<div class="who" style="margin-top:8px;font-size:13px">'+RACES[c.race].name+' '+C2.name+(c.cls==='cleric'?' of '+GODS[c.god].name:'')+(c.race==='fae'?' &middot; '+RACES.fae.courts[c.court]:'')+'</div>'+
      '<div class="kv" style="max-width:420px"><span>Might</span><b>'+st.mig+'</b><span>Agility</span><b>'+st.agi+'</b><span>Vitality</span><b>'+st.vit+'</b><span>Focus</span><b>'+st.foc+'</b>'+
      '<span>Starting kit</span><b style="text-align:left">'+kitNames.join(', ')+'</b><span>Passive</span><b style="text-align:left;font-weight:400">'+C2.passive+'</b></div>'+
-     '<button class="go btn-primary" id="begin">Enter the Dungeon</button> <span class="c-info" style="font-size:11px;margin-left:8px">Sound and music start with your first click. M mutes, N toggles music.</span></div></div></div>';
+     '<button class="go btn-primary" id="begin">Enter the Dungeon</button><p class="c-info create-sound-note">Sound and music start with your first tap or click. Change sound and music in Options.</p></div></div></div>';
   el.innerHTML=h;
   $('cBack').onclick=function(){sfx('ui-click');openTitle();};
   el.querySelectorAll('[data-race]').forEach(function(b){ b.onclick=function(){ sfx('ui-click'); c.race=b.getAttribute('data-race'); c.name=''; if(creationRefuses(c, c.god)) c.god='murk'; renderCreate(); }; });
@@ -222,8 +222,13 @@ function newRun(seed,choice){
   log('<b>'+player.name+'</b>, '+player.who+', enters the Dungeon.','c-kill');
   if(!window.TIPS_SHOWN){
     window.TIPS_SHOWN=true;
-    log('Move with the arrow keys or WASD (Q E Z C for diagonals), or click a tile. Bump enemies to attack. <b>1-8</b> use your hotbar, <b>g</b> picks up, <b>r</b> rests, <b>p</b> opens Faith, <b>i</b> your bag, <b>Tab</b> your character.','c-info');
-    log('Hover anything on the map to inspect it. Traps show once you spot them; Agility helps.','c-info');
+    if(typeof MOBILE!=='undefined'&&MOBILE){
+      log('Each move takes a turn. Tap the pad or a map tile to move; bump enemies to attack. Explore travels automatically. Search is in the pad\'s centre; Pick up collects items underfoot.','c-info');
+      log('Tap your portrait for Character, the bag for Inventory, or Menu for Faith and Options. Hold an item or tile to inspect it.','c-info');
+    }else{
+      log('Move with the arrow keys or WASD (Q E Z C for diagonals), or click a tile. Bump enemies to attack. <b>1-8</b> use your hotbar, <b>g</b> picks up, <b>r</b> rests, <b>p</b> opens Faith, <b>i</b> your bag, <b>Tab</b> your character.','c-info');
+      log('Hover anything on the map to inspect it. Traps show once you spot them; Agility helps.','c-info');
+    }
   }
   floorIntro();resize();updateUI();
 }

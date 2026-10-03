@@ -92,6 +92,7 @@ function renderTouchHotbar(){
   }
 
 function syncHotbar(){
+  migratePrayerReferences(player);
   /* 2026-09-18: learning an ability, changing god or class and the forge all reset the hotbar (hotbar=null)
      so it rebuilds from abilities and prayers - which silently dropped the amulet and any potions on it.
      The last layout is remembered, and after a rebuild those entries go back to their old slots. */

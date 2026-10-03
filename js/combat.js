@@ -88,6 +88,7 @@ function wandThrift(){ var w=player.weapon; if(focusKey(w)!=='wand') return 0; v
 function orbCrit(){ var o=player.twoHanded ? null : player.off; if(focusKey(o)!=='orb' || o.cursed) return 0; return (tierOf(ORB_CRIT.base,o)+ORB_CRIT.per*(o.plus||0))*gearPassiveBonus(); }
 function staffRange(){ return focusKey(player.weapon)==='staff' ? 1 : 0; }
 function spellRange(A){
+  if(A.divinePowerOnly)return A.range;
   if(A.useWeaponRange) return Math.max(1, player.range);
   return A.range ? A.range + (player.rangeBonus||0) + (!A.tech && !A.divine && typeof staffRange==='function' ? staffRange() : 0) : 0;
 }
@@ -568,6 +569,7 @@ function castBoltTarget(x,y){
   var dmgType = A.type==='magic' ? 'magic' : A.type;
   var base;
   if(A.tech){ base = roll(A.base[0],A.base[1]) + Math.floor((player.dmg[0]+player.dmg[1])/4); }
+  else if(A.divinePowerOnly)base=arcaneLanceRules().damage;
   else base = Math.round((sDMG(roll(A.base[0],A.base[1])) + (A.perAffinity ? A.perAffinity*totalAffinity() : 0)) * spellPower(A));   /* affinity adds before spell power */
   if(key==='smite' && (f.base.undead||f.base.shadowy)) base=Math.round(base*1.5);
   var wasAsleep=f.state==='asleep'||offGuard(f);

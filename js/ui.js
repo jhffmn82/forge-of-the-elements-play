@@ -99,6 +99,8 @@
   #create .card .class-symbol{height:48px}
   #create .summary{display:grid;grid-template-columns:200px 1fr;gap:18px;align-items:center;background:#141110;border:1px solid var(--edge);border-radius:10px;padding:14px;margin-top:18px}
   #create .summary .big{height:230px;display:flex;align-items:flex-end;justify-content:center}
+  #create .summary>div{min-width:0}
+  #create .create-sound-note{display:block;max-width:100%;margin:8px 0 0;font-size:11px;line-height:1.5;white-space:normal;overflow-wrap:anywhere}
   #create .go{font-size:16px;padding:10px 26px;margin-top:10px}
   #create input{width:220px;font-size:14px}
   @media (max-width:640px){ #create .summary{grid-template-columns:1fr} .shrine-head{grid-template-columns:80px minmax(0,1fr);gap:10px} .shrine-head .shrine-art{max-width:80px;overflow:hidden} .shrine-head .shrine-art canvas{max-width:100%;height:auto!important} }
@@ -205,7 +207,15 @@ function iconCanvas(name, size, fallbackText){
   var span=document.createElement('span'); span.className='gear';
   var o=name && (objArt('items',name)||anyObj(name));
   if(o){ paintArt(span,'items',name,size); }
-  else span.textContent=fallbackText||'?';
+  else{
+    span.textContent=fallbackText||'?';
+    var placeholder=span.firstChild,ready=name&&packedObjectReady('items',name,true);
+    if(ready)ready.then(function(){
+      /* The slot can be replaced while its atlas decodes. Only this pending
+       * placeholder belongs to this request; a rebuilt slot paints itself. */
+      if(span.isConnected&&span.firstChild===placeholder)paintArt(span,'items',name,size);
+    }).catch(function(){});
+  }
   return span;
 }
 function itemIcon(name, size){ return iconCanvas(null, size, '\u2726'); }
@@ -260,6 +270,7 @@ function hudResourceCard(kind){
   }
   if(kind.indexOf('move:')===0)return '<div class="nm">Move '+escape(kind.slice(5))+'</div><div class="hint">Move one tile.</div>';
   if(kind==='search')return '<div class="nm">Wait and search</div><div class="hint">Spend a turn searching nearby.</div>';
+  if(kind==='pickup')return '<div class="nm">Pick up</div><div class="hint">Collect items underfoot. Uses one turn.</div>';
   if(kind==='hp')return '<div class="nm">Health</div>'+row('HP',number(player.hp)+' / '+number(player.maxhp))+(playerShield()>0?row('Shield',number(playerShield()))+'<div class="hint">'+escape(shieldParts().join(', '))+'. Shields absorb damage before HP.</div>':'');
   if(kind==='mp')return '<div class="nm">Mana</div>'+row('Mana',number(Math.floor(player.mp))+' / '+number(player.maxmp));
   if(kind==='xp')return '<div class="nm">Experience</div>'+row('Level',player.level)+row('XP',number(player.xp)+' / '+number(player.xpNext))+'<div class="hint">'+(player.level>=20?'Maximum level reached. Further XP still counts toward your run total.':number(Math.max(0,player.xpNext-player.xp))+' XP to the next level.')+'</div>';
@@ -404,9 +415,9 @@ var PRAYER_ICONS={
   "anviltoll": "pr-reforge",
   "lance": "ic-radiant-lance",
   "bonespear": "pr-bonespear",
-  "arcanelance": "pr-arcanelance",
+  "manaward": "ic-arcane-ward",
   "luckystreak": "ic-roll-dice",
-  "arcanenova": "pr-arcanenova"
+  "arcaneblink": "pr-arcanenova"
 };
 function prayerIcon(pid){pid=prayerId(pid);return PRAYER_ICONS[pid]||'pr-'+pid;}
 function prayerCost(pid){ var P=PRAYERS[prayerId(pid)]; return P.health ? prayerHealthCost(pid)+' HP' : P.favor ? resourceReadoutHTML('favor',P.favor+' Favor') : P.essence ? resourceReadoutHTML('essence',P.essence+' Essence') : P.amusement ? P.amusement+' Amusement' : 'prayer'; }

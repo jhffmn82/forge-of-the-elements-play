@@ -104,7 +104,7 @@ function entryItemsAndTerrain(){
     else if(it.kind==='key'){ removeItem(it); player.keys[it.key]=(player.keys[it.key]||0)+1; log('Picked up <b>'+it.key+' key</b>.','c-kill'); sfx('pickup-key'); collected=true; }
     else if(it.kind==='heart')log('<b>Heart</b>: +25% max HP when needed.','c-info');
     else if(it.kind==='managlobe')log('<b>Mana globe</b>: +25% max Mana when needed.','c-info');
-    else log('<b>'+itemLabel(it)+'</b> · G to pick up.','c-info');
+    else log('<b>'+itemLabel(it)+'</b> · '+(typeof MOBILE!=='undefined'&&MOBILE?'Tap Pick up to collect.':'G to pick up.'),'c-info');
     if(collected&&it.crystal)claimCrystalVaultTreasure(it);
   });
   if(!(player.levitate>0)){

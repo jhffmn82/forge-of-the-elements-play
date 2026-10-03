@@ -28,6 +28,7 @@ function lvHealing(n,holyGround){
   return lvNumber(n);
 }
 function lvDamage(A){
+  if(A.divinePowerOnly){var damage=arcaneLanceRules().damage;return damage+'-'+damage;}
   var base=A.base||AOE_BASE;
   function value(n){
     if(A.kind==='bolt')return A.tech?n+Math.floor((player.dmg[0]+player.dmg[1])/4):Math.round((sDMG(n)+(A.perAffinity?A.perAffinity*totalAffinity():0))*spellPower(A));
@@ -99,7 +100,7 @@ var ABILITY_LIVE = {
   dawn:function(A){return actionDetail('Reveal every enemy on the floor.',[['Damage',Math.round(sDMG(A.base[0])*spellPower(A))+'-'+Math.round(sDMG(A.base[1])*spellPower(A))+' light'],['Targets','Visible enemies'],['Blind','3 turns'],['Reveal','All enemies · 20 turns']]);},
   glacialtomb:function(A){return actionDetail('Disable one enemy and make it immune to damage.',[['Damage',spellBaseDamage(A,A.base[0])+'-'+spellBaseDamage(A,A.base[1])+' frost to adjacent enemies'],['Duration','10 turns; elites 6, bosses 2']],['Self-cast: 3 turns, then restore 25% max HP and Mana.']);},
   upheaval:function(A){return actionDetail('Raise a line of blocking walls.',[['Damage',spellBaseDamage(A,A.base[0])+'-'+spellBaseDamage(A,A.base[1])+' physical'],['Walls','Up to 7'],['Area','Within 2 tiles of the walls'],['Root','2 turns'],['Duration','20 turns']],['Hits your summons; does not hit you.']);},
-  arcaneward:function(){return actionDetail('Damaging actions restore Favor.',[['Shield',Math.round((8+2*godRank())*divineStrength())+' HP'],['Favor',Number((godRank()*divineStrength()).toFixed(2))+' per damaging action'],['Duration',lvTurns(fullDivineDuration(8))]]);},
+  arcanelance:function(){return actionDetail('Strike one enemy. Divine Power scales the damage.',[['Damage',arcaneLanceRules().damage+' magic']],['Spell Power and affinity do not increase its base damage.']);},
   livingflame:function(A){var sp=spellPower(A);return actionDetail('Summon a ranged attacker.',[['Damage',Math.round(5*sp)+'-'+Math.round(9*sp)+' fire'],['Summon HP',Math.round(28*sp)],['Attack range','6 tiles'],['Duration','30 turns']],['Damages adjacent enemies on arrival. Every third shot splashes for half damage. Uses one of 2 summon slots.']);},
   raisedead:function(){return actionDetail('Call an undead servant.',[['Summons','One servant']],['Cannot summon while your servant still stands.']);},
   challenge:function(){return actionDetail('Force one enemy to approach.',[['Bonus damage','+'+Math.round(25*lvDiv())+'% weapon damage against the challenged enemy']]);},
@@ -122,8 +123,8 @@ var PRAYER_LIVE = {
   'the-brood':function(){return actionDetail('Summon spiderlings whose bites web or poison.',[['Summons','Up to 3 spiderlings'],['Duration',lvTurns(fullDivineDuration(SYLLA.broodLife))]],['Replaces your previous brood.']);},
   'venom-burst':function(){return actionDetail('Poison and blind nearby enemies.',[['Damage',lvDivineDamage(6)+' poison'],['Area','3-tile radius'],['Poison','3 turns'],['Blind','3 turns']]);},
   bonespear:function(){return actionDetail('Pierce every enemy in a line.',[['Damage',lvDivineDamage(6)+' shadow'],['Range','6 tiles']],['Must leave at least 1 HP.']);},
-  arcanelance:function(){return actionDetail('Hit an enemy or breakable object.',[['Damage',lvDivineDamage(6)+' magic'],['Range','6 tiles']]);},
-  arcanenova:function(){return actionDetail('Hit enemies around a target tile.',[['Damage',lvDivineDamage(8)+' magic'],['Range','6 tiles'],['Area','3×3 tiles']]);},
+  manaward:function(){var w=manaWardRules();return actionDetail('Absorbed damage restores Mana.',[['Shield',w.shield+' HP'],['Mana recovery',w.manaPerHP+' per HP absorbed'],['Duration',lvTurns(w.duration)]],['Refreshes the shield; Mana cannot exceed its maximum.']);},
+  arcaneblink:function(){return actionDetail('Teleport to visible, empty walkable ground.',[['Range',lvTiles(arcaneBlinkRules().range)]],['Choosing or cancelling a destination costs nothing.']);},
   raisedead:function(){return actionDetail('Call an undead servant.',[['Summons','One servant'],['Duration','Until destroyed or you leave the floor']],['Cannot summon while your servant still stands or your Lich is returning.']);},
   fieldsmelt:function(){return actionDetail('Recycle one carried item for its full Essence value.',[['Cast','Instant']],['Requires being out of combat.']);},
   anviltoll:function(){return actionDetail('Strike all nearby enemies with your weapon.',[['Damage',lvWeaponDamage(lvDiv())],['Area','2-tile radius'],['Knockback','2 tiles'],['Stun','1 turn']],['Knockback and Stun require a damaging hit.']);},
@@ -219,7 +220,7 @@ var AMULET_LIVE={
   pillar:function(){return actionDetail('Raise a pillar that blocks movement and sight.',[['Duration','15 turns'],['Requires','An empty tile']]);},
   stillness:function(){return actionDetail('Move without spending time.',[['Movement','3 steps']],['Any other action ends Stillness.']);},
   echo:function(){return actionDetail('Repeat your last sigil.',[],['Consumes no additional sigil.']);},
-  thorns:function(){return actionDetail('Root yourself and reflect melee damage.',[['Shield','At least '+amuletThornsWard()+' HP'],['Reflection','50% melee damage'],['Root','5 turns'],['Duration','5 turns']],['Includes damage to your ward and Ice Armor.']);},
+  thorns:function(){return actionDetail('Root yourself and reflect melee damage.',[['Shield','At least '+amuletThornsWard()+' HP'],['Reflection','50% melee damage'],['Root','5 turns'],['Duration','5 turns']],['Includes damage to your Ward, Mana Ward and Ice Armor.']);},
   plenty:function(){return actionDetail('Conjure a ration at your feet.');}
 };
 function amuletDetails(item){

@@ -43,7 +43,7 @@ function turnPrepareHolyBuffs(context){
     for(var k in now){
       if(!(now[k] > (prev[k]||0))) continue;
       gained++;
-      if(pct>0) setBuffTimer(k, now[k] + Math.max(1, Math.round(now[k]*pct)));
+      if(pct>0&&k!=='b:manaward') setBuffTimer(k, now[k] + Math.max(1, Math.round(now[k]*pct)));
     }
     if(gained && infusion('holy')==='light'){
       var h=Math.max(1, Math.round(player.maxhp*enchantValues('holy','light').buffHeal*gained));

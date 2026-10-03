@@ -33,6 +33,9 @@
     if(c.sanctuary)m=Math.min(m,Math.max(.25,m-.15*c.divine));
     return m;
   }
+  /* Divine invocations can author a primary damage rule independent of the
+   * ordinary spell/affinity formula; hit, crit and combat riders remain shared. */
+  function divineSpellDamage(base,rank,divine){return Math.max(0,Math.round(base*rank*divine));}
   function spellDamage(amount,c){
     var n=amount;
     // Bolts and area spells deliberately retain their authored rounding order.
@@ -58,6 +61,6 @@
     function suspend(resolve){var prior=active;active=null;try{return resolve();}finally{active=prior;}}
     return Object.freeze({run:run,suspend:suspend,current:function(){return active;},on:function(name,fn){(listeners[name]||(listeners[name]=[])).push(fn);return function(){listeners[name]=listeners[name].filter(function(f){return f!==fn;});};}});
   }
-  var api=Object.freeze({criticalMultiplier:criticalMultiplier,resistance:resistance,spellDamage:spellDamage,create:create});
+  var api=Object.freeze({criticalMultiplier:criticalMultiplier,resistance:resistance,spellDamage:spellDamage,divineSpellDamage:divineSpellDamage,create:create});
   root.FoteActions=api;if(typeof module==='object'&&module.exports)module.exports=api;
 })(typeof globalThis==='object'?globalThis:this);

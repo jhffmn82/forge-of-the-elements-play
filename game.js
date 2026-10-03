@@ -430,6 +430,7 @@ var KEYS={ArrowUp:[0,-1],ArrowDown:[0,1],ArrowLeft:[-1,0],ArrowRight:[1,0],
   w:[0,-1],s:[0,1],a:[-1,0],d:[1,0],q:[-1,-1],e:[1,-1],z:[-1,1],c:[1,1]};
 window.addEventListener('keydown', function(ev){
   var tgt=ev.target.tagName;
+  if(ev.target.closest&&ev.target.closest('[data-game-ui]'))return;
   if(typeof uiOpen==='function'&&uiOpen()&&!openSheet)return;
   if(tgt==='INPUT'||tgt==='SELECT') return;
   var k=ev.key;
@@ -445,11 +446,19 @@ window.addEventListener('keydown', function(ev){
   if('12345678'.indexOf(k)>=0) pressSlotIndex(+k-1);
 });
 var DIRS={1:[-1,1],2:[0,1],3:[1,1],4:[-1,0],6:[1,0],7:[-1,-1],8:[0,-1],9:[1,-1]};
+/* Pointer holds and ordinary button clicks share the native movement entry. */
+function pressDirectionPad(d){
+  if(!DIRS[d] || !player || player.hp<=0 || (RUN && (RUN.over||RUN.victory)) ||
+     (typeof uiOpen==='function' && uiOpen()) ||
+     (typeof turnSequenceBusy==='function' && turnSequenceBusy()))return false;
+  if(aiming || (typeof BOWAIM!=='undefined' && BOWAIM)){cancelAim();return false;}
+  lastDir=DIRS[d];tryMove(lastDir[0],lastDir[1]);return true;
+}
 $('dpad').addEventListener('click', function(ev){
   var b=ev.target.closest('button'); if(!b) return;
   var d=b.getAttribute('data-d');
   if(d==='5'){ endTurn(); return; }
-  lastDir=DIRS[d]; tryMove(lastDir[0],lastDir[1]);
+  pressDirectionPad(d);
 });
 cv.addEventListener('click', function(ev){
   var r=cv.getBoundingClientRect();

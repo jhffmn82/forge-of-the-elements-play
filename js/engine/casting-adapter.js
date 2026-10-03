@@ -13,7 +13,6 @@ var SELF_CASTS={
     sparkleFx(player.x,player.y,'heal',30);sfx('heal');
     log('Heal: +'+hh+' HP.','c-good');
   },
-"arcaneward":function(A,r,div){ player.buffs.communion=8; player.buffs.arcaneward=8; player.ward=Math.round((8+2*r)*div); sfx('cast-generic'); ringFx(player.x,player.y,'#7FA8FF',2); },
 "temper":function(A,r,div){ player.buffs.temper=fullDivineDuration(12);player._buffSeen=player._buffSeen||{};player._buffSeen['b:temper']=player.buffs.temper; derive(player); log('Temper: '+player.weapon.name+'.','c-good'); sfx('forge-enchant'); sparkleFx(player.x,player.y,'fire',20); },
 "rolldice":function(A,r,div){WOBBLE_BONUS=0;try{ sfx('wobbles-giggle'); wobblesIntervention(false); }finally{WOBBLE_BONUS=0;}},
 "unholyaura":function(A,r,div){
@@ -115,7 +114,7 @@ function inRange(x,y){
 
 function resolveTargetedCast(x,y,selection){
   if(selection.amulet)return castAmuletTarget(x,y);
-  var prayer={lance:castReginaldLance,bonespear:castBoneSpear,arcanelance:castArcaneLance,arcanenova:castArcaneNova}[selection.prayer];
+  var prayer={lance:castReginaldLance,bonespear:castBoneSpear,arcaneblink:castArcaneBlink}[selection.prayer];
   if(prayer)return prayer(x,y);
   if(AIM_KINDS[selection.A.kind])return castElementTarget(x,y);
   if(selection.A.kind==='charge')return castChargeTarget(x,y);
@@ -126,6 +125,8 @@ function castAt(x,y){
   var selection=aiming;if(!selection)return false;
   if(playerFearAction())return false;
   var A=selection.A;
+  if(selection.prayer==='arcaneblink'&&(!canPray('arcaneblink')||!arcaneBlinkDestination(x,y))){log('Blink: choose visible, empty ground within '+arcaneBlinkRules().range+' tiles.','c-info');return false;}
+
   if(!selection.amulet&&!selection.prayer){
     var forbidden=spellForbidden(A);
     if(forbidden){log(GODS[player.god].name+' forbids '+A.name+'.','c-info');sfx('ui-error');return false;}

@@ -1,7 +1,8 @@
 /* ============================================================================
    audio.js - sound effects and music.
    Recorded music uses MP3. Effects use supported Ogg Vorbis with MP3 recovery;
-   unavailable clips retain their existing synthesized stand-in.
+   Only cues without a recording use synthesis; a failed recording stays quiet
+   while its owner retains recovery of the selected clip.
    ========================================================================== */
 
 var AUDIO = { ctx:null, master:null, sfxBus:null, musicBus:null, verb:null, muted:false, musicOn:true,
@@ -53,7 +54,7 @@ function audioSave(){ try{ localStorage.setItem('astra-temple-audio', JSON.strin
 function toggleMute(){ AUDIO.muted=!AUDIO.muted; if(AUDIO.master) AUDIO.master.gain.value=AUDIO.muted?0:1; audioSave(); return AUDIO.muted; }
 function toggleMusic(){ AUDIO.musicOn=!AUDIO.musicOn; if(AUDIO.musicBus) AUDIO.musicBus.gain.setTargetAtTime(AUDIO.musicOn?AUDIO.vol.music:0, AUDIO.ctx.currentTime, 0.3); audioSave(); return AUDIO.musicOn; }
 
-/* ---- file-backed playback with synth fallback ---- */
+/* ---- file-backed playback; synthesis is only for unrecorded cues ---- */
 var AUDIO_LOADING={},AUDIO_MUSIC_LRU=[],AUDIO_MUSIC_REQUEST=0;
 var AUDIO_FETCH_TIMEOUT_MS=15000,AUDIO_DECODE_TIMEOUT_MS=10000,AUDIO_RETRY_MS=5000,AUDIO_OGG_SUPPORTED=null;
 function audioDeadline(promise,ms,label,cancel){
@@ -181,7 +182,7 @@ function sfx(name, opts){
   if(SFX_LAST[group]!==undefined && Math.abs(at-SFX_LAST[group])<(alert?350:ui?70:40) && SFX_LAST_GAIN[group]>=near)return;
   SFX_LAST[group]=at; SFX_LAST_GAIN[group]=near;
   var file=name==='step-stone' ? ['step-stone','step-stone-1','step-stone-3','step-stone-2'][SFX_STEP++%4] : (SFX_ALIASES[name]||name);
-  var generation=SFX_RUN_GENERATION,actor=SFX_ACTIVE_ACTOR,keepOnRun=ui;
+  var generation=SFX_RUN_GENERATION,actor=SFX_ACTIVE_ACTOR,keepOnRun=ui,recorded=window.AUDIO_FILES&&window.AUDIO_FILES.indexOf(file)>=0;
   loadFile(file, function(buf){
     function play(){
     if(AUDIO.muted || performance.now()>at+500 || (!keepOnRun&&(generation!==SFX_RUN_GENERATION||actor!==(typeof player!=='undefined'?player:null))))return; // Never replay stale impacts after slow decoding or a restored/new run.
@@ -193,7 +194,7 @@ function sfx(name, opts){
       if(/^(fire|ice|lightning|earth|light|shadow|magic|cast|shrine|pray|summon|heal|forge|wrath)/.test(name))g.connect(AUDIO.verb);
       if(keepOnRun)SFX_UI_VOICES.add(s);
       SFX_VOICES.push(s);s.onended=function(){var i=SFX_VOICES.indexOf(s);if(i>=0)SFX_VOICES.splice(i,1);SFX_UI_VOICES.delete(s);s.disconnect();g.disconnect();};s.start(t);
-    } else { SFX_SYNTH_GAIN=near;SFX_SYNTH_UI=keepOnRun; try{ synth(name, t, opts); } finally{ SFX_SYNTH_GAIN=1;SFX_SYNTH_UI=false; } }   /* the stand-in softens with distance too */
+    } else if(!recorded) { SFX_SYNTH_GAIN=near;SFX_SYNTH_UI=keepOnRun; try{ synth(name, t, opts); } finally{ SFX_SYNTH_GAIN=1;SFX_SYNTH_UI=false; } }   /* unrecorded cues retain their existing distance attenuation */
     }
     if(AUDIO.ctx.state==='suspended'||AUDIO.ctx.state==='interrupted')resumeAudio().then(function(){if(AUDIO.ctx.state==='running')play();});else play();
   });
@@ -201,7 +202,7 @@ function sfx(name, opts){
 
 /* One quiet click for mouse, touch and keyboard activation, including new HUD controls. */
 if(typeof document!=='undefined')document.addEventListener('click',function(ev){
-  var el=ev.target&&ev.target.closest&&ev.target.closest('#top,#bars,#hud2,#studyReadouts,#studyExplore,#bMap,#studyMenuToggle,#studyPortrait,#studyInventoryIcon,#studyLogClose,#log,#hotbar,#dpad,#shade,#modal,#statusbar,#title .menu,#create button,#create .card');
+  var el=ev.target&&ev.target.closest&&ev.target.closest('#top,#bars,#hud2,#studyReadouts,#studyExplore,#bMap,#studyMenuToggle,#studyPortrait,#studyInventoryIcon,#studyLogClose,#log,#hotbar,#shade,#modal,#statusbar,#title .menu,#create button,#create .card');
   if(!el||ev.defaultPrevented||ev.target.closest('[disabled],[aria-disabled="true"]'))return;
   audioInit();sfx('ui-click');
 },true);
@@ -304,7 +305,7 @@ function synth(name, t, opts){
   tone(t,'sine',660,0,0.08,0.05);
 }
 
-/* ---- music: file first, generative score otherwise ---- */
+/* ---- recorded music; failed clips retain their selected scene for retry ---- */
 function musicEnds(buf){ /* a song with an ending rather than a loop: its last half second is silent */
   if(!buf || typeof buf.getChannelData!=='function' || !buf.sampleRate) return false;
   var d=buf.getChannelData(0), n=Math.floor(buf.sampleRate*0.5), peak=0;
@@ -345,7 +346,9 @@ function playMusic(kind){
       AUDIO.musicFailed=false;AUDIO.musicFailures=0;AUDIO.musicRetryAt=0;
     } else {
       AUDIO.musicFailed=true;AUDIO.musicFailures=(AUDIO.musicFailures||0)+1;AUDIO.musicRetryAt=performance.now()+audioRetryDelay(AUDIO.musicFailures);
-      if(!AUDIO.music)AUDIO.music=generativeMusic(kind);
+      /* A missing or rejected recording must not revive the retired procedural
+         score. The next eligible scene request or audio-unlock gesture retries
+         this recording with the same bounded backoff. */
     }
   });
 }

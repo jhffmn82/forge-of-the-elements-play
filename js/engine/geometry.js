@@ -7,6 +7,10 @@
   function bodyPoint(entity,toward){var n=bodySize(entity);return {x:Math.max(entity.x,Math.min(entity.x+n-1,toward.x)),y:Math.max(entity.y,Math.min(entity.y+n-1,toward.y))};}
   function bodyDistance(a,b){var an=bodySize(a),bn=bodySize(b);return Math.max(0,a.x-b.x-bn+1,b.x-a.x-an+1,a.y-b.y-bn+1,b.y-a.y-an+1);}
   function bodyIntersects(entity,tiles){return tiles.some(function(p){return bodyContains(entity,Array.isArray(p)?p[0]:p.x,Array.isArray(p)?p[1]:p.y);});}
+  function teleportAllowed(origin,destination,context){
+    return Number.isInteger(destination.x)&&Number.isInteger(destination.y)&&context.inBounds&&context.visible&&context.walkable&&!context.occupied&&
+      bodyDistance(origin,destination)>0&&bodyDistance(origin,destination)<=context.range;
+  }
   function terrain(t){
     var floors=new Set([t.floor,t.open,t.stairs,t.rubble,t.water,t.bridge]);
     var walls=new Set([t.wall,t.door,t.locked,t.iceDoor,t.thorns,t.secret,t.sealed,t.toll]);
@@ -97,5 +101,5 @@
     value+=view.extra||0;return Math.max(0,Math.min(.9,value));
   }
   return Object.freeze({terrain:terrain,radius:radius,traceLine:traceLine,cast:cast,mask:mask,revealRock:revealRock,stealth:stealth,
-    bodySize:bodySize,bodyContains:bodyContains,bodyPoint:bodyPoint,bodyDistance:bodyDistance,bodyIntersects:bodyIntersects});
+    bodySize:bodySize,bodyContains:bodyContains,bodyPoint:bodyPoint,bodyDistance:bodyDistance,bodyIntersects:bodyIntersects,teleportAllowed:teleportAllowed});
 });

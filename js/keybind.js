@@ -27,7 +27,7 @@ function keyLabel(k){ return k.indexOf('Numpad')===0 ? 'Numpad '+k.slice(6) : k=
 var REBINDING=null;
 window.addEventListener('keydown', function(ev){
   if(ev.__fote) return;                                   /* our own translated event */
-  var tgt=ev.target && ev.target.tagName; if(tgt==='INPUT' || tgt==='SELECT' || tgt==='TEXTAREA') return;
+  var tgt=ev.target && ev.target.tagName; if(tgt==='INPUT' || tgt==='SELECT' || tgt==='TEXTAREA'||ev.target&&ev.target.closest&&ev.target.closest('[data-game-ui]')) return;
   var eventKey=bindingEventKey(ev),numpad=eventKey.indexOf('Numpad')===0;
   if(REBINDING){
     ev.preventDefault(); ev.stopImmediatePropagation();

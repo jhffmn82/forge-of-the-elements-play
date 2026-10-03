@@ -134,10 +134,19 @@ function damageDefenses(event){
     if(type==='phys'&&d>0)d=Math.max(1,d);
     if(!event.options.bypassShields){
       if(player.ward>0&&!(buff('arcaneward')||buff('communion')))player.ward=0;
-      var pools=[['ward','magic'],['iceArmor','ice'],['hideShield','phys'],['mward','magic'],['guard','phys']].map(function(p){return {key:p[0],amount:player[p[0]],type:p[1]};});
+      if(player.manaWard>0&&!buff('manaward'))player.manaWard=0;
+      var pools=[['ward','magic'],['manaWard','magic'],['iceArmor','ice'],['hideShield','phys'],['mward','magic'],['guard','phys']].map(function(p){return {key:p[0],amount:player[p[0]],type:p[1]};});
       var absorption=FoteDamage.absorb(d,pools);d=absorption.remaining;event.absorbed=absorption.absorbed;
       Object.keys(absorption.pools).forEach(function(key){player[key]=absorption.pools[key];});
-      absorption.absorbed.forEach(function(pool){floatText(player.x,player.y,'-'+Math.round(pool.amount),pool.type);if(pool.key==='ward'&&player.ward<=0)combatActionNote(player,'ward broken');});
+      absorption.absorbed.forEach(function(pool){
+        floatText(player.x,player.y,'-'+Math.round(pool.amount),pool.type);
+        if(pool.key==='manaWard'){
+          var before=player.mp;player.mp=Math.min(player.maxmp,player.mp+pool.amount*manaWardRules().manaPerHP);
+          var restored=player.mp-before;if(restored>0)floatText(player.x,player.y,'+'+Number(restored.toFixed(1))+' mp','ice');
+          if(player.manaWard<=0){player.buffs.manaward=0;combatActionNote(player,'Mana Ward broken');}
+        }
+        if(pool.key==='ward'&&player.ward<=0)combatActionNote(player,'ward broken');
+      });
     }
     if(Math.round(d)>0&&foe&&hasP('fortitude')&&!(player.fortUntil>worldNow())){d*=.5;player.fortUntil=worldNow()+600;combatActionNote(player,'Fortitude');}
   }

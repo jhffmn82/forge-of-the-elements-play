@@ -67,20 +67,30 @@ function atl(file){
 function hash2(x,y,s){ var h=(x*374761393 + y*668265263 + (s||0)*2147483647)|0; h=(h^(h>>>13))*1274126177|0; return ((h^(h>>>16))>>>0)/4294967295; }
 
 /* ---- sprite lookups ---- */
-function packedObjectArt(group, name){
-  var fresh=FoteEnvironmentProps.art(group,name); if(fresh) return fresh;   /* the environment-props atlases first */
+var PACKED_OBJECT_GROUPS=['props','chests','structures','traps','items','terrain','icons'];
+function packedObjectSpec(group,name){
   if(group==='items'&&name==='item-hawaiian-shirt')group='hawaiian-shirt';
   if(group==='icons'&&AS.map&&AS.map[name]&&AS.map[name].items[name])group=name;
   if(name==='item-censer'){group='knife';name='ceremonial-knife';}   /* the icon only: the knife in the hand is the 64px held-censer (2026-09-27, D2a) */
   if(group==='structures'&&name==='stairs-up'&&AS.map&&AS.map.stairs)group='stairs';
   if(group==='props'&&name==='weapon-rack'&&AS.map&&AS.map.rack)group='rack';
   var g=AS.map && AS.map[group]; if(!g || !g.items[name]) return null;
-  var img=atl('map-'+group+'.webp'); if(!img) return null;
-  var b=g.items[name];
-  return {img:img, sx:b[0]+b[2], sy:b[1]+b[3], sw:Math.max(1,b[4]), sh:Math.max(1,b[5]), cell:g.cell};   /* cell: the atlas cell, for icon framing (ui.js paintIconArt) */
+  return {file:'map-'+group+'.webp',box:g.items[name],cell:g.cell};
+}
+function packedObjectReady(group,name,fallback){
+  var spec=packedObjectSpec(group,name);
+  if(!spec&&fallback)PACKED_OBJECT_GROUPS.some(function(candidate){spec=packedObjectSpec(candidate,name);return !!spec;});
+  return spec?atlReady(spec.file):null;
+}
+function packedObjectArt(group, name){
+  var fresh=FoteEnvironmentProps.art(group,name); if(fresh) return fresh;   /* the environment-props atlases first */
+  var spec=packedObjectSpec(group,name);if(!spec)return null;
+  var img=atl(spec.file); if(!img) return null;
+  var b=spec.box;
+  return {img:img, sx:b[0]+b[2], sy:b[1]+b[3], sw:Math.max(1,b[4]), sh:Math.max(1,b[5]), cell:spec.cell};   /* cell: the atlas cell, for icon framing (ui.js paintIconArt) */
 }
 function anyObj(name){
-  var groups=['props','chests','structures','traps','items','terrain','icons'];
+  var groups=PACKED_OBJECT_GROUPS;
   for(var i=0;i<groups.length;i++){ var o=objArt(groups[i],name); if(o) return o; }
   return null;
 }

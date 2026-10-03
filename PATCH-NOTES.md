@@ -1,5 +1,12 @@
 # Forge of the Elements — Beta 1.5
 
+- Touch movement accepts taps sooner. Holding a direction repeats after half a second, at no more than four steps per second; releasing stops repeats.
+- A circular grab button appears beside the enabled touch pad when regular loot is underfoot. Search stays available; hearts and mana globes remain automatic.
+- All character paper dolls fit their available boxes. Item icons repaint after their artwork loads, and character-creation audio guidance wraps below the start button.
+- Failed recorded music and sound effects no longer substitute obsolete synthesized audio; the current recording can recover on a later attempt.
+- The title automatically checks for newer builds and glows Update available beneath Version. Updating keeps saved games and settings.
+- Vellum grants spell knockback at rank 1, adds bonus Divine Power to Spell Power at rank 3, and grants 25% stronger equipment at rank 5.
+- Vellum gains Arcane Lance: 7 Mana, range 3, damage equal to 5 per god rank times Divine Power. Mana Ward is instant, lasts 4 turns and has an 8-action cooldown; Blink has range 5 and a 20-action cooldown.
 - Phone startup loads current-scene artwork in a small queue and releases unused atlases as you explore.
 - Music and sound effects have MP3 support for phones that cannot decode Ogg audio.
 - Failed artwork, animated portraits and audio can retry without reloading your run.

@@ -35,6 +35,7 @@ var STATUS_INFO = {
   rally:     {name:'Rally', icon:'pr-rally', d:'+10% damage and spell power.'},
   temper:    {name:'Temper', icon:'ic-temper', d:'Increased weapon damage and armor.'},
   arcaneward:{name:'Ward', icon:'ic-arcane-ward', d:'Absorbs damage.'},
+  manaward:  {name:'Mana Ward', icon:'ic-arcane-ward', d:'Absorbed damage restores Mana, up to your maximum.'},
   haste:     {name:'Haste', icon:'ic-flame-step', d:'Movement, attacks and spellcasting are 30% faster.'},
   moltenring:{name:'Molten Ring', icon:'ic-firebolt', d:'Attacks and single-target spells deal 5 additional fire damage.'},
   cinder:    {name:'Cinder Stride', icon:'ic-flame-step', d:'Faster, leaving fire where you step.'},
@@ -101,6 +102,7 @@ function statusList(e){
       I=Object.assign({},I,{icon:amulet&&amulet.amulet==='stillness'&&amulet.icon||look&&'item-amulet-'+look||I.icon});
     }
     if(o.k==='communion'&&e.ward>0)I=Object.assign({},I,{d:'Ward: '+Math.round(e.ward)+' HP. '+I.d});
+    if(o.k==='manaward')I=Object.assign({},I,{d:'Shield: '+Math.round(e.manaWard||0)+' HP. '+I.d});
     if(o.k==='rally'&&e!==player)I=Object.assign({},I,{d:'Rallied: attacks deal 10% more damage.'});
     if(o.k==='stone'&&e!==player) I={name:'Petrified',icon:'st-stone',bad:1,d:'Can\'t move or act. Evasion is 0.'};
     if(o.k==='livingmountain'||o.k==='discipline') I=Object.assign({},I,{name:I.name+' ×'+(e.st[o.k].n||0)});

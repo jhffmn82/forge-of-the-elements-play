@@ -3,6 +3,13 @@ var FOTE_VERSION = 'Beta 1.5';
 /* Keep newest first; describe only changes already present in this build. */
 var FOTE_PATCHES = [
   {version:'Beta 1.5', notes:[
+    "Touch movement accepts taps sooner. Holding a direction repeats after half a second, at no more than four steps per second; releasing stops repeats.",
+    "A circular grab button appears beside the enabled touch pad when regular loot is underfoot. Search stays available; hearts and mana globes remain automatic.",
+    "All character paper dolls fit their available boxes. Item icons repaint after their artwork loads, and character-creation audio guidance wraps below the start button.",
+    "Failed recorded music and sound effects no longer substitute obsolete synthesized audio; the current recording can recover on a later attempt.",
+    "The title automatically checks for newer builds and glows Update available beneath Version. Updating keeps saved games and settings.",
+    "Vellum grants spell knockback at rank 1, adds bonus Divine Power to Spell Power at rank 3, and grants 25% stronger equipment at rank 5.",
+    "Vellum gains Arcane Lance: 7 Mana, range 3, damage equal to 5 per god rank times Divine Power. Mana Ward is instant, lasts 4 turns and has an 8-action cooldown; Blink has range 5 and a 20-action cooldown.",
     "Phone startup loads current-scene artwork in a small queue and releases unused atlases as you explore.",
     "Music and sound effects have MP3 support for phones that cannot decode Ogg audio.",
     "Failed artwork, animated portraits and audio can retry without reloading your run.",
@@ -349,32 +356,58 @@ var FOTE_PATCHES = [
 ]},
   {version:'Beta 1.0', notes:['Initial beta release.']}
 ];
-var foteVersionState = {message:'Checking for updates…', latest:null, pending:null};
+var foteVersionState = {message:'Checking for updates…', latest:null, pending:null, validated:false, installing:false};
+var foteTitleVersionTimer=null,FOTE_TITLE_CHECK_MS=60000;
 function foteBuild(){ return (document.querySelector('meta[name="fote-build"]')||{}).content||'dev'; }
+function foteBuildTime(value){
+  if(typeof value!=='string')return NaN;
+  var match=/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d+)?(?:Z|[+-](\d{2}):(\d{2}))$/.exec(value);
+  if(!match)return NaN;
+  var month=Number(match[2]),day=Number(match[3]);
+  if(month<1||month>12||day<1||day>new Date(Date.UTC(Number(match[1]),month,0)).getUTCDate()||Number(match[4])>23||Number(match[5])>59||Number(match[6])>59||Number(match[7]||0)>23||Number(match[8]||0)>59)return NaN;
+  return Date.parse(value);
+}
+function foteTitleOpen(){var title=document.getElementById('title');return !!(title&&title.classList.contains('on'));}
+function foteItchUpload(){var host=new URL(location.href).hostname;return host==='itch.zone'||host.endsWith('.itch.zone');}
+function foteVersionManifest(){return foteItchUpload()?'https://jhffmn82.github.io/forge-of-the-elements-play/build.json':'build.json';}
 function paintVersionStatus(){
-  ['versionStatus','versionPanelStatus'].forEach(function(id){ var el=document.getElementById(id); if(el)el.textContent=(id==='versionPanelStatus'?FOTE_VERSION+' · ':'')+foteVersionState.message; });
-  var b=document.getElementById('versionInstall'); if(b)b.hidden=!foteVersionState.latest;
+  ['versionStatus','versionPanelStatus'].forEach(function(id){var el=document.getElementById(id);if(!el)return;
+    el.textContent=id==='versionStatus'&&foteVersionState.latest?'Update available':(id==='versionPanelStatus'?FOTE_VERSION+' · ':'')+foteVersionState.message;
+    el.classList.toggle('update-available',!!foteVersionState.latest);el.title=foteVersionState.message;
+  });
+  var b=document.getElementById('versionInstall');if(b){b.hidden=!foteVersionState.latest;b.disabled=foteItchUpload()||foteVersionState.installing||!foteVersionState.validated;b.textContent=foteVersionState.installing?'Installing…':'Install update';}
 }
 function checkGameVersion(){
   if(foteVersionState.pending)return foteVersionState.pending;
-  if(foteBuild()==='dev'){ foteVersionState.message='Development build'; paintVersionStatus(); return Promise.resolve(); }
+  var local=foteBuildTime(foteBuild());
+  if(!Number.isFinite(local)){foteVersionState.latest=null;foteVersionState.validated=false;foteVersionState.message=foteBuild()==='dev'?'Development build':'This copy has no valid build date.';paintVersionStatus();return Promise.resolve(false);}
+  if(navigator.onLine===false){foteVersionState.validated=false;foteVersionState.message=foteVersionState.latest?'Update available. Connect to install.':'Offline · updates cannot be checked.';paintVersionStatus();return Promise.resolve(false);}
+  foteVersionState.validated=false;
   foteVersionState.message='Checking for updates…'; paintVersionStatus();
   foteVersionState.pending=(async function(){
     var controller=typeof AbortController==='function'?new AbortController():null;
-    var timer=controller?setTimeout(function(){controller.abort();},8000):null;
+    var timer=null;
     try{
-      var r=await fetch('build.json?t='+Date.now(),{cache:'no-store',signal:controller?controller.signal:undefined});
-      if(!r.ok)throw new Error('Unavailable');
-      var b=await r.json(); if(!b||typeof b.built!=='string'||!b.built)throw new Error('Invalid build');
-      foteVersionState.latest=b.built!==foteBuild()?b:null;
-      foteVersionState.message=foteVersionState.latest?'Update available: open Version to install':'Up to date';
-    }catch(e){ foteVersionState.latest=null; foteVersionState.message='Could not check for updates. You can keep playing this copy.'; }
-    finally{ if(timer)clearTimeout(timer); foteVersionState.pending=null; paintVersionStatus(); }
+      var request=(async function(){var r=await fetch(foteVersionManifest()+'?t='+Date.now(),{cache:'no-store',signal:controller?controller.signal:undefined});if(!r.ok)throw new Error('Unavailable');return r.json();})();
+      var deadline=new Promise(function(resolve,reject){timer=setTimeout(function(){if(controller)controller.abort();reject(new Error('Update check timed out'));},8000);});
+      var b=await Promise.race([request,deadline]),remote=b&&foteBuildTime(b.built);
+      if(!b||!Number.isFinite(remote))throw new Error('Invalid build');
+      foteVersionState.latest=remote>local?b:null;foteVersionState.validated=true;
+      foteVersionState.message=foteVersionState.latest?(foteItchUpload()?'Update available. Reload the itch.io game page; saved games are kept.':'Update available. Open Version to install.'):remote<local?'This copy is newer than the published build.':'Up to date';
+      return true;
+    }catch(e){foteVersionState.validated=false;foteVersionState.message=foteVersionState.latest?'Update available. Could not recheck; connect to install.':'Could not check for updates. You can keep playing this copy.';return false;}
+    finally{if(timer!==null)clearTimeout(timer);foteVersionState.pending=null;paintVersionStatus();}
   })();
   return foteVersionState.pending;
 }
+function stopTitleVersionChecks(){if(foteTitleVersionTimer!==null)clearTimeout(foteTitleVersionTimer);foteTitleVersionTimer=null;}
+function startTitleVersionChecks(){
+  stopTitleVersionChecks();if(!foteTitleOpen()||document.hidden)return;
+  checkGameVersion();
+  foteTitleVersionTimer=setTimeout(function(){foteTitleVersionTimer=null;startTitleVersionChecks();},FOTE_TITLE_CHECK_MS);
+}
 function showVersion(){
-  var html='<p id="versionPanelStatus" role="status"></p><button id="versionInstall" hidden>Install update</button><button id="versionCheck">Check again</button>';
+  var html='<p id="versionPanelStatus" role="status"></p><button id="versionInstall" hidden>Install update</button><button id="versionCheck">Check again</button><p class="sub">'+(foteItchUpload()?'To update this embedded copy, reload the itch.io game page. Saved games and settings are kept.':'Reloading to update keeps your saved games and settings.')+'</p>';
   FOTE_PATCHES.forEach(function(p){ html+='<section><h3>'+p.version+'</h3><ul>'+p.notes.map(function(n){return '<li>'+n+'</li>';}).join('')+'</ul></section>'; });
   openModal('Version',html,[{label:'Close',fn:closeModal}]);
   document.getElementById('versionInstall').onclick=function(){forceUpdate(this);};
@@ -382,14 +415,21 @@ function showVersion(){
   paintVersionStatus();
 }
 async function forceUpdate(btn){
-  await checkGameVersion(); var b=foteVersionState.latest; if(!b)return;
-  if(btn){btn.disabled=true;btn.textContent='Installing…';}
+  if(foteVersionState.installing||!foteTitleOpen()||foteItchUpload())return;
+  foteVersionState.installing=true;paintVersionStatus();
   try{
-    if(navigator.serviceWorker){var regs=await navigator.serviceWorker.getRegistrations();await Promise.all(regs.filter(function(r){return r.scope===new URL('./',location.href).href;}).map(function(r){return r.unregister();}));}
-    if(window.caches){var ks=await caches.keys();await Promise.all(ks.filter(function(k){return k.indexOf('astra-temple-')===0;}).map(function(k){return caches.delete(k);}));}
+    var checked=await checkGameVersion(),b=foteVersionState.latest;if(!checked||!foteVersionState.validated||!b||!foteTitleOpen())return;
+    var scope=new URL('./',location.href).href;
+    if(navigator.serviceWorker){var regs=await navigator.serviceWorker.getRegistrations();await Promise.all(regs.filter(function(r){return r.scope===scope;}).map(function(r){return r.unregister();}));}
+    if(!foteTitleOpen())return;
+    if(window.caches){var ks=await caches.keys();await Promise.all(ks.filter(function(k){return k.indexOf('astra-temple-')===0;}).map(async function(k){var cache=await caches.open(k),requests=await cache.keys();await Promise.all(requests.filter(function(r){return new URL(r.url).href.indexOf(scope)===0;}).map(function(r){return cache.delete(r);}));}));}
+    if(!foteTitleOpen())return;
     var url=new URL(location.href);url.searchParams.set('b',b.built);location.replace(url.href);
-  }catch(e){ if(btn){btn.disabled=false;btn.textContent='Retry update';} foteVersionState.message='Update could not be installed. Please try again.';paintVersionStatus(); }
+  }catch(e){foteVersionState.message='Update could not be installed. Please try again.';}
+  finally{foteVersionState.installing=false;paintVersionStatus();}
 }
 /* Installed apps may return from suspension without rebuilding the title menu. */
-document.addEventListener('visibilitychange',function(){var t=document.getElementById('title');if(!document.hidden&&t&&t.classList.contains('on'))checkGameVersion();});
-window.addEventListener('load',function(){var t=document.getElementById('title');if(t&&t.classList.contains('on'))checkGameVersion();});
+document.addEventListener('visibilitychange',startTitleVersionChecks);
+window.addEventListener('online',startTitleVersionChecks);
+window.addEventListener('offline',startTitleVersionChecks);
+window.addEventListener('load',startTitleVersionChecks);

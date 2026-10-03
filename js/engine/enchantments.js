@@ -49,7 +49,7 @@
   };
   elements.forEach(function(el){rules.armor[el].resistance=curve(.10,.05);});
   function finite(v){return Number.isFinite(v)?v:0;}
-  function gearBonus(rank){return 1+.05*Math.max(0,finite(rank));}
+  function gearBonus(rank){return finite(rank)>=5?1.25:1;}
   function amplifyBonus(value,multiplier){return value>0?value*multiplier:value||0;}
   function godBonus(context){context=context||{};return gearBonus(context.vellumRank)*(1+.10*Math.max(0,finite(context.anvilRank)));}
   function scale(mastery,context){return (1+.3*Math.max(0,finite(mastery)))*godBonus(context);}

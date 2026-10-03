@@ -39,11 +39,9 @@
     }
     if(c.buffs.rally>0)spell*=1.1;
     var divine=1+((w.cursed?0:w.divine||0)+(o&&!o.cursed?o.divine||0:0))*c.gearBonus;
-    if(c.rank>=5){
-      if(actor.god==='murk')divine+=.02*Math.max(0,(stats.vit||10)-10);
-      // Spell Power is resolved first and never reads Divine Power.
-      if(actor.god==='vellum')divine+=Math.max(0,spell-1);
-    }
+    if(actor.god==='murk'&&c.rank>=5)divine+=.02*Math.max(0,(stats.vit||10)-10);
+    // Vellum converts only equipment's bonus Divine Power, in one direction.
+    if(actor.god==='vellum'&&c.rank>=3)spell+=Math.max(0,divine-1);
     return {spell:spell,divine:divine};
   }
   /* Dwarf (DESIGN races table): worn weapons and armor count as one upgrade level higher, on top of their own upgrades */

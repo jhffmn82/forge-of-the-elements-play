@@ -178,12 +178,50 @@ function playerHitRewards(target,singleTarget){
     player._communionAction=turn;
     player.favor=Math.min(100,(player.favor||0)+godRank()*divineStrength());
   }
-  if(singleTarget && target.hp>0 && hasGod('vellum') && godRank()>=3 && combatRoll(.10*godRank(),true))
+  if(singleTarget && target.hp>0 && hasGod('vellum') && godRank()>=1 && combatRoll(.10*godRank(),true))
     knockback(target,target.x-player.x,target.y-player.y,2);
 }
 
 /* Old save/hotbar names resolve here; only current prayers have implementations. */
-function prayerId(id){return {manatide:'arcanelance',unbound:'arcanenova',corpsefeast:'bonespear',offering:'fieldsmelt',reforge:'anviltoll'}[id]||id;}
+function prayerId(id){return {arcanelance:'manaward',manatide:'manaward',arcanenova:'arcaneblink',unbound:'arcaneblink',corpsefeast:'bonespear',offering:'fieldsmelt',reforge:'anviltoll'}[id]||id;}
+function arcaneLanceRules(){
+  var A=ABILITIES.arcanelance;
+  return {damage:FoteActions.divineSpellDamage(A.base[0],godRank(),divineStrength()),range:A.range};
+}
+function manaWardRules(){return FoteCosts.manaWard(PRAYERS.manaward,godRank(),divineStrength());}
+function arcaneBlinkRules(){var P=PRAYERS.arcaneblink;return {name:P.name,kind:'teleport',range:P.range,divine:true,cost:0};}
+function arcaneBlinkDestination(x,y){
+  var inside=Number.isInteger(x)&&Number.isInteger(y)&&inb(x,y);
+  return FoteGeometry.teleportAllowed(player,{x:x,y:y},{range:arcaneBlinkRules().range,inBounds:inside,
+    visible:inside&&(revealAll||vis[idxOf(x,y)]),walkable:inside&&walkable(x,y),occupied:inside&&occupied(x,y)});
+}
+function migratePrayerReferences(actor){
+  // Invocation and prayer names are separate namespaces: old prayer Arcane
+  // Lance becomes Mana Ward, while old Communion becomes the new invocation.
+  function abilityId(id){return id==='arcaneward'?'arcanelance':id;}
+  if(actor.abilities)actor.abilities=actor.abilities.map(abilityId).filter(function(id,i,all){return all.indexOf(id)===i;});
+  ['hotbar','_hotPrev'].forEach(function(key){(actor[key]||[]).forEach(function(slot){if(slot&&slot.type==='ability')slot.key=abilityId(slot.key);});});
+  if(actor.hotKnown&&Object.prototype.hasOwnProperty.call(actor.hotKnown,'a:arcaneward')){
+    actor.hotKnown['a:arcanelance']=actor.hotKnown['a:arcanelance']==='off'||actor.hotKnown['a:arcaneward']==='off'?'off':actor.hotKnown['a:arcanelance']||actor.hotKnown['a:arcaneward'];
+    delete actor.hotKnown['a:arcaneward'];
+  }
+  if(actor.cds&&Object.prototype.hasOwnProperty.call(actor.cds,'arcaneward')){
+    actor.cds.arcanelance=Math.max(actor.cds.arcanelance||0,actor.cds.arcaneward||0);delete actor.cds.arcaneward;
+  }
+  ['hotbar','_hotPrev'].forEach(function(key){(actor[key]||[]).forEach(function(slot){if(slot&&slot.type==='prayer')slot.key=prayerId(slot.key);});});
+  Object.keys(actor.hotKnown||{}).forEach(function(key){
+    if(key.indexOf('p:')!==0)return;
+    var current='p:'+prayerId(key.slice(2));if(current===key)return;
+    actor.hotKnown[current]=actor.hotKnown[current]==='off'||actor.hotKnown[key]==='off'?'off':actor.hotKnown[current]||actor.hotKnown[key];
+    delete actor.hotKnown[key];
+  });
+  Object.keys(actor.cds||{}).forEach(function(key){
+    if(key.indexOf('pray:')!==0)return;
+    var id=prayerId(key.slice(5)),current='pray:'+id;
+    if(DIVINE_COOLDOWNS.prayers[id]===0){delete actor.cds[key];return;}
+    if(current!==key){actor.cds[current]=Math.max(actor.cds[current]||0,actor.cds[key]||0);delete actor.cds[key];}
+  });
+}
 function prayerHealthCost(id){var P=PRAYERS[prayerId(id)];return P&&P.health||0;}
 function canPray(id){
   id=prayerId(id);
@@ -239,7 +277,7 @@ function usePrayer(id){
 }
 function performPrayer(id){
   if(!canPray(id)){prayerRefused(id);return false;}
-  var aim={bonespear:BONE_SPEAR,lance:LANCE,arcanelance:ARCANE_LANCE,arcanenova:ARCANE_NOVA}[id];
+  var aim=id==='arcaneblink'?arcaneBlinkRules():{bonespear:BONE_SPEAR,lance:LANCE}[id];
   if(aim){
     if(aiming&&aiming.prayer===id){
       var target=autoAimLive(),point=target&&autoAimPoint(target);
@@ -257,7 +295,8 @@ function performPrayer(id){
   if(id==='venom-burst')return prayVenomBurst();
   spendPrayer(id);sfx('pray');setClip(player,'cast');
   var div=divineStrength();
-  if(id==='ironhide'){player.buffs.ironhide=12;player.hideShield=Math.round((5+2*godRank())*div);derive(player);log('Iron Hide: armor and shield refreshed.','c-good');}
+  if(id==='manaward'){var ward=manaWardRules();player.manaWard=ward.shield;player.buffs.manaward=ward.duration;ringFx(player.x,player.y,'#7FA8FF',2);log('Mana Ward: '+ward.shield+' HP.','c-good');}
+  else if(id==='ironhide'){player.buffs.ironhide=12;player.hideShield=Math.round((5+2*godRank())*div);derive(player);log('Iron Hide: armor and shield refreshed.','c-good');}
   else if(id==='pummel'){player.pummel=3;log('Pummel: next 3 unarmed hits.','c-good');updateUI();draw();return true;}
   else if(id==='laststand'||id==='rampage'){player.buffs[id]=10;derive(player);updateUI();return true;}
   else if(id==='luckystreak'){player.buffs.luckystreak=8;derive(player);sfx('wobbles-giggle');updateUI();return true;}
@@ -287,6 +326,17 @@ function performPrayer(id){
   else if(id==='rolldice2')greaterPrayer();
   if(PRAYERS[id].instant)FREE_ACTION=true;
   endTurn();return true;
+}
+function castArcaneBlink(x,y){
+  if(!canPray('arcaneblink')||!arcaneBlinkDestination(x,y))return false;
+  var actor=player,floor=floorNo;
+  spendPrayer('arcaneblink');aiming=null;stopRest();stopTravel();sfx('pray');setClip(player,'cast');
+  sparkleFx(player.x,player.y,'magic',20);
+  if(typeof FoteEnemyPerception!=='undefined')FoteEnemyPerception.observeMove(x,y);
+  player.x=x;player.y=y;player._lx=undefined;player._ly=undefined;player.castingSpell=true;
+  sparkleFx(x,y,'magic',20);computeFOV();log('Blink.','c-good');stepOn();endTurn();
+  afterTurn(function(){if(player===actor&&floorNo===floor&&player.hp>0){enterTile();updateUI();draw();}});
+  return true;
 }
 function prayFieldSmelt(){
   var choices=player.bag.map(function(b,i){return {b:b,i:i,v:recycleValue(b)};}).filter(function(o){return o.v>0;});
@@ -374,7 +424,7 @@ function resolveAmusement(){
  }
 }
 
-function godsWorldAdvance(from,to){if(!buff('ironhide'))player.hideShield=0;if(!(player.hidden>0))player.syllaDark=0;
+function godsWorldAdvance(from,to){if(!buff('ironhide'))player.hideShield=0;if(!buff('manaward'))player.manaWard=0;if(!(player.hidden>0))player.syllaDark=0;
  ents.forEach(function(e){if(e.cowardMark&&e.challengeUntil<=to){e.cowardMark=false;e.challenged=false;}if(player.god==='reginald'&&e.foe&&e.hp>0&&dist(e,player)<=8){
   // The Unsneaky's announced presence is an explicit, local source of noise.
   if(typeof FoteEnemyPerception!=='undefined')FoteEnemyPerception.remember(e,player,'unsneaky',to);

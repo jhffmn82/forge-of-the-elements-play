@@ -64,7 +64,7 @@ function prepareAttack(event){
   event.multiplier=event.options.multiplier||1;event.label=event.options.label;
   event.hpBefore=def.hp;event.playerHPBefore=player.hp;
   event.thorns=def===player&&att!==player&&att.hp>0&&buff('thorns')&&dist(att,def)<=1;
-  event.shieldedHPBefore=player.hp+(player.ward||0)+(player.iceArmor||0);
+  event.shieldedHPBefore=event.thorns?thornsShieldedHP():0;
   event.wasHidden=player.hidden>0;
   event.numbing=att===player&&numbingDark(def)&&!event.wasHidden;
   event.dark=att===player&&syllaOn()&&player.syllaDark>0&&event.wasHidden?player.syllaDark:0;
@@ -92,9 +92,10 @@ function offHandSwing(foe){
   if(!foe||foe.hp<=0||!player.off||!player.off.weapon||player.twoHanded)return;
   return attack(player,foe,.6,undefined,{weapon:player.off,offhand:true,tags:['offhand']});
 }
+function thornsShieldedHP(){return player.hp+FoteCosts.shieldTotal(player,['ward','iceArmor','manaWard']);}
 function finishAttackReactions(event){
   var att=event.source,def=event.target,H=event.hit,landed=def.hp<event.hpBefore;
-  if(event.thorns){var taken=event.shieldedHPBefore-(player.hp+(player.ward||0)+(player.iceArmor||0));
+  if(event.thorns){var taken=event.shieldedHPBefore-thornsShieldedHP();
     if(taken>0&&att.hp>0){applyDamage(att,Math.max(1,Math.round(taken*.5)),'phys',player,{tags:['reflected'],actionId:event.actionId});if(att.hp<=0)kill(att,player);}}
   if(att===player){if(H&&landed)afterPlayerHit(def,H);else if(player.friction)player.friction.n=0;}
   if(att!==player&&def===player&&att.foe&&dist(att,player)<=1&&player.hp<event.playerHPBefore&&player.hp>0&&combo('air','shadow')&&!(player.windCd>turn)){

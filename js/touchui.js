@@ -194,6 +194,10 @@
   function hookDpad(){
     var dp=document.getElementById('dpad'); if(!dp || dp._touchWait) return !!dp;
     dp._touchWait=true;
+    /* The pad owns held pointer directions; browser panning must not steal
+       that gesture halfway through a step. Other map gestures stay unchanged. */
+    dp.style.touchAction='none';
+    dp.querySelectorAll('button[data-d]').forEach(function(b){b.style.touchAction='none';});
     var c=dp.querySelector('[data-d="5"]'); if(c){ if(!c.querySelector('svg'))c.innerHTML='&#9906;'; c.title='Wait and search'; }
     dp.addEventListener('click', function(ev){
       var b=ev.target.closest && ev.target.closest('button'); if(!b) return;

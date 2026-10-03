@@ -787,6 +787,9 @@ body.fote-study.study-minimal .study-recent-line{flex:none;margin:0 0 2px;displa
 body.fote-study.study-minimal .study-recent-line:first-child{margin-top:auto;}
 body.fote-study.study-minimal #studyInventoryIcon{display:flex;position:absolute;z-index:47;align-items:center;justify-content:center;width:var(--minimal-slot);height:var(--minimal-slot);padding:8px;border-radius:7px;}
 body.fote-study.study-minimal #studyInventoryIcon svg{width:calc(26px * var(--study-interface-scale,1));height:calc(26px * var(--study-interface-scale,1));}
+body.fote-study #app #studyPickup{position:absolute;z-index:47;display:flex;align-items:center;justify-content:center;width:44px;height:44px;min-height:44px;padding:0;border-radius:50%;touch-action:manipulation;}
+body.fote-study #app #studyPickup svg{width:24px;height:24px;pointer-events:none;}
+body.fote-study #app #studyPickup[hidden]{display:none!important;}
 body.fote-study.study-minimal #app #shade.study-character-panel #sheetTitle{position:absolute;width:1px;height:1px;padding:0;clip-path:inset(50%);overflow:hidden;}
 body.fote-study.study-minimal #app #shade.study-character-panel #studySheetTabs{display:flex;flex:1 1 0;flex-wrap:wrap;gap:4px;align-items:center;min-width:0;margin-right:0;}
 body.fote-study.study-minimal #studySheetTabs button{display:inline-flex;flex:none;align-items:center;justify-content:center;gap:5px;min-height:44px;padding:0 12px;font:calc(13px * var(--ui-text-scale,1)) var(--mono);border-radius:0;}
@@ -947,7 +950,7 @@ body.fote-study.study-minimal #app #bars .bar .l{font-size:.87em;font-weight:500
 body.fote-study.study-minimal #app #studyPietyBar{border:0;border-radius:0;background:#171617;}
 body.fote-study.study-minimal.study-touch #app #studyHud{--joined-progress-height:6px;}
 body.fote-study.study-minimal #app #studyReadouts{
- grid-row:3;display:flex;flex-direction:column;gap:0;margin:0;padding:0 0 0 4px;min-height:16px;align-items:stretch;
+ grid-row:3;display:flex;flex-direction:column;gap:0;margin:-4px 0 0;padding:0 0 0 4px;min-height:16px;align-items:stretch;
 }
 body.fote-study.study-minimal #app #studyHunger,
 body.fote-study.study-minimal #app #hud2 .study-favor{height:18px!important;padding:0!important;}

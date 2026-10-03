@@ -66,9 +66,7 @@ function restoreRunReferences(){
   arriveRarePet();
   if(typeof FoteShadowClone!=='undefined')FoteShadowClone.arrive();
   if(player.buffs)delete player.buffs.unbound;
-  Object.keys(player.cds||{}).forEach(function(key){
-    if(key.indexOf('pray:')===0&&DIVINE_COOLDOWNS.prayers[prayerId(key.slice(5))]===0)delete player.cds[key];
-  });
+  migratePrayerReferences(player);
   floorMeta.puzzles=rooms.filter(function(room){return room&&room.puzzle;});
   ents.forEach(function(entity){entity._lx=undefined;entity._ly=undefined;});
   RUN.over=false;
@@ -250,7 +248,7 @@ function exitGame(){
     $('tBack').onclick=function(){ playMusic('title'); renderTitleMenu(); };
   }, 150);
 }
-function closeTitle(){ var el=$('title'); if(el) el.classList.remove('on'); syncTitleFilm(); }
+function closeTitle(){var el=$('title');if(el)el.classList.remove('on');if(typeof stopTitleVersionChecks==='function')stopTitleVersionChecks();syncTitleFilm();}
 function latestSave(){
   var best=null, bestSlot=null;
   SAVE_SLOTS.forEach(function(s){ var d=readSlot(s); if(d && d.summary && typeof d.savedAt==='string' && Number.isFinite(Date.parse(d.savedAt)) && (!best || d.savedAt>best.savedAt)){ best=d; bestSlot=s; } });
@@ -274,7 +272,7 @@ function renderTitleMenu(){
   $('tHistory').onclick=function(){audioInit();openRunHistory('title');};
   $('tAbout').onclick=function(){ audioInit(); sfx('ui-click'); renderAbout(); };
   $('tUpdate').onclick=function(){ audioInit(); sfx('ui-click'); if(typeof showVersion==='function') showVersion(); };
-  if(typeof checkGameVersion==='function') checkGameVersion();
+  if(typeof startTitleVersionChecks==='function')startTitleVersionChecks();
   var first=el.querySelector('.menu button'); if(first) first.focus();
 }
 function openTitleSettings(){
