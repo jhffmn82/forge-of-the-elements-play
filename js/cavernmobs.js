@@ -16,13 +16,13 @@
 (function(){
   var M=MONSTERS;
   /* band = absolute floors. Stats are fixed; later biomes use distinct stronger creatures. */
-  M.stormbeetle   = {name:'Storm Beetle', sprite:'m-storm-beetle', col:'#3A4A7A', ch:'b', hp:110, dmg:[9,13], acc:64, eva:8, armor:5, speed:100, range:1, xp:40,
+  M.stormbeetle   = {name:'Storm Beetle', sprite:'m-storm-beetle', col:'#3A4A7A', ch:'b', hp:88, dmg:[9,13], acc:64, eva:8, armor:5, speed:100, range:1, xp:40,
                      band:[11,15], w:22, arcs:true, grounded:true, living:true, art:0.95, artLeft:true, sfx:'slime'};
-  M.sparkjelly    = {name:'Spark Jelly', sprite:'m-spark-jelly', col:'#8FD8FF', ch:'j', hp:53, dmg:[4,6], acc:66, eva:28, armor:0, speed:100, range:1, xp:36,
+  M.sparkjelly    = {name:'Spark Jelly', sprite:'m-spark-jelly', col:'#8FD8FF', ch:'j', hp:42, dmg:[4,6], acc:66, eva:28, armor:0, speed:100, range:1, xp:36,
                      band:[12,15], w:12, flying:true, erratic:true, stingChain:true, el:'air', glow:'#7FD0FF', living:true, art:0.85, sfx:'bat'};
-  M.shockeel      = {name:'Shock Eel', sprite:'m-shock-eel', col:'#3F7A6A', ch:'e', hp:61, dmg:[6,9], acc:66, eva:18, armor:1, speed:100, range:1, xp:40,
+  M.shockeel      = {name:'Shock Eel', sprite:'m-shock-eel', col:'#3F7A6A', ch:'e', hp:49, dmg:[6,9], acc:66, eva:18, armor:1, speed:100, range:1, xp:40,
                      band:[11,14], w:0, aquatic:true, el:'air', living:true, art:0.95, artLeft:true, sfx:'slime'};   /* w:0 - placed in water by eelPlacement() */
-  M.myconid       = {name:'Myconid', sprite:'m-myconid', col:'#7FA8A0', ch:'f', hp:61, dmg:[6,9], acc:60, eva:10, armor:1, speed:100, range:1, xp:38,
+  M.myconid       = {name:'Myconid', sprite:'m-myconid', col:'#7FA8A0', ch:'f', hp:49, dmg:[6,9], acc:60, eva:10, armor:1, speed:100, range:1, xp:38,
                      band:[11,15], w:16, spores:true, sporeproof:true, el:'earth', living:true, spellcaster:true, art:0.95, artLeft:true, sfx:'shaman'};
   M.shroomling    = {name:'Shroomling', sprite:'m-myconid', col:'#9FC0B0', ch:'f', hp:18, dmg:[4,6], acc:58, eva:12, armor:0, speed:100, range:1, xp:6,
                      band:[0,0], w:0, sporeproof:true, living:true, art:0.5, artLeft:true, sfx:'slime'};
@@ -30,15 +30,15 @@
      earth-brown and bruised pink); only the Maw calls it up, see mawCallTender */
   M.wormtender    = Object.assign({}, M.myconid, {name:'Worm Tender', hp:55, sprite:'m-worm-tender', col:'#A8705A', band:[0,0], w:0,
                      hint:'Summoned by the Deep Maw. Spore clouds poison and slow creatures inside.'});
-  M.crystalcrawler= {name:'Crystal Crawler', sprite:'m-crystal-crawler', col:'#8A6AD0', ch:'c', hp:55, dmg:[6,9], acc:68, eva:20, armor:3, speed:130, range:1, xp:38,
+  M.crystalcrawler= {name:'Crystal Crawler', sprite:'m-crystal-crawler', col:'#8A6AD0', ch:'c', hp:44, dmg:[6,9], acc:68, eva:20, armor:3, speed:130, range:1, xp:38,
                      band:[13,15], w:9, shatters:true, el:'earth', art:0.95, artLeft:true, sfx:'spider'};   /* the Caverns' one fast creature */
-  M.rootbound    = {name:'Root-bound', sprite:'m-rootbound', col:'#879567', ch:'r', hp:77, dmg:[8,12], acc:66, eva:8, armor:3, speed:100, range:1, xp:42,
+  M.rootbound    = {name:'Root-bound', sprite:'m-rootbound', col:'#879567', ch:'r', hp:62, dmg:[8,12], acc:66, eva:8, armor:3, speed:100, range:1, xp:42,
                      band:[11,15], w:8, living:true, spellcaster:true, caveSpell:'root', castCooldown:500, art:.95, sfx:'shaman',
                      hint:'Casts Earth Root, then closes in to strike while the spell recovers.'};
   /* Old save aliases only. Dungeon vermin remain unchanged on floors 1-5. */
-  M.caverat       = Object.assign({}, M.rat, {name:'Cave Rat',hp:42,dmg:[6,9],acc:66,eva:24,speed:135,xp:30,art:.85,band:[11,13],w:0});
-  M.cavebat       = Object.assign({}, M.bat, {name:'Grotto Bat',hp:33,dmg:[4,6],acc:66,eva:28,speed:130,xp:28,art:.85,band:[11,12], w:0});
-  M.caveslime     = Object.assign({}, M.slime, {name:'Basalt Slime',hp:79,dmg:[7,10],acc:62,armor:5,xp:38,art:1,band:[11,15], w:10,
+  M.caverat       = Object.assign({}, M.rat, {name:'Cave Rat',hp:34,dmg:[6,9],acc:66,eva:24,speed:135,xp:30,art:.85,band:[11,13],w:0});
+  M.cavebat       = Object.assign({}, M.bat, {name:'Grotto Bat',hp:26,dmg:[4,6],acc:66,eva:28,speed:130,xp:28,art:.85,band:[11,12], w:0});
+  M.caveslime     = Object.assign({}, M.slime, {name:'Basalt Slime',hp:63,dmg:[7,10],acc:62,armor:5,xp:38,art:1,band:[11,15], w:10,
                      hint:'Splits when wounded. Spits roots.'});
   delete M.caverat.biome; delete M.cavebat.biome; delete M.caveslime.biome;
   /* The Deep Maw: tuned by hand for floor 15, so no floor curve (fixed, like the plane elites) */
@@ -63,10 +63,10 @@
 })();
 
 /* Tier-two creature identities. Authored clip geometry lives in ASSETS.mobs. */
-var CAVE_ELEMENT_TIERS = [{"old":"emberling","kind":"cinderling","name":"Cinderling","sprite":"m-cinderling","file":"mob-m-cinderling.webp"},{"old":"tideling","kind":"rippleling","name":"Rippleling","sprite":"m-rippleling","file":"mob-m-rippleling.webp"},{"old":"galeling","kind":"gustling","name":"Gustling","sprite":"m-gustling","file":"mob-m-gustling.webp"},{"old":"stoneling","kind":"mossling","name":"Mossling","sprite":"m-mossling","file":"mob-m-mossling.webp"},{"old":"wisp","kind":"duskling","name":"Duskling","sprite":"m-duskling","file":"mob-m-duskling.webp"},{"old":"lumenling","kind":"gleamling","name":"Gleamling","sprite":"m-gleamling","file":"mob-m-gleamling.webp"}];
+var CAVE_ELEMENT_TIERS = [{"old":"emberling","kind":"cinderling","name":"Cinderling","sprite":"m-cinderling","file":"mob-m-cinderling.png"},{"old":"tideling","kind":"rippleling","name":"Rippleling","sprite":"m-rippleling","file":"mob-m-rippleling.png"},{"old":"galeling","kind":"gustling","name":"Gustling","sprite":"m-gustling","file":"mob-m-gustling.png"},{"old":"stoneling","kind":"mossling","name":"Mossling","sprite":"m-mossling","file":"mob-m-mossling.png"},{"old":"wisp","kind":"duskling","name":"Duskling","sprite":"m-duskling","file":"mob-m-duskling.png"},{"old":"lumenling","kind":"gleamling","name":"Gleamling","sprite":"m-gleamling","file":"mob-m-gleamling.png"}];
 CAVE_ELEMENT_TIERS.forEach(function(r){
   var old=MONSTERS[r.old];
-  MONSTERS[r.kind]=Object.assign({},old,{name:r.name,sprite:r.sprite,hp:r.old==='stoneling'?77:53,dmg:[7,10],acc:old.acc+5,armor:(old.armor||0)+2,xp:55,art:.95,elementTier:2,band:[0,0],w:0});
+  MONSTERS[r.kind]=Object.assign({},old,{name:r.name,sprite:r.sprite,hp:r.old==='stoneling'?62:42,dmg:[7,10],acc:old.acc+5,armor:(old.armor||0)+2,xp:55,art:.95,elementTier:2,band:[0,0],w:0});
   DROPS[r.kind]=DROPS[r.old];
 });
 

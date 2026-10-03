@@ -3,6 +3,7 @@ var FOTE_VERSION = 'Beta 1.5';
 /* Keep newest first; describe only changes already present in this build. */
 var FOTE_PATCHES = [
   {version:'Beta 1.5', notes:[
+    "Regular Caverns enemies have 20% less base HP; Buried Ghouls have 40 base HP.",
     "Hunger drains 20% more slowly to account for longer fights.",
     "Guaranteed floor meals are placed on reachable tiles after room construction, with one meal per floor and a 45% chance of a second.",
     "Earth-enchanted armor grants +1 armor plus 0.5 per Earth affinity point, with clearer Forge text.",
