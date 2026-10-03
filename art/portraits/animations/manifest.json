@@ -1,0 +1,421 @@
+[
+  {
+    "id": "human-f",
+    "portrait": "../human-f.webp",
+    "width": 128,
+    "height": 128,
+    "clips": {
+      "quiet": {
+        "sheet": "human-f/quiet.webp",
+        "frame_count": 17,
+        "delay": 160
+      },
+      "turn": {
+        "sheet": "human-f/turn.webp",
+        "frame_count": 17,
+        "delay": 160
+      },
+      "hurt": {
+        "sheet": "human-f/hurt.webp",
+        "frame_count": 4,
+        "delay": 80
+      }
+    }
+  },
+  {
+    "id": "human-m",
+    "portrait": "../human-m.webp",
+    "width": 128,
+    "height": 128,
+    "clips": {
+      "quiet": {
+        "sheet": "human-m/quiet.webp",
+        "frame_count": 17,
+        "delay": 160
+      },
+      "turn": {
+        "sheet": "human-m/turn.webp",
+        "frame_count": 17,
+        "delay": 160
+      },
+      "hurt": {
+        "sheet": "human-m/hurt.webp",
+        "frame_count": 4,
+        "delay": 80
+      }
+    }
+  },
+  {
+    "id": "elf-f",
+    "portrait": "../elf-f.webp",
+    "width": 128,
+    "height": 128,
+    "clips": {
+      "quiet": {
+        "sheet": "elf-f/quiet.webp",
+        "frame_count": 17,
+        "delay": 160
+      },
+      "turn": {
+        "sheet": "elf-f/turn.webp",
+        "frame_count": 17,
+        "delay": 160
+      },
+      "hurt": {
+        "sheet": "elf-f/hurt.webp",
+        "frame_count": 4,
+        "delay": 80
+      }
+    }
+  },
+  {
+    "id": "elf-m",
+    "portrait": "../elf-m.webp",
+    "width": 128,
+    "height": 128,
+    "clips": {
+      "quiet": {
+        "sheet": "elf-m/quiet.webp",
+        "frame_count": 17,
+        "delay": 160
+      },
+      "turn": {
+        "sheet": "elf-m/turn.webp",
+        "frame_count": 17,
+        "delay": 160
+      },
+      "hurt": {
+        "sheet": "elf-m/hurt.webp",
+        "frame_count": 4,
+        "delay": 80
+      }
+    }
+  },
+  {
+    "id": "dwarf-f",
+    "portrait": "../dwarf-f.webp",
+    "width": 128,
+    "height": 128,
+    "clips": {
+      "quiet": {
+        "sheet": "dwarf-f/quiet.webp",
+        "frame_count": 17,
+        "delay": 160
+      },
+      "turn": {
+        "sheet": "dwarf-f/turn.webp",
+        "frame_count": 17,
+        "delay": 160
+      },
+      "hurt": {
+        "sheet": "dwarf-f/hurt.webp",
+        "frame_count": 4,
+        "delay": 80
+      }
+    }
+  },
+  {
+    "id": "dwarf-m",
+    "portrait": "../dwarf-m.webp",
+    "width": 128,
+    "height": 128,
+    "clips": {
+      "quiet": {
+        "sheet": "dwarf-m/quiet.webp",
+        "frame_count": 17,
+        "delay": 160
+      },
+      "turn": {
+        "sheet": "dwarf-m/turn.webp",
+        "frame_count": 17,
+        "delay": 160
+      },
+      "hurt": {
+        "sheet": "dwarf-m/hurt.webp",
+        "frame_count": 4,
+        "delay": 80
+      }
+    }
+  },
+  {
+    "id": "gloomling-f",
+    "portrait": "../gloomling-f.webp",
+    "width": 128,
+    "height": 128,
+    "clips": {
+      "quiet": {
+        "sheet": "gloomling-f/quiet.webp",
+        "frame_count": 9,
+        "delay": 302,
+        "frame_delays": [
+          302,
+          302,
+          302,
+          302,
+          302,
+          302,
+          302,
+          302,
+          304
+        ]
+      },
+      "turn": {
+        "sheet": "gloomling-f/turn.webp",
+        "frame_count": 17,
+        "delay": 160
+      },
+      "hurt": {
+        "sheet": "gloomling-f/hurt.webp",
+        "frame_count": 4,
+        "delay": 80
+      }
+    }
+  },
+  {
+    "id": "gloomling-m",
+    "portrait": "../gloomling-m.webp",
+    "width": 128,
+    "height": 128,
+    "clips": {
+      "quiet": {
+        "sheet": "gloomling-m/quiet.webp",
+        "frame_count": 17,
+        "delay": 160
+      },
+      "turn": {
+        "sheet": "gloomling-m/turn.webp",
+        "frame_count": 17,
+        "delay": 160
+      },
+      "hurt": {
+        "sheet": "gloomling-m/hurt.webp",
+        "frame_count": 4,
+        "delay": 80
+      }
+    }
+  },
+  {
+    "id": "fae-air-f",
+    "portrait": "../fae-air-f.webp",
+    "width": 128,
+    "height": 128,
+    "clips": {
+      "quiet": {
+        "sheet": "fae-air-f/quiet.webp",
+        "frame_count": 17,
+        "delay": 160
+      },
+      "turn": {
+        "sheet": "fae-air-f/turn.webp",
+        "frame_count": 17,
+        "delay": 160
+      },
+      "hurt": {
+        "sheet": "fae-air-f/hurt.webp",
+        "frame_count": 4,
+        "delay": 80
+      }
+    }
+  },
+  {
+    "id": "fae-air-m",
+    "portrait": "../fae-air-m.webp",
+    "width": 128,
+    "height": 128,
+    "clips": {
+      "quiet": {
+        "sheet": "fae-air-m/quiet.webp",
+        "frame_count": 17,
+        "delay": 160
+      },
+      "turn": {
+        "sheet": "fae-air-m/turn.webp",
+        "frame_count": 17,
+        "delay": 160
+      },
+      "hurt": {
+        "sheet": "fae-air-m/hurt.webp",
+        "frame_count": 4,
+        "delay": 80
+      }
+    }
+  },
+  {
+    "id": "fae-fire-f",
+    "portrait": "../fae-fire-f.webp",
+    "width": 128,
+    "height": 128,
+    "clips": {
+      "quiet": {
+        "sheet": "fae-fire-f/quiet.webp",
+        "frame_count": 17,
+        "delay": 160
+      },
+      "turn": {
+        "sheet": "fae-fire-f/turn.webp",
+        "frame_count": 17,
+        "delay": 100,
+        "frame_delays": [
+          610,
+          100,
+          100,
+          100,
+          100,
+          100,
+          100,
+          100,
+          100,
+          100,
+          100,
+          100,
+          100,
+          100,
+          100,
+          100,
+          610
+        ]
+      },
+      "hurt": {
+        "sheet": "fae-fire-f/hurt.webp",
+        "frame_count": 4,
+        "delay": 80
+      }
+    }
+  },
+  {
+    "id": "fae-fire-m",
+    "portrait": "../fae-fire-m.webp",
+    "width": 128,
+    "height": 128,
+    "clips": {
+      "quiet": {
+        "sheet": "fae-fire-m/quiet.webp",
+        "frame_count": 17,
+        "delay": 160
+      },
+      "turn": {
+        "sheet": "fae-fire-m/turn.webp",
+        "frame_count": 17,
+        "delay": 160
+      },
+      "hurt": {
+        "sheet": "fae-fire-m/hurt.webp",
+        "frame_count": 4,
+        "delay": 80
+      }
+    }
+  },
+  {
+    "id": "fae-water-f",
+    "portrait": "../fae-water-f.webp",
+    "width": 128,
+    "height": 128,
+    "clips": {
+      "quiet": {
+        "sheet": "fae-water-f/quiet.webp",
+        "frame_count": 17,
+        "delay": 160
+      },
+      "turn": {
+        "sheet": "fae-water-f/turn.webp",
+        "frame_count": 17,
+        "delay": 160
+      },
+      "hurt": {
+        "sheet": "fae-water-f/hurt.webp",
+        "frame_count": 4,
+        "delay": 80
+      }
+    }
+  },
+  {
+    "id": "fae-water-m",
+    "portrait": "../fae-water-m.webp",
+    "width": 128,
+    "height": 128,
+    "clips": {
+      "quiet": {
+        "sheet": "fae-water-m/quiet.webp",
+        "frame_count": 17,
+        "delay": 160
+      },
+      "turn": {
+        "sheet": "fae-water-m/turn.webp",
+        "frame_count": 17,
+        "delay": 160
+      },
+      "hurt": {
+        "sheet": "fae-water-m/hurt.webp",
+        "frame_count": 4,
+        "delay": 80
+      }
+    }
+  },
+  {
+    "id": "fae-earth-f",
+    "portrait": "../fae-earth-f.webp",
+    "width": 128,
+    "height": 128,
+    "clips": {
+      "quiet": {
+        "sheet": "fae-earth-f/quiet.webp",
+        "frame_count": 9,
+        "delay": 302,
+        "frame_delays": [
+          302,
+          302,
+          302,
+          302,
+          302,
+          302,
+          302,
+          302,
+          304
+        ]
+      },
+      "turn": {
+        "sheet": "fae-earth-f/turn.webp",
+        "frame_count": 8,
+        "delay": 160,
+        "frame_delays": [
+          400,
+          200,
+          80,
+          80,
+          1000,
+          200,
+          200,
+          560
+        ]
+      },
+      "hurt": {
+        "sheet": "fae-earth-f/hurt.webp",
+        "frame_count": 4,
+        "delay": 80
+      }
+    }
+  },
+  {
+    "id": "fae-earth-m",
+    "portrait": "../fae-earth-m.webp",
+    "width": 128,
+    "height": 128,
+    "clips": {
+      "quiet": {
+        "sheet": "fae-earth-m/quiet.webp",
+        "frame_count": 17,
+        "delay": 160
+      },
+      "turn": {
+        "sheet": "fae-earth-m/turn.webp",
+        "frame_count": 17,
+        "delay": 160
+      },
+      "hurt": {
+        "sheet": "fae-earth-m/hurt.webp",
+        "frame_count": 4,
+        "delay": 80
+      }
+    }
+  }
+]

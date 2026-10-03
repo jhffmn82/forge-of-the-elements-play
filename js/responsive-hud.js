@@ -24,6 +24,7 @@ var FoteResponsiveHUD=(function(){
   function paintPortrait(){
     if(!mounted||!player)return;
     const art=node('studyPortraitArt');if(!art)return;
+    if(typeof FotePortraitAnimation!=='undefined'){FotePortraitAnimation.paint(art,player);return;}
     const look=String(player.look||'');
     if(!/^(human|elf|dwarf|gloomling|fae-(air|fire|water|earth))-[fm]$/.test(look))return;
     let image=portraitImages.get(look);

@@ -171,6 +171,7 @@ var FOTE_RUNTIME = {
   "js/environment-props.js",
   "art/packed/environment-vegetation-meta.js",
   "js/environment-vegetation.js",
+  "js/portrait-animation.js",
   "js/responsive-hud.js"
 ]
 };
