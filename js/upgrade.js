@@ -79,7 +79,7 @@ function upgradePanelHTML(){
     var it=o.it, cost=upgradeCost(it), plus=it.cursed ? 'cursed' : '+'+(it.plus||0);
     var what = it.kind==='ring' ? (it.unid && !RUN.ringKnown[it.ring] ? 'unknown ring' : ringLine(it)) : it.dmg ? it.dmg[0]+'-'+it.dmg[1]+' damage' : it.armor!==undefined ? it.armor+' armor' : (it.note||'');
     h+='<div class="frow"><div class="ftext"><b>'+gearName(it)+'</b> <span class="c-info">('+o.where+')</span><div class="d">'+what+' &middot; now '+plus+'</div></div>'+
-       '<button data-up="'+i+'" '+(cost===null||player.essence<cost?'disabled':'')+'>'+(cost===null?'max':(it.cursed?'Cleanse ':'Upgrade ')+cost)+'</button></div>';
+       '<button data-up="'+i+'" '+(cost===null||player.essence<cost?'disabled':'')+'>'+(cost===null?'max':(it.cursed?'Cleanse ':'Upgrade ')+resourceReadoutHTML('essence',cost))+'</button></div>';
   });
   return h;
 }

@@ -243,7 +243,7 @@ function actionEscape(text){return String(text).replace(/&/g,'&amp;').replace(/<
 function actionDetailsHTML(detail,options){
   var facts=actionFacts(detail,options),h='<div class="action-details">';
   if(detail.summary)h+='<p class="action-summary">'+actionEscape(detail.summary)+'</p>';
-  if(facts.length)h+='<dl class="action-facts">'+facts.map(function(f){return '<div><dt>'+actionEscape(f.label)+'</dt><dd>'+actionEscape(f.value)+'</dd></div>';}).join('')+'</dl>';
+  if(facts.length)h+='<dl class="action-facts">'+facts.map(function(f){var kind=f.label==='Cost'&&/\b(Favor|Essence)\b/i.exec(f.value);return '<div><dt>'+actionEscape(f.label)+'</dt><dd>'+(kind?resourceReadoutHTML(kind[1].toLowerCase(),f.value):actionEscape(f.value))+'</dd></div>';}).join('')+'</dl>';
   return h+detail.notes.map(function(note){return '<p class="action-note">'+actionEscape(note)+'</p>';}).join('')+'</div>';
 }
 function actionDetailsText(detail,options){

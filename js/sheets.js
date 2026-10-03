@@ -187,7 +187,7 @@ function equipResourcesHTML(sectionClass){
     return '<span class="mote keychip"><span class="kart" data-kicon="'+k[2]+'"></span>'+k[1]+' &times;'+count(player.keys&&player.keys[k[0]])+'</span>';
   }).join('');
   return '<div class="'+sectionClass+'">Keys</div><div class="pouch">'+keys+'</div>'+
-    '<div class="'+sectionClass+'">Pouch &middot; '+count(player.essence)+' essence</div><div class="pouch">'+motes+'</div>';
+    '<div class="'+sectionClass+'">Pouch &middot; '+resourceReadoutHTML('essence',count(player.essence)+' Essence')+'</div><div class="pouch">'+motes+'</div>';
 }
 function equipHTML(){
   var w=player.weapon, off=player.twoHanded?null:player.off, ar=player.armorItem, r=player.rings||[null,null], stow=player.ranged;

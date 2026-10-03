@@ -266,13 +266,13 @@ function buyMerchantItem(id,index){
 }
 function openCavernMerchant(id){
   var r=cavernMerchant(id);if(!merchantAvailable(r))return false;stopTravel();
-  var h='<div class="merchant-summary"><b>'+player.essence.toLocaleString()+' essence</b><span>Each item is available once.</span></div>';
+  var h='<div class="merchant-summary"><b>'+resourceReadoutHTML('essence',player.essence.toLocaleString()+' Essence')+'</b><span>Each item is available once.</span></div>';
   var groups=[{name:'Equipment &amp; jewellery',accept:function(it){return !['mote','sigil'].includes(it.kind);}},{name:'Elemental motes',accept:function(it){return it.kind==='mote';}},{name:'Sigils',accept:function(it){return it.kind==='sigil';}}];
   groups.forEach(function(group){h+='<section class="merchant-section"><h3>'+group.name+'</h3><div class="merchant-grid">';
     r.merchant.stock.forEach(function(offer,index){var it=offer.item;if(!group.accept(it))return;
       var name=it.kind==='ring'?'Unidentified ring':it.kind==='amulet'?'Unidentified amulet':it.kind==='mote'?cap(it.el)+' mote':it.kind==='sigil'?SIGILS[it.use].name:gearName(it.it);
       var detail=it.kind==='weapon'?weaponCard(it.it):it.kind==='armor'?armorCard(it.it):it.kind==='off'?offhandCard(it.it):it.kind==='sigil'?actionDetailsHTML(sigilDetails(it.use)):'';
-      h+='<div class="merchant-card'+(offer.sold?' sold':'')+'"><span data-merchant-icon="'+index+'"></span><b class="merchant-name">'+name+'</b><span class="merchant-price">'+offer.price.toLocaleString()+'<small>essence</small></span><button data-merchant-buy="'+index+'" '+(offer.sold||player.essence<offer.price?'disabled':'')+'>'+(offer.sold?'Sold':'Buy')+'</button>'+(detail?'<details data-merchant-details="'+index+'"><summary>Details</summary>'+detail+'</details>':'')+'</div>';
+      h+='<div class="merchant-card'+(offer.sold?' sold':'')+'"><span data-merchant-icon="'+index+'"></span><b class="merchant-name">'+name+'</b><span class="merchant-price">'+resourceReadoutHTML('essence',offer.price.toLocaleString())+'<small>Essence</small></span><button data-merchant-buy="'+index+'" '+(offer.sold||player.essence<offer.price?'disabled':'')+'>'+(offer.sold?'Sold':'Buy')+'</button>'+(detail?'<details data-merchant-details="'+index+'"><summary>Details</summary>'+detail+'</details>':'')+'</div>';
     });h+='</div></section>';
   });
   openModal('Myconid merchant',h,[{label:'Leave',fn:closeModal}],'wide');

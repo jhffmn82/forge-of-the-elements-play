@@ -1,9 +1,9 @@
 {
   "version": "Beta 1.5",
-  "built": "2026-10-03T11:33:05.636924+00:00",
-  "epoch": 1791027185,
+  "built": "2026-10-03T12:08:27.893185+00:00",
+  "epoch": 1791029307,
   "source": "3c60874c+reviewed-followup+approved-portrait-animation + fluid-barrel-art-ecd2abda + beta15-hotfix",
   "candidate": false,
   "releaseState": "play",
-  "revision": "hud-resources-20261003"
+  "revision": "favor-patron-20261003"
 }

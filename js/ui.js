@@ -5,6 +5,11 @@
 
 (function injectCSS(){
   var css = `
+  :root{--resource-essence:#B98AF0}
+  .resource-readout{display:inline-flex;align-items:center;gap:.35em;white-space:nowrap;color:var(--resource-color)!important}
+  .resource-readout>span{color:inherit!important}
+  .resource-icon{display:inline-flex;align-items:center;justify-content:center;width:1em;height:1em;flex:0 0 1em;color:inherit!important}
+  .resource-icon svg{display:block;width:1em;height:1em}
   #modal{position:fixed;inset:0;z-index:90;display:none;align-items:center;justify-content:center;background:rgba(6,5,4,.78);padding:16px}
   #modal.on{display:flex}
   #modal .mbox{width:min(620px,100%);max-height:min(88vh,760px);display:flex;flex-direction:column;background:linear-gradient(180deg,#221D1A,#171310);
@@ -37,7 +42,7 @@
   .pouch2{display:flex;gap:6px;flex-wrap:wrap}
   .mslot{width:64px;display:flex;flex-direction:column;align-items:center;gap:1px;padding:5px 2px;border:1px solid var(--edge);border-radius:6px;background:#141110;font-size:10px;color:var(--ash)}
   .mslot b{font-size:13px;color:var(--ink)} .mslot.none{opacity:.4}
-  .forge-info{font-size:12px;color:#fff;font-weight:700;display:flex;flex-direction:column;gap:2px} .forge-info .c-info{color:#fff}   /* 2026-09-28 (Justin): bright white and bold; the affinity keeps its element colour, essence its gold */
+  .forge-info{font-size:12px;color:#fff;font-weight:700;display:flex;flex-direction:column;gap:2px} .forge-info .c-info{color:#fff}
   .ftabs{display:flex;gap:4px;margin:6px 0 10px} .ftabs button.on{border-color:var(--ember);color:var(--gold);background:#2A2015}
   .frow{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.05)}
   .frow .ftext{flex:1} .frow .d, .egrid .d{color:var(--dim);font-size:11px;display:block}
@@ -223,6 +228,18 @@ function itemIcon(name, size){ return iconCanvas(null, size, '\u2726'); }
   }
 })();
 SHEETS.Faith='Faith';
+/* HUD and menu resource readouts share their symbol and color. */
+function resourceColor(kind){
+  return kind==='essence'?'var(--resource-essence)':player&&player.god&&GODS[player.god]?GODS[player.god].color:'var(--ink)';
+}
+function resourceIconHTML(kind,className){
+  var icon=kind==='favor'?'<svg viewBox="0 0 24 24" focusable="false"><path fill="currentColor" d="m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.9-6.2-3.3-6.2 3.3 1.2-6.9-5-4.9 6.9-1z"/></svg>':'◆';
+  return '<span class="resource-icon '+(className||'')+'" aria-hidden="true">'+icon+'</span>';
+}
+function resourceReadoutHTML(kind,text){
+  var escaped=String(text).replace(/[&<>"']/g,function(ch){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch];});
+  return '<span class="resource-readout resource-'+kind+'" style="--resource-color:'+resourceColor(kind)+'">'+resourceIconHTML(kind)+'<span>'+escaped+'</span></span>';
+}
 function hudResourceCard(kind){
   function number(n){return Math.round(n||0).toLocaleString('en-US');}
   function escape(s){return String(s).replace(/[&<>"']/g,function(ch){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch];});}
@@ -246,7 +263,7 @@ function hudResourceCard(kind){
   if(kind==='hp')return '<div class="nm">Health</div>'+row('HP',number(player.hp)+' / '+number(player.maxhp))+(playerShield()>0?row('Shield',number(playerShield()))+'<div class="hint">'+escape(shieldParts().join(', '))+'. Shields absorb damage before HP.</div>':'');
   if(kind==='mp')return '<div class="nm">Mana</div>'+row('Mana',number(Math.floor(player.mp))+' / '+number(player.maxmp));
   if(kind==='xp')return '<div class="nm">Experience</div>'+row('Level',player.level)+row('XP',number(player.xp)+' / '+number(player.xpNext))+'<div class="hint">'+(player.level>=20?'Maximum level reached. Further XP still counts toward your run total.':number(Math.max(0,player.xpNext-player.xp))+' XP to the next level.')+'</div>';
-  if(kind==='stock')return '<div class="nm">Essence &amp; keys</div>'+row('Essence',number(player.essence))+row('Iron keys',number(player.keys&&player.keys.iron))+row('Crystal keys',number(player.keys&&player.keys.crystal))+'<div class="hint">Essence pays for crafting, upgrades and enchantments at a forge. Keys open locked doors on the floor where you find them.</div>';
+  if(kind==='stock')return '<div class="nm">Essence &amp; keys</div>'+row('Essence',resourceReadoutHTML('essence',number(player.essence)))+row('Iron keys',number(player.keys&&player.keys.iron))+row('Crystal keys',number(player.keys&&player.keys.crystal))+'<div class="hint">Essence pays for crafting, upgrades and enchantments at a forge. Keys open locked doors on the floor where you find them.</div>';
   if(kind==='motes')return '<div class="nm">Elemental motes</div>'+['fire','water','earth','air','light','shadow'].map(function(k){return row(cap(k),number(player.motes[k]));}).join('')+'<div class="hint">Infuse carried motes when claiming a boss core or at a forge. Open Gear to see your pouch.</div>';
   if(kind==='amusement'){
     var mood=Math.max(0,Math.min(100,player.amusement||0)),odds=wobblesMoodOdds(mood);
@@ -259,7 +276,7 @@ function hudResourceCard(kind){
   if(!player.god)return '<div class="nm">No god followed</div>';
   var god=GODS[player.god],rank=godRank(),next=PIETY_RANKS[rank];
   if(kind==='piety')return '<div class="nm">Piety</div><div class="hint">'+escape(god.name)+'</div><div class="row"><span>God rank</span><b>'+rank+' / 5</b></div><div class="row"><span>Piety</span><b>'+number(player.piety)+(next?' / '+number(next):'')+'</b></div><div class="hint">'+(next?number(Math.max(0,next-player.piety))+' more piety to reach rank '+(rank+1)+'.':'Maximum god rank reached.')+'</div>';
-  return '<div class="nm">Favor</div><div class="row"><span>Favor</span><b>'+number(player.favor)+' / 100</b></div><div class="hint">Spent on divine abilities that cost Favor. It is earned alongside piety.</div>';
+  return '<div class="nm">Favor</div>'+row('Favor',resourceReadoutHTML('favor',number(player.favor)+' / 100'))+'<div class="hint">Spent on divine abilities that cost Favor. It is earned alongside piety.</div>';
 }
 function bindHudResourceCard(element,kind){
   if(!element)return;
@@ -324,7 +341,7 @@ function bars(){
   var h='<span class="chip" title="Hunger">'+hl+' <span class="hunger"><i style="width:'+Math.round(hp*100)+'%"></i></span></span>';
   if(player.stillness>0) h+='<span class="chip" style="color:#9FD8FF" title="Time is frozen: moving is free">\u23F8 stillness '+player.stillness+'</span>';
   if(player.keys && (player.keys.iron||player.keys.crystal)) h+='<span class="chip" id="keychip">\u{1F5DD} '+((player.keys.iron||0)+(player.keys.crystal||0))+'</span>';
-  h+='<span class="chip" title="Essence">\u25C6 '+player.essence+'</span>';
+  h+='<span class="chip" title="Essence">'+resourceReadoutHTML('essence',player.essence)+'</span>';
   var mc=Object.keys(player.motes).filter(function(m){ return player.motes[m]>0; });
   if(mc.length) h+='<span class="chip" title="Motes">'+mc.map(function(m){ return '<span class="dot" style="background:'+AFF_COL[m]+';width:8px;height:8px"></span>'+player.motes[m]; }).join(' ')+'</span>';
   if(player.god) h+=faithChipHTML();
@@ -367,8 +384,8 @@ function faithChipHTML(){
   var next=PIETY_RANKS[r]||null, prev=PIETY_RANKS[r-1]||0, pct=next ? clamp(((player.piety||0)-prev)/(next-prev),0,1) : 1, fav=Math.round(player.favor||0);
   return h+'<span class="rk">R'+r+'</span>'+
     '<span class="meter" title="Piety '+Math.round(player.piety||0)+(next?' / '+next+' for rank '+(r+1):' (max rank)')+'"><i style="width:'+Math.round(pct*100)+'%;background:linear-gradient(90deg,'+hexA(g.color,0.55)+','+g.color+')"></i></span>'+
-    '<span class="rk" title="Favor, spent on your god\'s abilities">\u2726 '+fav+'</span>'+
-    '<span class="meter sm" title="Favor '+fav+' / 100"><i style="width:'+fav+'%;background:linear-gradient(90deg,#6B5A22,#E8D27A)"></i></span></span>';
+    '<span class="rk" title="Favor, spent on your god\'s abilities">'+resourceReadoutHTML('favor',fav)+'</span>'+
+    '<span class="meter sm" title="Favor '+fav+' / 100"><i style="width:'+fav+'%;background:linear-gradient(90deg,'+hexA(g.color,.55)+','+g.color+')"></i></span></span>';
 }
 var PRAYER_ICONS={
   "ironhide": "pr-ironhide",
@@ -392,7 +409,7 @@ var PRAYER_ICONS={
   "arcanenova": "pr-arcanenova"
 };
 function prayerIcon(pid){pid=prayerId(pid);return PRAYER_ICONS[pid]||'pr-'+pid;}
-function prayerCost(pid){ var P=PRAYERS[prayerId(pid)]; return P.health ? prayerHealthCost(pid)+' HP' : P.favor ? P.favor+' Favor' : P.essence ? P.essence+' essence' : P.amusement ? P.amusement+' Amusement' : 'prayer'; }
+function prayerCost(pid){ var P=PRAYERS[prayerId(pid)]; return P.health ? prayerHealthCost(pid)+' HP' : P.favor ? resourceReadoutHTML('favor',P.favor+' Favor') : P.essence ? resourceReadoutHTML('essence',P.essence+' Essence') : P.amusement ? P.amusement+' Amusement' : 'prayer'; }
 
 /* every ability or prayer you gain drops into the first empty hotbar slot once; clearing a slot keeps it cleared */
 
@@ -408,7 +425,7 @@ function renderHotbarSlots(){
       var A=ABILITIES[s.key], off = (A.favor ? (player.favor||0)<A.favor : player.mp<costOf(A)) ? ' disabled' : '';
       var armed = (aiming && player.abilities[aiming.i]===s.key) ? ' armed' : '';
       html+='<button class="slot hasico'+armed+'" data-i="'+i+'" data-ico="'+(A.icon||'')+'"'+off+' title="'+(typeof liveDesc==='function' ? liveDesc(A) : A.desc).replace(/"/g,'&quot;')+'">'+
-            '<span class="ico"></span><span class="k">'+(i+1)+'</span><span class="n">'+A.name+'</span><span class="c">'+(A.favor ? A.favor+' Favor' : costOf(A)+' mana')+'</span></button>';
+            '<span class="ico"></span><span class="k">'+(i+1)+'</span><span class="n">'+A.name+'</span><span class="c">'+(A.favor ? resourceReadoutHTML('favor',A.favor+' Favor') : costOf(A)+' mana')+'</span></button>';
     } else if(s.type==='prayer'){
       var PR=PRAYERS[s.key], gcol=GODS[player.god] ? GODS[player.god].color : '#8A6FB0';
       html+='<button class="slot hasico prayer-slot" style="--gc:'+gcol+'" data-i="'+i+'" data-ico="'+prayerIcon(s.key)+'"'+(canPray(s.key)?'':' disabled')+' title="'+(typeof prayerLive==='function' ? prayerLive(PR) : PR.desc).replace(/"/g,'&quot;')+'">'+

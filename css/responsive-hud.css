@@ -1040,6 +1040,7 @@ body.fote-study.study-classic #app #hud2 .study-favor .meter{display:none!import
 body.fote-study #app #hud2 button:is(.study-favor,.study-stock){font-weight:500!important;line-height:1!important;}
 body.fote-study #app #hud2 button:is(.study-favor,.study-stock) :is(.study-resource-value,.study-resource-label,.study-resource-icon){font:inherit!important;color:inherit!important;line-height:1;display:block;}
 body.fote-study #app #hud2 .study-resource-icon{display:flex!important;align-items:center;justify-content:center;flex:0 0 1em;width:1em;}
+body.fote-study #app #hud2 .study-resource-icon svg{display:block;width:1em;height:1em;}
 body.fote-study.study-classic #app #hud2 .study-motes{grid-area:2/1/3/3;}
 body.fote-study.study-classic #app #studyActionBar{display:flex;flex:0 0 40px;}
 body.fote-study.study-classic #app #studyExplore{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;height:40px;min-height:40px;margin:0;opacity:1;cursor:pointer;font-size:14px!important;}

@@ -366,10 +366,7 @@ body.fote-study.study-minimal[data-ui-theme] #app #studyPietyBar{background:#171
 body.fote-study.study-minimal[data-ui-theme] #app #bars :is(.xp,#studyPietyBar)::after{box-shadow:none;}
 body.fote-study.study-minimal[data-ui-theme] #app #studySheetTabs button{background:none;border-color:transparent;box-shadow:none;color:var(--ui-ash);}
 body.fote-study.study-minimal[data-ui-theme] #app #studySheetTabs button.on{color:var(--gold);box-shadow:inset 0 -2px var(--gold);}
-body.fote-study[data-ui-theme] #app #hud2 .study-favor{color:#8fb8ff;}
-body.fote-study[data-ui-theme] #app #hud2 .study-stock{color:#e8b44a;}
-body.fote-study.study-classic[data-ui-theme^=vellum] #app #hud2 .study-favor{color:#305987;}
-body.fote-study.study-classic[data-ui-theme^=vellum] #app #hud2 .study-stock{color:#83530c;}
+body.fote-study[data-ui-theme] #app #hud2 .study-stock{color:var(--resource-essence);}
 body.fote-study.study-minimal[data-ui-theme] #app #studyRecentLog{color:#d5ccc0;--ash:#d5ccc0;--dim:#b5ab9d;text-shadow:0 1px 2px #000,0 0 5px #000c;}
 body.fote-study.study-minimal[data-ui-theme] #app #studyHunger{color:#d8b46e;text-shadow:0 1px 2px #000;}
 body.fote-study.study-minimal[data-ui-theme] #app #studyHunger.study-starving{color:#ee9d87;}

@@ -95,9 +95,9 @@ function recyclePanelHTML(){
   if(!list.length) return h+'<p class="c-info">Nothing in your bag to recycle.</p>';
   var total=list.reduce(function(a,o){ return a+o.v; }, 0);
   h+=list.map(function(o){
-    return '<div class="frow recyc"><span class="ic" data-ricon="'+(iconNameForBag(o.b)||'')+'"></span><div class="ftext"><b>'+o.b.name+'</b></div><span class="val">+'+o.v+' essence</span><button data-recycle="'+o.i+'">Recycle</button></div>';
+    return '<div class="frow recyc"><span class="ic" data-ricon="'+(iconNameForBag(o.b)||'')+'"></span><div class="ftext"><b>'+o.b.name+'</b></div><span class="val">'+resourceReadoutHTML('essence','+'+o.v+' Essence')+'</span><button data-recycle="'+o.i+'">Recycle</button></div>';
   }).join('');
-  h+='<div class="frow"><div class="ftext c-info">Everything above: <b style="color:var(--gold)">+'+total+' essence</b></div><button data-recycle-all="1">Recycle all</button></div>';
+  h+='<div class="frow"><div class="ftext c-info">Everything above: <b>'+resourceReadoutHTML('essence','+'+total+' Essence')+'</b></div><button data-recycle-all="1">Recycle all</button></div>';
   return h;
 }
 function recycleAt(i){

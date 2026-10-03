@@ -3,7 +3,7 @@ var FOTE_VERSION = 'Beta 1.5';
 /* Keep newest first; describe only changes already present in this build. */
 var FOTE_PATCHES = [
   {version:'Beta 1.5', notes:[
-    "Favor and Essence use matching text sizes and alignment, with blue Favor and gold Essence in both HUD layouts.",
+    "Favor uses your patron god's color and a five-point star; Essence uses its violet crystal color and a diamond consistently across the HUD and menus. Both HUD readouts use matching text sizes and alignment.",
     "Regular Caverns enemies have 20% less base HP; Buried Ghouls have 40 base HP.",
     "Hunger drains 20% more slowly to account for longer fights.",
     "Guaranteed floor meals are placed on reachable tiles after room construction, with one meal per floor and a 45% chance of a second.",
