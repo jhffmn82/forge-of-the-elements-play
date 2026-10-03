@@ -147,6 +147,7 @@ function fleeStep(e,threat){
 }
 function actorPrepare(context){
   var e=context.actor;
+  if(typeof FoteEnemyPerception!=='undefined'&&FoteEnemyPerception.libraryDormant(e))return true;
   if(e.shadowClone)e.cloneAction=null;
   if(e.pebbleSlam&&(e.state!=='hunt'||FoteActors.blocked(e,gameEffects)||e.x!==e.pebbleSlam.fromX||e.y!==e.pebbleSlam.fromY))clearPebbleSlam(e);
   if(e.challengeT&&--e.challengeT<=0){e.challenged=false;e.cowardMark=false;}

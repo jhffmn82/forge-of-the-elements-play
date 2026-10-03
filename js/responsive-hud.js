@@ -11,7 +11,7 @@ var FoteResponsiveHUD=(function(){
   const lineIcon=path=>'<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">'+path+'</svg>';
   function syncNavigation(){
     const explore=node('studyExplore'),map=node('bMap');
-    explore.dataset.iconOnly='true';
+    explore.dataset.iconOnly=document.body.classList.contains('study-classic')?'false':'true';
     syncExploreButton(explore);
     bindHudResourceCard(explore,'explore');
     map.innerHTML=lineIcon('<path d="m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3zM9 3v15m6-12v15"/>');
@@ -139,7 +139,7 @@ var FoteResponsiveHUD=(function(){
     menuOpen=on;document.body.classList.toggle('study-menu-open',on);
     const button=node('studyMenuToggle'),top=node('top');
     if(button)button.setAttribute('aria-expanded',String(on));
-    if(top){top.inert=!on;top.setAttribute('aria-hidden',String(top.inert));}
+    if(top){top.inert=!on&&!document.body.classList.contains('study-classic');top.setAttribute('aria-hidden',String(top.inert));}
     if(mounted)syncTouchControls();
     if(on)node('studyNav').querySelector('button').focus();else if(restoreFocus&&button)button.focus();
   }
@@ -185,7 +185,10 @@ var FoteResponsiveHUD=(function(){
       ?Math.max(.8,Math.min(1.1,wide?w/800:w/430,wide?h/440:h/780))
       :Math.max(1,Math.min(1.5,w/960,h/600));
     document.body.style.setProperty('--study-interface-scale',String(Math.round(scale*1000)/1000));
-    document.body.classList.add('study-minimal');
+    const classic=typeof uiHudMode==='function'&&uiHudMode()==='classic';
+    document.body.dataset.uiHudMode=classic?'classic':'minimal';
+    document.body.classList.toggle('study-minimal',!classic);
+    document.body.classList.toggle('study-classic',classic);
     document.body.classList.toggle('study-finger',finger);
     document.body.classList.remove('study-desktop','study-unified','study-wide');
     document.body.classList.toggle('study-touch',finger);
@@ -200,14 +203,14 @@ var FoteResponsiveHUD=(function(){
     const hotbarLayout=typeof uiHotbarLayout==='function'?uiHotbarLayout():(typeof UI_HOTBAR_LAYOUT==='string'?UI_HOTBAR_LAYOUT:'horizontal');
     const vertical=hotbarLayout==='vertical';
     document.body.classList.toggle('study-hotbar-vertical',vertical);
-    document.body.classList.toggle('study-overlay-pad',finger?UI_TOUCH_PAD:UI_DESKTOP_PAD);
+    document.body.classList.toggle('study-overlay-pad',classic?UI_DESKTOP_PAD:finger?UI_TOUCH_PAD:UI_DESKTOP_PAD);
     composeColumns();
     syncNavigation();
     renderReadouts();
-    if(typeof FoteCombatLog!=='undefined')FoteCombatLog.setTransient(true);
+    if(typeof FoteCombatLog!=='undefined')FoteCombatLog.setTransient(!classic);
     setMenu(false);syncAudioButton();syncSheet();
     syncTouchControls();
-    document.documentElement.style.setProperty('--study-top','0px');
+    document.documentElement.style.setProperty('--study-top',classic?node('top').getBoundingClientRect().bottom+'px':'0px');
     resize();positionSheet();
   }
   function composeColumns(){
@@ -215,6 +218,18 @@ var FoteResponsiveHUD=(function(){
     const app=node('app'),hud=node('studyHud'),status=node('statusbar'),recent=node('studyRecentLog');
     const panels=node('studySheetTabs');
     const panelButtons=['studyChar','studyGear','studyFaith','studySheetOptions'].map(node);
+    const nav=node('studyNav');
+    if(document.body.classList.contains('study-classic')){
+      nav.append(node('studyChar'),node('studyGear'),node('studyFaith'),node('studyOptions'),node('bMap'),node('bMute'));
+      if(hud.parentElement!==app)app.append(hud);
+      if(status&&status.parentElement!==hud)hud.append(status);
+      if(node('log').parentElement!==hud)hud.append(node('log'));
+      const actions=node('studyActionBar');actions.append(explore);hud.insertBefore(actions,status);
+      if(hotbar.parentElement!==app)app.append(hotbar);
+      return;
+    }
+    if(node('log').parentElement!==node('studyRight'))node('studyRight').prepend(node('log'));
+    if(node('studyActionBar').parentElement!==app)app.append(node('studyActionBar'));
     if(panelButtons.some((button,index)=>panels.children[index]!==button))panels.append(...panelButtons);
     const actions=node('studyActionBar');
     const actionButtons=[node('studyMenuToggle'),node('bMap'),explore];
@@ -319,13 +334,13 @@ var FoteResponsiveHUD=(function(){
     syncExploreButton(node('studyExplore'));
     node('studyDepth').textContent=node('hBiome').textContent+' · Floor '+node('hFloor').textContent;
     bindHudResourceCard(node('studyExplore'),'explore');
-    const hungry=player.hunger<=0?'Starving':player.hunger<300?'Hungry':'Fed';
+    const hungry=player.hunger<=0?'Starving':player.hunger<300?'Hungry':'Full';
     node('studyHungerText').textContent=hungry;
     node('studyHungerFill').style.width=clamp(player.hunger/HUNGER_MAX*100,0,100)+'%';
-    node('studyHungerFill').style.background=hungry==='Fed'?'#687b3e':'#b87a32';
+    node('studyHungerFill').style.background=hungry==='Full'?'#687b3e':hungry==='Starving'?'#b8503d':'#b87a32';
     node('studyHunger').setAttribute('aria-label',hungry+'. Hunger '+num(player.hunger)+' / '+num(HUNGER_MAX));
     node('studyHunger').classList.toggle('study-starving',player.hunger<=0);
-    node('studyHunger').classList.toggle('study-fed',hungry==='Fed');
+    node('studyHunger').classList.toggle('study-fed',hungry==='Full');
     node('xpBar').setAttribute('aria-label','Level '+player.level+'. XP '+num(player.xp)+' / '+num(player.xpNext));
     bindHudResourceCard(node('bars').querySelector('.hp'),'hp');
     bindHudResourceCard(node('bars').querySelector('.mp'),'mp');

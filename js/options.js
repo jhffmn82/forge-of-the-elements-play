@@ -65,6 +65,8 @@ if($('bArt'))$('bArt').textContent=spriteOn?'Art: sprites':'Art: blocks';
     '.opt-appearance>.seg{flex:0 1 auto;flex-wrap:wrap;min-width:0;max-width:100%}',
     '.opt-appearance>.seg button{flex:0 0 auto;min-height:28px;padding:4px 9px;font-size:11px;line-height:1.2}',
     '.opt-appearance>.seg button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}',
+    '.opt-appearance select{max-width:100%;min-height:32px;padding:5px 28px 5px 9px;border:1px solid var(--edge);border-radius:4px;background:var(--panel-2);color:var(--ink);font:12px var(--mono)}',
+    'body.touch .opt-appearance select{min-height:44px}',
     'body.touch .opt-appearance>.seg button{min-height:34px}',
     '.legend{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;font-size:11px} .legend b{color:var(--gold);font-weight:600} .legend span{color:var(--dim)}'
   ].join('\n');
@@ -78,8 +80,10 @@ try{UI_STATUS_SIZE=localStorage.getItem('fote-ui-status-size')||UI_STATUS_SIZE;}
 var UI_HOTBAR_LAYOUTS={vertical:'Vertical',horizontal:'Horizontal'};
 var UI_PAD_SIDES={left:'Left',right:'Right'},UI_PAD_SIDE='left';
 try{var savedPadSide=localStorage.getItem('fote-ui-pad-side');if(Object.prototype.hasOwnProperty.call(UI_PAD_SIDES,savedPadSide))UI_PAD_SIDE=savedPadSide;}catch(e){}
-// Retain the camera's shared layout query; there is one gameplay interface.
-function uiHudMode(){return 'minimal';}
+var UI_HUD_MODES={minimal:'Overlay (Default)',classic:'Classic UI'},UI_HUD_MODE='minimal';
+try{UI_HUD_MODE=localStorage.getItem('fote-ui-hud-mode')||UI_HUD_MODE;}catch(e){}
+// Small windows retain the landscape phone HUD, even with a saved desktop choice.
+function uiHudMode(){return UI_HUD_MODE==='classic'&&innerWidth>=960&&innerHeight>=600?'classic':'minimal';}
 function uiUsesTouchInput(){
   try{var override=new URLSearchParams(location.search).get('touch');if(override==='0'||override==='1')return override==='1';}catch(e){}
   return !!((typeof MOBILE!=='undefined'&&MOBILE)||(typeof navigator!=='undefined'&&navigator.maxTouchPoints>0)||(typeof matchMedia==='function'&&matchMedia('(pointer:coarse)').matches));
@@ -96,6 +100,7 @@ function applyUIAppearance(){
   if(!Object.prototype.hasOwnProperty.call(UI_THEMES,UI_THEME))UI_THEME='ember';
   if(!Object.prototype.hasOwnProperty.call(UI_TEXT_SIZES,UI_TEXT_SIZE))UI_TEXT_SIZE='normal';
   if(!Object.prototype.hasOwnProperty.call(UI_STATUS_SIZES,UI_STATUS_SIZE))UI_STATUS_SIZE='normal';
+  if(!Object.prototype.hasOwnProperty.call(UI_HUD_MODES,UI_HUD_MODE))UI_HUD_MODE='minimal';
   if(!Object.prototype.hasOwnProperty.call(UI_PHONE_PAD_SIZES,UI_PHONE_PAD_SIZE))UI_PHONE_PAD_SIZE='normal';
   if(!Object.prototype.hasOwnProperty.call(UI_HOTBAR_LAYOUTS,UI_HOTBAR_LAYOUT))UI_HOTBAR_LAYOUT='horizontal';
   if(!Object.prototype.hasOwnProperty.call(UI_PAD_SIDES,UI_PAD_SIDE))UI_PAD_SIDE='left';
@@ -117,10 +122,14 @@ applyUIAppearance();
 function appearanceSegments(id,label,choices,value){
   return '<div class="optrow opt-appearance"><span id="'+id+'Label">'+label+'</span>'+segHTML(id,Object.keys(choices).map(function(k){return[k,choices[k]];}),value,id+'Label')+'</div>';
 }
-var UI_APPEARANCE_CHOICES={uiSide:{left:'Left',right:'Right'},uiPadSide:UI_PAD_SIDES,uiHotbarLayout:UI_HOTBAR_LAYOUTS,uiPhonePadSize:UI_PHONE_PAD_SIZES,uiStatusSize:UI_STATUS_SIZES,uiTheme:UI_THEMES,uiTextSize:UI_TEXT_SIZES};
+function appearanceDropdown(id,label,choices,value){
+  return '<label class="optrow opt-appearance"><span>'+label+'</span><select id="'+id+'">'+Object.keys(choices).map(function(k){return '<option value="'+k+'"'+(k===value?' selected':'')+'>'+choices[k]+'</option>';}).join('')+'</select></label>';
+}
+var UI_APPEARANCE_CHOICES={uiHudMode:UI_HUD_MODES,uiSide:{left:'Left',right:'Right'},uiPadSide:UI_PAD_SIDES,uiHotbarLayout:UI_HOTBAR_LAYOUTS,uiPhonePadSize:UI_PHONE_PAD_SIZES,uiStatusSize:UI_STATUS_SIZES,uiTheme:UI_THEMES,uiTextSize:UI_TEXT_SIZES};
 function setAppearanceSetting(id,value){
   if(!Object.prototype.hasOwnProperty.call(UI_APPEARANCE_CHOICES,id)||!Object.prototype.hasOwnProperty.call(UI_APPEARANCE_CHOICES[id],value))return false;
   var key;
+  if(id==='uiHudMode'){UI_HUD_MODE=value;key='fote-ui-hud-mode';}
   if(id==='uiSide'){UI_SIDE=value;key='fote-ui-side';}
   if(id==='uiPadSide'){UI_PAD_SIDE=value;key='fote-ui-pad-side';}
   if(id==='uiHotbarLayout'){UI_HOTBAR_LAYOUT=value;key='fote-ui-hotbar-layout';}
@@ -145,6 +154,7 @@ function settingsHTML(){
      '<label class="optrow"><span>Effects volume</span><input type="range" id="volSfx" min="0" max="100" value="'+Math.round((AUDIO.vol.sfx||0)*100)+'"></label>'+
      '<label class="optrow"><span>Music volume</span><input type="range" id="volMusic" min="0" max="100" value="'+Math.round((AUDIO.vol.music||0)*100)+'"></label>'+
      '<div class="sec">Display</div>'+
+     appearanceSegments('uiHudMode','Desktop interface',UI_HUD_MODES,UI_HUD_MODE)+'<div class="c-info">Classic UI keeps a windowed map and a permanent combat log. Smaller windows use Overlay.</div>'+
      appearanceSegments('uiStatusSize','Portrait and bars',UI_STATUS_SIZES,UI_STATUS_SIZE)+
      appearanceSegments('uiSide','Portrait side',{left:'Left',right:'Right'},UI_SIDE)+
      appearanceSegments('uiPadSide','Control pad side',UI_PAD_SIDES,UI_PAD_SIDE)+
@@ -152,7 +162,7 @@ function settingsHTML(){
      '<div class="optrow"><span>Touch direction pad</span>'+segHTML('touchPad',[['on','On'],['off','Off']],UI_TOUCH_PAD?'on':'off')+'</div>'+
      appearanceSegments('uiPhonePadSize','Touch control size',UI_PHONE_PAD_SIZES,UI_PHONE_PAD_SIZE)+
      (!(typeof MOBILE!=='undefined'&&MOBILE)?'<div class="optrow"><span>Movement pad</span>'+segHTML('desktopPad', [['shown','Shown'],['hidden','Hidden']],UI_DESKTOP_PAD?'shown':'hidden')+'</div>':'')+
-     appearanceSegments('uiTheme','UI theme',UI_THEMES,UI_THEME)+
+     appearanceDropdown('uiTheme','UI theme',UI_THEMES,UI_THEME)+
      appearanceSegments('uiTextSize','Text size',UI_TEXT_SIZES,UI_TEXT_SIZE)+
      '<label class="optrow ui-opacity-row"><span>UI transparency <output id="uiOpacityValue" for="uiOpacity">'+(100-UI_OPACITY)+'%</output></span><input type="range" id="uiOpacity" min="0" max="90" step="5" value="'+(100-UI_OPACITY)+'" aria-label="UI transparency" aria-describedby="uiOpacityHint"></label><div id="uiOpacityHint" class="c-info">Fades panel and button backgrounds. Text, icons and bars stay solid.</div>'+
      '<div class="optrow"><span>Map zoom</span>'+segHTML('mapzoom', [['far','Far'],['normal','Normal'],['close','Close'],['closest','Closest']], MAP_ZOOM)+'</div>'+
@@ -184,6 +194,8 @@ function refreshOptions(settingsRoot){
   if(scroller)scroller.scrollTop=scroll;
 }
 function wireSettings(root){
+  var theme=root.querySelector('#uiTheme');
+  if(theme)theme.onchange=function(){if(setAppearanceSetting('uiTheme',theme.value)){sfx('ui-click');refreshOptions(root);}};
   var opacity=root.querySelector('#uiOpacity');
   if(opacity)opacity.oninput=function(){UI_OPACITY=100-Number(opacity.value);applyUIAppearance();root.querySelector('#uiOpacityValue').textContent=(100-UI_OPACITY)+'%';try{localStorage.setItem('fote-ui-opacity',String(UI_OPACITY));}catch(e){}};
   root.querySelectorAll('[data-bind]').forEach(function(b){ b.onclick=function(ev){ ev.stopPropagation(); REBINDING=b.getAttribute('data-bind'); refreshOptions(); }; });

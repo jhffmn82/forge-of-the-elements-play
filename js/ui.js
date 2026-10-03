@@ -253,7 +253,7 @@ function hudResourceCard(kind){
     return '<div class="nm">Amusement '+number(mood)+'%</div>'+row('Prank chance / turn',(odds.prank*100).toFixed(3)+'%')+row('Reward chance / turn',(odds.reward*100).toFixed(3)+'%')+'<div class="hint">Combat raises Amusement; quiet drains it. Pranks raise it by 50; rewards spend 50, within 0 to 100. These chances use Amusement, not Favor.</div>';
   }
   if(kind==='hunger'){
-    var state=player.hunger<=0?'Starving':player.hunger<300?'Hungry':'Fed';
+    var state=player.hunger<=0?'Starving':player.hunger<300?'Hungry':'Full';
     return '<div class="nm">Hunger: '+state+'</div><div class="row"><span>Hunger</span><b>'+number(player.hunger)+' / '+number(HUNGER_MAX)+'</b></div><div class="hint">Eat food from your bag to restore hunger.</div>';
   }
   if(!player.god)return '<div class="nm">No god followed</div>';
@@ -320,7 +320,7 @@ function bars(){
   $('fx').innerHTML=tags.join('');
   if(typeof FoteResponsiveHUD!=='undefined'&&FoteResponsiveHUD.isMounted()){FoteResponsiveHUD.renderReadouts();return;}
   var hud=$('hud2'); if(!hud) return;
-  var hp=player.hunger/HUNGER_MAX, hl = player.hunger<=0 ? 'Starving' : player.hunger<300 ? 'Hungry' : 'Fed';
+  var hp=player.hunger/HUNGER_MAX, hl = player.hunger<=0 ? 'Starving' : player.hunger<300 ? 'Hungry' : 'Full';
   var h='<span class="chip" title="Hunger">'+hl+' <span class="hunger"><i style="width:'+Math.round(hp*100)+'%"></i></span></span>';
   if(player.stillness>0) h+='<span class="chip" style="color:#9FD8FF" title="Time is frozen: moving is free">\u23F8 stillness '+player.stillness+'</span>';
   if(player.keys && (player.keys.iron||player.keys.crystal)) h+='<span class="chip" id="keychip">\u{1F5DD} '+((player.keys.iron||0)+(player.keys.crystal||0))+'</span>';

@@ -363,12 +363,14 @@ function resolveAmusement(){
  var mood=Math.max(0,Math.min(100,Number(player.amusement)||0)),odds=wobblesMoodOdds(mood),roll=rng();
  if(roll<odds.prank){
   player.amusement=Math.min(100,mood+50);
-  var prank=pick(['blind','chill']);applyStatus(player,prank,2);log('Wobbles: '+(STATUS_INFO[prank]&&STATUS_INFO[prank].name||prank)+'.','c-you');
+  sfx('wobbles-giggle');sparkleFx(player.x,player.y,'magic',24);floatText(player.x,player.y,'Prank!','magic');
+  var prank=pick(['blind','chill','root']);applyStatus(player,prank,4);log('Wobbles pranks you: '+(STATUS_INFO[prank]&&STATUS_INFO[prank].name||prank)+' for 4 turns.','c-you');
  }else if(roll<odds.prank+odds.reward){
   player.amusement=Math.max(0,mood-50);
-  if(player.hp<player.maxhp*.75){var before=player.hp;healPlayer(player.maxhp*.4);log('Wobbles: +'+Math.round(player.hp-before)+' HP.','c-good');}
-  else if(rng()<.5){var it=randomGear();it.x=player.x;it.y=player.y;items.push(it);log('Wobbles: gear dropped.','c-good');}
-  else{var essence=ri(20,40);gainEssence(essence);log('Wobbles: +'+essence+' Essence.','c-good');}
+  sfx('wobbles-giggle');sparkleFx(player.x,player.y,'magic',24);floatText(player.x,player.y,'Gift!','magic');
+  if(player.hp<player.maxhp*.75){var before=player.hp;healPlayer(player.maxhp);log('Wobbles restores your health: +'+Math.round(player.hp-before)+' HP.','c-good');}
+  else if(rng()<.5){var it=randomGear();if(it.data){it.data.plus=Math.min(3,Math.max(1,(it.data.plus||0)+1));delete it.data.cursed;delete it.data.cursedOff;delete it.data.unid;it.name=gearName(it.data);}it.x=player.x;it.y=player.y;items.push(it);log('Wobbles gifts you '+(it.name||'enhanced gear')+'.','c-good');}
+  else{var essence=ri(40,80)*(1+Math.max(0,bidx()));gainEssence(essence);log('Wobbles gifts you '+essence+' Essence.','c-good');}
  }
 }
 

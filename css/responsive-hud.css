@@ -754,11 +754,10 @@ body.fote-study.study-minimal #app #hud2 :is(.study-wallet,.study-piety){display
 body.fote-study.study-minimal #app #hud2 .study-favor{height:max(24px,calc(20px * var(--minimal-status-scale) * var(--ui-text-scale,1)));background:none;border:0;}
 body.fote-study.study-minimal #app #hud2 .study-favor .meter{display:none!important;}
 body.fote-study.study-minimal #app #studyHunger{height:max(24px,calc(var(--minimal-detail-font) * 1.4))!important;flex:0 0 auto;padding:0 4px!important;}
-body.fote-study.study-minimal #app #studyHunger.study-fed{display:none;}
 body.fote-study.study-minimal #app #studyHungerText{font:500 var(--minimal-detail-font)/1.4 var(--mono);flex-basis:auto;}
 body.fote-study.study-minimal #app #hud2 .study-favor{font:600 var(--minimal-detail-font)/1.4 var(--mono)!important;font-variant-numeric:tabular-nums;}
 body.fote-study.study-minimal #app #hud2 .study-favor .rk{font:inherit;}
-body.fote-study.study-minimal #app #studyHunger .study-hunger-track{display:none;}
+body.fote-study.study-minimal #app #studyHunger .study-hunger-track{display:block;flex:1 1 40px;min-width:30px;}
 body.fote-study.study-minimal #app #statusbar{
  display:flex;position:static;inset:auto;max-width:100%;width:100%;min-height:0;
  grid-column:2;grid-row:4;flex-wrap:wrap;gap:3px;margin-top:8px;pointer-events:auto;
@@ -904,10 +903,11 @@ body.fote-study.study-minimal.study-small-touch.study-overlay-pad:not(.study-hot
 
 /* Compact joined portrait/vitals silhouette, with no enclosing window. */
 body.fote-study.study-minimal #app #studyHud{
- --joined-base-portrait:clamp(64px,calc(70px * var(--study-interface-scale,1)),92px);
+ --joined-size-scale:calc(var(--ui-status-scale,1.3) / 1.3);
+ --joined-base-portrait:calc(clamp(64px,calc(70px * var(--study-interface-scale,1)),92px) * var(--joined-size-scale));
  --joined-portrait:calc(var(--joined-base-portrait) * 1.25);
- --joined-base-width:min(calc(300px * var(--study-interface-scale,1)),calc(100vw - 2 * var(--minimal-inset) - var(--minimal-menu-size) - 10px));
- --joined-overlap:calc(20px * var(--study-interface-scale,1));
+ --joined-base-width:min(calc(300px * var(--study-interface-scale,1) * var(--joined-size-scale)),calc(100vw - 2 * var(--minimal-inset) - var(--minimal-menu-size) - 10px));
+ --joined-overlap:calc(20px * var(--study-interface-scale,1) * var(--joined-size-scale));
  width:calc(var(--joined-base-width) * .75 + var(--joined-base-portrait) * .5 - var(--joined-overlap) * .25);
  grid-template-columns:var(--joined-portrait) minmax(0,1fr);gap:2px 0;
  padding:0;background:none;border:0;border-radius:0;box-shadow:none;pointer-events:none;
@@ -923,13 +923,13 @@ body.fote-study.study-minimal #studyPortrait{
 }
 body.fote-study.study-minimal #studyPortraitStats{
  bottom:-1px;left:50%;padding:2px 4px;background:#15120de8;border:0;border-radius:3px;gap:5px;
- font:600 clamp(11px,calc(11px * var(--study-interface-scale,1)),13px)/1.1 var(--mono);
+ font:600 clamp(11px,calc(11px * var(--study-interface-scale,1) * var(--joined-size-scale)),16px)/1.1 var(--mono);
 }
 body.fote-study.study-minimal #studyLevel{color:#e6ddce;}
 body.fote-study.study-minimal #studyRank{color:#91b9f0;}
 body.fote-study.study-minimal #studyPortraitStats small{font-size:.85em;font-weight:600;color:inherit;}
 body.fote-study.study-minimal #app #bars{
- grid-row:2;margin-left:calc(-20px * var(--study-interface-scale,1))!important;
+ grid-row:2;margin-left:calc(-1 * var(--joined-overlap))!important;
  margin-top:calc(var(--joined-portrait) * .12)!important;
  grid-template-rows:calc(var(--joined-base-portrait) * .32) calc(var(--joined-base-portrait) * .29) 4px 4px!important;
  gap:0!important;border:0;border-radius:0 4px 2px 0;overflow:hidden;
@@ -939,7 +939,7 @@ body.fote-study.study-minimal #app #bars .bar{
 }
 body.fote-study.study-minimal #app #bars .bar span{
  padding:0 6px 0 calc(var(--joined-overlap) + 5px)!important;
- font:600 clamp(9px,calc(10px * var(--study-interface-scale,1)),12px)/1.1 var(--mono)!important;
+ font:600 clamp(9px,calc(10px * var(--study-interface-scale,1) * var(--joined-size-scale)),15px)/1.1 var(--mono)!important;
  text-shadow:0 1px 2px #0008;
 }
 body.fote-study.study-minimal #app #bars .bar .l{font-size:.87em;font-weight:500;color:#f1e9df;}
@@ -949,11 +949,14 @@ body.fote-study.study-minimal #app #studyReadouts{
 }
 body.fote-study.study-minimal #app #studyHunger,
 body.fote-study.study-minimal #app #hud2 .study-favor{height:18px!important;padding:0!important;}
+body.fote-study.study-minimal #app #studyHunger{flex:1 1 auto;min-width:0;}
 body.fote-study.study-minimal #app #studyHungerText,
 body.fote-study.study-minimal #app #hud2 .study-favor{
  font:500 clamp(11px,calc(11px * var(--study-interface-scale,1)),13px)/1.1 var(--mono)!important;
 }
 body.fote-study.study-minimal #app #studyHungerText{color:#dab86a;}
+body.fote-study.study-minimal #app #studyHunger.study-fed #studyHungerText{color:#94bb75;}
+body.fote-study.study-minimal #app #studyHunger.study-starving #studyHungerText{color:#ee9d87;}
 body.fote-study.study-minimal #app #hud2 .study-favor{color:#d7d0c5;}
 body.fote-study.study-minimal #studyStatPoints{
  top:calc(var(--minimal-depth-height) + var(--joined-portrait) * .65);left:-4px;right:auto;
@@ -967,7 +970,7 @@ body.fote-study.study-minimal #app #statusbar:empty{display:none;}
 body.fote-study.study-minimal #app #studyExplore{top:calc(var(--minimal-inset) + var(--cohesive-hud-height,115px) + 8px + env(safe-area-inset-top,0px));}
 body.fote-study.study-minimal #app #bMap{top:calc(var(--minimal-inset) + var(--cohesive-hud-height,115px) + var(--minimal-action-size) + 16px + env(safe-area-inset-top,0px));}
 body.fote-study.study-minimal.study-pad-right #app #studyHud{grid-template-columns:minmax(0,1fr) var(--joined-portrait);}
-body.fote-study.study-minimal.study-pad-right #app #bars{margin-left:0!important;margin-right:calc(-20px * var(--study-interface-scale,1))!important;border-radius:4px 0 0 2px;}
+body.fote-study.study-minimal.study-pad-right #app #bars{margin-left:0!important;margin-right:calc(-1 * var(--joined-overlap))!important;border-radius:4px 0 0 2px;}
 body.fote-study.study-minimal.study-pad-right #app #bars .bar span{padding-left:6px!important;padding-right:calc(var(--joined-overlap) + 5px)!important;}
 body.fote-study.study-minimal.study-pad-right #studyStatPoints{left:auto;right:-4px;}
 body.fote-study.study-minimal.study-pad-right #app #statusbar{grid-column:1;}
@@ -980,3 +983,75 @@ body.fote-study.study-minimal.study-pad-right #app #statusbar{grid-column:1;}
 
 
 body.fote-study #studyPortraitArt{overflow:hidden;}
+
+/* Optional windowed desktop layout; the hotbar owns its own row or column. */
+body.fote-study.study-classic{--classic-rail:clamp(260px,22vw,330px);--classic-slot:clamp(64px,8vh,80px);}
+body.fote-study.study-classic #app{
+ grid-template-columns:var(--classic-rail) minmax(0,1fr)!important;
+ grid-template-rows:44px minmax(0,1fr) calc(var(--classic-slot) + 8px)!important;
+}
+body.fote-study.study-classic #app #map{grid-area:2/2/3/3;border:1px solid var(--ui-edge);}
+body.fote-study.study-classic #app #studyHud{
+ grid-area:2/1/4/2;display:flex;flex-direction:column;gap:8px;padding:10px;
+ min-height:0;overflow:hidden;border:0;border-right:1px solid var(--ui-edge);
+}
+body.fote-study.study-classic #studyDepth{display:none;}
+body.fote-study.study-classic #studyPortrait{
+ display:block;position:relative;flex:0 0 auto;align-self:center;
+ width:calc(80px * var(--ui-status-scale,1.3));height:calc(80px * var(--ui-status-scale,1.3));
+ padding:0;overflow:visible;border:1px solid var(--ui-edge);border-radius:50%;background:#101012;
+}
+body.fote-study.study-classic #studyPortraitArt{display:block;width:100%;height:100%;border-radius:50%;}
+body.fote-study.study-classic #studyPortraitStats{
+ position:absolute;bottom:-2px;left:50%;transform:translateX(-50%);display:flex;gap:8px;white-space:nowrap;
+ padding:2px 6px;border:1px solid var(--ui-edge);border-radius:4px;background:var(--ui-panel);font:600 12px/1.2 var(--mono);
+}
+body.fote-study.study-classic #studyPortraitStats small{margin-right:3px;color:var(--ui-ash);}
+body.fote-study.study-classic #app #bars{
+ flex:0 0 auto;grid-template-columns:minmax(0,1fr)!important;
+ grid-template-rows:repeat(2,calc(24px * var(--ui-status-scale,1.3))) 6px 6px!important;gap:3px!important;
+}
+body.fote-study.study-classic #app #bars .bar{height:100%!important;grid-column:1;}
+body.fote-study.study-classic #app #bars .bar span{font-size:14px!important;}
+body.fote-study.study-classic #app #studyPietyBar{display:block;padding:0;border:0;}
+body.fote-study.study-classic #app #studyPietyBar[hidden]{display:none;}
+body.fote-study.study-classic #app #studyPietyFill{position:absolute;inset:0 auto 0 0;}
+body.fote-study.study-classic #app #studyReadouts{flex:0 0 auto;padding:0;}
+body.fote-study.study-classic #app #studyHunger{width:100%;height:24px!important;}
+body.fote-study.study-classic #app #studyHunger .study-hunger-track{display:block;flex:1 1 30px;min-width:30px;}
+body.fote-study.study-classic #app #studyHungerText{font-size:13px;flex-basis:70px;}
+body.fote-study.study-classic #app #hud2 button.chip{height:24px;font-size:12px!important;}
+body.fote-study.study-classic #app #hud2 .study-piety{display:none;}
+body.fote-study.study-classic #app #hud2 .study-favor{grid-column:1/-1;}
+body.fote-study.study-classic #app #studyActionBar{display:flex;flex:0 0 40px;}
+body.fote-study.study-classic #app #studyExplore{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;height:40px;min-height:40px;margin:0;opacity:1;cursor:pointer;font-size:14px!important;}
+body.fote-study.study-classic #app #studyExplore svg{width:24px;height:24px;}
+body.fote-study.study-classic #app #statusbar{position:static;display:flex;flex-wrap:wrap;max-width:100%;flex:0 0 auto;}
+body.fote-study.study-classic #app #log{flex:1 1 0;min-height:0;overflow:auto;width:100%!important;max-width:none!important;font-size:13px!important;padding:6px!important;}
+body.fote-study.study-classic #app #hotbar{
+ grid-area:3/2/4/3;grid-template-columns:repeat(8,minmax(0,1fr))!important;grid-template-rows:minmax(0,1fr)!important;
+ width:min(100%,calc(8 * var(--classic-slot) + 36px))!important;height:100%!important;
+ justify-self:center;gap:4px!important;padding:4px!important;box-sizing:border-box;
+}
+body.fote-study.study-classic #app #hotbar .slot .ico{width:calc(var(--classic-slot) - 8px)!important;height:calc(var(--classic-slot) - 8px)!important;}
+body.fote-study.study-classic #app #studyNav{width:500px;grid-template-columns:repeat(4,minmax(0,1fr)) 44px 74px;}
+body.fote-study.study-classic #app #studyNav :is(#bMap,#bMute) svg{width:22px;height:22px;}
+body.fote-study.study-classic #app #studyNav #bMute small{display:none;}
+body.fote-study.study-classic #app #studySheetTabs{display:none;}
+body.fote-study.study-classic #brand h1{display:none;}
+body.fote-study.study-classic #studyRecentLog{display:none!important;}
+body.fote-study.study-classic:not(.study-overlay-pad) #app #dpad{display:none!important;}
+body.fote-study.study-classic #app #studyHunger.study-fed{color:#94bb75;}
+body.fote-study.study-classic.study-pad-right #app{grid-template-columns:minmax(0,1fr) var(--classic-rail)!important;}
+body.fote-study.study-classic.study-pad-right #app #studyHud{grid-column:2;}
+body.fote-study.study-classic.study-pad-right #app :is(#map,#hotbar){grid-column:1;}
+body.fote-study.study-classic.study-hotbar-vertical #app{grid-template-columns:var(--classic-rail) minmax(0,1fr) calc(var(--classic-slot) + 8px)!important;grid-template-rows:44px minmax(0,1fr)!important;}
+body.fote-study.study-classic.study-hotbar-vertical #app #studyHud{grid-row:2;}
+body.fote-study.study-classic.study-hotbar-vertical #app #hotbar{
+ grid-area:2/3/3/4;grid-template-columns:minmax(0,1fr)!important;grid-template-rows:repeat(8,minmax(0,1fr))!important;
+ width:100%!important;max-height:calc(8 * var(--classic-slot) + 36px)!important;align-self:center;
+}
+body.fote-study.study-classic.study-hotbar-vertical.study-pad-right #app{grid-template-columns:calc(var(--classic-slot) + 8px) minmax(0,1fr) var(--classic-rail)!important;}
+body.fote-study.study-classic.study-hotbar-vertical.study-pad-right #app #studyHud{grid-column:3;}
+body.fote-study.study-classic.study-hotbar-vertical.study-pad-right #app #map{grid-column:2;}
+body.fote-study.study-classic.study-hotbar-vertical.study-pad-right #app #hotbar{grid-column:1;}

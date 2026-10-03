@@ -262,6 +262,12 @@ function mastered(kind){ return kind!=='drowned'&&kind!=='baths'&&aff(PUZZLE_KIN
 
 function enterTile(){
   var room=puzzleRoomAt(player.x,player.y), inWater=at(player.x,player.y)===WATER;
+  if(room&&room.puzzle.kind==='library'&&!room.puzzle.entered){
+    room.puzzle.entered=true;
+    var keepers=ents.filter(function(e){return e.hp>0&&e.libraryRoom&&e.libraryRoom.x===room.puzzle.door.x&&e.libraryRoom.y===room.puzzle.door.y;});
+    keepers.forEach(function(e){FoteEnemyPerception.remember(e,player,'library-entry');});
+    if(keepers.length)log('The library guardians wake.','c-info');
+  }
   /* the drowned cellar: swimming costs HP */
   if(room && room.deep && inWater && !(player.levitate>0) && player.hp>0){
     var d=Math.max(1,Math.round(player.maxhp*0.08)); dealDirectDamage(player,d,'ice',null,{tags:['environment','drowning']}); floatText(player.x,player.y,String(d),'ice');

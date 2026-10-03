@@ -387,14 +387,15 @@ function spillBarrel(p){
   var room=roomAt(p.x,p.y),fluid=p.fluid,flooded=[],spillPoint=[p.x,p.y];
   removeProp(p);sfx('crate-break',{from:p});
   floorMeta=floorMeta||{};floorMeta.ooze=floorMeta.ooze||{};
-  for(var y=0;y<MH;y++)for(var x=0;x<MW;x++){
+  // A barrel holds one local pool, even when its room spans most of the floor.
+  for(var y=Math.max(0,p.y-1);y<=Math.min(MH-1,p.y+1);y++)for(var x=Math.max(0,p.x-1);x<=Math.min(MW-1,p.x+1);x++){
     var i=idxOf(x,y),t=at(x,y);
     if(t!==FLOOR&&t!==WATER)continue;
     if(fluid==='water'){
-      if(room?roomAt(x,y)!==room:Math.max(Math.abs(x-p.x),Math.abs(y-p.y))>1)continue;
+      if(room&&roomAt(x,y)!==room)continue;
       setT(x,y,WATER);if(gAt(x,y)!==G_TELL)setG(x,y,0);fireT[i]=0;fireSrc[i]=0;delete floorMeta.ooze[i];flooded.push([x,y]);
     }else{
-      if(Math.max(Math.abs(x-p.x),Math.abs(y-p.y))>1||t===WATER)continue;
+      if(t===WATER)continue;
       if(room&&roomAt(x,y)!==room)continue;
       if(room&&room.storageAisle&&room.storageAisle.includes(i))continue;
       var safe=true;
@@ -405,7 +406,7 @@ function spillBarrel(p){
   }
   if(typeof puzzleSpellTiles==='function')puzzleSpellTiles(fluid==='water'?{el:'water'}:{type:'poison'},fluid==='water'?flooded:[spillPoint]);
   if(typeof SURF_CACHE!=='undefined')SURF_CACHE.key=null;
-  log(fluid==='water'?'Water spills across the room.':'The barrel spills a poison pool.','c-info');
+  log(fluid==='water'?'The barrel spills a water pool.':'The barrel spills a poison pool.','c-info');
 }
 /* Damaging spells share prop reactions; frozen treasure still requires fire. */
 function spellPropHit(x,y,type){

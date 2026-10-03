@@ -4,14 +4,22 @@ var FoteEnemyPerception=(function(){
  'use strict';
  var MEMORY=1200,SEARCH=600;
  function hostile(e){return !!(e&&e.foe&&!e.ally&&e.hp>0&&!e.parent&&!(e.base||{}).object);}
+ function libraryDormant(e){
+  if(!e||!e.libraryRoom)return false;
+  var room=(floorMeta.puzzles||[]).find(function(r){return r.puzzle.kind==='library'&&r.puzzle.door.x===e.libraryRoom.x&&r.puzzle.door.y===e.libraryRoom.y;});
+  if(!room||room.puzzle.entered)return false;
+  if(roomAt(player.x,player.y)===room){room.puzzle.entered=true;return false;}
+  e.state='asleep';e.lastSeen=null;e.teamSearchUntil=0;
+  return true;
+ }
  function line(a,b){return FoteEnemyTeamwork.openLine(a,b);}
  function sees(e,target){
-  if(!target||target.hp<=0||e.st&&e.st.blind)return false;
+  if(libraryDormant(e)||!target||target.hp<=0||e.st&&e.st.blind)return false;
   if(target===player)return canSeePlayer(e);
   return dist(e,target)<=7&&line(e,target)&&!actorConcealed(target);
  }
  function remember(e,point,reason,clock){
-  if(!hostile(e)||!point||!Number.isFinite(point.x)||!Number.isFinite(point.y))return false;
+  if(!hostile(e)||libraryDormant(e)||!point||!Number.isFinite(point.x)||!Number.isFinite(point.y))return false;
   var fresh=e.state!=='hunt';
   var previous=e.lastSeen||e,dx=point.x-previous.x,dy=point.y-previous.y;
   if(dx||dy)e.searchDirection={x:Math.sign(dx),y:Math.sign(dy)};
@@ -100,6 +108,7 @@ var FoteEnemyPerception=(function(){
  }
  function takeTurn(e){
   if(!hostile(e))return false;
+  if(libraryDormant(e))return true;
   // Legacy alert flags no longer spend an action. Perception selects a target;
   // the ordinary behavior pipeline owns the one move, attack, or support act.
   delete e.noticeWait;delete e.teamAlertWait;delete e.chaosAlertWait;
@@ -144,7 +153,7 @@ var FoteEnemyPerception=(function(){
  function hear(point,radius,loud,clock){
   var field=soundField(point,radius);
   ents.forEach(function(e){
-   if(!hostile(e)||e.state==='throne'||!field.has(idxOf(e.x,e.y)))return;
+   if(!hostile(e)||libraryDormant(e)||e.state==='throne'||!field.has(idxOf(e.x,e.y)))return;
    // Sight is more precise than a sound elsewhere in the room.
    if(e.state==='hunt'&&sees(e,player))return;
    var fresh=e.state!=='hunt';
@@ -182,7 +191,7 @@ var FoteEnemyPerception=(function(){
  }
  function damaged(event){
   var e=event.target,source=event.source==='player'?player:event.source;
-  if(event.damage>0&&hostile(e)){
+  if(event.damage>0&&hostile(e)&&!libraryDormant(e)){
    e.state='hunt';e.caughtOff=-1;
    if(!event.tags.has('periodic')&&!event.tags.has('environment')){
     remember(e,sees(e,source)?source:e,'attacked');
@@ -191,5 +200,5 @@ var FoteEnemyPerception=(function(){
   }
   attacked(e,source,event.tags);
  }
- return Object.freeze({remember:remember,forget:forget,notice:notice,investigate:investigate,takeTurn:takeTurn,sees:sees,petTarget:petTarget,hear:hear,observeMove:observeMove,playerAction:playerAction,attacked:attacked,damaged:damaged});
+ return Object.freeze({libraryDormant:libraryDormant,remember:remember,forget:forget,notice:notice,investigate:investigate,takeTurn:takeTurn,sees:sees,petTarget:petTarget,hear:hear,observeMove:observeMove,playerAction:playerAction,attacked:attacked,damaged:damaged});
 })();
