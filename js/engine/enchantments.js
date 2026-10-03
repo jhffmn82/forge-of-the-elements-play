@@ -19,7 +19,7 @@
     },
     armor:{
       fire:{maxhp:curve(.05,.03)},water:{evasion:curve(8,2.4,{round:true})},
-      air:{deflect:curve(.05,.03)},earth:{armor:curve(1,.3,{round:true})},
+      air:{deflect:curve(.05,.03)},earth:{armor:curve(1,.5,{round:true})},
       light:{hpRegen:curve(.5,.15)},shadow:{stealth:curve(0,.05,{minimum:.05})}
     },
     shield:{
@@ -94,7 +94,7 @@
     if(slot==='armor'){
       var prefix='+'+pct('resistance')+' '+damageTypes[el]+' resistance; ';
       var bonus={fire:function(){return '+'+pct('maxhp')+' max HP.';},water:function(){return '+'+f('evasion')+' evasion.';},
-        air:function(){return pct('deflect')+' chance to deflect ranged attacks.';},earth:function(){return '+'+f('armor')+' armor.';},
+        air:function(){return pct('deflect')+' chance to deflect ranged attacks.';},earth:function(){var c=rules.armor.earth.armor;return formula?'+'+number(c.base)+' armor (+'+number(c.per)+' per Earth affinity point).':'+'+f('armor')+' armor.';},
         light:function(){return '+'+pct('hpRegen')+' HP regeneration.';},shadow:function(){return '+'+pct('stealth')+' stealth.';}};
       return prefix+bonus[el]();
     }

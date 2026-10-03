@@ -1,5 +1,6 @@
 # Forge of the Elements — Beta 1.5
 
+- Earth-enchanted armor grants +1 armor plus 0.5 per Earth affinity point, with clearer Forge text.
 - The selected enchantment mote and active Forge tab now have a clear gold highlight.
 - Show touch pad controls the floating transparent pad in both Overlay and Classic, including tablets.
 - Mobile XP and Piety bars are slightly thicker.

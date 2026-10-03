@@ -3,6 +3,7 @@ var FOTE_VERSION = 'Beta 1.5';
 /* Keep newest first; describe only changes already present in this build. */
 var FOTE_PATCHES = [
   {version:'Beta 1.5', notes:[
+    "Earth-enchanted armor grants +1 armor plus 0.5 per Earth affinity point, with clearer Forge text.",
     "The selected enchantment mote and active Forge tab now have a clear gold highlight.",
     "Show touch pad controls the floating transparent pad in both Overlay and Classic, including tablets.",
     "Mobile XP and Piety bars are slightly thicker.",
