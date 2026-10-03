@@ -14,17 +14,10 @@
     });});
   }
   function atlas(file){
-    // Native atl() redraws immediately on load, including while the title screen
-    // is still awaiting its first world. These sidecar images share ATL safely.
-    if(!ATL[file]){
-      var fresh=new Image();ATL[file]=fresh;
-      fresh.src='art/packed/'+file+(root.ASSETS&&ASSETS.build?'?v='+ASSETS.build:'');
-    }
-    var image=ATL[file].complete&&ATL[file].naturalWidth?ATL[file]:null;
-    if(!watched[file]){
-      watched[file]=true;
-      if(image)invalidate(file);
-      else ATL[file].addEventListener('load',function(){invalidate(file);redraw();},{once:true});
+    var image=atl(file),requested=ATL[file];
+    if(watched[file]!==requested){
+      watched[file]=requested;
+      atlReady(file).then(function(){if(ATL[file]===requested){invalidate(file);redraw();}},function(){});
     }
     return image;
   }
@@ -48,11 +41,8 @@
   }
   function ensureAssets(){
     return ensureMetadata().then(function(data){return Promise.all(data.files.map(function(file){
-      // A failed image stays broken; replace it so the loading screen's Retry fetches it again.
-      if(ATL[file]&&ATL[file].complete&&!ATL[file].naturalWidth){delete ATL[file];delete watched[file];}
-      if(atlas(file))return Promise.resolve();
-      return new Promise(function(resolve,reject){var image=ATL[file];image.addEventListener('load',resolve,{once:true});image.addEventListener('error',function(){reject(Error('Environment prop atlas could not load: '+file));},{once:true});});
-    }));}).then(function(){return root.FoteEnvironmentProps;});
+      return atlReady(file,{retry:true}).then(function(){invalidate(file);});
+    }));}).then(function(){failure=null;return root.FoteEnvironmentProps;},function(error){failure=error;throw error;});
   }
   /* Props with a look of their own, as data; drawPropSurface (render-adapter.js) applies it. paint: the painted art
      draws at a .98 fit ahead of the named prop passes. scale: the prop shrinks around its floor anchor (anchor: a share
@@ -67,5 +57,5 @@
     // The Crypt's packed bones keep their own art, at the same half size.
     return name==='bones'&&packCryptOn()?{scale:FIT.bones.scale,anchor:FIT.bones.anchor}:FIT[name];
   }
-  root.FoteEnvironmentProps=Object.freeze({ensureAssets:ensureAssets,ready:function(){return !!metadata;},art:art,fit:fit,error:function(){return failure;}});
+  root.FoteEnvironmentProps=Object.freeze({ensureAssets:ensureAssets,ready:function(){if(!metadata)return false;var files=atlasLoadDiagnostics().files;return metadata.files.every(function(file){return files.some(function(entry){return entry.file===file&&entry.phase==='ready';});});},art:art,fit:fit,error:function(){return failure;}});
 })(globalThis);

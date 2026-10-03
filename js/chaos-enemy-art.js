@@ -16,17 +16,10 @@
   function load(name,spec){
     if(!valid(spec))return Promise.reject(new Error('Missing or invalid Chaos enemy atlas: '+name));
     if(loaded[name]&&loaded[name].source===spec)return Promise.resolve();
-    if(ATL[spec.file]&&ATL[spec.file].complete&&!ATL[spec.file].naturalWidth)delete ATL[spec.file];
-    atl(spec.file);var img=ATL[spec.file];
-    return new Promise(function(resolve,reject){
-      function clean(){img.removeEventListener('load',finish);img.removeEventListener('error',fail);}
-      function fail(){clean();if(ATL[spec.file]===img)delete ATL[spec.file];reject(new Error('Could not load Chaos enemy artwork: '+spec.file));}
-      function finish(){
-        clean();var rows=Math.max(spec.static_row+1,spec.clips.idle.row+1,spec.clips.attack.row+1),cols=Math.max(spec.clips.idle.frames,spec.clips.attack.frames);
-        if(img.naturalWidth<cols*spec.cell||img.naturalHeight<rows*spec.cell){fail();return;}
-        Promise.resolve(typeof img.decode==='function'?img.decode():undefined).then(function(){loaded[name]={source:spec,sheet:{img:img,m:Object.assign({},spec,{chaos:true})}};resolve();},fail);
-      }
-      if(img.complete){if(img.naturalWidth)finish();else fail();}else{img.addEventListener('load',finish);img.addEventListener('error',fail);}
+    return atlReady(spec.file,{retry:true}).then(function(img){
+      var rows=Math.max(spec.static_row+1,spec.clips.idle.row+1,spec.clips.attack.row+1),cols=Math.max(spec.clips.idle.frames,spec.clips.attack.frames);
+      if(img.naturalWidth<cols*spec.cell||img.naturalHeight<rows*spec.cell)throw new Error('Invalid Chaos enemy artwork dimensions: '+spec.file);
+      loaded[name]={source:spec,sheet:{img:img,m:Object.assign({},spec,{chaos:true})}};
     });
   }
   function ensureAssets(requested){

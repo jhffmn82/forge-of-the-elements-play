@@ -55,8 +55,8 @@
         progress.textContent='Loading game… '+Math.round((i+1)/paths.length*100)+'%';
       }
     }finally{clearInterval(watch);if(arrivals)arrivals.disconnect();}
-    startGame();
     veil.remove();
+    await startGame();
   })();
   function reloadPanel(message){
     const panel=document.createElement('div');

@@ -5,10 +5,64 @@
 
 var AS = window.ASSETS || {};
 var ATL = {}, ATL_LOADS = 0;   /* ATL_LOADS: atlases loaded so far (the ground layer's key) */
+/* Mobile startup must not decode the whole dungeon at once. The synchronous
+ * renderer still asks for the same art; this owner queues and retries requests. */
+var ATLAS_JOBS=new Map(),ATLAS_QUEUE=[],ATLAS_ACTIVE=0,ATLAS_PROTECTED=new Set(),ATLAS_TRIM=null;
+var ATLAS_MAX_ACTIVE=4,ATLAS_BUDGET=96*1024*1024,ATLAS_TIMEOUT=45000;
+function setAtlasProtectedFiles(files){ATLAS_PROTECTED=new Set(files||[]);trimAtlasCache();}
+function trimAtlasCache(){
+  var bytes=0,now=performance.now(),available=[];
+  ATLAS_JOBS.forEach(function(job){if(job.phase==='ready'){bytes+=job.bytes;if(!ATLAS_PROTECTED.has(job.file)&&now-job.used>5000)available.push(job);}});
+  available.sort(function(a,b){return a.used-b.used;});
+  while(bytes>ATLAS_BUDGET&&available.length){
+    var job=available.shift();if(ATLAS_JOBS.get(job.file)!==job)continue;
+    ATLAS_JOBS.delete(job.file);if(ATL[job.file]===job.image)delete ATL[job.file];bytes-=job.bytes;
+  }
+  if(bytes>ATLAS_BUDGET&&!ATLAS_TRIM)ATLAS_TRIM=setTimeout(function(){ATLAS_TRIM=null;trimAtlasCache();},5100);
+}
+function pumpAtlasQueue(){
+  while(ATLAS_ACTIVE<ATLAS_MAX_ACTIVE&&ATLAS_QUEUE.length){
+    var job=ATLAS_QUEUE.shift();if(ATLAS_JOBS.get(job.file)!==job||job.phase!=='queued')continue;
+    startAtlasJob(job);
+  }
+}
+function startAtlasJob(job){
+  ATLAS_ACTIVE++;job.phase='load';var image=job.image,settled=false;
+  function clean(){clearTimeout(job.timer);image.removeEventListener('load',loaded);image.removeEventListener('error',failed);}
+  function finish(error){
+    if(settled)return;settled=true;clean();ATLAS_ACTIVE--;
+    if(error){job.phase='failed';job.error=error;job.retryAt=performance.now()+5000;job.reject(error);}
+    else{job.phase='ready';job.bytes=image.naturalWidth*image.naturalHeight*4;job.used=performance.now();ATL_LOADS++;job.resolve(image);if(typeof requestTerrainRedraw==='function')requestTerrainRedraw();}
+    pumpAtlasQueue();trimAtlasCache();
+  }
+  function failed(){finish(new Error('Atlas load failed: '+job.file));}
+  function loaded(){
+    if(settled)return;if(!image.naturalWidth)return failed();job.phase='decode';
+    Promise.resolve().then(function(){return typeof image.decode==='function'?image.decode():undefined;}).then(function(){finish();},function(error){finish(new Error('Atlas decode failed: '+job.file+' ('+String(error)+')'));});
+  }
+  image.addEventListener('load',loaded);image.addEventListener('error',failed);
+  job.timer=setTimeout(function(){var phase=job.phase;finish(new Error('Atlas '+phase+' timed out: '+job.file));if(job.phase==='failed')image.src='';},ATLAS_TIMEOUT);
+  if(job.adopted){if(image.complete){if(image.naturalWidth)loaded();else failed();}}
+  else image.src='art/packed/'+job.file+(window.ASSETS&&ASSETS.build?'?v='+ASSETS.build:'');
+}
+function requestAtlas(file,options){
+  var job=ATLAS_JOBS.get(file),now=performance.now();
+  if(job&&job.phase==='failed'&&(options&&options.retry||now>=job.retryAt)){ATLAS_JOBS.delete(file);if(ATL[file]===job.image)delete ATL[file];job=null;}
+  if(job){job.used=now;ATL[file]=job.image;return job;}
+  var image=ATL[file],adopted=!!image;
+  if(!image)image=new Image();
+  job={file:file,image:image,adopted:adopted,phase:'queued',used:now,bytes:0,error:null};
+  job.promise=new Promise(function(resolve,reject){job.resolve=resolve;job.reject=reject;});
+  job.promise.catch(function(){});ATLAS_JOBS.set(file,job);ATL[file]=image;ATLAS_QUEUE.push(job);pumpAtlasQueue();return job;
+}
+function atlReady(file,options){return requestAtlas(file,options).promise;}
+function atlasLoadDiagnostics(){
+  var files=[],failures=[],bytes=0;
+  ATLAS_JOBS.forEach(function(job){files.push({file:job.file,phase:job.phase,bytes:job.bytes});if(job.phase==='ready')bytes+=job.bytes;if(job.error)failures.push({file:job.file,phase:job.phase,message:job.error.message});});
+  return {active:ATLAS_ACTIVE,queued:ATLAS_QUEUE.length,readyBytes:bytes,maxActive:ATLAS_MAX_ACTIVE,budgetBytes:ATLAS_BUDGET,failures:failures,files:files};
+}
 function atl(file){
-  /* a loaded atlas joins the next frame: one coalesced redraw (render-adapter.js), not a draw() per image */
-  if(!ATL[file]){ var im=new Image(); im.onload=function(){ ATL_LOADS++; if(typeof requestTerrainRedraw==='function') requestTerrainRedraw(); }; im.src='art/packed/'+file+(window.ASSETS && ASSETS.build ? '?v='+ASSETS.build : ''); ATL[file]=im; }
-  var a=ATL[file]; return (a.complete && a.naturalWidth) ? a : null;
+  var job=requestAtlas(file);return job.phase==='ready'?job.image:null;
 }
 function hash2(x,y,s){ var h=(x*374761393 + y*668265263 + (s||0)*2147483647)|0; h=(h^(h>>>13))*1274126177|0; return ((h^(h>>>16))>>>0)/4294967295; }
 

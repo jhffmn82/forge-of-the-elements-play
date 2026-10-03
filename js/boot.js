@@ -2,9 +2,9 @@
    boot.js - wire the sandbox, add screen shake, and start at the title screen.
    ========================================================================== */
 
-var GAME_STARTED=false;
+var GAME_STARTED=false,GAME_START_READY=null;
 function startGame(){
-  if(GAME_STARTED)return;
+  if(GAME_STARTED)return GAME_START_READY;
   GAME_STARTED=true;
   /* sandbox: replace the old preset picker with a new-character button and testing tools */
   var pre=$('preset'); if(pre && pre.parentNode) pre.parentNode.style.display='none';
@@ -77,18 +77,31 @@ function startGame(){
   requestAnimationFrame(resize);
   requestAnimationFrame(fxTick);
   setTimeout(resize, 150);
-  /* load every sprite sheet before the game shows, so nothing flashes up as a placeholder square */
-  FoteLifecycle.ready();
-  preloadArt(openTitle);
+  GAME_START_READY=preloadArt(function(){FoteLifecycle.ready();openTitle();});
+  return GAME_START_READY;
 }
 
-/* A failed or undecoded required atlas must never reveal an incomplete scene. */
+/* Request native appearance selectors for the current residents, including
+ * sleeping/concealed actors. Existing draw/UI requests cover current objects.
+ * This is a startup set, not a list of every floor visited during a run. */
+function startupSceneAtlasFiles(){
+  var look=typeof playerCastLook==='function'?playerCastLook():player&&player.look;
+  if(look){castSheet(look);var spec=AS.cast&&AS.cast[look];if(spec&&spec.doll)atl('cast-'+look+'-doll.webp');}
+  var residents=(typeof ents!=='undefined'?ents:[]).concat(floorMeta&&floorMeta.buriedGhouls||[],floorMeta&&floorMeta.maw&&floorMeta.maw.ent||[],floorMeta&&floorMeta.pendingLich&&floorMeta.pendingLich.entity||[]);
+  residents.forEach(function(actor){
+    if(!actor||actor===player||actor.hp<=0&&!(floorMeta&&floorMeta.pendingLich&&actor===floorMeta.pendingLich.entity))return;
+    if(actor.shadowClone){castSheet(actor.cloneLook);return;}
+    if(actor.livingFlame){atl('living-flame.webp');return;}
+    if(typeof isShadeSummon==='function'&&isShadeSummon(actor)){shadeSummonSheet();return;}
+    if(actor.base&&actor.base.sprite)mobSheet(actor.base.sprite);
+  });
+  return Object.keys(ATL);
+}
+/* Await only this scene. The atlas owner bounds both requests and decode work;
+ * later content retains its native on-demand loading and retry path. */
 function preloadArt(done){
-  /* Everything loads here (Justin 2026-09-27), the Chad underwear sheets included (2.7 MB): a follower never shows a
-   * stand-in figure while their sheet arrives. */
-  var files=((window.ASSETS && ASSETS.files)||[]).slice();
-  if(files.length) files.push('cave-bridge-master.webp'); /* the Caverns rope bridge (cavernrender.js) */
   var veil=document.createElement('div'); veil.id='loadVeil';
+  veil.setAttribute('data-fote-startup','');
   veil.style.cssText='position:fixed;inset:0;z-index:99;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;background:#0B0A09;color:#A79C93;font:14px sans-serif';
   var title=document.createElement('h1'); title.textContent='Forge of the Elements'; veil.appendChild(title);
   var status=document.createElement('p'); status.setAttribute('role','status'); veil.appendChild(status);
@@ -98,40 +111,36 @@ function preloadArt(done){
     if(document.readyState==='complete') resolve();
     else window.addEventListener('load',resolve,{once:true});
   });
-  function imageReady(file){
-    atl(file); var img=ATL[file];
-    return new Promise(function(resolve,reject){
-      function clean(){ img.removeEventListener('load',loaded); img.removeEventListener('error',failed); }
-      function failed(){ clean(); reject(new Error(file)); }
-      function loaded(){
-        clean();
-        if(!img.naturalWidth) return reject(new Error(file));
-        Promise.resolve(typeof img.decode==='function'?img.decode():undefined).then(resolve,function(){reject(new Error(file));});
-      }
-      if(img.complete){ if(img.naturalWidth) loaded(); else failed(); }
-      else { img.addEventListener('load',loaded); img.addEventListener('error',failed); }
-    });
+  var resolveReady,rejectReady,finished=false,loading=false,completion=new Promise(function(resolve,reject){resolveReady=resolve;rejectReady=reject;});
+  async function awaitFiles(files){
+    if(typeof setAtlasProtectedFiles==='function')setAtlasProtectedFiles(files);
+    var loaded=0;await Promise.all(files.map(function(file){return atlReady(file,{retry:true}).then(function(){loaded++;status.textContent='Loading this scene '+loaded+' / '+files.length;});}));
   }
-  var failed=[];
-  function attempt(){
+  async function attempt(){
+    if(loading||finished)return;loading=true;
     retry.hidden=true; status.textContent='Lighting the torches…';
-    failed.forEach(function(file){delete ATL[file];}); failed=[];
-    if(!files.length){status.textContent='The artwork manifest could not be loaded. Reload to try again.';return;}
-    var loaded=0;
-    Promise.all(files.map(function(file){return imageReady(file).then(function(){
-      loaded++;status.textContent='Loading artwork '+loaded+' / '+files.length;
-    },function(){failed.push(file);});})).then(function(){
-      if(failed.length){status.textContent='Could not load '+failed.length+' artwork file(s). Check your connection and retry.';retry.hidden=false;return;}
-      return scriptsReady.then(function(){
-        /* All the new art loads here, every biome's terrain and the Realm of Chaos included, so nothing shows
-           the old art first and nothing downloads during play. The goblin and Shambler sheets are ASSETS.files. */
-        var art=[FoteEnvironmentProps.ensureAssets(),FoteEnvironmentDeco.ensureAssets(),FoteEnvironmentVegetation.ensureAssets(),FoteEnvironmentTerrain.ensureAssets('all')];
-        if(typeof FoteChaosCampaign!=='undefined'){status.textContent='Preparing the Realm of Chaos…';art.push(FoteChaosCampaign.prepare());}
-        return Promise.all(art);
-      }).then(function(){return document.fonts?document.fonts.ready:undefined;}).then(function(){
-        return new Promise(function(resolve){requestAnimationFrame(function(){resize();draw();requestAnimationFrame(resolve);});});
-      }).then(function(){done();veil.remove();});
-    }).catch(function(){status.textContent='The scene could not be prepared. Retry loading.';retry.hidden=false;});
+    try{
+      if(!window.ASSETS||!Array.isArray(ASSETS.files)||!ASSETS.files.length)throw Error('The artwork manifest could not be loaded.');
+      await scriptsReady;await awaitFiles(startupSceneAtlasFiles());
+      // Environment sources have their own caches. Prepare them in order and
+      // request only current terrain, instead of decoding all biomes and Chaos.
+      await FoteEnvironmentProps.ensureAssets();await FoteEnvironmentDeco.ensureAssets();await FoteEnvironmentVegetation.ensureAssets();await FoteEnvironmentTerrain.ensureAssets();
+      if(typeof FoteChaosCampaign!=='undefined'&&floorMeta&&(floorMeta.chaosCampaign||floorMeta.chaosPreview||floorMeta.chaosEntryPreview)){status.textContent='Preparing this part of the Realm of Chaos…';await FoteChaosCampaign.prepare();}
+      if(typeof FotePortraitAnimation!=='undefined'&&typeof FotePortraitAnimation.retry==='function')await FotePortraitAnimation.retry(player.look);
+      if(document.fonts)await document.fonts.ready;
+      var previous=null,stable=false;
+      for(var pass=0;pass<6;pass++){
+        var files=startupSceneAtlasFiles().sort();await awaitFiles(files);
+        await new Promise(function(resolve){requestAnimationFrame(function(){resize();draw();requestAnimationFrame(resolve);});});
+        var discovered=startupSceneAtlasFiles().sort().join('|');
+        if(discovered===files.join('|')&&discovered===previous){stable=true;break;}previous=discovered;
+      }
+      if(!stable)throw Error('This scene is still requesting artwork. Retry loading.');
+      finished=true;
+      try{done();if(typeof setAtlasProtectedFiles==='function')setAtlasProtectedFiles([]);veil.remove();resolveReady();}catch(error){veil.remove();rejectReady(error);}
+    }catch(error){status.textContent='Could not prepare this scene: '+String(error.message||error)+' Retry loading.';retry.hidden=false;}
+    finally{loading=false;}
   }
   retry.onclick=attempt; attempt();
+  return completion;
 }

@@ -116,19 +116,7 @@
   function belongs(name,theme){if(themeGroups[theme])return themeGroups[theme].some(function(key){return belongs(name,key);});var prefix=themePrefixes[theme];return typeof name==='string'&&!!prefix&&name.indexOf(prefix)===0;}
   function ready(theme){theme=themeKey(theme);return themeGroups[theme]?themeGroups[theme].every(function(key){return !!decoded[key];}):!!decoded[theme];}
   function imageReady(file){
-    // Failed loads can be retried without poisoning the shared atlas cache.
-    if(ATL[file]&&ATL[file].complete&&!ATL[file].naturalWidth)delete ATL[file];
-    atl(file);var img=ATL[file];
-    return new Promise(function(resolve,reject){
-      function clean(){img.removeEventListener('load',loaded);img.removeEventListener('error',failed);}
-      function failed(){clean();if(ATL[file]===img)delete ATL[file];reject(new Error('Could not load Chaos preview artwork: '+file));}
-      function loaded(){
-        clean();if(!img.naturalWidth){failed();return;}
-        Promise.resolve(typeof img.decode==='function'?img.decode():undefined).then(resolve,failed);
-      }
-      if(img.complete){if(img.naturalWidth)loaded();else failed();}
-      else{img.addEventListener('load',loaded);img.addEventListener('error',failed);}
-    });
+    return atlReady(file,{retry:true});
   }
   function ensureAssets(theme){
     theme=themeKey(theme);

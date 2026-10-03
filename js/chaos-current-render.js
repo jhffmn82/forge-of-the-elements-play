@@ -10,17 +10,11 @@
   }
   function ensureAssets(){
     if(gateReady)return Promise.resolve();if(gateLoading)return gateLoading;
-    var image=ATL[gateFile];if(image&&image.complete&&!image.naturalWidth)delete ATL[gateFile];atl(gateFile);image=ATL[gateFile];
-    gateLoading=new Promise(function(resolve,reject){
-      function cleanup(){image.removeEventListener('load',loaded);image.removeEventListener('error',failed);}
-      function failed(){cleanup();reject(new Error('Could not load material gateway.'));}
-      function loaded(){cleanup();if(!image.naturalWidth)return failed();Promise.resolve(image.decode?image.decode():undefined).then(function(){gateReady=true;resolve();},failed);}
-      if(image.complete){if(image.naturalWidth)loaded();else failed();}else{image.addEventListener('load',loaded);image.addEventListener('error',failed);}
-    }).finally(function(){gateLoading=null;});return gateLoading;
+    gateLoading=atlReady(gateFile,{retry:true}).then(function(){gateReady=true;}).finally(function(){gateLoading=null;});return gateLoading;
   }
   function drawGate(x,y,px,py,alpha){
     if(!materialGateAt(x,y))return false;
-    var image=ATL[gateFile];if(!image||!image.naturalWidth)return true;
+    var image=atl(gateFile);if(!image)return true;
     var h=TS*2.5,w=h*image.naturalWidth/image.naturalHeight;
     ctx.save();ctx.globalAlpha=alpha;ctx.drawImage(image,px+TS*.5-w*.5,py+TS*.96-h,w,h);ctx.restore();return true;
   }

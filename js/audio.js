@@ -1,7 +1,7 @@
 /* ============================================================================
    audio.js - sound effects and music.
-   Every effect first tries audio/<name>.ogg (see art/SOUNDS.md). Until that file
-   exists, a small synthesized stand-in plays instead, so nothing is silent.
+   Recorded music uses MP3. Effects use supported Ogg Vorbis with MP3 recovery;
+   unavailable clips retain their existing synthesized stand-in.
    ========================================================================== */
 
 var AUDIO = { ctx:null, master:null, sfxBus:null, musicBus:null, verb:null, muted:false, musicOn:true,
@@ -14,9 +14,10 @@ try { var _m=localStorage.getItem('astra-temple-audio'); if(_m){ var o=JSON.pars
   if(!o.effects && AUDIO.vol && Math.abs(AUDIO.vol.sfx-0.8)<1e-6){ AUDIO.vol.sfx=0.5; } } } catch(e){}
 
 function audioInit(){
-  if(AUDIO.ctx) { if(AUDIO.ctx.state==='suspended') AUDIO.ctx.resume(); return; }
+  syncRunSfx();
+  if(AUDIO.ctx) { return resumeAudio(); }
   var AC=window.AudioContext||window.webkitAudioContext; if(!AC) return;
-  var c=new AC(); AUDIO.ctx=c;
+  var c;try{c=new AC();}catch(error){AUDIO.initError=error;return;} AUDIO.ctx=c;
   AUDIO.master=c.createGain(); AUDIO.master.gain.value=AUDIO.muted?0:1;
   var limiter=c.createDynamicsCompressor();limiter.threshold.value=-3;limiter.knee.value=3;limiter.ratio.value=12;limiter.attack.value=.003;limiter.release.value=.15;
   AUDIO.master.connect(limiter);limiter.connect(c.destination);AUDIO.limiter=limiter;
@@ -28,6 +29,24 @@ function audioInit(){
   AUDIO.verb=c.createConvolver(); AUDIO.verb.buffer=ir;
   var vg=c.createGain(); vg.gain.value=0.08; AUDIO.verb.connect(vg); vg.connect(AUDIO.sfxBus);
   if(AUDIO.pendingMusic){ var requested=AUDIO.pendingMusic; AUDIO.pendingMusic=null; playMusic(requested); }
+  return resumeAudio();
+}
+var AUDIO_RESUMING=null;
+function resumeAudio(){
+  var c=AUDIO.ctx;if(!c)return;
+  function recover(){
+    if(AUDIO.ctx!==c)return;
+    if(AUDIO.pendingMusic){var kind=AUDIO.pendingMusic;AUDIO.pendingMusic=null;playMusic(kind);}
+    else if(AUDIO.musicFailed&&AUDIO.musicKind)playMusic(AUDIO.musicKind);
+    if(AUDIO.ambienceFailed&&AUDIO.ambienceKind&&typeof syncAmbience==='function')syncAmbience(AUDIO.ambienceKind);
+  }
+  if(c.state==='running'||typeof c.resume!=='function'){recover();return Promise.resolve();}
+  if(c.state==='closed')return Promise.resolve();
+  if(AUDIO_RESUMING)return AUDIO_RESUMING;
+  var resumed;try{resumed=c.resume();}catch(error){AUDIO.initError=error;return Promise.resolve();}
+  var request=audioDeadline(Promise.resolve(resumed),5000,'Audio context resume');
+  AUDIO_RESUMING=request.then(function(){AUDIO.initError=null;recover();},function(error){AUDIO.initError=error;}).then(function(){AUDIO_RESUMING=null;});
+  return AUDIO_RESUMING;
 }
 ['pointerdown','keydown'].forEach(function(ev){ window.addEventListener(ev, audioInit, {passive:true}); });
 function audioSave(){ try{ localStorage.setItem('astra-temple-audio', JSON.stringify({muted:AUDIO.muted, musicOn:AUDIO.musicOn, vol:AUDIO.vol, levelled:true, effects:true})); }catch(e){} }
@@ -36,18 +55,47 @@ function toggleMusic(){ AUDIO.musicOn=!AUDIO.musicOn; if(AUDIO.musicBus) AUDIO.m
 
 /* ---- file-backed playback with synth fallback ---- */
 var AUDIO_LOADING={},AUDIO_MUSIC_LRU=[],AUDIO_MUSIC_REQUEST=0;
+var AUDIO_FETCH_TIMEOUT_MS=15000,AUDIO_DECODE_TIMEOUT_MS=10000,AUDIO_RETRY_MS=5000,AUDIO_OGG_SUPPORTED=null;
+function audioDeadline(promise,ms,label,cancel){
+  return new Promise(function(resolve,reject){
+    var settled=false,timer=setTimeout(function(){if(settled)return;settled=true;if(cancel)cancel();reject(new Error(label+' timed out'));},ms);
+    Promise.resolve(promise).then(function(value){if(settled)return;settled=true;clearTimeout(timer);resolve(value);},function(error){if(settled)return;settled=true;clearTimeout(timer);reject(error);});
+  });
+}
+function audioFormats(name){
+  if(name.indexOf('music-')===0)return ['mp3'];
+  if(AUDIO_OGG_SUPPORTED===null){
+    try{var probe=document.createElement('audio'),support=probe.canPlayType&&probe.canPlayType('audio/ogg; codecs="vorbis"');AUDIO_OGG_SUPPORTED=support==='probably'||support==='maybe';}catch(error){AUDIO_OGG_SUPPORTED=false;}
+  }
+  return AUDIO_OGG_SUPPORTED?['ogg','mp3']:['mp3'];
+}
+function audioRetryDelay(failures){return Math.min(30000,AUDIO_RETRY_MS*Math.pow(2,Math.min(3,Math.max(0,failures-1))));}
 function musicGain(kind){return 1;}   /* 2026-09-22: the files are levelled to -24 LUFS; the slider is the only music gain */
 function loadFile(name, cb){
   if(AUDIO.files[name]) return cb(AUDIO.files[name]);
   if(AUDIO.missing[name]) return cb(null);
   if(!(window.AUDIO_FILES && window.AUDIO_FILES.indexOf(name)>=0)){ AUDIO.missing[name]=true; return cb(null); }
-  if(AUDIO_LOADING[name]){AUDIO_LOADING[name].push(cb);return;}
-  AUDIO_LOADING[name]=[cb];
-  function finish(buf){var callbacks=AUDIO_LOADING[name]||[];delete AUDIO_LOADING[name];callbacks.forEach(function(f){f(buf);});}
-  fetch('audio/'+name+'.ogg').then(function(r){ if(!r.ok) throw 0; return r.arrayBuffer(); })
-    .then(function(b){ return AUDIO.ctx.decodeAudioData(b); })
-    .then(function(buf){
+  if(AUDIO_LOADING[name]){AUDIO_LOADING[name].callbacks.push(cb);return;}
+  var attempt={callbacks:[cb]},formats=audioFormats(name);AUDIO_LOADING[name]=attempt;
+  function finish(buf){
+    if(AUDIO_LOADING[name]!==attempt)return;
+    delete AUDIO_LOADING[name];var callbacks=attempt.callbacks;attempt.callbacks=[];
+    callbacks.forEach(function(f){try{f(buf);}catch(error){AUDIO.callbackError=error;}});
+  }
+  function format(index){
+    var ext=formats[index],url='audio/'+name+'.'+ext,controller=typeof AbortController==='function'?new AbortController():null;
+    var fetched=Promise.resolve().then(function(){return fetch(url,controller?{signal:controller.signal}:undefined);}).then(function(r){if(!r.ok)throw new Error(url+' HTTP '+r.status);return r.arrayBuffer();});
+    return audioDeadline(fetched,AUDIO_FETCH_TIMEOUT_MS,url+' fetch',function(){if(controller)controller.abort();}).then(function(bytes){
+      return audioDeadline(Promise.resolve().then(function(){return AUDIO.ctx.decodeAudioData(bytes);}),AUDIO_DECODE_TIMEOUT_MS,url+' decode');
+    }).catch(function(error){
+      AUDIO.loadErrors=AUDIO.loadErrors||{};AUDIO.loadErrors[name]=error;
+      if(index+1<formats.length)return format(index+1);throw error;
+    });
+  }
+  format(0).then(function(buf){
+      if(AUDIO_LOADING[name]!==attempt)return;
       AUDIO.files[name]=buf;
+      if(AUDIO.loadErrors)delete AUDIO.loadErrors[name];
       if(name.indexOf('music-')===0){AUDIO_MUSIC_LRU.push(name);while(AUDIO_MUSIC_LRU.length>3)delete AUDIO.files[AUDIO_MUSIC_LRU.shift()];}
       finish(buf);
     })
@@ -71,6 +119,16 @@ var SFX_ALIASES={
   'heart-alert':'heart-intro','heart-attack':'golem-attack'
 };
 var SFX_LAST={},SFX_LAST_GAIN={},SFX_VOICES=[],SFX_STEP=0,SFX_SYNTH_GAIN=1;
+var SFX_RUN_GENERATION=0,SFX_ACTIVE_ACTOR=null,SFX_UI_VOICES=new WeakSet(),SFX_SYNTH_UI=false;
+function resetRunSfx(){
+  SFX_RUN_GENERATION++;SFX_LAST={};SFX_LAST_GAIN={};SFX_STEP=0;
+  var voices=SFX_VOICES.slice();SFX_VOICES=voices.filter(function(voice){return SFX_UI_VOICES.has(voice);});
+  voices.forEach(function(voice){if(!SFX_UI_VOICES.has(voice)){try{voice.stop();}catch(error){}}});
+}
+function syncRunSfx(){
+  var actor=typeof player!=='undefined'?player:null;
+  if(actor!==SFX_ACTIVE_ACTOR){SFX_ACTIVE_ACTOR=actor;resetRunSfx();}
+}
 /* ---- per-sound levels: one table, on top of a call's own vol ----
    2026-09-29 (Justin): "sound effects overall are too loud." An algorithmic pass over docs/sfx-pass-measurements.json
    (after.rms_dbfs, the level of each shipped file). The reference is the median of the weapon combat sounds (swing,
@@ -109,6 +167,7 @@ function sfxDistanceGain(from){
   return 0;
 }
 function sfx(name, opts){
+  syncRunSfx();
   if(!AUDIO.ctx || AUDIO.muted || !name) return;
   var now=performance.now();
   opts=opts||{};
@@ -122,16 +181,21 @@ function sfx(name, opts){
   if(SFX_LAST[group]!==undefined && Math.abs(at-SFX_LAST[group])<(alert?350:ui?70:40) && SFX_LAST_GAIN[group]>=near)return;
   SFX_LAST[group]=at; SFX_LAST_GAIN[group]=near;
   var file=name==='step-stone' ? ['step-stone','step-stone-1','step-stone-3','step-stone-2'][SFX_STEP++%4] : (SFX_ALIASES[name]||name);
+  var generation=SFX_RUN_GENERATION,actor=SFX_ACTIVE_ACTOR,keepOnRun=ui;
   loadFile(file, function(buf){
-    if(AUDIO.muted || performance.now()>at+500)return; // Never replay stale impacts after slow decoding.
+    function play(){
+    if(AUDIO.muted || performance.now()>at+500 || (!keepOnRun&&(generation!==SFX_RUN_GENERATION||actor!==(typeof player!=='undefined'?player:null))))return; // Never replay stale impacts after slow decoding or a restored/new run.
     var c=AUDIO.ctx, t=c.currentTime+Math.max(0,(at-performance.now())/1000);
     if(buf){
       var s=c.createBufferSource(); s.buffer=buf; s.playbackRate.value=opts.rate||1;
       while(SFX_VOICES.length>=24){var old=SFX_VOICES.shift();try{old.stop();}catch(e){}}
       var g=c.createGain(); g.gain.value=sfxGain(name,opts,file)*(alert?.55:1)*near; s.connect(g); g.connect(AUDIO.sfxBus);
       if(/^(fire|ice|lightning|earth|light|shadow|magic|cast|shrine|pray|summon|heal|forge|wrath)/.test(name))g.connect(AUDIO.verb);
-      SFX_VOICES.push(s);s.onended=function(){var i=SFX_VOICES.indexOf(s);if(i>=0)SFX_VOICES.splice(i,1);s.disconnect();g.disconnect();};s.start(t);
-    } else { SFX_SYNTH_GAIN=near; try{ synth(name, t, opts); } finally{ SFX_SYNTH_GAIN=1; } }   /* the stand-in softens with distance too */
+      if(keepOnRun)SFX_UI_VOICES.add(s);
+      SFX_VOICES.push(s);s.onended=function(){var i=SFX_VOICES.indexOf(s);if(i>=0)SFX_VOICES.splice(i,1);SFX_UI_VOICES.delete(s);s.disconnect();g.disconnect();};s.start(t);
+    } else { SFX_SYNTH_GAIN=near;SFX_SYNTH_UI=keepOnRun; try{ synth(name, t, opts); } finally{ SFX_SYNTH_GAIN=1;SFX_SYNTH_UI=false; } }   /* the stand-in softens with distance too */
+    }
+    if(AUDIO.ctx.state==='suspended'||AUDIO.ctx.state==='interrupted')resumeAudio().then(function(){if(AUDIO.ctx.state==='running')play();});else play();
   });
 }
 
@@ -159,7 +223,8 @@ function noise(t, dur, vol, fType, f1, f2, q){
 }
 function trackSynth(s,nodes){
   while(SFX_VOICES.length>=24){var old=SFX_VOICES.shift();try{old.stop();}catch(e){}}
-  SFX_VOICES.push(s);s.onended=function(){var i=SFX_VOICES.indexOf(s);if(i>=0)SFX_VOICES.splice(i,1);s.disconnect();nodes.forEach(function(n){n.disconnect();});};
+  if(SFX_SYNTH_UI)SFX_UI_VOICES.add(s);
+  SFX_VOICES.push(s);s.onended=function(){var i=SFX_VOICES.indexOf(s);if(i>=0)SFX_VOICES.splice(i,1);SFX_UI_VOICES.delete(s);s.disconnect();nodes.forEach(function(n){n.disconnect();});};
 }
 function arp(t, notes, step, type, vol){ notes.forEach(function(n,i){ tone(t+i*step, type||'triangle', n, 0, step*2.2, vol||0.18); }); }
 var ELEM_SYNTH = {
@@ -247,17 +312,22 @@ function musicEnds(buf){ /* a song with an ending rather than a loop: its last h
   return peak<0.01;
 }
 function playMusic(kind){
+  syncRunSfx();
   /* pendingMusic is the request waiting for the first user gesture, not a
      historical track.  Leaving the old request here allowed a load or a
      downstairs transition to fall back to the earlier biome later. */
   if(!AUDIO.ctx){ AUDIO.pendingMusic=kind; return; }
   AUDIO.pendingMusic=null;
-  if(AUDIO.musicKind===kind) return;
-  stopMusic(); AUDIO.musicKind=kind;var request=++AUDIO_MUSIC_REQUEST;
+  if(AUDIO.musicKind===kind){
+    if(AUDIO.musicLoading||!AUDIO.musicFailed||performance.now()<(AUDIO.musicRetryAt||0))return;
+  }else{stopMusic();AUDIO.musicKind=kind;}
+  var request=++AUDIO_MUSIC_REQUEST;AUDIO.musicLoading=true;
   loadFile('music-'+kind, function(buf){
     if(AUDIO.musicKind!==kind || request!==AUDIO_MUSIC_REQUEST) return;
+    AUDIO.musicLoading=false;
     var c=AUDIO.ctx;
     if(buf){
+      var prior=AUDIO.music;
       /* Justin, 2026-09-22: the menu song fades in softly. A track that ends (its last half second is silent,
          a song rather than a loop) plays once and comes back after a rest instead of looping mid-phrase. */
       var fade=(kind==='menu'||kind==='title')?6:2, once=musicEnds(buf), s, g, timer=null, stopped=false;
@@ -270,11 +340,16 @@ function playMusic(kind){
         s.start();
       }
       start();
+      if(prior){try{prior.stop();}catch(error){}}
       AUDIO.music={stop:function(){ stopped=true; if(timer){clearTimeout(timer);timer=null;} g.gain.cancelScheduledValues(c.currentTime);g.gain.setTargetAtTime(0,c.currentTime,.25); s.stop(c.currentTime+1.1); }};
-    } else AUDIO.music=generativeMusic(kind);
+      AUDIO.musicFailed=false;AUDIO.musicFailures=0;AUDIO.musicRetryAt=0;
+    } else {
+      AUDIO.musicFailed=true;AUDIO.musicFailures=(AUDIO.musicFailures||0)+1;AUDIO.musicRetryAt=performance.now()+audioRetryDelay(AUDIO.musicFailures);
+      if(!AUDIO.music)AUDIO.music=generativeMusic(kind);
+    }
   });
 }
-function stopMusic(){ AUDIO_MUSIC_REQUEST++;if(AUDIO.music){ try{ AUDIO.music.stop(); }catch(e){} AUDIO.music=null; } AUDIO.musicKind=null; }
+function stopMusic(){ AUDIO_MUSIC_REQUEST++;if(AUDIO.music){ try{ AUDIO.music.stop(); }catch(e){} AUDIO.music=null; } AUDIO.musicKind=null;AUDIO.musicLoading=false;AUDIO.musicFailed=false;AUDIO.musicFailures=0;AUDIO.musicRetryAt=0; }
 function generativeMusic(kind){
   var c=AUDIO.ctx, out=c.createGain(); out.gain.value=0; out.gain.linearRampToValueAtTime(1, c.currentTime+3); out.connect(AUDIO.musicBus);
   var wet=c.createGain(); wet.gain.value=0.6; out.connect(AUDIO.verb);

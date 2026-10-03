@@ -282,6 +282,6 @@
  });
  if(typeof FoteLifecycle!=='undefined')FoteLifecycle.whenReady(function(){
   if(typeof FoteEnvironmentTerrain==='undefined')return;
-  FoteEnvironmentTerrain.ensureAssets('all').then(function(){setTimeout(function(){root.FoteTerrainWorkers.warm();},0);},function(){});
+  FoteEnvironmentTerrain.ensureAssets().then(function(){setTimeout(function(){root.FoteTerrainWorkers.warm();},0);},function(){});
  });
 })(globalThis);

@@ -1,5 +1,8 @@
 # Forge of the Elements — Beta 1.5
 
+- Phone startup loads current-scene artwork in a small queue and releases unused atlases as you explore.
+- Music and sound effects have MP3 support for phones that cannot decode Ogg audio.
+- Failed artwork, animated portraits and audio can retry without reloading your run.
 - Favor uses your patron god's color and a five-point star; Essence uses its violet crystal color and a diamond consistently across the HUD and menus. Both HUD readouts use matching text sizes and alignment.
 - Regular Caverns enemies have 20% less base HP; Buried Ghouls have 40 base HP.
 - Hunger drains 20% more slowly to account for longer fights.

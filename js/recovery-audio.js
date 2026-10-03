@@ -63,12 +63,18 @@ function ambienceForScene(){
 }
 var AMBIENCE_REQUEST=0;
 function syncAmbience(name){
-  if(!AUDIO.ctx || AUDIO.ambienceKind===name)return;
+  if(!AUDIO.ctx)return;
+  if(AUDIO.ambienceKind===name){
+    if(!name||AUDIO.ambienceLoading||!AUDIO.ambienceFailed||performance.now()<(AUDIO.ambienceRetryAt||0))return;
+  }else{AUDIO.ambienceFailed=false;AUDIO.ambienceFailures=0;AUDIO.ambienceRetryAt=0;}
   AUDIO.ambienceKind=name;var request=++AMBIENCE_REQUEST;
   if(AUDIO.ambience){AUDIO.ambience.stop();AUDIO.ambience=null;}
-  if(!name)return;
+  AUDIO.ambienceLoading=!!name;if(!name)return;
   loadFile(name,function(buf){
-    if(!buf || AUDIO.ambienceKind!==name || request!==AMBIENCE_REQUEST)return;
+    if(AUDIO.ambienceKind!==name || request!==AMBIENCE_REQUEST)return;
+    AUDIO.ambienceLoading=false;
+    if(!buf){AUDIO.ambienceFailed=true;AUDIO.ambienceFailures=(AUDIO.ambienceFailures||0)+1;AUDIO.ambienceRetryAt=performance.now()+audioRetryDelay(AUDIO.ambienceFailures);return;}
+    AUDIO.ambienceFailed=false;AUDIO.ambienceFailures=0;AUDIO.ambienceRetryAt=0;
     var c=AUDIO.ctx,s=c.createBufferSource(),g=c.createGain();s.buffer=buf;s.loop=true;
     g.gain.setValueAtTime(0,c.currentTime);g.gain.linearRampToValueAtTime(.16,c.currentTime+2);
     s.connect(g);g.connect(AUDIO.musicBus);s.onended=function(){s.disconnect();g.disconnect();};s.start();
