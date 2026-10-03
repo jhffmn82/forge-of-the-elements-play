@@ -1,5 +1,6 @@
 # Forge of the Elements — Beta 1.5
 
+- Favor and Essence use matching text sizes and alignment, with blue Favor and gold Essence in both HUD layouts.
 - Regular Caverns enemies have 20% less base HP; Buried Ghouls have 40 base HP.
 - Hunger drains 20% more slowly to account for longer fights.
 - Guaranteed floor meals are placed on reachable tiles after room construction, with one meal per floor and a 45% chance of a second.

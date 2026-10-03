@@ -956,15 +956,13 @@ body.fote-study.study-minimal #app #studyHunger .study-hunger-track{margin-botto
 body.fote-study.study-minimal #app #hud2{display:flex!important;justify-content:flex-start;width:100%;gap:12px!important;}
 body.fote-study.study-minimal #app #hud2 .study-wallet{display:contents!important;}
 body.fote-study.study-minimal #app #hud2 .study-motes{display:none!important;}
-body.fote-study.study-minimal #app #hud2 .study-stock{height:18px;font-size:12px!important;}
-body.fote-study.study-minimal #app #studyHungerText,
-body.fote-study.study-minimal #app #hud2 .study-favor{
- font:500 clamp(11px,calc(11px * var(--study-interface-scale,1)),13px)/1.1 var(--mono)!important;
+body.fote-study.study-minimal #app #hud2 .study-stock{height:18px;}
+body.fote-study.study-minimal #app #hud2 :is(.study-favor,.study-stock){
+ font:500 clamp(11px,calc(12px * var(--study-interface-scale,1)),14px)/1 var(--mono)!important;
 }
-body.fote-study.study-minimal #app #studyHungerText{color:#dab86a;}
+body.fote-study.study-minimal #app #studyHungerText{font:500 clamp(11px,calc(11px * var(--study-interface-scale,1)),13px)/1.1 var(--mono)!important;color:#dab86a;}
 body.fote-study.study-minimal #app #studyHunger.study-fed #studyHungerText{color:#94bb75;}
 body.fote-study.study-minimal #app #studyHunger.study-starving #studyHungerText{color:#ee9d87;}
-body.fote-study.study-minimal #app #hud2 .study-favor{color:#d7d0c5;}
 body.fote-study.study-minimal #studyStatPoints{
  top:calc(var(--minimal-depth-height) + var(--joined-portrait) * .65);left:-4px;right:auto;
  min-width:23px;height:21px;padding:0 3px;border:1px solid #9c7841;border-radius:7px!important;
@@ -1038,6 +1036,10 @@ body.fote-study.study-classic #app #hud2 .study-wallet{display:contents;}
 body.fote-study.study-classic #app #hud2 .study-stock{grid-area:1/1/2/2;}
 body.fote-study.study-classic #app #hud2 .study-favor{grid-area:1/2/2/3;}
 body.fote-study.study-classic #app #hud2 .study-favor .meter{display:none!important;}
+/* Resource glyphs and values share a font and vertical center in both layouts. */
+body.fote-study #app #hud2 button:is(.study-favor,.study-stock){font-weight:500!important;line-height:1!important;}
+body.fote-study #app #hud2 button:is(.study-favor,.study-stock) :is(.study-resource-value,.study-resource-label,.study-resource-icon){font:inherit!important;color:inherit!important;line-height:1;display:block;}
+body.fote-study #app #hud2 .study-resource-icon{display:flex!important;align-items:center;justify-content:center;flex:0 0 1em;width:1em;}
 body.fote-study.study-classic #app #hud2 .study-motes{grid-area:2/1/3/3;}
 body.fote-study.study-classic #app #studyActionBar{display:flex;flex:0 0 40px;}
 body.fote-study.study-classic #app #studyExplore{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;height:40px;min-height:40px;margin:0;opacity:1;cursor:pointer;font-size:14px!important;}
