@@ -159,9 +159,8 @@ function settingsHTML(){
      appearanceSegments('uiSide','Portrait side',{left:'Left',right:'Right'},UI_SIDE)+
      appearanceSegments('uiPadSide','Control pad side',UI_PAD_SIDES,UI_PAD_SIDE)+
      appearanceSegments('uiHotbarLayout','Hotbar orientation',UI_HOTBAR_LAYOUTS,UI_HOTBAR_LAYOUT)+
-     '<div class="optrow"><span>Touch direction pad</span>'+segHTML('touchPad',[['on','On'],['off','Off']],UI_TOUCH_PAD?'on':'off')+'</div>'+
+     '<div class="optrow"><span id="padVisibilityLabel">Show touch pad</span>'+segHTML(uiUsesTouchInput()?'touchPad':'desktopPad',[['on','On'],['off','Off']],(uiUsesTouchInput()?UI_TOUCH_PAD:UI_DESKTOP_PAD)?'on':'off','padVisibilityLabel')+'</div>'+
      appearanceSegments('uiPhonePadSize','Touch control size',UI_PHONE_PAD_SIZES,UI_PHONE_PAD_SIZE)+
-     (!(typeof MOBILE!=='undefined'&&MOBILE)?'<div class="optrow"><span>Movement pad</span>'+segHTML('desktopPad', [['shown','Shown'],['hidden','Hidden']],UI_DESKTOP_PAD?'shown':'hidden')+'</div>':'')+
      appearanceDropdown('uiTheme','UI theme',UI_THEMES,UI_THEME)+
      appearanceSegments('uiTextSize','Text size',UI_TEXT_SIZES,UI_TEXT_SIZE)+
      '<label class="optrow ui-opacity-row"><span>UI transparency <output id="uiOpacityValue" for="uiOpacity">'+(100-UI_OPACITY)+'%</output></span><input type="range" id="uiOpacity" min="0" max="90" step="5" value="'+(100-UI_OPACITY)+'" aria-label="UI transparency" aria-describedby="uiOpacityHint"></label><div id="uiOpacityHint" class="c-info">Fades panel and button backgrounds. Text, icons and bars stay solid.</div>'+
@@ -212,7 +211,7 @@ function wireSettings(root){
       if(id==='light'){ try{ localStorage.setItem('astra-temple-light', v); }catch(e){} var bl=$('bLight'); if(bl) bl.textContent='Lighting: '+v; draw(); }
       if(id==='motion'){ if(typeof setMotion==='function') setMotion(v); }
       if(id==='mapart')setMapArt(v);
-      if(id==='desktopPad'){UI_DESKTOP_PAD=v==='shown';try{localStorage.setItem('fote-ui-desktop-pad',UI_DESKTOP_PAD?'shown':'hidden');}catch(e){}if(typeof FoteResponsiveHUD!=='undefined')FoteResponsiveHUD.relayout();}
+      if(id==='desktopPad'){UI_DESKTOP_PAD=v==='on'||v==='shown';try{localStorage.setItem('fote-ui-desktop-pad',UI_DESKTOP_PAD?'shown':'hidden');}catch(e){}if(typeof FoteResponsiveHUD!=='undefined')FoteResponsiveHUD.relayout();}
       if(id==='touchPad'){UI_TOUCH_PAD=v==='on';try{localStorage.setItem('fote-ui-touch-pad',v);}catch(e){}applyUIAppearance();}
       if(id==='mapzoom'){ MAP_ZOOM=v; try{ localStorage.setItem('astra-temple-map-zoom', v); }catch(e){} resize(); }
       if(id==='speed'){ ANIM_SPEED=parseFloat(v)||1; try{ localStorage.setItem('astra-temple-anim-speed', String(ANIM_SPEED)); }catch(e){} applyAnimSpeed(); }

@@ -3,6 +3,11 @@ var FOTE_VERSION = 'Beta 1.5';
 /* Keep newest first; describe only changes already present in this build. */
 var FOTE_PATCHES = [
   {version:'Beta 1.5', notes:[
+    "The selected enchantment mote and active Forge tab now have a clear gold highlight.",
+    "Show touch pad controls the floating transparent pad in both Overlay and Classic, including tablets.",
+    "Mobile XP and Piety bars are slightly thicker.",
+    "Overlay shows a full food bar, Favor and Essence below it, and status icons beside the HP bar.",
+    "Classic UI places Essence and Favor side by side, without a Favor meter, and uses thicker XP and Piety bars.",
     "Food status is always visible: Full in green, Hungry in amber and Starving in red, with a live hunger meter.",
     "Classic UI is available again in Options under Desktop interface, with a windowed map, permanent log and room for all eight hotbar buttons. Small screens use Overlay.",
     "The Portrait and bars size setting works again, and UI Theme is now a dropdown.",

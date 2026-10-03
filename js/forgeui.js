@@ -42,7 +42,7 @@ function enchantPanelHTML(){
   h+='<div class="moterow">'+ELEMENTS.map(function(el){
     var n=player.motes[el]||0;
     var blocked=forbiddenElement(el);
-    return '<button data-emote="'+el+'" class="'+(forgeMote===el?'on':'')+'" '+(blocked?'title="'+GODS[player.god].name+' forbids this enchantment" ':'')+(n&&!blocked?'':'disabled')+'><span class="dot" style="background:'+AFF_COL[el]+'"></span>'+cap(el)+' &times;'+n+'</button>';
+    return '<button data-emote="'+el+'" aria-pressed="'+(forgeMote===el)+'" class="'+(forgeMote===el?'on':'')+'" '+(blocked?'title="'+GODS[player.god].name+' forbids this enchantment" ':'')+(n&&!blocked?'':'disabled')+'><span class="dot" style="background:'+AFF_COL[el]+'"></span>'+cap(el)+' &times;'+n+'</button>';
   }).join('')+'</div>';
   if(!forgeMote) return h+'<p class="c-info">You have no motes to set.</p>';
   var el=forgeMote;

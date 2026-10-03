@@ -203,7 +203,7 @@ var FoteResponsiveHUD=(function(){
     const hotbarLayout=typeof uiHotbarLayout==='function'?uiHotbarLayout():(typeof UI_HOTBAR_LAYOUT==='string'?UI_HOTBAR_LAYOUT:'horizontal');
     const vertical=hotbarLayout==='vertical';
     document.body.classList.toggle('study-hotbar-vertical',vertical);
-    document.body.classList.toggle('study-overlay-pad',classic?UI_DESKTOP_PAD:finger?UI_TOUCH_PAD:UI_DESKTOP_PAD);
+    document.body.classList.toggle('study-overlay-pad',finger?UI_TOUCH_PAD:UI_DESKTOP_PAD);
     composeColumns();
     syncNavigation();
     renderReadouts();
@@ -211,7 +211,7 @@ var FoteResponsiveHUD=(function(){
     setMenu(false);syncAudioButton();syncSheet();
     syncTouchControls();
     document.documentElement.style.setProperty('--study-top',classic?node('top').getBoundingClientRect().bottom+'px':'0px');
-    resize();positionSheet();
+    resize();positionSheet();positionStatuses();
   }
   function composeColumns(){
     const hotbar=node('hotbar'),pad=node('dpad'),explore=node('studyExplore');
@@ -226,6 +226,7 @@ var FoteResponsiveHUD=(function(){
       if(node('log').parentElement!==hud)hud.append(node('log'));
       const actions=node('studyActionBar');actions.append(explore);hud.insertBefore(actions,status);
       if(hotbar.parentElement!==app)app.append(hotbar);
+      if(pad.parentElement!==node('map'))node('map').append(pad);
       return;
     }
     if(node('log').parentElement!==node('studyRight'))node('studyRight').prepend(node('log'));
@@ -239,7 +240,7 @@ var FoteResponsiveHUD=(function(){
     else if(inventory.parentElement!==app)app.append(inventory);
     if(actionButtons.some((button,index)=>actions.children[index]!==button))actions.append(...actionButtons);
     if(hud.parentElement!==app)app.append(hud);
-    if(status&&status.parentElement!==hud)hud.append(status);
+    if(status&&status.parentElement!==app)app.append(status);
     if(recent&&recent.parentElement!==app)app.append(recent);
     if(hotbar.parentElement!==app)app.append(hotbar);
     if(pad.parentElement!==node('map'))node('map').append(pad);
@@ -269,7 +270,7 @@ var FoteResponsiveHUD=(function(){
     portrait.innerHTML='<span id="studyPortraitArt"></span><span id="studyPortraitStats"><span id="studyLevel"></span><span id="studyRank"></span></span>';hud.prepend(portrait);
     const statPoints=document.createElement('button');statPoints.id='studyStatPoints';statPoints.type='button';statPoints.hidden=true;statPoints.setAttribute('aria-controls','shade');hud.append(statPoints);
     const piety=document.createElement('button');piety.id='studyPietyBar';piety.type='button';piety.className='bar study-piety-bar';
-    piety.innerHTML='<i id="studyPietyFill"></i>';node('bars').append(piety);
+    piety.innerHTML='<i id="studyPietyFill"></i><span id="studyPietyText"></span>';node('bars').append(piety);
     const inventory=document.createElement('button');inventory.id='studyInventoryIcon';inventory.type='button';inventory.title='Inventory';inventory.setAttribute('aria-label','Inventory');
     inventory.innerHTML='<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M6 7a3 3 0 0 1 3-2h6a3 3 0 0 1 3 2l2 12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><path d="M8 13h8v5H8zM7 9h10"/></svg>';app.append(inventory);
     const sheetTabs=document.createElement('nav');sheetTabs.id='studySheetTabs';sheetTabs.setAttribute('aria-label','Character panels');node('shade').querySelector('header').prepend(sheetTabs);
@@ -331,6 +332,7 @@ var FoteResponsiveHUD=(function(){
   }
   function renderReadouts(){
     if(!mounted||!player)return;
+    const classic=document.body.classList.contains('study-classic');
     syncExploreButton(node('studyExplore'));
     node('studyDepth').textContent=node('hBiome').textContent+' · Floor '+node('hFloor').textContent;
     bindHudResourceCard(node('studyExplore'),'explore');
@@ -342,6 +344,7 @@ var FoteResponsiveHUD=(function(){
     node('studyHunger').classList.toggle('study-starving',player.hunger<=0);
     node('studyHunger').classList.toggle('study-fed',hungry==='Full');
     node('xpBar').setAttribute('aria-label','Level '+player.level+'. XP '+num(player.xp)+' / '+num(player.xpNext));
+    if(classic)node('lvTxt').textContent='XP '+num(player.xp)+' / '+num(player.xpNext);
     bindHudResourceCard(node('bars').querySelector('.hp'),'hp');
     bindHudResourceCard(node('bars').querySelector('.mp'),'mp');
     bindHudResourceCard(node('xpBar'),'xp');
@@ -356,12 +359,13 @@ var FoteResponsiveHUD=(function(){
       const detail=g.name+', rank '+rank+'. Piety '+num(player.piety)+(next?' / '+num(next)+' for rank '+(rank+1):', maximum rank');
       node('studyRank').innerHTML='<small>R</small><b>'+rank+'</b>';node('studyRank').style.color=g.color;
       node('studyPietyFill').style.width=pct+'%';node('studyPietyFill').style.background=g.color;
+      node('studyPietyText').textContent='Piety '+num(player.piety)+(next?' / '+num(next):' (max)');
       node('studyPietyBar').title=detail;node('studyPietyBar').setAttribute('aria-label',detail);bindHudResourceCard(node('studyPietyBar'),'piety');
       faith='<button class="chip faithchip study-piety" data-study-panel="Faith" style="color:'+g.color+'" title="'+esc(detail)+'" aria-label="'+esc(detail)+'"><span class="gdot"></span><span class="rk">R'+rank+'</span><span class="meter"><i style="width:'+pct+'%;background:linear-gradient(90deg,'+hexA(g.color,.55)+','+g.color+')"></i></span></button>'+
-        '<button class="chip faithchip study-favor" data-study-panel="Faith" title="Favor '+num(player.favor)+' / 100. Spent on your god\'s abilities." aria-label="Favor '+num(player.favor)+' / 100"><span class="rk">✦ '+num(player.favor)+'</span><span class="meter sm"><i style="width:'+clamp(player.favor,0,100)+'%;background:linear-gradient(90deg,#6B5A22,#E8D27A)"></i></span></button>';
+        '<button class="chip faithchip study-favor" data-study-panel="Faith" title="Favor '+num(player.favor)+' / 100. Spent on your god\'s abilities." aria-label="Favor '+num(player.favor)+' / 100"><span class="rk">✦ '+(classic?'Favor ':'')+num(player.favor)+'</span><span class="meter sm"><i style="width:'+clamp(player.favor,0,100)+'%;background:linear-gradient(90deg,#6B5A22,#E8D27A)"></i></span></button>';
     }
     const keys=(player.keys?.iron||0)+(player.keys?.crystal||0);
-    const economy='<button class="chip study-stock" data-study-panel="Equip" title="Essence '+num(player.essence)+', keys '+keys+'" aria-label="Essence '+num(player.essence)+', keys '+keys+'"><span aria-hidden="true">◆</span><b>'+num(player.essence)+'</b>'+(keys?'<span class="study-key-icon" aria-hidden="true">🗝</span><b>'+keys+'</b>':'')+'</button>';
+    const economy='<button class="chip study-stock" data-study-panel="Equip" title="Essence '+num(player.essence)+', keys '+keys+'" aria-label="Essence '+num(player.essence)+', keys '+keys+'"><span aria-hidden="true">◆</span>'+(classic?'<span>Essence</span>':'')+'<b>'+num(player.essence)+'</b>'+(keys?'<span class="study-key-icon" aria-hidden="true">🗝</span><b>'+keys+'</b>':'')+'</button>';
     const elements=['fire','water','earth','air','light','shadow'];
     const moteDetail=elements.map(k=>cap(k)+' '+num(player.motes[k])).join(', ');
     const motes='<button class="chip motechip study-motes" data-study-panel="Equip" title="Motes: '+moteDetail+'" aria-label="Motes: '+moteDetail+'">'+elements.map(k=>'<span class="study-mote" title="'+cap(k)+' motes: '+num(player.motes[k])+'"><i class="dot" style="background:'+AFF_COL[k]+'"></i><b>'+num(player.motes[k])+'</b></span>').join('')+'</button>';
@@ -392,13 +396,20 @@ var FoteResponsiveHUD=(function(){
   function renderStatusMeter(){
     if(!mounted||!player)return;
     const bar=node('statusbar');if(!bar)return;
-    const parent=node('studyHud');
+    const parent=document.body.classList.contains('study-classic')?node('studyHud'):node('app');
     if(bar.parentElement!==parent)parent.append(bar);
+    positionStatuses();
     if(player.god!=='wobbles')return;
     const existing=node('studyAmusement');if(existing){paintAmusement(existing);return;}
     const effect=document.createElement('button');effect.id='studyAmusement';effect.className='sico study-amusement-icon';effect.type='button';
     effect.innerHTML='<i class="study-amusement-fill"></i><img class="study-amusement-art" src="'+statusIconURL('pr-rolldice2')+'" alt="" aria-hidden="true"><span class="n"></span>';
     paintAmusement(effect);bar.prepend(effect);bindHudResourceCard(effect,'amusement');effect.onclick=()=>showSheet('Faith');
+  }
+  function positionStatuses(){
+    if(!mounted)return;
+    const hud=node('studyHud').getBoundingClientRect(),right=document.body.classList.contains('study-pad-right');
+    node('app').style.setProperty('--study-status-offset',(right?innerWidth-hud.left:hud.right)+'px');
+    node('app').style.setProperty('--study-status-top',node('bars').querySelector('.hp').getBoundingClientRect().top+'px');
   }
   return Object.freeze({mount,renderReadouts,renderStatusMeter,syncAudioButton,syncSheet,syncTouchControls,relayout,hasOverlay,isMounted:()=>mounted});
 })();

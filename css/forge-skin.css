@@ -340,6 +340,12 @@ body[data-ui-theme] #modal .seg button.on{
  color:var(--gold)!important;text-shadow:none;
  box-shadow:inset 0 0 0 1px var(--gold),inset 0 -2px var(--gold);
 }
+/* Forge selections stay visible above the shared material button faces. */
+body[data-ui-theme] #modal #forgeBody :is(.moterow,.ftabs) button.on{
+ border-color:var(--gold);color:var(--gold)!important;
+ background:color-mix(in srgb,var(--gold) 18%,var(--ui-panel-2));
+ box-shadow:inset 0 0 0 1px var(--gold),inset 0 -2px var(--gold);
+}
 
 /* Ordinary navigation reads as tabs; the selected panel carries the accent. */
 body.fote-study[data-ui-theme=ember] #app #top #studyNav button{background:transparent;border-color:transparent;border-radius:0!important;box-shadow:none;color:var(--ui-ash);}
