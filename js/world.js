@@ -301,9 +301,7 @@ function generateOnce(seed){
   for(i=0;i<3;i++) drop({kind:'essence', n:ri(5,12)+floorNo*2});
   drop(randomGear()); if(rng()<0.6) drop(randomGear());
   if(rng()<0.25) drop({kind:'sigil', use:randomSigilUse()});   /* about one loose sigil every other floor; chests, crates and monsters add the rest */
-  /* 2026-09-22 (Justin, starving all game): one meal on every floor and a 45% chance of a second. Hunger is a
-     reason to keep moving, not a clock you lose to; the meals themselves are unchanged (a Ration is 47%). */
-  drop({kind:'food', food: randomFood()}); if(rng()<0.45) drop({kind:'food', food: randomFood()});
+  /* Guaranteed meals are placed after all room and terrain builders finish. */
   ((biomePlan().motes||{})[floorNo]||[]).forEach(function(el){ drop({kind:'mote', el:el}); });
 
   /* ---- start ---- */
@@ -373,6 +371,24 @@ function generateOnce(seed){
 }
 
 /* ============================================================== helpers */
+function placeGeneratedFood(){
+  /* One meal per floor, plus a 45% chance of a second. Place on the finished map:
+     earlier loot can occupy a random tile and room builders can replace it. */
+  var reach=bfsFrom(player.x,player.y),cells=[],fallback=[];
+  for(var y=0;y<MH;y++)for(var x=0;x<MW;x++){
+    if(reach[idxOf(x,y)]<0||!freeCell(x,y)||nearDoor(x,y))continue;
+    var room=roomAt(x,y);
+    if(room&&(room.puzzle||room.merchant||room.hiddenSigil||room.rareEvent))continue;
+    fallback.push({x:x,y:y});if(room)cells.push({x:x,y:y});
+  }
+  if(!cells.length)cells=fallback;
+  var count=rng()<0.45?2:1;
+  for(var i=0;i<count;i++){
+    var cell=cells.length?cells.splice(ri(0,cells.length-1),1)[0]:{x:player.x,y:player.y};
+    items.push({kind:'food',food:randomFood(),x:cell.x,y:cell.y});
+  }
+}
+
 function bfsFrom(sx,sy){
   var d=new Int32Array(MW*MH).fill(-1), q=[sx,sy], h=0;
   d[idxOf(sx,sy)]=0;

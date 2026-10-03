@@ -36,7 +36,8 @@ var floorGeneration=FoteGeneration.create({
     {name:'biome-balance',run:balanceGeneratedEnemies},
     {name:'stair-approach-traps',run:repairStairApproachTraps},
     {name:'secret-floor-hints',run:function(){if(typeof repairRareRoomHints==='function')repairRareRoomHints();}},
-    {name:'rare-companion-arrival',run:function(){if(typeof arriveRarePet==='function')arriveRarePet();}}
+    {name:'rare-companion-arrival',run:function(){if(typeof arriveRarePet==='function')arriveRarePet();}},
+    {name:'floor-food',run:placeGeneratedFood}
   ]
 });
 // Dimension changes never allocate floor arrays. Builders install a new map

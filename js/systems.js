@@ -4,7 +4,7 @@
    ========================================================================== */
 
 var BAG_MAX = 25;   /* Five rows of five slots. */
-function hungerCost(cost){ return cost/100 * 2 * (player.race==='gloomling' ? 0.8 : 1); }
+function hungerCost(cost){ return cost/100 * 1.6 * (player.race==='gloomling' ? 0.8 : 1); }
 
 function bossNameForFloor(){
   var live=typeof ents!=='undefined' && ents.filter(function(e){return e.foe&&e.base&&e.base.boss&&e.hp>0;})[0];

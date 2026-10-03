@@ -1,5 +1,7 @@
 # Forge of the Elements — Beta 1.5
 
+- Hunger drains 20% more slowly to account for longer fights.
+- Guaranteed floor meals are placed on reachable tiles after room construction, with one meal per floor and a 45% chance of a second.
 - Earth-enchanted armor grants +1 armor plus 0.5 per Earth affinity point, with clearer Forge text.
 - The selected enchantment mote and active Forge tab now have a clear gold highlight.
 - Show touch pad controls the floating transparent pad in both Overlay and Classic, including tablets.
