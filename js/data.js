@@ -828,7 +828,7 @@ var DIVINE_COOLDOWNS = {
     'the-brood':20, 'venom-burst':8        /* Sylla */
   },
   invokes: {                              /* the Cleric's invoke for each god (INVOKE_OF) */
-    ironbody:18, bellow:0, heal:0, unholyaura:12, challenge:0, temper:18, arcanelance:12, rolldice:0, intothedark:5
+    ironbody:18, bellow:0, heal:0, unholyaura:12, challenge:0, temper:18, arcanelance:0, rolldice:0, intothedark:5
   }
 };
 

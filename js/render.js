@@ -78,7 +78,9 @@ function packedObjectSpec(group,name){
   return {file:'map-'+group+'.webp',box:g.items[name],cell:g.cell};
 }
 function packedObjectReady(group,name,fallback){
-  var spec=packedObjectSpec(group,name);
+  /* Shrine selectors prefer the 256px set art over map-tile thumbnails. */
+  var spec=typeof name==='string'&&name.indexOf('shrine-')===0&&AS.map&&AS.map.set&&AS.map.set.items[name]?
+    packedObjectSpec('set',name):packedObjectSpec(group,name);
   if(!spec&&fallback)PACKED_OBJECT_GROUPS.some(function(candidate){spec=packedObjectSpec(candidate,name);return !!spec;});
   return spec?atlReady(spec.file):null;
 }

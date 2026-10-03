@@ -1,9 +1,9 @@
 {
   "version": "Beta 1.5",
-  "built": "2026-10-03T19:52:38.904297+00:00",
-  "epoch": 1791057158,
-  "source": "3c60874c+reviewed-followup+approved-portrait-animation + fluid-barrel-art-ecd2abda + beta15-hotfix + mobile-loading-hotfix (public base ce997353) + reviewed mobile-controls/Vellum hotfix (public base c7ede58)",
+  "built": "2026-10-03T20:34:23.679842+00:00",
+  "epoch": 1791059663,
+  "source": "3c60874c+reviewed-followup+approved-portrait-animation + fluid-barrel-art-ecd2abda + beta15-hotfix + mobile-loading-hotfix (public base ce997353) + reviewed mobile-controls/Vellum hotfix (public base c7ede58) + reviewed Lance/statue follow-up (public base de7a164)",
   "candidate": false,
   "releaseState": "public",
-  "revision": "mobile-controls-vellum-20261003-195238"
+  "revision": "lance-statues-20261003-203423"
 }

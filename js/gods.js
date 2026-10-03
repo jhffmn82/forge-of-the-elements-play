@@ -208,6 +208,8 @@ function migratePrayerReferences(actor){
   if(actor.cds&&Object.prototype.hasOwnProperty.call(actor.cds,'arcaneward')){
     actor.cds.arcanelance=Math.max(actor.cds.arcanelance||0,actor.cds.arcaneward||0);delete actor.cds.arcaneward;
   }
+  // Lance has no cooldown; saved Communion or older Lance waits are retired.
+  if(actor.cds&&DIVINE_COOLDOWNS.invokes.arcanelance===0)delete actor.cds.arcanelance;
   ['hotbar','_hotPrev'].forEach(function(key){(actor[key]||[]).forEach(function(slot){if(slot&&slot.type==='prayer')slot.key=prayerId(slot.key);});});
   Object.keys(actor.hotKnown||{}).forEach(function(key){
     if(key.indexOf('p:')!==0)return;

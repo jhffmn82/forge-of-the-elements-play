@@ -3,7 +3,7 @@
 **Beta 1.5 is the current public build.**
 
 A browser roguelike: explore elemental dungeons, shape your build at the Forge, and face each biome's boss.
-This update improves mobile controls, recorded audio recovery, portraits and item icons, and Vellum's caster abilities.
+This follow-up removes Arcane Lance's cooldown and refreshes god statue previews from their full-resolution artwork.
 
 ## Play on a PC
 
@@ -24,4 +24,4 @@ Or just open the play link above in Chrome on the device - the game lays itself 
 ## This repository
 
 Generated output only: the playable build, published by `tools/publish.py` from the source project. Last
-build: **2026-10-03T19:52:38.904297+00:00**.
+build: **2026-10-03T20:34:23.679842+00:00**.

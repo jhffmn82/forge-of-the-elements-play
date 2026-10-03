@@ -166,6 +166,12 @@ function paintIconArt(c, o, w, h, trinket, keep){
 function paintArtCanvas(el, group, name, size){
   var o = group==='cast' ? null : (objArt(group,name) || anyObj(name));
   var c=document.createElement('canvas'), d=window.devicePixelRatio||1, S=size||32;
+  var shrineReady=group==='structures'&&typeof name==='string'&&name.indexOf('shrine-')===0&&packedObjectReady(group,name);
+  if(shrineReady)shrineReady.then(function(image){
+    /* A usable thumbnail can arrive first. Promote only this live canvas;
+     * replaced cards and already-detailed statues need no repaint. */
+    if((!o||o.img!==image)&&el.isConnected&&el.firstChild===c)paintArt(el,group,name,size);
+  }).catch(function(){});
   if(o){
     var trinket=group==='items' && /^item-(ring|amulet)(-|$)/.test(name) && !!((el.classList && el.classList.contains('gear')) || (el.closest && el.closest('#hotbar')));
     /* a canvas the page stretches to its box (touch Gear tiles, the hotbar) is repainted at the size it is shown. For a
@@ -193,7 +199,10 @@ function paintArtCanvas(el, group, name, size){
     var si=cm && cm.static_row!=null && atl('cast-'+name+'.webp');
     if(si){ var ss=S*0.98/cm.stand, sw=cm.cell*ss; x.drawImage(si,0,cm.static_row*cm.cell,cm.cell,cm.cell,(S-sw)/2,S-(cm.cell-(cm.foot||0))*ss+S*0.02,sw,sw); }
     if(dm){ setTimeout(function(){ if(el.isConnected) paintArt(el,group,name,size); }, 300); if(!si) return; }
-  } else if(AS.map){ setTimeout(function(){ if(el.isConnected && !el.querySelector('canvas')){ paintArt(el,group,name,size); } }, 500); return; }
+  } else if(AS.map){
+    if(shrineReady){el.innerHTML='';el.appendChild(c);return;}
+    setTimeout(function(){ if(el.isConnected && !el.querySelector('canvas')){ paintArt(el,group,name,size); } }, 500);return;
+  }
   el.innerHTML=''; el.appendChild(c);
 }
 function iconNameForBag(b){

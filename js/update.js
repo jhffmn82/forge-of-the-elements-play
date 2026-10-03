@@ -3,6 +3,8 @@ var FOTE_VERSION = 'Beta 1.5';
 /* Keep newest first; describe only changes already present in this build. */
 var FOTE_PATCHES = [
   {version:'Beta 1.5', notes:[
+    "Vellum's Arcane Lance has no cooldown. Saved games clear obsolete Lance and Communion waits.",
+    "God statue previews wait for their full-resolution artwork and refresh when it loads.",
     "Touch movement accepts taps sooner. Holding a direction repeats after half a second, at no more than four steps per second; releasing stops repeats.",
     "A circular grab button appears beside the enabled touch pad when regular loot is underfoot. Search stays available; hearts and mana globes remain automatic.",
     "All character paper dolls fit their available boxes. Item icons repaint after their artwork loads, and character-creation audio guidance wraps below the start button.",
