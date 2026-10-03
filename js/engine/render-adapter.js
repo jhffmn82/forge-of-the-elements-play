@@ -60,10 +60,8 @@ var renderLightSources=FoteRendering.sequence([
 ]);
 function drawPropSurface(p,x,y,alpha){
   if(p.fluid){
-    var barrel=objArt('props','barrel');
-    if(barrel){drawObj(barrel,x,y,{feet:true,fit:.9,alpha:alpha});
-      ctx.save();ctx.globalAlpha=alpha;ctx.fillStyle=p.fluid==='water'?'#54BDF0':'#A6D94F';
-      ctx.fillRect(x+TS*.32,y+TS*.48,TS*.36,TS*.09);ctx.restore();return true;}
+    var barrel=objArt('props',p.name)||objArt('props','barrel');
+    if(barrel)return !!drawObj(barrel,x,y,{feet:true,fit:.9,alpha:alpha});
   }
 
   // An explicit set-piece sprite owns its appearance before any name-based
