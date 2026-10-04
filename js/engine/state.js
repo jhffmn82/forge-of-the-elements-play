@@ -15,7 +15,7 @@
   }
   const fields=Object.freeze(['MW','MH','player','RUN','floorNo','turn','revealAll','worldSeed','nextId','lastDir','spawnedExtra','nextSpawn',
     'map','seen','vis','feats','items','ents','rooms','ground','fireT','fireSrc','props','propGrid','chestKind','floorMeta',
-    'levers','plates','altars','iceG','rootG','holyG','sigilLook','sigilKnown','LAST_CHOICE']);
+    'levers','plates','altars','iceG','rootG','holyG','DEEP_RAWVIS','BLIND_RAWVIS','sigilLook','sigilKnown','LAST_CHOICE']);
   function create(initial={}){
     const size=dimensions(initial);
     let values=Object.assign(Object.create(null),initial,{MW:size.width,MH:size.height}),revision=0;

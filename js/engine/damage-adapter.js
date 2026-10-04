@@ -83,10 +83,13 @@ function damageCreatureRules(event){
 }
 function damageOutgoingRules(event){
   var target=event.target,source=event.source,type=event.type;
-  if(typeof hostileCombatDamage==='function'&&!event.tags.has('reflected'))event.amount=hostileCombatDamage(source,event.amount);
+  // Derived damage already includes the primary hit's outgoing modifiers.
+  // Receiver immunity and native defenses still apply to its new damage type.
+  var outgoing=!event.options.outgoingModifiersApplied;
+  if(outgoing&&typeof hostileCombatDamage==='function'&&!event.tags.has('reflected'))event.amount=hostileCombatDamage(source,event.amount);
   var holy=event.hit&&event.hit.att===player&&event.hit.view?actionInfusion('holy',event.hit.view):infusion('holy');
   if(holy&&isBuffed()){
-    if(holy==='fire'&&source===player&&target!==player)event.amount*=1+enchantValues('holy','fire').damageBonus;
+    if(outgoing&&holy==='fire'&&source===player&&target!==player)event.amount*=1+enchantValues('holy','fire').damageBonus;
     if(holy==='earth'&&target===player)event.amount*=1-enchantValues('holy','earth').damageReduction;
   }
   if(source&&source.foe&&source.st&&source.st.poison&&(target.shadowClone&&target.cloneStats?(target.cloneStats.aff.earth||0)>=3&&(target.cloneStats.aff.shadow||0)>=2:combo('earth','shadow')))event.amount*=.8;
@@ -94,21 +97,28 @@ function damageOutgoingRules(event){
   if(target===player&&type==='poison'&&buff('poisonward'))return rejectDamage(event,'poison-ward');
   if(target===player){for(var el in IMMUNE_TYPE)if(IMMUNE_TYPE[el]===type&&aff(el)>=6){floatText(player.x,player.y,'immune','miss');return rejectDamage(event,'element-immunity');}}
   if(target!==player){
-    if(target.foe&&!event.tags.has('proc')&&typeof murkSummonDamage==='function')event.amount*=murkSummonDamage(source);
-    if(source&&source.shadowClone&&source.cloneStats){
+    if(outgoing&&target.foe&&!event.tags.has('proc')&&typeof murkSummonDamage==='function')event.amount*=murkSummonDamage(source);
+    if(outgoing&&source&&source.shadowClone&&source.cloneStats){
       var copied=source.cloneStats;
       if(copied.holyFire&&FoteShadowClone.buffed(source))event.amount*=1+copied.holyFire;
       if((copied.aff.fire||0)>=3&&target.st&&target.st.burn)event.amount*=1+.05*copied.aff.fire;
     }
-    if((source===player||source==='player')&&aff('fire')>=3&&target.st&&target.st.burn)event.amount*=1+.05*aff('fire');
-    if(target.st&&target.st.hollow)event.amount*=1+.05*target.st.hollow.n;
+    if(outgoing&&(source===player||source==='player')&&aff('fire')>=3&&target.st&&target.st.burn)event.amount*=1+.05*aff('fire');
+    if(outgoing&&target.st&&target.st.hollow)event.amount*=1+.05*target.st.hollow.n;
   }
   return true;
 }
 function damageDefenses(event){
+  // Frozen is consumed by native defenses before landed-hit reactions run.
+  event.frozenBefore=gameEffects.has(event.target,'frozen');
   if(typeof FoteShadowClone!=='undefined'&&FoteShadowClone.defend(event))return;
   var target=event.target,source=event.source,type=event.type,amount=event.amount,d=amount;
   var isPlayer=target===player,foe=source&&source!==player&&source.foe;
+  if(isPlayer&&foe&&event.rawAmount>0&&typeof recordHostileAttack==='function'){
+    var hostileAction=gameActions.current();
+    // Weapon/spell child actions already recorded the attempt before accuracy.
+    if(hostileAction&&hostileAction.kind==='actor'&&!(hostileAction.hostileAttacks||[]).some(function(attempt){return attempt.source===source&&attempt.target===target;}))recordHostileAttack(source,target,event.tags);
+  }
   var wardChance=player.block>0?player.block:Math.min(.40,.25+.01*Math.max(0,player.stats.mig-10));
   if(isPlayer&&!event.options.attackRolled&&!event.tags.has('area')&&foe&&hasP('spellWard')&&wardChance>0&&combatRoll(wardChance,true)){
     d*=.25;onShieldBlock(source,player,amount);combatActionNote(player,'blocked');floatText(player.x,player.y,'block','miss');sfx('block');
@@ -125,10 +135,7 @@ function damageDefenses(event){
     if(d>0&&target.st&&target.st.frozen){gameEffects.remove(target,'frozen','damaged');if(!isPlayer)gameEffects.apply(target,'imm_frozen',3,undefined,{durationModifiers:false,ignoreImmunity:true});}
   }
   if(isPlayer){
-    if(buff('laststand'))d*=.5;
-    if(hasGod('reginald')&&godRank()>=3&&foe&&source.challenged)d*=Math.max(0,1-.05*godRank()*divineStrength());
-    if(hasGod('reginald')&&godRank()>=5&&foe)d*=1-.10*Math.min(3,Math.max(0,adjacentFoes()-1));
-    if(hasGod('reginald')&&godRank()>=3&&foe&&source.hp>0&&!source.challenged&&dist(source,player)>1){source.challenged=true;source.challengeUntil=worldNow()+500;source.state='hunt';source.cowardMark=true;log(combatText(source.name||'Attacker')+': Challenged.','c-good');}
+    if(buff('laststand'))d*=FoteDamage.lastStand(godRank(),divineStrength()).damageMultiplier;
     d=d>0&&barrier>0?Math.max(1,d-barrier):Math.max(0,d);
     // A landed physical hit survives rounding; actual shields can still absorb it.
     if(type==='phys'&&d>0)d=Math.max(1,d);
@@ -150,14 +157,24 @@ function damageDefenses(event){
     }
     if(Math.round(d)>0&&foe&&hasP('fortitude')&&!(player.fortUntil>worldNow())){d*=.5;player.fortUntil=worldNow()+600;combatActionNote(player,'Fortitude');}
   }
-  if(target.challenged&&target.challengeBoost)d*=1.2;
   if(target.dazed>0)d*=1.5;
   event.amount=d;
 }
 function commitDamage(event){
   var target=event.target,d=event.damage,hpBefore=target.hp;
-  target.hp-=d;if(typeof rareSpiderDamaged==='function')rareSpiderDamaged(event);
+  target.hp-=d;
+  // Only the packet crossing from living HP to dead HP owns death attribution.
+  // Later corpse riders retain that record, even if equipment changes first.
+  if(hpBefore>0){
+    delete target.lethalCause;
+    if(d>0&&target.hp<=0)target.lethalCause=event.cause;
+  }
+  if(typeof rareSpiderDamaged==='function')rareSpiderDamaged(event);
   if(event.hit&&d>0)event.hit.landed=true;
+  // Offensive status applications receive this exact primary hit explicitly.
+  // Never infer it from a parent cast or the last hit during a world pulse.
+  if(nativeElementHit(event))event.hit.nativeDamage={source:event.source,target:target,damage:d,
+    point:{x:target.x,y:target.y},affinity:Object.assign({},event.hit.view&&event.hit.view.aff||{}),luck:event.hit.view&&event.hit.view.procLuck||0,actionId:event.actionId,cause:event.cause};
   if(typeof FoteEnemyPerception!=='undefined')FoteEnemyPerception.damaged(event);
   else if(d>0&&target!==player&&target.foe&&!target.ally&&target.hp>0&&['asleep','wander','hunt'].indexOf(target.state)>=0){
     target.state='hunt';target.caughtOff=-1;
@@ -177,24 +194,64 @@ function commitDamage(event){
   }
   if(target!==player&&target.kind!=='slime'&&target.base&&target.base.splits&&!target.split&&target.hp>0&&target.hp<target.maxhp/2&&!event.tags.has('periodic'))slimeSplit(target);
 }
+function nativeElementHit(event){
+  var hit=event.hit,target=event.target;
+  return event.source===player&&target!==player&&target.foe&&!target.ally&&hit&&hit.att===player&&hit.def===target&&
+    ['attack','spell'].some(function(tag){return event.tags.has(tag);})&&
+    !['proc','periodic','arc','reflected','environment','ground'].some(function(tag){return event.tags.has(tag);});
+}
+function emitElementArcs(receipt,rule){
+  var target=receipt.target,source=receipt.source;
+  if(source!==player||!(receipt.damage>0))return;
+  var origin=receipt.point||{x:target.x,y:target.y};
+  var others=ents.filter(function(e){return e.foe&&!e.ally&&e!==target&&e.hp>0&&dist(e,origin)<=rule.range&&vis[idxOf(e.x,e.y)];})
+    .sort(function(a,b){return dist(a,origin)-dist(b,origin);}).slice(0,rule.targets);
+  others.forEach(function(other){
+    if(other.hp<=0||ents.indexOf(other)<0)return;
+    var impact={x:other.x,y:other.y};
+    var event=gameDamage.resolve(other,Math.max(1,Math.round(receipt.damage*rule.damageMultiplier)),'lightning',source,
+      {tags:['arc','proc'],actionId:receipt.actionId,cause:receipt.cause,procLuck:receipt.luck,procAffinity:receipt.affinity});
+    // Commit the captured impact even when a reaction moves/removes its actor.
+    var ground=FoteDamage.frozenArcGround(receipt.affinity);
+    if(event.damage>0&&ground.duration>0)markIceGround(impact.x,impact.y,ground.duration);
+    boltFx(origin.x,origin.y,impact.x,impact.y,'lightning',{staticDischarge:true});
+    if(other.hp<=0)kill(other,source);
+  });
+}
 function damageElementReactions(event){
   var target=event.target,source=event.source,type=event.type,d=event.damage;
   if(target!==player&&target.sapped&&d>0){target.sapped=false;gameEffects.remove(target,'stun','awakened');}
   if(target===player||(source!==player&&source!=='player')||d<=0)return;
   if(type==='dark'&&aff('shadow')>=6&&target.hp>0)addHollow(target,1);
   if(type==='light'&&aff('light')>=3)healPlayer(aff('light'));
-  if(type==='lightning'&&aff('air')>=6&&target.hp>0&&rng()<.15)applyStatus(target,'stun',1);
-  if(aff('air')>=3&&!event.tags.has('arc')&&rng()<.05*aff('air')){
-    var other=ents.filter(function(e){return e.foe&&e!==target&&e.hp>0&&dist(e,target)<=3&&vis[idxOf(e.x,e.y)];}).sort(function(a,b){return dist(a,target)-dist(b,target);})[0];
-    if(other){gameDamage.resolve(other,Math.max(1,Math.round(d*.5)),'lightning',player,{tags:['arc']});boltFx(target.x,target.y,other.x,other.y,'lightning');if(other.hp<=0)kill(other,player);}
-  }
+  var view=event.hit&&event.hit.att===player&&event.hit.view,affinity=view&&view.aff||event.options.procAffinity,air=affinity?affinity.air||0:aff('air');
+  var luck=view&&view.procLuck!==undefined?view.procLuck:event.options.procLuck;
+  if(type==='lightning'&&air>=6&&target.hp>0&&pRoll(.15,luck))applyStatus(target,'stun',1);
+  if(!nativeElementHit(event))return;
+  var receipt=event.hit.nativeDamage,arc=FoteDamage.airArc(receipt.affinity.air);
+  if(arc.chance>0&&pRoll(arc.chance,receipt.luck))emitElementArcs(receipt,arc);
 }
 function damageReceivedReactions(event){
   var target=event.target,source=event.source,type=event.type,d=event.damage;
   if(target!==player)return;
-  var soaked=event.iceBefore-(player.iceArmor||0);
-  if(soaked>0&&combo('water','light'))healPlayer(Math.max(1,Math.round(soaked*.25)));
-  if(d>0&&source&&source.foe&&source.hp>0&&combo('fire','earth')&&(dist(source,player)>1||type!=='phys')){applyStatus(source,'root',1);applyStatus(source,'burn',3,burnDmg());burst(source.x,source.y,'fire',18,.06);log(combatText(source.name)+': Rooted, Burning.','c-fire');}
+  if(d>0&&hasGod('reginald')&&godRank()>=3&&source&&source.foe&&!source.ally&&source.hp>0&&dist(source,player)>1&&
+      !['proc','periodic','environment','reflected','arc','ground'].some(function(tag){return event.tags.has(tag);})){
+    var duration=FoteDamage.cowardsMark().duration;
+    gameActions.run('reaction',player,source,{ability:{id:'cowards-mark',name:"Coward's Mark"},tags:['reaction','cowards-mark']},function(reaction){
+      var cause=FoteActions.damageCause(reaction,{source:player,target:source,ability:reaction.options.ability,actionId:reaction.actionId,tags:Array.from(reaction.tags)},null);
+      var options={source:player,applicationCause:cause,tags:Array.from(reaction.tags)};
+      var feared=applyStatus(source,'fear',duration,undefined,options);
+      var rooted=applyStatus(source,'root',duration,undefined,options);
+      var controls=[];if(feared.applied)controls.push('Afraid');if(rooted.applied)controls.push('Rooted');
+      if(controls.length)log(combatText(source.name||'Attacker')+': '+controls.join(', ')+'.','c-good');
+    });
+  }
+  if(d>0&&source&&source.foe&&source.hp>0&&combo('fire','earth')&&(dist(source,player)>1||type!=='phys')){
+    var root=applyStatus(source,'root',3,undefined,{source:player,tags:['reaction','fire-earth']});
+    var burning=applyStatus(source,'burn',3,burnDmg(),{source:player,tags:['reaction','fire-earth']});
+    var effects=[];if(root.applied)effects.push('Rooted');if(burning.applied)effects.push('Burning');
+    burst(source.x,source.y,'fire',18,.06);if(effects.length)log(combatText(source.name)+': '+effects.join(', ')+'.','c-fire');
+  }
   if(source&&source.base){var b=source.base;
     if(d>0&&b.poisons&&!player.st.poison&&rng()<b.poisons&&aff('earth')<6){if(applyStatus(player,'poison',4,Math.max(2,sDMG(2))).applied)combatActionNote(player,'Poisoned');}
     if(d>0&&b.phases){var drained=Math.min(Math.floor(player.mp),4);if(drained>0){player.mp-=drained;floatText(player.x,player.y,'-'+drained+' mp','magic');}}
@@ -211,6 +268,88 @@ function damageAttackReactions(event){
   if(!syllaOn()||!(event.damage>0)||event.source!==player||target===player||!target.foe||target.ally||!hit||hit.att!==player||hit.def!==target||hit._syl||event.tags.has('periodic')||event.tags.has('proc')||event.tags.has('reflected')||event.tags.has('arc'))return;
   hit._syl=true;syllaHitReactions(event);
 }
+function damageCriticalReactions(event){
+  var target=event.target,hit=event.hit;
+  if(!(event.damage>0)||event.source!==player||!target.foe||target.ally||
+      !hit||hit.att!==player||hit.def!==target||!hit.crit||
+      !['attack','spell'].some(function(tag){return event.tags.has(tag);})||
+      ['proc','periodic','arc','reflected','environment'].some(function(tag){return event.tags.has(tag);})||
+      !combo('fire','air',hit.view))return;
+  var affinity=hit.view&&hit.view.aff,damage=burnDmg(hit.view);
+  var result=applyStatus(target,'burn',3,damage,affinity?{sourceAffinity:affinity,data:{sourceAffinity:affinity}}:undefined);
+  if(result.applied){hit.criticalBurnDamage=damage;if(!result.previous)combatActionNote(target,'Burning');}
+}
+function damageSurpriseReactions(event){
+  var target=event.target,source=event.source,hit=event.hit;
+  var copied=source&&source.shadowClone&&source.cloneStats;
+  if(!(event.damage>0)||!(source===player||copied)||!target.foe||target.ally||
+      !hit||hit.att!==source||hit.def!==target||!hit.surprise||!hit.view||
+      !['attack','spell'].some(function(tag){return event.tags.has(tag);})||
+      ['proc','periodic','arc','reflected','environment'].some(function(tag){return event.tags.has(tag);})||
+      !combo('fire','shadow',hit.view))return;
+  var affinity=Object.assign({},hit.view.aff||{}),options={sourceAffinity:affinity,data:{sourceAffinity:affinity}};
+  var turns=3,corruptTurns=enchantValues('weapon','shadow',hit.view).corruptDuration;
+  if(copied){
+    options.durationModifiers=false;options.bossControl=true;options.data.sourceDuration=copied.syllaDuration||0;
+    turns=FoteEffects.duration('burn',turns,{bonusDuration:copied.syllaDuration||0});
+    corruptTurns=FoteEffects.duration('corrupt',corruptTurns,{bonusDuration:copied.syllaDuration||0});
+  }
+  var damage=copied?copied.burn:burnDmg(hit.view);
+  var burning=applyStatus(target,'burn',turns,damage,options);
+  var corruption=applyStatus(target,'corrupt',corruptTurns,undefined,options);
+  if(burning.applied){hit.surpriseBurnDamage=damage;if(!burning.previous)combatActionNote(target,'Burning');}
+  if(corruption.applied&&!corruption.previous)combatActionNote(target,'Corrupted');
+}
+function damageSiltShieldReactions(event){
+  var target=event.target,hit=event.hit;
+  if(!(event.damage>0)||event.source!==player||!(player.hp>0)||!target.foe||target.ally||
+      !hit||hit.att!==player||hit.def!==target||!hit.view||hit.spell||!event.tags.has('attack')||
+      ['proc','periodic','arc','reflected','environment','ground'].some(function(tag){return event.tags.has(tag);})||
+      !combo('earth','water',hit.view))return;
+  var before=player.iceArmor||0,maximum=player.iceArmorMax||0;
+  player.iceArmor=Math.min(maximum,before+FoteDamage.siltShield().restore);
+  hit.siltShieldRestored=Math.max(0,player.iceArmor-before);
+}
+function damageFrozenHolyReactions(event){
+  var target=event.target,hit=event.hit;
+  if(!(event.damage>0)||!event.frozenBefore||!(target.hp>0)||ents.indexOf(target)<0||
+      !nativeElementHit(event)||!hit.view||!combo('water','light',hit.view))return;
+  gameDamage.resolve(target,event.damage*FoteDamage.frozenHoly().damageMultiplier,'light',event.source,
+    {tags:['proc','water-light'],outgoingModifiersApplied:true,actionId:event.actionId,cause:event.cause});
+}
+/* Successful primary hit facts admit these combo statuses. The attack's crit
+ * and surprise decisions have already resolved; new control never changes them. */
+function damageShadowStunReactions(event){
+  var target=event.target,hit=event.hit;
+  if(!(event.damage>0)||!(target.hp>0)||ents.indexOf(target)<0||!nativeElementHit(event)||
+      !hit.surprise||!hit.view||!combo('shadow','air',hit.view))return;
+  var affinity=Object.assign({},hit.view.aff||{});
+  var result=applyStatus(target,'stun',FoteDamage.shadowStun().duration,undefined,
+    {sourceAffinity:affinity,data:{sourceAffinity:affinity}});
+  if(result.applied&&!result.previous)combatActionNote(target,'Stunned');
+}
+function damageGlintReactions(event){
+  var target=event.target,hit=event.hit;
+  if(!(event.damage>0)||!(target.hp>0)||ents.indexOf(target)<0||!nativeElementHit(event)||
+      !hit.crit||!hit.view||hit.spell&&!hit.singleTarget||!combo('air','light',hit.view))return;
+  var affinity=Object.assign({},hit.view.aff||{});
+  var result=applyStatus(target,'blind',FoteDamage.glint().duration,undefined,
+    {sourceAffinity:affinity,data:{sourceAffinity:affinity}});
+  if(result.applied&&!result.previous)combatActionNote(target,'Blinded');
+}
+function damageSurprisePoisonReactions(event){
+  var target=event.target,hit=event.hit;
+  if(!(event.damage>0)||!(target.hp>0)||ents.indexOf(target)<0||!nativeElementHit(event)||
+      !hit.surprise||!hit.view||!combo('shadow','earth',hit.view))return;
+  var rule=FoteDamage.surprisePoison(),affinity=Object.assign({},hit.view.aff||{});
+  var poison=gameDamage.resolve(target,event.damage*rule.damageMultiplier,'poison',event.source,
+    {tags:['proc','shadow-earth'],outgoingModifiersApplied:true,actionId:event.actionId,cause:event.cause});
+  if(poison.reason||!(target.hp>0)||ents.indexOf(target)<0)return;
+  var result=applyStatus(target,'poison',rule.duration,undefined,
+    {durationModifiers:false,refresh:'replace',sourceAffinity:affinity,
+      data:{sourceAffinity:affinity,damageScale:1},applicationCause:poison.cause});
+  if(result.applied&&!result.previous)combatActionNote(target,'Poisoned');
+}
 function admitDamage(event){
   var target=event.target;
   if(target===player&&event.type==='poison'&&gameEffects.has(player,'stone'))return rejectDamage(event,'stone-skin');
@@ -221,10 +360,7 @@ function admitDamage(event){
   if(Number.isFinite(ratio)&&ratio>0){
     if(target.hp<=0)return rejectDamage(event,'element-absorption');
     var amount=event.amount*ratio;if(gameEffects.has(target,'rot'))amount*=.5;
-    var healed=FoteDamage.heal(target.hp,target.maxhp,amount);target.hp=healed.hp;
-    if(healed.restored>0){
-      gameDamage.emit('healingApplied',{target:target,source:event.source,amount:amount,restored:healed.restored,overflow:healed.overflow,natural:false,damageType:event.type});
-    }
+    gameDamage.heal(target,amount,event.source,{damageType:event.type});
     return rejectDamage(event,'element-absorption');
   }
   return true;
@@ -232,10 +368,22 @@ function admitDamage(event){
 var gameDamage=FoteDamage.create({
   pendingHit:pendingHit,
   actionId:function(){var action=typeof gameActions!=='undefined'&&gameActions.current();return action?action.actionId:'world:'+turn;},
+  cause:function(event,inherited){
+    // A supplied delayed origin must not borrow a newer action by that actor.
+    var action=!Object.prototype.hasOwnProperty.call(event.options,'cause')&&typeof gameActions!=='undefined'&&gameActions.current();
+    return typeof FoteActions!=='undefined'?FoteActions.damageCause(action,event,inherited):null;
+  },
   admit:admitDamage,
   modify:function(event){if(damageCreatureRules(event)!==false)damageOutgoingRules(event);},
   defend:damageDefenses,commit:commitDamage,
-  after:function(event){damageElementReactions(event);damageReceivedReactions(event);damageAttackReactions(event);}
+  commitHealing:function(event){
+    event.target.hp=event.hp;
+    if(event.target===player&&event.options.playerRules){
+      if(event.overflow>0&&combo('light','water'))player.iceArmor=Math.min(player.iceArmorMax,player.iceArmor+event.overflow);
+      if(!event.natural&&event.amount>=1)deepStanch(player);
+    }else if(event.options.stanch&&event.restored>0&&event.amount>=1&&!event.natural)deepStanch(event.target);
+  },
+  after:function(event){damageCriticalReactions(event);damageSurpriseReactions(event);damageSiltShieldReactions(event);damageFrozenHolyReactions(event);damageShadowStunReactions(event);damageGlintReactions(event);damageSurprisePoisonReactions(event);damageElementReactions(event);damageReceivedReactions(event);damageAttackReactions(event);}
 });
 /* HP changes own their feedback. Callers keep their particles/sounds, but never
  * draw a second number or show the requested heal instead of the HP restored. */
@@ -251,7 +399,7 @@ gameDamage.on('healingApplied',function(event){
 });
 function combatDamageName(event){
   var names={'murk-drain':'Life Drain',venomtouch:'Venomtouch',
-    'fire-affinity':'Fire affinity',smite:'Smite','molten-ring':'Molten Ring',
+    'fire-affinity':'Fire affinity','water-light':'Clear Waters','shadow-earth':'Venom Strike',smite:'Smite','molten-ring':'Molten Ring',
     gust:'Gust',enchant:'Enchantment',arc:'Arc',reflected:'Reflection','elemental-attack':'Elemental attack'};
   for(var tag in names)if(event.tags.has(tag))return names[tag];
   return event.tags.has('proc')&&!event.tags.has('attack')?'Bonus damage':'';
@@ -322,17 +470,25 @@ function dealDirectDamage(target,amount,type,source,options){
 }
 function healPlayer(amount,natural,options){
   if(!player||!(amount>0))return 0;
-  amount=rotHealing(amount,options&&options.regen);if(!(amount>0))return 0;
-  if(hasGod('glimmer'))amount*=1+.10*godRank();
-  if(!(options&&options.holyGround)&&inSanctuary(player))amount*=1+.25*(typeof holyGroundStrength==='function'?holyGroundStrength(player):divineStrength());
-  var result=FoteDamage.heal(player.hp,player.maxhp,amount);player.hp=result.hp;
-  if(result.overflow>0&&combo('light','water'))player.iceArmor=Math.min(player.iceArmorMax,player.iceArmor+result.overflow);
-  if(!natural&&amount>=1)deepStanch(player);
-  gameDamage.emit('healingApplied',{target:player,amount:amount,restored:result.restored,overflow:result.overflow,natural:!!natural,regen:!!(options&&options.regen)});
+  var rawAmount=amount;
+  amount=playerHealingAmount(amount,options);if(!(amount>0))return 0;
+  var result=gameDamage.heal(player,amount,player,{rawAmount:rawAmount,playerRules:true,natural:!!natural,regen:!!(options&&options.regen)});
   return result.overflow;
 }
+/* Named full restores retain their authored exemption from ordinary heal
+ * multipliers, overflow conversion and Bleed removal; cleansing stays explicit. */
+function restoreActorHealth(target,source){
+  return gameDamage.heal(target,Math.max(0,target.maxhp-target.hp),source,{fullRestore:true});
+}
+function playerHealingContext(options){
+  options=options||{};
+  return {rot:!!(player&&gameEffects.has(player,'rot')),regen:!!options.regen,
+    glimmerRank:hasGod('glimmer')?godRank():0,
+    sanctuaryPower:!options.holyGround&&inSanctuary(player)?(typeof holyGroundStrength==='function'?holyGroundStrength(player):divineStrength()):0};
+}
+function playerHealingAmount(amount,options){return FoteDamage.healingAmount(amount,playerHealingContext(options));}
 /* 2026-09-29 (Justin): Rot is the one rule for every HP gain. While you rot, regeneration stops outright (base
    regeneration and everything that multiplies it, such as a Light armor enchant or Grumbok's Thick Hide, plus a
    Ring of Mending and the Regeneration food buff); every other heal is halved. healPlayer() asks it, and so do the
-   two heals that write HP themselves (a heart off the floor, a Light shield block). */
-function rotHealing(amount,regen){return player&&gameEffects.has(player,'rot')?(regen?0:amount*.5):amount;}
+   heart pickups and Light shield blocks before the shared HP commit. Named full restores retain their explicit exemption. */
+function rotHealing(amount,regen){return FoteDamage.healingAmount(amount,{rot:!!(player&&gameEffects.has(player,'rot')),regen:!!regen});}

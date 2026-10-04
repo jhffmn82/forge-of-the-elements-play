@@ -1,4 +1,26 @@
 /* Sigils share validation and completion; each effect has one implementation. */
+function resolveUncommonRewards(kind,p){
+  var loot=[];
+  if(kind==='funeral-bell')loot=[{kind:'sigil',use:'transmutation'},{kind:'essence',n:50}];
+  if(kind==='crystal-resonance'){player.mp=player.maxmp;loot=[{kind:'mote',el:pick(ELEMENTS)}];}
+  if(kind==='silk-survivor'){
+    var foods=Object.keys(FOODS).filter(function(k){return FOODS[k].buff&&(FOODS[k].biome===undefined||FOODS[k].biome===3);});
+    var first=pick(foods),second=pick(foods.filter(function(k){return k!==first;}));
+    loot=[{kind:'food',food:first},{kind:'food',food:second},{kind:'sigil',use:'mapping'}];
+  }
+  loot.forEach(function(it){var c=nearFree(p.x,p.y,2)||{x:player.x,y:player.y};it.x=c.x;it.y=c.y;items.push(it);});
+  log(kind==='portcullis-cache'?'The portcullis rises. Two brutes and a shaman guard the cache.':kind==='funeral-bell'?'The funeral bell rings. Three acolytes answer; an offering appears.':kind==='crystal-resonance'?'The crystal refills your Mana and releases a mote. Its resonance draws nearby enemies.':'The traveler leaves two special foods and a mapping sigil. Spiderlings flood the room! Escort him to the upstairs for a ring or amulet.','c-info');
+}
+function sigilBuffNotice(key,label,style){
+  var hero=player,run=RUN;
+  // The reader starts its paid turn after this effect returns. Read the timer
+  // after that turn's Holy preparation and world pulses have both completed.
+  Promise.resolve().then(function(){afterTurn(function(){
+    if(player!==hero||RUN!==run||hero.hp<=0||run.over||run.victory)return;
+    var remaining=key==='hidden'?hero.hidden:hero.buffs[key];
+    if(remaining>0)log(label+': '+remaining+' turns.',style);
+  });});
+}
 var SIGIL_CASTS={
 "transmutation":function(context){return transmutationPicker(context);},
 "firestorm":function(context){var use=context.use,F=floorNo,bountySpots=context.spots;
@@ -19,7 +41,7 @@ applyStatus(player,'stone',15); log('Stone Skin; Poison and Stun cleared.','c-go
 healPlayer(Math.round(player.maxhp*.35));player.buffs.afterglow=15;sparkleFx(player.x,player.y,'heal',30);
 },
 "vanish":function(context){var use=context.use,F=floorNo,bountySpots=context.spots;
-player.hidden=5; ents.forEach(function(e){ if(e.foe && e.state==='hunt'){ e.state='wander'; e.lastSeen=null; } }); log('Hidden: 5 turns.','c-good'); sfx('vanish');
+player.hidden=5; ents.forEach(function(e){ if(e.foe && e.state==='hunt'){ e.state='wander'; e.lastSeen=null; } }); sigilBuffNotice('hidden','Hidden','c-good'); sfx('vanish');
 },
 "identify":function(context){var use=context.use,F=floorNo,bountySpots=context.spots;
 Object.keys(SIGILS).forEach(function(k){ if(player.bag.some(function(b){ return b.kind==='sigil' && b.data.use===k; })) identifySigil(k); });
@@ -51,16 +73,16 @@ player.levitate=Math.max(player.levitate||0,60); gameEffects.clear(player,'root'
 },
 "haste":function(context){
 player.buffs.haste=Math.max(player.buffs.haste||0,20);derive(player);
-log('Haste: +30% speed for 20 turns.','c-good');sparkleFx(player.x,player.y,'lightning',24);
+sigilBuffNotice('haste','Haste','c-good');sparkleFx(player.x,player.y,'lightning',24);
 },
 "stoneskin2":function(context){var use=context.use,F=floorNo,bountySpots=context.spots;
 applyStatus(player,'stone',30); giveWard(player.maxhp*0.2, 30); log('Stone Skin, shield; Poison and Stun cleared.','c-good');
 },
 "heal2":function(context){var use=context.use,F=floorNo,bountySpots=context.spots;
-var restored=player.maxhp-player.hp;player.hp=player.maxhp;gameDamage.emit('healingApplied',{target:player,restored:restored});cleanseAll();sparkleFx(player.x,player.y,'heal',30);
+restoreActorHealth(player,player);cleanseAll();sparkleFx(player.x,player.y,'heal',30);
 },
 "vanish2":function(context){var use=context.use,F=floorNo,bountySpots=context.spots;
-player.hidden=5; ents.forEach(function(e){ if(e.foe && e.state==='hunt'){ e.state='wander'; e.lastSeen=null; } }); log('Hidden: 5 turns.','c-good');
+player.hidden=5; ents.forEach(function(e){ if(e.foe && e.state==='hunt'){ e.state='wander'; e.lastSeen=null; } }); sigilBuffNotice('hidden','Hidden','c-good');
 },
 "cinder":function(context){var use=context.use,F=floorNo,bountySpots=context.spots;
 player.buffs.cinder=10; derive(player); player._cinderAt={x:player.x,y:player.y}; log('Cinder Stride: +50% speed; leave burning ground.','c-fire');
@@ -68,7 +90,7 @@ player.buffs.cinder=10; derive(player); player._cinderAt={x:player.x,y:player.y}
 "magma":function(context){var use=context.use,F=floorNo,bountySpots=context.spots;
 player.buffs.moltenring=Math.max(player.buffs.moltenring||0,5);
 for(var my=-2;my<=2;my++) for(var mx=-2;mx<=2;mx++){ var tx=player.x+mx, ty=player.y+my; if((mx||my) && inb(tx,ty) && walkable(tx,ty)) fireT[idxOf(tx,ty)]=Math.max(fireT[idxOf(tx,ty)],5); }
-    ents.forEach(function(e){ if(e.foe && dist(e,player)<=2) applyStatus(e,'burn',3,sDMG(2)); }); log('Molten Ring: +5 fire damage on hits for 5 turns.','c-fire');
+    ents.forEach(function(e){ if(e.foe && dist(e,player)<=2) applyStatus(e,'burn',3,sDMG(2)); }); sigilBuffNotice('moltenring','Molten Ring','c-fire');
 },
 "smoke":function(context){var use=context.use,F=floorNo,bountySpots=context.spots;
 raiseSmoke();
@@ -123,8 +145,9 @@ function prepareSigil(use){
 function resolveSigilPuzzles(use){
   if(use==='heal'||use==='heal2'){(floorMeta.puzzles||[]).forEach(function(room){if(room.puzzle.kind==='darktraps'&&!room.puzzle.solved&&nearRoom(room,2))solvePuzzle(room,'light reveals every trap.');});return;}
   if(use==='identify') douseAround(3);
-  var solveAs = use==='identify2' ? 'identify' : use;   /* the Water sigil+ works on water puzzles too */
+  var solveAs = use==='identify2' ? 'identify' : use;   /* the Greater Sigil of Knowledge works on water puzzles too */
   (floorMeta.puzzles||[]).forEach(function(room){
+    if(room.puzzle.kind==='poisonvault'&&!room.puzzle.solved&&(use==='firestorm'||use==='firestorm2')&&nearRoom(room,use==='firestorm2'?2:1)){solvePuzzle(room,'the fire burns away the poison gas.');return;}
     var k=room.puzzle.kind; if(room.puzzle.solved || PUZZLE_KINDS[k].sigil!==solveAs) return;
     if(k==='everburn' && floorMeta.everburn && dist(player, floorMeta.everburn)<=3) solvePuzzle(room, 'the undying flame gutters out.');
     else if(k==='barricade' && dist(player, room.puzzle.door)<=2) solvePuzzle(room, 'the barricade goes up in flames.');

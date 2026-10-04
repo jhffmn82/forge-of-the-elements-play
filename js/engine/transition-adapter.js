@@ -12,21 +12,36 @@ function restoreFloor(n,arrival){
   if(typeof FoteEnemyFields!=='undefined')FoteEnemyFields.restore();
   presentRestoredFloor(arrival);return true;
 }
-function descend(fell){
-  if(typeof FoteChaosCampaign!=='undefined'&&FoteChaosCampaign.descend(fell))return;
+function randomPitArrival(){
+  var reachable=bfsFrom(player.x,player.y),cells=[];
+  for(var y=0;y<MH;y++)for(var x=0;x<MW;x++){
+    var r=roomAt(x,y),i=idxOf(x,y);
+    if(reachable[i]>=0&&freeCell(x,y)&&walkable(x,y)&&r&&!r.special&&!r.pocket&&r.role!=='boss'&&!fireT[i]&&!cloudAt(i))cells.push({x:x,y:y});
+  }
+  var spot=pick(cells);if(!spot)return;
+  player.x=spot.x;player.y=spot.y;player._lx=undefined;player._ly=undefined;
+  computeFOV();updateUI();draw();
+}
+function descend(fell,randomArrival){
+  if(typeof FoteChaosCampaign!=='undefined'&&FoteChaosCampaign.descend(fell)){if(randomArrival){randomPitArrival();if(RUN&&!RUN.over)writeSlot('auto','floor '+floorNo);}return;}
+  var sourceFloor=floorNo;
   if(floorMeta&&floorMeta.plane){
     log('There are no stairs in '+PLANE_TITLE[floorMeta.plane]+'. The portal is the way home.','c-info');
   }else if(!RUN||floorNo>=LAST_FLOOR&&!(RUN.floorStash&&RUN.floorStash[floorNo+1])){
     generateNextFloor(fell);
   }else{
     var target=floorNo+1,saved=RUN.floorStash&&RUN.floorStash[target];
-    stashFloor();
     if(saved){
+      stashFloor();
       if(!fell)sfx('stairs');player.levitate=0;
       restoreFloor(target,saved.floorMeta&&saved.floorMeta.upAt);
       log((floorMeta.chaosCampaign?'The current carries you back to ':'You climb back down to ')+'<b>floor '+floorNo+'</b>. It is as you left it.','c-kill');playSceneMusic();
-    }else{generateNextFloor(fell);placeArrivalStairs();}
+    }else{
+      try{generationTransaction(function(){stashFloor();generateNextFloor(fell);placeArrivalStairs();});}
+      catch(error){if(!error||error.code!=='GENERATION_PRESENTATION_FAILED')log('The next floor could not be prepared. You remain on floor '+floorNo+'. Try the stairs again.','c-info');throw error;}
+    }
   }
+  if(randomArrival&&floorNo!==sourceFloor)randomPitArrival();
   if(RUN&&!RUN.over)writeSlot('auto','floor '+floorNo);
 }
 function ascend(){
@@ -42,13 +57,16 @@ function ascend(){
 }
 function enterPlane(el){
   if(!el||!PLANE_ROSTER[el]){log('The portal flickers and will not hold. Nothing lies beyond it yet.','c-info');sfx('ui-error');return false;}
-  closeModal&&modalOpen&&closeModal();
+  try{return generationTransaction(function(){return enterPlaneCandidate(el);});}
+  catch(error){if(!error||error.code!=='GENERATION_PRESENTATION_FAILED')log('The plane could not be prepared. You remain on floor '+floorNo+'. Try the portal again.','c-info');throw error;}
+}
+function enterPlaneCandidate(el){
+  afterGeneratedInstall(function(){if(typeof closeModal==='function'&&modalOpen)closeModal();});
   var from={x:player.x,y:player.y};floorMeta.portalUsed=true;stashFloor();
   RUN.planeStash=RUN.floorStash[floorNo];delete RUN.floorStash[floorNo];
   RUN.planeFrom=from;RUN.planesVisited=(RUN.planesVisited||[]).concat([el]);
   buildPlaneFloor(el,(worldSeed^0x7A11E5^floorNo*131)>>>0);
-  sfx('stairs');SHAKE=6;log('You step through the portal into <b>'+PLANE_TITLE[el]+'</b>.','c-kill');log(PLANE_HAZARD_TEXT[el],'c-info');
-  writeSlot('auto','plane');
+  afterGeneratedInstall(function(){sfx('stairs');SHAKE=6;log('You step through the portal into <b>'+PLANE_TITLE[el]+'</b>.','c-kill');log(PLANE_HAZARD_TEXT[el],'c-info');writeSlot('auto','plane');});
 }
 function leavePlane(){
   var saved=RUN.planeStash;if(!saved){log('The portal flickers but nothing happens.','c-info');return;}
@@ -63,7 +81,9 @@ var planeGeneration=FoteTransitions.stages([
   {name:'plane-clusters',run:function(c){dressPlaneClusters(c.element,c.seed);}},
   {name:'elemental-plane-hazards',run:function(c){dressElementalPlane(c.element,c.seed);}}
 ]);
-function buildPlaneFloor(element,seed){resetMapDimensions();planeGeneration.run({element:element,seed:seed});if(typeof FoteShadowClone!=='undefined')FoteShadowClone.arrive();arriveRarePet();}
+function buildPlaneFloor(element,seed){
+  return generationTransaction(function(){resetMapDimensions();planeGeneration.run({element:element,seed:seed});if(typeof FoteShadowClone!=='undefined')FoteShadowClone.arrive();arriveRarePet();afterGeneratedInstall(presentGeneratedPlane);});
+}
 
 var tileEntry=FoteTransitions.stages([
   {name:'persistent-webs',run:function(){if(typeof FoteEnemyFields!=='undefined')FoteEnemyFields.enter(player);}},

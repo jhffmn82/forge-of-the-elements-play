@@ -1,13 +1,22 @@
 /* Composition root: install definitions, create services, then start exactly once. */
 (function(root){
   'use strict';
-  const initializers=[];let ready=false;
+  const initializers=[];let ready=false,interactive=false;
+  const startupInputs=['keydown','click','pointerdown','contextmenu','drop','touchstart','change'];
+  function startupInput(event){
+    if(interactive)return;
+    if(event.target&&typeof event.target.closest==='function'&&event.target.closest('[data-fote-startup]'))return;
+    event.stopImmediatePropagation();
+    // Keep browser shortcuts and native focus navigation usable during loading.
+    if(event.type!=='keydown'||(!event.ctrlKey&&!event.metaKey&&event.key!=='Tab'&&!/^F\d{1,2}$/.test(event.key)))event.preventDefault();
+  }
+  for(const type of startupInputs)root.addEventListener(type,startupInput,{capture:true,passive:false});
   root.FoteLifecycle=Object.freeze({
     whenReady(fn){if(ready)fn();else initializers.push(fn);},
     ready(){if(ready)return;ready=true;for(const fn of initializers.splice(0))fn();}
   });
   const version=document.querySelector('meta[name="fote-build"]')?.content||'dev';
-  const veil=document.createElement('div');veil.id='moduleLoadVeil';
+  const veil=document.createElement('div');veil.id='moduleLoadVeil';veil.setAttribute('data-fote-startup','');
   veil.style.cssText='position:fixed;inset:0;z-index:99;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;background:#0B0A09;color:#A79C93;font:14px sans-serif';
   const heading=document.createElement('h1');heading.textContent='Forge of the Elements';
   const progress=document.createElement('p');progress.setAttribute('role','status');progress.textContent='Loading game…';
@@ -57,9 +66,11 @@
     }finally{clearInterval(watch);if(arrivals)arrivals.disconnect();}
     veil.remove();
     await startGame();
+    interactive=true;for(const type of startupInputs)root.removeEventListener(type,startupInput);
   })();
   function reloadPanel(message){
     const panel=document.createElement('div');
+    panel.setAttribute('data-fote-startup','');
     panel.style.cssText='position:fixed;inset:0;z-index:100;display:grid;place-content:center;gap:16px;background:#0B0A09;color:#F6E7B0;font:16px sans-serif;text-align:center';
     const text=document.createElement('p');text.textContent=message;
     const retry=document.createElement('button');retry.textContent='Reload';retry.onclick=()=>location.reload();

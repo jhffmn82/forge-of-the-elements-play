@@ -1,0 +1,127 @@
+/* =====================================================================
+   upgrade.js - essence economy and item upgrades (2026-09-16).
+   - Essence found is worth more in deeper biomes (x1, x2.5, x4.5, x6, x8),
+     so one +1 is reachable by the end of biome 1 and full +3 gear by the end.
+   - The Forge's Upgrade tab raises weapons, armor, off-hands and rings, to +3.
+     Rings cost 500 / 1000 / 2000 for +1 / +2 / +3. Dwarves pay 25% less.
+   - Upgrading a cursed item breaks the curse (rings go to +0).
+   - Rings: +0 gives the base effect, each rank adds a step; cursed rings are -1..-3.
+   - Amulets are not bought up: they level with use (hidden count) - 10 uses to
+     level 2, 30 to level 3 - and their level is how many charges they hold.
+   - Placement: about 2 rings and 1 amulet per floor, outside the normal loot pool.
+   ===================================================================== */
+
+/* to +1, +2, +3. 2026-09-17: was 600/1200/2000, cut to 150/400/900 because a full biome 1 gave ~700.
+   2026-09-20 (Justin): doubled to 300/800/1800 - the cut went too far. Fine costs 2x these and
+   Masterwork 4x, through tierCostMult below, so a Masterwork +3 is 7200 (2026-09-22, Justin: was 1.5x / 2x,
+   and a full-clear character ended biome 4 with 29,000 essence unspent). */
+var UPGRADE_COST = [300, 800, 1800];
+var RING_RANK_COST = [500, 1000, 2000];   /* to +1, +2, +3 (2026-09-18, Justin: was a flat 500 a rank) */
+var ESSENCE_BIOME_MULT = [1, 2.5, 4.5, 6, 8];
+function essenceMult(){ return ESSENCE_BIOME_MULT[Math.min(ESSENCE_BIOME_MULT.length-1, Math.floor((floorNo-1)/5))]; }
+
+/* ---------------------------------------------------------------- essence scales with depth, applied when picked up */
+
+
+/* ---------------------------------------------------------------- rings: +0 is the base effect */
+
+
+/* ---------------------------------------------------------------- amulets: level = charge capacity, earned by use */
+var AMULET_LEVEL_USES = [0, 10, 30];
+
+
+/* the kill hook caps at the amulet's level instead of a flat 3 */
+
+
+/* ---------------------------------------------------------------- Keen Eyes: anything you can see */
+
+function turnRevealKeenEyes(context){  if(!player || player.hp<=0 || !(ringVal('keeneyes')>0)) return;
+  var ch=ringVal('keeneyes');
+  feats.forEach(function(f){ if(!f.found && vis[idxOf(f.x,f.y)] && rng()<ch){ f.found=true; log('Your ring tingles: '+(/^[AEIOU]/.test(trapName(f.kind))?'an':'a')+' <b>'+trapName(f.kind)+' trap</b>.','c-info'); if(typeof trapSpotFx==='function') trapSpotFx(f); } });
+  for(var y=0;y<MH;y++) for(var x=0;x<MW;x++){ if(at(x,y)===SECRET && vis[idxOf(x,y)] && rng()<ch*0.5){ setT(x,y,DOOR); log('Your ring tingles: a <b>hidden door</b>.','c-kill'); sfx('door-secret',{from:{x:x,y:y}}); computeFOV(); } }
+
+}
+RINGS.keeneyes.desc='Spot traps and hidden doors anywhere in sight, and find more of them when you search.';   /* 2026-09-23 audit: doors are found by searching, not in passing */
+RINGS.keeneyes.unit='% chance a turn to spot traps you can see';
+
+/* ---------------------------------------------------------------- upgrades at the Forge */
+/* 2026-09-18 (Justin): Fine costs more to upgrade and Masterwork more again - a Masterwork piece is never swapped
+   out, so its +3 is the last thing that slot ever buys. 2026-09-22 (Justin): Fine 2x the base, Masterwork 2x that. */
+function tierCostMult(it){ if(!it || it.kind==='ring' || typeof tierNum!=='function') return 1; var t=tierNum(it); return t>=3 ? 4 : t===2 ? 2 : 1; }
+function upgradeCost(it){
+  if(!it) return null;
+  var plus=it.plus||0;
+  if(it.cursed) plus=-1;
+  if(plus>=3) return null;
+  var base = it.kind==='ring' ? RING_RANK_COST[Math.max(0,plus)] : UPGRADE_COST[Math.max(0,plus)] * tierCostMult(it);
+  return Math.round(base * (player.race==='dwarf' ? 0.75 : 1));
+}
+/* 2026-09-17: an unidentified piece cannot be upgraded - you would be paying essence for a bonus you
+   cannot see, on something that might be cursed. The Forge lists it, greyed, saying why. */
+function upgradeable(it){ return it && (it.kind==='ring' || it.kind==='weapon' || it.kind==='armor' || it.kind==='off' || (it.dmg && !it.unarmed) || it.armor!==undefined || it.block!==undefined) && it!==EMPTY_OFF && !it.unarmed && !it.joke && !it.unid; }
+function allUpgradeTargets(){
+  var out=[];
+  function add(it, where){ if(upgradeable(it) && out.every(function(o){ return o.it!==it; })) out.push({it:it, where:where}); }
+  add(player.sets[player.activeSet], 'main hand'); add(player.ranged, 'ranged'); add(player.armorItem, 'armor');
+  if(player.off && player.off!==EMPTY_OFF) add(player.off, 'off hand');
+  (player.rings||[]).forEach(function(r,i){ add(r, 'ring '+(i+1)); });
+  player.bag.forEach(function(b){ if(b.data && (b.kind==='weapon'||b.kind==='armor'||b.kind==='off'||b.kind==='ring')) add(b.data, 'bag'); });
+  return out;
+}
+
+function upgradePanelHTML(){
+  var list=allUpgradeTargets();
+  var h='<p class="c-info">Spend essence to strengthen gear you wear or carry, up to +3. '+
+        'Fine gear costs twice as much to upgrade, and Masterwork four times as much. Upgrading a cursed item breaks the curse. Deeper biomes give more essence.'+
+        (player.race==='dwarf'?' <b>Dwarven smithing: 25% cheaper.</b>':'')+'</p>';
+  if(!list.length) return h+'<p class="c-info">Nothing to upgrade.</p>';
+  list.forEach(function(o, i){
+    var it=o.it, cost=upgradeCost(it), plus=it.cursed ? 'cursed' : '+'+(it.plus||0);
+    var what = it.kind==='ring' ? (it.unid && !RUN.ringKnown[it.ring] ? 'unknown ring' : ringLine(it)) : it.dmg ? it.dmg[0]+'-'+it.dmg[1]+' damage' : it.armor!==undefined ? it.armor+' armor' : (it.note||'');
+    h+='<div class="frow"><div class="ftext"><b>'+gearName(it)+'</b> <span class="c-info">('+o.where+')</span><div class="d">'+what+' &middot; now '+plus+'</div></div>'+
+       '<button data-up="'+i+'" '+(cost===null||player.essence<cost?'disabled':'')+'>'+(cost===null?'max':(it.cursed?'Cleanse ':'Upgrade ')+cost)+'</button></div>';
+  });
+  return h;
+}
+/* off-hands gain a little per plus: shields block, orbs spell damage, tomes mana, holy symbols divine strength */
+
+
+   /* orb and staff levels now live in focusBonus (combat.js) */
+
+/* ---------------------------------------------------------------- rings and amulets placed per floor */
+
+
+/* and no longer in the general loot pool */
+
+
+/* Named floor-generation stages; ordered by generation-adapter.js. */
+function placeGeneratedTrinkets(seed){
+
+  var r=mulberry32(((seed||0) ^ 0x7a11)>>>0);
+  function spot(){
+    for(var t=0;t<200;t++){ var rm=rooms[Math.floor(r()*rooms.length)]; if(!rm || rm.role==='start') continue;
+      var x=rm.x+Math.floor(r()*rm.w), y=rm.y+Math.floor(r()*rm.h); if(freeCell(x,y)) return {x:x,y:y}; }
+    return null;
+  }
+  /* a fixed budget per biome: 2 rings and 1 amulet, on non-boss floors (the crystal vault and Wobbles can add more) */
+  var biome=Math.floor((floorNo-1)/5), key='b'+biome;
+  RUN.trinketPlan=RUN.trinketPlan||{};
+  if(!RUN.trinketPlan[key]){
+    var pr=mulberry32(((worldSeed||0) ^ (0x51ed+biome*977))>>>0), floors=[1,2,3,4].map(function(f){ return biome*5+f; });
+    function pickF(){ return floors[Math.floor(pr()*floors.length)]; }
+    RUN.trinketPlan[key]={rings:[pickF(), pickF()], amulets:[pickF()]};
+  }
+  var plan=RUN.trinketPlan[key];
+  var nRings = plan.rings.filter(function(f){ return f===floorNo; }).length;
+  var nAmulets = plan.amulets.filter(function(f){ return f===floorNo; }).length;
+  var saveRng=rng; rng=r;
+  for(var i=0;i<nRings;i++){ var s=spot(); if(s) items.push({kind:'ring', it:makeRing(null, r()<0.15), x:s.x, y:s.y}); }
+  for(var j=0;j<nAmulets;j++){ var s2=spot(); if(s2) items.push({kind:'amulet', it:makeAmulet(null, r()<0.15), x:s2.x, y:s2.y}); }
+  rng=saveRng;
+}
+
+/* Named travel and entry stages; ordered by transition-adapter.js. */
+function entryScaleEssence(){
+  var m=essenceMult();
+  if(m!==1) items.forEach(function(it){ if(it.kind==='essence' && it.x===player.x && it.y===player.y && !it.scaled){ it.n=Math.round(it.n*m); it.scaled=true; } });
+}

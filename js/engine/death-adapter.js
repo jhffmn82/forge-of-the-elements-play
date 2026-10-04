@@ -4,7 +4,14 @@
 var resolvingDeaths=new WeakSet();
 function prepareCreatureDeath(event){
   var e=event.entity,b=e.base||{};
+  if(e.silkEscort){var room=rooms.find(function(r){return r.id===e.silkEscort.roomId;});if(room&&room.uncommonEvent)room.uncommonEvent.escort='failed';log('The rescued traveler falls. The escort is lost.','c-you');}
   if(e.pebbleSlam)clearPebbleSlam(e);
+  /* Borrowed bodies dissipate. Their source's corpse, revival and hostile
+   * death bursts are not inherited summon abilities. */
+  if(e.ally&&e.shade){
+    floorMeta.marks=(floorMeta.marks||[]).filter(function(mark){return mark.kind!=='eel'+e.id;});
+    return true;
+  }
   if(b.magmaBurst&&e.hp<=0&&inFwa()){
     burst(e.x,e.y,'fire',34,.09);SHAKE=6;if(vis[idxOf(e.x,e.y)])log('<b>Magma Crawler explodes!</b>','c-kill');
     ents.slice().forEach(function(other){if(other===e||other.hp<=0||dist(other,e)>1||other!==player&&fwaNative(other))return;fwaHurt(other,roll(8,13),'fire',null,other===player?'Molten rock sprays over you':null);if(other.hp>0)applyStatus(other,'burn',2,sDMG(3));});
@@ -74,7 +81,7 @@ function commitCreatureDeath(event){
   if(e.base.sfx)sfx(e.base.sfx+'-death',{at:fxClock,from:e});var seenDeath=revealAll||vis[idxOf(e.x,e.y)],ourKill=by===player||!!(by&&by.ally);if(!e.quietDeath&&(seenDeath||ourKill))log(combatText(e.name)+' dies.','c-kill');   /* 1.3.2 ruling 2: an unseen death is quiet unless you or an ally made the kill */
   RUN.kills++;
   if(event.playerSide&&!e.noXp)gainXP(e.base.xp||10);
-  godOnKill(e,by);
+  godOnKill(e,by,event.cause);
   if(e.keyholder){items.push({x:e.x,y:e.y,kind:'key',key:'iron'});log('It drops an <b>iron key</b>.','c-kill');}
   if(e.base.drop==='mote'&&e.base.el){items.push({x:e.x,y:e.y,kind:'mote',el:e.base.el});log('It collapses into '+(/^[aeiou]/.test(e.base.el)?'an':'a')+' <b>'+e.base.el+' mote</b>.','c-kill');sparkleFx(e.x,e.y,TRAIL_EL(e.base.el),26);}
   else rollDrops(e,event.playerSide);
@@ -93,6 +100,30 @@ function rewardAmuletKill(event){
   }
   amuletSync(a);
 }
+/* A synchronous killing command grants Smoke before it pays its time cost.
+ * Keep a transient receipt so that command cannot erase or age its own grant;
+ * the public Hidden amount/birth clock remain the saved timer state. */
+var smokeHiddenReceipts=new WeakMap();
+function grantSmokeHidden(){
+  player.hidden=Math.max(player.hidden||0,3);player._worldHiddenBorn=player.t;
+  var action=typeof gameActions!=='undefined'&&gameActions.current();
+  if(action&&action.source===player&&!(typeof gameTurns!=='undefined'&&gameTurns.running&&gameTurns.running()))
+    smokeHiddenReceipts.set(player,{clock:player.t,turns:3});
+  log('Smoke: Hidden.','c-good');
+}
+function takeSmokeHiddenReceipt(actor,clock){
+  var receipt=smokeHiddenReceipts.get(actor);smokeHiddenReceipts.delete(actor);
+  return receipt&&receipt.clock===clock?receipt.turns:0;
+}
+function smokeDeathView(event){
+  var cause=event.cause,action=typeof gameActions!=='undefined'&&gameActions.current();
+  if(!cause||cause.sourceId!==player.id||!action||
+      ['proc','periodic','arc','reflected','environment'].some(function(tag){return (cause.tags||[]).indexOf(tag)>=0;}))return player;
+  if(action.source===player&&action.actionId===cause.actionId&&action.view)return action.view;
+  var hits=action.spellResults||[];
+  for(var i=hits.length-1;i>=0;i--)if(hits[i].source===player&&hits[i].target===event.entity&&hits[i].actionId===cause.actionId)return hits[i].view||player;
+  return player;
+}
 function rewardCreatureDeath(event){
   var e=event.entity;
   rewardAmuletKill(event);
@@ -101,10 +132,10 @@ function rewardCreatureDeath(event){
   }
   var burn=e.st&&e.st.burn,burnAffinity=burn&&burn.sourceAffinity;
   if(e.foe&&burn&&(burnAffinity?burnAffinity.fire||0:aff('fire'))>=6){var other=ents.filter(function(o){return o.foe&&o.hp>0&&dist(o,e)<=3;}).sort(function(a,b){return dist(a,e)-dist(b,e);})[0];if(other){
-    if(burnAffinity)gameEffects.apply(other,'burn',3+(burn.sourceDuration||0),sDMG(2+(burnAffinity.fire||0)),{sourceAffinity:burnAffinity,data:{sourceAffinity:burnAffinity,sourceDuration:burn.sourceDuration||0},durationModifiers:false});
-    else applyStatus(other,'burn',3,burnDmg());
+    if(burnAffinity)gameEffects.apply(other,'burn',3+(burn.sourceDuration||0),sDMG(2+(burnAffinity.fire||0)),{sourceAffinity:burnAffinity,data:{sourceAffinity:burnAffinity,sourceDuration:burn.sourceDuration||0},durationModifiers:false,applicationCause:burn.applicationCause||null});
+    else applyStatus(other,'burn',3,burnDmg(),{applicationCause:burn.applicationCause||null});
     boltFx(e.x,e.y,other.x,other.y,'fire');log('Wildfire: '+combatText(other.name)+' Burning.','c-fire');}}
-  if(e.foe&&e.st&&e.st.burn&&combo('shadow','fire')&&(event.source===player||event.source==='player')){player.hidden=Math.max(player.hidden||0,3);log('Smolder: Hidden.','c-good');}
+  if(player.hp>0&&e.foe&&!e.ally&&gameEffects.has(e,'burn')&&combo('shadow','fire',smokeDeathView(event)))grantSmokeHidden();
 }
 function finishCreatureDeath(event){
   var e=event.entity,boss=e.base.boss||e.caveBoss;
@@ -113,14 +144,14 @@ function finishCreatureDeath(event){
   if(e.kind==='matron'){log('<b>Matron defeated.</b>','c-kill');deepEnsureExit(e);}
   if(event.revive)floorMeta.pendingLich={entity:e,at:turn+1};
 }
-function kill(e,by){
+function kill(e,by,cause){
   if(!e)return;
   if(e===player){death();return;}
   if(e.rarePet&&RUN)RUN.rareSpiderPet=null;
   if(e.parent||resolvingDeaths.has(e))return;
   if(ents.indexOf(e)<0&&!(e.kind==='deepmaw'&&floorMeta.maw&&floorMeta.maw.phase!=='dead'))return;
   if(e.foe&&!(by&&by.ally))by=player;
-  var event={entity:e,source:by,playerSide:by===player||by==='player'||!!(by&&by.ally),revive:e.ally&&e.undeadServant&&!e.revived&&capstone('murk')};
+  var event={entity:e,source:by,cause:e.lethalCause||cause||null,playerSide:by===player||by==='player'||!!(by&&by.ally),revive:e.ally&&e.undeadServant&&!e.revived&&capstone('murk')};
   resolvingDeaths.add(e);
   try{
     if(event.revive)e.revived=true;

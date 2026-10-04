@@ -44,23 +44,38 @@ function joinGod(id,startPiety){
   player.god=id;player.piety=startPiety||0;player.favor=Math.min(100,Math.round((startPiety||0)/2));player.amusement=50;
   player.lastRank=godRank();if(id!=='sylla')player.syllaDark=0;
   syncGlimmerLight({deferStats:true});derive(player);player.hotbar=null;updateUI();
+  if(typeof FoteGettingStarted!=='undefined')FoteGettingStarted.offer('gods');
 }
+function pietyRewardContext(){
+  var god=GODS[player.god];
+  return {race:player.race,cls:player.cls,lovedRace:god&&god.loves,biome:bidx(),
+    plane:!!(typeof floorMeta!=='undefined'&&floorMeta&&floorMeta.plane)};
+}
+function pietyDepthMultiplier(){return FoteProgression.depthMultiplier(pietyRewardContext());}
 function gainPiety(amount,why,options){
   var before=godRank(),god=GODS[player.god];
   if(god&&amount>0){
-    var context={race:player.race,cls:player.cls,lovedRace:god.loves,biome:bidx()};
+    var context=pietyRewardContext();
     player.piety=(player.piety||0)+FoteProgression.piety(amount,context);
     // Divine power may change at this new rank; favor uses that updated value.
     if(!(options&&options.pietyOnly))player.favor=Math.min(100,(player.favor||0)+FoteProgression.favor(amount,Object.assign({},context,{divine:divineStrength()})));
     var after=godRank();
     if(after>before){
-      log('<b>'+god.name+' is pleased.</b> Piety rank '+after+'.','c-kill');sfx('piety-rank');ringFx(player.x,player.y,god.color,3);
-      var index=godBoonRanks(god).indexOf(after),boon=index>=0?god.boons[index]:null;if(boon)log('Boon: '+boon,'c-good');
-      (god.prayers||[]).forEach(function(key){var prayer=PRAYERS[key];if(prayer.rank===after)log('New ability: <b>'+prayer.name+'</b>. '+prayer.desc+' Find it in the Faith tab (P).','c-kill');});
+      var message='<b>'+god.name+' is pleased.</b> Piety rank '+after+'.',color=god.color;
+      var index=godBoonRanks(god).indexOf(after),boon=index>=0?god.boons[index]:null;
+      var prayers=(god.prayers||[]).filter(function(key){return PRAYERS[key].rank===after;}).map(function(key){var prayer=PRAYERS[key];return 'New ability: <b>'+prayer.name+'</b>. '+prayer.desc+' Find it in the Faith tab (P).';});
+      var presentRank=function(){
+        log(message,'c-kill');sfx('piety-rank');ringFx(player.x,player.y,color,3);
+        if(boon)log('Boon: '+boon,'c-good');prayers.forEach(function(text){log(text,'c-kill');});
+      };
+      if(typeof afterGeneratedInstall==='function')afterGeneratedInstall(presentRank);else presentRank();
     }
   }
   var lightChanged=syncGlimmerLight({deferStats:true});
-  if((godRank()>before||lightChanged)&&!(options&&options.deferStats)){derive(player);updateUI();}
+  if((godRank()>before||lightChanged)&&!(options&&options.deferStats)){
+    derive(player);
+    if(typeof afterGeneratedInstall==='function')afterGeneratedInstall(function(){updateUI();});else updateUI();
+  }
 }
 function pietyViolation(what,amount){
   var previous=player.god,god=GODS[previous],abandoned=false;
@@ -76,14 +91,16 @@ function pietyViolation(what,amount){
   var lightChanged=syncGlimmerLight({deferStats:true});
   if(abandoned||lightChanged){derive(player);updateUI();}
 }
-function godOnKill(entity,source){
+function godOnKill(entity,source,cause){
   if(!entity||entity.noXp||entity.noReward||entity.ally)return;
   var base=entity.base||{},status=entity.st||{};
   var reward=FoteProgression.killReward({god:player.god,rank:godRank(),foe:entity.foe,
     big:entity.elite||base.elite||base.boss,playerKill:source===player,taggedPlayerKill:source==='player',allyKill:!!(source&&source.ally),
-    servant:!!(source&&source.undeadServant),unarmed:!!(player.weapon&&player.weapon.unarmed),
+    servant:!!(source&&source.undeadServant),unarmed:!!(cause&&cause.kind==='attack'&&cause.unarmed),
     spellcaster:base.spellcaster,element:base.el,undead:base.undead,shadowy:base.shadowy,
-    awake:entity.state!=='asleep',castThisTurn:player.castTurn===turn,
+    // Universal foe credit does not change the lethal packet's actual method
+    // or source. Periodic statuses currently have no application provenance.
+    awake:cause&&cause.targetId===entity.id&&typeof cause.targetAwake==='boolean'?cause.targetAwake:entity.state!=='asleep',spellKill:!!(cause&&cause.kind==='spell'&&Number.isFinite(cause.sourceId)&&cause.sourceId===player.id),
     held:effectHasTag(entity,'root')||effectHasTag(entity,'slow')||status.poison||entity.syllaWeb>0,
     syllaKill:SYLLA.pietyKill,syllaBig:SYLLA.pietyBig});
   if(reward.piety>0)gainPiety(reward.piety);
@@ -92,6 +109,7 @@ function godOnKill(entity,source){
 function levelStatPoints(character,level){return FoteProgression.statPoints(character,level);}
 function gainXP(amount,options){
   amount=Number(amount);if(!Number.isFinite(amount)||amount<=0)return;
+  var previousLevel=player.level;
   player.xpNext=xpToNext(player.level);var gained=FoteProgression.experience(amount,player.cls);
   recordRunEarning('xp',gained,options);
   player.xp+=gained;floatText(player.x,player.y,'+'+gained+' xp','xp');
@@ -102,6 +120,7 @@ function gainXP(amount,options){
     log('<b>Level '+player.level+'.</b> Stat point'+(player.points>1?'s':'')+' to spend in the Character sheet.','c-kill');
     sfx('level-up');sparkleFx(player.x,player.y,'light',40);ringFx(player.x,player.y,'#E8B44A',2.5);
   }
+  if(player.level>previousLevel&&typeof FoteGettingStarted!=='undefined')FoteGettingStarted.offer('character');
 }
 function castRaiseDead(x,y,ability,options){
   if(!walkable(x,y)||occupied(x,y)){log('The dead need an empty patch of floor.','c-info');return false;}

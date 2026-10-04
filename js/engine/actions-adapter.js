@@ -1,8 +1,28 @@
 /* One contextual path for attacks and spell hits. Equipment is never swapped
  * to simulate an action, and every damage event carries its action identity. */
 var gameActions=FoteActions.create();
+var reginaldCounterDepth=0;
 gameActions.on('actionStarted',function(event){
   if(event.source===player&&!event.parentId&&typeof FoteCombatLog!=='undefined')FoteCombatLog.beginAction();
+  if(['attack','spell','ability'].indexOf(event.kind)>=0)recordHostileAttack(event.source,event.target,event.tags);
+});
+/* Accuracy failures still own an attack attempt. Content attacks without a
+ * child action report their attempt on the existing actor action instead. */
+function recordHostileAttack(source,target,tags){
+  var action=gameActions.current();tags=Array.from(tags||[]);
+  if(reginaldCounterDepth||!action||action.source!==source||target!==player||!source||!source.foe||source.ally||
+      tags.some(function(tag){return ['proc','periodic','environment','ground','reflected','arc','reaction','counter'].indexOf(tag)>=0;}))return;
+  (action.hostileAttacks||(action.hostileAttacks=[])).push({source:source,target:target});
+}
+gameActions.on('actionResolved',function(event){
+  (event.hostileAttacks||[]).forEach(function(attempt){
+    var enemy=attempt.source;
+    if(!hasGod('reginald')||godRank()<5||player.hp<=0||enemy.hp<=0||!ents.includes(enemy))return;
+    var flags={lastAttack:player.lastAttack,lastAttackMelee:player.lastAttackMelee,castingSpell:player.castingSpell};
+    reginaldCounterDepth++;
+    try{attack(player,enemy,1,'Perfect Counter',{weapon:player.weapon,projected:dist(player,enemy)>1,tags:['reaction','counter']});}
+    finally{reginaldCounterDepth--;Object.keys(flags).forEach(function(key){player[key]=flags[key];});}
+  });
 });
 gameActions.on('actionResolved',function(event){
   if(!event.spellResults||!event.spellResults.length)return;
@@ -25,6 +45,13 @@ function actionDivine(view){return FoteStats.powers(view,statContent()).divine;}
 function actionCritBonus(view){return actionInfusion('holy',view)==='shadow'&&(view&&view.shadowClone?FoteShadowClone.buffed(view):isBuffed())?enchantValues('holy','shadow',view).critChance:0;}
 function actionRootCrit(target,view){return actionInfusion('orb',view)==='earth'&&effectHasTag(target,'root')?enchantValues('orb','earth',view).critChance:0;}
 function actionCritMultiplier(view){return FoteActions.criticalMultiplier(view.stats.agi,actionInfusion('orb',view)==='shadow'?enchantValues('orb','shadow',view).critMultiplier:0);}
+function actionCriticalHit(event,rolled){
+  var primary=event.source===player&&event.target.foe&&!event.target.ally&&
+    !['proc','periodic','arc','reflected','environment','ground'].some(function(tag){return event.tags.has(tag);});
+  return FoteActions.criticalHit(rolled,{primary:primary,
+    critOnBurning:primary&&combo('air','fire',event.view),burning:primary&&gameEffects.has(event.target,'burn'),
+    critOnStunned:primary&&event.view&&combo('air','shadow',event.view),stunned:primary&&gameEffects.has(event.target,'stun')});
+}
 function attackView(att,def,options){
   if(att.shadowClone&&typeof FoteShadowClone!=='undefined')return FoteShadowClone.attackView(att,options);
   if(att!==player)return att;
@@ -56,10 +83,12 @@ function resistMult(target,type){
 }
 function prepareAttack(event){
   var att=event.source,def=event.target,view=event.view=attackView(att,def,event.options);
+  event.targetAwake=def.state!=='asleep';
+  if(att===player){view.aff=Object.assign({},view.aff||{});view.procLuck=typeof luckBonus==='function'?luckBonus():0;}
   revealActor(att);
   if(typeof FoteEnemyPerception!=='undefined')FoteEnemyPerception.attacked(def,att,event.tags);
   if(att===player&&view.weapon&&view.weapon.unarmed&&!event.options.offhand&&!event.tags.has('proc')&&livingMountain(player)){
-    stackLivingMountain();view=event.view=attackView(att,def,event.options);
+    stackLivingMountain();view=event.view=attackView(att,def,event.options);view.aff=Object.assign({},view.aff||{});view.procLuck=typeof luckBonus==='function'?luckBonus():0;
   }
   event.multiplier=event.options.multiplier||1;event.label=event.options.label;
   event.hpBefore=def.hp;event.playerHPBefore=player.hp;
@@ -97,15 +126,12 @@ function finishAttackReactions(event){
   var att=event.source,def=event.target,H=event.hit,landed=def.hp<event.hpBefore;
   if(event.thorns){var taken=event.shieldedHPBefore-thornsShieldedHP();
     if(taken>0&&att.hp>0){applyDamage(att,Math.max(1,Math.round(taken*.5)),'phys',player,{tags:['reflected'],actionId:event.actionId});if(att.hp<=0)kill(att,player);}}
-  if(att===player){if(H&&landed)afterPlayerHit(def,H);else if(player.friction)player.friction.n=0;}
-  if(att!==player&&def===player&&att.foe&&dist(att,player)<=1&&player.hp<event.playerHPBefore&&player.hp>0&&combo('air','shadow')&&!(player.windCd>turn)){
-    var best=null,bd=0;for(var dy=-1;dy<=1;dy++)for(var dx=-1;dx<=1;dx++){var nx=player.x+dx,ny=player.y+dy;if((dx||dy)&&walkable(nx,ny)&&!occupied(nx,ny)){var dd=dist({x:nx,y:ny},att);if(dd>bd){bd=dd;best={x:nx,y:ny};}}}
-    if(best&&bd>1){player.x=best.x;player.y=best.y;player.windCd=turn+5;log('Windwalker: retreated.','c-good');computeFOV();}}
+  if(att===player&&H&&landed)afterPlayerHit(def,H);
   if(att===player&&landed){stokeForgeHeat();if(hasGod('grom')&&event.view.weapon.unarmed&&def.foe&&event.hpBefore>0)gainPiety(0.3,'punch',{pietyOnly:true});}
   if(att===player&&def.surprised)def.surprised=false;
   if(att===player&&def.base&&def.base.fumes&&dist(att,def)<=1&&def.hp>0&&(def._fumeAt||-9)<turn-1){def._fumeAt=turn;addCloud(def.x,def.y,1,5,sDMG(2+Math.floor(floorNo/3)),'beetle');log('<b>Grave Beetle:</b> poison cloud!','c-you');sfx('trap-gas',{from:def});}
-  if(att.base&&att.base.reloads&&def===player&&dist(att,def)>1){att.reloading=true;if(landed){applyStatus(player,'root',1);log('You: Rooted.','c-you');}}
-  if(att.base&&landed&&player.hp>0){if(att.base.arcs&&def===player)beetleArc(att);if(att.base.stingChain)jellyChain(att,def);if(att.base.aquatic){att._surfT=turn;if(def===player&&eelWater(att.x,att.y))applyStatus(player,'wet',3);}}
+  if(att.base&&att.base.reloads&&(def===player||att.ally&&att.shade&&def.foe)&&dist(att,def)>1){att.reloading=true;if(landed){gameEffects.apply(def,'root',1,undefined,att.ally&&att.shade?{sourceAffinity:{},data:{sourceAffinity:{}}}:undefined);if(def===player)log('You: Rooted.','c-you');}}
+  if(att.base&&landed&&player.hp>0){if(att.base.arcs&&(def===player||att.ally&&att.shade&&def.foe))beetleArc(att);if(att.base.stingChain)jellyChain(att,def);if(att.base.aquatic){att._surfT=turn;if(def===player&&eelWater(att.x,att.y))applyStatus(player,'wet',3);}}
   if(att!==player&&att.base&&landed&&def.hp>0){var b=att.base;
     if(b.chillTouch&&event.primaryDamage>0&&dist(att,def)<=1){addChill(def);floatText(def.x,def.y,'chilled','ice');}
     if(b.bleeds&&(b.bleedDamage===undefined||dist(att,def)<=1)&&rng()<b.bleeds)inflictBleed(def,att,b.bleedTurns,b.bleedDamage);
@@ -119,21 +145,22 @@ function finishAttackReactions(event){
 function resolveSpellStrike(f,A,amount,type,options){
   options=options||{};if(!f||f.hp<=0)return null;
   return gameActions.run('spell',player,f,options,function(event){
-    var view=event.view=Object.assign({},player),numb=numbingDark(f),opening=offGuard(f)||player.hidden>0||numb;
+    var targetAwake=f.state!=='asleep';
+    var view=event.view=Object.assign({},player,{aff:Object.assign({},player.aff||{}),procLuck:typeof luckBonus==='function'?luckBonus():0}),numb=numbingDark(f),opening=offGuard(f)||player.hidden>0||numb;
     var unaware=opening||f.st&&(f.st.stun||f.st.frozen);
     var crit=combatRoll((f.sapped?1:view.crit+actionCritBonus(view))+actionRootCrit(f,view)+(unaware&&player.aff.shadow?.05*player.aff.shadow:0),true);
+    crit=actionCriticalHit(event,crit);
     var singleTarget=!!(options.bolt||A.kind==='bolt')&&!A.piercing;
     var dark=singleTarget&&syllaOn()&&view.hidden>0?player.syllaDark||0:0;
     if(dark)amount*=1+SYLLA.darkPerRank*dark*actionDivine(view);
     var base=FoteActions.spellDamage(amount,{bolt:!!options.bolt,numbing:numb,crit:crit,criticalMultiplier:actionCritMultiplier(view),lightUndead:A.el==='light'&&(f.base.undead||f.base.shadowy)});
-    event.hit={att:player,def:f,crit:crit,surprise:!!(options.bolt?unaware:opening),spell:true,singleTarget:singleTarget,actionId:event.actionId,view:view};
+    event.hit={att:player,def:f,targetAwake:targetAwake,crit:crit,surprise:!!(options.bolt?unaware:opening),spell:true,singleTarget:singleTarget,actionId:event.actionId,view:view};
     LAST_HIT=event.hit;event.ability=A;event.statusBefore=Object.keys(f.st||{});
     if(!options.bolt){if(f.state!=='hunt'&&f.state!=='throne')f.state='hunt';f.caughtOff=-1;}
-    event.damage=applyDamage(f,base,type,player,{hit:event.hit,ability:A,actionId:event.actionId,tags:[singleTarget?'single-target':'area','spell']});
+    event.damage=applyDamage(f,base,type,player,{hit:event.hit,ability:A,actionId:event.actionId,tags:[singleTarget?'single-target':'area','spell'].concat(Array.from(event.tags))});
     event.primaryDamage=event.damage;
     f.lastHitBy=player;event.landed=event.damage>0;
-    if(singleTarget&&!event.landed&&player.friction)player.friction.n=0;
-    if(singleTarget||!options.bolt||!A.tech&&!A.divine)spellOnHit(f,event.damage,crit,A,{singleTarget:singleTarget,rawDamage:base,type:type,actionId:event.actionId});
+    if(singleTarget||!options.bolt||!A.tech&&!A.divine)spellOnHit(f,event.damage,crit,A,{singleTarget:singleTarget,rawDamage:base,type:type,actionId:event.actionId,hit:event.hit});
     if(singleTarget&&event.landed&&f.foe&&!f.ally){
       applyPlayerHitBonuses(event);
       afterPlayerHit(f,event.hit);stokeForgeHeat();
@@ -155,12 +182,13 @@ function spellDamageResult(event,note){
     (event.hit&&event.hit.crit?' (crit)':'')+combatActionNotes(event,note);
 }
 function presentSpellDamage(event,note){log(combatText(event.ability.name)+': '+spellDamageResult(event,note)+'.','c-hit');}
-function spellHit(f,A,amount,type){
+function spellHit(f,A,amount,type,options){
   var event=resolveSpellStrike(f,A,amount,type);if(!event)return 0;
   var parent=gameActions.current();
   if(parent&&['cast','prayer'].indexOf(parent.kind)>=0)(parent.spellResults||(parent.spellResults=[])).push(event);
-  else presentSpellDamage(event);
-  return event.damage;
+  if(options&&options.chill&&f.hp>0)addChill(f,{hit:event.hit});
+  if(!parent||['cast','prayer'].indexOf(parent.kind)<0)presentSpellDamage(event);
+  return options&&options.result?event:event.damage;
 }
 function spellOnHit(f,d,crit,A,context){if(!(d>0)||!f.foe||f.ally)return;applySpellOffhandEffects(f,d,crit,A);applySpellWeaponEnchant(f,d,crit,A,context);}
 
@@ -172,11 +200,12 @@ function applyPlayerHitBonuses(event){
   if(!(event.primaryDamage>0)||!def.foe||def.ally)return result;
   if(player.aff.fire)
     record('fire',dealDirectDamage(def,Math.round(player.aff.fire*resistMult(def,'fire')),'fire',player,{tags:['proc','fire-affinity'],actionId:event.actionId,resistanceApplied:true}));
-  if(player.aff.light&&rng()<.10*player.aff.light+smiteBonus()){
+  var view=event.view||{},light=(view.aff||player.aff).light||0,luck=view.procLuck===undefined?undefined:view.procLuck;
+  if(light&&pRoll(.10*light+smiteBonus(),luck)){
     var sm=applyDamage(def,smiteDamage(),'light',player,{attackRolled:true,actionId:event.actionId,tags:['proc','smite']});
     sm+=onSmiteProc(def,event.actionId)||0;record('light',sm);
     if(aff('light')>=6&&inb(def.x,def.y))markHolyGround(def.x,def.y,spellPower());
-    if(def.hp>0&&rng()<.10*player.aff.light)applyStatus(def,'blind',2);
+    if(def.hp>0&&pRoll(.10*light,luck))applyStatus(def,'blind',2);
     sparkleFx(def.x,def.y,'light',10);
   }
   if(player.aff.shadow&&def.hp>0)addHollow(def,0);
@@ -217,7 +246,7 @@ function rollWeaponHit(event){
   else setClip(att, 'attack');
   var tSwing = Math.max(performance.now(), fxClock);   /* the release or swing frame, after the clip's windup */
   if(ranged){ boltFx(att.x,att.y,def.x,def.y,'phys',{arrow:true,silentHit:true}); sfx('bow-shot',{at:tSwing,from:att}); }
-  else { lungeFx(att, def.x, def.y); if(att===player || !att.base.sfx)sfx('swing',{at:tSwing,from:att}); }
+  else { if(event.options.projected)boltFx(att.x,att.y,def.x,def.y,'phys',{silentHit:true});else lungeFx(att, def.x, def.y); if(att===player || !att.base.sfx)sfx('swing',{at:tSwing,from:att}); }
   if(!ranged && att!==player && att.base.sfx) sfx(att.base.sfx+'-attack',{at:tSwing,from:att});
   if(def===player && att.foe) ch=hostileHitChance(ch);
   if(def.shadowClone&&def.cloneStats){
@@ -250,11 +279,8 @@ function weaponBaseDamage(view,base,melee,att,def){
   if(melee&&perk('unstoppable'))statPool+=0.20;
   if(melee&&active('rampage'))statPool+=(.20+.04*rank)*actionDivine(view);
   if(def&&perk('crushing')&&def.hp<def.maxhp/2)statPool+=0.25;
-  if(def&&def.challenged&&actor.god==='reginald')statPool+=0.25*actionDivine(view);
-  if(actor.god==='reginald'&&rank>=5)statPool+=0.10*Math.min(3,Math.max(0,(att===player?adjacentFoes():ents.filter(function(o){return o.foe&&o.hp>0&&dist(att,o)<=1;}).length)-1));
   if(active('rally'))statPool+=0.10;
   if(def&&actor.god==='glimmer'&&(def.base.undead||def.base.shadowy))statPool+=0.10*rank;
-  if(def&&actor.god==='reginald'&&(def.elite||def.base.elite||def.base.boss))statPool+=0.10*rank;
   base*=Math.max(0.1,1+gearPool)*Math.max(0.1,1+statPool);
   if(((view.weapon&&view.weapon.range)||1)>1&&(def?dist(att,def)<=1:melee))base*=0.6;
   if(att===player&&view.weapon.unarmed&&player.pummel>0)base*=1+actionDivine(view);
@@ -279,9 +305,10 @@ function rollWeaponDamage(event,strike){
     var unaware = offGuard(def) || def.st.stun || def.st.frozen || (att.hidden>0||event.numbing) || (att===player && typeof smokeAmbush==='function' && smokeAmbush(def)) || def.surprised;
     var critCh = (def.sapped?1:view.crit+actionCritBonus(view)) + actionRootCrit(def,view) + (unaware && actor.aff.shadow ? 0.05*actor.aff.shadow : 0);
     crit = att===player?combatRoll(critCh,true):rng()<critCh;
+    if(att===player)crit=actionCriticalHit(event,crit);
     if(unaware){ surprise=true; base *= (att===player?isScoundrel():actor.cls==='scoundrel') ? 2.0 : 1.5; if(view.weapon.name.indexOf('Dagger')>=0) base*=1.2;
-      /* 2026-09-22 (Justin): no piety for surprise attacks at all - his followers simply cannot sneak (stealthScore), and
-         his only foul is Shadow (gods.js, forge.js). */ }
+      /* Sir's kill reward uses the captured pre-hit awareness, before the
+         struck enemy's state or the combat presentation awakens it. */ }
   } else {
     crit = !(def===player && hasP('bulwark')||def.shadowClone&&def.cloneStats.passives.bulwark) && rng() < 0.05;
   }
@@ -289,7 +316,7 @@ function rollWeaponDamage(event,strike){
   if(att===player&&pummelHit&&def.hp>0)applyStatus(def,'stun',1);
   if(blocked){ if(typeof onShieldBlock==='function') onShieldBlock(att, def, base); base *= 0.25; }
   /* Fortitude resolves after mitigation in applyDamage. */
-  event.hit={att:att,def:def,crit:crit,surprise:surprise,melee:!ranged,actionId:event.actionId,view:view};
+  event.hit={att:att,def:def,targetAwake:event.targetAwake,crit:crit,surprise:surprise,melee:!ranged,actionId:event.actionId,view:view};
   LAST_HIT=event.hit;
   strike.base=base;strike.crit=crit;strike.surprise=surprise;
 }
@@ -299,7 +326,7 @@ function resolveWeaponDamage(event,strike){
   var base=strike.base,crit=strike.crit,surprise=strike.surprise;
   var primaryType=att.swarm||att.shadowClone&&!ranged?'dark':att!==player&&att.base&&att.base.attackType||'phys';
   event.primaryType=primaryType;
-  var phys=applyDamage(def,base,primaryType,att,{hit:event.hit,attackRolled:true,actionId:event.actionId,tags:['attack',ranged?'ranged':'melee'].concat(event.tags.has('proc')?['proc']:[])}),extra=0,applied=0,note='',el=null,rawExtra={},bonuses={};
+  var phys=applyDamage(def,base,primaryType,att,{hit:event.hit,attackRolled:true,actionId:event.actionId,tags:['attack',ranged?'ranged':'melee'].concat(Array.from(event.tags))}),extra=0,applied=0,note='',el=null,rawExtra={},bonuses={};
   function addRaw(type,n){rawExtra[type]=(rawExtra[type]||0)+n;}
   function addBonus(type,n){if(n>0){type=FoteDamage.type(type);bonuses[type]=(bonuses[type]||0)+n;}return n;}
   sfx(hitSfx(att,def,crit,blocked), {at:def._hit, from:def});
@@ -308,10 +335,10 @@ function resolveWeaponDamage(event,strike){
     if(ench&&phys>0){
       /* The same authored enchant magnitudes drive weapon and spell procs. */
       var values=enchantValues('weapon',ench);
-      var roll1 = function(c){ return (typeof pRoll==='function' ? pRoll(c) : rng()<c); };
+      var roll1 = function(c){ return (typeof pRoll==='function' ? pRoll(c,view.procLuck) : rng()<c); };
       el=ench;
       if(ench==='fire'){ addRaw('fire',Math.round(base*values.extraDamage)); if(roll1(values.burnChance)&&applyStatus(def,'burn',values.burnDuration,burnDmg()).applied)note=' <span class="c-fire">Burning</span>'; }
-      if(ench==='water' && roll1(values.chillChance)){ var chill=addChill(def);if(chill.applied)note=chill.key==='frozen'?' Frozen':' Chilled'; }
+      if(ench==='water' && roll1(values.chillChance)){ var chill=addChill(def,{hit:event.hit});if(chill.applied)note=chill.key==='frozen'?' Frozen':' Chilled'; }
       if(ench==='earth' && roll1(values.rootChance)&&applyStatus(def,'root',values.rootDuration).applied)note=' Rooted';
       if(ench==='shadow'){ if(def.st.corrupt) addRaw('dark',values.corruptDamage);   /* 2026-09-29 (Justin): +2 against Corrupted, was +1 against Hollowed */
         if(roll1(values.procChance)){
@@ -350,8 +377,7 @@ function resolveWeaponDamage(event,strike){
     extra=addBonus(elemToType(el),add);
   }
   if(att.lifesteal && att.ally){
-    var healing=FoteDamage.heal(att.hp,att.maxhp,Math.round(phys*.3));att.hp=healing.hp;
-    gameDamage.emit('healingApplied',{target:att,restored:healing.restored,overflow:healing.overflow,natural:false});
+    gameDamage.heal(att,Math.round(phys*.3),att);
   }
   return {phys:phys,extra:extra,applied:applied,note:note,element:el,bonuses:bonuses};
 }

@@ -2,7 +2,8 @@
  * FoteActors commits exactly one action cost after the selected behavior. */
 function canSeePlayer(e){
   if(player.hidden>0||e.st&&e.st.blind)return false;
-  var sight=e&&e.base&&e.base.darksight&&typeof DEEP_RAWVIS!=='undefined'&&DEEP_RAWVIS?DEEP_RAWVIS:vis;
+  var sight=e&&e.base&&e.base.darksight&&typeof DEEP_RAWVIS!=='undefined'&&DEEP_RAWVIS?DEEP_RAWVIS:
+    typeof BLIND_RAWVIS!=='undefined'&&BLIND_RAWVIS?BLIND_RAWVIS:vis;
   for(var y=e.y;y<e.y+entitySize(e);y++)for(var x=e.x;x<e.x+entitySize(e);x++)if(inb(x,y)&&sight[idxOf(x,y)]&&
     (typeof FoteEnemyTeamwork==='undefined'||FoteEnemyTeamwork.openLine({x:x,y:y},player)))return true;
   return false;
@@ -150,7 +151,6 @@ function actorPrepare(context){
   if(typeof FoteEnemyPerception!=='undefined'&&FoteEnemyPerception.libraryDormant(e))return true;
   if(e.shadowClone)e.cloneAction=null;
   if(e.pebbleSlam&&(e.state!=='hunt'||FoteActors.blocked(e,gameEffects)||e.x!==e.pebbleSlam.fromX||e.y!==e.pebbleSlam.fromY))clearPebbleSlam(e);
-  if(e.challengeT&&--e.challengeT<=0){e.challenged=false;e.cowardMark=false;}
   if(e.smokeLost&&(e.state==='hunt'||!smokeActive()))e.smokeLost=false;
   if(e.kind==='matron'){
     var matron=matronState();
@@ -172,11 +172,6 @@ function actorFinish(context){
   }
   if(e.foe&&(e.x!==context.x||e.y!==context.y)){
     if(rootG&&rootG[idxOf(e.x,e.y)]&&!gameEffects.airborne(e))applyStatus(e,'root',1);
-    if(gameEffects.has(e,'burn')&&combo('fire','air')){
-      var damage=Math.max(1,Math.round(e.st.burn.d*resistMult(e,'fire')));
-      dealDirectDamage(e,damage,'fire',e.lastHitBy||null,{tags:['periodic','movement']});floatText(e.x,e.y,String(damage),'fire');
-      if(e.hp<=0){kill(e,player);return;}
-    }
   }
   if(e.foe&&!e.base.boss&&!MAPVIEW.on){
     var see=canSeePlayer(e);
@@ -220,10 +215,10 @@ var gameActors=FoteActors.create({
     actorBehavior('local-teamwork',function(e){return typeof FoteEnemyTeamwork!=='undefined'&&!!FoteEnemyTeamwork.family(e);},function(e){return FoteEnemyTeamwork.takeTurn(e);}),
     actorBehavior('summon-retaliation',function(e){return e.foe&&!e.base.boss;},petRetaliationBehavior),
     actorBehavior('sporecaller',function(e){return !!e.base.sporecaller;},function(e){return FoteSporecaller.act(e);}),
-    actorBehavior('elemental-plane',function(e){return inFwa()&&e.base.fwa;},elementalPlaneBehavior),
+    actorBehavior('elemental-plane',function(e){return (inFwa()||e.planeEncounter)&&e.base.fwa;},elementalPlaneBehavior),
     actorBehavior('underdark',function(e){return !!e.base.deepAI;},deepCreatureBehavior),
     actorBehavior('caverns',function(e){return e.base.aquatic||e.base.spores||e.base.caveSpell||e.kind==='stormbeetle'||e.kind==='sparkjelly';},caveCreatureBehavior),
-    actorBehavior('plane-traits',function(){return !!floorMeta.plane;},planeCreatureBehavior),
+    actorBehavior('plane-traits',function(e){return !!floorMeta.plane||!!e.planeEncounter;},planeCreatureBehavior),
     actorBehavior('crypt-traits',function(e){var b=e.base;return b.reloads||b.summoner||b.phases;},function(e){return cryptCreatureBehavior(e);}),
     actorBehavior('ordinary-monster',function(e){return !!e.foe;},basicMonsterBehavior)
   ]

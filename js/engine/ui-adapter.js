@@ -15,7 +15,7 @@ function renderAmuletHotbar(){
       bb.oncontextmenu=function(ev){ ev.preventDefault(); player.hotbar[ii]=null; abilityBar(); };
       dragSource(bb, 'hot:'+ii);
       dropTarget(bb, function(tag){ hotbarDrop(ii, tag); });   /* the replaced slot still takes a drop */
-      var ico=bb.querySelector('.ico'); if(ico && (objArt('items',a.icon))) paintArt(ico,'items',a.icon,28); })(b, idx);
+      var ico=bb.querySelector('.ico'); if(ico&&a.icon)paintArt(ico,'items',a.icon,28); })(b, idx);
   }
 }
 
@@ -36,9 +36,25 @@ function renderAmuletCharges(){
 /* 2026-09-28 (Justin: a better sign of skills on cooldown): a slot on cooldown greys its icon, shows a dark clock sweep for
    the part still to run and a big turn count, and flashes once when it is ready again. CD_SPAN remembers each cooldown's
    longest remaining time as its length, so the sweep works for abilities, prayers and invokes alike. */
-var CD_SPAN={};
+var CD_SPAN={}, CD_ACTOR=null, CD_FLASHES=new Map(), HOTBAR_CLICK_BINDINGS=new Map();
+function syncHotbarCooldownActor(){
+  if(CD_ACTOR===player)return;
+  /* Save restore and new characters replace the actor. Display history belongs
+     to that actor, not to a skill key shared by every run. */
+  CD_FLASHES.forEach(function(flash,button){clearTimeout(flash.timer);button.classList.remove('cdready');});
+  CD_FLASHES.clear();CD_SPAN={};CD_ACTOR=player;clearHotbarClickBindings();
+}
+function flashHotbarReady(button){
+  var flash={actor:CD_ACTOR,timer:null};
+  button.classList.add('cdready');CD_FLASHES.set(button,flash);
+  flash.timer=setTimeout(function(){
+    if(CD_FLASHES.get(button)!==flash)return;
+    CD_FLASHES.delete(button);
+    if(player===flash.actor)button.classList.remove('cdready');
+  },700);
+}
 function renderHotbarCooldowns(){
-
+  syncHotbarCooldownActor();
   if(!player || !player.hotbar || !$('hotbar')) return;
   $('hotbar').querySelectorAll('.slot[data-i]').forEach(function(b){
     var s=player.hotbar[+b.getAttribute('data-i')], key=null, left=0, c=b.querySelector('.c');
@@ -49,7 +65,7 @@ function renderHotbarCooldowns(){
     var was=CD_SPAN[key];
     if(left){ var span=Math.max(was||0, left, s.type==='ability' && ABILITIES[s.key] && cooldownTurns(ABILITIES[s.key].cd||0) || 0); CD_SPAN[key]=span;
       b.classList.add('oncd'); b.style.setProperty('--cdp', Math.round(left/span*100)); }
-    else if(was){ delete CD_SPAN[key]; b.classList.add('cdready'); setTimeout(function(){ b.classList.remove('cdready'); }, 700); }
+    else if(was){ delete CD_SPAN[key]; flashHotbarReady(b); }
   });
 }
 
@@ -70,17 +86,46 @@ function bindHotbarCards(){
   });
 }
 
+function clearHotbarClickBindings(){
+  HOTBAR_CLICK_BINDINGS.forEach(function(binding,button){
+    binding.cancel();
+    button.removeEventListener('touchstart',binding.start);
+    button.removeEventListener('touchend',binding.cancel);
+    button.removeEventListener('touchcancel',binding.cancel);
+    button.removeEventListener('click',binding.click,true);
+    if(button.oncontextmenu===binding.context)button.oncontextmenu=null;
+  });
+  HOTBAR_CLICK_BINDINGS.clear();
+}
 function bindHotbarClickSpells(){
-
+  /* Rebuilding slots releases their input callbacks as well as their DOM. */
+  clearHotbarClickBindings();
   if(!$('hotbar') || !player || !player.hotbar) return;
   $('hotbar').querySelectorAll('.slot[data-i]').forEach(function(b){
     var s=player.hotbar[+b.getAttribute('data-i')];
     if(!s || s.type!=='ability' || !clickSpellable(s.key)) return;
-    b.oncontextmenu=function(ev){ ev.preventDefault(); toggleClickSpell(s.key); };
-    var timer=null;
-    b.addEventListener('touchstart', function(){ timer=setTimeout(function(){ timer=null; b._longPress=true; toggleClickSpell(s.key); }, 550); }, {passive:true});
-    b.addEventListener('click', function(ev){ if(b._longPress){ b._longPress=false; ev.stopImmediatePropagation(); ev.preventDefault(); } }, true);
-    b.addEventListener('touchend', function(){ if(timer){ clearTimeout(timer); timer=null; } });
+    var owner=player,index=+b.getAttribute('data-i'),key=s.key,binding={press:null};
+    function current(){
+      var slot=player&&player.hotbar&&player.hotbar[index];
+      return player===owner&&b.isConnected&&HOTBAR_CLICK_BINDINGS.get(b)===binding&&slot&&slot.type==='ability'&&slot.key===key;
+    }
+    binding.cancel=function(){if(binding.press){clearTimeout(binding.press.timer);binding.press=null;}};
+    binding.start=function(){
+      binding.cancel();if(!current())return;
+      var press={timer:null};binding.press=press;
+      press.timer=setTimeout(function(){
+        if(binding.press!==press)return;
+        binding.press=null;if(!current())return;
+        b._longPress=true;toggleClickSpell(key);
+      },550);
+    };
+    binding.click=function(ev){if(b._longPress){b._longPress=false;ev.stopImmediatePropagation();ev.preventDefault();}};
+    binding.context=function(ev){ev.preventDefault();if(current())toggleClickSpell(key);};
+    HOTBAR_CLICK_BINDINGS.set(b,binding);b.oncontextmenu=binding.context;
+    b.addEventListener('touchstart',binding.start,{passive:true});
+    b.addEventListener('click',binding.click,true);
+    b.addEventListener('touchend',binding.cancel);
+    b.addEventListener('touchcancel',binding.cancel);
     if(player.clickSpell===s.key){ var m=document.createElement('span'); m.className='clickmark'; m.textContent='◎'; m.title='Your click ability'; b.appendChild(m); }
   });
 }
@@ -103,6 +148,7 @@ function syncHotbar(){
   var prayers = (typeof prayerList==='function' ? prayerList() : []).filter(function(pid){ return godRank()>=PRAYERS[pid].rank; });
   for(i=0;i<8;i++){
     s=player.hotbar[i]; if(!s) continue;
+    if(s.type==='swap'){player.hotbar[i]=null;continue;}
     if(s.type==='ability' && player.abilities.indexOf(s.key)<0) player.hotbar[i]=null;
     if(s.type==='prayer' && prayers.indexOf(s.key)<0) player.hotbar[i]=null;
     if(s.type==='item' && player.bag.indexOf(s.ref)<0) player.hotbar[i]=s.ref&&s.ref.data===player.ranged&&isRangedWeapon(player.ranged)?{type:'ranged'}:null;
@@ -159,7 +205,7 @@ function pressSlotIndex(i){
   if(s.type==='ability'){ var ai=player.abilities.indexOf(s.key); if(ai>=0) useAbility(ai); return; }
   if(s.type==='prayer'){ usePrayer(s.key); updateUI(); return; }
   if(s.type==='amulet'){useAmulet();updateUI();return;}
-  /* 2026-09-20: the equipped bow can live on the hotbar; pressing it shoots (js/rangedslot.js) */
+  /* 2026-09-20: the equipped bow can live on the hotbar; pressing it shoots (js/equipment/rangedslot.js) */
   if(s.type==='ranged'){ if(typeof bowSlotPress==='function') bowSlotPress(); return; }
   if(s.type==='item'){
     var bi=player.bag.indexOf(s.ref);

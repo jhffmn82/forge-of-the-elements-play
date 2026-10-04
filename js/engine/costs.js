@@ -23,7 +23,6 @@
     return cost;
   }
   function movement(c){
-    if(c.freeStep)return 0;
     var cost=10000/(c.speed*(1-(c.chill||0)))*(c.fleet?.85:1)/(1+.10*(c.air||0));
     if(c.water&&!c.levitate)cost*=1.25;
     if(c.grom&&c.rank>=1)cost/=1+.10*c.rank;

@@ -1,4 +1,6 @@
 /* Item creation and charge progression have one owner. */
+function makeEscortReward(){return rng()<.5?{kind:'ring',it:makeRing(null,false)}:{kind:'amulet',it:makeAmulet(null,false)};}
+function makeExpeditionReward(){var ring=makeRing(null,false);ring.plus=Math.max(2,ring.plus||0);return {kind:'ring',it:ring};}
 function ringPower(item){return FoteGear.ringPower(item);}
 function amuletCap(item){return FoteGear.amuletCapacity(item);}
 function amuletKillsNeeded(item){return FoteGear.amuletKills(item,AMULETS[item.amulet].kills);}

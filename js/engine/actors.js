@@ -19,6 +19,9 @@
     return best;
   }
   function candidates(dx,dy){return [[dx,dy],[dx,0],[0,dy]].filter(function(offset,index,list){return (offset[0]||offset[1])&&!list.slice(0,index).some(function(other){return offset[0]===other[0]&&offset[1]===other[1];});});}
+  /* Borrowed spell formulas follow the existing half-strength Shade stats.
+   * Weapon attacks already read the resolved half-strength damage pair. */
+  function inheritedAbilityDamage(actor,amount){return amount*(actor&&actor.ally&&actor.shade?.5:1);}
   function create(ports){
     function takeTurn(actor){
       if(!actor||actor.hp<=0||!ports.present(actor))return false;
@@ -40,5 +43,5 @@
     }
     return Object.freeze({takeTurn:takeTurn});
   }
-  return Object.freeze({create:create,movementAllowed:movementAllowed,blocked:blocked,effectiveEvasion:effectiveEvasion,bestStep:bestStep,candidates:candidates,neighbors:neighbors});
+  return Object.freeze({create:create,movementAllowed:movementAllowed,blocked:blocked,effectiveEvasion:effectiveEvasion,bestStep:bestStep,candidates:candidates,neighbors:neighbors,inheritedAbilityDamage:inheritedAbilityDamage});
 });

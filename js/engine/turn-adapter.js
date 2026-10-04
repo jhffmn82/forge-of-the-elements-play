@@ -5,12 +5,13 @@ function turnBeginCombatLog(){if(typeof FoteCombatLog!=='undefined')FoteCombatLo
 function turnFinishCombatLog(){if(typeof FoteCombatLog!=='undefined')FoteCombatLog.finishTurn();}
 function turnPrepareAction(context){
   BOWAIM=null;player.movedLast=context.moved;
-  if(player.castingSpell){player.hidden=0;player.syllaDark=0;}
+  context.smokeHidden=typeof takeSmokeHiddenReceipt==='function'?takeSmokeHiddenReceipt(player,context.from):0;
+  if(player.castingSpell){player.hidden=context.smokeHidden?Math.min(player.hidden||0,context.smokeHidden):0;player.syllaDark=0;}
   if(player.stillness>0){
     if(context.moved){context.stillness=true;player.stillness--;if(!player.stillness)log('Time lurches back into motion.','c-info');}
     else {player.stillness=0;log('Your action breaks the stillness.','c-info');}
   }
-  FREE_ACTION=FREE_ACTION||(!context.moved&&(player.lastAttack||context.noisy)&&aff('air')>=6&&rng()<.15);
+  FREE_ACTION=FREE_ACTION||(!context.moved&&(player.lastAttack||context.noisy)&&aff('air')>=6&&pRoll(.15));
 }
 function turnPrepareBuffClocks(context){
   var previous=player._worldBuffPrev||{};player._worldBuffBorn=player._worldBuffBorn||{};
@@ -25,6 +26,7 @@ function turnAdvanceAction(context){
   context.actionId=turn;
   context.freshBuffs.forEach(function(key){player._worldBuffBorn[key]=context.to;});
   player._worldFreshBuffs=[];
+  if(context.smokeHidden)player._worldHiddenBorn=context.to;
   if(player.blurCd>0)player.blurCd--;
   if(player.fortCd>0)player.fortCd--;
 }
@@ -76,6 +78,8 @@ function turnWorldPulse(clock){
   Object.keys(player.buffs||{}).forEach(function(key){
     if(!(player.buffs[key]>0)||(player._worldBuffBorn||{})[key]>=clock)return;
     player.buffs[key]--;
+    if(key==='trollblood'&&player.hp>0)healPlayer(player.maxhp*FoteDamage.trollBlood(godRank(),divineStrength()).regenFraction,false,{regen:true});
+    if(key==='laststand'&&player.hp>0)healPlayer(player.maxhp*FoteDamage.lastStand(godRank(),divineStrength()).regenFraction,false,{regen:true});
     if(key==='afterglow'&&player.hp>0)healPlayer(Math.max(1,Math.round(player.maxhp*.05)));
   });
   if(player.hidden>0&&!(player._worldHiddenBorn>=clock))player.hidden--;
@@ -93,7 +97,6 @@ function turnExplore(){
   spotTraps();if(!floorMeta.boss)wanderingSpawn();godTick(turnInCombat());
 }
 function turnFinalizeAction(context){
-  if(context.freeStep)player.freeStep=false;
   player.lastAttack=false;player.movedThisTurn=false;player.castingSpell=false;FREE_ACTION=false;delete player.grassStep;
   delete player.ghoulStep;
   if(player.hp<context.hpBefore)player.lastDamageTime=player.t;
@@ -101,13 +104,14 @@ function turnFinalizeAction(context){
   player._buffPrev=Object.assign({},player.buffs);
   player._worldHiddenPrev=player.hidden;player._worldLevitatePrev=player.levitate;
   player._buffSeen=buffTimers();
+  player._buffDurationSeen=Object.assign({},player._buffSeen);
   if(player.hp<=0)death();else {derive(player);computeFOV();if(typeof FoteSporecaller!=='undefined')FoteSporecaller.observe();updateUI();draw();}
 }
 function turnPhase(name,run,aliveOnly){return {name:name,run:run,aliveOnly:!!aliveOnly};}
 var gameTurns=FoteTurns.create({
   now:function(){return player.t;},alive:function(){return player&&player.hp>0;},
   setClock:function(clock){WORLD_NOW=clock;},
-  snapshot:function(){return {actionId:turn,hpBefore:player.hp,moved:!!player.movedThisTurn,noisy:!!player.noisy,freeStep:!!(player.movedThisTurn&&player.freeStep)};},
+  snapshot:function(){return {actionId:turn,hpBefore:player.hp,moved:!!player.movedThisTurn,noisy:!!player.noisy};},
   actors:function(){return ents;},active:function(e){return (e.foe||e.ally)&&e.hp>0;},
   beforeSchedule:function(){ents.forEach(betaEnemyBalance);},
   beforeActors:turnPlayerAnimationWait,beforeActor:turnPrimeAnimations,afterActor:turnActorAnimationWait,

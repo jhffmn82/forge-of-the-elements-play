@@ -239,9 +239,98 @@ function drawFramePasses(){
   if(inDeep()&&DC.built>=DEEP_BUDGET)requestTerrainRedraw();
 }
 var renderPreviousMap=null,renderPreviousMeta=null;
+/* Continue preparing elected art after startup and on each installed scene.
+ * Query selectors only: no draw pass, gameplay write, RNG or unseen reveal.
+ * A slice yields to input; the existing atlas owner gives these jobs one lane. */
+var sceneArtEnabled=false,sceneArtLoading=null;
+function sceneArtAvailable(){return !!(sceneArtEnabled&&spriteOn&&player&&map&&map.length&&floorMeta);}
+function sceneArtCurrent(scope){return scope.active&&sceneArtAvailable()&&scope.map===map&&scope.meta===floorMeta&&scope.hero===player&&scope.appearanceRevision===FoteContent.appearanceRevision(scope.meta);}
+function querySceneArt(task){
+  function query(){
+    var value=task.value,name;
+    if(task.kind==='tile'){
+      tileSprite(task.x,task.y,value);
+      if(value===OPEN){var material=DOOR_ART[openDoorMaterial(task.x,task.y)]||DOOR_ART.wood;objArt('structures',material[0]);objArt('structures',material[1]);}
+      if(value===STAIRS&&inDeep())deepArt('stairs-down-drow');
+    }else if(task.kind==='prop'){
+      name=value.artName||value.name;
+      objArt('props',name)||objArt('structures',name)||objArt('chests',name)||objArt('terrain',name);
+      var packed=typeof packNameFor==='function'&&packNameFor(value);if(packed)packArt(packed);
+      if(value.set||value.soulSmoke)setArt(name);
+      if(value.cave||typeof CAVE_PIECES!=='undefined'&&CAVE_PIECES[value.name])caveArt(value.name);
+      if(value.deep||typeof DEEP_PIECES!=='undefined'&&DEEP_PIECES[value.name])deepArt(value.name);
+      if(value.name==='stack-group'||value.name==='urn-group'){
+        var cluster=sceneryClusterAppearance(value);sceneryClusterSource(cluster.family,cluster.variant);
+      }
+    }else if(task.kind==='item')objArt('items',itemArtName(value));
+    else if(task.kind==='trap'){var trap=TRAPS[value.kind];if(trap)objArt('traps',trap.sprite);}
+    else if(task.kind==='plate')objArt('structures',value.pressed?'plate-glow':'trap-plate')||objArt('traps','trap-plate');
+    else if(task.kind==='ground')objArt('terrain',GROUND_ART[value]);
+    else if(task.kind==='actor'){
+      if(value.shadowClone)castSheet(value.cloneLook);
+      else if(value.livingFlame)atl('living-flame.webp');
+      else if(typeof isShadeSummon==='function'&&isShadeSummon(value))shadeSummonSheet();
+      else if(value.base&&value.base.sprite)mobSheet(value.base.sprite);
+    }else if(task.kind==='hero'){
+      var look=playerCastLook();castSheet(look);var spec=AS.cast&&AS.cast[look];if(spec&&spec.doll)atl('cast-'+look+'-doll.webp');
+    }
+  }
+  if(typeof FoteChaosPreviewRenderer!=='undefined'&&FoteChaosPreviewRenderer.mixed()&&typeof FoteChaosPreviewRenderer.withCell==='function')return FoteChaosPreviewRenderer.withCell(task.x,task.y,query);
+  return query();
+}
+function electSceneArt(){
+  var tasks=[],tiles=new Set(),grounds=new Set(),hero=player;
+  function add(kind,value,x,y){if(kind==='tile'||kind==='ground')FoteContent.observeAppearance(floorMeta,kind,value);else if(kind==='plate')FoteContent.observeAppearance(floorMeta,kind,!!value.pressed);tasks.push({kind:kind,value:value,x:Number.isFinite(x)?x:hero.x,y:Number.isFinite(y)?y:hero.y});}
+  add('hero',hero,hero.x,hero.y);
+  for(var i=0;i<map.length;i++){
+    var tile=map[i],key=tile+(tile===CHEST?':'+chestKind[i]:tile===OPEN?':'+openDoorMaterial(i%MW,Math.floor(i/MW)):'');
+    if(!tiles.has(key)){tiles.add(key);add('tile',tile,i%MW,Math.floor(i/MW));}
+    var material=ground&&ground[i];if(material&&GROUND_ART[material]&&!grounds.has(material)){grounds.add(material);add('ground',material,i%MW,Math.floor(i/MW));}
+  }
+  props.forEach(function(value){add('prop',value,value.x,value.y);});
+  items.forEach(function(value){if(!value.crystal&&value.kind!=='heart'&&value.kind!=='managlobe')add('item',value,value.x,value.y);});
+  feats.forEach(function(value){add('trap',value,value.x,value.y);});
+  if(plates&&plates.cells)plates.cells.forEach(function(value){add('plate',value,value.x,value.y);});
+  var residents=ents.concat(floorMeta.buriedGhouls||[],floorMeta.maw&&floorMeta.maw.ent||[],floorMeta.pendingLich&&floorMeta.pendingLich.entity||[]);
+  residents.forEach(function(value){if(value&&value!==hero&&(value.hp>0||floorMeta.pendingLich&&value===floorMeta.pendingLich.entity))add('actor',value,value.x,value.y);});
+  tasks.sort(function(a,b){return Math.max(Math.abs(a.x-hero.x),Math.abs(a.y-hero.y))-Math.max(Math.abs(b.x-hero.x),Math.abs(b.y-hero.y));});
+  return tasks;
+}
+function retireSceneArt(scope){
+  if(!scope)return;
+  if(scope.task!==null){if(scope.idle&&typeof cancelIdleCallback==='function')cancelIdleCallback(scope.task);else clearTimeout(scope.task);scope.task=null;}
+  scope.tasks=[];retireBackgroundAtlasRequests(scope);
+  if(sceneArtLoading===scope)sceneArtLoading=null;
+}
+function scheduleSceneArt(scope){
+  if(!sceneArtCurrent(scope)||!scope.tasks.length)return;
+  function slice(){
+    scope.task=null;if(!sceneArtCurrent(scope)){retireSceneArt(scope);return;}
+    var end=performance.now()+4,count=0;
+    while(scope.tasks.length&&count++<8&&performance.now()<end){
+      var task=scope.tasks.shift();
+      try{withBackgroundAtlasRequests(scope,function(){querySceneArt(task);});scope.elected++;}
+      catch(error){scope.errors.push(String(error&&error.message||error));console.error('Current-scene artwork election failed',error);}
+    }
+    scheduleSceneArt(scope);
+  }
+  scope.idle=typeof requestIdleCallback==='function';scope.task=scope.idle?requestIdleCallback(slice,{timeout:250}):setTimeout(slice,16);
+}
+function continueSceneArtLoading(){
+  if(!sceneArtAvailable()){retireSceneArt(sceneArtLoading);return;}
+  var scope=sceneArtLoading,appearanceRevision=FoteContent.appearanceRevision(floorMeta),counts=[props.length,items.length,feats.length,ents.length,player.look,player.god].join('|');
+  if(scope&&sceneArtCurrent(scope)&&scope.counts===counts)return;
+  retireSceneArt(scope);
+  scope=sceneArtLoading={active:true,map:map,meta:floorMeta,hero:player,appearanceRevision:appearanceRevision,counts:counts,tasks:electSceneArt(),task:null,idle:false,elected:0,errors:[]};
+  scheduleSceneArt(scope);
+}
+function startSceneArtLoading(){sceneArtEnabled=true;continueSceneArtLoading();}
+function sceneArtLoadingDiagnostics(){var scope=sceneArtLoading;return {enabled:sceneArtEnabled,current:!!scope&&sceneArtCurrent(scope),elected:scope?scope.elected:0,remaining:scope?scope.tasks.length:0,errors:scope?scope.errors.slice():[]};}
+if(typeof FoteLifecycle!=='undefined')FoteLifecycle.whenReady(startSceneArtLoading);
 /* Floor-entry hold (2026-09-27): a new floor is not painted until its art is ready, so it never shows
  * the old art first. The previous frame stays up (no loading card) and input waits (pacing.js).
- * The loading screen loads every floor's art (boot.js), so after it this is only a safety net. */
+ * Startup awaits its current scene. Later scenes prepare terrain here and
+ * continue electing object/resident sheets in the bounded background lane. */
 var floorArt=null,floorDrawn=[];
 /* Terrain hold (2026-09-28): the same, for the natural terrain of a view that is not built yet (a new floor, a
  * portal hop to another island, a zoom or reveal change). Its cells are built first, at full detail, behind the
@@ -298,6 +387,7 @@ function drawTerrainNow(){
   }
 }
 function draw(){
+  continueSceneArtLoading();
   var changed=renderPreviousMap!==map||renderPreviousMeta!==floorMeta;
   if(changed&&spriteOn&&map&&holdFloor())return;
   if(spriteOn&&map&&ground&&holdTerrain(changed))return;

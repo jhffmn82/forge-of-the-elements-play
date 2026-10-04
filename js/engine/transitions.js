@@ -1,6 +1,22 @@
 /* Floor ownership, paused deadlines, and ordered tile-entry stages. */
-(function(root,factory){var api=factory();if(typeof module==='object'&&module.exports)module.exports=api;else root.FoteTransitions=api;})(globalThis,function(){
+(function(root,factory){var catalog=typeof module==='object'&&module.exports?require('./floor-clocks.js'):root.FoteFloorClocks;var api=factory(catalog);if(typeof module==='object'&&module.exports)module.exports=api;else root.FoteTransitions=api;})(globalThis,function(clockCatalog){
   'use strict';
+  var sceneEpochs=new WeakMap();
+  /* Wall-clock callbacks belong to the floor where they were scheduled. State
+   * replacement covers generation/load; the epoch also covers cached-floor
+   * travel away and back to the same map and metadata objects. */
+  function deferScene(state,fn,delay,timers){
+    var keys=['RUN','player','map','floorMeta','floorNo','MW','MH'],values=keys.map(function(key){return state.get(key);});
+    var revision=state.revision,epoch=sceneEpochs.get(state)||0,active=true;
+    var later=timers&&timers.setTimeout||function(callback,ms){return setTimeout(callback,ms);};
+    var clear=timers&&timers.clearTimeout||function(id){clearTimeout(id);};
+    var timer=later(function(){
+      if(!active)return;active=false;
+      if(state.revision!==revision||(sceneEpochs.get(state)||0)!==epoch||!keys.every(function(key,i){return state.get(key)===values[i];}))return;
+      fn();
+    },delay);
+    return function(){if(active){active=false;clear(timer);}};
+  }
   var floorKeys=Object.freeze(['MW','MH','map','seen','vis','feats','items','ents','rooms','ground','fireT','fireSrc','props','propGrid','chestKind','floorMeta',
     'levers','plates','altars','iceG','rootG','holyG','spawnedExtra','nextSpawn','worldSeed']);
   function capture(state){
@@ -28,39 +44,20 @@
       if(first==='*')Object.keys(object).forEach(function(k){path(object[k],rest,key,amount);});
       else path(object[first],rest,key,amount);
     }
-    function fields(object,keys,amount){keys.forEach(function(key){shift(object,key,amount);});}
-    var meta=saved.floorMeta||{};
-    ['marks','clouds','dark','shockClouds','tides','upheaval'].forEach(function(key){path(meta,[key,'*'],'until',turns);});
-    ['hazardPending','fwaPending','mortyReturn','pendingLich','maw'].forEach(function(key){path(meta,[key],'at',turns);});
-    ['corpses','regrow'].forEach(function(key){path(meta,[key,'*'],'at',turns);});
-    path(meta,['deathRemains','*'],'bornAt',ticks);path(meta,['deathRemains','*'],'expiresAt',ticks);
-    path(meta,['sporeFields','*'],'armedTurn',turns);
-    path(meta,['sporeFields','*'],'fireAt',ticks);path(meta,['sporeFields','*'],'expiresAt',ticks);
-    path(meta,['greenTrail','*'],'bornAt',ticks);path(meta,['greenTrail','*'],'expiresAt',ticks);
-    ['webGround','magmaFlames'].forEach(function(key){path(meta,[key,'*'],'bornAt',ticks);path(meta,[key,'*'],'expiresAt',ticks);});
-    path(meta,['smoke'],'until',turns);path(meta,['sanctuary'],'until',ticks);
-    path(meta,['chaosCombat','hazards','*'],'bornAt',ticks);path(meta,['chaosCombat','hazards','*'],'expiresAt',ticks);
-    path(meta,['chaosCombat'],'lastPulse',ticks);
-    ['majorReadyAt','rushReadyAt','summonReadyAt'].forEach(function(key){path(meta,['unmakerEncounter'],key,ticks);});
-    path(meta,['unmakerEncounter','warning'],'armedTurn',turns);
-    path(meta,['unmakerEncounter'],'pylonPulseAt',ticks);
-    path(meta,['unmakerEncounter','pylons','*'],'readyAt',ticks);
-    path(meta,['unmakerEncounter','pylons','*','warning'],'armedTurn',turns);
-    path(meta,['unmakerEncounter','pylons','*','warning'],'fireAt',ticks);
-    path(meta,['matron'],'nextRit',turns);path(meta,['matron','rit'],'at',turns);path(meta,['matron','venom'],'at',turns);
-    fields(meta,['_arcTurn'],turns);
-    path(saved,['items','*'],'until',turns);path(saved,['props','*'],'until',turns);
-    path(saved,['rooms','*'],'cooledUntil',turns);path(meta,['puzzles','*'],'cooledUntil',turns);
-    shift(saved,'nextSpawn',turns);
-    var actors=(saved.ents||[]).concat(meta.pendingLich&&meta.pendingLich.entity||[],meta.maw&&meta.maw.ent||[]);
-    actors.forEach(function(e){
-      fields(e,['stormChargeAt','stormReady','sparkReady','stoneImm','caughtOff','_surfT','_burnedAt','_fumeAt','_shellTurn','_blockTurn','_hitKey','_immuneMsg'],turns);
-      ['zap','grasp','brand','erupt'].forEach(function(key){path(e,[key],'at',turns);});
-      fields(e,['rallyUntil','challengeUntil','waterPullReadyAt'],ticks);
-      fields(e,['sporeFieldReadyAt','sporeSupportReadyAt','rageReadyAt','teamSearchUntil','searchUntil'],ticks);
-      fields(e,['greenPulseAt','brutePushReadyAt','skeletonChargeReadyAt'],ticks);
-      fields(e,['chaosCooldown','chaosDebuffReadyAt','chaosBeamReadyAt','rootSpitReadyAt','caveSpellReadyAt'],ticks);
-      path(e,['st','*'],'bornAt',ticks);
+    var amounts={'paid-turn':turns,'world-clock':ticks};
+    clockCatalog.records.forEach(function(record){
+      if(record.scope==='floor'&&record.pausedFloor==='rebase')path(saved,record.path,record.field,amounts[record.unit]);
+    });
+    function readPath(object,parts){
+      for(var i=0;i<parts.length&&object;i++)object=object[parts[i]];
+      return object;
+    }
+    var actors=[];
+    clockCatalog.actorSources.forEach(function(parts){actors=actors.concat(readPath(saved,parts)||[]);});
+    actors.forEach(function(actor){
+      clockCatalog.records.forEach(function(record){
+        if(record.scope==='actor'&&record.pausedFloor==='rebase')path(actor,record.path,record.field,amounts[record.unit]);
+      });
     });
     saved.turn=turn;saved.clock=clock;
   }
@@ -71,11 +68,12 @@
     state.set('ents',saved.ents.concat([player]));state.set('floorNo',floor);
     player.keys={iron:saved.keys&&saved.keys.iron||0,crystal:saved.keys&&saved.keys.crystal||0};
     state.get('ents').forEach(function(e){e._lx=undefined;e._ly=undefined;e.t=player.t;});
+    sceneEpochs.set(state,(sceneEpochs.get(state)||0)+1);
   }
   function stages(list){
     var names=new Set();list=list.slice();
     list.forEach(function(stage){if(!stage.name||names.has(stage.name)||typeof stage.run!=='function')throw new Error('Invalid entry stage: '+stage.name);names.add(stage.name);});
     return Object.freeze({names:Object.freeze(Array.from(names)),run:function(context){for(var i=0;i<list.length;i++)if(list[i].run(context)===true)return true;return false;}});
   }
-  return Object.freeze({floorKeys:floorKeys,capture:capture,restore:restore,resumeClocks:resumeClocks,stages:stages});
+  return Object.freeze({floorKeys:floorKeys,capture:capture,restore:restore,resumeClocks:resumeClocks,stages:stages,deferScene:deferScene});
 });

@@ -1,0 +1,574 @@
+/* =====================================================================
+   portals.js - elemental portals and plane floors (2026-09-17). See docs/design/game-design.md section 17.
+   One Crypt floor always holds a portal (Light, Shadow or Earth, chosen per run). Stepping through takes
+   you to a freshly generated cave floor of that element (planes.js layouts): its own stone, props, hazard,
+   three enemy kinds and an elite in the central chamber, and a treasure grotto. The portal home stands
+   where you arrived. A plane can be visited once; the Crypt floor waits exactly as you left it.
+   Light uses Justin's creatures (art/reference/planes-enemies/Light); Shadow and Earth still use stand-ins.
+   ===================================================================== */
+
+var PORTAL = 20;
+var PLANE_EL_COL = {light:'#FFE08A', shadow:'#B98CFF', earth:'#9FD86A', fire:'#FF8A3A', water:'#7CC8FF', air:'#E8F4FF'};
+var PLANE_TITLE = {light:'the Plane of Light', shadow:'the Plane of Shadow', earth:'the Plane of Earth', fire:'the Plane of Fire', water:'the Plane of Water', air:'the Plane of Air'};
+
+/* ---------------------------------------------------------------- the tile */
+
+
+function portalElement(){ return floorMeta.plane || floorMeta.portal; }
+function portalOpen(){ return floorMeta.plane ? true : (floorMeta.portal && !floorMeta.portalUsed); }
+
+/* the swirl inside the arch, animated */
+
+function drawPortalTelegraphs(now){
+  if(typeof FoteChaosCurrentRenderer!=='undefined'&&floorMeta&&floorMeta.portalAt&&FoteChaosCurrentRenderer.materialGateAt(floorMeta.portalAt.x,floorMeta.portalAt.y))return;
+
+  var p=floorMeta && floorMeta.portalAt; if(!p || at(p.x,p.y)!==PORTAL || !(revealAll||seen[idxOf(p.x,p.y)])) return;
+  if(!portalOpen()) return;
+  var col=PLANE_EL_COL[portalElement()]||'#FFFFFF', t=ANIM.reduce ? 0 : (now||0)/1000;
+  var cx=(p.x-camX+0.5)*TS, cy=(p.y-camY+0.46)*TS, rx=TS*0.25, ry=TS*0.32;
+  ctx.save();
+  var g=ctx.createRadialGradient(cx,cy,1,cx,cy,rx*1.2); g.addColorStop(0,'rgba(255,255,255,0.85)'); g.addColorStop(0.35,col); g.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.globalAlpha=0.55+0.15*Math.sin(t*2.4); ctx.fillStyle=g; ctx.beginPath(); ctx.ellipse(cx,cy,rx,ry,0,0,7); ctx.fill();
+  ctx.globalAlpha=0.95;
+  for(var i=0;i<14;i++){
+    var a=t*(1.6+(i%3)*0.4)+i*0.9, rr=(0.25+0.75*((i*37%10)/10)) * (1-((t*0.6+i*0.13)%1)*0.6);
+    var px=cx+Math.cos(a)*rx*rr, py=cy+Math.sin(a)*ry*rr, s=Math.max(1.5, TS*0.045);
+    ctx.fillStyle = i%3===0 ? '#FFFFFF' : col; ctx.fillRect(px-s/2, py-s/2, s, s);
+  }
+  ctx.restore();
+
+}
+
+function addPortalLights(L, now, prp){
+  var p=floorMeta && floorMeta.portalAt;
+  if(p && at(p.x,p.y)===PORTAL && portalOpen()) L.push({x:p.x, y:p.y, c:hexRGB(PLANE_EL_COL[portalElement()]||'#FFFFFF'), r:4.2, s:1.0*(ANIM.reduce?1:1+0.1*Math.sin(now/300)), tx:p.x, ty:p.y});
+  (floorMeta && floorMeta.planeLights || []).forEach(function(l){ if(revealAll||seen[idxOf(l.x,l.y)]) L.push({x:l.x, y:l.y, c:hexRGB(l.col), r:l.r, s:l.s, tx:l.x, ty:l.y}); });
+  return L;
+
+}
+
+/* ---------------------------------------------------------------- placing the portal on its Crypt floor */
+
+
+/* ---------------------------------------------------------------- stepping on a portal */
+
+
+/* ---------------------------------------------------------------- building a plane floor */
+var PLANE_PROPS = {
+  light:  {decor:['crystal-gold-small','stalagmite-light','crystal-gold-small'], light:'crystal-gold', lightCol:'#FFE08A', rune:'rune-stone-light', center:'sun-dais', stone:null},
+  shadow: {decor:['crystal-violet','stalagmite-shadow','stalagmite-shadow'], light:'crystal-violet', lightCol:'#B98CFF', rune:'rune-stone-shadow', center:null, stone:'stepping-stone'},
+  earth:  {decor:['fern','root-tangle','glow-mushrooms','fern'], light:'glow-mushrooms', lightCol:'#D8F0A0', rune:'rune-stone-earth', center:null, stone:'mossy-boulder'}
+};
+['crystal-gold','crystal-gold-small','stalagmite-light','crystal-violet','stalagmite-shadow','fern','root-tangle','glow-mushrooms','stepping-stone','sun-dais'].forEach(function(n){ PROPS[n]=PROPS[n]||{flat:1}; });
+PROPS['rune-stone-light']={b:1}; PROPS['rune-stone-shadow']={b:1}; PROPS['rune-stone-earth']={b:1}; PROPS['mossy-boulder']={b:1};
+PROPS['stepping-stone']={flat:1};
+
+
+var PLANE_HAZARD_TEXT = {
+  light: 'Gold light pulses through the cave: when the stones around you start to glow, step off them before the flare.',
+  shadow:'Darkness presses in: you see only a short way here, and farther when you stand in the violet glow of the crystals.',
+  earth: 'The cave groans: when dust starts to trickle, step off the marked stones before the rocks fall.'
+};
+function generatePlaneBase(el, seed){
+  var m=makePlaneMap(el, seed), W=MW, H=MH, K=PLANE_PROPS[el];
+  map=new Uint8Array(W*H); seen=new Uint8Array(W*H); vis=new Uint8Array(W*H);
+  ground=new Uint8Array(W*H); fireT=new Uint8Array(W*H); if(typeof fireSrc!=='undefined') fireSrc=new Uint8Array(W*H);
+  propGrid=new Int16Array(W*H).fill(-1); props=[]; feats=[]; items=[]; ents=[player]; rooms=[]; chestKind={}; levers=[]; plates=null; altars={};
+  if(typeof groundReset==='function') groundReset();
+  spawnedExtra=99; nextSpawn=1e9;
+  floorMeta={floor:floorNo, biome:bidx(), plane:el, exitOpen:false, keyHolder:false, notes:[], planeLights:[], puzzles:[], searched:{}};
+  var rr=mulberry32(seed^0x51A5E);
+  var decorN=0;
+  for(var y=0;y<H;y++) for(var x=0;x<W;x++){
+    var v=m.grid[y*W+x], i=y*W+x;
+    if(v===PL.ROCK){ map[i]=WALL; continue; }
+    map[i] = v===PL.WATER ? WATER : FLOOR;
+    if(v===PL.ENTRY){ map[i]=PORTAL; floorMeta.portalAt={x:x,y:y}; }
+    else if(v===PL.DECOR){ (floorMeta._anchors=floorMeta._anchors||[]).push({x:x,y:y}); if(el==='earth' && rr()<0.5) addProp(x,y,K.decor[(decorN++)%K.decor.length]); }   /* Earth keeps some plants; rock and crystal formations are terrain */
+    else if(v===PL.LIGHT){ if(el==='earth'){ addProp(x,y,K.light); floorMeta.planeLights.push({x:x,y:y,col:K.lightCol,r:3.4,s:0.8}); } }
+    else if(v===PL.BLOCK && K.stone){ addProp(x,y,K.stone); }
+    else if(v===PL.RUNE){
+      /* the rune stone spans two cells where there is room, and its sprite carries its own shadow */
+      /* the stone is as big as it looks: two cells wide and two deep where there is room, and all of it blocks */
+      function runeFree(cx, cy){ return inb(cx,cy) && m.grid[cy*W+cx]!==PL.ROCK && !propAt(cx,cy) && map[idxOf(cx,cy)]===FLOOR; }
+      /* the stone is drawn two cells across, so it needs a 2x2 block of floor: look nearby for one */
+      var spot=null;
+      for(var rr2=0; rr2<=3 && !spot; rr2++) for(var oy2=-rr2; oy2<=rr2 && !spot; oy2++) for(var ox2=-rr2; ox2<=rr2; ox2++){
+        var bx=x+ox2, by=y+oy2;
+        if([[0,0],[1,0],[0,1],[1,1]].every(function(o){ return runeFree(bx+o[0], by+o[1]); })){ spot={x:bx, y:by}; break; }
+      }
+      if(spot && typeof addSetPiece==='function') addSetPiece(spot.x, spot.y, K.rune, 2, 2, {keep:true});
+      else addProp(x, y, K.rune, {keep:true});   /* nowhere for the big one: a single cell instead */
+      var lit=spot || {x:x, y:y};
+      floorMeta.planeLights.push({x:lit.x+(spot?0.5:0), y:lit.y+(spot?0.5:0), col:K.lightCol, r:3.2, s:0.75});
+    }
+    else if(v===PL.TREASURE){ map[i]=CHEST; chestKind[i]='chest-plane'; floorMeta.treasureAt={x:x,y:y}; }
+  }
+  /* seal any pocket of floor the cave generator left walled off, so nothing unreachable shows on the map */
+  (function(){
+    var seenP=new Uint8Array(MW*MH), q=[m.entry.x+m.entry.dx, m.entry.y+m.entry.dy];
+    if(map[idxOf(q[0],q[1])]===WALL){ q=[m.entry.x, m.entry.y]; }
+    seenP[idxOf(q[0],q[1])]=1;
+    for(var h=0; h<q.length; h+=2){
+      var qx=q[h], qy=q[h+1];
+      [[1,0],[-1,0],[0,1],[0,-1]].forEach(function(o){
+        var nx=qx+o[0], ny=qy+o[1]; if(!inb(nx,ny)) return; var i=idxOf(nx,ny);
+        if(seenP[i] || map[i]===WALL) return; seenP[i]=1; q.push(nx,ny);
+      });
+    }
+    var sealed=0;
+    for(var i2=0;i2<map.length;i2++){ if(map[i2]!==WALL && !seenP[i2]){ map[i2]=WALL; sealed++; } }
+  })();
+  /* centerpieces */
+  if(K.center){   /* the centerpiece spans 2x2 and can be stood on */
+    for(var cy2=m.center.y; cy2<=m.center.y+1; cy2++) for(var cx2=m.center.x; cx2<=m.center.x+1; cx2++){ var ci=idxOf(cx2,cy2); if(map[ci]!==FLOOR) map[ci]=FLOOR; var cp=propAt(cx2,cy2); if(cp) removeProp(cp); }
+    var cpc=addSetPiece(m.center.x, m.center.y, K.center, 2, 2, {keep:true}); if(cpc){ cpc.b=0; cpc.flat=1; }
+
+  }
+  if(el==='shadow'){ for(var yy=m.center.y-2;yy<=m.center.y+2;yy++) for(var xx=m.center.x-4;xx<=m.center.x+4;xx++){ if(inb(xx,yy) && map[idxOf(xx,yy)]===FLOOR && rr()<0.5 && [[1,0],[-1,0],[0,1],[0,-1]].some(function(o){ return at(xx+o[0],yy+o[1])===WATER; })) addProp(xx,yy,'stepping-stone'); } }
+  if(el==='shadow'){ floorMeta.planeLights.push({x:m.center.x,y:m.center.y,col:'#7A4FE0',r:5,s:0.9}); }
+  if(el==='light'){ floorMeta.planeLights.push({x:m.center.x+0.5,y:m.center.y+0.5,col:'#FFF4DC',r:6,s:0.9}); }
+  floorMeta.centerAt=m.center;
+  if(typeof ptPlanFeatures==='function' && PT_MAT[el]) ptPlanFeatures(rr);   /* outcrop, spring, wall formations (planeterrain.js) */
+  delete floorMeta._anchors;
+  player.x=m.entry.x+m.entry.dx; player.y=m.entry.y+m.entry.dy; player._lx=undefined;
+  if(!walkable(player.x,player.y)){ player.x=m.entry.x; player.y=m.entry.y; }
+  /* the plane's creatures: 3 kinds, and the elite at the heart of the cave */
+  var roster=PLANE_ROSTER[el], open=[];
+  for(var j=0;j<W*H;j++){ var ox=j%W, oy=(j/W)|0; if(walkable(ox,oy) && !propAt(ox,oy) && map[j]!==PORTAL && Math.abs(ox-player.x)+Math.abs(oy-player.y)>9) open.push({x:ox,y:oy}); }
+  var n=12+bfloor()*2;
+  for(var k=0;k<n && open.length;k++){
+    // Hound companions may already occupy a later entry in the candidate list.
+    open=open.filter(function(c){return !occupied(c.x,c.y);});if(!open.length)break;
+    var c=open.splice(Math.floor(rr()*open.length),1)[0];
+    var kind=roster.mobs[Math.floor(rr()*roster.mobs.length)], e=spawn(kind, c.x, c.y);
+    e.state = rr()<0.6 ? 'asleep' : 'wander';
+    if(kind==='umbralhound'){ var c2=nearFree(c.x,c.y,2); if(c2){ var e2=spawn(kind,c2.x,c2.y); e2.state=e.state; } }
+  }
+  var cc=nearFree(m.center.x, m.center.y+2, 3) || m.center;
+  var elite=spawn(roster.elite, cc.x, cc.y); elite.state='asleep'; elite.elite=true; floorMeta.eliteId=elite.id;
+  if(roster.elite==='mountainheart') setupHeart(elite);
+  computeFOV();
+}
+function presentGeneratedPlane(){resize();updateUI();draw();playMusic('boss');}
+
+/* the plane's treasure */
+
+function openPlaneChest(x,y){
+  var el=floorMeta.plane;
+  setT(x,y,FLOOR); sfx('chest-open'); sparkleFx(x,y,'light',40);
+  addProp(x,y,'chest-wood-open',{flat:false, b:false, openChest:true});
+  var loot=[];
+  for(var g=0; g<2; g++){ var gear=randomGear(); if(gear.it){ if(gear.it.tier!==undefined) gear.it.tier=Math.min(3,(typeof gear.it.tier==='number'?gear.it.tier:1)+1); if(gear.kind==='weapon'||gear.kind==='armor') gear.it.enchant=el; gear.it.cursed=false; } loot.push(gear); }
+  var motes=2+(rng()<0.5?1:0); for(var mt=0;mt<motes;mt++) loot.push({kind:'mote', el:el});
+  loot.push({kind:'essence', n:Math.round((80+rng()*40)*(typeof essenceMult==='function'?essenceMult():1))});
+  loot.forEach(function(it){ var c=nearFree(x,y,2)||{x:x,y:y}; it.x=c.x; it.y=c.y; items.push(it); });
+  log('The rune chest opens: treasure of '+PLANE_TITLE[el]+'.','c-kill');
+  stepOn();
+
+}
+/* no stragglers wander into a plane */
+
+
+/* ---------------------------------------------------------------- plane creatures */
+var PLANE_ROSTER = {
+  light:  {mobs:['dawnsentinel','halowisp','prismscarab'], elite:'radiantwarden'},
+  shadow: {mobs:['stalker','gloommoth','umbralhound'], elite:'nightwarden'},
+  earth:  {mobs:['burrower','crystalgolem','mosstroll'], elite:'mountainheart'}
+};
+(function(){
+  var M=MONSTERS;
+  /* fixed: these are tuned for the plane they guard, so spawn() does not put the dungeon floor curve on top */
+  function mk(o){ o.band=[0,0]; o.w=0; o.speed=o.speed||100; o.range=o.range||1; o.fixed=true; return o; }
+  /* Light (Justin's creatures, 2026-09-17) */
+  M.dawnsentinel = mk({name:'Dawn Sentinel', sprite:'m-dawn-sentinel', col:'#F6E7B0', ch:'D', hp:75, dmg:[8,11], acc:66, eva:12, armor:5, xp:42, reflects:4, el:'light', art:1.05, sfx:'golem'});
+  M.halowisp     = mk({name:'Halo Wisp', sprite:'m-halo-wisp', col:'#FFE08A', ch:'w', hp:24, dmg:[4,6], acc:60, eva:34, armor:0, xp:30, healer:true, flying:true, el:'light', art:0.75, sfx:'wisp'});
+  M.prismscarab  = mk({name:'Prism Scarab', sprite:'m-prism-scarab', col:'#C8F0FF', ch:'p', hp:55, dmg:[6,9], acc:66, eva:14, armor:3, xp:36, range:4, prism:true, el:'light', art:0.85, sfx:'spider'});
+  /* 2026-09-18 (Justin): both wardens brought to the Heart's 110 HP and 8-12 - 150/140 and 9-14 was out of reach at level 8 */
+  M.radiantwarden= mk({name:'Radiant Warden', sprite:'m-radiant-warden', col:'#FFD24A', ch:'R', hp:160, dmg:[11,15], acc:72, eva:18, armor:5, xp:300, elite:true, brands:true, el:'light', art:1.3, sfx:'radiant-warden'});
+  M.stalker      = mk({name:'Stalker', sprite:'m-stalker', col:'#2A2436', ch:'s', hp:75, dmg:[8,11], acc:70, eva:38, armor:1, xp:40, lurks:true, shadowy:true, art:1.0, sfx:'hound'});
+  M.gloommoth    = mk({name:'Gloom Moth', sprite:'m-gloom-moth', col:'#6A4F8A', ch:'m', hp:24, dmg:[4,6], acc:62, eva:44, armor:0, xp:30, snuffs:true, flying:true, erratic:true, art:0.85, sfx:'wisp'});
+  M.umbralhound  = mk({name:'Umbral Hound', sprite:'m-umbral-hound', col:'#2A2436', ch:'h', hp:55, dmg:[6,9], acc:66, eva:20, armor:1, xp:34, howls:true, shadowy:true, art:0.95, sfx:'hound'});
+  M.nightwarden  = mk({name:'Night Warden', sprite:'m-night-warden', col:'#B8B0D8', ch:'W', hp:160, dmg:[11,15], acc:72, eva:20, armor:4, xp:300, elite:true, moonbound:true, shadowy:true, art:1.2, sfx:'night-warden'});
+  M.burrower     = mk({name:'Burrower', sprite:'m-burrower', col:'#8A6A4A', ch:'b', hp:55, dmg:[6,9], acc:64, eva:10, armor:3, xp:38, burrows:true, art:0.95, sfx:'golem'});
+  M.crystalgolem = mk({name:'Crystal Golem', sprite:'m-crystal-golem', col:'#9A8AC0', ch:'G', hp:100, dmg:[9,13], acc:60, eva:4, armor:10, xp:46, shatters:true, el:'earth', art:1.05, sfx:'golem'});
+  M.mosstroll    = mk({name:'Moss Troll', sprite:'m-moss-troll', col:'#6F8A44', ch:'T', hp:100, dmg:[9,13], acc:62, eva:8, armor:2, xp:46, regenerates:true, living:true, art:1.1, sfx:'brute'});
+  /* 2026-09-17: 180 HP and 10-15 was an attrition fight a level 9 character could not win - builds are not
+     online yet at that depth. 110 and 8-12 keeps him lethal if you stand there and finishes in a reasonable
+     number of exchanges. */
+  M.mountainheart= mk({name:'Heart of the Mountain', sprite:'m-mountain-heart', col:'#C08A40', ch:'M', hp:160, dmg:[12,16], acc:68, eva:0, armor:6, xp:320, elite:true, big:2, still:true, el:'earth', art:1.9, sfx:'heart'});
+  M.crystalnode  = mk({name:'Crystal Node', sprite:'m-crystal-golem', col:'#C8A0FF', ch:'*', hp:30, dmg:[0,0], acc:0, eva:0, armor:3, xp:20, object:true, art:0.6, sfx:'golem'});
+  ['dawnsentinel','halowisp','prismscarab','radiantwarden','stalker','gloommoth','umbralhound','nightwarden','burrower','crystalgolem','mosstroll','mountainheart','crystalnode'].forEach(function(k){ DROPS[k]=DROPS[k]||{chance:0.3, table:{essence:8, sigil:2, gear:3}}; });
+})();
+
+/* the plane hazards */
+function planeTick(){
+  var el=floorMeta && floorMeta.plane; if(!el || !player || player.hp<=0) return;
+  floorMeta.hz=(floorMeta.hz||0)+1;
+  var marks=floorMeta.marks=(floorMeta.marks||[]).filter(function(mk){ return turn<mk.until; });
+  var pending=floorMeta.hazardPending;
+  if(pending && turn>=pending.at){
+    floorMeta.hazardPending=null; floorMeta.marks=marks.filter(function(mk){ return mk.kind!=='hazard'; });
+    pending.cells.forEach(function(i){
+      var x=i%MW, y=(i/MW)|0;
+      burst(x,y, el==='light'?'light':'earth', 8, 0.05);
+      ents.slice().forEach(function(t){
+        if(t.x!==x || t.y!==y) return;
+        if(t!==player && t.base && (PLANE_ROSTER[el].mobs.indexOf(t.kind)>=0 || t.kind===PLANE_ROSTER[el].elite)) return;
+        var hd=applyDamage(t, roll(5,8)+Math.floor(floorNo/2), el==='light'?'light':'phys', null); floatText(t.x,t.y,String(hd), el==='light'?'light':'phys');
+        if(el==='light') applyStatus(t,'blind',2);
+        if(t===player){ log((el==='light'?'Light flare: ':'Falling rocks: ')+combatDamageNumber(hd,el==='light'?'light':'phys')+(el==='light'&&gameEffects.has(t,'blind')?'; Blind':'')+'.','c-you'); if(player.hp<=0){  if(player.hp<=0) death(); } }
+        else if(t.hp<=0) kill(t, null);
+      });
+    });
+    if(el==='earth') SHAKE=7;
+  }
+  var every = el==='light' ? 4 : el==='earth' ? 6 : 0;
+  if(every && floorMeta.hz%every===0 && !floorMeta.hazardPending){
+    var cells=[];
+    if(el==='light'){
+      /* a few blotches of glowing floor around you; crystal and stone shade is safe */
+      for(var b=0;b<3;b++){ var bx=player.x+ri(-5,5), by=player.y+ri(-4,4); for(var y=by-1;y<=by+1;y++) for(var x=bx-2;x<=bx+2;x++){ if(!inb(x,y) || !walkable(x,y)) continue; var shade=[[1,0],[-1,0],[0,1],[0,-1]].some(function(o){ var p=propAt(x+o[0],y+o[1]); return p && /crystal|stalagmite|rune|dais/.test(p.name); }); if(!shade && rng()<0.8) cells.push(idxOf(x,y)); } }
+      if(rng()<0.6) cells.push(idxOf(player.x,player.y));
+    } else {
+      for(var k=0;k<7;k++){ var x2=player.x+ri(-3,3), y2=player.y+ri(-3,3); if(inb(x2,y2) && walkable(x2,y2)) cells.push(idxOf(x2,y2)); }
+    }
+    cells=cells.filter(function(v,i,a){ return a.indexOf(v)===i; });
+    floorMeta.hazardPending={cells:cells, at:turn+2};
+    floorMeta.marks.push({cells:cells, col: el==='light' ? '#FFD84A' : '#B08A5A', until:turn+2, kind:'hazard'});
+    log(el==='light' ? '<b>Light flare:</b> leave marked ground!' : '<b>Falling rocks:</b> leave marked ground!','c-you',{priority:'warning'});
+  }
+}
+
+
+/* Shadow: darkness closes in, except near the violet crystals */
+
+
+function inMoonlight(e){ return (floorMeta.planeLights||[]).some(function(l){ return Math.abs(l.x-e.x)<=2 && Math.abs(l.y-e.y)<=2; }); }
+
+/* damage rules for plane creatures */
+
+
+function canSeeFrom(a,b){ var path=boltPath(a.x,a.y,b.x,b.y), end=path[path.length-1]; return end && end.x===b.x && end.y===b.y; }
+function planeCreaturesTick(){
+  if(!floorMeta || !floorMeta.plane || !player) return;
+  if(player.snuffed>0){ player.snuffed--; if(player.snuffed===0){ log('Your light steadies.','c-info'); computeFOV(); } }
+  ents.slice().forEach(function(e){
+    var b=e.base||{};
+    if(b.regenerates && e.hp>0 && e.hp<e.maxhp && !(e._burnedAt>turn-5))gameDamage.heal(e,4,e,{natural:true,regen:true});
+  });
+}
+
+
+function planeCreatureBehavior(e){
+  var b=e.base||{};
+  if(!floorMeta || (!floorMeta.plane&&!e.planeEncounter)) return false;
+  if(e.parent || b.object){  return true; }
+  var see=canSeePlayer(e), d=dist(e,player);
+  if(e.state==='hunt'){
+    if(b.healer){
+      e.healCd=(e.healCd||0)-1;
+      var hurt=ents.filter(function(o){ return o.foe && o!==e && o.hp<o.maxhp && dist(o,e)<=4; }).sort(function(a,z){ return a.hp/a.maxhp-z.hp/z.maxhp; })[0];
+      if(hurt && e.healCd<=0){ gameDamage.heal(hurt,8,e); sparkleFx(hurt.x,hurt.y,'light',16); e.healCd=2;  return true; }
+      if(d<=3 && fleeStep(e)){  return true; }
+    }
+    if(b.howls && !e.howled && see){ e.howled=true; log('Umbral Hound: nearby enemies alerted.','c-you'); ents.forEach(function(o){ if(o.foe && o.state!=='hunt' && dist(o,e)<=14){ o.state='hunt'; o.lastSeen={x:player.x,y:player.y}; } });  return true; }
+    if(b.burrows&&canActorMove(e)){
+      e.bCd=(e.bCd||0)-1;
+      if(!e.burrowed && d>2 && e.bCd<=0){ e.burrowed=true; e.bCd=6; if(vis[idxOf(e.x,e.y)]) log('Burrower dives.','c-info');  return true; }
+      if(e.burrowed){
+        if(d<=1 || e.bCd<=3){ var sp=nearFree(player.x,player.y,1); if(sp){ e.x=sp.x; e.y=sp.y; } e.burrowed=false; SHAKE=4; log('Burrower emerges!','c-you');  return true; }
+        var nx=e.x+Math.sign(player.x-e.x), ny=e.y+Math.sign(player.y-e.y); if(inb(nx,ny) && at(nx,ny)!==WALL && !occupied(nx,ny)){ e.x=nx; e.y=ny; }
+         return true;
+      }
+    }
+    if(b.moonbound&&canActorMove(e)){
+      e.tpCd=(e.tpCd||0)-1;
+      if(e.tpCd<=0 || (d<=1 && inMoonlight(e))){
+        var shadows=[]; for(var y=player.y-7;y<=player.y+7;y++) for(var x=player.x-7;x<=player.x+7;x++){ if(inb(x,y) && walkable(x,y) && !occupied(x,y) && dist({x:x,y:y},player)>=2 && dist({x:x,y:y},player)<=4) shadows.push({x:x,y:y}); }
+        if(shadows.length){
+          var s2=pick(shadows);
+          sparkleFx(e.x, e.y, 'dark', 30); if(typeof ringFx==='function') ringFx(e.x, e.y, '#7A4FE0', 2);
+          e.x=s2.x; e.y=s2.y; e._lx=undefined; e.tpCd=3;
+          sparkleFx(s2.x, s2.y, 'dark', 30); if(typeof ringFx==='function') ringFx(s2.x, s2.y, '#B98CFF', 2);
+          if(typeof sfx==='function') sfx('vanish',{from:e});
+          log(combatText(e.name)+': teleported.','c-info');  return true;
+        }
+      }
+    }
+    if(b.brands){
+      e.brandCd=(e.brandCd||0)-1;
+      if(e.brand && turn>=e.brand.at){
+        var dmg=Math.min(Math.round(e.brand.stored), Math.round(player.maxhp*0.4)); var los=canSeePlayer(e); e.brand=null;
+        if(los && dmg>0){ var bd=applyDamage(player, dmg, 'light', e); floatText(player.x,player.y,String(bd),'light'); log('Judgment: '+combatDamageNumber(bd,'light')+'.','c-you'); if(player.hp<=0) kill(player,e); }
+        else log('Judgment fades.','c-good');
+         return true;
+      }
+      if(!e.brand && e.brandCd<=0 && see){ e.brand={at:turn+3, stored:0}; e.brandCd=7; setClip(e,'attack'); log('<b>Judgment:</b> damage dealt returns in 3 turns. Break sight!','c-you',{priority:'warning'});  return true; }
+    }
+  }
+  if(b.still){
+    if(e.st.stun || e.st.frozen || e.st.fear){return true;}
+    if(e.state!=='hunt'){
+      /* dormant until struck or stood next to: a boss that cannot chase you should not start the fight
+         either, so you get to clear its crystal nodes and its escort first (2026-09-17) */
+      if(e._provoked || heartTouching(e)){ e.state='hunt'; log('<b>'+e.name+'</b> wakes with a rumble.','c-you'); sfx('heart-intro',{from:e}); SHAKE=6; }
+       return true;
+    }
+    if(heartTouching(e)){ attack(e,player);  return true; }
+    /* anything of yours standing against it gets hit too - it used to ignore a summoned servant entirely */
+    var near=ents.filter(function(o){ return o.ally && o.hp>0 && [[0,0],[1,0],[0,1],[1,1]].some(function(q){
+      return Math.max(Math.abs(e.x+q[0]-o.x), Math.abs(e.y+q[1]-o.y))<=1; }); })[0];
+    if(near){ attack(e, near);  return true; }
+    /* it cannot follow you, so it reaches: stone spikes every third turn at anything it can see within 6 */
+    e.spikeCd=(e.spikeCd||0)-1;
+    if(see && d<=6 && e.spikeCd<=0){
+      e.spikeCd=3; setClip(e,'attack'); SHAKE=4;
+      if(typeof burst==='function') burst(player.x, player.y, 'earth', 20, 0.06);
+      var sd=applyDamage(player, roll(7,11)+Math.floor(floorNo/2), 'phys', e);
+      floatText(player.x, player.y, String(sd), 'phys');
+      log(combatText(e.name)+' spikes: '+combatDamageNumber(sd,'phys')+'.','c-you');
+      if(rng()<0.35) applyStatus(player,'root',2);
+      if(player.hp<=0) kill(player, e);
+       return true;
+    }
+     return true;
+  }
+  return false;
+
+}
+/* the Stalker is unseen until it is next to you; a burrowed Burrower is unseen too */
+/* creatures that are out of sight (a lurking Stalker, a burrowed Burrower, the limbs of a big elite) are simply not
+   drawn. They used to be hidden by clearing their tile's visibility, which also unlit the tile and left a black square. */
+
+
+/* Saved actors retain their old base records; apply only the requested tuning. */
+function refreshEncounterTuning(){
+  var chaosCombat=floorMeta&&floorMeta.chaosPreview&&floorMeta.chaosCombat;
+  if(chaosCombat&&chaosCombat.damageVersion!==2){
+    (chaosCombat.hazards||[]).forEach(function(h){h.damage=Math.max(1,Math.round(h.damage*1.5));});
+    chaosCombat.damageVersion=2;
+  }
+  ents.concat(floorMeta.buriedGhouls||[],floorMeta.pendingLich?[floorMeta.pendingLich.entity]:[]).forEach(function(e){
+    if(!e||!e.base)return;
+    // Size is a species trait, including old summoned/Shade base snapshots.
+    // Refresh it before hostile tuning exits without changing resolved stats.
+    var species=MONSTERS[e.kind];
+    if(species&&species.tiny&&!e.base.tiny)e.base=Object.assign({},e.base,{tiny:true});
+    if(e.ally&&e.undeadServant){
+      var form=UNDEAD_FORMS.find(function(f){return f.sprite&&f.sprite===e.base.sprite;});
+      if(form&&form.art)e.base=Object.assign({},e.base,{art:form.art});
+    }
+    if(e.hp<=0)return;
+    /* A Shade owns a snapshot of its source's resolved stats. Reapplying
+     * hostile content migrations can restore full damage after a save. */
+    if(e.ally&&e.shade)return;
+    if(e.foe&&!e.ally&&!floorMeta.plane&&!floorMeta.chaosPreview){
+      var combatTuning={bat:['speed'],brute:['armor','hint'],shade:['speed','chillTouch','attackType'],bonearcher:['poisons'],
+        ghoul:['bleeds','bleedTurns','bleedDamage'],acolyte:['fearTouch','hint']}[e.kind];
+      if(combatTuning&&MONSTERS[e.kind]){
+        e.base=Object.assign({},e.base);
+        combatTuning.forEach(function(key){e.base[key]=MONSTERS[e.kind][key];});
+      }
+    }
+    if(e.kind==='ghoul'){
+      var ghoulBase=MONSTERS.ghoul;
+      if(e.base.hp>0&&e.base.hp!==ghoulBase.hp){
+        var ghoulHealth=e.hp/e.maxhp;e.maxhp=Math.max(1,Math.round(e.maxhp*ghoulBase.hp/e.base.hp));
+        e.hp=Math.max(1,Math.min(e.maxhp,Math.round(e.maxhp*ghoulHealth)));
+      }
+      if(String(e.base.dmg)!==String(ghoulBase.dmg)){
+        // Preserve existing biome/elite adjustments while changing base damage.
+        e.dmg=(e.dmg||e.base.dmg).map(function(n,i){return n+sDMG(ghoulBase.dmg[i])-sDMG(e.base.dmg[i]);});
+      }
+      e.base=Object.assign({},e.base,{hp:ghoulBase.hp,dmg:ghoulBase.dmg.slice(),speed:ghoulBase.speed,col:ghoulBase.col,
+        art:ghoulBase.art,artLeft:ghoulBase.artLeft,hint:ghoulBase.hint});
+      e.col=ghoulBase.col;
+    }
+    if(e.kind==='drowblade'&&!e.base.spawnInvisible){e.base=Object.assign({},e.base,{spawnInvisible:true});if(e.state==='hunt')e.visibilityRevealed=true;}
+    if(['slime','greenslime','pebbleslime','caveslime'].indexOf(e.kind)>=0&&e.foe&&!e.ally&&!floorMeta.plane&&!floorMeta.chaosPreview){
+      var appearanceSprite=e.base.sprite,slimeBase=MONSTERS[e.kind];
+      if(e.base.hp>0&&e.base.hp!==slimeBase.hp){
+        var slimeHealth=e.hp/e.maxhp;e.maxhp=Math.max(1,Math.round(e.maxhp*slimeBase.hp/e.base.hp));
+        e.hp=Math.max(1,Math.min(e.maxhp,Math.round(e.maxhp*slimeHealth)));
+      }
+      e.base=Object.assign({},e.base,{hp:slimeBase.hp,armor:slimeBase.armor,xp:slimeBase.xp,sprite:slimeBase.sprite,hint:slimeBase.hint,artLeft:slimeBase.artLeft});
+      if(e.slimeDescendant||e.small||e.slimeOffspring||e.greenOffspring||e.noLoot){e.noXp=true;e.slimeDescendant=true;}
+      if((e.kind==='slime'||e.kind==='greenslime')&&(e.small||e.slimeOffspring||e.greenOffspring)){
+        e.name=slimeBase.name;e.base=Object.assign({},slimeBase);e.maxhp=Math.max(e.hp,sHP(slimeBase.hp));
+        e.dmg=slimeBase.dmg.map(function(n){return sDMG(n);});e.beta11Balanced=false;
+        delete e.small;delete e.slimeOffspring;delete e.greenOffspring;
+      }
+      delete e.split;delete e.greenSplit;
+      if(e.base.sprite!==appearanceSprite)FoteContent.appearanceChanged(floorMeta);
+    }
+    if(typeof applyEarlyFloorEnemyTuning==='function')applyEarlyFloorEnemyTuning(e);
+    if(typeof isUnderdarkEnemy==='function'&&isUnderdarkEnemy(e)){
+      // Regular Underdark base HP rose in 1.5. Saved actor stats retain their
+      // biome/elite scaling and wounds; update that base before pending tuning.
+      // Bosses, Spiderlings and player pets keep their separately owned health.
+      if(!e.boss&&!e.caveBoss&&!e.deepBoss&&!e.base.boss&&!e.base.object&&['drowblade','drowpriestess','thoughteater','webspitter','drider','fireimp','emberspider'].indexOf(e.kind)>=0){
+        var underdarkBase=MONSTERS[e.kind];
+        if(underdarkBase&&Number.isFinite(e.base.hp)&&e.base.hp>0&&Number.isFinite(e.maxhp)&&e.maxhp>0&&e.base.hp!==underdarkBase.hp){
+          var underdarkHealth=e.hp/e.maxhp;
+          e.maxhp=Math.max(1,Math.round(e.maxhp*underdarkBase.hp/e.base.hp));
+          e.hp=Math.max(1,Math.min(e.maxhp,Math.round(e.maxhp*underdarkHealth)));
+          e.base=Object.assign({},e.base,{hp:underdarkBase.hp});
+        }
+      }
+      betaEnemyBalance(e);
+    }
+    if(['bat','slime','caveslime','shade','stalker','gloommoth','dawnsentinel','halowisp','prismscarab','radiantwarden','chaos-rift-skitter','chaos-lens-bearer','chaos-lash-dancer','chaos-razor-dancer'].indexOf(e.kind)>=0){
+      var tuned=MONSTERS[e.kind];if(tuned){e.base=Object.assign({},e.base);['eva','el','rootSpit','attackType','chillTouch'].forEach(function(key){if(tuned[key]!==undefined)e.base[key]=tuned[key];});}
+    }
+    if(floorMeta&&floorMeta.chaosPreview&&e.base.chaosAI){
+      var current=MONSTERS[e.kind];
+      if(current&&current.chaosAI){
+        if(e.base.hp>0&&e.base.hp!==current.hp){
+          var healthFraction=e.hp/e.maxhp;
+          e.maxhp=Math.max(1,Math.round(e.maxhp*current.hp/e.base.hp));
+          e.hp=Math.max(1,Math.min(e.maxhp,Math.round(e.maxhp*healthFraction)));
+        }
+        if(String(e.base.dmg)!==String(current.dmg))e.dmg=current.dmg.map(function(n){return sDMG(n);});
+        e.base=Object.assign({},e.base,{hp:current.hp,dmg:current.dmg.slice(),sfx:current.sfx,statusImmunities:(current.statusImmunities||[]).slice()});
+        if(current.spawnInvisible)e.base.spawnInvisible=true;else delete e.base.spawnInvisible;
+        if(e.windup&&e.windup.chaos)e.windup=null;
+      }
+    }
+    if(e.kind==='bonearcher')e.base=Object.assign({},e.base,{poisons:MONSTERS.bonearcher.poisons});
+    if(e.kind==='mountainheart'){
+      e.base=Object.assign({},e.base,{dmg:MONSTERS.mountainheart.dmg.slice()});
+      e.dmg=MONSTERS.mountainheart.dmg.map(function(n){return sDMG(n);});
+    }
+  });
+}
+
+/* ---------------------------------------------------------------- 2x2: the Heart of the Mountain */
+function setupHeart(h){
+  /* the main body sits on its top-left tile; three hollow limbs fill the rest and pass any damage to it */
+  h.size=2;
+  [[1,0],[0,1],[1,1]].forEach(function(o){
+    var x=h.x+o[0], y=h.y+o[1];
+    if(!inb(x,y)) return;
+    if(!walkable(x,y)) setT(x,y,FLOOR);
+    var p=propAt(x,y); if(p) removeProp(p);
+    var limb=spawn('crystalnode', x, y); limb.parent=h; limb.name=h.name; limb.noXp=true; limb.state='hunt'; limb.hp=limb.maxhp=9999;
+  });
+  /* its crystal nodes around the chamber. They are what makes the Heart mortal, so each one has to sit on
+     ground you can reach: 11 of 29 used to land inside the rock, which left the Heart immune for good
+     (2026-09-17). Whatever cannot be placed is simply one node fewer, never an unbreakable one. */
+  floorMeta.heartNodes=[];
+  var reach = (typeof bfsFrom==='function') ? bfsFrom(player.x, player.y) : null;
+  function nodeSpot(){
+    for(var t=0; t<400; t++){
+      var rad = 3 + Math.floor(t/50);
+      var c = nearFree(h.x+ri(-rad,rad), h.y+ri(-rad,rad), 2);
+      if(!c) continue;
+      if(Math.abs(c.x-h.x)<=1 && Math.abs(c.y-h.y)<=1) continue;                 /* not under the body */
+      if(reach && !(reach[idxOf(c.x,c.y)]>=0)) continue;                          /* must be walkable-to */
+      if(occupied(c.x,c.y)) continue;
+      return c;
+    }
+    return null;
+  }
+  for(var i=0;i<3;i++){
+    var c=nodeSpot(); if(!c) break;
+    var n=spawn('crystalnode', c.x, c.y); n.state='hunt'; floorMeta.heartNodes.push(n.id);
+  }
+}
+function heartTouching(h){ return [[0,0],[1,0],[0,1],[1,1]].some(function(o){ return Math.max(Math.abs(h.x+o[0]-player.x), Math.abs(h.y+o[1]-player.y))<=1; }); }
+
+
+/* The Heart's sprite already draws at TS * art(1.9) * big(1.25), so it spills well past its tile. What it
+   does not have is a 2x2 FOOTPRINT: `big:2` is read by the renderer for scale and by the lightmap, but
+   nothing uses it for collision or targeting, so it occupies one tile. Left as is deliberately. */
+
+
+/* ---------------------------------------------------------------- 2026-09-20: a moonbound creature shows its state
+   Justin: "the shadow plane is confusing... the warden took 0 damage from range and I'm not sure what he was doing."
+   Out of the crystals' light it wears a dark shroud and cannot be hurt; inside it, it glows and is open to a blow. */
+
+function drawMoonboundOverlay(e, px, py, opts){
+  if(!e || !e.base || !e.base.moonbound || !(typeof floorMeta!=='undefined' && floorMeta && floorMeta.plane)) return;
+  var lit = typeof inMoonlight==='function' && inMoonlight(e), now=performance.now();
+
+  ctx.save();
+  if(lit){
+    var a=0.25+0.15*Math.sin(now/260);
+    var g=ctx.createRadialGradient(px+TS/2, py+TS*0.55, TS*0.1, px+TS/2, py+TS*0.55, TS*0.8);
+    g.addColorStop(0,'rgba(201,178,255,'+a.toFixed(3)+')'); g.addColorStop(1,'rgba(201,178,255,0)');
+    ctx.globalCompositeOperation='lighter'; ctx.fillStyle=g; ctx.fillRect(px-TS*0.4, py-TS*0.4, TS*1.8, TS*1.8);
+  } else {
+    ctx.globalAlpha=0.45; ctx.fillStyle='#120E1E';
+    ctx.beginPath(); ctx.ellipse(px+TS/2, py+TS*0.5, TS*0.46, TS*0.52, 0, 0, 7); ctx.fill();
+  }
+  ctx.restore();
+
+
+}
+
+/* Named floor-generation stages; ordered by generation-adapter.js. */
+function placeGeneratedPortal(seed){
+
+  if(!floorMeta.portal || floorMeta.boss) return;
+  var cand=rooms.filter(function(r){ return !r.role && !r.pocket && !r.special && r.w>=4 && r.h>=4; });
+  cand.sort(function(a,b){ return (Math.abs(b.cx-player.x)+Math.abs(b.cy-player.y))-(Math.abs(a.cx-player.x)+Math.abs(a.cy-player.y)); });
+  for(var i=0;i<cand.length;i++){
+    var r=cand[i], c={x:r.cx, y:r.y+1};
+    if(at(c.x,c.y)===FLOOR && !propAt(c.x,c.y) && !itemAt(c.x,c.y) && !occupied(c.x,c.y)){
+      setT(c.x,c.y,PORTAL); floorMeta.portalAt=c; r.role='portal';
+      floorMeta.notes.push('Something hums on this floor: <b>a portal to '+PLANE_TITLE[floorMeta.portal]+'</b> stands open.');
+      break;
+    }
+  }
+}
+
+/* Named travel and entry stages; ordered by transition-adapter.js. */
+function entryPortalPrompt(){
+  if(at(player.x,player.y)!==PORTAL) return;
+  if(typeof FoteChaosEntryPreview!=='undefined'&&FoteChaosEntryPreview.prompt())return;
+  if(typeof FoteChaosCampaign!=='undefined'&&FoteChaosCampaign.materialPortalPrompt())return;
+  if(typeof FoteChaosPreview!=='undefined'&&FoteChaosPreview.active()){
+    var linked=FoteChaosPreview.atPortal(player.x,player.y);if(!linked)return;
+    stopTravel();
+    confirmBox(linked.label,'This portal leads to another island on this floor. The way back stays open.','Step through',function(){
+      if(gameTurns.busy()||!FoteChaosPreview.active())return;
+      var trip=FoteChaosPreview.travelPortal(linked);
+      if(trip){
+        var region=FoteChaosPreview.active().regions.find(function(r){return r.id===trip.destination.regionId;});
+        log('You step into '+(region?region.name:'the next island')+'. The portal behind you stays open.','c-info');
+        player.movedThisTurn=false;endTurn();afterTurn(function(){writeSlot('auto','Chaos portal');});
+      }
+    });
+    return;
+  }
+  if(floorMeta.plane){
+    confirmBox('Leave '+PLANE_TITLE[floorMeta.plane], (floorMeta.eliteDead ? 'The way home shimmers.' : 'The guardian of this plane still lives.')+' Go back the way you came? The portal closes behind you.', 'Return', function(){ leavePlane(); });
+  } else if(floorMeta.portal && !floorMeta.portalUsed){
+    confirmBox('Step through the portal', 'A cave of pure '+floorMeta.portal+' lies beyond. A guardian waits at its heart, and treasure at its far end. The portal you arrive by will bring you back.', 'Step through', function(){ enterPlane(floorMeta.portal); });
+  } else if(floorMeta.portalUsed) log('The portal has gone dark.','c-info');
+  return;
+}
+
+/* Named character presentation passes; composed by render-adapter.js. */
+
+function prepareMoonboundActor(job){
+  var e=job.entity;if(!e||!e.base||!e.base.moonbound||!floorMeta||!floorMeta.plane)return;
+  return function(complete){if(complete)drawMoonboundOverlay(e,job.x,job.y,job.options);};
+}
+function hidePlaneActor(job){
+  var e=job.entity;if(!e||e===player||revealAll||!floorMeta||!floorMeta.plane)return;
+  var b=e.base||{};if((b.lurks&&dist(e,player)>1)||(b.burrows&&e.burrowed)||e.parent)return true;
+}
+function prepareMountainHeartActor(job){
+  var e=job.entity,px=job.x,py=job.y,opts=job.options;
+  if(!e||e.kind!=='mountainheart'||!e._clip||e._clip.name!=='attack'||ANIM.reduce)return;
+  var age=performance.now()-e._clip.t0,p=age/540;if(p<0||p>=1)return;
+  var lift=p<.32?Math.sin(p/.32*Math.PI/2):0,slam=p>=.32?Math.sin(Math.min(1,(p-.32)/.68)*Math.PI):0;
+  var cx=px+TS*.5,feet=py+TS*.97;
+  ctx.save();ctx.translate(cx,feet-TS*.12*lift);ctx.scale(1+.07*slam,1+.05*lift-.13*slam);ctx.translate(-cx,-feet);
+  return function(complete){ctx.restore();if(complete&&p>=.32){
+    ctx.save();ctx.globalAlpha=(opts&&opts.alpha!==undefined?opts.alpha:1)*(1-p)*.6;
+    ctx.strokeStyle='#C6A26B';ctx.lineWidth=Math.max(1,TS*.025);ctx.beginPath();ctx.ellipse(cx,feet,TS*(.45+p*.65),TS*(.13+p*.18),0,0,Math.PI*2);ctx.stroke();ctx.restore();
+  }};
+}

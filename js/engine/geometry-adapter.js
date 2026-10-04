@@ -11,6 +11,10 @@ function visionCast(context){
     darkTrapRoom:room&&room.puzzle&&room.puzzle.kind==='darktraps'&&room.dark,darkRoom:room&&room.dark,
     lightAffinity:player.aff.light>0,fireAffinity:player.aff.fire>0});
   context.view={x:player.x,y:player.y,width:MW,height:MH,vis:vis,seen:seen,opaque:opaque,wall:ptWallCell};
+  context.blind=playerBlind();
+  // Enemies retain the normally masked sight. Its exploration writes are
+  // private while Blind; only the player's adjacent cast may learn new cells.
+  if(context.blind)context.view=Object.assign({},context.view,{vis:new Uint8Array(MW*MH),seen:seen.slice()});
   FoteGeometry.cast(context.view,radius);
 }
 function visionSmoke(context){var smoke=smokeActive();if(smoke&&vis)FoteGeometry.mask(context.view,smoke._mask);}
@@ -22,11 +26,18 @@ function visionRockBand(context){
 }
 function visionDeepDarkness(context){
   var globes=deepDarkActive();if(!globes.length||!vis){DEEP_RAWVIS=null;return;}
-  DEEP_RAWVIS=vis.slice();var mask=new Uint8Array(MW*MH);globes.forEach(function(globe){globe.cells.forEach(function(i){mask[i]=1;});});FoteGeometry.mask(context.view,mask);
+  DEEP_RAWVIS=context.view.vis.slice();var mask=new Uint8Array(MW*MH);globes.forEach(function(globe){globe.cells.forEach(function(i){mask[i]=1;});});FoteGeometry.mask(context.view,mask);
+}
+function visionBlind(context){
+  BLIND_RAWVIS=context.blind?context.view.vis:null;
+  if(!context.blind)return;
+  context.view=Object.assign({},context.view,{vis:vis,seen:seen});
+  FoteGeometry.cast(context.view,1,{adjacentOnly:true});
 }
 var visionStages=FoteTransitions.stages([
   {name:'radius-and-sight',run:visionCast},{name:'smoke-mask',run:visionSmoke},
-  {name:'plane-rock-band',run:visionRockBand},{name:'darkness-mask-and-darksight',run:visionDeepDarkness}
+  {name:'plane-rock-band',run:visionRockBand},{name:'darkness-mask-and-darksight',run:visionDeepDarkness},
+  {name:'blind-adjacent-sight',run:visionBlind}
 ]);
 function computeFOV(radius){visionStages.run({radius:radius});}
 /* Actor concealment never changes tile FOV: the floor and its lights remain
@@ -35,9 +46,10 @@ function computeFOV(radius){visionStages.run({radius:radius});}
 function actorConcealed(e){
   return !!(e&&e!==player&&e.base&&e.base.spawnInvisible&&!e.visibilityRevealed&&!revealAll&&!(e.foe&&player&&player.dawnUntil>turn));
 }
+function playerBlind(){return !!(player&&typeof gameEffects!=='undefined'&&gameEffects.has(player,'blind'));}
 function actorVisible(e,allowDawn){
   if(!e||actorConcealed(e))return false;
-  if(revealAll||allowDawn&&e.foe&&player&&player.dawnUntil>turn)return true;
+  if(!playerBlind()&&(revealAll||allowDawn&&e.foe&&player&&player.dawnUntil>turn))return true;
   for(var y=e.y;y<e.y+entitySize(e);y++)for(var x=e.x;x<e.x+entitySize(e);x++)if(inb(x,y)&&vis[idxOf(x,y)])return true;
   return false;
 }

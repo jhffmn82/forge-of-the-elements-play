@@ -27,5 +27,9 @@ function derive(actor){
   actor.guard=actor.guard===undefined?actor.guardMax:Math.min(actor.guard,actor.guardMax);
   actor.iceArmor=actor.iceArmor===undefined?actor.iceArmorMax:Math.min(actor.iceArmor,actor.iceArmorMax);
   // Legacy spell execution consumes these chances from the authored ability.
-  if(actor===player){ABILITIES.spark.stunChance=.05*(actor.aff.air||0);ABILITIES.smite.blindChance=.10*(actor.aff.light||0);if(typeof syncMurkSummons==='function')syncMurkSummons();}
+  if(actor===player){
+    var syncSpellChances=function(){ABILITIES.spark.stunChance=.05*(player.aff.air||0);ABILITIES.smite.blindChance=.10*(player.aff.light||0);};
+    if(typeof afterGeneratedInstall==='function')afterGeneratedInstall(syncSpellChances);else syncSpellChances();
+    if(typeof syncMurkSummons==='function')syncMurkSummons();
+  }
 }

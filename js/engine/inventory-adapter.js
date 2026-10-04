@@ -31,7 +31,7 @@ function dropBagItem(index){
   if(gameTurns.busy())return false;
   var b=player.bag[index];if(!b)return false;
   var it=FoteInventory.gear(b.kind)?{kind:b.kind,it:b.data}:b.kind==='sigil'?{kind:'sigil',use:b.data.use}:b.kind==='food'?{kind:'food',food:b.data.food}:null;
-  if(!it)return false;it.x=player.x;it.y=player.y;items.push(it);consume(index);log('You drop '+itemLabel(it)+'.','c-info');rareRoomFoodDropped(it);return true;
+  if(!it)return false;it.x=player.x;it.y=player.y;items.push(it);consume(index);log('You drop '+itemLabel(it)+'.','c-info');rareRoomFoodDropped(it);offeringGearDropped(it);return true;
 }
 function commitEquipment(plan){
   var item=plan.item;Object.assign(item,plan.normalized);
@@ -87,7 +87,6 @@ function removeEquipment(slot,spendTurn){
 function takeOffRing(slot){return removeEquipment('ring'+slot,true);}
 function takeOffAmulet(){return removeEquipment('amulet',true);}
 function unequipRanged(){return removeEquipment('ranged',false);}
-function swapWeapon(){log('Your '+(isRangedWeapon(player.ranged)?gearName(player.ranged)+' is always ready: attack anything further than a tile away and you shoot it.':'ranged weapon slot is empty. A bow there fires without swapping.'),'c-info');}
 function breakCurse(item,options){
   var change=FoteInventory.cleanse(item);if(!change)return false;Object.assign(item,change);
   if(!(options&&options.deferRefresh)){derive(player);refreshBagNames();}

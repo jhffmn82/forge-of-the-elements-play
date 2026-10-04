@@ -14,6 +14,7 @@
     return found;
   }
   function itemKey(item){return item&&item.key||null;}
+  function reginald(rank){return {accuracy:2*rank,crit:.02*rank,armor:rank};}
   function tierOf(item){
     if(item&&typeof item.tier==='number')return Math.max(0,Math.min(3,item.tier));
     var legacy={Worn:0,Rusty:1,'':1,Plain:1,Trusty:2,Fine:2,Masterwork:3},tier=item&&legacy[item.tier];
@@ -40,8 +41,8 @@
     if(c.buffs.rally>0)spell*=1.1;
     var divine=1+((w.cursed?0:w.divine||0)+(o&&!o.cursed?o.divine||0:0))*c.gearBonus;
     if(actor.god==='murk'&&c.rank>=5)divine+=.02*Math.max(0,(stats.vit||10)-10);
-    // Vellum converts only equipment's bonus Divine Power, in one direction.
-    if(actor.god==='vellum'&&c.rank>=3)spell+=Math.max(0,divine-1);
+    // Vellum transfers only the resolved Divine bonus; Divine never reads Spell Power.
+    if(actor.god==='vellum'&&c.rank>=3)spell+=.5*Math.max(0,divine-1);
     return {spell:spell,divine:divine};
   }
   /* Dwarf (DESIGN races table): worn weapons and armor count as one upgrade level higher, on top of their own upgrades */
@@ -105,9 +106,9 @@
     var plus=upgradeValue(w,actor)+(actor.god==='anvil'?c.rank:0)+(c.buffs.temper>0?Math.round(2*c.divine):0)+(w.unarmed&&actor.god==='grom'?c.rank:0);
     return {name:actor.name||'Adventurer',who:race.name+' '+cls.name+(actor.god?' of '+content.gods[actor.god].name:''),
       weapon:w,twoHanded:w.hands===2,passives:p,abilities:abilityList(actor,content),speed:race.speed,maxhp:maxhp,maxmp:hp(mana),
-      acc:60+2*s.agi+content.enchantments.amplifyBonus(w.acc,c.gearBonus)+(actor.god==='reginald'?4*c.rank:0),
+      acc:60+2*s.agi+content.enchantments.amplifyBonus(w.acc,c.gearBonus)+(actor.god==='reginald'?reginald(c.rank).accuracy:0),
       eva:10+2*s.agi+evaPenalty+content.enchantments.amplifyBonus(o&&o.eva,c.gearBonus)+(p.lightFeet?8:0)+(a.enchant==='water'?Math.round(c.enchant('armor','water').evasion):0),
-      armor:(a.armor||0)+(a.armor>0?upgradeValue(a,actor):0)+(a.enchant==='earth'?Math.round(c.enchant('armor','earth').armor):0)+(actor.god==='grom'?c.rank:0)+(c.buffs.ironbody>0?Math.round(4*c.divine):0)+(c.buffs.ironhide>0?Math.round(5*c.divine):0),
+      armor:(a.armor||0)+(a.armor>0?upgradeValue(a,actor):0)+(a.enchant==='earth'?Math.round(c.enchant('armor','earth').armor):0)+(actor.god==='grom'?c.rank:0)+(actor.god==='reginald'?reginald(c.rank).armor:0)+(c.buffs.ironbody>0?Math.round(4*c.divine):0)+(c.buffs.ironhide>0?Math.round(5*c.divine):0),
       block:0,parry:o&&o.weapon?.08+s.agi/300:0,rangeBonus:actor.race==='elf'?1:0,
       crit:.06+.02*(s.agi-10)+(p.deadeye?.08:0)+(w.critBonus||0)*c.gearBonus+orbCrit+(p.archmage?.05:0),
       dmg:[damage(w.dmg[0])+plus,damage(w.dmg[1])+plus],
@@ -157,11 +158,7 @@
         out.dmg=out.dmg.map(function(n){return n+2*stacks;});
       }
     }
-    if(actor.god==='grumbok'&&c.rank>=5){   /* 2026-09-29 (Justin): Warrior's Discipline, +2 damage per stack (gods.js) */
-      var discipline=actor.st&&actor.st.discipline,drill=discipline&&discipline.t>0?Math.max(0,Math.min(c.rank,discipline.n||0)):0;
-      if(drill)out.dmg=out.dmg.map(function(n){return n+2*drill;});
-    }
-    if(actor.god==='reginald')out.crit+=.02*c.rank;
+    if(actor.god==='reginald')out.crit+=reginald(c.rank).crit;
     out.luck=actor.god==='wobbles'?.03*c.rank:0;
     if(out.luck){out.crit+=out.luck;if(out.parry)out.parry+=out.luck;if(out.block)out.block=Math.min(.75,out.block+out.luck);}
     if(c.buffs.might>0)out.dmg=out.dmg.map(function(n){return Math.round(n*1.2);});
@@ -185,7 +182,7 @@
     }
     return out;
   }
-  var api={compute:compute,computeWithRanged:computeWithRanged,passivesFor:passivesFor,rankOf:rankOf,powers:powers,focusBonus:focusBonus};
+  var api={reginald:reginald,compute:compute,computeWithRanged:computeWithRanged,passivesFor:passivesFor,rankOf:rankOf,powers:powers,focusBonus:focusBonus};
   root.FoteStats=Object.freeze(api);
   if(typeof module==='object'&&module.exports)module.exports=api;
 })(typeof globalThis==='object'?globalThis:this);

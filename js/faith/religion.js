@@ -1,0 +1,136 @@
+/* =====================================================================
+   religion.js - god changes from the mechanics review (2026-09-16,
+   docs/design/game-design.md 12 step 8). Grom fist tiers and Iron Hide overhealth;
+   Glimmer's Light point and Guiding Light; Murk's Unholy Aura invoke and
+   Raise Dead prayer; Reginald's crit and rank 3; Anvil's offering,
+   Reforge cap and mote refunds; Vellum's instant Unbound; Wobbles'
+   Greater Prayer. Invokes scale +3% per Focus point (combat.js castSelf).
+   ===================================================================== */
+
+/* ---------------------------------------------------------------- boon and prayer text */
+
+
+/* 2026-09-20 (Justin): the free Light point is no longer a joining gift - it is what rank 5 is FOR. Undying
+   Light comes down to rank 3 to take its old place, so she still reads as three boons and a rank-5 reward.
+   Her boons unlock at 1 / 2 / 3 / 5 (godBoonRanks in gods.js); rank 2 for Guiding Light is the one number
+   here that is not Justin's - PLACEHOLDER, it only moves the +5% Smite chance one rank earlier. */
+
+/* ---------------------------------------------------------------- who a god refuses */
+function refusalText(id){
+  if(clericGodLocked(id)) return 'Clerics are bound to their chosen god and cannot convert.';
+  var g=GODS[id];
+  if(g.refuses && player.race===g.refuses) return g.name+' will not accept a '+RACES[player.race].name+'.';
+  if(id==='reginald' && isScoundrel()) return 'Sir Reginald will not take a sneak-thief into his service.';
+  if(classRefusesGod(player.cls, id)) return g.name.split(',')[0]+' will not take a '+CLASSES[player.cls].name+'.';
+  var affinityRefusal=godAffinityRefusal(id);if(affinityRefusal)return affinityRefusal;
+  return g.name+' refuses you.';
+}
+function canHoldLight(){
+  var els=Object.keys(player.aff).filter(function(k){ return player.aff[k]>0; });
+  if(els.indexOf('light')>=0) return true;
+  if(els.indexOf('shadow')>=0) return false;
+  return els.length<2;
+}
+function godAffinityRefusal(id){
+  if(id==='reginald'&&(player.aff.shadow||0)>0)return 'Sir Reginald wants nothing to do with shadow.';
+  if(id==='glimmer'&&(player.aff.shadow||0)>0)return 'Saint Glimmer will not touch shadow.';
+  if(id==='glimmer'&&!canHoldLight())return 'Saint Glimmer\'s light needs room: you already hold two elements, and neither is Light.';
+  if(id==='murk'&&(player.aff.light||0)>0)return 'Mother Murk will not accept Light affinity.';
+  if(id==='sylla'&&(player.aff.fire||0)>0)return 'Sylla will not accept Fire affinity.';
+  return null;
+}
+function godRefuses(id){
+  if(clericGodLocked(id)) return true;
+  var g=GODS[id];
+  if(g.refuses && player.race===g.refuses) return true;
+  if(classRefusesGod(player.cls, id)) return true;   /* 2026-09-29 (Justin): the class table in create.js */
+  return !!godAffinityRefusal(id);
+}
+
+/* ---------------------------------------------------------------- Glimmer's Light point (rank 5 from 2026-09-20) */
+function grantGlimmerLight(){
+  if(player.glimmerLight) return;
+  /* the point arrives late now, so there may be no room left for it: a Gloomling is refused at the shrine,
+     but anyone can fill both element slots between joining and rank 5. She waits rather than breaking the cap. */
+  if(typeof canHoldLight==='function' && !canHoldLight()){
+    log('<b>Saint Glimmer</b> would kindle Light in you, but there is no room left for it.','c-info');
+    return;
+  }
+  player.glimmerLight=true;
+  player.aff.light=(player.aff.light||0)+1;
+  if(!player.primary) player.primary='light';
+  log('<b>Saint Glimmer</b> kindles a point of <b>Light</b> in you.','c-kill');
+}
+/* granted at rank 5 and taken back the moment the rank drops below it (or she is abandoned) */
+
+function takeGlimmerLight(){
+  if(!player.glimmerLight) return;
+  player.glimmerLight=false;
+  player.aff.light=Math.max(0,(player.aff.light||0)-1);
+  if(!player.aff.light) delete player.aff.light;
+  if(player.primary==='light' && !player.aff.light) player.primary=Object.keys(player.aff)[0]||null;
+  log('<b>Saint Glimmer</b> takes back the light she gave you.','c-you');
+}
+
+
+function smiteBonus(){return hasGod('glimmer')&&godRank()>=3?.05*godRank():0;}   /* Guiding Light is boon 2, and boon 2 unlocks at rank 2 now */
+
+/* ---------------------------------------------------------------- Grom: fists by rank, armor, punch piety, Iron Hide */
+var GROM_FISTS = [[1,3],[2,5],[3,6],[5,9],[5,9],[7,12]];
+
+
+/* ---------------------------------------------------------------- Murk: Unholy Aura invoke, Raise Dead prayer */
+
+
+var WOBBLE_BONUS=0;
+
+/* a prayed servant has no timer */
+
+
+/* ---------------------------------------------------------------- Reginald rank 3: Called Out */
+
+
+/* ---------------------------------------------------------------- Anvil rank 3: Second Heat refunds motes */
+function secondHeat(before){
+  if(!Object.keys(before).some(function(k){return before[k]>(player.motes[k]||0);})) return;
+  if(!hasGod('anvil') || godRank()<3 || rng()>=(0.30+0.10*(godRank()-3))) return;
+  var back=0;
+  for(var k in before){ var lost=before[k]-(player.motes[k]||0); if(lost>0){ player.motes[k]=(player.motes[k]||0)+lost; back+=lost; } }
+  if(back) log('<b>Second Heat.</b> Old Anvil hands your mote'+(back>1?'s':'')+' back.','c-good');
+}
+
+
+/* Track spell actions for concealment and casting-time effects. */
+
+
+/* ---------------------------------------------------------------- Wobbles: Greater Prayer */
+function greaterPrayer(){
+  var rules=wobblesTemptRules(),good=rng()<rules.baseReward||wobblesConvertPrank(rules.rank),roll=rng();sfx('wobbles-giggle');
+  if(good){
+    if(roll<FoteProgression.wobblesRules().greaterRestorationChance && (player.hp<player.maxhp||player.mp<player.maxmp)){restoreWobblesResources(true,true,'Tempt Fate');clearBad();log('Tempt Fate: cleansed.','c-good');}
+    else grantWobblesGift({label:'Tempt Fate',pool:'greater'});
+  }else if(roll<.35){
+    var pool=ents.filter(function(e){return e.foe&&e.hp>0&&!(e.base&&(e.base.boss||e.base.elite||e.base.rare))&&!e.elite;});
+    for(var i=0;i<3;i++){var s=nearFree(player.x,player.y,3);if(s){var model=pool.length?pick(pool):null;var m=spawn(model?model.kind:'rat',s.x,s.y);m.state='hunt';m.noLoot=true;}}
+    log('<b>Tempt Fate:</b> ambush.','c-you');
+  }else if(roll<.70){player.hp=Math.max(1,Math.ceil(player.hp/2));applyStatus(player,'blind',4);log('<b>Tempt Fate:</b> half HP lost; Blind.','c-you');}
+  else if(roll<.95){var spots=safeWobbleSpots();if(spots.length){var s=pick(spots);player.x=s.x;player.y=s.y;player._lx=undefined;}log('<b>Tempt Fate:</b> teleport.','c-you');}
+  else {var loss=Math.floor(player.essence/2);player.essence-=loss;log('<b>Tempt Fate:</b> '+loss+' essence lost.','c-you');}
+  computeFOV();updateUI();
+}
+
+
+/* ---------------------------------------------------------------- who each god is (2026-09-20)
+   Justin: "the faith tab should really show the artwork of the statue, maybe a little blurb about the god". The
+   sheet was all rules and numbers; these are the few lines that say what kind of thing you have sworn to. */
+var GOD_BLURB = {
+  grom:     'God of unarmed combat.',
+  grumbok:  'God of martial strength who forbids spellcasting.',
+  glimmer:  'Saint of healing and light.',
+  murk:     'Patron of life drain and undead servants.',
+  reginald: 'Patron of open combat and challenges.',
+  anvil:    'God of forging and enchantments.',
+  vellum:   'Patron of spellcasting and arcane equipment.',
+  wobbles:  'God of luck, rewards and pranks.',
+  sylla:    'Patron of webs, poison and ambushes.'
+};

@@ -11,7 +11,7 @@ function playerTiming(){
   c.rampage=buff('rampage')&&player.lastAttackMelee;c.hunter=player.wizardHunterUntil>player.t;
   c.casting=player.castingSpell;c.tomeReduction=infusion('tome')==='air'?enchantValues('tome','air').castTimeReduction:0;
   c.storm=player.stormUntil>player.t;c.holyAir=holy;c.holyReduction=holy?enchantValues('holy','air').actionTimeReduction:0;
-  c.free=FREE_ACTION;c.freeStep=player.freeStep;c.fleet=hasP('fleet');c.air=player.aff.air||0;
+  c.free=FREE_ACTION;c.fleet=hasP('fleet');c.air=player.aff.air||0;
   c.water=at(player.x,player.y)===WATER;c.levitate=player.levitate;
   return c;
 }
@@ -24,7 +24,7 @@ function moveCost(){return FoteCosts.movement(playerTiming());}
 /* Stable sheet values describe the next ordinary move/attack, not the last
  * command or a one-use free-action receipt. 100 time units = one global turn. */
 function playerSpeedPercent(kind){
-  var c=playerTiming();c.free=false;c.freeStep=false;c.casting=false;
+  var c=playerTiming();c.free=false;c.casting=false;
   c.attacking=kind==='attack';c.rampage=!!buff('rampage')&&!((player.weapon||{}).range>1);
   var cost=kind==='move'?FoteCosts.movement(c):FoteCosts.action(c);
   return Math.round(10000/Math.max(1,cost))+'%';
@@ -49,14 +49,9 @@ function spendSpellMana(A){
   var cost=costOf(A);
   player.mp-=cost;player._actualSpellCost=cost;
   SPELL_PAYMENTS.set(player,{ability:A,cost:cost,eligible:!A.tech&&!A.divine,conducted:false});
-  if(A.divine){
-    vellumManaPiety(cost);
-    // The released progression owner recognizes spell kills by their paid
-    // cast turn. A damaging divine bolt must receive that same native receipt.
-    if(A.divinePowerOnly&&player.god==='vellum')player.castTurn=turn;
-  }
+  if(A.divine)vellumManaPiety(cost);
   if(!A.tech)player.castingSpell=true;
-  if(typeof stackDiscipline==='function')stackDiscipline();
+  if(!A.divine&&!A.cd&&typeof stackDiscipline==='function')stackDiscipline();
   return cost;
 }
 function spellConduct(A){

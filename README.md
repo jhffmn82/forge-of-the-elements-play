@@ -1,27 +1,14 @@
-# Forge of the Elements
+# Forge of the Elements — Beta 1.6 playtest
 
-**Beta 1.5 is the current public build.**
+This is the Beta 1.6 playtest candidate, including the architecture and balance
+changes, 18 new room discoveries, Tiny creatures and the contextual tutorial.
+It is available for testing before the formal release.
 
-A browser roguelike: explore elemental dungeons, shape your build at the Forge, and face each biome's boss.
-This follow-up removes Arcane Lance's cooldown and refreshes god statue previews from their full-resolution artwork.
+**[Play in your browser](https://jhffmn82.github.io/forge-of-the-elements-play/)**
 
-## Play on a PC
+Use landscape on phones. Each move or attack advances turns; standing still
+does not. Choose Show tutorial when creating a character, or replay it from Options.
 
-**[Play in your browser](https://jhffmn82.github.io/forge-of-the-elements-play/)** - nothing to install.
-Keyboard: WASD or the arrow keys to move, QEZC for diagonals, 1-8 for the hotbar, Tab for the character
-sheet, `i` for equipment, `>` to take the stairs. The mouse works for all of it too: click a tile to walk
-there, click a monster to attack or shoot it.
-
-## Play on an Android phone or tablet
-
-**[Download the app (forge.apk)](https://github.com/jhffmn82/forge-of-the-elements-play/releases/latest/download/forge.apk)**
-Open the downloaded file, allow installs from your browser when Android asks, and "Forge" appears in the app
-drawer. Phone and tablet play uses landscape; tap to move and hold anything to inspect it. If the browser cannot lock orientation, the game asks you to turn the device sideways. It plays offline once it has loaded, and
-picks up new builds by itself, so the app only needs installing once.
-
-Or just open the play link above in Chrome on the device - the game lays itself out for touch either way.
-
-## This repository
-
-Generated output only: the playable build, published by `tools/publish.py` from the source project. Last
-build: **2026-10-03T20:34:23.679842+00:00**.
+Generated playable output only. Reviewed build: **2026-10-04T23:14:39.790153+00:00**.
+The build.json record identifies the exact candidate. Existing save storage is
+retained. Previous release notes remain in PATCH-NOTES.md.

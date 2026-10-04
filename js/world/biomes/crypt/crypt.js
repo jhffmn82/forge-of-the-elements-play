@@ -1,0 +1,425 @@
+/* =====================================================================
+   crypt.js - biome 2, the Crypt (floors 6-10), 2026-09-17. See docs/design/game-design.md section 17.
+   Monsters: Shambler, Grave Beetle, Skeleton, Bone Archer, Shade, Grave Bloat, Necro-Acolyte.
+   Boss: Morty the Mostly-Dead (floor 10) with his phylactery. Crypt props, green soul-fire light,
+   poison clouds, Rot, bone wards.
+   ===================================================================== */
+
+/* ---------------------------------------------------------------- the bestiary */
+(function(){
+  var M=MONSTERS;
+  M.shambler   = {name:'Shambler', sprite:'m-shambler', col:'#8FA37A', ch:'z', hp:48, dmg:[5,8], acc:60, eva:8, armor:1, speed:100, range:1, xp:22,
+                  band:[6,8], w:22, undead:true, rises:true, rots:true, art:0.95, sfx:'zombie'};   /* rots: 2026-09-28 (Justin), its hits rot like a Grave Bloat's */
+  M.gravebeetle= {name:'Grave Beetle', sprite:'m-grave-beetle', col:'#3E5A3A', ch:'b', hp:48, dmg:[5,8], acc:62, eva:12, armor:3, speed:100, range:1, xp:20,
+                  band:[6,8], w:18, fumes:true, living:true, art:0.8, sfx:'slime'};
+  M.skeleton.band=[6,10]; M.skeleton.w=18; M.skeleton.boneType=true; M.skeleton.sprite='m-crypt-skeleton';   /* Justin's Crypt sprite set, 2026-09-17 */
+  /* 2026-09-17: their arrows are grave-tipped. A 4-7 shot was nothing to a mage with Magic Barrier (-5 from
+     ranged) or anyone in real armour, so the threat is the poison rather than the hit. */
+  M.bonearcher = {name:'Bone Archer', sprite:'m-bone-archer', col:'#D8CEBC', ch:'a', hp:43, dmg:[5,8], acc:64, eva:16, armor:1, speed:100, range:6, xp:26,
+                  band:[7,10], w:14, undead:true, reloads:true, poisons:1, art:0.95, sfx:'skeleton'};
+  M.shade      = {name:'Shade', sprite:'m-shade', col:'#5A3E7A', ch:'S', hp:48, dmg:[5,8], acc:66, eva:42, armor:0, speed:100, range:1, xp:30, attackType:'ice',chillTouch:true,
+                  band:[7,10], w:10, undead:true, shadowy:true, phases:true, el:'shadow', art:0.95, sfx:'wisp'};
+  M.gravebloat = {name:'Grave Bloat', sprite:'m-grave-bloat', col:'#9FBF7A', ch:'B', hp:90, dmg:[8,11], acc:58, eva:4, armor:2, speed:100, range:1, xp:38,
+                  band:[8,10], w:10, undead:true, bursts:true, rots:true, art:1.1, sfx:'zombie'};
+  M.acolyte    = {name:'Necro-Acolyte', sprite:'m-necro-acolyte', col:'#6A3E8A', ch:'n', hp:43, dmg:[5,8], acc:62, eva:14, armor:0, speed:100, range:1, xp:40,
+                  band:[9,10], w:8, living:true, spellcaster:true, summoner:true, fearTouch:1, art:0.95, sfx:'shaman',hint:'Summons Skeletons and wards allies. Attacks cause Fear for 1 turn.'};
+  M.morty      = {name:'Morty the Mostly-Dead', sprite:'m-morty', col:'#7A4FB0', ch:'M', hp:170, dmg:[8,13], acc:70, eva:18, armor:3, speed:100, range:1, xp:450,
+                  band:[10,10], w:0, boss:true, elite:true, undead:true, spellcaster:true, art:1.2, sfx:'morty'};
+  M.phylactery = {name:'Phylactery', sprite:'m-phylactery', col:'#6FE08A', ch:'&', hp:60, dmg:[0,0], acc:0, eva:0, armor:12, speed:100, range:0, xp:60,
+                  band:[10,10], w:0, still:true, object:true, art:0.9};
+  /* elementalings roam every biome */
+  ['emberling','tideling','galeling','stoneling','wisp','lumenling'].forEach(function(k){ if(M[k]) M[k].band=[M[k].band[0], 25]; });
+  DROPS.shambler   = {chance:0.12, table:{essence:10, food:4}};
+  DROPS.gravebeetle= {chance:0.14, table:{essence:12, sigil:1}};
+  DROPS.bonearcher = {chance:0.22, table:{essence:8, gear:6, sigil:1}};
+  DROPS.shade      = {chance:0.20, table:{essence:10, sigil:3}};
+  DROPS.gravebloat = {chance:0.35, table:{essence:6, gear:5, food:2}};
+  DROPS.acolyte    = {chance:0.40, table:{essence:6, sigil:4, gear:4}};
+  DROPS.phylactery = {chance:0, table:{essence:1}};
+})();
+function inCrypt(){ return bidx()===1; }
+
+/* ---------------------------------------------------------------- props and light */
+PROPS['sarcophagus']     = {b:1};
+PROPS['sarcophagus-open']= {b:1};
+PROPS['urn']             = {b:1, br:1};
+PROPS['urn-broken']      = {flat:1};
+PROPS['soul-brazier']    = {b:1, light:'#7CFFA0'};
+PROPS['grave-pillar']    = {b:1};
+PROPS['skeleton-niche']  = {b:1};
+PROPS['bone-pile']       = {flat:1};
+PROPS['coffin']          = {b:1};
+PROPS['candelabra']      = {b:1, light:'#9CFFB8'};
+var CRYPT_PROP = {'brazier-lit':'soul-brazier', 'brazier-unlit':'soul-brazier', 'torch-stand':'candelabra', 'banner-stand':'grave-pillar',
+  /* 2026-09-20: 'barrel-explosive' used to map to 'urn' here, swept in beside plain barrels, crates and
+     pots when this table was written to re-skin the Crypt. But an explosive barrel carries ex:1 (js/content/data.js)
+     and an urn does not, so the storage room's one gameplay object was silently defused underground. It
+     stays a barrel: Justin wants it to go off. Anything added here must be checked the same way - this
+     table is for looks, and a prop that does something is not interchangeable with one that does not. */
+  'statue':'sarcophagus', 'statue-broken':'sarcophagus-open', 'barrel':'urn', 'crate':'urn', 'crate-supply':'urn', 'pot':'urn',
+  'bookshelf':'coffin', 'weapon-rack':'coffin', 'cart':'sarcophagus-open', 'bed-straw':'bone-pile', 'alchemy-table':'sarcophagus', 'table-candle':'candelabra'};
+
+
+function addCryptLights(L, now, prp){
+  if(inCrypt()){
+    var green=hexRGB('#6FE89A');
+    L.forEach(function(l, i){ if(i===0) return; var c=l.c; if(c[0]>0.9 && c[1]>0.5 && c[1]<0.75 && c[2]<0.4){ l.c=green; l.s*=0.85; } });   /* wall sconces burn green */
+    (floorMeta.clouds||[]).forEach(function(cl){ if(turn<cl.until && cl.cells.length){ var i0=cl.cells[Math.floor(cl.cells.length/2)]; L.push({x:i0%MW, y:(i0/MW)|0, c:hexRGB('#8CFF6A'), r:2.2, s:0.35, tx:i0%MW, ty:(i0/MW)|0}); } });
+  }
+  return L;
+
+}
+
+/* ---------------------------------------------------------------- special rooms speak the Crypt's language */
+/* base.poisons is the chance a hit from this creature poisons you. The Bone Archer is the one that has it:
+   its damage alone stopped mattering once you had armour or Magic Barrier (2026-09-17). */
+
+
+var CRYPT_SWAP = {rat:'gravebeetle', bat:'shambler', goblin:'shambler', archer:'bonearcher', brute:'gravebloat'};
+
+
+/* ---------------------------------------------------------------- poison clouds and Rot */
+function addCloud(cx, cy, r, turns, dmg, source){
+  if(source==='beetle'||source==='bloat'){turns+=1;dmg+=sDMG(1);}
+  floorMeta.clouds=floorMeta.clouds||[];
+  var cells=[];
+  for(var y=cy-r;y<=cy+r;y++) for(var x=cx-r;x<=cx+r;x++) if(inb(x,y) && walkable(x,y)) cells.push(idxOf(x,y));
+  floorMeta.clouds.push({cells:cells, until:turn+turns, dmg:dmg, src:source||''});
+  burst(cx, cy, 'poison', 40, 0.06);
+}
+function cloudAt(i){ return (floorMeta.clouds||[]).filter(function(c){ return turn<c.until && c.cells.indexOf(i)>=0; })[0]; }
+
+function turnCryptClouds(context){  if(!floorMeta || !floorMeta.clouds || !floorMeta.clouds.length || !player || player.hp<=0) return;
+  floorMeta.clouds = floorMeta.clouds.filter(function(c){ return turn<c.until; });
+  ents.slice().forEach(function(e){
+    var c=cloudAt(idxOf(e.x,e.y)); if(!c) return;
+    if(e!==player && (e.base.undead || e.base.fumes || e.base.object)) return;   /* the dead don't breathe; beetles live in it */
+    var d=applyDamage(e, c.dmg, 'poison', null); floatText(e.x,e.y,String(d),'poison');
+    if(e===player){ log('Gas: '+combatDamageNumber(d,'poison')+'.','c-you'); if(player.hp<=0){  if(player.hp<=0) death(); } }
+    else if(e.hp<=0) kill(e, null);
+  });
+
+}
+var CLOUD_PUFF=null;
+function cloudPuff(){
+  if(CLOUD_PUFF) return CLOUD_PUFF;
+  var c=document.createElement('canvas'); c.width=c.height=64; var g=c.getContext('2d');
+  var gr=g.createRadialGradient(28,26,2,32,32,32);
+  gr.addColorStop(0,'rgba(170,225,110,0.95)'); gr.addColorStop(0.45,'rgba(120,190,70,0.6)'); gr.addColorStop(0.8,'rgba(80,140,50,0.18)'); gr.addColorStop(1,'rgba(60,110,40,0)');
+  g.fillStyle=gr; g.fillRect(0,0,64,64); CLOUD_PUFF=c; return c;
+}
+
+var FIELD_MIST_PUFFS={};
+function drawFieldMist(cells, color, now, opacity, remembered){
+  var puff=FIELD_MIST_PUFFS[color];
+  if(!puff){
+    puff=document.createElement('canvas');puff.width=puff.height=64;
+    var g=puff.getContext('2d');g.drawImage(cloudPuff(),0,0);g.globalCompositeOperation='source-in';g.fillStyle=color;g.fillRect(0,0,64,64);FIELD_MIST_PUFFS[color]=puff;
+  }
+  var t=ANIM.reduce?0:(now||0)/1000;
+  ctx.save();
+  cells.forEach(function(i){
+    if(!(revealAll||vis[i]||remembered&&seen[i]))return;var x=i%MW,y=Math.floor(i/MW);
+    for(var k=0;k<2;k++){
+      var h=hash2(x,y,k+719),phase=t*.25+h*6.28;
+      var cx=(x-camX+.5+Math.sin(phase)*.14)*TS,cy=(y-camY+.55+Math.cos(phase*.8)*.12)*TS,r=TS*(.64+h*.16);
+      ctx.globalAlpha=opacity*(.88+.12*Math.sin(phase));ctx.drawImage(puff,cx-r,cy-r*.65,r*2,r*1.3);
+    }
+  });ctx.restore();
+}
+
+/* The established glowing warning, shared by temporary fields. Deliberately
+ * separate from the quieter material left after an attack has resolved. */
+function drawGroundWarning(cells,col,now,opacity){
+  var t=(now||0)/1000;ctx.save();
+  cells.forEach(function(i){
+    if(!(revealAll||vis[i]))return;
+    var x=i%MW,y=Math.floor(i/MW),cx=(x-camX+.5)*TS,cy=(y-camY+.5)*TS;
+    var pulse=ANIM.reduce?.6:.45+.3*Math.sin(t*8+x+y);
+    var g=ctx.createRadialGradient(cx,cy,TS*.05,cx,cy,TS*.75);g.addColorStop(0,col);g.addColorStop(.55,col);g.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.globalAlpha=pulse*.55*opacity;ctx.fillStyle=g;ctx.fillRect(cx-TS*.75,cy-TS*.75,TS*1.5,TS*1.5);
+    ctx.globalAlpha=pulse*opacity;ctx.fillStyle='rgba(255,255,255,.35)';ctx.beginPath();ctx.arc(cx,cy,TS*.12,0,7);ctx.fill();
+  });ctx.restore();
+}
+
+function drawCryptTelegraphs(now){
+
+  if(!floorMeta) return;
+  var t=(now||0)/1000;
+  ctx.save();
+  (floorMeta.clouds||[]).forEach(function(c){
+    if(turn>=c.until) return;
+    var fade=Math.min(1, (c.until-turn)/2);
+    /* billowing puffs that spill over the cells' edges and drift, not flat squares */
+    var puff=cloudPuff();
+    c.cells.forEach(function(i){
+      if(!(revealAll||seen[i])) return;
+      var x=i%MW, y=(i/MW)|0;
+      for(var k=0;k<3;k++){
+        var h1=hash2(x,y,k*3+1), h2=hash2(x,y,k*3+2), h3=hash2(x,y,k*3+3), sp=ANIM.reduce ? 0 : t*(0.25+h3*0.3);
+        var cx=(x-camX+0.5 + (h1-0.5)*0.6 + Math.sin(sp+h2*6.28)*0.12)*TS, cy=(y-camY+0.5 + (h2-0.5)*0.6 + Math.cos(sp*0.8+h1*6.28)*0.1)*TS;
+        var r=TS*(0.62+h3*0.3)*(1+0.06*Math.sin(sp*1.7+k));
+        ctx.globalAlpha=(0.34+0.08*Math.sin(sp*1.3+h1*6))*fade;
+        ctx.drawImage(puff, cx-r, cy-r, r*2, r*2);
+      }
+    });
+    ctx.globalAlpha=1;
+  });
+  (floorMeta.marks||[]).forEach(function(m){
+    if(/^storm\d+$/.test(m.kind))return; // The beetle warning is drawn with its static field.
+    if(turn>=m.until) return;
+    /* warning glow: a soft pulsing pool per cell with a bright core, no hard squares */
+    drawGroundWarning(m.cells,m.col,now,1);
+  });
+  ctx.restore();
+
+}
+
+/* ---------------------------------------------------------------- damage rules */
+
+
+/* ---------------------------------------------------------------- attacks: beetle fumes, archer pins */
+
+
+/* ---------------------------------------------------------------- monster turns */
+
+function cryptCreatureBehavior(e,target){
+  target=target||player;
+  var b=e.base||{};
+  if(e.state==='hunt'){
+    /* Bone Archer: a turn to nock */
+    if(b.reloads && e.reloading){ e.reloading=false; if(vis[idxOf(e.x,e.y)]) log('Bone Archer reloads.','c-info');  return true; }
+    /* Necro-Acolyte: keep away, summon, ward, curse */
+    if(b.summoner && (target!==player||canSeePlayer(e))){
+      var d=dist(e,target);
+      e.sumCd=(e.sumCd||0)-1; e.wardCd=(e.wardCd||0)-1;e.boltCd=(e.boltCd||0)-1;
+      if(typeof FoteEnemyTeamwork!=='undefined'&&FoteEnemyTeamwork.retreat(e,target))return true;
+      var minion=ents.filter(function(o){ return o.id===e.minion && o.hp>0; })[0];
+      if(!minion && e.sumCd<=0){
+        var c=nearFree(e.x,e.y,2); if(c){ var sk=spawnRaw('skeleton', c.x, c.y); sk.base=Object.assign({},sk.base,{hp:MONSTERS.skeleton.summonHp}); sk.hp=sk.maxhp=sHP(sk.base.hp); sk.state='hunt'; sk.noLoot=true; e.minion=sk.id; e.sumCd=6; setClip(e,'attack'); sfx('shaman-cast',{from:e}); sparkleFx(c.x,c.y,'dark',24); log('Necro-Acolyte summons Skeleton.','c-you');  return true; }
+      }
+      if(FoteEnemyTeamwork.boneWard(e))return true;
+      if(typeof FoteEnemyTeamwork==='undefined'&&d<=3 && fleeStep(e)){return true;}
+      if(d<=5 && e.boltCd<=0 && clearShot(e,target)){   /* 2026-09-22: no grave bolt through its own skeletons */
+        recordHostileAttack(e,target,['attack','spell','ranged']);
+        e.boltCd=3; setClip(e,'attack'); boltFx(e.x,e.y,target.x,target.y,'dark');
+        var graveChance=hitChance(accOf(e)+8,evaOf(target));if(target===player)graveChance=hostileHitChance(graveChance,true);
+        if(rng()<graveChance){ var gd=applyDamage(target, roll(3,6)+Math.floor(floorNo/2), 'dark', e); floatText(target.x,target.y,String(gd),'dark'); if(gd>0&&target.hp>0&&b.fearTouch)inflictFear(target,e,b.fearTouch); log('Necro-Acolyte → '+(target===player?'you':combatText(target.name))+': '+combatDamageNumber(gd,'dark')+'.','c-you'); if(target.hp<=0) kill(target,e); }
+        else log('A grave bolt misses.','c-miss');
+         return true;
+      }
+      if(FoteEnemyTeamwork.position(e,target,5))return true;
+      FoteEnemyTeamwork.boneWard(e,true);return true;
+    }
+    /* Shade: drifts through doors and thin walls */
+    if(b.phases && canActorMove(e)){
+      var seesPlayer=canSeePlayer(e),pursuit=seesPlayer?player:e.searchGoal||e.lastSeen;
+      if(!pursuit)return false;
+      var d2=dist(e,pursuit);
+      if(seesPlayer&&d2<=1){ attack(e,player);  return true; }
+      var best=null, bd=d2;
+      [[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]].forEach(function(o){
+        var nx=e.x+o[0], ny=e.y+o[1]; if(!inb(nx,ny) || nx<1||ny<1||nx>=MW-1||ny>=MH-1 || occupied(nx,ny) || at(nx,ny)===CHASM) return true;
+        var t=at(nx,ny), thin = walkable(nx,ny) || t===DOOR || (t===WALL && [[1,0],[-1,0],[0,1],[0,-1]].some(function(q){ return walkable(nx+q[0],ny+q[1]); }));
+        if(!thin) return true; var dd=dist({x:nx,y:ny}, pursuit); if(dd<bd){ bd=dd; best={x:nx,y:ny}; }
+      });
+      if(best){ e.x=best.x; e.y=best.y;  return true; }
+    }
+  }
+  return false;
+
+}
+
+/* ---------------------------------------------------------------- deaths: shamblers rise, bloats burst */
+
+
+/* a corpse that isn't finished gets back up */
+
+function turnCryptCorpses(context){
+  if(!floorMeta || !floorMeta.corpses || !floorMeta.corpses.length) return;
+  floorMeta.corpses = floorMeta.corpses.filter(function(c){
+    var i=idxOf(c.x,c.y);
+    if(fireT[i]>0 || (holyG && holyG[i])){ if(vis[i]) log('Corpse destroyed.','c-good'); return false; }
+    if(turn<c.at) return true;
+    var spot = occupied(c.x,c.y) ? nearFree(c.x,c.y,2) : {x:c.x,y:c.y};
+    if(!spot) return true;
+    var z=spawnRaw(c.kind, spot.x, spot.y); z.risen=true; z.hp=Math.max(1,Math.round(c.maxhp/2)); z.state='hunt';
+    if(vis[idxOf(spot.x,spot.y)]) log('<b>Shambler revives!</b>','c-you');
+    return false;
+  });
+
+}
+/* stepping on a corpse (or hitting its tile) finishes it */
+
+
+/* the Shade is invisible past 2 tiles in the dark (and inside walls) */
+
+
+/* ---------------------------------------------------------------- Morty's hall */
+function buildMortyHall(r){
+  r.role='boss';
+  if(r.hall) return;   /* the composed hall (js/world/biomes/crypt/cryptset.js) already placed Morty, his phylactery and the gate */
+  floorMeta.bossAt={x:r.cx, y:r.y+2};
+  floorMeta.phylAt={x:r.cx, y:r.y};
+  /* pillars to hide behind from the Bone Nova */
+  [[-3,-1],[3,-1],[-3,2],[3,2]].forEach(function(o){ var x=r.cx+o[0], y=r.cy+o[1]; if(x>r.x && x<r.x+r.w-1 && y>r.y && y<r.y+r.h-1) addProp(x, y, 'grave-pillar', {keep:true}); });
+  decorateEdges(r, ['soul-brazier','sarcophagus','soul-brazier','candelabra'], 6);
+  var gx=r.cx, gy=r.y+r.h-1;
+  setT(gx,gy,EXIT); floorMeta.exitAt={x:gx,y:gy};
+  for(var i=0;i<6;i++){ var c=pick(interiorCells(r)); if(c) setG(c.x,c.y,pick([G_BONES,G_BONES,G_MOSS])); }
+}
+
+
+/* ---------------------------------------------------------------- Morty the Mostly-Dead */
+function mortyHall(){ return rooms.filter(function(r){ return r.role==='boss'; })[0]; }
+function mortyAct(e){
+
+  if(e.hp<=0)return;
+  var see=canSeePlayer(e), d=dist(e,player), hall=mortyHall(), rm=roomAt(player.x,player.y);
+  if(e.state==='throne'){
+    if(see && d<=8 && rm && rm===hall){
+      e.state='hunt'; e.turnN=0; log('<b>Morty awakens!</b>','c-you'); sfx('morty-intro',{from:e}); playMusic('boss');
+      ents.forEach(function(o){ if(o.guard) o.state='hunt'; });
+    }
+     return;
+  }
+  e.turnN=(e.turnN||0)+1;
+  /* a channelled Bone Nova resolves or keeps building */
+  if(e.channel){
+    if(e.channelHp - e.hp >= 20){ e.channel=0; floorMeta.marks=[]; log('Bone Nova interrupted.','c-good');  return; }
+    if(--e.channel>0){ log('<b>Bone Nova next turn!</b>','c-you');  return; }
+    floorMeta.marks=[];
+    ringFx(e.x,e.y,'#8CFF6A',8); SHAKE=10; sfx('shaman-cast',{from:e});
+    var targets=ents.filter(function(o){ return o!==e && !o.foe && vis[idxOf(o.x,o.y)]; }).concat(see ? [player] : []);
+    targets.forEach(function(t){ var raw=roll(10,16)+Math.floor(floorNo/2);
+      if(t===player) raw=Math.min(raw, Math.round(player.maxhp*0.35));   /* never a one-shot */
+      var nd=applyDamage(t, raw, 'dark', e); floatText(t.x,t.y,String(nd),'dark'); if(t===player){ log('Bone Nova: '+combatDamageNumber(nd,'dark')+'.','c-you'); if(player.hp<=0) kill(player,e); } else if(t.hp<=0) kill(t,e); });
+    if(!see) log('Bone Nova misses.','c-good');
+     return;
+  }
+  /* Grave Grasp erupts */
+  if(e.grasp && turn>=e.grasp.at){
+    var cells=e.grasp.cells; e.grasp=null; floorMeta.marks=(floorMeta.marks||[]).filter(function(m){ return m.kind!=='grasp'; });
+    cells.filter(function(v,k,a){ return a.indexOf(v)===k; }).forEach(function(i){ var x=i%MW, y=(i/MW)|0; burst(x,y,'dark',10,0.05); ents.forEach(function(t){ if(t.x===x && t.y===y && t!==e && !(t.foe)){ var gd=applyDamage(t, roll(8,12), 'dark', e); floatText(t.x,t.y,String(gd),'dark'); applyStatus(t,'root',1); if(t===player){ log('Grave Hands: '+combatDamageNumber(gd,'dark')+(gameEffects.has(t,'root')?'; Rooted':'')+'.','c-you'); if(player.hp<=0) kill(player,e); } } }); });
+  }
+  /* blink away from melee, or every few turns */
+  e.blinkCd=(e.blinkCd||0)-1;
+  if(see&&canActorMove(e)&&((d<=1 && e.blinkCd<=0) || e.turnN%6===0)){
+    var spots=hall ? interiorCells(hall).filter(function(p){ return walkable(p.x,p.y) && !occupied(p.x,p.y) && dist(p,player)>=4; }) : [];
+    if(spots.length){ var s=pick(spots); sparkleFx(e.x,e.y,'dark',30); e.x=s.x; e.y=s.y; e._lx=undefined; sparkleFx(e.x,e.y,'dark',30); e.blinkCd=4; if(vis[idxOf(e.x,e.y)]||true) log('Morty teleports.','c-info');  return; }
+  }
+  if(!see){ chaseStep(e);  return; }
+  /* Bone Nova every 9 turns */
+  if(e.turnN%9===0){
+    e.channel=2; e.channelHp=e.hp;
+    var ring=[]; for(var y=e.y-6;y<=e.y+6;y++) for(var x=e.x-6;x<=e.x+6;x++) if(inb(x,y) && walkable(x,y) && vis[idxOf(x,y)] && Math.abs(x-e.x)+Math.abs(y-e.y)>=5 && Math.abs(x-e.x)+Math.abs(y-e.y)<=6) ring.push(idxOf(x,y));
+    floorMeta.marks=[{cells:ring, col:'#8CFF6A', until:turn+3, kind:'nova'}];
+    setClip(e,'attack'); log('<b>Bone Nova:</b> break sight or deal 20 damage!','c-you',{priority:'warning'}); sfx('shaman-cast',{from:e});
+     return;
+  }
+  /* Grave Grasp every 4 turns */
+  if(e.turnN%4===1 && !e.grasp){
+    var gc=[idxOf(player.x,player.y)];
+    for(var k=0;k<5;k++){ var gx=player.x+ri(-2,2), gy=player.y+ri(-2,2); if(inb(gx,gy) && walkable(gx,gy)) gc.push(idxOf(gx,gy)); }
+    e.grasp={cells:gc, at:turn+2};
+    floorMeta.marks=(floorMeta.marks||[]).concat([{cells:gc, col:'#B070FF', until:turn+2, kind:'grasp'}]);
+    setClip(e,'attack'); log('<b>Grave Hands:</b> leave marked tiles!','c-you',{priority:'warning'});
+     return;
+  }
+  /* soul bolts at range, otherwise keep his distance. 2026-09-22 (Justin): the boss may cast over his skeletons - the
+     clear-lane rule for shooters stops at the Necro-Acolyte */
+  if(d>=2 && d<=7){
+    recordHostileAttack(e,player,['attack','spell','ranged']);
+    setClip(e,'attack'); boltFx(e.x,e.y,player.x,player.y,'dark'); sfx('shaman-cast',{from:e});
+    if(rng()<hostileHitChance(hitChance(accOf(e), evaOf(player)),true)){ var sd=applyDamage(player, roll(6,10)+Math.floor(floorNo/2), 'dark', e); floatText(player.x,player.y,String(sd),'dark'); log('Morty soul bolt: '+combatDamageNumber(sd,'dark')+'.','c-you'); if(player.hp<=0) kill(player,e); }
+    else log('Morty\'s soul bolt misses.','c-miss');
+     return;
+  }
+  if(d<=1){ attack(e,player);  return; }
+  chaseStep(e);
+}
+
+function phylacteryBreaks(ph){
+  sparkleFx(ph.x,ph.y,'light',60); SHAKE=8; sfx('puzzle-solved');
+  log('<b>Phylactery destroyed.</b> Morty cannot revive.','c-kill');
+  var m=ents.filter(function(o){ return o.kind==='morty'; })[0];
+  var spots=(floorMeta.deathSpots||[]).slice(-4);
+  if(m || floorMeta.mortyReturn){
+    log('<b>Morty calls reinforcements!</b>','c-you');
+    spots.forEach(function(s){ var c=occupied(s.x,s.y) ? nearFree(s.x,s.y,2) : s; if(c){ var z=spawnRaw('shambler', c.x, c.y); z.state='hunt'; z.risen=true; z.noLoot=true; } });
+  }
+}
+
+function turnMortyReturn(context){
+  var R=floorMeta && floorMeta.mortyReturn; if(!R || turn<R.at) return;
+  floorMeta.mortyReturn=null;
+  var pa=floorMeta.phylAt, c=pa ? (occupied(pa.x,pa.y+1) ? nearFree(pa.x,pa.y+1,3) : {x:pa.x,y:pa.y+1}) : null;
+  if(!c) return;
+  var m=spawnRaw('morty', c.x, c.y); m.state='hunt'; m.elite=true; m.hp=Math.round(R.maxhp*0.6); m.maxhp=R.maxhp; m.turnN=1; floorMeta.bossId=m.id;
+  for(var i=0;i<2;i++){ var s=nearFree(c.x,c.y,2); if(s){ var sk=spawnRaw('skeleton', s.x, s.y); sk.base=Object.assign({},sk.base,{hp:MONSTERS.skeleton.summonHp}); sk.hp=sk.maxhp=sHP(sk.base.hp); sk.state='hunt'; sk.noLoot=true; } }
+  sparkleFx(c.x,c.y,'dark',60); log('<b>Morty revives; 2 Skeletons summoned!</b>','c-you');
+
+}
+
+/* ---------------------------------------------------------------- the corpse stays visible (2026-09-18)
+   A shambler that "collapses and twitches" was only a log line: the death animation played, faded out, and
+   the tile looked empty - so there was nothing to see, walk onto or hit. The body now lies there (the last
+   frame of its death clip, or its sprite on its side) until it is finished, burned or gets back up, and it
+   twitches on the turn before it rises. */
+function drawLyingCorpse(c, now, animating){
+  var i=idxOf(c.x,c.y); if(!(revealAll || seen[i])) return;
+  if(!spriteOn){drawCorpse({e:c,remains:c},1,(revealAll||vis[i])?1:memA(.45));return;}
+  /* 2026-09-27 (render plan B9): while its death clip plays the body is that clip alone; then it lies facing the way it fell */
+  if(animating.has(c.id)) return;
+  var b=MONSTERS[c.kind] || {}, twitch = turn>=c.at-1 && !ANIM.reduce ? Math.sin(now/55)*TS*0.02 : 0;
+  ctx.save(); ctx.translate(twitch, 0);
+  try{ drawCorpse({e:{x:c.x,y:c.y,sprite:b.sprite,art:b.art||0.9,flip:!!c.flip},remains:c,dust:true},1,0.92*((revealAll||vis[i]) ? 1 : memA(0.45))); }
+  finally{ ctx.restore(); }
+}
+
+function drawCorpseTelegraphs(now){
+
+  if(floorMeta && floorMeta.corpses && floorMeta.corpses.length){
+    var t=performance.now(), animating=new Set();
+    fx.forEach(function(f){ if(f.k==='d' && t<f.t0+f.dur) animating.add(f.e.id); });
+    floorMeta.corpses.forEach(function(c){ drawLyingCorpse(c, t, animating); });
+  }
+
+}
+
+/* Named travel and entry stages; ordered by transition-adapter.js. */
+function moveCorpse(dx,dy){
+  var nx=player.x+dx, ny=player.y+dy, cs=floorMeta && floorMeta.corpses;
+  if(cs && cs.length){
+    var hit=cs.filter(function(c){ return c.x===nx && c.y===ny; })[0];
+    if(hit && !occupied(nx,ny)){
+      floorMeta.corpses=cs.filter(function(c){ return c!==hit; });
+      setClip(player,'melee'); lungeFx(player,nx,ny); sfx('skeleton-death');
+      log('Corpse destroyed.','c-good'); endTurn(); return true;
+    }
+  }
+  return false;
+}
+
+/* Named floor-content helpers; selected by content-adapter.js. */
+function populateCryptGuardian(bossRoom){  if(bossRoom){
+    bossRoom.role='boss';
+    var m=spawnRaw('morty', floorMeta.bossAt.x, floorMeta.bossAt.y); m.state='throne'; m.elite=true; floorMeta.bossId=m.id;
+    var pa=floorMeta.phylAt; if(occupied(pa.x,pa.y) || !walkable(pa.x,pa.y)) pa=nearFree(pa.x,pa.y,2);
+    if(pa){ var ph=spawnRaw('phylactery', pa.x, pa.y); ph.state='still'; floorMeta.phylId=ph.id; }
+    var cells=shuffled(interiorCells(bossRoom)).filter(function(p){ return walkable(p.x,p.y) && !occupied(p.x,p.y); });
+    for(var q=0;q<2 && cells.length;q++){ var c=cells.pop(); var s=spawnRaw('skeleton', c.x, c.y); s.state='asleep'; s.guard=true; }
+  }
+}
+
+/* Named character presentation passes; composed by render-adapter.js. */
+
+function prepareShadeVisibility(){
+  var hidden=[];
+  if(ents&&vis&&player)ents.forEach(function(e){
+    if(!e.base||!e.base.phases||revealAll)return;
+    var i=idxOf(e.x,e.y),rm=roomAt(e.x,e.y);
+    if(vis[i]&&dist(e,player)>2&&(at(e.x,e.y)===WALL||(rm&&rm.dark))){hidden.push(i);vis[i]=0;}
+  });
+  return function(){hidden.forEach(function(i){vis[i]=1;});};
+}

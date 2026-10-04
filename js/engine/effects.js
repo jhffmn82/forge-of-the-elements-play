@@ -45,9 +45,21 @@
     if(key==='web'||key==='webbed'||status&&status.effect==='web')return result.concat('web');
     return result;
   }
+  /* Duration of a new application, before immunity and existing-status overlap.
+   * The result remains in world turns; scheduling belongs to pulse/eligible. */
+  function duration(key,turns,context){
+    context=context||{};
+    if(context.durationModifiers!==false){
+      turns+=context.bonusDuration||0;
+      if(context.isPlayer&&context.ironConst)turns=Math.max(1,Math.round(turns/2));
+    }
+    if((context.durationModifiers!==false||context.bossControl)&&!context.isPlayer&&context.isBoss&&definition(key).bossControl)turns=1;
+    return turns;
+  }
+  function beaconRoot(){return {duration:2};}
   function create(hooks){
     hooks=hooks||{};
-    var unit=hooks.worldTurn||100,lastPulse=new WeakMap(),pulseClock=null;
+    var unit=hooks.worldTurn||100,lastPulse=new WeakMap(),pulseClock=null,applicationContext=null;
     function player(e){return hooks.isPlayer?!!hooks.isPlayer(e):e===(hooks.getPlayer&&hooks.getPlayer());}
     function now(){var n=pulseClock===null?(hooks.now?hooks.now():0):pulseClock;return Number.isFinite(n)?n:0;}
     function perk(e,id){return !!(hooks.hasPerk&&hooks.hasPerk(id,e));}
@@ -88,7 +100,7 @@
       var event={entity:e,key:key,status:status,reason:reason||'removed',clock:now()};
       if(key==='root'&&e.syllaWeb>0){
         var slow=e.syllaWeb;e.syllaWeb=0;
-        if(reason==='expired'&&alive(e))apply(e,'slow',slow,undefined,{data:{effect:'web'}});
+        if(reason==='expired'&&alive(e))apply(e,'slow',slow,undefined,{data:{effect:'web'},applicationCause:status.applicationCause||null});
       }
       if(reason==='expired'&&key==='fear'&&!player(e)&&alive(e))apply(e,'imm_fear',5,undefined,{durationModifiers:false,ignoreImmunity:true});
       emit('onExpired',event);return true;
@@ -100,13 +112,14 @@
       var reason=blocked(e,requested,options),event={entity:e,key:key,requested:requested,turns:turns,reason:reason};
       if(reason){emit('onBlocked',event);return {applied:false,reason:reason,key:key};}
       e.st=e.st||{};var previous=e.st[key],d=definition(key);
-      if(options.durationModifiers!==false){
-        if(hooks.bonusDuration)turns+=hooks.bonusDuration(e,key,turns)||0;
-        if(player(e)&&perk(e,'ironConst'))turns=Math.max(1,Math.round(turns/2));
-      }
-      if((options.durationModifiers!==false||options.bossControl)&&!player(e)&&boss(e)&&d.bossControl)turns=1;
+      turns=durationFor(e,key,turns,options);
       var status=Object.assign({},previous||{},options.data||{});
       if(!options.data||!options.data.sourceAffinity){delete status.sourceAffinity;delete status.sourceDuration;}
+      /* A refresh is a new application. Never retain a previous actor's cause
+       * merely because this status already existed. Legacy statuses may lack it. */
+      if(Object.prototype.hasOwnProperty.call(options,'applicationCause'))status.applicationCause=options.applicationCause;
+      else if(applicationContext&&applicationContext.entity===e&&Object.prototype.hasOwnProperty.call(applicationContext.status,'applicationCause')&&!Object.prototype.hasOwnProperty.call(options,'source'))status.applicationCause=applicationContext.status.applicationCause;
+      else if(hooks.applicationCause)status.applicationCause=hooks.applicationCause(e,key,options)||null;
       status.t=options.refresh==='replace'?turns:Math.max(turns,previous&&previous.t||0);
       status.bornAt=options.bornAt===undefined?now():options.bornAt;
       if(extra!==undefined)status.d=extra;
@@ -116,7 +129,9 @@
       if(player(e)&&key==='stone'){remove(e,'poison','stone-skin');remove(e,'stun','stone-skin');}
       if(player(e)&&d.tags.indexOf('hard-control')>=0)e.resolveUntil=now()+status.t*unit+2*unit;
       event.status=status;event.previous=previous;event.fresh=!previous;event.turns=turns;event.reason=null;
-      event.options=options;emit('onApplied',event);
+      event.options=options;
+      var priorApplication=applicationContext;applicationContext=event;
+      try{emit('onApplied',event);}finally{applicationContext=priorApplication;}
       return {applied:true,key:key,status:status,previous:previous};
     }
     function addChill(e,options){
@@ -137,9 +152,9 @@
     }
     function applyWeb(e,settings){
       settings=settings||{};
-      var root=apply(e,'web',settings.rootTurns===undefined?1:settings.rootTurns);
+      var options=settings.options||{},root=apply(e,'web',settings.rootTurns===undefined?1:settings.rootTurns,undefined,options);
       if(root.applied)e.syllaWeb=settings.slowTurns===undefined?3:settings.slowTurns;
-      var bleed=apply(e,'bleed',settings.bleedTurns===undefined?3:settings.bleedTurns,settings.bleedDamage===undefined?2:settings.bleedDamage);
+      var bleed=apply(e,'bleed',settings.bleedTurns===undefined?3:settings.bleedTurns,settings.bleedDamage===undefined?2:settings.bleedDamage,options);
       return {root:root,bleed:bleed};
     }
     function eligible(e,status,clock){return status.bornAt===undefined||(player(e)?status.bornAt<clock-unit:status.bornAt<=clock-unit);}
@@ -155,7 +170,10 @@
       for(var i=0;i<keys.length;i++){
         var key=keys[i],status=e.st[key];if(!status||!eligible(e,status,clock))continue;
         if(status.t!==undefined&&status.t<=0){remove(e,key,'expired');continue;}
-        if(emit('onTick',{entity:e,key:key,status:status,clock:clock})===false||!alive(e)){
+        var priorApplication=applicationContext,ticked;
+        applicationContext={entity:e,key:key,status:status};
+        try{ticked=emit('onTick',{entity:e,key:key,status:status,clock:clock});}finally{applicationContext=priorApplication;}
+        if(ticked===false||!alive(e)){
           emit('onAfterPulse',{entity:e,clock:clock,hpBefore:hp,alive:false});return false;
         }
         if(e.st[key]!==status||status.t===undefined)continue;
@@ -171,8 +189,16 @@
     function clear(e,tag){
       Object.keys(e&&e.st||{}).forEach(function(key){if(!tag||tags(key,e.st[key]).indexOf(tag)>=0)remove(e,key,'cleansed');});
     }
-    var service={apply:apply,remove:remove,has:has,hasTag:hasTag,airborne:airborne,blocked:blocked,addChill:addChill,applyWeb:applyWeb,pulse:pulse,eligible:eligible,repairClock:repairClock,clear:clear,definition:definition,tags:tags,canonical:canonical};
+    function durationFor(e,key,turns,options){
+      options=options||{};key=canonical(key);
+      var isPlayer=player(e),modifiers=options.durationModifiers!==false;
+      return duration(key,turns,{isPlayer:isPlayer,isBoss:!isPlayer&&boss(e),
+        ironConst:modifiers&&isPlayer&&perk(e,'ironConst'),
+        bonusDuration:modifiers&&hooks.bonusDuration?hooks.bonusDuration(e,key,turns)||0:0,
+        durationModifiers:options.durationModifiers,bossControl:options.bossControl});
+    }
+    var service={apply:apply,duration:durationFor,remove:remove,has:has,hasTag:hasTag,airborne:airborne,blocked:blocked,addChill:addChill,applyWeb:applyWeb,pulse:pulse,eligible:eligible,repairClock:repairClock,clear:clear,definition:definition,tags:tags,canonical:canonical};
     return Object.freeze(service);
   }
-  return Object.freeze({create:create,registry:definitions,canonical:canonical,definition:definition,tags:tags});
+  return Object.freeze({create:create,registry:definitions,canonical:canonical,definition:definition,tags:tags,duration:duration,beaconRoot:beaconRoot});
 });

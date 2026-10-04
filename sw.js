@@ -3,9 +3,9 @@
    Two jobs:
    1. OFFLINE: every file the network delivers is kept in the cache, so whatever a player has already loaded
       reloads with no signal. Installing no longer downloads the whole build: the 705 files dist/precache.json
-      lists (written by tools/deploy.py) come to about 122 MB at Beta 1.3.1, and every browser tab that
+      lists (written by tools/build/deploy.py) come to about 122 MB at Beta 1.3.1, and every browser tab that
       registered this worker used to pull all of them on its first visit. Only an installed copy (home-screen
-      app, the Android APK) stores the full list; js/offline.js does that from the page, a few files at a time.
+      app, the Android APK) stores the full list; js/platform/offline.js does that from the page, a few files at a time.
    2. UPDATES: network first. Whenever the device can reach the server it takes the fresh copy, so a patch
       arrives on the next launch with no reinstall; the cache answers only when the network does not.
 

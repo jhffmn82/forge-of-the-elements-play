@@ -83,7 +83,7 @@ function turnFiniteAnimationWait(actor){
   return Math.max(0,end-performance.now());
 }
 /* 2026-09-28: the slides stamped while this task's AI ran start once its work is done: at a swing the player can
- * see (render.js setClip), a pause, or the turn's end. A crowded floor's AI time never eats them (game.js motionStart). */
+ * see (render.js setClip), a pause, or the turn's end. A crowded floor's AI time never eats them (js/runtime/game.js motionStart). */
 function turnStartSlides(){
   if(ANIM.reduce)return;
   var now=performance.now();
