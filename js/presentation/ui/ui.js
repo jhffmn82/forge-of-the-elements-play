@@ -315,12 +315,17 @@ function hudResourceCard(kind){
 }
 function bindHudResourceCard(element,kind){
   if(!element)return;
-  element.removeAttribute('title');element.setAttribute('aria-describedby','dtip');
+  function isNavigation(){return !!element.closest('#studyNav,#studySheetTabs');}
+  element.removeAttribute('title');
   element.querySelectorAll('[title]').forEach(function(child){child.removeAttribute('title');});
+  // Menu commands and sheet tabs already name their action. Shared controls
+  // such as Map may move between the HUD and menu when the layout changes.
+  if(isNavigation()){element.removeAttribute('aria-describedby');return;}
+  element.setAttribute('aria-describedby','dtip');
   if(element._hudResourceCard===kind)return;
   element._hudResourceCard=kind;if(element.tabIndex<0)element.tabIndex=0;
-  hoverCard(element,function(){return hudResourceCard(kind);});
-  element.addEventListener('focus',function(){if(document.body.classList.contains('touch'))return;var r=element.getBoundingClientRect();showCard(hudResourceCard(kind),{clientX:r.left,clientY:r.bottom,isTrusted:false});});
+  hoverCard(element,function(){return isNavigation()?null:hudResourceCard(kind);});
+  element.addEventListener('focus',function(){if(isNavigation()||document.body.classList.contains('touch'))return;var r=element.getBoundingClientRect();showCard(hudResourceCard(kind),{clientX:r.left,clientY:r.bottom,isTrusted:false});});
   element.addEventListener('blur',hideCard);
   element.addEventListener('click',hideCard);
 }

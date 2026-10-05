@@ -3,7 +3,7 @@
 **Beta 1.6 playtest candidate.** This build is being tested here before formal release. The public `/forge` and itch.io builds retain their released versions.
 
 A browser roguelike: explore elemental dungeons, shape your build at the Forge, and face each biome's boss.
-The current Play build includes guided onboarding, mobile controls, combat updates and closer map zoom.
+The current Play build includes guided onboarding, landscape mobile controls, early-game combat updates and closer map zoom.
 
 ## Play on a PC
 
@@ -19,10 +19,10 @@ Open the downloaded file, allow installs from your browser when Android asks, an
 drawer. It plays offline once it has loaded and picks up new builds by itself, so the app only needs installing once.
 The APK wrapper's portrait setting is unchanged; this web update does not rebuild the APK.
 
-Or open the play link above in Chrome on the device. Browser play supports portrait and landscape;
-tap to move and hold to inspect. The game lays itself out for touch without a rotation prompt or fullscreen request.
+Or open the play link above in Chrome on the device and turn it sideways. Mobile play uses landscape;
+tap to move and hold to inspect. A rotate prompt appears in portrait; the game does not request fullscreen.
 
 ## This repository
 
 Generated output only: the playable build, published by `tools/release/publish.py` from the source project. Last
-build: **2026-10-05T02:25:14.942252+00:00**.
+build: **2026-10-05T12:54:37.893959+00:00**.

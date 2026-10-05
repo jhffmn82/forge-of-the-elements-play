@@ -234,6 +234,7 @@ function damageElementReactions(event){
 function damageReceivedReactions(event){
   var target=event.target,source=event.source,type=event.type,d=event.damage;
   if(target!==player)return;
+  if(d>0&&typeof stackDiscipline==='function')stackDiscipline();
   if(d>0&&hasGod('reginald')&&godRank()>=3&&source&&source.foe&&!source.ally&&source.hp>0&&dist(source,player)>1&&
       !['proc','periodic','environment','reflected','arc','ground'].some(function(tag){return event.tags.has(tag);})){
     var duration=FoteDamage.cowardsMark().duration;

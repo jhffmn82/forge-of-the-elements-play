@@ -44,7 +44,7 @@ var WEAPONS = {
   longsword:W('Long Sword',[7,12],0,2,{note:'+10% crit', critBonus:0.10, icon:'item-longsword'}),
   axe:      W('Battle Axe',[8,14],-10,2,{note:'+25% damage to targets at half HP or less', executioner:0.25, icon:'item-axe'}),
   bow:      W('Short Bow',[3,8],5,2,{range:6, note:'range 6; up close, your main weapon swings instead', icon:'item-bow'}),
-  staff:    W('Oak Staff',[3,6],0,2,{note:'the most spell damage and +1 spell range', spell:0.20, icon:'item-staff'}),
+  staff:    W('Oak Staff',[4,8],0,2,{note:'the most spell damage and +1 spell range', spell:0.20, icon:'item-staff'}),
   spear:    W('Spear',[5,9],5,2,{note:'reach: attacks 2 tiles away in a line', reach:2, icon:'item-spear'}),
   censer:   W('Ceremonial Knife',[3,6],0,1,{note:'strengthens your god\'s abilities', light:true, divine:0.15, icon:'item-censer'})
 };
@@ -126,7 +126,7 @@ var GODS = {
     "boons": [
       "Thick Hide: +4% resistance to magic and elemental damage and +20% HP regeneration per rank.",
       "Wizard Hunter: taking magic, elemental or ranged damage grants +5% movement and attack speed per rank for 3 turns.",
-      "Warrior's Discipline: using any ability reduces all remaining ability cooldowns by 2 and restores 2 Favor."
+      "Warrior's Discipline: taking HP damage builds up to 5 stacks, once per turn. Each grants weapon damage, crit and armor and reduces remaining cooldowns by 1. Stacks last 8 turns."
     ],
     "gain": "Kills, extra for spellcasters and elemental creatures."
   },
@@ -296,8 +296,8 @@ var ABILITIES = {
     "range": 6,
     "type": "magic",
     "base": [
-      3,
-      6
+      7,
+      10
     ],
     "always": true,
     "perAffinity": 1,
@@ -467,7 +467,7 @@ var ABILITIES = {
     "kind": "bolt",
     "range": 5,
     "type": "magic",
-    "base": [5, 5],
+    "base": [10, 10],
     "divinePowerOnly": true,
     "icon": "pr-arcanelance",
     "divine": true,
@@ -887,15 +887,15 @@ var PROPS = {
 
 /* ---------------------------------------------------------------- monsters, biome 1 */
 var MONSTERS = {
-  rat:     {name:'Dungeon Rat', sprite:'m-rat', col:'#8C7A63', ch:'r', hp:8, dmg:[4,5], acc:56, eva:22, armor:0, speed:100, range:1, xp:4,
+  rat:     {name:'Dungeon Rat', sprite:'m-rat', col:'#8C7A63', ch:'r', hp:16, dmg:[4,5], acc:56, eva:22, armor:0, speed:100, range:1, xp:4,
             band:[1,3], w:26, pack:[2,3], art:0.75, sfx:'rat', living:true},
-  bat:     {name:'Cave Bat', sprite:'m-bat', col:'#9E8CA8', ch:'b', hp:8, dmg:[2,3], acc:58, eva:44, armor:0, speed:200, range:1, xp:6,
+  bat:     {name:'Cave Bat', sprite:'m-bat', col:'#9E8CA8', ch:'b', hp:16, dmg:[2,3], acc:58, eva:44, armor:0, speed:200, range:1, xp:6,
             band:[1,2], w:6, erratic:true, flying:true, art:0.7, sfx:'bat', living:true},
-  goblin:  {name:'Goblin', sprite:'m-goblin', col:'#6F9350', ch:'g', hp:16, dmg:[5,7], acc:60, eva:16, armor:1, speed:100, range:1, xp:8,
+  goblin:  {name:'Goblin', sprite:'m-goblin', col:'#6F9350', ch:'g', hp:20, dmg:[5,7], acc:60, eva:16, armor:1, speed:100, range:1, xp:8,
             band:[1,5], w:26, art:0.9, sfx:'goblin', living:true, artLeft:true},
-  archer:  {name:'Goblin Archer', sprite:'m-goblin-archer', col:'#B8894A', ch:'a', hp:14, dmg:[3,5], acc:60, eva:18, armor:0, speed:100, range:6, xp:10,
+  archer:  {name:'Goblin Archer', sprite:'m-goblin-archer', col:'#B8894A', ch:'a', hp:14, dmg:[5,7], acc:60, eva:18, armor:0, speed:100, range:6, xp:10,
             band:[2,5], w:18, kiter:true, art:0.9, sfx:'goblin', living:true, artLeft:true},
-  brute:   {name:'Goblin Brute', sprite:'m-goblin-brute', col:'#4E7A3C', ch:'G', hp:30, dmg:[5,8], acc:58, eva:10, armor:6, speed:100, range:1, xp:18,hint:'Heavy armor. Melee hits can push you back. 4-turn cooldown.',
+  brute:   {name:'Goblin Brute', sprite:'m-goblin-brute', col:'#4E7A3C', ch:'G', hp:30, dmg:[7,10], acc:58, eva:10, armor:6, speed:100, range:1, xp:18,hint:'Heavy armor. Melee hits can push you back. 4-turn cooldown.',
             band:[3,5], w:14, art:1.05, sfx:'brute', living:true, artLeft:true},
   slime:   {name:'Rock Slime', sprite:'m-rock-slime', col:'#7C8C9E', ch:'s', hp:32, dmg:[4,6], acc:54, eva:8, armor:3, speed:70, range:1, xp:16, rootSpit:true,
             band:[2,4], w:12, splits:true, art:0.8, artLeft:true, sfx:'slime',
@@ -903,7 +903,7 @@ var MONSTERS = {
   pebbleslime:{name:'Pebble Slime', sprite:'m-slime', col:'#7C8C9E', ch:'s', hp:18, dmg:[2,3], acc:54, eva:8, armor:0, speed:70, range:1, xp:8,
             band:[1,1], biome:[0], w:12, pebbleSlam:true, art:0.65, sfx:'slime',
             hint:'Marks a tile before striking. Move off the mark.'},
-  shaman:  {name:'Goblin Shaman', sprite:'m-goblin-shaman', col:'#C25A3A', ch:'h', hp:16, dmg:[3,5], acc:64, eva:14, armor:0, speed:100, range:1, xp:18,
+  shaman:  {name:'Goblin Shaman', sprite:'m-goblin-shaman', col:'#C25A3A', ch:'h', hp:20, dmg:[3,5], acc:64, eva:14, armor:0, speed:100, range:1, xp:18,
             band:[3,5], w:10, caster:'firebolt', castRange:6, castEvery:4, el:'fire', art:0.9, sfx:'shaman', living:true, spellcaster:true, artLeft:true},
   skeleton:{name:'Skeleton', sprite:'m-skeleton', col:'#D8CEBC', ch:'k', hp:32, summonHp:16, dmg:[3,5], acc:62, eva:18, armor:2, speed:100, range:1, xp:18,
             band:[9,9], w:0, undead:true, art:0.95, sfx:'skeleton'},

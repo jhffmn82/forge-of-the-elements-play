@@ -55,7 +55,7 @@
     return {enabled:(affinity.water||0)>=3&&(affinity.air||0)>=2,targets:arc.targets,range:arc.range,damageMultiplier:arc.damageMultiplier};
   }
   function frozenArcGround(affinity){affinity=affinity||{};return {duration:(affinity.air||0)>=3&&(affinity.water||0)>=2?3:0};}
-  function chainLightning(){return {targets:5,jumpRange:4,damageMultiplier:.75};}
+  function chainLightning(){return {targets:5,jumpRange:4,damageMultiplier:1};}
   /* Silt Shield retains its stat-derived capacity; only a primary weapon
    * hit may restore this fixed amount, capped by the recipient's live pool. */
   function siltShield(){return {restore:9};}

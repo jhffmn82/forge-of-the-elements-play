@@ -593,7 +593,7 @@ function castBoltTarget(x,y){
   var worldProp=propAt(end.x,end.y),breakableHit=worldProp&&worldProp.br&&!worldProp.hoard&&A.kind==='bolt'&&A.base;
   var terrain = !f && (at(end.x,end.y)===ICEDOOR || at(end.x,end.y)===THORNS || propAt(end.x,end.y) || gAt(end.x,end.y)===G_GRASS);
   if(!f && !(terrain && (breakableHit||A.type==='fire'||A.type==='phys'||A.type==='ice'||A.type==='lightning'))){ log(path.length && end.x!==x ? 'Something is in the way.' : 'Nothing to hit there.','c-info'); return false; }
-  aiming=null; spendSpellMana(A); if(A.divine) startInvokeCd(key); else if(A.cd){startDivineCd(key,A.cd);stackDiscipline();}   /* Challenge: an aimed invoke's cooldown starts on payment; 2026-09-29 (Justin): so does Sap's 8 turns */
+  aiming=null; spendSpellMana(A); if(A.divine) startInvokeCd(key); else if(A.cd){startDivineCd(key,A.cd);}   /* Challenge: an aimed invoke's cooldown starts on payment; 2026-09-29 (Justin): so does Sap's 8 turns */
   if(!A.tech && !A.divine && typeof spellConduct==='function') spellConduct(A);
   setClip(player, A.tech && A.useWeaponRange && player.range<=1 ? 'melee' : 'cast');
   var ptype = A.type==='magic'?'magic':A.type==='phys'?(A.el==='earth'?'earth':'phys'):A.type==='ice'?'ice':A.type==='dark'?'dark':A.type;

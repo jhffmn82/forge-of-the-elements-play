@@ -249,6 +249,10 @@ function querySceneArt(task){
   function query(){
     var value=task.value,name;
     if(task.kind==='tile'){
+      /* Ground sources belong to this scene too, even when the retained layer
+       * means their selectors will not run again for several seconds. */
+      if(isWallLike(value))wallTile(task.x,task.y);
+      else if(value!==CHASM)floorTile(task.x,task.y);
       tileSprite(task.x,task.y,value);
       if(value===OPEN){var material=DOOR_ART[openDoorMaterial(task.x,task.y)]||DOOR_ART.wood;objArt('structures',material[0]);objArt('structures',material[1]);}
       if(value===STAIRS&&inDeep())deepArt('stairs-down-drow');
@@ -300,7 +304,7 @@ function retireSceneArt(scope){
   if(!scope)return;
   if(scope.task!==null){if(scope.idle&&typeof cancelIdleCallback==='function')cancelIdleCallback(scope.task);else clearTimeout(scope.task);scope.task=null;}
   scope.tasks=[];retireBackgroundAtlasRequests(scope);
-  if(sceneArtLoading===scope)sceneArtLoading=null;
+  if(sceneArtLoading===scope){sceneArtLoading=null;setActiveAtlasScene(null);}
 }
 function scheduleSceneArt(scope){
   if(!sceneArtCurrent(scope)||!scope.tasks.length)return;
@@ -316,12 +320,26 @@ function scheduleSceneArt(scope){
   }
   scope.idle=typeof requestIdleCallback==='function';scope.task=scope.idle?requestIdleCallback(slice,{timeout:250}):setTimeout(slice,16);
 }
+/* Floor entry is a readiness boundary. Warming may continue during ordinary
+ * play, but the first frame must not substitute letters for resident sprites. */
+function prepareSceneArt(scope){
+  if(!scope||!sceneArtCurrent(scope))return Promise.resolve();
+  if(scope.task!==null){if(scope.idle&&typeof cancelIdleCallback==='function')cancelIdleCallback(scope.task);else clearTimeout(scope.task);scope.task=null;}
+  while(scope.tasks.length){
+    var task=scope.tasks.shift();
+    withBackgroundAtlasRequests(scope,function(){querySceneArt(task);});scope.elected++;
+  }
+  /* These are now required entry sources: promote them into the normal queue. */
+  return Promise.all(Array.from(scope.atlasFiles).map(function(file){return atlReady(file,{retry:true});}));
+}
 function continueSceneArtLoading(){
   if(!sceneArtAvailable()){retireSceneArt(sceneArtLoading);return;}
   var scope=sceneArtLoading,appearanceRevision=FoteContent.appearanceRevision(floorMeta),counts=[props.length,items.length,feats.length,ents.length,player.look,player.god].join('|');
   if(scope&&sceneArtCurrent(scope)&&scope.counts===counts)return;
+  var retained=scope&&scope.map===map&&scope.meta===floorMeta?scope.atlasFiles:new Set();
   retireSceneArt(scope);
-  scope=sceneArtLoading={active:true,map:map,meta:floorMeta,hero:player,appearanceRevision:appearanceRevision,counts:counts,tasks:electSceneArt(),task:null,idle:false,elected:0,errors:[]};
+  scope=sceneArtLoading={active:true,map:map,meta:floorMeta,hero:player,appearanceRevision:appearanceRevision,counts:counts,atlasFiles:retained,tasks:electSceneArt(),task:null,idle:false,elected:0,errors:[]};
+  setActiveAtlasScene(scope);
   scheduleSceneArt(scope);
 }
 function startSceneArtLoading(){sceneArtEnabled=true;continueSceneArtLoading();}
@@ -329,8 +347,8 @@ function sceneArtLoadingDiagnostics(){var scope=sceneArtLoading;return {enabled:
 if(typeof FoteLifecycle!=='undefined')FoteLifecycle.whenReady(startSceneArtLoading);
 /* Floor-entry hold (2026-09-27): a new floor is not painted until its art is ready, so it never shows
  * the old art first. The previous frame stays up (no loading card) and input waits (pacing.js).
- * Startup awaits its current scene. Later scenes prepare terrain here and
- * continue electing object/resident sheets in the bounded background lane. */
+ * Startup awaits its current scene. Later entries await terrain and elected
+ * object/resident sheets too; no partially prepared floor is made playable. */
 var floorArt=null,floorDrawn=[];
 /* Terrain hold (2026-09-28): the same, for the natural terrain of a view that is not built yet (a new floor, a
  * portal hop to another island, a zoom or reveal change). Its cells are built first, at full detail, behind the
@@ -341,13 +359,30 @@ function floorArtPending(){
     !!terrainHold&&!terrainHold.done&&terrainHold.map===map&&terrainHold.meta===floorMeta;
 }
 function whenFloorDrawn(fn){if(floorArtPending())floorDrawn.push(fn);else fn();}
+function floorArtMessage(hold,error){
+  if(floorArt!==hold||hold.map!==map||hold.meta!==floorMeta)return;
+  var node=document.getElementById('floorArtStatus');
+  if(!node){node=document.createElement('div');node.id='floorArtStatus';node.setAttribute('role','status');node.style.cssText='position:fixed;z-index:99;bottom:20px;left:50%;transform:translateX(-50%);padding:12px 16px;border:1px solid #79634C;border-radius:8px;background:#17120F;color:#E5D5BD;font:14px sans-serif;text-align:center';document.body.appendChild(node);}
+  node.style.fontSize='calc(14px + var(--ui-mobile-text-add,0px))';node.replaceChildren();
+  var text=document.createElement('span');text.textContent=error?'Some artwork could not load. ':'Preparing floor…';node.appendChild(text);
+  if(error){var retry=document.createElement('button');retry.textContent='Retry';retry.style.cssText='margin-left:10px;padding:8px 12px;min-width:44px;min-height:44px';retry.onclick=function(){prepareFloorArt(hold);};node.appendChild(retry);}
+}
+function prepareFloorArt(hold){
+  if(hold.loading||floorArt!==hold)return;hold.loading=true;hold.error=null;
+  floorArtMessage(hold,null);
+  var chaos=hold.meta&&(hold.meta.chaosCampaign||hold.meta.chaosEntryPreview)&&typeof FoteChaosCampaign!=='undefined';
+  Promise.all([typeof FoteEnvironmentTerrain!=='undefined'?FoteEnvironmentTerrain.ensureAssets():null,chaos?FoteChaosCampaign.prepare():null])
+    .then(function(){if(hold.map!==map||hold.meta!==floorMeta)return;continueSceneArtLoading();return prepareSceneArt(sceneArtLoading);})
+    .then(function(){
+      hold.loading=false;hold.done=true;
+      if(floorArt!==hold||hold.map!==map||hold.meta!==floorMeta)return;
+      var notice=document.getElementById('floorArtStatus');if(notice)notice.remove();draw();
+    },function(error){hold.loading=false;hold.error=error;console.error('Floor artwork preparation failed',error);floorArtMessage(hold,error);});
+}
 function holdFloor(){
   if(floorArt&&floorArt.map===map&&floorArt.meta===floorMeta)return !floorArt.done;
-  var chaos=floorMeta&&(floorMeta.chaosCampaign||floorMeta.chaosEntryPreview)&&typeof FoteChaosCampaign!=='undefined';
-  if(typeof FoteEnvironmentTerrain==='undefined'||FoteEnvironmentTerrain.ready()&&(!chaos||FoteChaosCampaign.prepared()))return false;
-  var hold=floorArt={map:map,meta:floorMeta,done:false};
-  Promise.all([FoteEnvironmentTerrain.ensureAssets(),chaos?FoteChaosCampaign.prepare():null]).catch(function(){/* the original materials are the load-error fallback */})
-    .then(function(){hold.done=true;if(floorArt===hold)draw();});
+  var hold=floorArt={map:map,meta:floorMeta,done:false,loading:false,error:null};
+  prepareFloorArt(hold);
   return true;
 }
 /* The tile window the next frame will draw (drawScene's own camera, from the player's drawn position). */
@@ -394,7 +429,7 @@ function draw(){
   var shake=SHAKE>0.5&&!ANIM.reduce;
   if(shake){ctx.save();ctx.translate((Math.random()-.5)*SHAKE,(Math.random()-.5)*SHAKE);}else SHAKE=0;
   try{
-    drawFramePasses();
+    withSceneAtlasRequests(sceneArtLoading,drawFramePasses);
     if(spriteOn&&map&&ground){ /* the map's ResizeObserver can call draw() before the first world exists */
       if(changed){renderPreviousMap=map;renderPreviousMeta=floorMeta;}
       terrainShown={map:map,meta:floorMeta,x:camX,y:camY,w:viewW,h:viewH,reveal:!!revealAll,cw:cv.width,ch:cv.height};

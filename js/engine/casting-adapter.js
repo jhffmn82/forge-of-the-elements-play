@@ -72,7 +72,7 @@ function resolveElementSelf(A){  beginCast(A);
 function useShadowstep(){
   if(cdLeft('shadowstep')>0){log('Shadowstep: ready in '+cdLeft('shadowstep')+' turns.','c-info');sfx('ui-error');return;}
   if(ents.some(function(e){return e.foe&&dist(e,player)<=1;})){log('Enemy adjacent.','c-info');sfx('ui-error');return;}
-  startDivineCd('shadowstep',ABILITIES.shadowstep.cd);stackDiscipline();player.hidden=4;
+  startDivineCd('shadowstep',ABILITIES.shadowstep.cd);player.hidden=4;
   ents.forEach(function(e){if(e.foe&&e.state==='hunt'){e.state='wander';e.lastSeen=null;e.goal=null;}});
   setClip(player,'cast');sfx('vanish');sparkleFx(player.x,player.y,'dark',18);log('Shadowstep: hidden.','c-good');endTurn();
 }

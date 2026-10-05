@@ -360,18 +360,19 @@ function spendPrayer(id){
    because Raise Dead is a prayer and an ability of the same name. canPray and useAbility refuse while it runs. */
 function prayerCdKey(id){return 'pray:'+prayerId(id);}
 function startDivineCd(key,turns){turns=cooldownTurns(turns);if(turns>0){player.cds=player.cds||{};player.cds[key]=turn+turns;}}
-/* Grumbok rank 5: one trigger per admitted ability, after its cooldown starts. */
+/* Grumbok rank 5 gains momentum from actual HP damage, once per paid turn. */
 function cooldownTurns(turns){return turns;}
 function stackDiscipline(){
-  if(!player||player.hp<=0||!capstone('grumbok'))return;
-  if(player.st)delete player.st.discipline;
-  Object.keys(player.cds||{}).forEach(function(key){if(player.cds[key]>turn)player.cds[key]=Math.max(turn,player.cds[key]-2);});
-  var before=player.favor||0;player.favor=Math.min(100,before+2);
-  log("Warrior's Discipline: cooldowns reduced by 2; +"+(player.favor-before)+' Favor.','c-good');
+  if(!player||player.hp<=0||!capstone('grumbok')||player._disciplineTurn===turn)return;
+  player._disciplineTurn=turn;
+  var old=player.st&&player.st.discipline,rule=FoteStats.discipline(old&&old.t>0?old.n||0:0,divineStrength());
+  gameEffects.apply(player,'discipline',fullDivineDuration(rule.duration),undefined,{data:{n:Math.min(rule.cap,rule.stacks+1)},durationModifiers:false,refresh:'replace',bornAt:worldNow()-100});
+  Object.keys(player.cds||{}).forEach(function(key){if(player.cds[key]>turn)player.cds[key]=Math.max(turn,player.cds[key]-rule.cooldown);});
+  derive(player);log("Warrior's Discipline: "+player.st.discipline.n+' stacks.','c-good');
 }
 function trollBloodRules(){var rule=FoteDamage.trollBlood(godRank(),divineStrength());rule.duration=fullDivineDuration(rule.duration);return rule;}
-function startPrayerCd(id){startDivineCd(prayerCdKey(id),DIVINE_COOLDOWNS.prayers[prayerId(id)]);stackDiscipline();}
-function startInvokeCd(key){startDivineCd(key,DIVINE_COOLDOWNS.invokes[key]);stackDiscipline();}
+function startPrayerCd(id){startDivineCd(prayerCdKey(id),DIVINE_COOLDOWNS.prayers[prayerId(id)]);}
+function startInvokeCd(key){startDivineCd(key,DIVINE_COOLDOWNS.invokes[key]);}
 function prayerRefused(id){var n=cdLeft(prayerCdKey(id)),health=prayerHealthCost(id),P=PRAYERS[prayerId(id)];log(n>0?P.name+': ready in '+n+' turns.':health&&player.hp<health+1?P.name+': needs '+(health+1)+' HP; costs '+health+'.':P.name+': unavailable.','c-info');sfx('ui-error');}
 function usePrayer(id){
   if(gameTurns.busy())return false;

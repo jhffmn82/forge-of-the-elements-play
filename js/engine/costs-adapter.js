@@ -51,7 +51,6 @@ function spendSpellMana(A){
   SPELL_PAYMENTS.set(player,{ability:A,cost:cost,eligible:!A.tech&&!A.divine,conducted:false});
   if(A.divine)vellumManaPiety(cost);
   if(!A.tech)player.castingSpell=true;
-  if(!A.divine&&!A.cd&&typeof stackDiscipline==='function')stackDiscipline();
   return cost;
 }
 function spellConduct(A){

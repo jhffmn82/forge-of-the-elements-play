@@ -33,8 +33,8 @@ var STATUS_INFO = {
   rampage:   {name:'Rampage', icon:'pr-rampage', d:'More melee damage and faster melee attacks.'},
   ironhide:  {name:'Iron Hide', icon:'pr-ironhide', d:'Extra armor and a shield.'},
   ironbody:  {name:'Iron Body', icon:'ic-iron-body', d:'Extra armor, and your unarmed hits may Stun.'},
+  discipline:{name:"Warrior's Discipline",icon:'ic-charge',d:'Weapon damage, crit and armor increased.'},
   trollblood:{name:'Troll Blood', icon:'pr-trollblood', d:'Regenerate HP each turn.'},
-  warriorsdiscipline:{name:"Warrior's Discipline", icon:'ic-charge', d:'Rank 5 passive. Each successful ability use reduces all remaining ability cooldowns by 2 and restores 2 Favor, up to 100. Includes class abilities.'},
   laststand: {name:'Last Stand', icon:'pr-laststand', unit:'turns', d:'Reduced damage and HP regeneration.'},
   rally:     {name:'Rally', icon:'pr-rally', d:'+10% damage and spell power.'},
   temper:    {name:'Temper', icon:'ic-temper', d:'Increased weapon damage and armor.'},
@@ -85,7 +85,6 @@ function statusList(e){
   if(e.boneWard)out.push({k:'boneward',t:0});
   if(e!==player&&e.rallyUntil>player.t)out.push({k:'rally',t:Math.ceil((e.rallyUntil-player.t)/100)});
   if(e===player){
-    if(player.god==='grumbok'&&godRank()>=5)out.push({k:'warriorsdiscipline',t:0});
     for(var b in (player.buffs||{})) if(b!=='hardened'&&player.buffs[b]>0&&!(b==='arcaneward'&&player.buffs.communion>0)) out.push({k:b, t:player.buffs[b]});
     if(player.hidden>0) out.push({k:'hidden', t:player.hidden});
     if(player.levitate>0) out.push({k:'levitate', t:player.levitate});
@@ -107,6 +106,7 @@ function statusList(e){
     if(o.k==='communion'&&e.ward>0)I=Object.assign({},I,{d:'Ward: '+Math.round(e.ward)+' HP. '+I.d});
     if(o.k==='manaward')I=Object.assign({},I,{d:'Shield: '+Math.round(e.manaWard||0)+' HP. '+I.d});
     if(o.k==='laststand'&&e===player){var stand=reginaldRules().lastStand;I=Object.assign({},I,{d:'Damage taken −'+Math.round((1-stand.damageMultiplier)*100)+'%. Regenerate up to '+Number(playerHealingAmount(player.maxhp*stand.regenFraction,{regen:true}).toFixed(1))+' HP per turn.'});}
+    if(o.k==='discipline'&&e===player){var drill=FoteStats.discipline(e.st.discipline.n||0,divineStrength());I=Object.assign({},I,{d:'Weapon damage +'+Number(drill.damage.toFixed(1))+'. Crit +'+Number((drill.crit*100).toFixed(1))+'%. Armor +'+Number(drill.armor.toFixed(1))+'. Taking HP damage adds a stack and reduces remaining cooldowns by 1, once per turn.'});}
     if(o.k==='blind'&&e===player)I=Object.assign({},I,{d:'Only adjacent squares are visible. Attacks miss far more often.'});
     if(o.k==='rally'&&e!==player)I=Object.assign({},I,{d:'Rallied: attacks deal 10% more damage.'});
     if(o.k==='stone'&&e!==player) I={name:'Petrified',icon:'st-stone',bad:1,d:'Can\'t move or act. Evasion is 0.'};
@@ -145,7 +145,7 @@ function renderStatusBar(){
   }).join('');
   bar.querySelectorAll('[data-si]').forEach(function(el){
     var s=list[+el.getAttribute('data-si')];
-    if(typeof hoverCard==='function') hoverCard(el, function(){ return '<div class="nm">'+s.name+'</div>'+(s.stacks?'<div class="row"><span>Stacks</span><b>'+s.stacks+' / 10</b></div>':'')+(s.t>0?'<div class="row"><span>'+cap(s.unit)+' left</span><b>'+s.t+'</b></div>':'')+'<div class="hint">'+s.d+'</div>'; });
+    if(typeof hoverCard==='function') hoverCard(el, function(){ return '<div class="nm">'+s.name+'</div>'+(s.stacks?'<div class="row"><span>Stacks</span><b>'+s.stacks+' / '+(s.k==='discipline'?5:10)+'</b></div>':'')+(s.t>0?'<div class="row"><span>'+cap(s.unit)+' left</span><b>'+s.t+'</b></div>':'')+'<div class="hint">'+s.d+'</div>'; });
   });
   if(typeof FoteResponsiveHUD!=='undefined')FoteResponsiveHUD.renderStatusMeter();
 }

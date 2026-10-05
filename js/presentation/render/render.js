@@ -11,6 +11,15 @@ var ATLAS_JOBS=new Map(),ATLAS_QUEUE=[],ATLAS_ACTIVE=0,ATLAS_PROTECTED=new Set()
 var ATLAS_MAX_ACTIVE=4,ATLAS_BUDGET=96*1024*1024,ATLAS_TIMEOUT=45000;
 var ATLAS_BACKGROUND_SCOPE=null,ATLAS_BACKGROUND_ACTIVE=0;
 var ATLAS_WATCHERS=new Map();
+/* A retained ground layer does not look its source images up every frame.
+ * Keep the installed scene's elected/drawn art alive until that scene retires;
+ * elapsed lookup time alone is not evidence that an image is unused. */
+var ATLAS_SCENE=null,ATLAS_DRAW_SCOPE=null;
+function setActiveAtlasScene(scope){ATLAS_SCENE=scope||null;if(scope&&!scope.atlasFiles)scope.atlasFiles=new Set();}
+function withSceneAtlasRequests(scope,query){
+  var previous=ATLAS_DRAW_SCOPE;ATLAS_DRAW_SCOPE=scope;
+  try{return query();}finally{ATLAS_DRAW_SCOPE=previous;}
+}
 /* Current-scene selectors elect art without starting a second cache or queue.
  * Background work has one lane; visible requests promote their queued jobs. */
 function withBackgroundAtlasRequests(scope,query){
@@ -51,7 +60,7 @@ function notifyAtlasSubscribers(job,subscribers){
 function setAtlasProtectedFiles(files){ATLAS_PROTECTED=new Set(files||[]);trimAtlasCache();}
 function trimAtlasCache(){
   var bytes=0,now=performance.now(),available=[];
-  ATLAS_JOBS.forEach(function(job){if(job.phase==='ready'){bytes+=job.bytes;if(!ATLAS_PROTECTED.has(job.file)&&now-job.used>5000)available.push(job);}});
+  ATLAS_JOBS.forEach(function(job){if(job.phase==='ready'){bytes+=job.bytes;if(!ATLAS_PROTECTED.has(job.file)&&!(ATLAS_SCENE&&ATLAS_SCENE.active&&ATLAS_SCENE.atlasFiles.has(job.file))&&now-job.used>5000)available.push(job);}});
   available.sort(function(a,b){return a.used-b.used;});
   while(bytes>ATLAS_BUDGET&&available.length){
     var job=available.shift();if(ATLAS_JOBS.get(job.file)!==job)continue;
@@ -89,6 +98,8 @@ function startAtlasJob(job){
 }
 function requestAtlas(file,options){
   var job=ATLAS_JOBS.get(file),now=performance.now(),scope=ATLAS_BACKGROUND_SCOPE&&ATLAS_BACKGROUND_SCOPE.active?ATLAS_BACKGROUND_SCOPE:null;
+  var owner=scope||ATLAS_DRAW_SCOPE;
+  if(owner&&owner.active&&owner===ATLAS_SCENE)owner.atlasFiles.add(file);
   if(job&&job.phase==='failed'&&(options&&options.retry||now>=job.retryAt)){ATLAS_JOBS.delete(file);if(ATL[file]===job.image)delete ATL[file];job=null;}
   if(job){
     job.used=now;ATL[file]=job.image;
@@ -106,7 +117,7 @@ function atlReady(file,options){return requestAtlas(file,options).promise;}
 function atlasLoadDiagnostics(){
   var files=[],failures=[],bytes=0;
   ATLAS_JOBS.forEach(function(job){files.push({file:job.file,phase:job.phase,bytes:job.bytes});if(job.phase==='ready')bytes+=job.bytes;if(job.error)failures.push({file:job.file,phase:job.phase,message:job.error.message});});
-  return {active:ATLAS_ACTIVE,backgroundActive:ATLAS_BACKGROUND_ACTIVE,queued:ATLAS_QUEUE.length,readyBytes:bytes,maxActive:ATLAS_MAX_ACTIVE,budgetBytes:ATLAS_BUDGET,failures:failures,files:files};
+  return {active:ATLAS_ACTIVE,backgroundActive:ATLAS_BACKGROUND_ACTIVE,queued:ATLAS_QUEUE.length,readyBytes:bytes,maxActive:ATLAS_MAX_ACTIVE,budgetBytes:ATLAS_BUDGET,sceneFiles:ATLAS_SCENE&&ATLAS_SCENE.active?Array.from(ATLAS_SCENE.atlasFiles):[],failures:failures,files:files};
 }
 function atl(file){
   var job=requestAtlas(file);return job.phase==='ready'?job.image:null;
@@ -704,6 +715,12 @@ function drawCharacterSprite(e, px, py, opts){
       ctx.save(); ctx.globalAlpha=(opts.alpha===undefined?1:opts.alpha)*(e.shadowClone?.72:1); ctx.imageSmoothingEnabled=true;
       if(e.shadowClone)ctx.filter='grayscale(1) brightness(.78) sepia(.6) hue-rotate(205deg) saturate(1.5)';
       if(opts.flip){ ctx.translate(px+TS/2,0); ctx.scale(-1,1); ctx.translate(-(px+TS/2),0); }
+      /* Correct a measured authored-cell translation after mirroring, moving
+       * body, held gear and flash as one composition in either facing. */
+      if(typeof FoteCastFrameAlignment!=='undefined'){
+        var anchorShift=FoteCastFrameAlignment.offset(cs.look,m,fr);
+        if(anchorShift)ctx.translate(anchorShift*w/cell,0);
+      }
       if(typeof drawCastLayers==='function') drawCastLayers(e, cs, fr, dx, dy, w, h); else ctx.drawImage(cs.img, fr.sx, fr.sy, cell, cell, dx, dy, w, h);
       if(opts.flash>0){ ctx.globalAlpha*=opts.flash; ctx.drawImage(whiteCut(cs.img,fr.sx,fr.sy,cell,cell), dx,dy,w,h); }
       ctx.restore();

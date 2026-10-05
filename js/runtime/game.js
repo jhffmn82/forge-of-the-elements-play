@@ -291,6 +291,7 @@ function ensureDtip(){
 }
 
 function showCard(html, ev){
+  if(!html){hideCard();return;}
   var t=ensureDtip();
   t.innerHTML=html; t.style.display='block';
   var x=Math.min(ev.clientX+14, window.innerWidth-t.offsetWidth-10);

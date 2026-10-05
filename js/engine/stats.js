@@ -88,6 +88,7 @@
     var c=computationContext(actor,content,actor.weapon,true);
     return {spell:c.spell,divine:c.divine};
   }
+  function discipline(stacks,divine){stacks=Math.max(0,Math.min(5,stacks));return {stacks:stacks,cap:5,duration:8,cooldown:1,damage:stacks*divine,crit:.02*stacks*divine,armor:stacks*divine};}
   function baseStats(actor,content,c){
     var s=actor.stats,p=c.passives,w=c.weapon,o=c.off,a=c.armor;
     var race=content.races[actor.race]||content.races.human,cls=content.classes[actor.cls]||content.classes.fighter;
@@ -158,6 +159,10 @@
         out.dmg=out.dmg.map(function(n){return n+2*stacks;});
       }
     }
+    if(actor.god==='grumbok'&&c.rank>=5){
+      var momentum=actor.st&&actor.st.discipline,boon=discipline(momentum&&momentum.t>0?momentum.n||0:0,c.divine);
+      out.dmg=out.dmg.map(function(n){return n+boon.damage;});out.crit+=boon.crit;out.armor+=boon.armor;
+    }
     if(actor.god==='reginald')out.crit+=reginald(c.rank).crit;
     out.luck=actor.god==='wobbles'?.03*c.rank:0;
     if(out.luck){out.crit+=out.luck;if(out.parry)out.parry+=out.luck;if(out.block)out.block=Math.min(.75,out.block+out.luck);}
@@ -182,7 +187,7 @@
     }
     return out;
   }
-  var api={reginald:reginald,compute:compute,computeWithRanged:computeWithRanged,passivesFor:passivesFor,rankOf:rankOf,powers:powers,focusBonus:focusBonus};
+  var api={discipline:discipline,reginald:reginald,compute:compute,computeWithRanged:computeWithRanged,passivesFor:passivesFor,rankOf:rankOf,powers:powers,focusBonus:focusBonus};
   root.FoteStats=Object.freeze(api);
   if(typeof module==='object'&&module.exports)module.exports=api;
 })(typeof globalThis==='object'?globalThis:this);

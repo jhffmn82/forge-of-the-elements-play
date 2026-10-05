@@ -353,7 +353,7 @@ var FoteResponsiveHUD=(function(){
       button.innerHTML=lineIcon(path)+'<span>'+label+'</span>';nav.insertBefore(button,node('studyOptions'));
     }
     const history=document.createElement('button');history.id='studyHistory';history.type='button';history.textContent='Log history';nav.append(history);
-    for(const [id,kind]of [['studyPortrait','character'],['studyInventoryIcon','inventory'],['studyMenuToggle','menu'],['studySheetOptions','options'],['studyOptions','options'],['studyHistory','history'],['studyLogClose','history-close'],['studyMenuChar','character'],['studyMenuGear','inventory'],['studyMenuFaith','faith'],['studyChar','character'],['studyGear','inventory'],['studyFaith','faith']])bindHudResourceCard(node(id),kind);
+    for(const [id,kind]of [['studyPortrait','character'],['studyInventoryIcon','inventory']])bindHudResourceCard(node(id),kind);
     node('close').setAttribute('aria-label','Close panel');
     const explore=document.createElement('button');explore.id='studyExplore';explore.type='button';explore.textContent='Explore';
     left.insertBefore(explore,node('dpad'));bindExploreButton(explore);

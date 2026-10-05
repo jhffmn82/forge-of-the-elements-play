@@ -40,7 +40,7 @@ function animBusy(move){
   }
   return false;
 }
-function uiOpen(){ return (typeof FoteResponsiveHUD!=='undefined'&&FoteResponsiveHUD.hasOverlay()) || (typeof modalOpen!=='undefined' && modalOpen) || (typeof openSheet!=='undefined' && openSheet) || ($('title') && $('title').classList.contains('on')) || ($('create') && $('create').classList.contains('on')); }
+function uiOpen(){ return (typeof FoteMobileOrientation!=='undefined'&&FoteMobileOrientation.isBlocked()) || (typeof FoteResponsiveHUD!=='undefined'&&FoteResponsiveHUD.hasOverlay()) || (typeof modalOpen!=='undefined' && modalOpen) || (typeof openSheet!=='undefined' && openSheet) || ($('title') && $('title').classList.contains('on')) || ($('create') && $('create').classList.contains('on')); }
 
 /* One bounded direction intent, never a backlog of turns. A completed tap may
    wait for the current turn; a hold stops repeating as soon as it is released.

@@ -42,7 +42,7 @@
   }
   /* Divine invocations can author a primary damage rule independent of the
    * ordinary spell/affinity formula; hit, crit and combat riders remain shared. */
-  function divineSpellDamage(base,rank,divine){return Math.max(0,Math.round(base*rank*divine));}
+  function divineSpellDamage(base,rank,divine){return Math.max(0,Math.round((base+5*Math.max(0,rank-1))*divine));}
   function spellDamage(amount,c){
     var n=amount;
     // Bolts and area spells deliberately retain their authored rounding order.
