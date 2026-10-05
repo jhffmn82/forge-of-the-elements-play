@@ -70,15 +70,10 @@ previewPath=function(ax,ay,x,y,A){
 
 function drawLastCastSurface(){var f=floorMeta.lastCastTiles;if(!f||f.until<performance.now())return;ctx.save();ctx.fillStyle='rgba(255,200,100,.18)';ctx.strokeStyle='rgba(255,220,145,.8)';f.tiles.forEach(function(p){if(vis[idxOf(p[0],p[1])]){var x=(p[0]-camX)*TS,y=(p[1]-camY)*TS;ctx.fillRect(x,y,TS,TS);ctx.strokeRect(x+2,y+2,TS-4,TS-4);}});ctx.restore();
 }
-/* Independent save markers keep early-floor health and damage tuning idempotent. */
+/* Preserve content HP; the saved marker keeps floor-one damage tuning idempotent. */
 function applyEarlyFloorEnemyTuning(e,deferHealth){
  if(floorMeta.plane||!e.foe||e.ally||!['rat','goblin'].includes(e.kind))return;
  var base=e.base||{};
- if(e.kind==='goblin'&&!deferHealth&&floorNo>=1&&floorNo<=2&&!e.earlyFloorHpAdjusted&&!e.elite&&!e.boss&&!e.caveBoss&&!e.deepBoss&&!base.elite&&!base.boss&&Number.isFinite(e.maxhp)&&e.maxhp>0){
-  var max=e.maxhp,healthFraction=e.hp/max;e.maxhp=Math.max(1,Math.round(max*2/3));
-  if(e.hp>0)e.hp=Math.max(1,Math.min(e.maxhp,Math.round(e.maxhp*healthFraction)));
-  e.earlyFloorHpAdjusted=true;
- }
  if(floorNo===1&&!e.floorOneDamageAdjusted){e.dmg=(e.dmg||base.dmg).map(function(v){return Math.max(1,v-2);});e.floorOneDamageAdjusted=true;}
 }
 function betaEnemyBalance(e){

@@ -564,7 +564,7 @@ function triggerTrap(tr,e){
   var d;
   if(tr.kind==='dart'){ d=applyDamage(e, trapDmg(e, roll(4,8)+floorNo), 'phys', null); floatText(e.x,e.y,String(d),'phys'); if(rng()<0.5) applyStatus(e,'poison',4,2);
     tell('You trigger a dart trap: '+d+' damage.', who+' triggers a dart trap: '+d+' damage.'); sfx('trap-dart',{from:tr}); }
-  else if(tr.kind==='fire'){ d=applyDamage(e, roll(4,7)+floorNo, 'fire', null); applyStatus(e,'burn',3,sDMG(2)); floatText(e.x,e.y,String(d),'fire'); ignite(e.x,e.y,null);
+  else if(tr.kind==='fire'){ d=applyDamage(e, roll(4,7)+floorNo, 'fire', null); applyStatus(e,'burn',3,sDMG(2),{source:null,tags:['environment','trap','fire-vent']}); floatText(e.x,e.y,String(d),'fire'); ignite(e.x,e.y,null);
     burst(e.x,e.y,'fire',24,0.05); tell('A fire vent erupts: '+d+' fire damage and Burning.', 'A fire vent erupts under the '+e.name+': '+d+' fire damage and Burning.'); sfx('trap-fire',{from:tr}); }
   else if(tr.kind==='frost'){ d=applyDamage(e, roll(3,6)+floorNo, 'ice', null); addChill(e); addChill(e); floatText(e.x,e.y,String(d),'ice'); burst(e.x,e.y,'ice',24,0.05);
     tell('A frost jet blasts you: '+d+' frost damage and Chill.', 'A frost jet blasts the '+e.name+': '+d+' frost damage and Chill.'); sfx('trap-frost',{from:tr}); }

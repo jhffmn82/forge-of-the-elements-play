@@ -124,7 +124,8 @@ var gameEffects=FoteEffects.create({
       context.options.resistanceApplied=true;
       damage=dealDirectDamage(e,Math.max(1,Math.round(s.d*resistMult(e,'fire'))),'fire',context.source,context.options);e._hit=performance.now();floatText(e.x,e.y,String(damage),'fire');
       if(e===player)log('Burn: '+combatDamageNumber(damage,'fire')+'.','c-you');
-      if(gAt(e.x,e.y)===G_GRASS||gAt(e.x,e.y)===G_SHORT)ignite(e.x,e.y,e===player?'player':null);
+      // Carry the Burn's author into ground fire, never its burning victim.
+      if(gAt(e.x,e.y)===G_GRASS||gAt(e.x,e.y)===G_SHORT)ignite(e.x,e.y,context.source===player?'player':null);
     }else if(key==='poison'){
       var poisonScale=Number.isFinite(s.damageScale)&&s.damageScale>0?s.damageScale:1;
       damage=Math.max(1,Math.round(e.maxhp*(e.base&&e.base.boss?.05:.10)*poisonScale));

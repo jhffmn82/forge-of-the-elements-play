@@ -1250,11 +1250,11 @@ function prepareGreedyVaultChest(x,y){
   var v=r.greedyVault,index=v.chests.findIndex(function(c){return c.x===x&&c.y===y;});
   if(v.opened.length!==1||v.opened.indexOf(index)>=0||v.collapsed)return true;
   v.collapsed=true;
-  /* Dressing queries omit water and the room's center. Collapse the actual
-   * rectangular vault footprint while retaining furniture and doorway edges. */
+  /* Keep a one-cell bypass inside the existing room walls. The interior still
+   * collapses around the two chest platforms, including water and the center. */
   for(var cy=r.y;cy<r.y+r.h;cy++)for(var cx=r.x;cx<r.x+r.w;cx++){
     var tile=at(cx,cy),edge=cx===r.x||cx===r.x+r.w-1||cy===r.y||cy===r.y+r.h-1;
-    if((tile===FLOOR||tile===WATER)&&!propAt(cx,cy)&&!(edge&&nearDoor(cx,cy))&&!v.chests.some(function(p){return p.x===cx&&p.y===cy;})){setT(cx,cy,CHASM);setG(cx,cy,0);}
+    if((tile===FLOOR||tile===WATER)&&!propAt(cx,cy)&&!edge&&!v.chests.some(function(p){return p.x===cx&&p.y===cy;})){setT(cx,cy,CHASM);setG(cx,cy,0);}
   }
   log('You reach for the second chest. The floor around the chest platforms collapses!','c-you');
   if(roomAt(player.x,player.y)===r&&at(player.x,player.y)===CHASM&&!(player.levitate>0)&&!player.windCarry)fallIntoChasm();
