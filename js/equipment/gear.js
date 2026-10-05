@@ -66,17 +66,9 @@ function unidHint(it){
 /* Mending is stored in percentage points per 100 units of world time.
    One point of ring power grants exactly 1/300 max HP before gear bonuses. */
 function mendingRate(value){return value/100;}
-function drainCursedMending(actor,rate,scale){
-  if(!(rate<0)||!(scale>0)||actor.hp<=0)return;
-  // Carry fractions through saves rather than rounding a small curse to zero.
-  actor.mendingDebt=(actor.mendingDebt||0)-actor.maxhp*rate*scale;
-  var drain=Math.floor(actor.mendingDebt+1e-9);actor.mendingDebt=Math.max(0,actor.mendingDebt-drain);
-  if(drain>0)dealDirectDamage(actor,drain,'magic',null,{tags:['periodic','curse']});
-  if(actor!==player&&actor.hp<=0)kill(actor,null);
-}
 function ringLine(r){
   var R=RINGS[r.ring], pw=ringPower(r), v=(R.step*pw+(R.base||0)*Math.sign(pw))*gearPassiveBonus();
-  if(r.ring==='mending')return v<0?Number((-v).toFixed(2))+'% of max HP lost a turn':'+'+Number(v.toFixed(2))+R.unit;
+  if(r.ring==='mending')return v<0?'Stops HP regeneration while worn.':'+'+Number(v.toFixed(2))+R.unit;
   if(r.ring==='sustenance')return v<0?Math.round(-v*100)+'% more hunger':Math.round(v*100)+'% less hunger';
   if(r.ring==='keeneyes'&&v<0)return Math.round(-v*100)+'% less chance to spot traps or find hidden doors';
   if(r.ring==='wizardry'){var sd=Math.max(-50,v*50);return (v>=0?'+':'')+Math.round(v*100)+'% max Mana, '+(sd>=0?'+':'')+Number(sd.toFixed(2))+'% spell damage';}  /* spellPower() never lets the ring take more than 50% */
@@ -85,7 +77,7 @@ function ringLine(r){
 }
 function ringDescription(r){
   if(!r.unid&&ringPower(r)<0){
-    if(r.ring==='mending')return 'Drains your life while worn.';
+    if(r.ring==='mending')return 'Stops HP regeneration while worn.';
     if(r.ring==='sustenance')return 'You get hungry more quickly.';
     if(r.ring==='keeneyes')return 'Makes traps and hidden doors harder to discover.';
     if(r.ring==='luck')return 'Enemies drop loot less often.';
@@ -97,7 +89,7 @@ function ringDescription(r){
 function ringSummary(r){
   if(r.unid)return 'Strength unknown until identified.';
   var line=ringLine(r),cursed=ringPower(r)<0;
-  if(r.ring==='mending')return line+(cursed?' while worn.':' while fed and not poisoned.');
+  if(r.ring==='mending')return cursed?line:line+' while fed and not poisoned.';
   if(r.ring==='warding')return line+' against fire, frost, lightning, poison, light and shadow.';
   if(r.ring==='keeneyes'&&!cursed)return line+'; also helps find hidden doors.';
   return line+'.';

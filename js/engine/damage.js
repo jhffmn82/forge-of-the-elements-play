@@ -39,6 +39,7 @@
    * share these modifiers; only heal() computes restoration and overflow. */
   function healingAmount(amount,context){
     context=context||{};
+    if(context.regen&&context.regenerationBlocked)return 0;
     if(context.rot)amount=context.regen?0:amount*.5;
     if(context.glimmerRank)amount*=1+.10*context.glimmerRank;
     if(context.sanctuaryPower)amount*=1+.25*context.sanctuaryPower;

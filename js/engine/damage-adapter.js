@@ -484,6 +484,7 @@ function restoreActorHealth(target,source){
 function playerHealingContext(options){
   options=options||{};
   return {rot:!!(player&&gameEffects.has(player,'rot')),regen:!!options.regen,
+    regenerationBlocked:!!options.regen&&FoteGear.cursedMending(player&&player.rings),
     glimmerRank:hasGod('glimmer')?godRank():0,
     sanctuaryPower:!options.holyGround&&inSanctuary(player)?(typeof holyGroundStrength==='function'?holyGroundStrength(player):divineStrength()):0};
 }

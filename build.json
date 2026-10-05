@@ -1,9 +1,9 @@
 {
   "version": "Beta 1.6",
-  "built": "2026-10-05T13:39:56.047421+00:00",
-  "epoch": 1791207596,
-  "source": "Sylla fire attribution, early Goblin HP and Greed inside perimeter correction; runtime 6df3df9e270c1bc20fe6025a3a7766f0adf7de3da4766e6b56b10bfb686d23f2",
+  "built": "2026-10-05T14:29:21.521152+00:00",
+  "epoch": 1791210561,
+  "source": "Cursed Mending stops HP regeneration without HP drain; runtime 73dd0340399a6c3d50e766f63982b70254669c0072af86fc195cc903c55c3488",
   "candidate": true,
   "releaseState": "playtest",
-  "revision": "beta16-greed-hotfix-20261005-133956"
+  "revision": "beta16-mending-hotfix-20261005-142921"
 }

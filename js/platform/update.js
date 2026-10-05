@@ -246,7 +246,7 @@ var FOTE_PATCHES = [
     "Block Art is available in Options and remembers your choice, with consistent blocks and symbols for map scenery, creatures, hazards and remains.",
     "The title screen now uses the instrumental menu theme, continuing smoothly into character creation. Level-up and victory sounds are quieter.",
     "Grukk's battle now has a subdued ambient theme with low sustained tones and quiet dungeon sounds, leaving more room for combat audio.",
-    "Cursed rings now apply their intended penalties, including life drain from Mending and worse trap spotting from Keen Eyes. Corrected older cursed rings whose upgrade values could accidentally grant benefits.",
+    "Cursed rings now apply their intended penalties: Mending stops HP regeneration while worn, and Keen Eyes makes traps harder to spot. Corrected older cursed rings whose upgrade values could accidentally grant benefits.",
     "Amulet curses remain hidden when equipped. Using a cursed amulet reveals it, spends a charge and unleashes a random trap instead of its normal power. Identifying an amulet can still expose its curse safely.",
     "Ordinary Goblins have less health on the first two floors, shortening the opening fights. Existing saves receive the adjustment without healing wounded enemies. Rats keep their original health.",
     "Single-target spells now trigger general on-hit effects, including weapon enchantments, elemental bonuses and combinations, Molten Ring, and Sylla's Web and concealed opening strike. Magic Missile and divine bolts follow the same rules; secondary damage cannot trigger these effects again.",

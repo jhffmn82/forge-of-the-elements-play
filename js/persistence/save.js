@@ -68,6 +68,7 @@ function repairInterruptedPlayerDeath(){
   return true;
 }
 function restoreRunReferences(){
+  delete player.mendingDebt; // Cursed Mending now stops regeneration, never drains.
   // Retired same-target hit counter held an unnecessary enemy graph reference.
   delete player.friction;
   // The replaced Air/Shadow pair grants neither retreat nor free movement.
@@ -80,7 +81,7 @@ function restoreRunReferences(){
   // the new Fear/Root kit, including actors on cached floors and planes.
   var savedScenes=Object.keys(RUN.floorStash||{}).map(function(key){return RUN.floorStash[key];}).concat([RUN.planeStash,RUN.chaosEntryStash]);
   [ents].concat(savedScenes.filter(Boolean).map(function(scene){return scene.ents||[];})).forEach(function(actors){actors.forEach(function(e){
-    ['challenged','cowardMark','challengeUntil','challengeT','challengeBoost'].forEach(function(key){delete e[key];});
+    ['challenged','cowardMark','challengeUntil','challengeT','challengeBoost','mendingDebt'].forEach(function(key){delete e[key];});
   });});
   floorMeta.puzzles=rooms.filter(function(room){return room&&room.puzzle;});
   ents.forEach(function(entity){entity._lx=undefined;entity._ly=undefined;});
