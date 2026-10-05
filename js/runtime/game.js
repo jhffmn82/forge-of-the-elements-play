@@ -248,11 +248,13 @@ function resize(){
   /* Opts > Map zoom (options.js) scales that. It lives here, not in a wrapper, because the map's
      ResizeObserver below holds this function itself - a wrapper was skipped whenever a sheet closed. */
   var zm=(typeof MAP_ZOOM_MUL!=='undefined' && MAP_ZOOM_MUL[MAP_ZOOM]) || 1;
-  if(zm!==1) z=[Math.max(7, Math.round(z[0]*zm)), Math.max(6, Math.round(z[1]*zm))];
+  // Each zoom shows one fewer tile on either side of the player. Keep the
+  // authored presets intact and retain their minimum target counts.
+  z=[Math.max(7,Math.round(z[0]*zm)-2),Math.max(6,Math.round(z[1]*zm)-2)];
   /* Floating controls do not reserve map space. Landscape zoom is measured in
      rows, so phones, tablets and PCs keep the same coverage vertically. */
   var fitRows=innerWidth>innerHeight && typeof uiHudMode==='function' && uiHudMode()==='minimal';
-  TS = fitRows ? Math.max(14,Math.floor(H/z[1])) : clamp(Math.floor(Math.min(W/z[0], H/z[1])), 14, 72);
+  TS = fitRows ? Math.max(15,Math.floor(H/z[1])) : clamp(Math.floor(Math.min(W/z[0], H/z[1])), 15, 72);
   /* Cover landscape's map panel with whole tiles and clip the excess at its
      edges. Rounding down left a visible frame around the centered canvas.
      Keep CSS pixels tied to TS so tapping still picks the drawn tile. */

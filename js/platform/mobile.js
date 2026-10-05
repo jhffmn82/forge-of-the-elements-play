@@ -19,74 +19,8 @@
   var DEVICE = q==='1' ? true : q==='0' ? false : !!coarse;
   window.MOBILE = DEVICE;
 
-  /* Mobile play uses landscape. Native rotation is best-effort; a focused
-     rotate prompt protects the controls when the browser cannot lock it. */
-  var orientationPreference='landscape', orientationMessage='', orientationAttempt=0;
-  var orientationBlocked=false,orientationFocus=null;
-  function syncOrientationPrompt(){
-    if(!DEVICE)return;
-    var prompt=document.getElementById('orientationPrompt');if(!prompt)return;
-    var blocked=innerHeight>innerWidth;
-    prompt.hidden=!blocked;document.body.classList.toggle('needs-landscape',blocked);
-    var app=document.getElementById('app');if(app)app.toggleAttribute('inert',blocked);
-    if(blocked&&!orientationBlocked){
-      orientationFocus=document.activeElement;
-      if(typeof stopTravel==='function')stopTravel();
-      prompt.querySelector('button').focus({preventScroll:true});
-    }else if(!blocked&&orientationBlocked&&orientationFocus&&orientationFocus.isConnected){orientationFocus.focus({preventScroll:true});}
-    orientationBlocked=blocked;
-  }
-  function mountOrientationPrompt(){
-    if(!DEVICE)return;
-    var prompt=document.createElement('section');prompt.id='orientationPrompt';prompt.hidden=true;
-    prompt.setAttribute('role','dialog');prompt.setAttribute('aria-modal','true');prompt.setAttribute('aria-labelledby','orientationTitle');
-    prompt.innerHTML='<div><h2 id="orientationTitle">Turn your device sideways</h2><p>Forge of the Elements plays in landscape.</p><p id="orientationStatus">Enable auto-rotate, then turn your device sideways.</p><button type="button">Use landscape</button></div>';
-    prompt.querySelector('button').onclick=applyOrientation;document.body.appendChild(prompt);
-    document.addEventListener('keydown',function(event){if(orientationBlocked&&!prompt.contains(event.target)){event.preventDefault();event.stopImmediatePropagation();}},true);
-    syncOrientationPrompt();
-  }
-  // Landscape is the mobile layout; retired portrait preferences are ignored.
-  function orientationHint(value){
-    return 'Turn your device '+(value==='landscape'?'sideways':'upright')+'. Your browser controls rotation here; enable auto-rotate if needed.';
-  }
-  function showOrientationStatus(message){
-    orientationMessage=message;
-    var el=document.getElementById('orientationStatus'); if(el) el.textContent=message;
-  }
-  async function applyOrientation(){
-    if(!DEVICE) return false;
-    var attempt=++orientationAttempt;
-    showOrientationStatus('Applying '+orientationPreference+' orientation…');
-    /* A host such as itch.io already owns its iframe's fullscreen session.
-       Locking from that iframe is still allowed where the browser supports it. */
-    if(window.self===window.top && !document.fullscreenElement && document.documentElement.requestFullscreen){
-      try{ await document.documentElement.requestFullscreen({navigationUI:'hide'}); }catch(e){}
-    }
-    if(attempt!==orientationAttempt) return false;
-    var wanted=orientationPreference;
-    try{
-      if(!window.screen || !screen.orientation || typeof screen.orientation.lock!=='function') throw new Error('Orientation lock unavailable');
-      await screen.orientation.lock(wanted);
-      if(attempt!==orientationAttempt) return false;
-      showOrientationStatus((wanted==='landscape'?'Landscape':'Portrait')+' orientation enabled.');
-      return true;
-    }catch(e){
-      if(attempt===orientationAttempt) showOrientationStatus(orientationHint(wanted));
-      return false;
-    }
-  }
-  window.FoteMobileOrientation=Object.freeze({
-    isBlocked:function(){return orientationBlocked;},
-    getPreference:function(){ return orientationPreference; },
-    getStatus:function(){ return orientationMessage || (orientationPreference==='portrait'?'Portrait selected. Turn your device upright if needed.':'Landscape selected. Turn your device sideways if needed.'); },
-    setPreference:function(value){
-      if(!DEVICE || value!=='landscape') return Promise.resolve(false);
-      orientationPreference=value;
-      try{ localStorage.setItem('astra-temple-orientation', value); }catch(e){}
-      return applyOrientation();
-    },
-    apply:applyOrientation
-  });
+  /* The browser/device owns rotation. Layout and zoom follow the live viewport
+     without blocking play, requesting fullscreen or locking an orientation. */
 
   /* the phone layout also comes on in a narrow desktop window, where the desktop bars overflow anyway */
   function wantTouch(){
@@ -115,7 +49,7 @@
       ' body.touch #ctl #fx{display:none}',                    /* the status tags float over the map instead */
       ' body.touch #dpad{grid-template-columns:repeat(3,44px)!important;grid-auto-rows:34px!important;gap:4px!important}',
       /* the log is the bottom row and gets the room the hotbar's second row used to take */
-      ' body.touch #log{order:3;grid-column:auto;contain:none;height:clamp(84px,12vh,112px)!important;font-size:12.5px;padding:6px 9px}',
+      ' body.touch #log{order:3;grid-column:auto;contain:none;height:clamp(84px,12vh,112px)!important;font-size:calc(12.5px + var(--ui-mobile-text-add,0px));padding:6px 9px}',
       '}',
       /* landscape: two columns, and the log floats over the map because height is what runs out */
       '@media (orientation:landscape){',
@@ -133,7 +67,7 @@
       'body.touch #shade{align-items:stretch}',
       'body.touch .sheet .bodyw{overscroll-behavior:contain}',
       'body.touch .sheet header{padding:7px 10px}',
-      'body.touch .sheet header h2{font-size:16px}',
+      'body.touch .sheet header h2{font-size:calc(16px + var(--ui-mobile-text-add,0px))}',
       'body.touch .sheet .bodyw{padding:10px}',
       /* sheets.js writes three columns in the order totals, worn, bag. On a phone the worn doll and the bag
          share the top row and the totals run full width underneath, so both are on screen at once. */
@@ -145,10 +79,10 @@
       'body.touch .gcol-worn .sec span{display:none}',                     /* the "hover for details" hint is mouse talk */
       'body.touch .gdoll .art{min-height:120px!important}',
       'body.touch .gslot{width:42px!important;height:42px!important;border-width:1px}',
-      'body.touch .gslot .lab{bottom:-12px;font-size:7.5px}',
-      'body.touch .gslot .ph{font-size:16px}',
+      'body.touch .gslot .lab{bottom:-12px;font-size:calc(7.5px + var(--ui-mobile-text-add,0px))}',
+      'body.touch .gslot .ph{font-size:calc(16px + var(--ui-mobile-text-add,0px))}',
       'body.touch .gearwrap .invgrid{grid-template-columns:repeat(4,minmax(34px,1fr))!important;gap:5px}',
-      'body.touch .gearwrap .sec{margin:6px 0 3px;font-size:9px}',
+      'body.touch .gearwrap .sec{margin:6px 0 3px;font-size:calc(9px + var(--ui-mobile-text-add,0px))}',
       'body.touch .stowrow{margin-top:16px;gap:8px}',
       'body.touch .stowrow span{display:none}',                            /* the caption does not fit a 150px column */
       'body.touch .invgrid{grid-template-columns:repeat(auto-fill,minmax(38px,1fr))}',
@@ -158,9 +92,9 @@
       'body.touch #tip{left:8px!important;top:auto!important;bottom:8px!important;right:auto!important;',
       '  max-width:min(78%,340px)!important;background:rgba(10,9,8,.93);backdrop-filter:blur(2px);padding:9px 11px!important}',
       /* pinned in a corner it is not fighting for room any more, so the type can come up a notch */
-      'body.touch #tip .nm{font-size:16px!important}',
-      'body.touch #tip .row{font-size:13px!important}',
-      'body.touch #tip .odds{font-size:13.5px!important}',
+      'body.touch #tip .nm{font-size:calc(16px + var(--ui-mobile-text-add,0px))!important}',
+      'body.touch #tip .row{font-size:calc(13px + var(--ui-mobile-text-add,0px))!important}',
+      'body.touch #tip .odds{font-size:calc(13.5px + var(--ui-mobile-text-add,0px))!important}',
       '@media (orientation:landscape){ body.touch #tip{bottom:8px!important;left:8px!important} }',
       /* the touch targets in the top bar, and room for them: the game title is not needed mid-run */
       /* 2026-09-18: the menu tabs were too small to hit reliably with a finger. 52px tall, 60px minimum
@@ -169,12 +103,12 @@
       'body.touch #top{min-height:52px!important}',
       'body.touch #tabs{gap:4px!important;overflow-x:auto;scrollbar-width:none;flex:1 1 auto;justify-content:flex-end}',
       'body.touch #tabs::-webkit-scrollbar{display:none}',
-      'body.touch #tabs button{min-height:52px!important;min-width:60px;padding:0 16px!important;font-size:13.5px!important;flex:0 0 auto}',
-      'body.touch #top button{min-height:48px;padding:8px 12px;font-size:13px}',
+      'body.touch #tabs button{min-height:52px!important;min-width:60px;padding:0 16px!important;font-size:calc(13.5px + var(--ui-mobile-text-add,0px))!important;flex:0 0 auto}',
+      'body.touch #top button{min-height:48px;padding:8px 12px;font-size:calc(13px + var(--ui-mobile-text-add,0px))}',
       'body.touch #brand h1{display:none}',
       /* the chips (fed, essence, motes, faith) stay one row and scroll sideways if there are too many:
          wrapped, they were taking three lines out of the map */
-      'body.touch #hud2{flex-wrap:nowrap!important;gap:5px;font-size:11.5px;overflow-x:auto;overflow-y:hidden;',
+      'body.touch #hud2{flex-wrap:nowrap!important;gap:5px;font-size:calc(11.5px + var(--ui-mobile-text-add,0px));overflow-x:auto;overflow-y:hidden;',
       '  scrollbar-width:none;min-height:0;padding-bottom:1px}',
       'body.touch #hud2::-webkit-scrollbar{display:none}',
       'body.touch #hud2 .chip{flex:0 0 auto}',
@@ -221,7 +155,7 @@
     var on=wantTouch(), was=document.body.classList.contains('touch');
     document.body.classList.toggle('touch', on);
     if(on && !was) shortenTop();
-    applyZoom();syncOrientationPrompt();
+    applyZoom();
   }
   /* icons are painted at their slot's exact size, so a layout change during a run repaints them (CSS would stretch the old ones) */
   function relayout(){ sync(); if(typeof abilityBar==='function' && typeof RUN!=='undefined' && RUN && !document.getElementById('loadVeil')) abilityBar(); }
@@ -230,12 +164,6 @@
   if(window.visualViewport) visualViewport.addEventListener('resize', function(){ setTimeout(relayout, 0); });
 
   if(DEVICE){
-    /* First tap applies landscape by default, or the player's saved choice. */
-    window.addEventListener('pointerdown', function once(event){
-      window.removeEventListener('pointerdown', once, true);
-      if(!event.target.closest('#orientationPrompt'))applyOrientation();
-    }, true);
-
     /* no pinch zoom, no double-tap zoom, no long-press menu on the map */
     document.addEventListener('gesturestart', function(ev){ ev.preventDefault(); });
     document.addEventListener('contextmenu', function(ev){ if(ev.target && ev.target.id==='cv') ev.preventDefault(); });
@@ -255,8 +183,8 @@
     var st=document.createElement('style');
     st.textContent=[
       '.tgear{display:flex;flex-direction:column;gap:12px}',
-      '.tgear .tg-sec{font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin:0 0 6px}',
-      '.tgear .tg-hint{font-size:11.5px;color:var(--dim);line-height:1.4;margin:0}',
+      '.tgear .tg-sec{font-size:calc(9.5px + var(--ui-mobile-text-add,0px));letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin:0 0 6px}',
+      '.tgear .tg-hint{font-size:calc(11.5px + var(--ui-mobile-text-add,0px));color:var(--dim);line-height:1.4;margin:0}',
       /* worn slots in two columns on the left, the bag filling the rest to the right */
       '.tgear .tg-top{display:grid;grid-template-columns:auto minmax(0,1fr);gap:12px;align-items:start}',
       '.tgear .tg-slots{display:grid;grid-template-columns:repeat(2,84px);gap:8px}',
@@ -270,9 +198,9 @@
       '.tgear .gslot.empty{border-style:dashed;opacity:.6}',
       '.tgear .gslot .ic{width:42px;height:42px;display:flex;align-items:center;justify-content:center}',
       '.tgear .gslot .ic canvas{display:block}',
-      '.tgear .gslot .ph{font-size:22px;color:var(--dim);line-height:42px}',
-      '.tgear .gslot .lab{position:static!important;font-size:8px;letter-spacing:.11em;text-transform:uppercase;color:var(--dim)}',
-      '.tgear .gslot .nm{font-size:10.5px;color:var(--ink);text-align:center;line-height:1.2;max-width:100%;',
+      '.tgear .gslot .ph{font-size:calc(22px + var(--ui-mobile-text-add,0px));color:var(--dim);line-height:42px}',
+      '.tgear .gslot .lab{position:static!important;font-size:calc(8px + var(--ui-mobile-text-add,0px));letter-spacing:.11em;text-transform:uppercase;color:var(--dim)}',
+      '.tgear .gslot .nm{font-size:calc(10.5px + var(--ui-mobile-text-add,0px));color:var(--ink);text-align:center;line-height:1.2;max-width:100%;',
       '  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}',
       '.tgear .gslot.over{border-color:var(--gold);background:#2A2015}',
       '.tgear .tg-portrait{min-height:170px;border:1px dashed var(--edge);border-radius:8px;',
@@ -281,11 +209,11 @@
       '.tgear .cell{position:relative;aspect-ratio:1;min-height:56px;border:1px solid var(--edge);border-radius:8px;',
       '  background:#161210;display:flex;align-items:center;justify-content:center}',
       '.tgear .cell.empty{border-style:dashed;opacity:.28}',
-      '.tgear .cell b{position:absolute;right:4px;bottom:2px;font-size:10px;color:var(--gold);z-index:2}',
+      '.tgear .cell b{position:absolute;right:4px;bottom:2px;font-size:calc(10px + var(--ui-mobile-text-add,0px));color:var(--gold);z-index:2}',
       '.tgear .tg-tot{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:4px 18px}',
-      '.tgear .tg-tot .kv{font-size:12px;gap:2px 10px}',
+      '.tgear .tg-tot .kv{font-size:calc(12px + var(--ui-mobile-text-add,0px));gap:2px 10px}',
       '.tgear .pouch{gap:7px}',
-      '.tgear .mote{font-size:11.5px;padding:3px 10px 3px 7px}',
+      '.tgear .mote{font-size:calc(11.5px + var(--ui-mobile-text-add,0px));padding:3px 10px 3px 7px}',
       '@media (max-width:420px){ .tgear .tg-slots{grid-template-columns:repeat(2,72px)} }'
     ].join('\n');
     document.head.appendChild(st);
@@ -387,7 +315,7 @@
       var b=document.querySelector('#tabs button[data-p="Sand"]'); if(b) b.remove();
       if(typeof openSheet!=='undefined' && openSheet==='Sand' && typeof showSheet==='function') showSheet(null);
     }
-    mountOrientationPrompt();sync();
+    sync();
     /* the audio buttons rewrite their own labels, so shorten them again each time they do */
     if(typeof syncAudioButtons==='function'){
       var _sync=syncAudioButtons;

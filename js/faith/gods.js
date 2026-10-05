@@ -177,7 +177,7 @@ function shrineGifts(id, g, mine){
   var prayers = mine ? (g.prayers||[]).filter(function(p){ return PRAYERS[p] && r>=PRAYERS[p].rank; }) : [];
   var h='<p><b>'+(mine?'Your boons:':'First boon:')+'</b></p><ol class="boons">'+boons.map(function(b){ return '<li>'+b+'</li>'; }).join('')+'</ol>';
   if(prayers.length) h+='<p><b>Your abilities</b></p>'+prayers.map(function(p){ var P=PRAYERS[p]; return '<div class="shrine-ability"><b>'+P.name+'</b>'+actionDetailsHTML(prayerDetails(P,p))+'</div>'; }).join('');
-  if(boons.length<g.boons.length || prayers.length<(g.prayers||[]).length) h+='<p class="c-info" style="font-size:11px">'+(mine?'Grow in piety to learn what else '+g.name.split(',')[0]+' grants.':'Swear yourself and grow in piety to learn what else '+g.name.split(',')[0]+' grants.')+'</p>';
+  if(boons.length<g.boons.length || prayers.length<(g.prayers||[]).length) h+='<p class="c-info" style="font-size:calc(11px + var(--ui-mobile-text-add,0px))">'+(mine?'Grow in piety to learn what else '+g.name.split(',')[0]+' grants.':'Swear yourself and grow in piety to learn what else '+g.name.split(',')[0]+' grants.')+'</p>';
   return h;
 }
 function openShrine(){
@@ -223,7 +223,7 @@ function faithHTML(){
   var h='<div class="faith"><div class="godhead" style="display:flex;gap:12px;align-items:flex-start;margin-bottom:8px">'+
         '<div class="faith-art" style="flex:0 0 96px;width:96px;height:96px"></div>'+
         '<div style="flex:1 1 auto"><h3 style="color:'+g.color+';margin:0">'+g.name+'</h3><div class="who">'+cap(g.title)+'</div>'+
-        (typeof GOD_BLURB!=='undefined' && GOD_BLURB[player.god] ? '<p class="c-info" style="margin:6px 0 0;font-size:12px;line-height:1.5">'+GOD_BLURB[player.god]+'</p>' : '')+
+        (typeof GOD_BLURB!=='undefined' && GOD_BLURB[player.god] ? '<p class="c-info" style="margin:6px 0 0;font-size:calc(12px + var(--ui-mobile-text-add,0px));line-height:1.5">'+GOD_BLURB[player.god]+'</p>' : '')+
         '</div></div>';
   /* Wobbles earns Piety and Favor alongside his separate Amusement meter. */
   if(g.chaos) h+='<div class="kv"><span>Amusement</span><b>'+Math.round(player.amusement||0)+' / 100</b><span>Piety rank</span><b>'+r+' / 5</b><span>Piety</span><b>'+Math.round(player.piety||0)+(next?' (next rank at '+next+')':'')+'</b><span>Favor</span><b>'+Math.round(player.favor||0)+' / 100</b></div>'+
@@ -235,12 +235,12 @@ function faithHTML(){
     '<div class="fmeter"><span>Favor</span><span class="meter"><i style="width:'+Math.round(player.favor||0)+'%;background:linear-gradient(90deg,#6B5A22,#E8D27A)"></i></span><span>'+Math.round(player.favor||0)+' / 100</span></div>';
   var BRf=godBoonRanks(g);
   h+='<p><b>Rule.</b> '+g.rule+'</p><p><b>Piety from:</b> '+g.gain+'</p><p><b>Depth.</b> '+pietyDepthText()+'</p><p><b>Boons</b></p><ol class="boons">'+g.boons.map(function(b,i){ var br=BRf[i]||i+1; return br<=r ? '<li><b>Rank '+br+'.</b> '+b+'</li>' : ''; }).join('')+'</ol>'+
-     (g.boons.some(function(b,i){ return (BRf[i]||i+1)>r; }) ? '<p class="c-info" style="font-size:11px">Grow in piety to learn what else '+g.name.split(',')[0]+' grants.</p>' : '')+'<p><b>Abilities</b></p>';
+     (g.boons.some(function(b,i){ return (BRf[i]||i+1)>r; }) ? '<p class="c-info" style="font-size:calc(11px + var(--ui-mobile-text-add,0px))">Grow in piety to learn what else '+g.name.split(',')[0]+' grants.</p>' : '')+'<p><b>Abilities</b></p>';
   var shown=0;
   g.prayers.forEach(function(pid){ var P=PRAYERS[pid], ok=canPray(pid); if(godRank()<P.rank) return; shown++;
     h+='<div class="abrow" data-pr="'+pid+'"><span class="pico"></span><span class="k">'+P.rank+'</span><div><span style="color:var(--ink)">'+P.name+'</span>'+actionDetailsHTML(prayerDetails(P,pid),{omit:['Requires']})+'</div>'+
        '<button class="prayer" data-p="'+pid+'" '+(ok?'':'disabled')+'>Use</button></div>'; });
-  if(!shown) h+='<p class="c-info" style="font-size:11px">No abilities yet. Your god will teach you as your piety grows.</p>';
+  if(!shown) h+='<p class="c-info" style="font-size:calc(11px + var(--ui-mobile-text-add,0px))">No abilities yet. Your god will teach you as your piety grows.</p>';
   return h+'</div>';
 }
 

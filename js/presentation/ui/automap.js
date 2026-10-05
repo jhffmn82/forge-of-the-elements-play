@@ -11,7 +11,7 @@ var AUTOMAP_ON = false;
   st.textContent=[
     '#automap{position:absolute;inset:0;z-index:5;pointer-events:none;display:none}',
     '#automap.on{display:block}',
-    '#automapTag{position:absolute;left:10px;bottom:8px;z-index:6;display:none;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#E8D5A8;',
+    '#automapTag{position:absolute;left:10px;bottom:8px;z-index:6;display:none;font-size:calc(11px + var(--ui-mobile-text-add,0px));letter-spacing:.1em;text-transform:uppercase;color:#E8D5A8;',
     '  background:rgba(18,14,11,.7);border:1px solid #5A4630;border-radius:4px;padding:2px 8px;pointer-events:none}',
     '#automapTag.on{display:block}',
     '#bMap.on{border-color:var(--gold);color:var(--gold)}'

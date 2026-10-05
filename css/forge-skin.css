@@ -292,16 +292,16 @@ body[data-ui-theme=ember] #app ::-webkit-scrollbar-corner{background:#211b16;}
    values and combat text retain their compact, readable monospaced font. */
 body.fote-study[data-ui-theme] #app #top #depth,
 body.fote-study[data-ui-theme] #app #top #studyNav button{
- font-family:var(--display);font-weight:600;font-size:calc(17px * var(--ui-text-scale,1));line-height:1.1;
+ font-family:var(--display);font-weight:600;font-size:calc(calc(17px * var(--ui-text-scale,1)) + var(--ui-mobile-text-add,0px));line-height:1.1;
 }
 body.fote-study[data-ui-theme] #app #top #depth .study-position{font-family:inherit;}
 @media(min-height:600px){
  body.fote-study[data-ui-theme] #app #top #depth,
- body.fote-study[data-ui-theme] #app #top #studyNav button{font-size:calc(20px * var(--ui-text-scale,1));}
+ body.fote-study[data-ui-theme] #app #top #studyNav button{font-size:calc(calc(20px * var(--ui-text-scale,1)) + var(--ui-mobile-text-add,0px));}
 }
 @media(max-width:740px){
  body.fote-study[data-ui-theme] #app #top #depth,
- body.fote-study[data-ui-theme] #app #top #studyNav button{font-size:calc(15px * var(--ui-text-scale,1));}
+ body.fote-study[data-ui-theme] #app #top #studyNav button{font-size:calc(calc(15px * var(--ui-text-scale,1)) + var(--ui-mobile-text-add,0px));}
 }
 
 /* Front screens retain the original art, element and god colors. Their fine
@@ -326,7 +326,7 @@ body[data-ui-theme] #create .card{background:#171310;box-shadow:inset 0 1px #dac
 body[data-ui-theme] #create .card.on{border-color:var(--ember);background:#241a12;box-shadow:inset 0 0 0 1px #e2622b40,inset 0 -2px #e2622b80;}
 body[data-ui-theme] #create .summary{background:#1b1715;border-color:var(--ui-edge);box-shadow:inset 0 1px #dac49b0d;}
 body[data-ui-theme] #create input{background:#100e0c;color:var(--ink);border-color:#53412e;border-radius:5px;box-shadow:inset 0 1px 3px #0006;}
-body[data-ui-theme] #create :is(.go,#cBack){font-family:var(--display);font-size:20px;color:var(--gold);}
+body[data-ui-theme] #create :is(.go,#cBack){font-family:var(--display);font-size:calc(20px + var(--ui-mobile-text-add,0px));color:var(--gold);}
 body[data-ui-theme] #create .go{border-color:#966231;background:linear-gradient(#3d2c1c,#261c14);}
 @media(hover:hover){
  body.fote-study[data-ui-theme=ember] #app :is(#studyNav button,#studyExplore,#dpad button):hover,
@@ -361,7 +361,7 @@ body.fote-study.study-minimal[data-ui-theme] #app :is(#studyMenuToggle,#studyExp
  background:var(--ui-log-tint);border:1px solid var(--ui-edge);box-shadow:none;color:var(--ui-ink);text-shadow:none;
 }
 body.fote-study.study-minimal[data-ui-theme] #app #top{background:var(--ui-header-face);border-color:var(--ui-edge);box-shadow:0 4px 16px #0006;}
-body.fote-study.study-minimal[data-ui-theme] #app #top #studyNav button{font:calc(13px * var(--ui-text-scale,1)) var(--mono);border-radius:5px!important;text-align:left;}
+body.fote-study.study-minimal[data-ui-theme] #app #top #studyNav button{font:calc(calc(13px * var(--ui-text-scale,1)) + var(--ui-mobile-text-add,0px)) var(--mono);border-radius:5px!important;text-align:left;}
 body.fote-study.study-minimal[data-ui-theme] #app #studyPortraitStats{background:var(--ui-panel);color:var(--ui-ink);border:1px solid var(--ui-edge);text-shadow:none;}
 body.fote-study.study-minimal[data-ui-theme] #app #studyPortrait{background:var(--ui-log-tint);border-color:var(--ui-edge);}
 body.fote-study.study-minimal[data-ui-theme] #app #bMap.on{color:var(--gold);border-color:var(--gold);}

@@ -12,18 +12,18 @@
   st.textContent=[
     /* bottom strip: log (full height) | bars, chips and hotbar stacked | d-pad */
     '#strip{grid-template-columns:minmax(220px,1fr) minmax(0,720px) auto!important;align-items:stretch}',
-    '#log{height:auto!important;min-height:0;contain:size;align-self:stretch;font-size:12px}',
+    '#log{height:auto!important;min-height:0;contain:size;align-self:stretch;font-size:calc(12px + var(--ui-mobile-text-add,0px))}',
     '#mid{width:720px!important;justify-content:flex-start;gap:6px}',   /* reserve room for every status chip; the log yields first */
     '#bars{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}',
     '#mid .bar{height:20px}',
-    '#mid .bar span{font-size:12.5px;padding:0 7px}',
+    '#mid .bar span{font-size:calc(12.5px + var(--ui-mobile-text-add,0px));padding:0 7px}',
     /* the chips fit one row under the bars: short meters, favor shown as a number only */
-    '#hud2{flex-wrap:nowrap;gap:5px;font-size:12.5px;color:var(--ink);justify-content:flex-start;min-width:0;max-width:100%}',
+    '#hud2{flex-wrap:nowrap;gap:5px;font-size:calc(12.5px + var(--ui-mobile-text-add,0px));color:var(--ink);justify-content:flex-start;min-width:0;max-width:100%}',
     '#hud2 .chip{padding:2px 7px 2px 4px;gap:4px;white-space:nowrap;flex:0 0 auto;box-sizing:border-box}',
     '#hud2 .hunger{width:52px}',
     '#hud2 .faithchip{gap:5px;min-width:max-content;flex:0 0 auto}',
     '#hud2 .faithchip .meter{width:40px;flex:0 1 40px;min-width:14px}',
-    '#hud2 .motechip{gap:3px;font-size:11.5px}',
+    '#hud2 .motechip{gap:3px;font-size:calc(11.5px + var(--ui-mobile-text-add,0px))}',
     '#hud2 .motechip .dot{margin-right:1px}',
     '#hud2 .faithchip .meter.sm{display:none}',
     '#hotbar{grid-template-columns:repeat(8,52px)!important;grid-template-rows:52px!important;min-height:0!important;gap:5px;flex:0 0 auto}',
@@ -40,11 +40,11 @@
        the slot, and the canvas inside stretches to it (painted at 64 below, so it stays sharp). */
     '#hotbar .slot .ico{left:50%;top:50%;transform:translate(-50%,-50%);width:44px;height:44px;display:flex;align-items:center;justify-content:center}',
     '#hotbar .slot .ico canvas{width:100%!important;height:100%!important;display:block}',
-    '#hotbar .slot .k{top:2px;left:4px;right:auto;font-size:9px}',
-    '#hotbar .slot .cdn{position:absolute;right:3px;bottom:2px;font-size:9px;color:var(--gold);text-shadow:0 1px 2px #000}',
+    '#hotbar .slot .k{top:2px;left:4px;right:auto;font-size:calc(9px + var(--ui-mobile-text-add,0px))}',
+    '#hotbar .slot .cdn{position:absolute;right:3px;bottom:2px;font-size:calc(9px + var(--ui-mobile-text-add,0px));color:var(--gold);text-shadow:0 1px 2px #000}',
     '#hotbar .slot.oncd .ico canvas{filter:grayscale(1) brightness(.45) drop-shadow(0 0 1px #000)}',
     '#hotbar .slot.oncd::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:conic-gradient(rgba(0,0,0,.62) calc(var(--cdp,0) * 1%),rgba(0,0,0,0) 0)}',
-    '#hotbar .slot .cdn.cdbig{left:0;right:0;top:50%;bottom:auto;transform:translateY(-50%);text-align:center;font-size:20px;font-weight:700;color:#fff;text-shadow:0 0 3px #000,0 1px 2px #000;z-index:2}',
+    '#hotbar .slot .cdn.cdbig{left:0;right:0;top:50%;bottom:auto;transform:translateY(-50%);text-align:center;font-size:calc(20px + var(--ui-mobile-text-add,0px));font-weight:700;color:#fff;text-shadow:0 0 3px #000,0 1px 2px #000;z-index:2}',
     '#hotbar .slot.cdready{animation:cdready .7s ease-out}',
     '@keyframes cdready{0%{box-shadow:inset 0 0 0 2px #ffe08a,0 0 12px 2px rgba(255,210,110,.85)}100%{box-shadow:inset 0 0 0 1px #3a322b,inset 0 0 12px -2px var(--c,transparent),0 2px 3px rgba(0,0,0,.6)}}',
     '@media (prefers-reduced-motion:reduce){#hotbar .slot.cdready{animation:none}}',
@@ -52,7 +52,7 @@
     '#ctl #fx{grid-column:1/-1;max-width:none;justify-content:flex-start}',
     /* narrower windows keep 8 in a row with smaller slots; the chips drop their labels */
     '@media (max-width:1200px){#strip{grid-template-columns:minmax(220px,1fr) minmax(0,620px) auto!important} #mid{width:620px!important}}',
-    '@media (max-width:980px){#strip{grid-template-columns:minmax(180px,1fr) minmax(0,480px) auto!important} #mid{width:480px!important} #hotbar{grid-template-columns:repeat(8,45px)!important;grid-template-rows:45px!important;gap:4px} #hotbar .slot{width:45px;height:45px} #hotbar .slot .ico{width:38px;height:38px} #hud2{flex-wrap:wrap;font-size:12px;gap:3px} #hud2 .chip{padding:2px 4px 2px 3px} #hud2 .hunger{width:28px} #hud2 .motechip{font-size:11px;gap:2px} #hud2 .faithchip{gap:3px} #hud2 .faithchip .meter{width:24px}}',
+    '@media (max-width:980px){#strip{grid-template-columns:minmax(180px,1fr) minmax(0,480px) auto!important} #mid{width:480px!important} #hotbar{grid-template-columns:repeat(8,45px)!important;grid-template-rows:45px!important;gap:4px} #hotbar .slot{width:45px;height:45px} #hotbar .slot .ico{width:38px;height:38px} #hud2{flex-wrap:wrap;font-size:calc(12px + var(--ui-mobile-text-add,0px));gap:3px} #hud2 .chip{padding:2px 4px 2px 3px} #hud2 .hunger{width:28px} #hud2 .motechip{font-size:calc(11px + var(--ui-mobile-text-add,0px));gap:2px} #hud2 .faithchip{gap:3px} #hud2 .faithchip .meter{width:24px}}',
     '@media (max-width:760px){#mid{width:380px!important} #hotbar{grid-template-columns:repeat(8,37px)!important;grid-template-rows:37px!important} #hotbar .slot{width:37px;height:37px} #hotbar .slot .ico{width:31px;height:31px} #hud2 .faithchip .meter{display:none}}',
     '@media (max-width:640px){#strip{grid-template-columns:1fr auto!important} #log{grid-column:1/-1;contain:none;height:clamp(70px,12vh,110px)!important}}'
   ].join('\n');

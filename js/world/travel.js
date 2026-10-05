@@ -386,6 +386,6 @@ function toggleClickSpell(key){
 
 (function(){
   var st=document.createElement('style');
-  st.textContent='#hotbar .slot .clickmark{position:absolute;left:3px;bottom:1px;font-size:12px;color:#9FD8FF;text-shadow:0 0 4px #3A8FD0}';
+  st.textContent='#hotbar .slot .clickmark{position:absolute;left:3px;bottom:1px;font-size:calc(12px + var(--ui-mobile-text-add,0px));color:#9FD8FF;text-shadow:0 0 4px #3A8FD0}';
   document.head.appendChild(st);
 })();

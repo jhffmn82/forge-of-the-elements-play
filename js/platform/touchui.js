@@ -15,15 +15,15 @@
     /* ---- d-pad: a real thumb target. --dp is one button */
     'body.touch{--dp:clamp(46px,9vw,62px)}',
     'body.touch #dpad{grid-template-columns:repeat(3,var(--dp))!important;grid-auto-rows:var(--dp)!important;gap:5px!important}',
-    'body.touch #dpad button{font-size:calc(var(--dp)*.42)!important;min-height:0!important;padding:0!important;border-radius:10px}',
-    'body.touch #dpad button[data-d="5"]{font-size:calc(var(--dp)*.36)!important;color:var(--gold)}',
+    'body.touch #dpad button{font-size:calc(var(--dp)*.42 + var(--ui-mobile-text-add,0px))!important;min-height:0!important;padding:0!important;border-radius:10px}',
+    'body.touch #dpad button[data-d="5"]{font-size:calc(var(--dp)*.36 + var(--ui-mobile-text-add,0px))!important;color:var(--gold)}',
 
     /* ---- portrait: hotbar row full width, then log (left) | d-pad (right) */
     '@media (orientation:portrait){',
     ' body.touch #strip{grid-template-columns:minmax(0,1fr) auto!important;grid-template-rows:auto auto;gap:8px!important}',
     ' body.touch #mid{grid-column:1/-1;grid-row:1;order:0}',
     ' body.touch #log{grid-column:1;grid-row:2;order:0;height:auto!important;min-height:0;contain:size;align-self:stretch;',
-    '   font-size:clamp(14px,2.2vw,16px);line-height:1.35;padding:7px 10px}',
+    '   font-size:calc(clamp(14px,2.2vw,16px) + var(--ui-mobile-text-add,0px));line-height:1.35;padding:7px 10px}',
     ' body.touch #ctl{grid-column:2;grid-row:2;order:0;display:flex!important;justify-content:flex-end;align-items:center}',
     '}',
     /* landscape keeps its two columns; the d-pad just sits a little smaller there because height is what runs out */
@@ -36,8 +36,8 @@
     'body.touch #hotbar .slot .ico canvas{width:100%!important;height:100%!important;display:block}',
     'body.touch #hotbar .slot .k{display:none}',                         /* number keys mean nothing without a keyboard */
     'body.touch #hotbar .slot.empty .n{display:none}',
-    'body.touch #hotbar .slot .cdn.cdbig{font-size:clamp(16px,3.8vw,24px)!important;right:0!important;bottom:auto!important}',
-    'body.touch #hotbar .slot .cdn{font-size:clamp(12px,2.6vw,17px)!important;right:5px!important;bottom:3px!important;',
+    'body.touch #hotbar .slot .cdn.cdbig{font-size:calc(clamp(16px,3.8vw,24px) + var(--ui-mobile-text-add,0px))!important;right:0!important;bottom:auto!important}',
+    'body.touch #hotbar .slot .cdn{font-size:calc(clamp(12px,2.6vw,17px) + var(--ui-mobile-text-add,0px))!important;right:5px!important;bottom:3px!important;',
     '  background:rgba(10,9,8,.7);border-radius:6px;padding:0 4px}',
 
     /* ---- top bar: tabs share the row evenly; nothing overflows off the right edge */
@@ -45,7 +45,7 @@
     'body.touch #brand{flex:0 0 auto;min-width:0}',
     'body.touch #tabs{overflow:visible!important;justify-content:stretch!important;gap:4px!important;flex:1 1 auto;min-width:0}',
     'body.touch #tabs button.on{color:var(--gold)!important}',
-    'body.touch #tabs button{flex:1 1 0!important;min-width:0!important;padding:0 2px!important;font-size:clamp(13.5px,3.3vw,17px)!important;color:var(--ash);',
+    'body.touch #tabs button{flex:1 1 0!important;min-width:0!important;padding:0 2px!important;font-size:calc(clamp(13.5px,3.3vw,17px) + var(--ui-mobile-text-add,0px))!important;color:var(--ash);',
     '  white-space:nowrap;overflow:hidden;text-overflow:clip}',
     '@media (max-width:480px){ body.touch #brand{display:none} }',  /* phone: the floor number is in the chips row */
 
@@ -66,23 +66,23 @@
     'body.touch .tgear .gslot{width:100%!important;height:auto!important;aspect-ratio:1/1;min-height:0!important;padding:2px!important;justify-content:center!important;gap:0!important}',
     'body.touch .tgear .gslot .nm{display:none}',
     'body.touch .tgear .gslot .ic{width:64%!important;height:64%!important}',
-    'body.touch .tgear .gslot .ph{font-size:clamp(18px,4vmin,30px)!important;line-height:1!important}',
-    'body.touch .tgear .gslot .lab{font-size:clamp(7px,1.4vmin,10px)!important;letter-spacing:0;line-height:1.1;margin-top:2px;white-space:nowrap}',
+    'body.touch .tgear .gslot .ph{font-size:calc(clamp(18px,4vmin,30px) + var(--ui-mobile-text-add,0px))!important;line-height:1!important}',
+    'body.touch .tgear .gslot .lab{font-size:calc(clamp(7px,1.4vmin,10px) + var(--ui-mobile-text-add,0px))!important;letter-spacing:0;line-height:1.1;margin-top:2px;white-space:nowrap}',
     'body.touch .tgear .cell{min-height:0!important}',
     /* Occupied bag cells drag directly; empty cells and gaps still scroll. */
     'body.touch .tgear .cell[data-b]{touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}',
     'body.touch .tgear .cell .gear{width:74%;height:74%;display:flex;align-items:center;justify-content:center}',
     'body.touch .tgear .gslot .ic canvas,body.touch .tgear .cell canvas{width:100%!important;height:100%!important;display:block}',
-    'body.touch .tgear .cell b{font-size:13px!important}',
-    'body.touch .tgear .tg-hint{font-size:13px!important}',
-    'body.touch .tgear .tg-sec{font-size:11px!important}',
-    'body.touch #bAmHot{margin-top:10px;min-height:44px;width:100%;max-width:100%;padding:4px;font-size:12px;white-space:normal}',
+    'body.touch .tgear .cell b{font-size:calc(13px + var(--ui-mobile-text-add,0px))!important}',
+    'body.touch .tgear .tg-hint{font-size:calc(13px + var(--ui-mobile-text-add,0px))!important}',
+    'body.touch .tgear .tg-sec{font-size:calc(11px + var(--ui-mobile-text-add,0px))!important}',
+    'body.touch #bAmHot{margin-top:10px;min-height:44px;width:100%;max-width:100%;padding:4px;font-size:calc(12px + var(--ui-mobile-text-add,0px));white-space:normal}',
 
     /* Keep every title action reachable even on a short phone screen. 2026-09-28: the menu sits at the bottom, under
        the logo painted into the title art (it ends about 31% down), instead of stretching over it. */
     '@media (max-height:560px){',
     ' body.touch #title .menu{top:auto;bottom:max(12px,env(safe-area-inset-bottom,0px));transform:none;overflow-y:auto;justify-content:flex-end;gap:6px}',
-    ' body.touch #title .menu button{font-size:20px;min-height:44px;padding:6px 14px;flex-shrink:0}',
+    ' body.touch #title .menu button{font-size:calc(20px + var(--ui-mobile-text-add,0px));min-height:44px;padding:6px 14px;flex-shrink:0}',
     '}',
     /* Landscape: vitals and controls | map and hotbar | menus and combat log.
        Keep the existing elements and handlers; sheets stay inside the map. */
@@ -99,16 +99,16 @@
     ' body.touch #top{grid-column:3;grid-row:1;align-self:start;min-height:0!important;min-width:0;padding:0!important;border:0}',
     ' body.touch #brand{display:none!important}',
     ' body.touch #tabs{display:grid!important;grid-template-columns:repeat(3,minmax(44px,1fr));gap:2px!important;align-self:stretch}',
-    ' body.touch #tabs button{height:44px;min-height:44px!important;min-width:0!important;padding:0 1px!important;font-size:clamp(11px,1.3vw,13px)!important;letter-spacing:0}',
+    ' body.touch #tabs button{height:44px;min-height:44px!important;min-width:0!important;padding:0 1px!important;font-size:calc(clamp(11px,1.3vw,13px) + var(--ui-mobile-text-add,0px))!important;letter-spacing:0}',
     ' body.touch #tabs #bMap{grid-column:span 2}',
     ' body.touch #tabs:has(button[data-p="Sand"]) #bMap{grid-column:auto}',
     ' body.touch #app #bars{grid-column:1;grid-row:1;display:grid!important;grid-template-columns:1fr;gap:3px}',
     ' body.touch #app #bars .bar{height:28px!important}',
-    ' body.touch #app #bars .bar span{font-size:12px!important;padding:0 5px!important}',
-    ' body.touch #app #hud2{grid-column:1;grid-row:2;display:flex!important;flex-wrap:wrap!important;align-content:start;justify-content:flex-start;gap:3px;max-height:80px;overflow:auto;font-size:11px}',
-    ' body.touch #app #hud2 .chip{padding:2px 4px!important;font-size:11px!important;max-width:100%;overflow-x:auto}',
+    ' body.touch #app #bars .bar span{font-size:calc(12px + var(--ui-mobile-text-add,0px))!important;padding:0 5px!important}',
+    ' body.touch #app #hud2{grid-column:1;grid-row:2;display:flex!important;flex-wrap:wrap!important;align-content:start;justify-content:flex-start;gap:3px;max-height:80px;overflow:auto;font-size:calc(11px + var(--ui-mobile-text-add,0px))}',
+    ' body.touch #app #hud2 .chip{padding:2px 4px!important;font-size:calc(11px + var(--ui-mobile-text-add,0px))!important;max-width:100%;overflow-x:auto}',
     ' body.touch #app #ctl{display:contents!important}',
-    ' body.touch #app #log{grid-column:3;grid-row:2/5;display:flex!important;position:static!important;width:auto!important;height:auto!important;max-height:none!important;min-height:0;contain:size;pointer-events:auto;overflow:auto;font-size:12px;line-height:1.3;padding:6px;background:#151110;border:1px solid var(--edge)}',
+    ' body.touch #app #log{grid-column:3;grid-row:2/5;display:flex!important;position:static!important;width:auto!important;height:auto!important;max-height:none!important;min-height:0;contain:size;pointer-events:auto;overflow:auto;font-size:calc(12px + var(--ui-mobile-text-add,0px));line-height:1.3;padding:6px;background:#151110;border:1px solid var(--edge)}',
     ' body.touch #app #map #shade{position:absolute!important;inset:0!important;padding:0!important}',
     ' body.touch #shade .cols3{grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr))}',
     /* Ability details need the whole row; costs belong beneath the name. */
@@ -151,39 +151,39 @@
     'body.touch .tgear .cell.lifted,body.touch .tgear .gslot.lifted{opacity:.4}',
     '#hmenu{position:fixed;left:8px;right:8px;z-index:70;background:rgba(18,15,13,.97);border:1px solid var(--edge);border-radius:12px;',
     '  padding:12px;box-shadow:0 8px 30px rgba(0,0,0,.6);display:flex;flex-direction:column;gap:10px;max-width:520px;margin:0 auto}',
-    '#hmenu .hm-card .nm{font-size:18px;color:var(--gold);margin-bottom:4px}',
-    '#hmenu .hm-card .row,#hmenu .hm-card .hint,#hmenu .hm-card{font-size:14px;line-height:1.4}',
+    '#hmenu .hm-card .nm{font-size:calc(18px + var(--ui-mobile-text-add,0px));color:var(--gold);margin-bottom:4px}',
+    '#hmenu .hm-card .row,#hmenu .hm-card .hint,#hmenu .hm-card{font-size:calc(14px + var(--ui-mobile-text-add,0px));line-height:1.4}',
     '#hmenu .hm-card .row{display:flex;justify-content:space-between;gap:12px}',
     '#hmenu .hm-card .row b{color:var(--ink)}',
     '#hmenu .hm-btns{display:flex;flex-wrap:wrap;gap:8px}',
-    '#hmenu .hm-btns button{flex:1 1 auto;min-height:48px;font-size:15px;padding:0 14px}',
+    '#hmenu .hm-btns button{flex:1 1 auto;min-height:48px;font-size:calc(15px + var(--ui-mobile-text-add,0px));padding:0 14px}',
     '#hmenu .hm-btns button.on{border-color:var(--gold);color:var(--gold)}',
 
     /* ---- long-press cards: across the screen, on the half away from the finger (see showCard below) */
     /* 2026-09-22 (Justin): the card sits bottom-left, above the hotbar, over the empty lower part of the sheet, where it can be read; it carries the item's buttons */
-    'body.touch #dtip{left:8px!important;right:auto!important;top:auto!important;bottom:var(--cardb,8px)!important;width:min(440px,calc(100vw - 16px))!important;max-width:none!important;font-size:14px;padding:10px 12px!important;z-index:85!important;pointer-events:auto!important}',   /* over the docked hotbar and tabs (60) */
+    'body.touch #dtip{left:8px!important;right:auto!important;top:auto!important;bottom:var(--cardb,8px)!important;width:min(440px,calc(100vw - 16px))!important;max-width:none!important;font-size:calc(14px + var(--ui-mobile-text-add,0px));padding:10px 12px!important;z-index:85!important;pointer-events:auto!important}',   /* over the docked hotbar and tabs (60) */
     'body.touch #dtip .tc-btns{display:flex;gap:8px;margin-top:10px}',
-    'body.touch #dtip .tc-btns button{flex:1 1 auto;min-height:44px;font-size:15px}',
-    'body.touch #dtip .nm{font-size:18px!important}',
+    'body.touch #dtip .tc-btns button{flex:1 1 auto;min-height:44px;font-size:calc(15px + var(--ui-mobile-text-add,0px))}',
+    'body.touch #dtip .nm{font-size:calc(18px + var(--ui-mobile-text-add,0px))!important}',
 
     /* ---- one type size up across the strip (2026-09-18: it had room to spare) */
     'body.touch #mid .bar{height:26px!important}',
-    'body.touch #mid .bar span{font-size:clamp(14px,2.4vw,16px)!important;padding:0 9px!important}',
-    'body.touch #hud2{font-size:clamp(13px,2.1vw,15px)!important}',
+    'body.touch #mid .bar span{font-size:calc(clamp(14px,2.4vw,16px) + var(--ui-mobile-text-add,0px))!important;padding:0 9px!important}',
+    'body.touch #hud2{font-size:calc(clamp(13px,2.1vw,15px) + var(--ui-mobile-text-add,0px))!important}',
     'body.touch #hud2 .chip{padding:3px 9px 3px 5px!important}',
-    'body.touch #tip .nm{font-size:18px!important}',
-    'body.touch #tip .row{font-size:14.5px!important}',
-    'body.touch #tip .odds{font-size:15px!important}',
-    'body.touch .sheet{font-size:15px}',
+    'body.touch #tip .nm{font-size:calc(18px + var(--ui-mobile-text-add,0px))!important}',
+    'body.touch #tip .row{font-size:calc(14.5px + var(--ui-mobile-text-add,0px))!important}',
+    'body.touch #tip .odds{font-size:calc(15px + var(--ui-mobile-text-add,0px))!important}',
+    'body.touch .sheet{font-size:calc(15px + var(--ui-mobile-text-add,0px))}',
     /* Exit: a browser will not let a page (or an installed web app) close itself, so on a phone or tablet the
        button could only fail. Home / swipe away closes it there. */
     'body.touch #tExit,body.touch #oExit{display:none!important}',
     /* Opts: key bindings mean nothing without a keyboard, and they pushed Audio/Display (map zoom) below the fold */
     'body.touch .optgrid{grid-template-columns:1fr!important}',
     'body.touch .optgrid>div:first-child{display:none}',
-    'body.touch .optrow{font-size:14px;padding:8px 0}',
-    'body.touch .seg button{padding:8px 12px;font-size:13px}',
-    'body.touch .sheet header h2{font-size:18px!important}'
+    'body.touch .optrow{font-size:calc(14px + var(--ui-mobile-text-add,0px));padding:8px 0}',
+    'body.touch .seg button{padding:8px 12px;font-size:calc(13px + var(--ui-mobile-text-add,0px))}',
+    'body.touch .sheet header h2{font-size:calc(18px + var(--ui-mobile-text-add,0px))!important}'
   ].join('\n');
   document.head.appendChild(st);
 

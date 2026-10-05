@@ -18,8 +18,8 @@ var forgeMote = null;
     '.enchcard:hover:not(.off){border-color:var(--ember)}',
     '.enchcard.off{opacity:.45;cursor:default}',
     '.enchcard .ic{flex:0 0 42px;height:42px;display:flex;align-items:center;justify-content:center}',
-    '.enchcard .t{font-size:12px;color:var(--ink)} .enchcard .s{font-size:10.5px;color:var(--dim);text-transform:uppercase;letter-spacing:.08em}',
-    '.enchcard .now{font-size:11px;color:var(--ash);margin-top:3px} .enchcard .new{font-size:11px;color:#CFE6B8;margin-top:3px}',
+    '.enchcard .t{font-size:calc(12px + var(--ui-mobile-text-add,0px));color:var(--ink)} .enchcard .s{font-size:calc(10.5px + var(--ui-mobile-text-add,0px));color:var(--dim);text-transform:uppercase;letter-spacing:.08em}',
+    '.enchcard .now{font-size:calc(11px + var(--ui-mobile-text-add,0px));color:var(--ash);margin-top:3px} .enchcard .new{font-size:calc(11px + var(--ui-mobile-text-add,0px));color:#CFE6B8;margin-top:3px}',
     '.recyc .val{color:var(--gold);font-variant-numeric:tabular-nums;min-width:70px;text-align:right}'
   ].join('\n');
   document.head.appendChild(st);

@@ -11,43 +11,43 @@
     border:1px solid #4A3E34;border-radius:10px;box-shadow:0 24px 60px rgba(0,0,0,.7)}
   #modal .mbox.wide{width:min(880px,100%)}
   #modal header{padding:12px 16px;border-bottom:1px solid var(--edge);display:flex;align-items:center;justify-content:space-between}
-  #modal header h2{font-family:var(--display);color:var(--gold);font-size:22px;margin:0}
-  #modal .mbody{padding:14px 16px;overflow-y:auto;line-height:1.5;font-size:12.5px;color:var(--ink)}
+  #modal header h2{font-family:var(--display);color:var(--gold);font-size:calc(22px + var(--ui-mobile-text-add,0px));margin:0}
+  #modal .mbody{padding:14px 16px;overflow-y:auto;line-height:1.5;font-size:calc(12.5px + var(--ui-mobile-text-add,0px));color:var(--ink)}
   #modal .mbody p{margin:0 0 8px}
   .merchant-summary{position:sticky;top:-14px;z-index:2;display:flex;justify-content:space-between;gap:12px;padding:12px 0;background:var(--panel,#211b16);border-bottom:1px solid var(--edge);margin-bottom:14px}
   .merchant-summary b{color:var(--gold);white-space:nowrap}.merchant-summary span{color:var(--dim)}
-  .merchant-section{margin:18px 0 22px}.merchant-section h3{margin:0 0 8px;color:var(--gold);font:18px var(--display)}
+  .merchant-section{margin:18px 0 22px}.merchant-section h3{margin:0 0 8px;color:var(--gold);font:calc(18px + var(--ui-mobile-text-add,0px)) var(--display)}
   .merchant-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
   .merchant-card{display:grid;grid-template-columns:32px minmax(0,1fr) auto 70px;align-items:center;gap:8px;padding:10px;border:1px solid var(--edge);border-radius:6px;background:rgba(0,0,0,.12)}
-  .merchant-card.sold{opacity:.55}.merchant-card .merchant-name{line-height:1.35;overflow-wrap:anywhere}.merchant-price{text-align:right;white-space:nowrap;color:var(--gold);font-size:12px}.merchant-price small{display:block;color:var(--dim);font-size:10px}
-  .merchant-card button{margin:0;min-height:32px;padding:5px 8px}.merchant-card details{grid-column:2/-1;font-size:12px}.merchant-card summary{cursor:pointer;color:var(--dim)}
+  .merchant-card.sold{opacity:.55}.merchant-card .merchant-name{line-height:1.35;overflow-wrap:anywhere}.merchant-price{text-align:right;white-space:nowrap;color:var(--gold);font-size:calc(12px + var(--ui-mobile-text-add,0px))}.merchant-price small{display:block;color:var(--dim);font-size:calc(10px + var(--ui-mobile-text-add,0px))}
+  .merchant-card button{margin:0;min-height:32px;padding:5px 8px}.merchant-card details{grid-column:2/-1;font-size:calc(12px + var(--ui-mobile-text-add,0px))}.merchant-card summary{cursor:pointer;color:var(--dim)}
   .merchant-card details[open]{padding-top:5px}.merchant-card .pico{display:block}.merchant-card [data-merchant-icon]{display:flex;align-items:center;justify-content:center}
   @media(max-width:850px){.merchant-grid{grid-template-columns:1fr}.merchant-summary{flex-wrap:wrap}.merchant-card{grid-template-columns:28px minmax(0,1fr) auto 62px}}
   #modal footer{padding:10px 16px;border-top:1px solid var(--edge);display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
   #modal footer button.primary, .btn-primary{background:linear-gradient(180deg,#8A4A1E,#5A2E12);border-color:#B8653A;color:#FFE9C8}
   #modal footer button:disabled, button:disabled{opacity:.38;cursor:default;border-color:var(--edge)!important;color:var(--dim)!important}
-  .bossbar{position:absolute;left:50%;top:10px;transform:translateX(-50%);z-index:5;width:min(420px,70%);text-align:center;font-family:var(--display);color:#E8B44A;font-size:15px;text-shadow:0 1px 3px #000;pointer-events:none}
+  .bossbar{position:absolute;left:50%;top:10px;transform:translateX(-50%);z-index:5;width:min(420px,70%);text-align:center;font-family:var(--display);color:#E8B44A;font-size:calc(15px + var(--ui-mobile-text-add,0px));text-shadow:0 1px 3px #000;pointer-events:none}
   .bossbar .bb{height:9px;border:1px solid #5A2E18;background:#1A0E0A;border-radius:4px;overflow:hidden;margin-top:3px}
   .bossbar .bb i{display:block;height:100%;background:linear-gradient(90deg,#8E2F27,#E2622B)}
   .shrine-head{display:grid;grid-template-columns:130px minmax(0,1fr);gap:14px;align-items:start;margin-bottom:12px}
   .shrine-details{min-width:0;overflow-wrap:anywhere}
-  .shrine h3,.faith h3{font-family:var(--display);font-size:20px;margin:0}
+  .shrine h3,.faith h3{font-family:var(--display);font-size:calc(20px + var(--ui-mobile-text-add,0px));margin:0}
   .boons{margin:0 0 8px 18px;padding:0} .boons li{margin:2px 0}
   .forge-top{display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
   .pouch2{display:flex;gap:6px;flex-wrap:wrap}
-  .mslot{width:64px;display:flex;flex-direction:column;align-items:center;gap:1px;padding:5px 2px;border:1px solid var(--edge);border-radius:6px;background:#141110;font-size:10px;color:var(--ash)}
-  .mslot b{font-size:13px;color:var(--ink)} .mslot.none{opacity:.4}
-  .forge-info{font-size:12px;color:#fff;font-weight:700;display:flex;flex-direction:column;gap:2px} .forge-info .c-info{color:#fff}   /* 2026-09-28 (Justin): bright white and bold; the affinity keeps its element colour, essence its gold */
+  .mslot{width:64px;display:flex;flex-direction:column;align-items:center;gap:1px;padding:5px 2px;border:1px solid var(--edge);border-radius:6px;background:#141110;font-size:calc(10px + var(--ui-mobile-text-add,0px));color:var(--ash)}
+  .mslot b{font-size:calc(13px + var(--ui-mobile-text-add,0px));color:var(--ink)} .mslot.none{opacity:.4}
+  .forge-info{font-size:calc(12px + var(--ui-mobile-text-add,0px));color:#fff;font-weight:700;display:flex;flex-direction:column;gap:2px} .forge-info .c-info{color:#fff}   /* 2026-09-28 (Justin): bright white and bold; the affinity keeps its element colour, essence its gold */
   .ftabs{display:flex;gap:4px;margin:6px 0 10px} .ftabs button.on{border-color:var(--ember);color:var(--gold);background:#2A2015}
   .frow{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.05)}
-  .frow .ftext{flex:1} .frow .d, .egrid .d{color:var(--dim);font-size:11px;display:block}
+  .frow .ftext{flex:1} .frow .d, .egrid .d{color:var(--dim);font-size:calc(11px + var(--ui-mobile-text-add,0px));display:block}
   .dot{width:11px;height:11px;border-radius:50%;display:inline-block;flex:0 0 auto;box-shadow:0 0 6px rgba(255,255,255,.2)}
   .egrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:6px;margin:6px 0 12px}
   .egrid button{text-align:left;display:flex;flex-direction:column;gap:2px}
   .fslot{margin-top:6px}
   .slot .ico{position:absolute;left:5px;top:50%;transform:translateY(-50%);width:28px;height:28px;image-rendering:auto}
   .slot.hasico{padding-left:38px}
-  #hud2{display:flex;gap:6px;align-items:center;flex-wrap:wrap;font-size:10.5px;color:var(--ash);min-height:16px}
+  #hud2{display:flex;gap:6px;align-items:center;flex-wrap:wrap;font-size:calc(10.5px + var(--ui-mobile-text-add,0px));color:var(--ash);min-height:16px}
   #hud2 .chip{display:flex;align-items:center;gap:4px;border:1px solid var(--edge);border-radius:12px;padding:1px 8px 1px 4px;background:#151110}
   #hud2 .chip canvas{display:block}
   .hunger{width:90px;height:8px;border:1px solid var(--edge);border-radius:3px;background:#120F0D;position:relative;overflow:hidden}
@@ -61,7 +61,7 @@
   .meter{width:90px;height:8px;border:1px solid var(--edge);border-radius:3px;background:#120F0D;position:relative;overflow:hidden;display:inline-block;vertical-align:middle}
   .meter.sm{width:48px}
   .meter i{position:absolute;left:0;top:0;bottom:0}
-  .fmeter{display:flex;align-items:center;gap:10px;margin:6px 0 10px;font-size:11px;color:var(--ash)}
+  .fmeter{display:flex;align-items:center;gap:10px;margin:6px 0 10px;font-size:calc(11px + var(--ui-mobile-text-add,0px));color:var(--ash)}
   .fmeter .meter{flex:1;height:10px}
   .slot.prayer-slot{border-color:var(--gc,#8A6FB0)}
   .slot.prayer-slot .c{color:var(--gc,#C9A8FF)}
@@ -69,35 +69,35 @@
   .abrow .pico{width:28px;height:28px;flex:none}
   .abrow[data-pr]{grid-template-columns:28px auto 1fr auto;align-items:center}
   #topbtns{display:flex;gap:4px;align-items:center;margin-left:8px}
-  #topbtns button{font-size:10.5px;padding:3px 7px;white-space:nowrap}
+  #topbtns button{font-size:calc(10.5px + var(--ui-mobile-text-add,0px));padding:3px 7px;white-space:nowrap}
   .tag canvas{vertical-align:middle;margin-right:2px}
   .cell .gear{position:absolute;inset:3px;display:flex;align-items:center;justify-content:center}
   .doll{grid-template-columns:minmax(0,1fr) clamp(110px,26%,150px) minmax(0,1fr)!important}
   @media (min-width:700px){ .equip{grid-template-columns:minmax(300px,1.35fr) minmax(220px,1fr)!important} }
   .dollart{grid-column:2;min-height:190px;grid-row:1/5;align-self:stretch;border:1px dashed var(--edge);border-radius:8px;background:radial-gradient(#2A221C,#141110);display:flex;align-items:flex-end;justify-content:center;overflow:hidden}
-  .prayer{font-size:11px;padding:3px 8px}
+  .prayer{font-size:calc(11px + var(--ui-mobile-text-add,0px));padding:3px 8px}
   .faith .who{margin-bottom:6px}
   /* character creation */
   #create{position:fixed;inset:0;z-index:40;background:radial-gradient(ellipse at 50% 20%,#2A1F18,#0B0908 70%);display:none;overflow-y:auto}
   #create.on{display:block}
   #create .wrap{max-width:1100px;margin:0 auto;padding:22px 16px 40px}
-  #create h1{font-size:34px;text-align:center;margin:6px 0 2px}
+  #create h1{font-size:calc(34px + var(--ui-mobile-text-add,0px));text-align:center;margin:6px 0 2px}
   #create .tag2{text-align:center;color:var(--ash);margin-bottom:18px}
-  #create .step{margin:16px 0 6px;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim)}
+  #create .step{margin:16px 0 6px;font-size:calc(10px + var(--ui-mobile-text-add,0px));letter-spacing:.18em;text-transform:uppercase;color:var(--dim)}
   #create .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px}
   #create .card{background:#171310;border:1px solid var(--edge);border-radius:8px;padding:10px;cursor:pointer;display:flex;flex-direction:column;gap:4px;text-align:left;color:var(--ink)}
   #create .card:hover{border-color:#6A5040}
   #create .card.on{border-color:var(--ember);background:#241A12;box-shadow:0 0 0 1px rgba(226,98,43,.35) inset}
-  #create .card b{font-family:var(--display);font-size:17px;color:var(--gold)}
-  #create .card span{font-size:11px;color:var(--ash);line-height:1.4}
+  #create .card b{font-family:var(--display);font-size:calc(17px + var(--ui-mobile-text-add,0px));color:var(--gold)}
+  #create .card span{font-size:calc(11px + var(--ui-mobile-text-add,0px));color:var(--ash);line-height:1.4}
   #create .card .port{height:120px;display:flex;align-items:flex-end;justify-content:center}
   #create .card .class-symbol{height:48px}
   #create .summary{display:grid;grid-template-columns:200px 1fr;gap:18px;align-items:center;background:#141110;border:1px solid var(--edge);border-radius:10px;padding:14px;margin-top:18px}
   #create .summary .big{height:230px;display:flex;align-items:flex-end;justify-content:center}
   #create .summary>div{min-width:0}
-  #create .create-sound-note{display:block;max-width:100%;margin:8px 0 0;font-size:11px;line-height:1.5;white-space:normal;overflow-wrap:anywhere}
-  #create .go{font-size:16px;padding:10px 26px;margin-top:10px}
-  #create input{width:220px;font-size:14px}
+  #create .create-sound-note{display:block;max-width:100%;margin:8px 0 0;font-size:calc(11px + var(--ui-mobile-text-add,0px));line-height:1.5;white-space:normal;overflow-wrap:anywhere}
+  #create .go{font-size:calc(16px + var(--ui-mobile-text-add,0px));padding:10px 26px;margin-top:10px}
+  #create input{width:220px;font-size:calc(14px + var(--ui-mobile-text-add,0px))}
   @media (max-width:640px){ #create .summary{grid-template-columns:1fr} .shrine-head{grid-template-columns:80px minmax(0,1fr);gap:10px} .shrine-head .shrine-art{max-width:80px;overflow:hidden} .shrine-head .shrine-art canvas{max-width:100%;height:auto!important} }
   `;
   var s=document.createElement('style'); s.textContent=css; document.head.appendChild(s);

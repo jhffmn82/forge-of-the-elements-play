@@ -208,14 +208,14 @@ function importSave(){
   st.textContent=[
     '#title .panel{position:absolute;z-index:2;left:50%;top:50%;transform:translate(-50%,-50%);width:min(560px,calc(100vw - 32px));max-height:calc(100vh - 40px);overflow-y:auto;',
     '  background:rgba(18,14,11,.96);border:1px solid #5A4630;border-radius:8px;padding:18px 20px;box-shadow:0 10px 40px rgba(0,0,0,.7)}',
-    '#title .panel h2{font-family:var(--display);color:var(--gold);font-size:26px;margin:0 0 10px}',
-    '#title .panel p{color:var(--ash);line-height:1.55;margin:0 0 10px;font-size:12.5px}',
+    '#title .panel h2{font-family:var(--display);color:var(--gold);font-size:calc(26px + var(--ui-mobile-text-add,0px));margin:0 0 10px}',
+    '#title .panel p{color:var(--ash);line-height:1.55;margin:0 0 10px;font-size:calc(12.5px + var(--ui-mobile-text-add,0px))}',
     '.slots{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}',
-    '.slotrow{display:grid;grid-template-columns:70px 1fr auto;gap:10px;align-items:center;padding:8px 10px;border:1px solid var(--edge);border-radius:5px;background:#151110;font-size:12px}',
-    '.slotrow .nm{color:var(--gold);font-size:11px;text-transform:uppercase;letter-spacing:.1em}',
-    '.slotrow .when{color:var(--dim);font-size:10.5px;margin-top:2px}',
+    '.slotrow{display:grid;grid-template-columns:70px 1fr auto;gap:10px;align-items:center;padding:8px 10px;border:1px solid var(--edge);border-radius:5px;background:#151110;font-size:calc(12px + var(--ui-mobile-text-add,0px))}',
+    '.slotrow .nm{color:var(--gold);font-size:calc(11px + var(--ui-mobile-text-add,0px));text-transform:uppercase;letter-spacing:.1em}',
+    '.slotrow .when{color:var(--dim);font-size:calc(10.5px + var(--ui-mobile-text-add,0px));margin-top:2px}',
     '.slotrow .act{display:flex;gap:5px}',
-    '.slotrow .act button{padding:3px 9px;font-size:11px}',
+    '.slotrow .act button{padding:3px 9px;font-size:calc(11px + var(--ui-mobile-text-add,0px))}',
     '.panelfoot{display:flex;gap:8px;justify-content:space-between;flex-wrap:wrap}'
   ].join('\n');
   document.head.appendChild(st);
@@ -337,7 +337,7 @@ var _optionsHTMLSave = optionsHTML;
 optionsHTML = function(){
   var h=_optionsHTMLSave();
   var dead = RUN && RUN.over;
-  return '<div class="sec">Save game</div>'+(dead ? '<p class="c-info" style="font-size:11.5px">The dead cannot be saved.</p>' : slotRows('save'))+
+  return '<div class="sec">Save game</div>'+(dead ? '<p class="c-info" style="font-size:calc(11.5px + var(--ui-mobile-text-add,0px))">The dead cannot be saved.</p>' : slotRows('save'))+
     '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px"><button id="oExport"'+(dead?' disabled':'')+'>Export to file</button><button id="oImport">Import from file</button><button id="oTitle">Quit to title</button><button id="oExit">Exit game</button></div>'+h;
 };
 var _wireOptionsSave = wireOptions;

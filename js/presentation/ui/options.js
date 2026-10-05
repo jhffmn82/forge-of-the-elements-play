@@ -28,7 +28,8 @@ function speedFxList(){
 /* ---------------------------------------------------------------- map zoom (2026-09-18)
    A multiplier on however many tiles the current view wants (desktop, phone portrait or landscape), so it
    stacks with the layout's own choice instead of replacing it. Closer = fewer, bigger tiles. */
-/* Landscape presets target 22, 18, 15 and 12 rows; width follows the map panel. */
+/* Canonical resize brings each multiplied target two tiles closer: landscape
+   Far/Normal/Close/Closest target 16/12/10/8 rows; width follows the map panel. */
 var MAP_ZOOM_MUL = {far:18/12, normal:14/12, close:1, closest:10/12}, MAP_ZOOM='normal';
 try { MAP_ZOOM = localStorage.getItem('astra-temple-map-zoom') || 'normal'; } catch(e){}
 if(!MAP_ZOOM_MUL[MAP_ZOOM]) MAP_ZOOM='normal';
@@ -49,26 +50,26 @@ if($('bArt'))$('bArt').textContent=spriteOn?'Art: sprites':'Art: blocks';
   st.textContent=[
     '.optgrid{display:grid;grid-template-columns:minmax(260px,1.2fr) minmax(220px,1fr);gap:14px 26px;align-items:start}',
     '@media (max-width:640px){.optgrid{grid-template-columns:1fr}}',
-    '.binds{display:grid;grid-template-columns:1fr auto 1fr auto;gap:3px 10px;align-items:center;font-size:11.5px}',
+    '.binds{display:grid;grid-template-columns:1fr auto 1fr auto;gap:3px 10px;align-items:center;font-size:calc(11.5px + var(--ui-mobile-text-add,0px))}',
     '.binds span{color:var(--ash)}',
-    '.binds button{min-width:64px;padding:2px 8px;font-size:11px;font-family:var(--mono);background:var(--panel-2);border:1px solid var(--edge);color:var(--gold);border-radius:4px}',
+    '.binds button{min-width:64px;padding:2px 8px;font-size:calc(11px + var(--ui-mobile-text-add,0px));font-family:var(--mono);background:var(--panel-2);border:1px solid var(--edge);color:var(--gold);border-radius:4px}',
     '.binds button.wait{border-color:var(--gold);background:#2A2015;color:var(--ink)}',
     '.binds button.custom{color:#9FD8FF}',
-    '.optrow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:12px;color:var(--ash)}',
+    '.optrow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:calc(12px + var(--ui-mobile-text-add,0px));color:var(--ash)}',
     '.optrow input[type=range]{width:140px;accent-color:#B08A48}',
     '#titleSettings .optrow{flex-wrap:wrap}',
     'body.touch #modal .title-settings button{min-height:44px}',
     '.seg{display:inline-flex;border:1px solid var(--edge);border-radius:4px;overflow:hidden}',
-    '.seg button{border:0;border-right:1px solid var(--edge);background:var(--panel-2);color:var(--ash);padding:3px 9px;font-size:11px;border-radius:0}',
+    '.seg button{border:0;border-right:1px solid var(--edge);background:var(--panel-2);color:var(--ash);padding:3px 9px;font-size:calc(11px + var(--ui-mobile-text-add,0px));border-radius:0}',
     '.seg button:last-child{border-right:0} .seg button.on{background:#3A2E1C;color:var(--gold)}',
     '.opt-appearance{flex-wrap:wrap;align-items:center}',
     '.opt-appearance>.seg{flex:0 1 auto;flex-wrap:wrap;min-width:0;max-width:100%}',
-    '.opt-appearance>.seg button{flex:0 0 auto;min-height:28px;padding:4px 9px;font-size:11px;line-height:1.2}',
+    '.opt-appearance>.seg button{flex:0 0 auto;min-height:28px;padding:4px 9px;font-size:calc(11px + var(--ui-mobile-text-add,0px));line-height:1.2}',
     '.opt-appearance>.seg button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}',
-    '.opt-appearance select{max-width:100%;min-height:32px;padding:5px 28px 5px 9px;border:1px solid var(--edge);border-radius:4px;background:var(--panel-2);color:var(--ink);font:12px var(--mono)}',
+    '.opt-appearance select{max-width:100%;min-height:32px;padding:5px 28px 5px 9px;border:1px solid var(--edge);border-radius:4px;background:var(--panel-2);color:var(--ink);font:calc(12px + var(--ui-mobile-text-add,0px)) var(--mono)}',
     'body.touch .opt-appearance select{min-height:44px}',
     'body.touch .opt-appearance>.seg button{min-height:34px}',
-    '.legend{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;font-size:11px} .legend b{color:var(--gold);font-weight:600} .legend span{color:var(--dim)}'
+    '.legend{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;font-size:calc(11px + var(--ui-mobile-text-add,0px))} .legend b{color:var(--gold);font-weight:600} .legend span{color:var(--dim)}'
   ].join('\n');
   document.head.appendChild(st);
 })();
@@ -181,7 +182,7 @@ function settingsHTML(){
     var k=bindKey(b[0]);
     h+='<span>'+b[1]+'</span><button data-bind="'+b[0]+'" class="'+(REBINDING===b[0]?'wait':BINDS[b[0]]?'custom':'')+'">'+(REBINDING===b[0]?'press a key':keyLabel(k))+'</button>';
   });
-  h+='</div><div style="margin-top:8px;display:flex;gap:8px;align-items:center"><button id="bindReset">Reset to defaults</button><span class="c-info" style="font-size:11px">Arrow keys always move. Esc closes windows.</span></div></div>';
+  h+='</div><div style="margin-top:8px;display:flex;gap:8px;align-items:center"><button id="bindReset">Reset to defaults</button><span class="c-info" style="font-size:calc(11px + var(--ui-mobile-text-add,0px))">Arrow keys always move. Esc closes windows.</span></div></div>';
   var lightOn = typeof lightingOn==='function' ? lightingOn() : true;
   h+='<div><div class="sec">Audio</div>'+
      '<div class="optrow"><span>Sound</span>'+segHTML('mute', [[0,'On'],[1,'Off']], AUDIO.muted?1:0)+'</div>'+

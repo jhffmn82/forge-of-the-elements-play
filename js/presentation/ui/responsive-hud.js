@@ -121,10 +121,12 @@ var FoteResponsiveHUD=(function(){
       const available=right?innerWidth-edge-pad.right-8:pad.left-edge-8;
       width=Math.min(width,Math.max(80,available));recent.style.width=width+'px';
     }
-    const left=right?innerWidth-edge-width:edge,hud=node('studyHud').getBoundingClientRect();
-    if(left<hud.right&&left+width>hud.left){
-      recent.style.maxHeight=Math.max(40,innerHeight-(parseFloat(style.bottom)||inset)-hud.bottom-10)+'px';
-    }
+    const left=right?innerWidth-edge-width:edge;
+    // Keep wrapped messages below any HUD/control occupying the same corner.
+    // Short landscape phones have room for fewer lines, never overlapping taps.
+    const blockers=['studyHud','studyActionBar','statusbar'].map(id=>node(id)?.getBoundingClientRect())
+      .filter(r=>r&&r.width&&r.height&&left<r.right&&left+width>r.left);
+    if(blockers.length)recent.style.maxHeight=Math.max(0,innerHeight-(parseFloat(style.bottom)||inset)-Math.max(...blockers.map(r=>r.bottom))-10)+'px';
     recent.scrollTop=recent.scrollHeight;
   }
   function hasOverlay(){return menuOpen||document.body.classList.contains('study-log-history');}
@@ -178,7 +180,7 @@ var FoteResponsiveHUD=(function(){
     if(!mounted)return;
     const w=innerWidth,h=innerHeight,inputOverride=new URLSearchParams(location.search).get('touch');
     const finger=inputOverride==='1'||(inputOverride!=='0'&&(window.MOBILE||navigator.maxTouchPoints>0||matchMedia('(pointer:coarse)').matches));
-    const wide=w>h,large=wide&&h>=600&&w>=960;
+    const wide=w>h,large=wide&&h>=600&&w>=960,portrait=w<600&&!wide;
     // Fit smaller controls to short phone viewports, then grow with available room.
     // Use CSS pixels; DPR belongs to the painters rather than HUD sizing.
     const scale=finger&&!large
@@ -195,13 +197,15 @@ var FoteResponsiveHUD=(function(){
     document.body.classList.toggle('study-small-touch',finger&&!large);
     document.body.classList.toggle('study-short',wide&&h<360);
     document.body.classList.toggle('study-large-landscape',large);
-    document.body.classList.toggle('study-portrait',w<600&&!wide);
+    document.body.classList.toggle('study-portrait',portrait);
     document.body.classList.toggle('study-tablet',w>=600&&!wide);
     document.body.classList.toggle('study-pad-right',UI_SIDE==='right');
     const padSide=typeof UI_PAD_SIDE==='string'?UI_PAD_SIDE:'left';
     document.body.classList.toggle('study-control-pad-left',padSide==='left');
     const hotbarLayout=typeof uiHotbarLayout==='function'?uiHotbarLayout():(typeof UI_HOTBAR_LAYOUT==='string'?UI_HOTBAR_LAYOUT:'horizontal');
-    const vertical=hotbarLayout==='vertical';
+    // A narrow upright phone needs two rows of full-size targets. Retain the
+    // saved orientation for landscape; changing the viewport never writes it.
+    const vertical=hotbarLayout==='vertical'&&!(finger&&portrait);
     document.body.classList.toggle('study-hotbar-vertical',vertical);
     document.body.classList.toggle('study-overlay-pad',finger?UI_TOUCH_PAD:UI_DESKTOP_PAD);
     composeColumns();
@@ -215,7 +219,7 @@ var FoteResponsiveHUD=(function(){
   }
   function composeColumns(){
     const hotbar=node('hotbar'),pad=node('dpad'),explore=node('studyExplore');
-    const app=node('app'),hud=node('studyHud'),status=node('statusbar'),recent=node('studyRecentLog');
+    const app=node('app'),hud=node('studyHud'),status=node('statusbar'),recent=node('studyRecentLog'),inventory=node('studyInventoryIcon');
     const panels=node('studySheetTabs');
     const panelButtons=['studyChar','studyGear','studyFaith','studySheetOptions'].map(node);
     const nav=node('studyNav');
@@ -226,6 +230,7 @@ var FoteResponsiveHUD=(function(){
       if(status&&status.parentElement!==hud)hud.append(status);
       if(node('log').parentElement!==hud)hud.append(node('log'));
       const actions=node('studyActionBar');actions.append(explore);hud.insertBefore(actions,status);
+      if(inventory.parentElement!==app)app.append(inventory);
       if(hotbar.parentElement!==app)app.append(hotbar);
       if(pad.parentElement!==node('map'))node('map').append(pad);
       return;
@@ -235,9 +240,8 @@ var FoteResponsiveHUD=(function(){
     if(panelButtons.some((button,index)=>panels.children[index]!==button))panels.append(...panelButtons);
     const actions=node('studyActionBar');
     const actionButtons=[node('studyMenuToggle'),node('bMap'),explore];
-    const inventory=node('studyInventoryIcon');
-    const phoneVertical=document.body.classList.contains('study-small-touch')&&document.body.classList.contains('study-hotbar-vertical');
-    if(phoneVertical)actionButtons.push(inventory);
+    const phonePortrait=document.body.classList.contains('study-small-touch')&&document.body.classList.contains('study-portrait');
+    if(phonePortrait)actionButtons.push(inventory);
     else if(inventory.parentElement!==app)app.append(inventory);
     if(actionButtons.some((button,index)=>actions.children[index]!==button))actions.append(...actionButtons);
     if(hud.parentElement!==app)app.append(hud);
@@ -349,7 +353,8 @@ var FoteResponsiveHUD=(function(){
       button.innerHTML=lineIcon(path)+'<span>'+label+'</span>';nav.insertBefore(button,node('studyOptions'));
     }
     const history=document.createElement('button');history.id='studyHistory';history.type='button';history.textContent='Log history';nav.append(history);
-    for(const [id,kind]of [['studyPortrait','character'],['studyInventoryIcon','inventory']])bindHudResourceCard(node(id),kind);
+    for(const [id,kind]of [['studyPortrait','character'],['studyInventoryIcon','inventory'],['studyMenuToggle','menu'],['studySheetOptions','options'],['studyOptions','options'],['studyHistory','history'],['studyLogClose','history-close'],['studyMenuChar','character'],['studyMenuGear','inventory'],['studyMenuFaith','faith'],['studyChar','character'],['studyGear','inventory'],['studyFaith','faith']])bindHudResourceCard(node(id),kind);
+    node('close').setAttribute('aria-label','Close panel');
     const explore=document.createElement('button');explore.id='studyExplore';explore.type='button';explore.textContent='Explore';
     left.insertBefore(explore,node('dpad'));bindExploreButton(explore);
     const hunger=document.createElement('button');hunger.id='studyHunger';hunger.type='button';hunger.className='study-hunger';
@@ -448,7 +453,7 @@ var FoteResponsiveHUD=(function(){
     if(!mounted)return;
     const hud=node('studyHud').getBoundingClientRect(),right=document.body.classList.contains('study-pad-right');
     node('app').style.setProperty('--study-status-offset',(right?innerWidth-hud.left:hud.right)+'px');
-    node('app').style.setProperty('--study-status-top',node('bars').querySelector('.hp').getBoundingClientRect().top+'px');
+    node('app').style.setProperty('--study-status-top',(document.body.classList.contains('study-portrait')?hud.bottom+8:node('bars').querySelector('.hp').getBoundingClientRect().top)+'px');
   }
   return Object.freeze({mount,setMenu,renderReadouts,renderStatusMeter,syncAudioButton,syncSheet,syncTouchControls,relayout,hasOverlay,isMounted:()=>mounted});
 })();

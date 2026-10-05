@@ -3,6 +3,7 @@ var FOTE_VERSION = 'Beta 1.6';
 /* Keep newest first; describe only changes already present in this build. */
 var FOTE_PATCHES = [
   {version:'Beta 1.6', notes:[
+    'Mobile play supports portrait and landscape without a rotation prompt or fullscreen request.',
     'Sandbox character editor: choose a class or saved build, equip each slot, set item quality and enchantments, allocate attributes and infusions, then select a dungeon floor or elemental plane.',
     'Reworked Sir Reginald with Lunge, rank-scaled accuracy, crit and armor, regenerating Last Stand, Fear and Root on ranged attackers, a weapon beam and Perfect Counter.',
     'Wobbles has broader pranks and resource rewards. Favorite Toy converts 5% of pranks per rank. Tempt Fate costs 40 Favor and can drop sigils, motes, rings and amulets nearby.',

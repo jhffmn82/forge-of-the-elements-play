@@ -1,14 +1,28 @@
-# Forge of the Elements — Beta 1.6 playtest
+# Forge of the Elements
 
-This is the Beta 1.6 playtest candidate, including the architecture and balance
-changes, 18 new room discoveries, Tiny creatures and the contextual tutorial.
-It is available for testing before the formal release.
+**Beta 1.6 playtest candidate.** This build is being tested here before formal release. The public `/forge` and itch.io builds retain their released versions.
 
-**[Play in your browser](https://jhffmn82.github.io/forge-of-the-elements-play/)**
+A browser roguelike: explore elemental dungeons, shape your build at the Forge, and face each biome's boss.
+The current Play build includes guided onboarding, mobile controls, combat updates and closer map zoom.
 
-Use landscape on phones. Each move or attack advances turns; standing still
-does not. Choose Show tutorial when creating a character, or replay it from Options.
+## Play on a PC
 
-Generated playable output only. Reviewed build: **2026-10-04T23:14:39.790153+00:00**.
-The build.json record identifies the exact candidate. Existing save storage is
-retained. Previous release notes remain in PATCH-NOTES.md.
+**[Play in your browser](https://jhffmn82.github.io/forge-of-the-elements-play/)** - nothing to install.
+Keyboard: WASD or the arrow keys to move, QEZC for diagonals, 1-8 for the hotbar, Tab for the character
+sheet, `i` for equipment, `>` to take the stairs. The mouse works for all of it too: click a tile to walk
+there, click a monster to attack or shoot it.
+
+## Play on an Android phone or tablet
+
+**[Download the app (forge.apk)](https://github.com/jhffmn82/forge-of-the-elements-play/releases/latest/download/forge.apk)**
+Open the downloaded file, allow installs from your browser when Android asks, and "Forge" appears in the app
+drawer. It plays offline once it has loaded and picks up new builds by itself, so the app only needs installing once.
+The APK wrapper's portrait setting is unchanged; this web update does not rebuild the APK.
+
+Or open the play link above in Chrome on the device. Browser play supports portrait and landscape;
+tap to move and hold to inspect. The game lays itself out for touch without a rotation prompt or fullscreen request.
+
+## This repository
+
+Generated output only: the playable build, published by `tools/release/publish.py` from the source project. Last
+build: **2026-10-05T02:25:14.942252+00:00**.

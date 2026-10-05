@@ -17,7 +17,7 @@
   });
   const version=document.querySelector('meta[name="fote-build"]')?.content||'dev';
   const veil=document.createElement('div');veil.id='moduleLoadVeil';veil.setAttribute('data-fote-startup','');
-  veil.style.cssText='position:fixed;inset:0;z-index:99;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;background:#0B0A09;color:#A79C93;font:14px sans-serif';
+  veil.style.cssText='position:fixed;inset:0;z-index:99;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;background:#0B0A09;color:#A79C93;font:calc(14px + var(--ui-mobile-text-add,0px)) sans-serif';
   const heading=document.createElement('h1');heading.textContent='Forge of the Elements';
   const progress=document.createElement('p');progress.setAttribute('role','status');progress.textContent='Loading game…';
   veil.append(heading,progress);document.body.appendChild(veil);
@@ -71,7 +71,7 @@
   function reloadPanel(message){
     const panel=document.createElement('div');
     panel.setAttribute('data-fote-startup','');
-    panel.style.cssText='position:fixed;inset:0;z-index:100;display:grid;place-content:center;gap:16px;background:#0B0A09;color:#F6E7B0;font:16px sans-serif;text-align:center';
+    panel.style.cssText='position:fixed;inset:0;z-index:100;display:grid;place-content:center;gap:16px;background:#0B0A09;color:#F6E7B0;font:calc(16px + var(--ui-mobile-text-add,0px)) sans-serif;text-align:center';
     const text=document.createElement('p');text.textContent=message;
     const retry=document.createElement('button');retry.textContent='Reload';retry.onclick=()=>location.reload();
     panel.append(text,retry);document.body.append(panel);return panel;

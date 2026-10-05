@@ -13,21 +13,21 @@
     '.sheet .bodyw{flex:1 1 auto;min-height:0;overflow-y:auto}',
     '.cols3{display:grid;grid-template-columns:minmax(170px,0.9fr) minmax(190px,1.05fr) minmax(200px,1.15fr);gap:14px 20px;align-items:start}',
     '@media (max-width:640px){.cols3{grid-template-columns:1fr}}',
-    '.sec{margin:14px 0 6px;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);border-bottom:1px solid var(--edge);padding-bottom:3px}',
+    '.sec{margin:14px 0 6px;font-size:calc(9.5px + var(--ui-mobile-text-add,0px));letter-spacing:.14em;text-transform:uppercase;color:var(--dim);border-bottom:1px solid var(--edge);padding-bottom:3px}',
     '.sec:first-child{margin-top:0}',
-    '.prow{display:grid;grid-template-columns:22px minmax(0,1fr);gap:8px;align-items:baseline;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:12px}',
-    '.prow .n{color:var(--ink)} .prow .d{color:var(--dim);font-size:11px;line-height:1.35} .prow .s{font-size:10.5px;white-space:nowrap}',
+    '.prow{display:grid;grid-template-columns:22px minmax(0,1fr);gap:8px;align-items:baseline;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:calc(12px + var(--ui-mobile-text-add,0px))}',
+    '.prow .n{color:var(--ink)} .prow .d{color:var(--dim);font-size:calc(11px + var(--ui-mobile-text-add,0px));line-height:1.35} .prow .s{font-size:calc(10.5px + var(--ui-mobile-text-add,0px));white-space:nowrap}',
     '.prow.off .n{color:var(--ash)} .prow.off{opacity:.55}',
-    '.prow .k{color:var(--gold);font-variant-numeric:tabular-nums;font-size:11px}',
+    '.prow .k{color:var(--gold);font-variant-numeric:tabular-nums;font-size:calc(11px + var(--ui-mobile-text-add,0px))}',
     '.arow{display:grid;grid-template-columns:40px 1fr auto;gap:10px;align-items:center;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05)}',
     '.arow .ic{width:36px;height:36px;border:1px solid var(--edge);border-radius:4px;background:#161210;display:flex;align-items:center;justify-content:center;overflow:hidden}',
-    '.arow .n{color:var(--ink);font-size:12.5px} .arow .d{color:var(--dim);font-size:11px;line-height:1.35} .arow .c{font-size:11px;text-align:right;white-space:nowrap}',
+    '.arow .n{color:var(--ink);font-size:calc(12.5px + var(--ui-mobile-text-add,0px))} .arow .d{color:var(--dim);font-size:calc(11px + var(--ui-mobile-text-add,0px));line-height:1.35} .arow .c{font-size:calc(11px + var(--ui-mobile-text-add,0px));text-align:right;white-space:nowrap}',
     '.arow[draggable=true]{cursor:grab} .arow.locked{opacity:.45}',
-    '.res{display:grid;grid-template-columns:repeat(2,1fr);gap:4px 12px;font-size:11.5px}',
+    '.res{display:grid;grid-template-columns:repeat(2,1fr);gap:4px 12px;font-size:calc(11.5px + var(--ui-mobile-text-add,0px))}',
     '.res span{display:flex;justify-content:space-between;color:var(--ash)} .res b{font-variant-numeric:tabular-nums}',
     '.gearwrap{display:grid;grid-template-columns:minmax(150px,0.7fr) minmax(300px,1.5fr) minmax(200px,1.15fr);gap:14px 20px;align-items:start}',
     '@media (max-width:640px){.gearwrap{grid-template-columns:1fr} .gearwrap>.gcol-worn{order:-1}}',
-    '.gearwrap .kv{font-size:11px;gap:1px 8px} .gearwrap .res{grid-template-columns:1fr 1fr;gap:1px 10px;font-size:11px}',
+    '.gearwrap .kv{font-size:calc(11px + var(--ui-mobile-text-add,0px));gap:1px 8px} .gearwrap .res{grid-template-columns:1fr 1fr;gap:1px 10px;font-size:calc(11px + var(--ui-mobile-text-add,0px))}',
     '.gearwrap .sec{margin:9px 0 4px}',
     '.keychip{display:inline-flex;align-items:center;gap:5px} .keychip .kart{width:18px;height:18px;display:inline-block}',
     '.gearwrap .invgrid{grid-template-columns:repeat(5,minmax(0,1fr));gap:0}',
@@ -36,12 +36,12 @@
     '.gdoll{display:grid;grid-template-columns:72px minmax(110px,1fr) 72px;grid-template-rows:repeat(3,72px);gap:12px 16px;align-items:center;justify-items:center}',
     '.gdoll .art{grid-column:2;grid-row:1/4;align-self:stretch;justify-self:stretch;border:1px dashed var(--edge);border-radius:8px;background:radial-gradient(#2A221C,#141110);display:flex;align-items:flex-end;justify-content:center;overflow:hidden;min-height:250px}',
     '.gslot{position:relative;width:68px;height:68px;border:2px solid var(--edge);border-radius:6px;background:#161210;display:flex;align-items:center;justify-content:center;cursor:pointer}',
-    '.gslot .lab{position:absolute;bottom:-14px;left:-10px;right:-10px;text-align:center;font-size:8px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);pointer-events:none}',
+    '.gslot .lab{position:absolute;bottom:-14px;left:-10px;right:-10px;text-align:center;font-size:calc(8px + var(--ui-mobile-text-add,0px));letter-spacing:.1em;text-transform:uppercase;color:var(--dim);pointer-events:none}',
     '.gslot.empty{border-style:dashed;opacity:.55;cursor:copy}',
     '.gslot.cursed{box-shadow:0 0 0 1px #D0605A inset}',
     '.gslot .ench{position:absolute;top:3px;right:3px;width:7px;height:7px;border-radius:50%}',
     '.gslot.over{border-color:var(--gold)!important;background:#2A2015}',
-    '.gslot .ph{font-size:22px;color:var(--dim)}',
+    '.gslot .ph{font-size:calc(22px + var(--ui-mobile-text-add,0px));color:var(--dim)}',
     '.stowrow{display:flex;align-items:center;gap:12px;margin-top:22px}',
     '.gdoll.over{outline:1px dashed var(--gold);outline-offset:6px;border-radius:10px}'   /* 2026-09-20: the whole doll takes a drop */
   ].join('\n');
@@ -81,7 +81,7 @@ function charHTML(){
     var n=player.aff[e], dots=''; for(var i=0;i<6;i++) dots+='<span class="pip" style="'+(i<n?'background:'+AFF_COL[e]+';border-color:'+AFF_COL[e]:'')+(i===5?';opacity:.5':'')+'"></span>';
     return '<div class="aff"><span class="nm">'+cap(e)+'</span><span class="pips">'+dots+'</span><span style="color:var(--dim)">'+n+'</span></div>';
   }).join('');
-  h+='<div class="sec">Affinity ('+totalAffinity()+' / '+affinityCap()+')</div>'+(pips || '<div class="c-info" style="font-size:11.5px">None yet. Carry a mote to the Elemental Forge.</div>');
+  h+='<div class="sec">Affinity ('+totalAffinity()+' / '+affinityCap()+')</div>'+(pips || '<div class="c-info" style="font-size:calc(11.5px + var(--ui-mobile-text-add,0px))">None yet. Carry a mote to the Elemental Forge.</div>');
   var hr=hitRange();
   h+='<div class="sec">Combat</div>'+kv([['HP',Math.round(player.hp)+' / '+player.maxhp+(playerShield()?' <span style="color:#9FD8FF">+'+playerShield()+'</span>':'')],['Mana',Math.floor(player.mp)+' / '+player.maxmp],
     ['Damage per hit',hr[0]+'-'+hr[1]],['Crit',Math.round(player.crit*100)+'%'],['Crit damage','&times;'+criticalMultiplier().toFixed(2)],['Accuracy',player.acc],['Evasion',evaOf(player)],['Armor',player.armor],
@@ -91,7 +91,7 @@ function charHTML(){
 
   /* middle: activated abilities, prayers, amulet */
   h+='<div><div class="sec">Abilities <span style="text-transform:none;letter-spacing:0">(drag onto the hotbar)</span></div>';
-  if(!player.abilities.length) h+='<div class="c-info" style="font-size:11.5px">No active abilities yet.</div>';
+  if(!player.abilities.length) h+='<div class="c-info" style="font-size:calc(11.5px + var(--ui-mobile-text-add,0px))">No active abilities yet.</div>';
   player.abilities.forEach(function(k){
     var A=ABILITIES[k]; if(!A) return;
     h+='<div class="arow" data-ab="'+k+'" draggable="true"><span class="ic" data-icon="'+(A.icon||'')+'"></span><div><div class="n">'+A.name+'</div>'+actionDetailsHTML(abilityDetails(A,k))+'</div></div>';
@@ -202,7 +202,7 @@ function equipHTML(){
      slotHTML('main','Main hand', w && !w.unarmed ? w : null, '&#9876;')+'<div class="art" id="dollArt"></div>'+slotHTML('off', player.twoHanded?'Both hands':'Off hand', off, '&#9960;')+
      slotHTML('armor','Armor', ar, '&#9960;')+slotHTML('amulet','Amulet', player.amulet, '&#9765;')+
      slotHTML('ring0','Ring', r[0], '&#9675;')+slotHTML('ring1','Ring', r[1], '&#9675;')+'</div>'+
-     '<div class="stowrow">'+slotHTML('stow','Ranged', stow, '&#127993;')+'<span class="c-info" style="font-size:11px">'+(stow?'Fires by itself at anything more than a tile away.':'A bow here fires by itself at anything more than a tile away.')+'</span></div></div>';
+     '<div class="stowrow">'+slotHTML('stow','Ranged', stow, '&#127993;')+'<span class="c-info" style="font-size:calc(11px + var(--ui-mobile-text-add,0px))">'+(stow?'Fires by itself at anything more than a tile away.':'A bow here fires by itself at anything more than a tile away.')+'</span></div></div>';
   /* right: bag and pouch */
   var cells=player.bag.map(function(it,idx){ return '<div class="cell" data-b="'+idx+'" draggable="true">'+(it.n>1?'<b>'+it.n+'</b>':'')+'</div>'; });
   while(cells.length<BAG_MAX) cells.push('<div class="cell empty"></div>');

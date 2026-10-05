@@ -147,7 +147,7 @@ function renderCreate(){
     h+='<div class="step">Your god</div><div class="cards">';
     Object.keys(GODS).forEach(function(g){
       var G=GODS[g], bad=creationRefuses(c, g);
-      h+='<button class="card'+(c.god===g?' on':'')+'" data-god="'+g+'" '+(bad?'disabled style="opacity:.4"':'')+'><div class="port" data-shrine="'+G.sprite+'"></div><b style="color:'+G.color+'">'+G.name+'</b><span><b style="font-family:inherit;font-size:11px;color:var(--ink)">Rule:</b> '+G.rule+'</span><span>Ability: '+ABILITIES[G.invoke].name+'</span>'+(bad?'<span class="c-you">Refuses you.</span>':'')+(G.loves===c.race?'<span class="c-good">Loves your kind: +25% piety gain.</span>':'')+'</button>';
+      h+='<button class="card'+(c.god===g?' on':'')+'" data-god="'+g+'" '+(bad?'disabled style="opacity:.4"':'')+'><div class="port" data-shrine="'+G.sprite+'"></div><b style="color:'+G.color+'">'+G.name+'</b><span><b style="font-family:inherit;font-size:calc(11px + var(--ui-mobile-text-add,0px));color:var(--ink)">Rule:</b> '+G.rule+'</span><span>Ability: '+ABILITIES[G.invoke].name+'</span>'+(bad?'<span class="c-you">Refuses you.</span>':'')+(G.loves===c.race?'<span class="c-good">Loves your kind: +25% piety gain.</span>':'')+'</button>';
     });
     h+='</div>';
   }
@@ -156,10 +156,10 @@ function renderCreate(){
   if(c.cls==='cleric' && c.god==='grom') kitNames=['Fists (Chad forbids weapons and body armor)','Holy Symbol'];
   h+='<div class="summary"><div class="big" id="bigPort"></div><div>'+
      '<div class="step" style="margin-top:0">3 &middot; Name</div><input id="cname" type="text" maxlength="24" value="'+c.name.replace(/"/g,'')+'"> <button id="reroll">Random</button>'+
-     '<div class="who" style="margin-top:8px;font-size:13px">'+RACES[c.race].name+' '+C2.name+(c.cls==='cleric'?' of '+GODS[c.god].name:'')+(c.race==='fae'?' &middot; '+RACES.fae.courts[c.court]:'')+'</div>'+
+     '<div class="who" style="margin-top:8px;font-size:calc(13px + var(--ui-mobile-text-add,0px))">'+RACES[c.race].name+' '+C2.name+(c.cls==='cleric'?' of '+GODS[c.god].name:'')+(c.race==='fae'?' &middot; '+RACES.fae.courts[c.court]:'')+'</div>'+
      '<div class="kv" style="max-width:420px"><span>Might</span><b>'+st.mig+'</b><span>Agility</span><b>'+st.agi+'</b><span>Vitality</span><b>'+st.vit+'</b><span>Focus</span><b>'+st.foc+'</b>'+
      '<span>Starting kit</span><b style="text-align:left">'+kitNames.join(', ')+'</b><span>Passive</span><b style="text-align:left;font-weight:400">'+C2.passive+'</b></div>'+
-     '<label style="display:flex;align-items:center;gap:8px;margin-top:10px;font-size:14px"><input id="cTutorial" type="checkbox" style="width:18px;height:18px"> Show tutorial</label>'+
+     '<label style="display:flex;align-items:center;gap:8px;margin-top:10px;font-size:calc(14px + var(--ui-mobile-text-add,0px))"><input id="cTutorial" type="checkbox" style="width:18px;height:18px"> Show tutorial</label>'+
      '<button class="go btn-primary" id="begin">Enter the Dungeon</button><p class="c-info create-sound-note">Sound and music start with your first tap or click. Change sound and music in Options.</p></div></div></div>';
   el.innerHTML=h;
   $('cBack').onclick=function(){sfx('ui-click');openTitle();};

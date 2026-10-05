@@ -84,7 +84,7 @@ function renderForge(){
   var affLine = Object.keys(player.aff).length ? Object.keys(player.aff).map(function(k){ return '<span style="color:'+AFF_COL[k]+'">'+cap(k)+' '+player.aff[k]+(k===player.primary?' (primary)':'')+'</span>'; }).join(' &middot; ') : 'none yet';
   var h='<div class="forge-top"><div class="pouch2">'+pouch+'</div><div class="forge-info">'+
         '<div>Affinity: <b>'+affLine+'</b></div><div>Cap: <b>'+totalAffinity()+' / '+affinityCap()+'</b>'+' <span class="c-info">(rises when you pick up a boss core)</span>'+'</div>'+
-        '<div>Essence: <b style="color:var(--gold);font-size:15px">'+player.essence+'</b></div></div></div>'+
+        '<div>Essence: <b style="color:var(--gold);font-size:calc(15px + var(--ui-mobile-text-add,0px))">'+player.essence+'</b></div></div></div>'+
         (corePickup?'':'<div class="ftabs">'+['fuse','enchant','upgrade','craft'].map(function(t){ return '<button data-ft="'+t+'" class="'+(forgeTab===t?'on':'')+'">'+{fuse:'Fuse',enchant:'Enchant',upgrade:'Upgrade',craft:'Craft sigils'}[t]+'</button>'; }).join('')+'</div>')+'<div class="fpanel">';
   if(corePickup||forgeTab==='fuse'){
     h+='<p class="c-info">Burn a mote into yourself for a point of affinity. It is permanent. You can hold two elements at most, never opposites; the second can never outgrow the first.</p>';
@@ -131,7 +131,7 @@ function forgeSay(html, kind){
   if(!el){
     el=document.createElement('div'); el.id='forgeSaid';
     el.style.cssText='margin:0 0 8px;padding:8px 10px;border-radius:6px;border:1px solid var(--gold);'+
-      'background:linear-gradient(180deg,rgba(232,180,74,.18),rgba(232,180,74,.06));color:var(--ink);font-size:13px';
+      'background:linear-gradient(180deg,rgba(232,180,74,.18),rgba(232,180,74,.06));color:var(--ink);font-size:calc(13px + var(--ui-mobile-text-add,0px))';
     body.insertBefore(el, body.firstChild);
   }
   el.style.borderColor = kind==='bad' ? '#D0605A' : 'var(--gold)';

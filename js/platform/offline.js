@@ -36,7 +36,7 @@
     if(!badge){
       badge=document.createElement('div');
       badge.style.cssText='position:fixed;right:10px;bottom:10px;z-index:60;padding:6px 10px;border-radius:6px;'+
-        'background:rgba(16,13,11,.92);border:1px solid #332A24;color:#A79C93;font:12px "IBM Plex Mono",monospace;'+
+        'background:rgba(16,13,11,.92);border:1px solid #332A24;color:#A79C93;font:calc(12px + var(--ui-mobile-text-add,0px)) "IBM Plex Mono",monospace;'+
         'pointer-events:none;max-width:60vw';
       document.body.appendChild(badge);
     }
