@@ -64,32 +64,38 @@ function stepEnt(e,dx,dy){
   return false;
 }
 function actorFootprintField(e,target,options){
-  var field=new Int32Array(MW*MH).fill(-1),judged=new Int8Array(MW*MH),queue=[],n=entitySize(e),neighbors=FoteActors.neighbors;
+  var mapWidth=MW,mapHeight=MH,frame=typeof FRAME_MAP!=='undefined'&&FRAME_MAP;
+  var width=frame?FRAME_MW:mapWidth,height=frame?FRAME_MH:mapHeight;
+  var field=new Int32Array(mapWidth*mapHeight).fill(-1),judged=new Int8Array(mapWidth*mapHeight),queue=[],n=entitySize(e),neighbors=FoteActors.neighbors;
   options=Object.assign({terrainOnly:true,doors:true},options||{});
+  // Bounds and indices stay fixed during this synchronous search. Keep the
+  // frame view used by inb/idxOf, without reading run-state getters per edge.
+  function inside(x,y){return x>=0&&y>=0&&x<width&&y<height;}
   /* 2026-09-27 (Justin: "even non visible monsters are slowing down performance"). A search judges each cell
    * once; a wall used to be judged again by every neighbour, for every wanderer, every turn. Nothing changes
    * during one search, so the field and every step taken from it are the same. */
-  function allowed(x,y){var i=idxOf(x,y);if(!judged[i])judged[i]=actorFootprintAllowed(e,x,y,options)?1:2;return judged[i]===1;}
+  function allowed(x,y){var i=y*width+x;if(!judged[i])judged[i]=actorFootprintAllowed(e,x,y,options)?1:2;return judged[i]===1;}
   for(var y=target.y-n;y<=target.y+entitySize(target);y++)for(var x=target.x-n;x<=target.x+entitySize(target);x++){
-    if(!inb(x,y)||dist({x:x,y:y,base:e.base},target)!==1||!allowed(x,y))continue;
+    if(!inside(x,y)||dist({x:x,y:y,base:e.base},target)!==1||!allowed(x,y))continue;
     // A diagonal behind two walls is not a reachable place beside the target.
     // Use the same corner rule as the eventual movement step.
     if(n===1&&entitySize(target)===1&&x!==target.x&&y!==target.y&&!actorCornerCellAllowed(e,x,target.y,options)&&!actorCornerCellAllowed(e,target.x,y,options))continue;
-    field[idxOf(x,y)]=0;queue.push({x:x,y:y});
+    field[y*width+x]=0;queue.push({x:x,y:y});
   }
   for(var head=0;head<queue.length;head++){
     var p=queue[head];
     // A per-actor route only needs the gradient back to this actor. The shared
     // player field has no origin coordinates and still covers the whole floor.
     if(p.x===e.x&&p.y===e.y)break;
+    var nextDistance=field[p.y*width+p.x]+1;
     for(var k=0;k<neighbors.length;k++){
-      var dx=neighbors[k][0],dy=neighbors[k][1],nx=p.x+dx,ny=p.y+dy;
-      if(!inb(nx,ny)||field[idxOf(nx,ny)]>=0||!allowed(nx,ny))continue;
+      var dx=neighbors[k][0],dy=neighbors[k][1],nx=p.x+dx,ny=p.y+dy,index=ny*width+nx;
+      if(!inside(nx,ny)||field[index]>=0||!allowed(nx,ny))continue;
       if(dx&&dy){
         if(n===1&&e.ally){if(!actorCornerCellAllowed(e,nx,p.y,options)&&!actorCornerCellAllowed(e,p.x,ny,options))continue;}
         else if(!allowed(nx,p.y)&&!allowed(p.x,ny))continue;
       }
-      field[idxOf(nx,ny)]=field[idxOf(p.x,p.y)]+1;queue.push({x:nx,y:ny});
+      field[index]=nextDistance;queue.push({x:nx,y:ny});
     }
   }
   return field;

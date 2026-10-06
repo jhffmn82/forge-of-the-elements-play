@@ -676,12 +676,17 @@ function drawCastLayers(e, cs, fr, dx, dy, w, h, g, time){
 /* ---------------------------------------------------------------- the paper doll */
 /* who: the character to draw, the player by default. 2026-09-27 (Justin, equip plan D12): the creation screen passes the
    starting kit's character, so its preview shows the kit through this same path. */
-/* Static dolls ask for their small native source before any animation atlas. A cold
- * fallback stays on this exact look, so an underwear preview cannot borrow a costume. */
+/* Static previews wait for their small native doll. A missing registration or a
+ * settled native load failure permits only this exact look's animation fallback. */
 function dollImageReady(img){return !!(img && img.complete!==false && (img.naturalWidth===undefined || img.naturalWidth>0));}
+function dollCastFallback(look){
+  var m=AS.cast && AS.cast[look],job=m && m.doll && ATLAS_JOBS.get('cast-'+look+'-doll.webp');
+  return !!(m && (!m.doll || job && job.phase==='failed'));
+}
 function dollSheetFor(look){
   var m=AS.cast && AS.cast[look],dm=m && m.doll,di=dm && atl('cast-'+look+'-doll.webp');
   if(dollImageReady(di))return {img:di,m:dm,look:look};
+  if(!dollCastFallback(look))return null;
   var image=m && atl('cast-'+look+'.webp');
   return dollImageReady(image)?{img:image,m:m,look:look}:null;
 }
@@ -696,12 +701,13 @@ function watchDollArt(el,size,who,portrait,currentPlayer){
   var look=castLookFor(who.look,who.god),m=AS.cast&&AS.cast[look],files=[];
   var sheet=dollSheetFor(look);
   if(m && m.doll && (!sheet || sheet.m!==m.doll))files.push('cast-'+look+'-doll.webp');
-  if(m && !sheet)files.push('cast-'+look+'.webp');
+  if(m && !sheet && dollCastFallback(look))files.push('cast-'+look+'.webp');
   var gear=castEquipmentFor(who);
   if(AS.map&&AS.map.held&&(heldKeyOf(gear.weapon)||heldKeyOf(gear.off))&&!atl('map-held.webp'))files.push('map-held.webp');
-  watchStaticArt(el,files,function(){
+  var repaint=function(){
     if(portrait)paintDollPortrait(el,size,who);else paintDoll(el,size,who);
-  },function(){return (!currentPlayer||who===player) && castLookFor(who.look,who.god)===look;});
+  };
+  watchStaticArt(el,files,repaint,function(){return (!currentPlayer||who===player) && castLookFor(who.look,who.god)===look;},null,null,repaint);
 }
 function paintDoll(el, size, who){
   if(!el)return;

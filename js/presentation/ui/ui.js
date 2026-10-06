@@ -153,7 +153,7 @@ function cancelStaticArtPaint(el,channel){
 }
 /* One mounted host/request owns its callbacks. Subscriptions survive a failed
  * atlas attempt, but a replacement, detached host or changed actor disposes them. */
-function watchStaticArt(el,files,repaint,owns,channel,metadata){
+function watchStaticArt(el,files,repaint,owns,channel,metadata,onFailure){
   channel=channel||'art';cancelStaticArtPaint(el,channel);
   if(!el)return;
   files=typeof files==='function'?files():files;
@@ -168,7 +168,10 @@ function watchStaticArt(el,files,repaint,owns,channel,metadata){
     if(!current()||el.isConnected===false){cancelStaticArtPaint(el,channel);return;}
     cancelStaticArtPaint(el,channel);repaint();
   }
-  function failed(){if(!current()||el.isConnected===false)cancelStaticArtPaint(el,channel);}
+  function failed(){
+    if(!current()||el.isConnected===false){cancelStaticArtPaint(el,channel);return;}
+    if(onFailure){cancelStaticArtPaint(el,channel);onFailure();}
+  }
   files.forEach(function(file){request.cancel.push(subscribeAtlas(file,ready,failed));});
   if(waitingMetadata)request.cancel.push(props.subscribeMetadata(ready,failed));
   if(!STATIC_ART_OBSERVER&&typeof MutationObserver==='function'&&document.documentElement){
@@ -235,8 +238,8 @@ function paintArtCanvas(el, group, name, size){
   c.width=S*d; c.height=S*d; c.style.width=S+'px'; c.style.height=S+'px';
   var x=c.getContext('2d'); x.setTransform(d,0,0,d,0,0); x.imageSmoothingEnabled=true;
   if(group==='cast'){
-    /* Creation thumbnails share the doll's source and stand selection. The exact
-       underwear idle is the fallback until its corrected native doll arrives. */
+    /* Creation thumbnails share the doll's source and stand selection. A missing
+       or failed native doll permits the exact look's approved still fallback. */
     var cm=AS.cast && AS.cast[name],dm=cm && cm.doll,sheet=dollSheetFor(name),native=!!(sheet && sheet.m===dm);
     if(sheet){
       var sm=sheet.m,row=dollStillRow(sheet),ss=S*0.98/sm.stand,sw=sm.cell*ss;
@@ -245,8 +248,9 @@ function paintArtCanvas(el, group, name, size){
     el.innerHTML='';el.appendChild(c);
     var files=[],named=el.getAttribute && el.getAttribute('data-look');
     if(dm && !native)files.push('cast-'+name+'-doll.webp');
-    if(cm && !sheet)files.push('cast-'+name+'.webp');
-    watchStaticArt(el,files,function(){paintArt(el,group,name,size);},function(){return !named || el.getAttribute('data-look')===name;});return;
+    if(cm && !sheet && dollCastFallback(name))files.push('cast-'+name+'.webp');
+    var repaint=function(){paintArt(el,group,name,size);};
+    watchStaticArt(el,files,repaint,function(){return !named || el.getAttribute('data-look')===name;},null,null,repaint);return;
   } else if(AS.map){
     el.innerHTML='';el.appendChild(c);watch();return;
   }
