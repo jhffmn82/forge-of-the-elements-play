@@ -34,10 +34,23 @@ function visionBlind(context){
   context.view=Object.assign({},context.view,{vis:vis,seen:seen});
   FoteGeometry.cast(context.view,1,{adjacentOnly:true});
 }
+function sandboxRoomPreviewBounds(){
+  var preview=RUN&&RUN.sandbox&&RUN.sandbox.previewRoomReveal;
+  if(!preview||preview.floor!==floorNo||preview.seed!==worldSeed||!player)return null;
+  var x=Math.min(preview.x,player.x-1),y=Math.min(preview.y,player.y-1);
+  return {x:x,y:y,w:Math.max(preview.x+preview.w,player.x+2)-x,h:Math.max(preview.y+preview.h,player.y+2)-y};
+}
+function sandboxRoomPreviewAt(x,y){
+  var bounds=sandboxRoomPreviewBounds();return !!(bounds&&x>=bounds.x&&y>=bounds.y&&x<bounds.x+bounds.w&&y<bounds.y+bounds.h);
+}
+function visionSandboxRoom(){
+  var preview=sandboxRoomPreviewBounds();if(!preview||!vis)return;
+  for(var y=preview.y;y<preview.y+preview.h;y++)for(var x=preview.x;x<preview.x+preview.w;x++)if(inb(x,y)){var i=idxOf(x,y);vis[i]=1;seen[i]=1;}
+}
 var visionStages=FoteTransitions.stages([
   {name:'radius-and-sight',run:visionCast},{name:'smoke-mask',run:visionSmoke},
   {name:'plane-rock-band',run:visionRockBand},{name:'darkness-mask-and-darksight',run:visionDeepDarkness},
-  {name:'blind-adjacent-sight',run:visionBlind}
+  {name:'blind-adjacent-sight',run:visionBlind},{name:'sandbox-room-preview',run:visionSandboxRoom}
 ]);
 function computeFOV(radius){visionStages.run({radius:radius});}
 /* Actor concealment never changes tile FOV: the floor and its lights remain

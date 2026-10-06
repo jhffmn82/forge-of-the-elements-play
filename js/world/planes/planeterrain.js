@@ -15,7 +15,7 @@
    Rasters are built a few per frame; a cell not built yet draws its flat material colour.
    ===================================================================== */
 
-var PT_R = 32;                               /* raster pixels per cell */
+var PT_R = 128;                               /* raster pixels per cell */
 var PT_MAT = {
   light: {
     /* pearl and ivory stone with cool lavender minerals; gold only in veins, markings and crystal bases; a little pale cyan */
@@ -149,9 +149,9 @@ function ptCellDist(x,y){ return inb(x,y) ? ptDist()[idxOf(x,y)] : 255; }
 var PT_FIELD=null;
 function ptFieldTables(){
   if(PT_FIELD) return PT_FIELD;
-  var N=1024*25, solid=new Float64Array(N), solidSum=new Float64Array(1024), band=new Float64Array(N), moss=new Float64Array(N), pool=new Float64Array(N);
-  for(var i=0;i<1024;i++){
-    var wx=((i&31)*2+1)/64, wy=((i>>5)*2+1)/64, wsum=0, k=0;
+  var R=PT_R, count=R*R, N=count*25, solid=new Float64Array(N), solidSum=new Float64Array(count), band=new Float64Array(N), moss=new Float64Array(N), pool=new Float64Array(N);
+  for(var i=0;i<count;i++){
+    var wx=(i%R+.5)/R, wy=(Math.floor(i/R)+.5)/R, wsum=0, k=0;
     for(var oy=-2;oy<=2;oy++) for(var ox=-2;ox<=2;ox++,k++){
       var dx=wx-(ox+0.5), dy=wy-(oy+0.5), d=Math.sqrt(dx*dx+dy*dy), w=Math.max(0, 1-d/1.35);
       if(w){ w*=w; wsum+=w; } solid[i*25+k]=w;
@@ -165,8 +165,8 @@ function ptFieldTables(){
 }
 /* the table row of a sample point inside its cell, or -1 for a point that is not a raster sample */
 function ptSub(wx, wy){
-  var su=(wx-Math.floor(wx))*64, sv=(wy-Math.floor(wy))*64;
-  return su===(su|0) && (su&1) && sv===(sv|0) && (sv&1) ? ((sv-1)>>1)*32+((su-1)>>1) : -1;
+  var su=(wx-Math.floor(wx))*PT_R*2, sv=(wy-Math.floor(wy))*PT_R*2;
+  return su===(su|0) && (su&1) && sv===(sv|0) && (sv&1) ? ((sv-1)>>1)*PT_R+((su-1)>>1) : -1;
 }
 function ptSolid(wx, wy, salt, raster){
   var wall=raster?raster.wall:ptWallCell;
@@ -219,15 +219,26 @@ function ptKind(wx, wy, salt, raster){
 /* ---------------------------------------------------------------- one cell */
 function ptMix(a, b, t){ return [a[0]+(b[0]-a[0])*t, a[1]+(b[1]-a[1])*t, a[2]+(b[2]-a[2])*t]; }
 /* Shared stone material only: no walls, pools, sigils or gameplay state. */
+/* Deposits taper and break along a warped directional field. They never
+   follow the closed Voronoi cells used for the rock's structural facets. */
+function ptMineralStreak(col,wx,wy,M,salt){
+  var ribbon=wx*.57+wy*.34+(ptVal(wx*.31,wy*.31,salt+40)-.5)*3.1+(ptVal(wx*1.2,wy*.8,salt+41)-.5)*.48;
+  var distance=Math.abs(Math.sin(ribbon*2.8)),width=.025+.16*ptVal(wx*.7,wy*.9,salt+42),deposit=ptVal(wx*.45,wy*.64,salt+43);
+  if(deposit>.5&&distance<width){
+    var amount=Math.min(1,(deposit-.5)*5)*Math.pow(1-distance/width,.7)*.7;
+    col=ptMix(col,distance<width*.17?M.veinHot:M.vein,amount);
+  }
+  return col;
+}
+
 function ptFloorColor(wx,wy,M,salt,R,center){
   var col;
-  /* floor: broad calm slabs; joints on only some edges, low contrast */
-  var sl=ptVor(wx, wy, 2.1, salt+31), tone=hash2(sl.ix,sl.iy,salt+32);
+  /* Natural mineral floors vary continuously across cell boundaries. */
+  var tone=ptVal(wx*1.8,wy*1.8,salt+32);
   col = ptMix(M.floor, M.floorLav, 0.3*ptVal(wx*0.16, wy*0.16, salt+33) + 0.12*tone);
   var lum=1 + (tone-0.5)*0.035 + (hash2(Math.floor(wx*R), Math.floor(wy*R), salt+34)-0.5)*M.grain*2;
   col=[col[0]*lum, col[1]*lum, col[2]*lum];
-  var jd=sl.d2-sl.d1;
-  if(jd<0.035 && hash2(sl.ix*7+sl.iy, sl.iy*3-sl.ix, salt+35)<0.5) col=ptMix(col, M.jointCol, M.joint*(1-jd/0.035));
+  // Natural floors vary continuously; paving joints belong to architectural inlays.
   /* broad regions: cool lavender mineral, pearlescent sheen, exposed mineral bands */
   var cool=ptVal(wx*0.11, wy*0.11, salt+36), ca0=center, ringNear=ca0 ? Math.max(0, 1-Math.abs(Math.hypot(wx-(ca0.x+1), wy-(ca0.y+1.5))-4.2)/2.6) : 0;
   var coolT=Math.max((cool-0.52)*2.4, ringNear*(ptVal(wx*0.3, wy*0.3, salt+46)-0.35)*1.2);
@@ -235,6 +246,12 @@ function ptFloorColor(wx,wy,M,salt,R,center){
   var pearl=ptVal(wx*0.19+7, wy*0.19, salt+37); if(pearl>0.66) col=ptMix(col, M.pearl, Math.min(0.5, (pearl-0.66)*3));
   var bandR=ptVal(wx*0.07, wy*0.07, salt+38);
   if(bandR>0.64){ var bs=Math.sin((wx*0.8+wy*0.45)*4.2 + ptVal(wx*0.5,wy*0.5,salt+39)*2.5); if(bs>0.82) col=ptMix(col, M.band, Math.min(0.55,(bandR-0.64)*4)); }
+  if(M!==PT_MAT.earth){
+    // Long broken mineral ribbons; a continuous directional field has no
+    // Voronoi cell edges to form closed polygons.
+    col=ptMineralStreak(col,wx,wy,M,salt);
+    return col;
+  }
   /* thin angular cracks of gold, in a few regions */
   var vv=ptVor(wx+0.3*ptVal(wx*1.3,wy*1.3,salt+40), wy, 1.3, salt+41), mk=ptVal(wx*0.26, wy*0.26, salt+42);
   if(mk>0.6 && vv.d2-vv.d1<0.02 && hash2(vv.ix,vv.iy,salt+45)<0.35){
@@ -242,10 +259,11 @@ function ptFloorColor(wx,wy,M,salt,R,center){
     col = vw<0.007 ? ptMix(col, fg ? M.veinHot : M.vein, va) : vw<0.015 ? ptMix(col, M.vein, (fg?0.9:0.65)*va) : ptMix(col, M.veinDark, 0.45*va);
   }
   /* a finer network of hairline veins runs through the open floor so the stone is never blank cream */
-  var hv=ptVor(wx*1.9+0.4*ptVal(wx*2.2, wy*2.2, salt+48), wy*1.9, 1.15, salt+49), hmk=ptVal(wx*0.5, wy*0.5, salt+50);
-  if(hmk>0.42 && hv.d2-hv.d1<0.012){
+  var hv=ptVor(wx*1.9+0.4*ptVal(wx*2.2, wy*2.2, salt+48), wy*1.9+0.55*ptVal(wx*1.7,wy*1.7,salt+52), 1.15, salt+49), hmk=ptVal(wx*0.5, wy*0.5, salt+50);
+  var mineralBreak=ptVal(wx*3.7,wy*3.7,salt+53),mineralWidth=.009+.055*ptVal(wx*2.4,wy*2.4,salt+54);
+  if(hmk>.55 && mineralBreak>.58 && hash2(hv.ix,hv.iy,salt+55)<.55 && hv.d2-hv.d1<mineralWidth){
     var hw=hv.d2-hv.d1, hg=hash2(hv.ix,hv.iy,salt+51)<0.18;
-    col = ptMix(col, hg ? M.veinHot : M.vein, (hg?0.6:0.3)*Math.min(1,(hmk-0.42)*5)*(hw<0.005?1:0.6));
+    col = ptMix(col, hg ? M.veinHot : M.vein, (hg?.65:.42)*Math.min(1,(hmk-.55)*7)*Math.min(1,(mineralBreak-.58)*7)*Math.pow(1-hw/mineralWidth,.6));
   }
   return col;
 }
@@ -256,7 +274,7 @@ function ptGroundRaster(x,y,material){
     var col=ptFloorColor(x+(u+.5)/R,y+(v+.5)/R,M,salt,R,null),p=(v*R+u)*4;
     D[p]=col[0];D[p+1]=col[1];D[p+2]=col[2];D[p+3]=255;
   }
-  g.putImageData(im,0,0);c.environmentTerrain={pixels:D};return c;
+  g.putImageData(im,0,0);c.environmentTerrain={pixels:D,terrainMaterial:M};return c;
 }
 function ptCellRaster(x, y){
   var M=ptMat(x,y); if(!M) return null;
@@ -287,6 +305,14 @@ function ptCellRaster(x, y){
     if(u<KX0||u>=KX1||v<KY0||v>=KY1) return Kraw(u,v);
     var i=(v-KY0)*KW+(u-KX0), k=km[i]; if(k===255) k=km[i]=Kraw(u,v); return k;
   }
+  var foot=new Uint16Array(R*R);
+  for(var fu=0;fu<R;fu++){
+    var distance=0;
+    for(var fv2=R+FACEP;fv2>=0;fv2--){
+      if(K(fu,fv2)===0)distance=0;else distance++;
+      if(fv2<R)foot[fv2*R+fu]=distance>0&&distance<=FACEP?distance:0;
+    }
+  }
   for(var v2=0; v2<R; v2++) for(var u2=0; u2<R; u2++){
     var wx=x+(u2+0.5)*step, wy=y+(v2+0.5)*step, p=(v2*R+u2)*4, col, kk=K(u2,v2);
     terrainMask[v2*R+u2]=kk;
@@ -294,8 +320,7 @@ function ptCellRaster(x, y){
       col=M.void;
       if(K(u2,v2+1)===1 || K(u2-1,v2)===1 || K(u2+1,v2)===1 || K(u2,v2-1)===1) col=M.voidEdge;
     } else if(kk===1){
-      var dn=-1;
-      for(var k=1;k<=FACEP;k++){ if(K(u2, v2+k)===0){ dn=k; break; } }
+      var dn=foot[v2*R+u2];
       if(dn>0){
         wallDepth[v2*R+u2]=1-dn/FACEP;
         /* cliff face: tall narrow facets, pale at the lip, deepening to the foot */
@@ -304,7 +329,7 @@ function ptCellRaster(x, y){
         col=[col[0]*shade, col[1]*shade, col[2]*shade];
         if(cf.d2-cf.d1<0.03) col=ptMix(col, M.faceLo, 0.3);
         var fv=ptVor(wx*1.6, wy*0.9, 0.9, salt+23), fmk=ptVal(wx*0.24, wy*0.24, salt+20);
-        if(fmk>0.57 && fv.d2-fv.d1<0.026){
+        if(M===PT_MAT.earth && fmk>0.57 && fv.d2-fv.d1<0.026){
           var fw=fv.d2-fv.d1, fgl=hash2(fv.ix, fv.iy, salt+24)<0.32;
           col = fw<0.008 ? ptMix(col, fgl ? M.veinHot : M.vein, 0.9) : fw<0.018 ? ptMix(col, M.vein, fgl?0.85:0.55) : ptMix(col, M.veinDark, 0.5);
         }            /* the vein shows on the cliff face too */
@@ -325,7 +350,7 @@ function ptCellRaster(x, y){
         if(back) col=ptMix(col, M.topLo, 0.45*back);
         /* now and then a mineral vein runs through the rock, following the facet seams */
         var rv=ptVor(wx+0.25*ptVal(wx*1.1, wy*1.1, salt+18), wy, 1.1, salt+19), rmk=ptVal(wx*0.24, wy*0.24, salt+20);
-        if(rmk>0.55 && rv.d2-rv.d1<0.035 && hash2(rv.ix, rv.iy, salt+21)<0.6){
+        if(M===PT_MAT.earth && rmk>0.55 && rv.d2-rv.d1<0.035 && hash2(rv.ix, rv.iy, salt+21)<0.6){
           /* metal reads as three tones across its width: a hot core, the metal itself, a dark trim */
           var gleam=hash2(rv.ix, rv.iy, salt+22)<0.32, wdt=rv.d2-rv.d1, amt=Math.min(1,(rmk-0.55)*7);
           if(wdt<0.009) col=ptMix(col, gleam ? M.veinHot : M.vein, (gleam?1:0.8)*amt);
@@ -334,6 +359,7 @@ function ptCellRaster(x, y){
         }
         if(K(u2-1,v2)===0 || K(u2+1,v2)===0 || K(u2,v2-1)===0) col=ptMix(col, M.edge, 0.55);
       }
+      if(M!==PT_MAT.earth)col=ptMineralStreak(col,wx,wy,M,salt);
       /* Porous limestone is an opt-in material using the same solid mask. */
       if(M.organicRock){
         var pore=ptVor(wx,wy,0.2,salt+117),poreRadius=.019+.023*hash2(pore.ix,pore.iy,salt+118);
@@ -407,10 +433,10 @@ function ptCellRaster(x, y){
       }
       /* scree: broken rock spilling from the foot of a cliff, so the wall meets the ground instead of stopping dead */
       var dUp=0;
-      for(var su=1; su<=7; su++){ if(K(u2, v2-su)===1){ dUp=su; break; } }
+      for(var su=1; su<=Math.round(R*7/32); su++){ if(K(u2, v2-su)===1){ dUp=su; break; } }
       if(dUp){
         var scree=ptVal(wx*3.4, wy*5.2, salt+90), grit=hash2(Math.floor(wx*R), Math.floor(wy*R), salt+91);
-        var reach=(7-dUp)/7;                                                     /* thickest right at the wall */
+        var reach=(R*7/32-dUp)/(R*7/32);                                                     /* thickest right at the wall */
         if(scree > 0.62-reach*0.3){
           var lit=grit<0.3;
           col=ptMix(col, lit ? M.topHi : (grit<0.62 ? M.top : M.topLo), 0.75);
@@ -427,6 +453,7 @@ function ptCellRaster(x, y){
           var along=Math.max(0, 1-(mv.d2-mv.d1)/0.16);                               /* 1 on a crack, 0 away from it */
           var drift=ptVal(wx*1.1, wy*1.1, salt+64)*0.6 + ptVal(wx*2.8, wy*2.8, salt+65)*0.4;
           var damp=mfield*(M.organicRock?Math.max(along*.6,Math.max(0,(drift-.2)*2)):along)*(0.55+drift*0.7);
+          if(M===PT_MAT.earth)damp=Math.max(damp,mfield*(.35+drift*.8));
           if(damp>0.1){
             col=ptMix(col, M.moss[2], Math.min(0.6, damp*0.75));                     /* 1: the dark damp stain, broad and soft */
             if(damp>0.26) col=ptMix(col, M.moss[0], Math.min(M.organicRock?.88:.7, (damp-0.26)*(M.organicRock?2.4:1.5))); /* 2: the green body */
@@ -438,7 +465,7 @@ function ptCellRaster(x, y){
         }
       }
       /* the floor darkens a little where it runs under rock */
-      var occ=0; for(var o=2;o<=7;o+=2){ if(K(u2, v2-o)===1){ occ=Math.max(occ, 1-o/9); } if(K(u2-o,v2)===1 || K(u2+o,v2)===1) occ=Math.max(occ, 0.6*(1-o/9)); }
+      var occ=0; for(var o=2;o<=R*7/32;o+=R*2/32){ if(K(u2, v2-o)===1){ occ=Math.max(occ, 1-o/(R*9/32)); } if(K(u2-o,v2)===1 || K(u2+o,v2)===1) occ=Math.max(occ, 0.6*(1-o/(R*9/32))); }
       if(occ) col=ptMix(col, M.occ, 0.32*occ);
     }
     D[p]=col[0]; D[p+1]=col[1]; D[p+2]=col[2]; D[p+3]=255;
@@ -448,7 +475,7 @@ function ptCellRaster(x, y){
      canvas holds them exactly) and the GPU canvas is not read back, which cost more than the pixels themselves. */
   var crystal=ptCrystalAt(x,y,M,salt);
   if(crystal) ptCrystal(g, x, y, salt, M);
-  c.environmentTerrain={mask:terrainMask,pool:terrainPool,pixels:crystal?g.getImageData(0,0,R,R).data:D,naturalWalls:M===PT_MAT.cavern,wallDepth:wallDepth,crystal:crystal};
+  c.environmentTerrain={terrainMaterial:M,mask:terrainMask,pool:terrainPool,pixels:crystal?g.getImageData(0,0,R,R).data:D,naturalWalls:M===PT_MAT.cavern||!!M.organicRock,naturalMaterial:M.organicRock?M:null,naturalFloor:M===PT_MAT.cavern||!!M.organicRock,wallDepth:wallDepth,crystal:crystal};
   return c;
 }
 /* a cliff-face cell that grows a crystal (drawn with canvas paths, so on the page, never in a terrain worker) */
@@ -456,7 +483,8 @@ function ptCrystalAt(x, y, M, salt){ return M.faceCrystals!==false && ptWallCell
 function ptCrystal(g, x, y, salt, M){
   /* crystals in a cliff face grow OUT of the rock at mid height, angled away from it: they must never look as if
      they were standing on the lip at the bottom of the face (that lip is the top of the wall, not a floor) */
-  var n=1+Math.floor(hash2(x,y,salt+52)*2), bx=8+hash2(x,y,salt+53)*16, by=Math.round(PT_R*0.66);
+  g.save();g.scale(PT_R/32,PT_R/32);
+  var n=1+Math.floor(hash2(x,y,salt+52)*2), bx=8+hash2(x,y,salt+53)*16, by=Math.round(32*0.66);
   for(var k=0;k<n;k++){
     var h=7+hash2(x,y,salt+60+k)*8, w=1.6+hash2(x,y,salt+70+k)*1.6;
     var lean=(hash2(x,y,salt+80+k)-0.5)*4;                                          /* almost upright, just off the rock */
@@ -468,6 +496,7 @@ function ptCrystal(g, x, y, salt, M){
     g.fillStyle=M.rockHi; g.fillRect(Math.round(ox-w-1), Math.round(oy-1), 2, 2);
     g.fillStyle=M.rockLo; g.fillRect(Math.round(ox+w-1), Math.round(oy), 2, 1);
   }
+  g.restore();
 }
 function ptShard(g, ox, by, w, h, lean, cyan, M){
   /* a hexagonal prism seen three-quarter: a bright lit face, a mid face, a deep shadow face, lit edges picked out */
@@ -530,7 +559,7 @@ function ptTile(x, y){
     PT_CACHE.built++; cells[k]=ptVoidTile(x,y)||ptCellRaster(x,y);
   }
   var img=cells[k];if(img&&!img.ptVoid&&typeof FoteEnvironmentTerrain!=='undefined')img=FoteEnvironmentTerrain.enhance(img,x,y,'plane',cells,k);
-  return img ? {img:img, sx:0, sy:0, sw:img.width, sh:img.height, crisp:img.width===PT_R} : null;
+  return img ? {img:img, sx:0, sy:0, sw:img.width, sh:img.height, crisp:false} : null;
 }
 /* 2026-09-28: every cell is built in full the first time it is drawn (no flat squares, no crisp rasters on screen);
    floor entries build the view behind the entry hold and idle time builds ahead of the player. */
@@ -553,7 +582,7 @@ function ptVoidTile(x, y){
     var g=c.getContext('2d'), im=g.createImageData(R,R), D=im.data, wallDepth=new Float32Array(R*R).fill(-1), mask=new Uint8Array(R*R).fill(2);
     for(var p=0;p<D.length;p+=4){ D[p]=M.void[0]; D[p+1]=M.void[1]; D[p+2]=M.void[2]; D[p+3]=255; }
     g.putImageData(im,0,0);
-    c.environmentTerrain={mask:mask,pool:new Uint8Array(R*R),pixels:D,naturalWalls:M===PT_MAT.cavern,wallDepth:wallDepth,crystal:false};
+    c.environmentTerrain={mask:mask,pool:new Uint8Array(R*R),pixels:D,naturalWalls:M===PT_MAT.cavern||!!M.organicRock,naturalMaterial:M.organicRock?M:null,naturalFloor:M===PT_MAT.cavern||!!M.organicRock,wallDepth:wallDepth,crystal:false};
     out=FoteEnvironmentTerrain.enhance(c,x,y,'plane');
     if(!out || out.width!==128) return null;   /* materials not ready: the ordinary path decides */
     out.ptVoid=true; V.set(M,out);
@@ -623,11 +652,11 @@ function buildPlaneTestRoom(el){
 var PT_DAIS = null;
 function ptDaisRaster(){
   if(PT_DAIS) return PT_DAIS;
-  var S=64, c=document.createElement('canvas'); c.width=S; c.height=S;
+  var S=256, c=document.createElement('canvas'); c.width=S; c.height=S;
   var g=c.getContext('2d'), im=g.createImageData(S,S), D=im.data;
   var TOP=[234,226,208], STEP=[216,206,186], SIDE=[176,164,150], SIDE2=[150,138,128], EDGE=[118,106,98], RING=[190,178,160], GOLD=[226,182,82], GOLDHI=[250,226,150];
   function put(u,v,col,a){ if(u<0||v<0||u>=S||v>=S) return; var p=(v*S+u)*4; D[p]=col[0]; D[p+1]=col[1]; D[p+2]=col[2]; D[p+3]=a===undefined?255:a; }
-  var cx=32, OUT={cy:34, rx:31, ry:20, h:6}, INN={cy:30, rx:22, ry:14, h:4};
+  var cx=128, OUT={cy:136, rx:124, ry:80, h:24}, INN={cy:120, rx:88, ry:56, h:16};
   function inE(u,v,cy,rx,ry){ var dx=(u+0.5-cx)/rx, dy=(v+0.5-cy)/ry; return dx*dx+dy*dy; }
   for(var v=0; v<S; v++) for(var u=0; u<S; u++){
     var col=null;
@@ -656,7 +685,7 @@ function ptDaisRaster(){
     if(col) put(u,v,col);
   }
   /* a pale highlight along the inner disc's upper-left rim */
-  for(var t=0;t<60;t++){ var an=Math.PI*1.05+t/60*Math.PI*0.6; put(Math.round(cx+Math.cos(an)*(INN.rx-1.2)), Math.round(INN.cy+Math.sin(an)*(INN.ry-1.2)), [250,246,232]); }
+  for(var t=0;t<240;t++){ var an=Math.PI*1.05+t/240*Math.PI*0.6; put(Math.round(cx+Math.cos(an)*(INN.rx-4.8)), Math.round(INN.cy+Math.sin(an)*(INN.ry-4.8)), [250,246,232]); }
   g.putImageData(im,0,0); PT_DAIS=c; return c;
 }
 
@@ -664,7 +693,7 @@ function drawSunDaisProp(p, px, py, alpha){
   if(p.name==='sun-dais' && ptMat()){
     var img=ptDaisRaster(), X=Math.round((p.x-camX)*TS), Y=Math.round((p.y-camY)*TS), W=Math.round(TS*2);
     ctx.save(); ctx.globalAlpha=alpha; ctx.imageSmoothingEnabled=false;
-    ctx.drawImage(img, 0, 0, 64, 64, X, Y, W, W); ctx.restore();
+    ctx.drawImage(img, 0, 0, img.width, img.height, X, Y, W, W); ctx.restore();
     return true;
   }
   return false;
@@ -866,8 +895,8 @@ function ptPieceCanvas(p){
      one's crystals - the shards are drawn from ptMat().crystal, and a cached canvas kept the old palette. */
   var key=(floorMeta&&floorMeta.plane||'-')+':'+p.name+':'+p.seed+':'+(p.size||1)+':'+p.w+'x'+p.h+':'+(p.wallDir?p.wallDir.join(''):'');
   if(PT_PIECES[key]) return PT_PIECES[key];
-  var M=ptMat()||PT_MAT.light, W=p.w*PT_R, H=(p.h+1.4)*PT_R, c=document.createElement('canvas'); c.width=W; c.height=H;
-  var g=c.getContext('2d'), rnd=mulberry32(p.seed||1), base=H-4;
+  var M=ptMat()||PT_MAT.light, W=p.w*32, H=(p.h+1.4)*32, c=document.createElement('canvas'); c.width=W*4; c.height=H*4;
+  var g=c.getContext('2d'), rnd=mulberry32(p.seed||1), base=H-4;g.scale(4,4);
   if(p.name==='pt-outcrop'){
     /* a rocky foot and many shards, tallest toward the back middle */
     ptRockBase(g, W, H, base, rnd, true);
@@ -968,8 +997,10 @@ function drawRuneStoneProp(p, px, py, alpha){
 
 function drawNaturalOutcropProp(p, px, py, alpha){
   if(p.name==='pt-outcrop' || p.name==='pt-cluster'){
-    var img=ptPieceCanvas(p), sc=TS/PT_R, W=Math.round(img.width*sc), H=Math.round(img.height*sc);
-    var X=Math.round((p.x-camX)*TS), Y=Math.round((p.y-camY+p.h)*TS)-H;
+    // The procedural backup is baked at four times the logical density.
+    // Match packed formations at 70%, keeping its footprint's floor anchor.
+    var img=ptPieceCanvas(p), sc=TS/(PT_R*4)*.7, W=Math.round(img.width*sc), H=Math.round(img.height*sc);
+    var X=Math.round((p.x-camX)*TS+(p.w*TS-W)/2), Y=Math.round((p.y-camY+p.h)*TS)-H;
     if(p.name==='pt-cluster' && p.wallDir) X+=Math.round(p.wallDir[0]*TS*0.4);   /* only sideways: the root stays on its cell's floor line */
 
     ctx.save(); ctx.globalAlpha=alpha; ctx.imageSmoothingEnabled=false; ctx.drawImage(img, X, Y, W, H); ctx.restore();

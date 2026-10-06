@@ -353,7 +353,7 @@ function spendPrayer(id){
   if(P.favor)player.favor-=P.favor;
   if(P.essence)spendEssence(P.essence);
   if(P.amusement)player.amusement-=P.amusement;
-  startPrayerCd(id);return true;
+  startPrayerCd(id);holyRadianceCast();return true;
 }
 /* Prayer and invoke cooldowns (DIVINE_COOLDOWNS in data.js; all 0 until Justin sets them). The wait starts when
    the cost is paid and is kept in player.cds beside Shadowstep and Charge. A prayer's is kept as 'pray:<id>',
@@ -489,10 +489,12 @@ function syncMurkSummons(){
 function murkSummonDamage(source){return 1+murkSummonBonus(source);}
 function murkLifeDrain(target,d,source,event){
   var r=murkRank();
-  if(!r||!(d>0)||!target||!target.foe||!(source===player||r>=3&&murkSummon(source)))return;
+  if(!(d>0)||!target||!target.foe||!(source===player||r>=3&&murkSummon(source)))return;
   if(event&&(event.procDepth>0||['proc','periodic','arc','reflected','environment'].some(function(tag){return event.tags.has(tag);})))return;
-  if(rng()>=Math.min(1,.10*r))return;
-  var drained=applyDamage(target,Math.max(1,Math.round(2*r*divineStrength())),'dark',source,{tags:['proc','murk-drain'],reactions:false});
+  var view=source===player&&event&&event.hit&&event.hit.view||player;
+  var rule=FoteActions.shadowDrain(view.aff&&view.aff.shadow||0,r,r?(view.divine||divineStrength()):1);
+  if(!(rule.damage>0)||rng()>=rule.chance)return;
+  var drained=applyDamage(target,rule.damage,'dark',source,{tags:['proc','murk-drain'],reactions:false});
   if(drained>0){
     if(source===player)healPlayer(drained);
     else if(source.hp>0){
@@ -503,6 +505,7 @@ function murkLifeDrain(target,d,source,event){
 }
 
 function godDamageResolved(target,d,type,source,event){
+ if(event&&typeof applyMurkSummonEnchant==='function')applyMurkSummonEnchant(event);
  murkLifeDrain(target,d,source,event);
 
 

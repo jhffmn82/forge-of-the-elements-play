@@ -26,24 +26,164 @@ var HELD = {
   kite:     {len:0.42, hand:'l', shield:true},
   orb:      {len:0.17, hand:'l', float:true},
   tome:     {len:0.22, hand:'l', shield:true},
-  holy:     {len:0.26, hand:'l', follow:0.3, tilt:0.25, grip:0.9}
+  /* 2026-10-05 (Justin: 'the holy symbol is a metal disk of various designs that is held and can offer some blocking
+     protection in combat'): a disc held face out on the off arm, drawn the buckler's way. It was a disc on a handle,
+     stood up out of the fist. A little smaller than the buckler (0.30): 27px across at a 90px tile. Its sprite is 60px,
+     0.28 of the 215px doll figure, so one sprite pixel is one pixel of the doll sheet. */
+  holy:     {len:0.28, hand:'l', shield:true}
 };
 /* 1.4 (Justin 2026-09-28: 'a per frame, for each animation, position and orientation mapping of the held weapons ... they
    should match how the weapon is held during the animation'). Every look carries grips checked against its own frames
    (art/sprites/grips, packed as ASSETS.cast[look].grips[clip][frame]): for each hand the fist a handle passes through, the
    elbow, front (1) or behind (-1) the body, and an optional tip angle a (degrees). The item's angle comes from that
    frame's forearm by the way it is held (tools/art/grip-tools.py draws the review overlays by the same rules):
-     blade   - (mace, wand) the tip carries on along the forearm, bent a little outward: down and
+     blade   - (wand) the tip carries on along the forearm, bent a little outward: down and
                out from a hanging arm, up from a raised one, forward in a thrust;
-     upright - (holy symbol, staff, spear, bow at rest, and the two-handed longsword and axe, which hanging point-down
+     upright - (mace, staff, spear, bow at rest, and the two-handed longsword and axe, which hanging point-down
                would reach past the feet) stands up out of a hanging fist, follows a raised or thrusting forearm;
      guard   - one-handed swords and knives rest raised toward the face's direction, across the body from the rear hand;
-     placed  - a shield sits on the forearm, a tome in the hand, an orb over the palm, all upright. */
-var HELD_STYLE={sword:'guard', longsword:'upright', axe:'upright', mace:'blade', dagger:'guard', wand:'blade', censer:'guard',
-  spear:'upright', staff:'upright', bow:'upright', holy:'upright'};
+     placed  - a shield or holy symbol sits on the forearm, a tome in the hand, an orb in the palm, all upright while the figure stands.
+   2026-10-05 (Justin: 'this isn't his hand, he has the orb hovering on his forearm'; 'gear must read right in idle and
+   walk as well as in attacks'). Measured on every clothed look and frame (boards/contact.cjs): the fist points are on the
+   painted hands (mean under 2.5 cell px), and the orb was 14.6 px off its hand, on the map and on the doll alike.
+     in the hand   - the orb was drawn its whole height plus a gap straight up the screen from the fist, which on a hanging
+                     arm is the forearm; it also bobbed on a clock and let the arm show through. 2026-10-06 (the review:
+                     set on the fist it covered the hand, 'you cannot see his hand at all'): a hanging hand grips it from
+                     above, its centre GRIP_ORB_IN_HAND of its own half height past the middle of the hand (GRIP_HAND past
+                     the fist) along the forearm; a forearm that is level or raised holds it up, its centre
+                     GRIP_ORB_ON_HAND of its half height straight above the hand, as it sat over the open palm of a cast;
+                     between the two it moves over by how far the forearm is raised. The painted hand is then drawn again
+                     over the orb, and over a tome (handRuns: the hand's own pixels, not a disc of whatever is near it).
+                     The orb's flag in HELD keeps its old name, float.
+     carry         - in the idle and the walk an item keeps the angle and the layer of the loop's first frame (every look's
+                     hands are in front of the body there). The walk art turns side-on part way through, which sent a
+                     shield or sword behind the body for half the loop and swung a two-hander like a pendulum.
+     outward       - is decided by the hand that holds the item, not by which half of the cell the fist is in (a sword
+                     snapped 41 degrees as a walking hand crossed the middle).
+     the floor     - a shield, tome or orb stops on the floor line (the cell less its foot strip). In the death clip a
+                     handled item turns about its fist until its low end rests on the floor, and is raised through the
+                     fist by what would still pass it. 2026-10-06: only there. In life that raise slid a hanging mace up to
+                     2 px through the hand that carries it, and a weapon's grip point is not this kit's to move.
+     death         - as the hand comes down to the floor (heldFall) an item with no angle written for the frame is laid
+                     level, and a shield or tome turns with the forearm to lie along it.
+     casting       - a wand whose casting hand is empty is held in that hand while the arm is up, and points where it
+                     points. 2026-10-06 (the review, looked at on every look): a wand kept in the weapon hand beside an
+                     orb or tome, and a staff, are not turned. That hand never rises in the cast art, so the levelled wand
+                     lay across the belt and the leaning staff put its head over the caster's face. Both keep their carry.
+   HELD_STYLE is the rest carry of each item, one value per item (the mace: 2026-10-06, Justin picked 'upright', which
+   stands at the shoulder; 'blade' hung as it always had, 'guard' is raised like the sword). FOTE_HELD_CARRY, review boards only (the game never sets
+   it), swaps that value so the other carries can be shown side by side. */
+var HELD_STYLE={sword:'guard', longsword:'upright', axe:'upright', mace:'upright', dagger:'guard', wand:'blade', censer:'guard',
+  spear:'upright', staff:'upright', bow:'upright'};
 /* GRIP_PULL: the share of the way a hanging item is drawn toward straight down (a blade) or straight up (an upright item),
    weighted by how far the forearm hangs, so nothing snaps as an arm rises. GRIP_BLADE_BEND: a hanging blade's outward cant. */
-var GRIP_PULL=0.5, GRIP_BLADE_BEND=6*Math.PI/180, GRIP_SHIELD_ON_FOREARM=0.30;
+var GRIP_PULL=0.5, GRIP_BLADE_BEND=6*Math.PI/180, GRIP_SHIELD_ON_FOREARM=0.30, GRIP_ORB_IN_HAND=0.55, GRIP_ORB_ON_HAND=0.8, GRIP_TOME_IN_HAND=0.3, GRIP_FINGERS=0.018, GRIP_FLAT=0.55, GRIP_THICK=0.3;
+/* GRIP_HAND: how far the middle of the painted hand lies past the fist point, along the forearm, as a share of the cell
+   (2.5 px of 128; boards/contact.cjs measures it). GRIP_HAND_REACH: how far from that middle a hand's own pixels are looked for. */
+var GRIP_HAND=0.02, GRIP_HAND_REACH=0.045;
+function heldStyle(key){ return (typeof FOTE_HELD_CARRY!=='undefined' && FOTE_HELD_CARRY && FOTE_HELD_CARRY[key]) || HELD_STYLE[key] || 'blade'; }
+/* how far this hand has come down from where it rests to the floor, 0 to 1 (the death clip lays gear down by it) */
+function heldFall(m, grip, hn, floor){
+  var rest=m.grips.idle && m.grips.idle[0] && m.grips.idle[0][hn], y0=rest ? rest.f[1] : floor*0.7;
+  return Math.max(0, Math.min(1, (grip[hn].f[1]-y0)/Math.max(1, floor-m.cell*0.06-y0)));
+}
+/* 2026-10-05 (Justin: 'the attack animations don't make sense for 2h weapons or spears'). A swing that plays a list
+   (render.js CLIP_PLAY) names its step, and the main-hand weapon is turned for that step, whatever its holding style.
+   HELD_SWING: the tip angle on each of the nine steps, in degrees as a grip's a (0 at the target, -90 up); null keeps
+     the holding rule. Steps 1 and 2 wind up and may point back; 3 to 6 run from launch to follow-through and lead with
+     the edge or head, never across the face; the first and last step are the carry, so nothing jumps as the clip
+     starts and ends. Written for the looks whose weapon hand travels (the only ones CLIP_PLAY lists an arm swing for).
+   HELD_POLE: on steps 2 to 7 a spear or staff lies on the line through both fists while both are in front of the body
+     and from GRIP_POLE_NEAR of the cell to GRIP_POLE_FAR of the shaft past the grip apart (the second hand has to be on
+     it); otherwise it takes its HELD_SWING angle. Its grip point stays in the weapon fist. The second hand closes over
+     the shaft too, unless it has come up under the head (GRIP_POLE_HEAD: the head's share of the length).
+     On a look whose rear arm never comes forward (the list says lead) it is thrust level from the lead fist on steps
+     3 to 6: interim, one hand.
+   Variant B, review boards only (FOTE_ANIM_VARIANT 'B'; the game never sets it): the hand also slides down the shaft by
+     GRIP_POLE_SLIDE (cell px a step; GRIP_LEAD_SLIDE in the one-hand thrust), so more of it leads. Art, length and grip
+     point (HELD) are the same in both. */
+var HELD_SWING={
+  sword:    [null,-100,-130, -25, -5, 20, 50,-20,null],
+  dagger:   [null, -75, -25, -12, -5,  0,  5,-30,null],
+  censer:   [null, -75, -25, -12, -5,  0,  5,-30,null],
+  mace:     [null, 160,-135, -20,  0, 25, 60, 80,null],
+  longsword:[null,-100,-125, -28, -8, 30, 55,-15,null],
+  axe:      [null,-100,-125, -28, -8, 30, 55,-15,null],
+  spear:    [null,null,null,null,null,  0,null,null,null],
+  staff:    [null,null,null,null,null,  0,null,null,null]
+};
+var HELD_POLE={spear:1, staff:1}, GRIP_POLE_NEAR=0.125, GRIP_POLE_FAR=0.8, GRIP_POLE_HEAD=0.25, GRIP_POLE_SLIDE=[0,0,12,14,16,18,16,12,0], GRIP_LEAD_SLIDE=[0,0,0,-14,-8,-2,-8,0,0];
+/* 2026-10-06 (Justin: 'the attack animations don't make sense for 2h weapons or spears'). The added body rows (render.js
+   CLIP_ROW) are drawn for the move, so on them the hands say where the weapon is. heldRowSwing is this step's turn of
+   the main-hand weapon on such a row, as heldSwing is for a play list of an old row. No weapon's art, length or grip
+   point (HELD) is touched.
+   HELD_ROW: the tip angle on each of the nine steps, by row and item, in degrees as HELD_SWING (0 at the target, -90
+     up); null keeps the holding rule (the carry, on the first and the last step).
+   thrust - a spear or staff lies on the line through both fists on steps 1 to 7, where both hands are on the shaft: the
+            rear fist holds the grip point (variant A), the lead fist is ahead of it. The list (level) is for a frame
+            whose fists cannot say (GRIP_POLE_NEAR, GRIP_POLE_FAR).
+   heavy  - a two-handed sword or axe lies on the line through both fists from wind-up to follow-through (steps 2 to
+            6; 2026-10-06, the take 3 track: and on the guard, step 7, where both hands are still on the handle, and
+            both fists close over it on all of those steps whether or not their line can be read; the lists are the
+            track's own angles now, pilot/picks.json _weapon_deg, so every look of a row is on one track; a row's
+            frame 1 is not played, render.js ROW_PLAY): the fist nearer the blade holds the grip point and the other
+            is on the handle behind it, toward the
+            pommel. That is the right fist, the hand HELD names, on every row drawn as asked. A row drawn with the left
+            hand uppermost says so on its wind-up frame (the left fist is the higher one there): on its two-fist steps
+            the grip point is in the left fist, and it has its own list (heavyl: its hands rise in front of the face,
+            so the weapon leans forward on step 1). Held so while the fists are GRIP_TWO_NEAR to GRIP_TWO_FAR of the
+            cell apart and their line is within GRIP_TWO_OFF degrees of the list's angle; otherwise, and on step 1
+            where the second hand is on its way to the handle, the list's angle in the weapon fist.
+   strike - a one-hand weapon is turned by the list: cocked back over the rear shoulder on the wind-up, the edge or
+            head leading from launch to follow-through, never across the face.
+   punch  - nothing is turned: a weapon in either fist rides it by its holding rule (the off-hand swing of a dual
+            wield is the lead fist's jab, and the main weapon keeps its carry).
+   The bow on the shoot row is in the bow hand, square to the line from the string fist to the bow fist, which is the
+   arrow's line (heldBowAim): upright at full draw and at the release, leaning up to GRIP_BOW_LEAN degrees as the hands
+   come up and go down. (The bow arm's forearm was tried first: its elbow hangs below the fist at full draw, and the
+   bow leaned 16 to 27 degrees back over a level arrow.) */
+var HELD_ROW={
+  thrust:{spear:[null,0,0,0,0,0,0,0,null], staff:[null,0,0,0,0,0,0,0,null]},
+  heavy:{longsword:[null,-100,-120,-88,-70,-38,-22,-72,null], axe:[null,-100,-120,-88,-70,-38,-22,-72,null]},
+  heavyl:{longsword:[null,-60,-106,-87,-34,31,44,-15,null], axe:[null,-60,-106,-87,-34,31,44,-15,null]},
+  strike:{sword:[null,-95,-125,-140,-50,18,55,-40,null], dagger:[null,-75,-110,-130,-40,5,35,-30,null], censer:[null,-75,-110,-130,-40,5,35,-30,null],
+    mace:[null,160,-130,-140,-45,22,60,80,null], wand:[null,160,-130,-140,-45,22,60,80,null]}
+};
+var GRIP_TWO_NEAR=0.04, GRIP_TWO_FAR=0.18, GRIP_TWO_OFF=60, GRIP_BOW_LEAN=25;
+function heldRowSwing(key, grip, fr, m){
+  var i=fr.step, up=fr.add==='heavy' && m.grips.heavy[2], left=!!up && up.l.f[1]<up.r.f[1];
+  var a=((HELD_ROW[left ? 'heavyl' : fr.add]||{})[key]||[])[i], o={a:a, row:1};
+  if(a==null || fr.off) return {};
+  var r=grip.r.f, l=grip.l.f, d=Math.hypot(l[0]-r[0], l[1]-r[1]), H=HELD[key], L=H.len*m.stand;
+  if(fr.add==='thrust'){
+    if(typeof FOTE_ANIM_VARIANT!=='undefined' && FOTE_ANIM_VARIANT==='B') o.slide=GRIP_POLE_SLIDE[i];
+    var s=o.slide||0;
+    if(d>=m.cell*GRIP_POLE_NEAR && d<=(L*H.grip+s)*GRIP_POLE_FAR){ o.a=Math.atan2(l[1]-r[1], l[0]-r[0])*180/Math.PI; o.fists=d<=L*(H.grip-GRIP_POLE_HEAD)+s ? ['r','l'] : ['r']; }
+  }
+  else if(fr.add==='heavy' && i>1 && i<8){
+    o.fists=['r','l'];   /* 2026-10-06: both hands are on the handle from the wind-up to the guard */
+    if(d<m.cell*GRIP_TWO_NEAR || d>m.cell*GRIP_TWO_FAR) return o;
+    var u=left ? l : r, v=left ? r : l, off=angDiff(Math.atan2(u[1]-v[1], u[0]-v[0]), a*Math.PI/180)*180/Math.PI;
+    if(Math.abs(off)<=GRIP_TWO_OFF){ o.a=a+off; if(left) o.hand='l'; }
+  }
+  return o;
+}
+function heldBowAim(grip){
+  var x=grip.l.f[0]-grip.r.f[0], y=grip.l.f[1]-grip.r.f[1], t=x>0 ? Math.atan2(y,x)*180/Math.PI : 0;
+  return {a:-90+Math.max(-GRIP_BOW_LEAN, Math.min(GRIP_BOW_LEAN, t)), row:1};
+}
+/* this step's turn for the main-hand weapon: a (tip angle, degrees), hand (the fist that carries it, when not its own),
+   fists (the hands that close over it), slide (variant B) */
+function heldSwing(key, grip, fr, m){
+  if(fr.add) return heldRowSwing(key, grip, fr, m);   /* 2026-10-06: an added body row has its own rules */
+  var i=fr.step, a=(HELD_SWING[key]||[])[i], o=a==null ? {} : {a:a};
+  if(!HELD_POLE[key] || i<2 || i>7 || (fr.lead && (i<3 || i>6))) return o;
+  if(typeof FOTE_ANIM_VARIANT!=='undefined' && FOTE_ANIM_VARIANT==='B') o.slide=(fr.lead ? GRIP_LEAD_SLIDE : GRIP_POLE_SLIDE)[i];
+  if(fr.lead){ o.a=0; o.hand='l'; o.fists=['l']; return o; }
+  var r=grip.r, l=grip.l, x=l.f[0]-r.f[0], y=l.f[1]-r.f[1], d=Math.hypot(x,y), H=HELD[key], L=H.len*m.stand, s=o.slide||0;
+  if(r.z>=0 && l.z>=0 && d>=m.cell*GRIP_POLE_NEAR && d<=(L*H.grip+s)*GRIP_POLE_FAR){ o.a=Math.atan2(y,x)*180/Math.PI; o.fists=d<=L*(H.grip-GRIP_POLE_HEAD)+s ? ['r','l'] : ['r']; }
+  return o;
+}
 function gripFor(m, row, col){
   if(!m.grips) return null;
   var clip=castClipAt(m,row), list=clip && m.grips[clip];
@@ -64,7 +204,17 @@ function heldTipAngle(style, hand, side){
   /* Cast art faces right; the world renderer mirrors body and gear together when facing left. */
   return style==='guard'&&Math.cos(tip)<0 ? Math.PI-tip : tip;
 }
-function heldKeyOf(it){
+/* 2026-10-05 (Justin: 'coming up with a different holy symbol for each god ... on the ground and inventory it's generic
+   but once equiped it changes to your god's'). An equipped Holy Symbol shows its holder's god's disc. This names that
+   picture, 'holy-<god>': held-holy-<god> in the hand (heldKeyOf), item-holy-<god> in the worn slot (sheets.js
+   wornIconName). It is worked out from the holder's god each time it is drawn, so a change of faith shows at once, an
+   old save needs nothing and nothing is stored on the item. A Shadow Clone keeps the god it was cast under. Null: no
+   god (the plain disc), or not a Holy Symbol (the Camera shares its icon and never changes). */
+function holySymbolOf(it, who){
+  var god=who && (who.god || (who.cloneStats && who.cloneStats.statModel && who.cloneStats.statModel.god));
+  return god && it && !it.joke && it.icon==='item-holy' ? 'holy-'+god : null;
+}
+function heldKeyOf(it, who){
   if(!it || it.unarmed || it===EMPTY_OFF || it.joke) return null;
   var ic=(it.icon||'').replace(/^item-/,'');
   /* 2026-09-20: Justin - dual wield drew wrong. An off-hand weapon was sent to the dagger sprite whatever it was,
@@ -72,6 +222,8 @@ function heldKeyOf(it){
      top of each other and read as one two-handed pose. It keeps its own art when the pack has it; a two-hander,
      shield or focus shape can never be a dual-wielded weapon, so those still fall back to the dagger. */
   if(it.kind==='off' && it.weapon) return (HELD[ic] && !HELD[ic].two && !HELD[ic].shield && !HELD[ic].float) ? ic : 'dagger';
+  var own=holySymbolOf(it, who);     /* the god's disc when the pack has one, else the plain disc */
+  if(own && HELD[own] && AS.map && AS.map.held && AS.map.held.items['held-'+own]) return own;
   return HELD[ic] ? ic : null;
 }
 
@@ -225,6 +377,9 @@ var HELD_TIER_TINT_SHIELD = {0:HELD_TIER_TINT[0]};
 /* 2026-09-27 (Justin, D11c): foci and staves keep their painted colours at T0. Grey, a starting tome, holy symbol or orb no
    longer matched its coloured icon. */
 var HELD_T0_KEEP={tome:1, holy:1, orb:1, staff:1, wand:1};
+/* 2026-10-05: each god's disc (held-holy-<god>, holySymbolOf above) is held by the one holy rule and, like the plain
+   disc, keeps its colours when Worn. The nine entries are the one HELD.holy object, and Object.keys(HELD) lists them. */
+if(typeof GODS!=='undefined') Object.keys(GODS).forEach(function(god){ HELD['holy-'+god]=HELD.holy; HELD_T0_KEEP['holy-'+god]=1; });
 function heldTierImage(o, key, tier, k){
   var T=tier===0 && HELD_T0_KEEP[key] ? null : (HELD[key] && HELD[key].shield ? HELD_TIER_TINT_SHIELD : HELD_TIER_TINT)[tier]; k=k||1; if(!T && k===1) return null;
   var id=key+':'+tier+':'+k; if(HELD_TIER_CACHE[id]) return HELD_TIER_CACHE[id];
@@ -246,12 +401,14 @@ function heldTier(it){
   return (appearance && typeof itemKey==='function' && itemKey(appearance) && typeof tierNum==='function') ? tierNum(appearance) : null;
 }
 /* handOv: draw this item in the other hand (an off-hand weapon), mirrored so its own art faces outward. cell: the sheet's
-   cell size, for the short-forearm rule */
-function drawHeld(g, key, pose, rest, dx, dy, sc, drawH, enchant, now, tier, handOv, cell, aim, grip, strike){
+   cell size, for the short-forearm rule. swing: this step's turn in a melee play list (heldSwing), or the hand a cast
+   gives the wand. at (2026-10-05): floor, the floor line in cell px; fall, how far the hand has dropped to it
+   in the death clip (heldFall); carry, the grip whose forearm sets the angle (the first frame of an idle or walk loop) */
+function drawHeld(g, key, pose, rest, dx, dy, sc, drawH, enchant, now, tier, handOv, cell, aim, grip, strike, swing, at){
   var H=HELD[key], o=objArt('held','held-'+key); if(!H || !o) return;
   /* aim: a bow being shot is held upright with its belly toward the target; the held art has its string on the
      outer side, so it is mirrored (2026-09-27, Justin: the bow was backwards in the new empty-handed shots) */
-  var hk = handOv || H.hand, mirror = (!!handOv && handOv!==H.hand) !== !!aim;
+  var hk = (swing && swing.hand) || handOv || H.hand, mirror = (!!handOv && handOv!==H.hand) !== !!aim;
   var gh = grip && grip[hk];
   var hand=gh ? gh.f : pose && pose[hk==='r'?'rh':'lh'], elbow=gh ? gh.e : pose && pose[hk==='r'?'re':'le'];
   if(!hand) return;
@@ -268,25 +425,55 @@ function drawHeld(g, key, pose, rest, dx, dy, sc, drawH, enchant, now, tier, han
   g.imageSmoothingEnabled=true; g.imageSmoothingQuality='high';
   if(gh){
     /* a grip: the item goes where this frame's fist is, turned the way it is held (heldTipAngle) */
+    var floorY=at && at.floor!==undefined ? dy+at.floor*sc : Infinity, dying=!!at && at.fall!==undefined, fall=dying ? at.fall : 0;
+    var fore=Math.atan2(hand[1]-elbow[1], hand[0]-elbow[0]);
     if(H.shield){
-      var onArm = key==='tome' ? 0 : GRIP_SHIELD_ON_FOREARM;     /* a tome is held in the hand, a shield strapped to the forearm */
+      /* a tome is held in the hand, a shield strapped to the forearm. 2026-10-05: the tome covered the whole hand; it sits
+         GRIP_TOME_IN_HAND of its height past the fist now, so a hanging hand carries it by its top edge and a raised one
+         holds it up, and the fingers close over it (drawCastLayers) */
+      var onArm = key==='tome' ? -o.sh*s*GRIP_TOME_IN_HAND/sc/(Math.hypot(hand[0]-elbow[0], hand[1]-elbow[1])||1) : GRIP_SHIELD_ON_FOREARM;
       var sx=hand[0]+(elbow[0]-hand[0])*onArm, sy=hand[1]+(elbow[1]-hand[1])*onArm;
-      g.translate(dx+sx*sc, dy+sy*sc);
-      g.drawImage(o.img, o.sx,o.sy,o.sw,o.sh, -o.sw*s/2, -o.sh*s*(key==='tome'?0.45:0.5), o.sw*s, o.sh*s);
+      /* 2026-10-05: it stood upright beside a fallen body, its lower half under the floor. In the death clip it turns with
+         the forearm as the hand comes down and is seen more and more from its edge (GRIP_FLAT: its height on the floor),
+         and it never passes the floor line */
+      var lie=fall*angDiff(fore, Math.PI/2), flat=1-fall*(1-GRIP_FLAT), up=o.sh*s*(key==='tome'?0.45:0.5), halfW=o.sw*s/2;
+      var low=(Math.abs(Math.cos(lie))*(o.sh*s-up)+Math.abs(Math.sin(lie))*halfW)*flat;
+      g.translate(dx+sx*sc, Math.min(dy+sy*sc, floorY-low));
+      if(lie){ g.scale(1, flat); g.rotate(lie); }
+      g.drawImage(o.img, o.sx,o.sy,o.sw,o.sh, -halfW, -up, o.sw*s, o.sh*s);
     } else if(H.float){
-      g.translate(hx, hy);
-      var bob2=(ANIM.reduce?0:Math.sin(now/300))*drawH*0.02;
-      g.globalAlpha*=0.95; g.drawImage(o.img, o.sx,o.sy,o.sw,o.sh, -o.sw*s/2, -o.sh*s - drawH*0.05 + bob2, o.sw*s, o.sh*s);
+      /* 2026-10-05 (Justin): in the hand; no bob, no see-through. 2026-10-06: under a hanging hand, over a raised one
+         (the head of this file); raised: how far the forearm is up, 0 hanging to 1 level or higher */
+      var oh=o.sh*s, raised=Math.max(0, Math.min(1, 1-Math.sin(fore))), past=cell*GRIP_HAND*sc+(1-raised)*oh/2*GRIP_ORB_IN_HAND;
+      g.translate(hx+Math.cos(fore)*past, Math.min(hy+Math.sin(fore)*past-raised*oh/2*GRIP_ORB_ON_HAND, floorY-oh/2));
+      g.drawImage(o.img, o.sx,o.sy,o.sw,o.sh, -o.sw*s/2, -oh/2, o.sw*s, oh);
     } else {
       g.translate(hx, hy);
-      var gside = hand[0] < cell/2 ? 1 : -1;
-      var tip = aim ? -Math.PI/2 : heldTipAngle(HELD_STYLE[key]||'blade', gh, gside);
+      var gside = hk==='r' ? 1 : -1;     /* 2026-10-05: outward by the hand, not by the half of the cell the fist is in */
+      var tip = aim ? -Math.PI/2 : swing && swing.a!==undefined ? swing.a*Math.PI/180 : heldTipAngle(heldStyle(key), at && at.carry ? at.carry[hk] : gh, gside);
       /* 2026-09-28 (Justin): in the attack the main-hand weapon points right, toward the target (the sprite is mirrored to face left) */
       if(strike && Math.cos(tip)<0) tip = Math.PI - tip;
+      /* 2026-10-06: an added body row gives the angle itself (heldRowSwing, heldBowAim): nothing is mirrored after it, and its
+         bow is not held dead upright */
+      if(swing && swing.row && swing.a!==undefined) tip=swing.a*Math.PI/180;
+      /* 2026-10-05: death lays an item level as its hand comes down, unless the frame's grip gives it an angle (an
+         upright item never reads that angle, so it is always laid down: a two-handed sword stood on end in front of a
+         falling Elf whose sword hand has one) */
+      /* 2026-10-06: toward the side it will lie on when the fall is over (the clip's last frame), not the side its tip
+         leans to on this frame: a long weapon lay pointing behind a falling figure, then ahead of it one frame later */
+      if(fall && (gh.a===undefined || heldStyle(key)==='upright')) tip += fall*angDiff(Math.cos(at.end ? heldTipAngle(heldStyle(key), at.end[hk], gside) : tip)<0 ? Math.PI : 0, tip);
+      /* the floor. Dying, the item turns about its fist until neither end is under the line: the head end keeps
+         GRIP_THICK of the art's width clear (an axe or mace head rests on the floor and the handle runs down to the
+         hand), the butt end may just touch. Whatever is still under after that, or in life (a pole's butt or a hanging
+         mace under a low hand), is cleared by raising the item through the fist */
+      var sn=Math.sin(tip), thick=o.sw*s*GRIP_THICK, hi=(floorY-hy-thick)/(len*H.grip), lo=-(floorY-hy)/(len*(1-H.grip));
+      if(dying && (sn>hi || sn<lo)){ sn=Math.max(-1, Math.min(1, Math.max(Math.min(sn, hi), Math.min(lo, hi)))); tip = Math.cos(tip)<0 ? Math.PI-Math.asin(sn) : Math.asin(sn); }
+      var under=hy+Math.max(sn*len*H.grip+Math.abs(Math.cos(tip))*thick, -sn*len*(1-H.grip))-floorY;
+      if(dying && under>0) g.translate(0, -under);   /* 2026-10-06: in the death clip only (the head of this file) */
       g.rotate(tip + Math.PI/2);
       if(mirror) g.scale(-1, 1);
       if(enchant){ g.shadowColor=AFF_COL[enchant]||'#fff'; g.shadowBlur=Math.max(3, drawH*0.04)*dev; }
-      g.drawImage(o.img, o.sx,o.sy,o.sw,o.sh, -o.sw*s/2, -o.sh*s*H.grip, o.sw*s, o.sh*s);
+      g.drawImage(o.img, o.sx,o.sy,o.sw,o.sh, -o.sw*s/2, -o.sh*s*H.grip-(swing && swing.slide || 0)*sc, o.sw*s, o.sh*s);
     }
     g.restore();
     return;
@@ -296,8 +483,7 @@ function drawHeld(g, key, pose, rest, dx, dy, sc, drawH, enchant, now, tier, han
   if(H.shield){
     g.drawImage(o.img, o.sx,o.sy,o.sw,o.sh, -o.sw*s/2, -o.sh*s*0.55, o.sw*s, o.sh*s);
   } else if(H.float){
-    var bob=(ANIM.reduce?0:Math.sin(now/300))*drawH*0.02;
-    g.globalAlpha*=0.95; g.drawImage(o.img, o.sx,o.sy,o.sw,o.sh, -o.sw*s/2, -o.sh*s - drawH*0.05 + bob, o.sw*s, o.sh*s);
+    g.drawImage(o.img, o.sx,o.sy,o.sw,o.sh, -o.sw*s/2, -o.sh*s/2, o.sw*s, o.sh*s);
   } else {
     var ang=-Math.PI/2 + (aim ? 0 : H.tilt*side);
     /* a forearm under 6% of the cell gives no real angle (a misread elbow), so the item keeps its resting lean */
@@ -317,6 +503,59 @@ function drawHeld(g, key, pose, rest, dx, dy, sc, drawH, enchant, now, tier, han
   g.restore();
 }
 
+/* 2026-10-06 (Justin: 'this isn't his hand'). The painted hand at a grip, as rows of its own pixels [x, y, width] in
+   cell px, worked out once per sheet frame and hand (as openDoorAperture in render.js scans a door once). The look's
+   hand colour is read off its standing hands: the median of the brightest pixels at the middle of each hand on the
+   still, or the first idle frame. A frame's hand is every pixel of that colour within GRIP_HAND_REACH of the hand's
+   middle, joined to it, with the dark line around them. Where no hand is painted at the fist (it is behind the body or
+   under a sleeve) there are no rows, and nothing is drawn over the item; the same where a page may not read its own
+   canvas (the sheet's pixels cannot be had, so the item is drawn whole, as it was before this). */
+var HAND_RUNS=new WeakMap();
+function handRuns(cs, sx, sy, gh){
+  var memo=HAND_RUNS.get(cs.img), m=cs.m, cell=m.cell, key=sx+':'+sy+':'+gh.f[0]+':'+gh.f[1];
+  if(!memo) HAND_RUNS.set(cs.img, memo={});
+  if(memo[key]) return memo[key];
+  var runs=memo[key]=[];
+  try{
+  var R=Math.ceil(cell*GRIP_HAND_REACH)+2, n=2*R+1, c=document.createElement('canvas'); c.width=c.height=n;
+  var q=c.getContext('2d',{willReadFrequently:true}), luma=function(d,i){ return .299*d[i]+.587*d[i+1]+.114*d[i+2]; };
+  /* the pixels around the middle of a hand: d (rgba), and the middle's own place in them (mx, my) */
+  var patch=function(px, py, hand){
+    var L=Math.hypot(hand.f[0]-hand.e[0], hand.f[1]-hand.e[1])||1, cx=hand.f[0]+(hand.f[0]-hand.e[0])/L*cell*GRIP_HAND, cy=hand.f[1]+(hand.f[1]-hand.e[1])/L*cell*GRIP_HAND;
+    var x0=Math.floor(cx)-R, y0=Math.floor(cy)-R;
+    q.clearRect(0,0,n,n); q.drawImage(cs.img, px+x0, py+y0, n, n, 0, 0, n, n);
+    /* a patch that reaches past the cell would read the next frame of the sheet: those pixels are not this figure's */
+    var d=q.getImageData(0,0,n,n).data;
+    for(var y=0;y<n;y++) for(var x=0;x<n;x++) if(x0+x<0 || y0+y<0 || x0+x>=cell || y0+y>=cell) d[(y*n+x)*4+3]=0;
+    return {d:d, x0:x0, y0:y0, mx:cx-x0, my:cy-y0};
+  };
+  if(memo.skin===undefined){
+    var still=m.grips && ((m.static_row!==undefined && m.grips.static && [m.grips.static[0], m.static_row]) || (m.clips && m.clips.idle && m.grips.idle && [m.grips.idle[0], m.clips.idle.row]));
+    var rs=[], gs=[], bs=[], mid=function(a){ a.sort(function(u,v){ return u-v; }); return a[a.length>>1]; };
+    if(still && still[0]) ['r','l'].forEach(function(hn){
+      var P=patch(0, still[1]*cell, still[0][hn]), near=cell*0.025, list=[], top=0;
+      for(var y=0;y<n;y++) for(var x=0;x<n;x++){ var i=(y*n+x)*4; if(P.d[i+3]<200 || Math.hypot(x+.5-P.mx, y+.5-P.my)>near) continue; var l=luma(P.d,i); list.push([i,l]); if(l>top) top=l; }
+      list.forEach(function(p){ if(p[1]>=top*.62){ rs.push(P.d[p[0]]); gs.push(P.d[p[0]+1]); bs.push(P.d[p[0]+2]); } });
+    });
+    memo.skin=rs.length ? [mid(rs), mid(gs), mid(bs)] : null;
+  }
+  var skin=memo.skin; if(!skin) return runs;
+  var P2=patch(sx, sy, gh), d2=P2.d, reach=cell*GRIP_HAND_REACH, light=luma(skin,0), mark=new Uint8Array(n*n), todo=[];
+  var is=function(x,y){ var i=(y*n+x)*4; return d2[i+3]>=200 && Math.hypot(d2[i]-skin[0], d2[i+1]-skin[1], d2[i+2]-skin[2])<=70 && luma(d2,i)>=light*.5 && Math.hypot(x+.5-P2.mx, y+.5-P2.my)<=reach; };
+  /* joined to the middle: start from the hand's pixels within a third of the reach of it */
+  for(var y=0;y<n;y++) for(var x=0;x<n;x++) if(Math.hypot(x+.5-P2.mx, y+.5-P2.my)<=reach/3+1 && is(x,y)){ mark[y*n+x]=1; todo.push(x,y); }
+  while(todo.length){
+    var ty=todo.pop(), tx=todo.pop();
+    [[1,0],[-1,0],[0,1],[0,-1]].forEach(function(s){
+      var X=tx+s[0], Y=ty+s[1]; if(X<0 || Y<0 || X>=n || Y>=n || mark[Y*n+X]) return;
+      if(is(X,Y)){ mark[Y*n+X]=1; todo.push(X,Y); }
+      else if(d2[(Y*n+X)*4+3]>=200 && luma(d2,(Y*n+X)*4)<light*.5) mark[Y*n+X]=2;   /* the dark line around the hand */
+    });
+  }
+  for(y=0;y<n;y++) for(x=0;x<n;x++) if(mark[y*n+x]){ var x1=x; while(x1<n && mark[y*n+x1]) x1++; runs.push([P2.x0+x, P2.y0+y, x1-x]); x=x1; }
+  }catch(unread){ if(memo.skin===undefined) memo.skin=null; runs.length=0; }
+  return runs;
+}
 function castEquipmentFor(who){
   var wpn=who.weapon, off=who.twoHanded ? null : who.off, arm=who.armorItem;
   if(who===player && who.god==='grom' && typeof equipmentForbidden==='function'){
@@ -329,14 +568,17 @@ function castEquipmentFor(who){
   return {weapon:wpn,off:off,armorItem:arm};
 }
 /* the whole figure: items behind the body, the (tinted) body, items in front.
- * A fixed presentation time keeps a cached portrait's floating focus still. */
+ * time is no longer read (2026-10-05: the orb is held and does not bob); callers still pass it. */
 function drawCastLayers(e, cs, fr, dx, dy, w, h, g, time){
   g = g || ctx;
   var m=cs.m, cell=m.cell, row=Math.round(fr.sy/cell), col=Math.round(fr.sx/cell), sc=w/cell, now=time===undefined?performance.now():time;
   var who = e || player;
   var pose=poseFor(m,row,col), rest=restPose(m), gear=castEquipmentFor(who);
   var wpn=gear.weapon,off=gear.off,arm=gear.armorItem;
-  var mainKey=heldKeyOf(wpn), offKey=heldKeyOf(off), clip=castClipAt(m,row);
+  var mainKey=heldKeyOf(wpn), offKey=heldKeyOf(off, who), clip=castClipAt(m,row);
+  /* 2026-10-06: an added body row (render.js CLIP_ROW) is drawn by the rules of the row it stands in for; add is its own name */
+  var add=m.clips && m.clips[clip] && m.clips[clip].old ? clip : null;
+  if(add) clip=m.clips[add].old;
   if(mainKey && HELD[mainKey].hand==='l'){ offKey=null; }            /* a bow takes the left hand */
   /* 2026-09-27 (Justin, equip plan D3a): the bow-shot clip has the bow painted into its frames, and the sword, axe or
      shield in the hands was drawn over it. Both hands' gear is put away while the shot plays. */
@@ -344,17 +586,45 @@ function drawCastLayers(e, cs, fr, dx, dy, w, h, g, time){
     mainKey=offKey=null;
     /* 2026-09-27: the approved Fae and Gloomling rows play the shot empty-handed (clips.ranged.bow false), as every
        melee row swings empty-handed, so the bow being shot is drawn in the left hand instead. */
-    var shot=m.clips && m.clips.ranged, aimBow=false;
+    var shot=m.clips && m.clips[add||'ranged'], aimBow=false;   /* 2026-10-06: the shoot row is empty-handed on every look */
     if(shot && shot.bow===false){
       var bow=[who.ranged, wpn].filter(function(it){ return heldKeyOf(it)==='bow'; })[0];
       if(bow && !(who===player && who.god==='grom' && typeof equipmentForbidden==='function' && equipmentForbidden('ranged',Object.assign({},bow)))){ wpn=bow; mainKey='bow'; aimBow=true; }
     }
   }
-  var items=[], grip=gripFor(m,row,col);
+  var items=[], grip=gripFor(m,row,col), floor=cell-(m.foot||0);
   if(grip){
     /* the grips say for every frame whether each hand is in front of the body or behind it */
-    if(mainKey) items.push({key:mainKey, ench:wpn.enchant, tier:heldTier(wpn), aim:clip==='ranged' && aimBow, strike:clip==='melee', z:grip[HELD[mainKey].hand].z});
-    if(offKey) items.push({key:offKey, ench:off.enchant, tier:heldTier(off), hand:'l', z:grip.l.z});
+    /* 2026-10-05: a swing that plays a list points the weapon at the target from launch to follow-through only (steps 3
+       to 6 of the nine), so its wind-up may point back and nothing jumps at either end. A row played straight has no
+       strike frame to time that by and keeps it pointed for the whole clip, as before */
+    /* 2026-10-05 (slice 1c): the off-hand swing of a dual wield (fr.off) is a jab of the lead hand. The main weapon keeps
+       its carry through it; the off-hand weapon rides that fist, and its own carry already points at the target */
+    var sw=mainKey && clip==='melee' && fr.step!==undefined && !fr.off ? heldSwing(mainKey, grip, fr, m) : null;
+    /* 2026-10-05 (Justin: 'all casters can cast'): every look casts with the off hand, so the wand hung at the floor
+       through the whole cast. up: how far the casting forearm is raised, 0 hanging to 1 level or higher. A wand whose
+       casting hand is empty goes to that hand once it is half way up and points where it points. 2026-10-06: with an
+       orb, tome or shield there the wand keeps its carry, and so does a staff (the head of this file) */
+    if(mainKey==='wand' && clip==='cast' && !offKey){
+      var up=Math.max(0, Math.min(1, 1-Math.sin(Math.atan2(grip.l.f[1]-grip.l.e[1], grip.l.f[0]-grip.l.e[0]))));
+      if(up>0.5) sw={hand:'l', fists:['l']};
+    }
+    /* 2026-10-05: the idle and the walk keep the angle and the layer of their first frame (see the head of this file) */
+    /* 2026-10-06 (the merge): on an added row (run, idle2) the carry is that row's own first frame */
+    var keep=(clip==='idle' || clip==='walk') && m.grips[add||clip] && m.grips[add||clip][0] || null, lay=keep || grip;
+    /* 2026-10-06 (Justin: 'during cast the spear in the dwarfs hand was wobbling'): the weapon hand does not cast, and its
+       forearm turns a few degrees from frame to frame in the cast art, which rocked a spear or staff about the fist. In a
+       cast the main-hand weapon keeps the angle and the layer of the cast's first frame, as an idle or walk loop does. A
+       wand moved to the casting hand is that hand's item and still points with it */
+    var keepMain=keep || (clip==='cast' && !(sw && sw.hand) && m.grips[add||clip] && m.grips[add||clip][0]) || null;
+    var at=function(hn, carry){ return {floor:floor, fall:clip==='death' ? heldFall(m, grip, hn, floor) : undefined, carry:carry===undefined ? keep : carry, end:clip==='death' && m.grips[add||'death'][m.grips[add||'death'].length-1]}; };   /* 2026-10-06: an added fall (death2) ends on its own last frame */
+    if(mainKey){ var mh=(sw && sw.hand) || HELD[mainKey].hand; items.push({key:mainKey, ench:wpn.enchant, tier:heldTier(wpn), aim:clip==='ranged' && aimBow, strike:clip==='melee' && !fr.off && (fr.step===undefined || (fr.step>2 && fr.step<7)), swing:sw, z:(keepMain||grip)[mh].z, at:at(mh, keepMain)}); }
+    /* 2026-10-06: the holy symbol is a disc held like a buckler now (Justin), each god's too, so it takes the shield's
+       rules: the carry, the floor, the death rule, and the striking weapon drawn in front of it */
+    if(offKey) items.push({key:offKey, ench:off.enchant, tier:heldTier(off), hand:'l', z:lay.l.z, at:at('l')});
+    /* 2026-10-06: an added row turns the weapon itself (heldRowSwing) or leaves it at its carry, so it is never mirrored
+       to the target; its bow stands square to the arrow's line */
+    if(add && mainKey){ if(add==='shoot' && aimBow) items[0].swing=heldBowAim(grip); else if(!sw || sw.a===undefined) items[0].strike=false; }
   } else if(pose){
     if(mainKey) items.push({key:mainKey, ench:wpn.enchant, tier:heldTier(wpn), aim:clip==='ranged' && aimBow, z:(pose[HELD[mainKey].hand==='r'?'rh':'lh']||[0,0,0])[2]});
     /* the off hand is the left one, whatever hand the item's own entry names (2026-09-20) */
@@ -364,52 +634,88 @@ function drawCastLayers(e, cs, fr, dx, dy, w, h, g, time){
     items.forEach(function(it){ if((it.hand||HELD[it.key].hand)==='l' && clip!=='melee' && clip!=='death') it.z=Math.max(0, it.z); });
   }
   var drawH=m.stand*sc;
-  items.forEach(function(it){ if(it.z<0) drawHeld(g, it.key, pose, rest, dx, dy, sc, drawH, it.ench, now, it.tier, it.hand, cell, it.aim, grip, it.strike); });
+  /* 2026-10-05 (Justin: 'the sword disappears under the shield'): the off-hand item was always drawn after the main
+     weapon. While the weapon strikes it is drawn last, in front of the shield. 2026-10-06: and on the step after the
+     follow-through, where the blade still crosses the shield (it dropped under it for that one step); and on a frame of
+     the idle or the walk whose own grip puts the shield hand behind the body and the weapon hand in front: the carry
+     keeps the shield in front there, and it hid the sword for half of every stride on the looks that turn side-on */
+  if(items.length>1 && (items[0].strike || (clip==='melee' && fr.step===7 && !fr.off) || (keep && grip.l.z<0 && grip.r.z>=0))) items.reverse();
+  var put=function(it){ drawHeld(g, it.key, pose, rest, dx, dy, sc, drawH, it.ench, now, it.tier, it.hand, cell, it.aim, grip, it.strike, it.swing, it.at); };
+  items.forEach(function(it){ if(it.z<0) put(it); });
   var look=armorLook(arm);
   if(look){ g.drawImage(tintedFrame(cs,row,col,look,pose), 0,0,cell,cell, dx,dy,w,h); }
   else g.drawImage(cs.img, fr.sx, fr.sy, cell, cell, dx, dy, w, h);
-  items.forEach(function(it){ if(it.z>=0) drawHeld(g, it.key, pose, rest, dx, dy, sc, drawH, it.ench, now, it.tier, it.hand, cell, it.aim, grip, it.strike); });
-  /* Fingers close over the grip rather than the handle covering the whole fist. */
+  /* Fingers close over the grip rather than the handle covering the whole fist. 2026-10-05: item by item, straight after
+     each is drawn, so a fist never shows through an item drawn over it afterwards (it showed as a dot on the shield); and
+     over the orb and the tome too, which are held now */
   items.forEach(function(it){
-    var held=HELD[it.key];if(it.z<0||held.shield||held.float)return;
-    var hn=(it.hand||held.hand), hand=grip ? grip[hn].f : pose && pose[hn==='r'?'rh':'lh'];if(!hand)return;
-    g.save();g.beginPath();g.arc(dx+hand[0]*sc,dy+hand[1]*sc,cell*.018*sc,0,Math.PI*2);g.clip();
-    if(look)g.drawImage(tintedFrame(cs,row,col,look,pose),0,0,cell,cell,dx,dy,w,h);
-    else g.drawImage(cs.img,fr.sx,fr.sy,cell,cell,dx,dy,w,h);
-    g.restore();
+    var held=HELD[it.key];if(it.z<0)return;
+    put(it);
+    if(held.shield && it.key!=='tome')return;
+    (it.swing && it.swing.fists || [it.hand||held.hand]).forEach(function(hn){   /* 2026-10-05: each hand on a pole */
+      var hand=grip ? grip[hn].f : pose && pose[hn==='r'?'rh':'lh'];if(!hand)return;
+      /* 2026-10-06: a hand this frame's own grip puts behind the body has no fingers to show (an item kept in front
+         through a walk had a disc of clothing painted on it there) */
+      if(grip && grip[hn].z<0)return;
+      g.save();g.beginPath();
+      /* 2026-10-06: an orb or a tome is held in the hand, not on a handle through the fist: the whole painted hand is
+         drawn over it (handRuns), in the cell's own pixels */
+      if(grip && (held.float || held.shield)){
+        g.translate(dx,dy);g.scale(sc,h/cell);
+        handRuns(cs,fr.sx,fr.sy,grip[hn]).forEach(function(run){g.rect(run[0],run[1],run[2],1);});
+        g.clip();g.scale(1/sc,cell/h);g.translate(-dx,-dy);
+      }
+      else{g.arc(dx+hand[0]*sc,dy+hand[1]*sc,cell*GRIP_FINGERS*sc,0,Math.PI*2);g.clip();}
+      if(look)g.drawImage(tintedFrame(cs,row,col,look,pose),0,0,cell,cell,dx,dy,w,h);
+      else g.drawImage(cs.img,fr.sx,fr.sy,cell,cell,dx,dy,w,h);
+      g.restore();
+    });
   });
 }
 
 /* ---------------------------------------------------------------- the paper doll */
 /* who: the character to draw, the player by default. 2026-09-27 (Justin, equip plan D12): the creation screen passes the
    starting kit's character, so its preview shows the kit through this same path. */
+/* Static dolls ask for their small native source before any animation atlas. A cold
+ * fallback stays on this exact look, so an underwear preview cannot borrow a costume. */
+function dollImageReady(img){return !!(img && img.complete!==false && (img.naturalWidth===undefined || img.naturalWidth>0));}
+function dollSheetFor(look){
+  var m=AS.cast && AS.cast[look],dm=m && m.doll,di=dm && atl('cast-'+look+'-doll.webp');
+  if(dollImageReady(di))return {img:di,m:dm,look:look};
+  var image=m && atl('cast-'+look+'.webp');
+  return dollImageReady(image)?{img:image,m:m,look:look}:null;
+}
+function dollStillRow(sheet){
+  var m=sheet.m,idle=m.clips && m.clips.idle2;
+  /* The approved underwear drawing lives on idle2; the old row-7 still has clothing leftovers. */
+  if(/-unclad$/.test(sheet.look) && idle && idle.old==='idle')return idle.row;
+  return m.static_row!==undefined?m.static_row:(m.clips.idle?m.clips.idle.row:0);
+}
 function watchDollArt(el,size,who,portrait,currentPlayer){
   if(typeof watchStaticArt!=='function')return;
   var look=castLookFor(who.look,who.god),m=AS.cast&&AS.cast[look],files=[];
-  var high=m&&m.doll&&atl('cast-'+look+'-doll.webp');
-  if(!high){
-    if(m&&m.doll)files.push('cast-'+look+'-doll.webp');
-    var sheet=castSheet(look);if(m&&(!sheet||sheet.look!==look))files.push('cast-'+look+'.webp');
-  }
+  var sheet=dollSheetFor(look);
+  if(m && m.doll && (!sheet || sheet.m!==m.doll))files.push('cast-'+look+'-doll.webp');
+  if(m && !sheet)files.push('cast-'+look+'.webp');
   var gear=castEquipmentFor(who);
   if(AS.map&&AS.map.held&&(heldKeyOf(gear.weapon)||heldKeyOf(gear.off))&&!atl('map-held.webp'))files.push('map-held.webp');
   watchStaticArt(el,files,function(){
     if(portrait)paintDollPortrait(el,size,who);else paintDoll(el,size,who);
-  },function(){return !currentPlayer||who===player;});
+  },function(){return (!currentPlayer||who===player) && castLookFor(who.look,who.god)===look;});
 }
 function paintDoll(el, size, who){
   if(!el)return;
   var currentPlayer=!who||who===player;
   if(typeof cancelStaticArtPaint==='function')cancelStaticArtPaint(el);
-  var look=who ? castLookFor(who.look, who.god) : playerCastLook(), cs=castSheet(look);
-  who=who||player;
-  var preferred=AS.cast&&AS.cast[look],dm=preferred&&preferred.doll,di=dm&&atl('cast-'+look+'-doll.webp'),hi=!!(di&&di.complete&&di.naturalWidth);
-  if(hi)cs={img:di,m:dm,look:look};
-  if(!cs || !AS.map || !AS.map.held){paintArt(el,'cast',look,size);watchDollArt(el,size,who,false,currentPlayer);return;}
+  who=who||player;if(!who)return;
+  var look=castLookFor(who.look,who.god),cs=dollSheetFor(look),preferred=AS.cast&&AS.cast[look];
+  var hi=!!(cs && preferred && cs.m===preferred.doll);
+  if(!cs){el.replaceChildren();watchDollArt(el,size,who,false,currentPlayer);return;}
+  if((!AS.map || !AS.map.held) && !/-unclad$/.test(look)){paintArt(el,'cast',look,size);watchDollArt(el,size,who,false,currentPlayer);return;}
   /* 2026-09-22 (Justin): the doll drew the map sheet's 107px figure at 231 CSS px, a x2.2 blow-up. tools/art/pack.py
      packs each native cut-out alone at 256 (cast-<look>-doll.webp, ASSETS.cast[look].doll); it is used here when it
      has loaded, and the map sheet stays the fallback. */
-  var m=cs.m, row = m.static_row!==undefined ? m.static_row : (m.clips.idle?m.clips.idle.row:0);
+  var m=cs.m, row=dollStillRow(cs);
   /* 2026-09-27 (Justin, equip plan step 5): the figure went through a 256px canvas and was then scaled again, a second
      smoothing pass (held items reached x4, x10 on a phone), and the 210px canvas cut the axe blade off the 275px figure.
      It is drawn once now, straight into a canvas as wide as the figure whose backing store is exactly its CSS size times
@@ -440,22 +746,18 @@ function paintDollPortrait(el,size,who){
   var currentPlayer=!who||who===player;
   if(typeof cancelStaticArtPaint==='function')cancelStaticArtPaint(el);
   who=who||player;if(!who)return false;
-  var look=castLookFor(who.look,who.god),sheet=castSheet(look);
-  var full=AS.cast && AS.cast[look],dm=full && full.doll;
-  var di=dm && atl('cast-'+look+'-doll.webp');
-  function ready(img){return !!(img && img.complete!==false && (img.naturalWidth===undefined || img.naturalWidth>0));}
-  var native=ready(di);
-  if(native)sheet={img:di,m:dm,look:look};
-  if(!sheet || !ready(sheet.img)){watchDollArt(el,size,who,true,currentPlayer);return false;}
-  var m=sheet.m,row=m.static_row!==undefined?m.static_row:(m.clips.idle?m.clips.idle.row:0);
+  var look=castLookFor(who.look,who.god),sheet=dollSheetFor(look);
+  var full=AS.cast && AS.cast[look],dm=full && full.doll,native=!!(sheet && sheet.m===dm);
+  if(!sheet){el.replaceChildren();watchDollArt(el,size,who,true,currentPlayer);return false;}
+  var m=sheet.m,row=dollStillRow(sheet);
   if(!(m.cell>0 && m.stand>0))return false;
   var S=Number(size);if(!Number.isFinite(S)||S<=0)S=68;
   var d=Number(window.devicePixelRatio);if(!Number.isFinite(d)||d<=0)d=1;
   var pixels=Math.max(1,Math.round(S*d)),gear=castEquipmentFor(who);
-  var mainKey=heldKeyOf(gear.weapon),offKey=heldKeyOf(gear.off);
+  var mainKey=heldKeyOf(gear.weapon),offKey=heldKeyOf(gear.off,who);
   if(mainKey && HELD[mainKey].hand==='l')offKey=null;
   var held=[mainKey,offKey].filter(Boolean).map(function(key){return objArt('held','held-'+key);});
-  var complete=(!dm||native) && (!sheet.look||sheet.look===look) && held.every(function(o){return o&&ready(o.img);});
+  var complete=(!dm||native) && (!sheet.look||sheet.look===look) && held.every(function(o){return o&&dollImageReady(o.img);});
   function itemView(it){return it?[heldKeyOf(it),it.icon,it.weight,heldTier(it),it.enchant||null,it.plus||0,!!it.cursed]:null;}
   var key=JSON.stringify([look,who.god||null,S,d,pixels,row,m.cell,m.stand,m.foot||0,complete,
     itemView(gear.weapon),offKey?itemView(gear.off):null,itemView(gear.armorItem),

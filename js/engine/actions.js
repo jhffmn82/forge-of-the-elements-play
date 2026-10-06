@@ -43,12 +43,16 @@
   /* Divine invocations can author a primary damage rule independent of the
    * ordinary spell/affinity formula; hit, crit and combat riders remain shared. */
   function divineSpellDamage(base,rank,divine){return Math.max(0,Math.round((base+5*Math.max(0,rank-1))*divine));}
+  function shadowDrain(affinity,rank,divine){
+    affinity=Math.max(0,affinity||0);rank=Math.max(0,rank||0);
+    return {chance:Math.min(1,(10*affinity+5*rank)/100),damage:Math.max(0,Math.round(2*affinity*(rank>0?divine||1:1)))};
+  }
   function spellDamage(amount,c){
     var n=amount;
     // Bolts and area spells deliberately retain their authored rounding order.
-    if(c.bolt&&c.numbing)n=Math.round(n*1.5);
+    if(c.bolt&&(c.numbing||c.surprise))n=Math.round(n*1.5);
     if(c.crit)n=Math.round(n*c.criticalMultiplier);
-    if(!c.bolt&&c.numbing)n=Math.round(n*1.5);
+    if(!c.bolt&&(c.numbing||c.surprise))n=Math.round(n*1.5);
     if(!c.bolt&&c.lightUndead)n=Math.round(n*1.5);
     return n;
   }
@@ -93,6 +97,6 @@
     function suspend(resolve){var prior=active;active=null;try{return resolve();}finally{active=prior;}}
     return Object.freeze({run:run,suspend:suspend,current:function(){return active;},on:function(name,fn){(listeners[name]||(listeners[name]=[])).push(fn);return function(){listeners[name]=listeners[name].filter(function(f){return f!==fn;});};}});
   }
-  var api=Object.freeze({lunge:lunge,reginaldLance:reginaldLance,criticalMultiplier:criticalMultiplier,criticalHit:criticalHit,resistance:resistance,spellDamage:spellDamage,divineSpellDamage:divineSpellDamage,damageCause:damageCause,create:create});
+  var api=Object.freeze({lunge:lunge,reginaldLance:reginaldLance,criticalMultiplier:criticalMultiplier,criticalHit:criticalHit,resistance:resistance,spellDamage:spellDamage,shadowDrain:shadowDrain,divineSpellDamage:divineSpellDamage,damageCause:damageCause,create:create});
   root.FoteActions=api;if(typeof module==='object'&&module.exports)module.exports=api;
 })(typeof globalThis==='object'?globalThis:this);

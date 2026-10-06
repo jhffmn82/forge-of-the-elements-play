@@ -94,7 +94,19 @@ function closeAdjacentDoors(){
   log(open.length>1 ? 'You close the doors.' : 'You close the door.','c-info'); sfx('door-close'); computeFOV(); endTurn();
 }
 
+function trampleMapMushrooms(actor){
+  if(!actor||gameEffects.airborne(actor))return;
+  var p=propAt(actor.x,actor.y);
+  if(p&&/mushroom|shroom|fungus/.test(p.name||'')&&!p.b){removeProp(p);setG(actor.x,actor.y,G_SHORT);}
+  if(floorMeta&&floorMeta.vegSpots){
+    var spots=floorMeta.vegSpots;
+    if((inCaverns()||inDeep())&&spots.some(function(sp){return sp.x===actor.x&&sp.y===actor.y&&(inCaverns()||sp.kind==='fungus');})){
+      floorMeta.vegSpots=spots.filter(function(sp){return sp.x!==actor.x||sp.y!==actor.y||!(inCaverns()||sp.kind==='fungus');});setG(actor.x,actor.y,G_SHORT);
+    }
+  }
+}
 function entryItemsAndTerrain(){
+  trampleMapMushrooms(player);
   var here=items.filter(function(it){ return it.x===player.x && it.y===player.y; });
   here.forEach(function(it){
     if(items.indexOf(it)<0)return;
@@ -285,8 +297,9 @@ function openCavernMerchant(id){
   $('mBody').querySelectorAll('[data-merchant-buy]').forEach(function(button){button.onclick=function(){var body=$('mBody'),scroll=body.scrollTop,opened=Array.from(body.querySelectorAll('details[open]')).map(function(d){return d.dataset.merchantDetails;});if(buyMerchantItem(id,Number(button.dataset.merchantBuy))){openCavernMerchant(id);opened.forEach(function(index){var d=$('mBody').querySelector('[data-merchant-details="'+index+'"]');if(d)d.open=true;});$('mBody').scrollTop=scroll;}};});return true;
 }
 function bumpProp(p){
+  if(p.cleansingShrine){if(p.used){log('The cleansing shrine has spent its blessing.','c-info');return true;}var count=cleanseCarriedCurses();if(count){p.used=true;log('The shrine removes all '+count+' item curse'+(count===1?'':'s')+'.','c-good');}else log('None of your carried or equipped items are cursed.','c-info');endTurn();return true;}
   if(p.eventRoom!==undefined)return interactUncommonEvent(p);
-  if(p.eventGate){log('The nearby lever controls this portcullis.','c-info');return true;}
+  if(p.eventGate){log('A lever elsewhere on this floor controls this portcullis.','c-info');return true;}
   if(p.offeringBowl){log('Leave an offering at my feet and you will be rewarded with change.','c-info');return true;}
   if(p.merchantId!==undefined){openCavernMerchant(p.merchantId);return true;}
   if(typeof FoteUnmakerEncounter!=='undefined'&&FoteUnmakerEncounter.forgeInfo(p.x,p.y)){
@@ -478,6 +491,12 @@ function ignite(x,y,src){
   if(!inb(x,y)) return;
   var g=gAt(x,y), p=propAt(x,y), t=at(x,y);
   if(t===WATER) return;
+  if(p&&/mushroom|shroom|fungus/.test(p.name||''))p.burn=1;
+  if(floorMeta&&floorMeta.vegSpots&&(inCaverns()||inDeep())){
+    var spots=floorMeta.vegSpots;if(spots.some(function(sp){return sp.x===x&&sp.y===y&&(inCaverns()||sp.kind==='fungus');})){
+      floorMeta.vegSpots=spots.filter(function(sp){return sp.x!==x||sp.y!==y||!(inCaverns()||sp.kind==='fungus');});setG(x,y,G_SHORT);g=G_SHORT;
+    }
+  }
   if(g===G_GRASS || g===G_SHORT || g===G_WEB || (p && p.burn)){
     if(!fireT[idxOf(x,y)]) { sfx('fire-ignite',{from:{x:x,y:y}}); }
     fireT[idxOf(x,y)] = Math.max(fireT[idxOf(x,y)], g===G_GRASS?5:3);
@@ -731,6 +750,8 @@ function shootAt(e,preferred){
     log('The <b>'+front.name+'</b> is in the way and takes the arrow.','c-info');e=front;
   }
   var weapon=isRangedWeapon(player.ranged)?player.ranged:player.weapon;
+  /* 2026-10-05 (slice 1c): a bow shot never turned the hero (a spell does, combat.js castAt): he shot over his shoulder */
+  var sf=typeof faceOf==='function' && faceOf(e.x-player.x, e.y-player.y); if(sf) player.face=sf;
   attack(player,e,1,weapon.name);
   player.hidden=0; endTurn(); return true;
 }

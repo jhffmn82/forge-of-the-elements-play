@@ -129,7 +129,10 @@ function packPlaneCluster(p){
 /* ---------------------------------------------------------------- drawing at natural size */
 function packDraw(p, name, alpha){
   var o=packArt(name); if(!o) return false;
-  var s=TS/64, res=o.res||1, w=p.w||1, h=p.h||1, fw=o.fullW*s, fh=o.fullH*s;
+  // Outcrop parts and wall clusters share the same crystal scale. Direct
+  // crystal props get their fit in environment-props.js, so do not scale twice.
+  var crystal=(p.name==='pt-part'||p.name==='pt-cluster')&&/^crystal-(gold|violet|amber|fire|water|air)(-small)?$/.test(name);
+  var s=TS/64*(crystal?.7:1), res=o.res||1, w=p.w||1, h=p.h||1, fw=o.fullW*s, fh=o.fullH*s;
   var left=(p.x-camX)*TS + (w*TS-fw)/2, bottom=(p.y-camY+h)*TS;
   var flip=false, flat=!!p.flat || !p.b;
   if(name==='wall-cobweb'){ flip=!!p.webLeft; }

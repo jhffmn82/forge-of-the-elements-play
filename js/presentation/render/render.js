@@ -129,7 +129,14 @@ var PACKED_OBJECT_GROUPS=['props','chests','structures','traps','items','terrain
 function packedObjectSpec(group,name){
   if(group==='items'&&name==='item-hawaiian-shirt')group='hawaiian-shirt';
   if(group==='icons'&&AS.map&&AS.map[name]&&AS.map[name].items[name])group=name;
-  if(name==='item-censer'){group='knife';name='ceremonial-knife';}   /* the icon only: the knife in the hand is the 64px held-censer (2026-09-27, D2a) */
+  /* 2026-10-05 (item art): not while the knife has a picture on environment-items.webp. That sheet answers the 'items' group
+     only, and the hotbar asks through 'icons', so a knife on the hotbar still loaded the 6 MiB painting and drew from it.
+     No packed picture answers for it then: under it on map-items.webp sits the old censer bowl, a different object, which
+     showed whenever the new sheet was out of memory. Nothing is drawn until that sheet is back. */
+  if(name==='item-censer'){
+    if(typeof FoteEnvironmentProps!=='undefined'&&FoteEnvironmentProps.source&&FoteEnvironmentProps.source('items',name))return null;
+    group='knife';name='ceremonial-knife';   /* the icon only: the knife in the hand is the 64px held-censer (2026-09-27, D2a) */
+  }
   if(group==='structures'&&name==='stairs-up'&&AS.map&&AS.map.stairs)group='stairs';
   if(group==='props'&&name==='weapon-rack'&&AS.map&&AS.map.rack)group='rack';
   var g=AS.map && AS.map[group]; if(!g || !g.items[name]) return null;
@@ -181,6 +188,19 @@ function whiteCut(img, sx,sy,sw,sh,color){
   WHITE_CACHE.set(key,c); if(WHITE_CACHE.size>WHITE_CACHE_MAX) WHITE_CACHE.delete(WHITE_CACHE.keys().next().value);
   return c;
 }
+/* 2026-10-05 (item art, C1): whole-number nearest-neighbour copies of 64px loot, for drawObjectSprite below. Bounded like
+   WHITE_CACHE: the 32 most recently drawn. A copy is the art's trimmed box times k each way, at most (64k)^2 pixels:
+   64 KiB at k 2, 144 KiB at k 3. None is made at pixel ratio 1. Measured with 48 different pieces of loot on one
+   screen before the 1080p rule below: the full 32 and 1.07 MiB on a pixel-ratio 2 laptop. */
+var LOOT_UP=new Map(), LOOT_UP_MAX=32;
+function lootCopy(o,k){
+  var key=o.img.src+'|'+o.sx+','+o.sy+','+o.sw+','+o.sh+'x'+k, c=LOOT_UP.get(key);
+  if(c){ LOOT_UP.delete(key); LOOT_UP.set(key,c); return c; }
+  c=document.createElement('canvas'); c.width=o.sw*k; c.height=o.sh*k;
+  var g=c.getContext('2d'); g.imageSmoothingEnabled=false; g.drawImage(o.img,o.sx,o.sy,o.sw,o.sh,0,0,c.width,c.height);
+  LOOT_UP.set(key,c); if(LOOT_UP.size>LOOT_UP_MAX) LOOT_UP.delete(LOOT_UP.keys().next().value);
+  return c;
+}
 /* draw a trimmed object in a tile. fit: fraction of the tile; feet: stand on the tile's lower edge */
 /* Adapted from render/place.js at fb69933: round destination edges together, not each size separately. */
 function placementRect(x,y,w,h){
@@ -197,7 +217,18 @@ function drawObjectSprite(o, px, py, opt){
   var rect=placementRect(dx,dy,w,h); dx=rect.x;dy=rect.y;w=rect.w;h=rect.h;
   ctx.save();
   ctx.globalAlpha=(opt.alpha===undefined?1:opt.alpha);
-  ctx.imageSmoothingEnabled = s<1;
+  ctx.imageSmoothingEnabled = s<1 || (o.res||1)>1;
+  /* 2026-10-05 (item art, C1): 64px loot on the floor chose its filter from the CSS scale alone, so on a pixel-ratio 2 or 3
+     screen art the page shrinks (s under 1) was blown up through the smoothing filter. When the real device scale enlarges
+     such art, it now draws from a whole-number copy, so the one filtered step only shrinks, at 'high' (the rule ui.js
+     paintIconArt and equip.js drawHeld already use). Loot in 64px cells only: a rune has no cell and a 128px picture says
+     128, so both keep the line above. Art the page itself enlarges (s 1 or more) keeps the hard pixels of the line above:
+     a copy there measured softer than today (review, same day), so a pixel-ratio 1 screen draws exactly as before. */
+  var src=o;
+  if(opt.loot && o.cell===64 && s<1){
+    var lt=ctx.getTransform(), lf=s*Math.max(Math.hypot(lt.a,lt.b), Math.hypot(lt.c,lt.d));
+    if(lf>1+1e-6){ var lc=lootCopy(o, Math.ceil(lf-1e-6)); src={img:lc, sx:0, sy:0, sw:lc.width, sh:lc.height}; ctx.imageSmoothingEnabled=true; ctx.imageSmoothingQuality='high'; }
+  }
   if(opt.flip){ ctx.translate(dx+w/2,0); ctx.scale(-1,1); ctx.translate(-(dx+w/2),0); }
   if(opt.outline){
     var cut=whiteCut(o.img,o.sx,o.sy,o.sw,o.sh), edge=Math.max(1,Math.round(TS/40));
@@ -205,7 +236,7 @@ function drawObjectSprite(o, px, py, opt){
     [[-edge,0],[edge,0],[0,-edge],[0,edge],[-edge,-edge],[edge,-edge],[-edge,edge],[edge,edge]].forEach(function(d){ctx.drawImage(cut,dx+d[0],dy+d[1],w,h);});
     ctx.globalAlpha=(opt.alpha===undefined?1:opt.alpha);
   }
-  ctx.drawImage(o.img, o.sx,o.sy,o.sw,o.sh, dx,dy,w,h);
+  ctx.drawImage(src.img, src.sx,src.sy,src.sw,src.sh, dx,dy,w,h);
   if(opt.flash>0){ ctx.globalAlpha*=opt.flash; ctx.drawImage(whiteCut(o.img,o.sx,o.sy,o.sw,o.sh), dx,dy,w,h); }
   ctx.restore();
   return true;
@@ -284,6 +315,7 @@ function baseTileSprite(x,y,t){
   if(t===TOLL) return objArt('structures','door-spiked');
   if(t===ICEDOOR) return objArt('structures','door-ice') || objArt('props','ice-block');
   if(t===THORNS) return objArt('structures','door-thorns') || objArt('props','vines');
+  if(t===SEALED&&propAt(x,y)&&propAt(x,y).eventGate)return objArt('props','portcullis-closed');
   if(t===SEALED) return (floorMeta && floorMeta.crystalDoor && floorMeta.crystalDoor.x===x && floorMeta.crystalDoor.y===y && objArt('structures','door-crystal')) || objArt('structures','door-iron');
   if(t===STAIRS) return objArt('structures','stairs-down');
   if(t===CHEST) { var k=chestKind[idxOf(x,y)]||'chest-wood'; return objArt('chests', k==='mimic'?'chest-wood':k); }
@@ -475,13 +507,19 @@ function drawVines(x, y, px, py, alpha, now){
 }
 
 /* ---- traps: set into the floor, drawn flat so they sit in the tile like the flagstones around them ---- */
+function trapArtworkRect(art,px,py){
+  // All trap mechanisms share an 80% tile footprint.
+  // Give every discovered mechanism the same footprint, preserving aspect.
+  var s=TS/64,w=art.sw/art.res*s,h=art.sh/art.res*s;
+  var scale=TS*.8/Math.max(w,h);
+  w*=scale;h*=scale;
+  return placementRect(px+(TS-w)/2,py+(TS-h)/2,w,h);
+}
 function drawTrapArtwork(f,px,py,covered,t){
   var info=TRAPS[f.kind];
   if(!info||covered&&/^(dart|fire|gas|frost|spark)$/.test(f.kind))return false;
   var art=objArt('traps',info.sprite);if(!art)return false;
-  // 2026-09-27 (Justin, render plan Q16): each painted trap sits at its authored place and size in the
-  // tile (its 64-unit canvas), not stretched into the old procedural plate's 32px box.
-  var s=TS/64,u=TS/32,r=placementRect(px+art.ox*s,py+art.oy*s,art.sw/art.res*s,art.sh/art.res*s),x=r.x,y=r.y,w=r.w,h=r.h;
+  var u=TS/32,r=trapArtworkRect(art,px,py),x=r.x,y=r.y,w=r.w,h=r.h;
   ctx.save();ctx.imageSmoothingEnabled=true;
   if(f.kind==='alarm'){
     // Separate only the hanging bell from its authored wire and posts. Its
@@ -573,10 +611,14 @@ function drawBaseGroundDecal(gv, x, y, px, py, alpha, now){
       ctx.strokeStyle='#4E8434'; ctx.lineWidth=Math.max(1.5,TS*0.035); ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(cx+(H(i+120)-0.5)*TS*0.08, cy-TS*0.1); ctx.stroke(); }
   } else if(gv===G_ASH || gv===G_SCORCH){
     var ash = gv===G_ASH;
-    for(i=0;i<5;i++){ cx=px+TS*(0.25+0.5*H(i)); cy=py+TS*(0.25+0.5*H(i+10)); r=TS*(0.18+0.2*H(i+30));
-      ctx.fillStyle= ash ? 'rgba(20,18,16,.35)' : 'rgba(10,8,6,.4)'; ctx.beginPath(); ctx.ellipse(cx,cy,r,r*0.8,H(i+5)*3,0,Math.PI*2); ctx.fill(); }
-    if(ash) for(i=0;i<14;i++){ ctx.fillStyle= H(i+50)<0.3 ? 'rgba(170,160,150,.55)' : 'rgba(95,88,82,.6)';
-      ctx.fillRect(px+TS*(0.1+0.8*H(i+60)), py+TS*(0.1+0.8*H(i+70)), Math.max(1,TS*0.05), Math.max(1,TS*0.04)); }
+    var stain=cachedRaster((ash?'ash':'scorch')+'@',x,y,function(xx,yy){return scorchRaster(xx,yy,ash);});
+    ctx.save();ctx.beginPath();
+    // Burn residue spills onto neighbouring revealed floor, never walls or fog.
+    var all=revealAll&&!playerBlind();
+    for(var sy=-1;sy<=1;sy++)for(var sx=-1;sx<=1;sx++){
+      var nx=x+sx,ny=y+sy,ng=gAt(nx,ny),nt=at(nx,ny);if((sx||sy)&&(ng===G_SCORCH||ng===G_ASH))continue;if(inb(nx,ny)&&nt!==CHASM&&!isWallLike(nt)&&(all||seen[idxOf(nx,ny)]))ctx.rect(px+sx*TS,py+sy*TS,TS,TS);
+    }
+    ctx.clip();ctx.imageSmoothingEnabled=true;ctx.drawImage(stain,px-TS*.25,py-TS*.25,TS*1.5,TS*1.5);ctx.restore();
     if(ash && !ANIM.reduce){ var glow=0.25+0.25*Math.sin(now/500+x*3+y); ctx.fillStyle='rgba(226,98,43,'+(glow*0.5)+')';
       ctx.fillRect(px+TS*(0.3+0.4*H(90)), py+TS*(0.3+0.4*H(91)), Math.max(1,TS*0.04), Math.max(1,TS*0.04)); }
   } else if(gv===G_PUDDLE){
@@ -609,16 +651,164 @@ function drawBaseGroundDecal(gv, x, y, px, py, alpha, now){
 }
 
 /* ---- characters: cast sheets with clips ---- */
-function drawInteractionGlow(px,py,alpha,now){
+function drawInteractionGlow(px,py,alpha,now,ring){
   ctx.save();var pulse=ANIM.reduce?1:.85+.15*Math.sin(now/550);ctx.globalAlpha=alpha*pulse;
   var aura=ctx.createRadialGradient(px+TS*.5,py+TS*.55,TS*.12,px+TS*.5,py+TS*.55,TS*.65);
   aura.addColorStop(0,'rgba(198,137,255,.65)');aura.addColorStop(1,'rgba(153,85,240,0)');ctx.fillStyle=aura;ctx.fillRect(px-TS*.15,py-TS*.1,TS*1.3,TS*1.3);
+  if(ring){ctx.strokeStyle='#DDBBFF';ctx.lineWidth=Math.max(1.5,TS*.025);ctx.beginPath();ctx.ellipse(px+TS*.5,py+TS*.78,TS*.43,TS*.2,0,0,Math.PI*2);ctx.stroke();}
   ctx.restore();
 }
 var CLIP_MS = {idle:130, walk:60, cast:65, ranged:65, melee:55, hurt:75, death:95, attack:60};
 /* how long each action clip winds up before its projectile leaves or its blow connects */
 var CLIP_WINDUP = {melee:170, attack:170, ranged:300, cast:260};
-function setClip(e, name){
+/* 2026-10-05 (Justin: 'the attack animations don't make sense for 2h weapons or spears'): every weapon played the melee
+   row's nine frames in order at one speed, so no look had its strike out when the blow lands (the enemy flashes about
+   297ms in) and none came back to its stand. A swing may play its row as a list of nine steps instead.
+   CLIP_HOLD: how long each step shows, in 99ths of the clip (5ms each at 495ms; none under 34ms, one paint at an even
+     30 a second): ready, two of wind-up, launch on the 170ms swing, reach, the strike held across the hit,
+     follow-through, two back to the stand. Shares of the clip, so it is exactly as long as it was. At an Animation
+     speed above 1x a step that would be shorter than a paint joins the step after it (clipFrame).
+   CLIP_PLAY: the frame of the look's own row each step shows, by weapon family: pole (spear, staff), fist (bare hands),
+     arm (every other weapon). lead: the rear arm never comes forward on this look, so a pole is thrust from the lead
+     fist (equip.js heldSwing; interim, one hand). A look with no entry for a family has no strike frame for it and
+     plays its row straight, as before: that is also how a look is put back on the old swing.
+     The strike step holds the frame whose fist or weapon is out furthest: on five of the six men a bare lead fist is
+     out on frame 7 and tucked again on 8, where the weapon hand's thrust lands. */
+var CLIP_HOLD = {melee:[11,13,10,7,7,24,9,9,9], cast:[9,11,11,11,13,13,10,10,11], ranged:[8,8,8,8,9,14,14,15,15], death:[11,11,11,11,11,11,11,11,11]};
+/* the step on which the blow lands, the bolt leaves or the arrow is loosed: with Motion off nothing winds up, so a list starts there */
+var CLIP_LAUNCH = {melee:3, cast:4, ranged:5};
+var CLIP_PLAY = (function(){
+  var thrust={f:[0,4,5,6,7,8,7,5,1]}, men={fist:{f:[0,4,5,6,6,7,6,5,1]}, arm:thrust, pole:thrust};
+  var lead=function(f){ return {f:f, lead:1}; }, jab={f:[0,2,3,3,4,4,3,2,1]}, lunge={f:[0,2,3,4,4,5,4,2,1]}, guard=lead([0,3,4,7,7,8,7,3,1]);
+  return {
+    'human-m':{fist:thrust, arm:thrust, pole:thrust}, 'gloomling-m':men, 'fae-air-m':men, 'fae-earth-m':men, 'fae-fire-m':men, 'fae-water-m':men,
+    'elf-m':{pole:{f:[0,3,4,5,6,5,7,8,1]}}, 'elf-f':{pole:lead([0,2,3,4,5,6,7,8,1])},
+    'dwarf-m':{fist:{f:[0,1,2,3,4,5,7,2,1]}, pole:lead([0,1,2,3,4,5,7,2,1])},
+    'dwarf-f':{fist:{f:[0,1,1,2,3,6,7,8,1]}, pole:lead([0,1,1,2,3,6,7,8,1])},
+    'fae-air-f':{fist:lunge, pole:guard}, 'fae-earth-f':{fist:lunge, pole:lead([0,3,4,7,8,7,8,3,1])},
+    'fae-fire-f':{fist:jab, pole:guard}, 'fae-water-f':{pole:guard}, 'gloomling-f':{pole:guard},   /* fae-fire-f: her frame 5 is painted with a haze */
+    'human-f':{pole:lead([0,2,3,6,7,8,7,3,1])},
+    /* 2026-10-05 (slice 1c): the Chad looks punch with bare hands only. Seven of the fourteen have a frame whose fist is
+       out, and their punch is held on the hit; the other seven have no such frame and play their row straight */
+    'human-m-unclad':{fist:men.fist}, 'gloomling-m-unclad':{fist:men.fist},
+    'elf-f-unclad':{fist:{f:[0,2,3,4,5,5,6,7,1]}}, 'fae-air-f-unclad':{fist:{f:[0,2,3,4,5,5,6,7,1]}}, 'fae-air-m-unclad':{fist:{f:[0,2,3,4,5,5,6,3,1]}},
+    'fae-water-f-unclad':{fist:{f:[0,3,4,5,6,6,7,8,1]}}, 'fae-water-m-unclad':{fist:{f:[0,4,5,6,8,8,7,4,1]}}
+  };
+})();
+/* 2026-10-05 (slice 1c; PLAN 6a item 14 as CRITIC amends it). The other rows play as lists too. Every list was chosen
+   look by look from the frames themselves (boards/out/playback/NOTES.md says which and why); a look with no entry plays
+   that row straight, as before, and taking an entry out puts the look back.
+   cast   - out and back: the gather, the raised hand held across the release (260ms), then down again, so the clip ends
+            near the stand and no frame with painted spell light is shown. The peak is the look's last frame with no
+            paint on it: 5, 4 or 3, and 2 on the female Dwarf and the Water Fae Chad man, whose frame 3 is already lit.
+            The clothed Fae and the Gloomling rows have no paint but drop their arms for one front-facing frame (6) mid-cast.
+   ranged - the draw comes early and full draw is held through the release (300ms), then the bow comes down. Where the
+            bow and arrow are painted into the row the step after the release goes to a frame with no arrow on the string.
+   death  - starts on the look's own first frame of the fall and holds it a beat; the figure used to stand for two to
+            five frames after the killing blow. The body lies still for what is left of the clip.
+   idle   - the stand, as a loop of its calm frames forward then back (CLIP_MS.idle each; a frame twice is a hold), for
+            the looks whose row turns the head to the camera, slides, or jumps where it loops. */
+(function(){
+  var up45=[0,1,2,3,4,5,4,3,1], up4=[0,1,2,3,4,4,4,3,1], up48=[0,1,2,3,4,4,8,3,1], up3=[0,1,2,2,3,3,2,1,0];
+  var late=[0,3,4,5,6,7,8,4,1], lateF=[0,2,3,5,6,7,8,3,1];
+  var fall2=[2,2,3,4,5,6,7,8,8], fall3=[3,3,4,5,6,7,8,8,8], fall4=[4,4,5,6,7,8,8,8,8], fall5=[5,5,6,6,7,7,8,8,8];
+  var there=[0,1,2,3,4,5,6,7,8,7,6,5,4,3,2,1], calm3=[0,0,1,2,3,3,2,1], calm4=[0,0,1,2,3,4,4,3,2,1];
+  var glance=[0,0,1,2,3,4,5,6,7,8,8,7,6,5,4,3,2,1];
+  var rows={
+    'human-m':{cast:up48, ranged:[0,3,4,5,6,7,3,3,0], death:fall4, idle:[0,0,8,8,7,7,8,8]},
+    'human-f':{cast:up45, ranged:[0,2,4,5,6,7,3,2,1], death:fall4},
+    'elf-m':{cast:up3, ranged:[0,3,4,5,7,8,7,3,1], death:fall4},
+    'elf-f':{cast:up4, ranged:[0,2,3,4,5,6,3,2,1], death:fall3, idle:[0,1,2,3,4,5,6,7,7,6,5,4,3,2,1,0]},
+    'dwarf-m':{cast:[0,1,2,2,3,3,7,8,0], ranged:[0,2,3,4,5,6,7,8,8], death:fall4},
+    'dwarf-f':{cast:[0,1,1,2,2,2,8,8,0], ranged:[0,1,2,4,5,7,2,2,1], death:fall4, idle:there},
+    'gloomling-m':{ranged:late, death:fall2}, 'gloomling-f':{cast:up45, ranged:lateF, death:fall2},
+    /* the Air and Fire men's idle rows are the trim Justin approved on 09-27 and 09-28 ('a little turn would be fine'),
+       and their sisters' glance at the camera is the gesture he likes on the Water Fae woman: all four rows play as they are */
+    'fae-air-m':{cast:up45, ranged:late, death:fall4}, 'fae-air-f':{cast:up45, ranged:lateF, death:fall4},
+    'fae-earth-m':{cast:up45, ranged:late, death:fall4, idle:calm3}, 'fae-earth-f':{cast:up45, ranged:lateF, death:fall4},
+    'fae-fire-m':{cast:up45, ranged:late, death:fall4}, 'fae-fire-f':{cast:up45, ranged:lateF, death:fall4},
+    'fae-water-m':{cast:up45, ranged:late, death:fall4, idle:[1,1,2,3,4,5,5,4,3,2]},
+    /* Justin likes her idle: every frame is kept, in its own order, and it runs back instead of snapping to the start */
+    'fae-water-f':{cast:up45, ranged:lateF, death:fall4, idle:glance},
+    'human-m-unclad':{cast:up48, death:fall4}, 'human-f-unclad':{cast:up45, death:fall4, idle:[1,1,1,2,2,2]},
+    'elf-m-unclad':{cast:up3, death:fall4}, 'elf-f-unclad':{cast:up4, death:fall3, idle:there},
+    'gloomling-m-unclad':{cast:up45, death:fall4, idle:calm4}, 'gloomling-f-unclad':{cast:up45, death:fall4, idle:[0,0,1,3,4,5,6,7,8,8,7,6,5,4,3,1]},   /* the same glance, kept; frame 2 hops */
+    'fae-air-m-unclad':{cast:[0,2,4,5,8,8,8,4,1], death:fall3}, 'fae-air-f-unclad':{cast:up4, death:fall3},
+    'fae-earth-m-unclad':{cast:up3, death:fall5, idle:calm3}, 'fae-earth-f-unclad':{cast:up3, death:fall4},
+    'fae-fire-m-unclad':{cast:[0,1,2,3,4,4,3,8,0], death:fall5, idle:[0,0,1,2,2,1]}, 'fae-fire-f-unclad':{cast:up3, death:fall4, idle:there},
+    'fae-water-m-unclad':{cast:[0,1,1,2,2,2,2,1,0], death:fall4, idle:there}, 'fae-water-f-unclad':{cast:up45, death:fall3, idle:calm3}
+  };
+  Object.keys(rows).forEach(function(look){
+    var r=rows[look], p=CLIP_PLAY[look]=Object.assign({}, CLIP_PLAY[look]);
+    Object.keys(r).forEach(function(k){ p[k]=k==='idle' ? r[k] : {f:r[k]}; });
+  });
+})();
+function clipPlay(look, clip){
+  var p=CLIP_HOLD[clip.name] && CLIP_PLAY[look];
+  if(clip.name!=='melee') return p && p[clip.name] || null;
+  /* 2026-10-05: the off-hand swing of a dual wield is a jab of the lead hand, which is where that weapon is */
+  return p && clip.art!==undefined && p[clip.off ? 'fist' : clip.art==='spear'||clip.art==='staff' ? 'pole' : clip.art ? 'arm' : 'fist'] || null;
+}
+/* 2026-10-06 (Justin: 'the attack animations don't make sense for 2h weapons or spears'). Every look's sheet now has
+   body rows drawn for the move, under its still (tools/art/install-rows.py; each says which row it stands in for: old).
+   The clip keeps its name, so the turn waits what it always did and no caller changes. Which row is drawn is chosen
+   in clipFrame, where the play lists are already resolved: the one place that has the sheet, the clip, what swings and
+   the clock in hand, and the one every drawer of the hero and his shadow asks for a frame. (These tables sit with
+   CLIP_PLAY, above setClip, so the tests that cut the lists out of this file by its text take them along.)
+   CLIP_ROW: the row an action plays, by its clip, and for a swing by what swings (fist: bare hands; the off-hand
+     swing of a dual wield and every underwear look punch too). A look whose sheet lacks the row (none was picked for
+     it, or it was taken out) plays its own row exactly as before, play list and all; a name taken out of this table
+     does the same for every look. CLIP_ROW_OFF: a pattern of 'look row' names held back from their new rows (none):
+     /-unclad / holds every underwear look back, /^fae-fire-m cast2$/ one row of one look.
+   ROW_HOLD: how long each of the nine frames shows, in 99ths of the clip, as CLIP_HOLD (written here in ms of the
+     585ms clip). A swing's rows use the swing's own list: wind-up before the launch at 170ms, the contact frame up
+     from 240 to 360ms across the hit, the stand by 495. shoot: full draw from 230ms, and the release frame is up from
+     298, as the arrow leaves (300ms). cast2: the open palm is out from 235 to 335ms, across the bolt (260ms). No step
+     is under a paint (34ms). flinch has no list: it plays at the hurt row's own pace, five steps of 75ms.
+   ROW_PLAY: the frame each step shows where that is not the step's own number. off: the off-hand swing of a dual wield
+     is the lead hand's jab, frame 2 of the punch row, out by the launch and held across the hit. flinch: its frame
+     0 is the stand, so the recoil shows as the blow lands and its deepest frame is held.
+   ROW_LAUNCH: the step a list starts on with Motion off, where nothing winds up (by clip).
+   2026-10-06, the final picks (Justin: 'Both runs, chosen by what's held'; the underwear looks are one drawing):
+   walk   - two run rows, by what the main hand holds: run2, the arm drive, for bare hands, a one-hand weapon, a
+            shield or a focus (and a bow, which rides the off hand); run, arms down, for a two-handed sword, an axe,
+            a spear or a staff, which a pumping fist would wave about. An underwear look carries nothing: run2.
+   idle   - idle2 on every look that has one (28 of 30), and its first frame is the stand with Motion off too.
+   death  - death2, the fall of the underwear looks, at the death clip's own holds. Its frame 0 is the stand, so
+            the fall starts on frame 1 and holds it a beat, as the old rows' lists do (ROW_PLAY).
+   heavy  - on every look the row's frame 1 crosses the arms on the chest (the take 3 track): the wind-up, frame 2,
+            is held from that step instead. The holds are the swing's own, so the clip is as long as it was and
+            the contact frame is up across the hit as before.
+   An underwear look never shows a row of its old drawing: its bellow, which names no weapon, punches too. */
+var CLIP_ROW={melee:{fist:'punch', bow:'punch', spear:'thrust', staff:'thrust', longsword:'heavy', axe:'heavy', sword:'strike', mace:'strike', dagger:'strike', censer:'strike', wand:'strike'},
+  walk:{fist:'run2', bow:'run2', sword:'run2', mace:'run2', dagger:'run2', censer:'run2', wand:'run2', longsword:'run', axe:'run', spear:'run', staff:'run'},
+  ranged:'shoot', cast:'cast2', hurt:'flinch', idle:'idle2', death:'death2'}, CLIP_ROW_OFF=null;
+var ROW_HOLD={shoot:[50,60,60,60,68,72,80,70,65], cast2:[45,60,65,65,100,70,60,55,65]}, ROW_PLAY={off:[0,1,1,2,2,2,1,1,0], flinch:[1,2,2,3,4], heavy:[0,2,2,3,4,5,6,7,8], death2:[1,1,2,3,4,5,6,7,8]}, ROW_LAUNCH={melee:3, ranged:5, cast:4};
+Object.keys(ROW_HOLD).forEach(function(k){ ROW_HOLD[k]=ROW_HOLD[k].map(function(ms){ return ms*99/585; }); });
+/* the added row this clip plays on this sheet (its name), or null: the sheet's own row plays */
+function clipRow(sheet, name, clip){
+  var r=CLIP_ROW[name], look=sheet.look;
+  if(!r || !look) return null;
+  var bare=/-unclad$/.test(look);
+  if(typeof r!=='string') r=!clip || (clip.art===undefined && !bare) ? null : r[clip.off || bare ? 'fist' : clip.art||'fist'];
+  var c=r && sheet.m.clips && sheet.m.clips[r];
+  return c && c.old===name && !(CLIP_ROW_OFF && CLIP_ROW_OFF.test(look+' '+r)) ? r : null;
+}
+/* the frame of added row r at q 99ths through its clip of T ms; f is the frame a row with no list is on. A row with a
+   list names its step (equip.js turns the weapon by it). A step shorter than a paint joins the step after it, and
+   what is left for the last steps, when that is shorter than a paint, joins the steps before it (Animation speed
+   above 1x). add: the row's name, for the drawer. 2026-10-06: where the row has a frame list of its own (ROW_PLAY:
+   heavy, death2) the step it names is the frame on screen, since the weapon is turned by the picture it is drawn on */
+function clipRowFrame(m, r, clip, q, T, f){
+  var c=m.clips[r], cell=m.cell, hold=ROW_HOLD[r]||CLIP_HOLD[clip.name], list=clip.off ? ROW_PLAY.off : ROW_PLAY[r];
+  if(!hold) return {sx:(list ? list[f] : f)*cell, sy:c.row*cell, add:r};
+  var min=34*99/T, a=0, i=ANIM.reduce ? ROW_LAUNCH[clip.name]||0 : 0, left=99;
+  for(var k=i; k--;) left-=hold[k];
+  for(;i<8;i++){ a+=hold[i]; left-=hold[i]; if(a>=min && left>=min){ if(q<a) break; q-=a; a=0; } }
+  return {sx:(list ? list[i] : i)*cell, sy:c.row*cell, step:list && !clip.off ? list[i] : i, add:r, off:clip.off};
+}
+/* wpn: the weapon a melee swing is made with (null: none, the row plays straight); left out, it is the figure's own */
+function setClip(e, name, wpn){
   if(!e) return;
   if(e._clip && e._clip.name==='death') return;
   /* clips share the effect queue: an action starts when the previous effect is done, and the lunge,
@@ -634,7 +824,22 @@ function setClip(e, name){
   if(seen) turnStartSlides();
   var slide=CLIP_WINDUP[name] && MOTION_STATE.get(e);
   if(slide && slide.mt && !(slide.hopHeight>1)) t0=Math.max(t0, slide.mt+(slide.dur||MOVE_MS));
+  var was=e._clip;
   e._clip={name:name, t0:t0};
+  if(name==='melee' && wpn!==null && typeof heldKeyOf==='function') e._clip.art=heldKeyOf(wpn||e.weapon);   /* 2026-10-05: its family, for CLIP_PLAY */
+  /* 2026-10-05 (slice 1c): a second swing in the same action (dual wield, Double Strike, Cleave, Lance) starts after the
+     first one's lunge and number, and replaced the first clip before a frame of it was painted: the body stood idle
+     through the first blow. The swings before it stay queued behind the new clip (prev, three at most) and clipFrame
+     shows each until the next begins. The turn still waits for the newest clip only, exactly as long as before.
+     The queue never runs more than 900ms ahead (above), so a fifth swing starts when the fourth does: it takes the
+     fourth's place and the swings before them stay.
+     2026-10-06: the hero and his shadow only. The Rootbound is given a cast clip too, and a second cast queued behind
+     its first kept the first one playing where a creature always dropped to its stand. */
+  if(was && nowC<t0 && (e===player || e.shadowClone) && name!=='attack' && was.name!=='attack' && CLIP_WINDUP[name] && CLIP_WINDUP[was.name]){
+    while(was && was.t0>=t0) was=was.prev;
+    if(was){ e._clip.prev=was; if(was.prev && was.prev.prev) delete was.prev.prev.prev; }
+  }
+  if(name==='melee' && wpn && wpn.kind==='off' && wpn.weapon) e._clip.off=1;
   if(seen) fxClock = t0 + CLIP_WINDUP[name];
 }
 /* Appearance is derived from current faith; the saved look remains the same
@@ -677,27 +882,75 @@ function shadeSummonSheet(){
   var sheet={img:canvas,m:source.m};SHADE_SUMMON_ART={source:source.img,sheet:sheet};return sheet;
 }
 function clipFrame(sheet, e, sliding){
-  var m=sheet.m, now=performance.now(), cell=m.cell;
+  var m=sheet.m, now=performance.now(), cell=m.cell, rest;
   if(m.chaos&&ANIM.reduce)return {sx:0,sy:m.static_row*cell};
   /* 2026-09-23 (Justin: the Magma Crawler changed art between asleep and awake): a creature whose animation rows
      drifted off its still (packet 04's fire and water five, stillPose in planesfwa.js) holds the still in every
      state, mid-clip included, until it is re-animated on model. */
   if(e.base && e.base.stillPose && !isShadeSummon(e) && m.static_row!==undefined) return {sx:0, sy:m.static_row*cell};
-  if(e._clip){
-    var c=m.clips[e._clip.name];
+  /* 2026-10-05 (slice 1c): of the swings queued in one action the newest that has begun is the one showing (setClip) */
+  var clip=e._clip;
+  while(clip && clip.prev && now<clip.t0) clip=clip.prev;
+  /* 2026-10-05 (slice 1c): a step taken while an older hurt or cast clip is still running ends that clip for the eye:
+     the walk shows, then the stand. The hero glided across the tile in that pose */
+  var slide=clip && sheet.look && (clip.name==='hurt' || clip.name==='cast') && typeof MOTION_STATE!=='undefined' && MOTION_STATE.get(e);
+  if(clip && !(slide && slide.stepped>clip.t0 && now>=slide.stepped)){
+    var c=m.clips[clip.name];
     if(c){
-      var ms=CLIP_MS[e._clip.name]||70, f=Math.floor((now-e._clip.t0)/ms);
-      if(e._clip.name==='death' && f>=c.frames) f=c.frames-1;
-      if(f>=0 && f<c.frames) return {sx:f*cell, sy:c.row*cell};
+      var ms=CLIP_MS[clip.name]||70, f=Math.floor((now-clip.t0)/ms);
+      if(clip.name==='death' && f>=c.frames) f=c.frames-1;
+      /* 2026-10-06: a look with the new body row for this action plays that row (CLIP_ROW), by its own holds. (Asked of
+         the hero's sheets only, as the lists below: a creature test that cuts this function out alone still runs.) */
+      var nr=f>=0 && f<c.frames && sheet.look && clipRow(sheet, clip.name, clip);
+      if(nr) return clipRowFrame(m, nr, clip, (now-clip.t0)/(ms*c.frames)*99, ms*c.frames, f);
+      /* 2026-10-05: a clip with a play list shows its step's frame and names the step (equip.js turns a swung weapon by it) */
+      var play=f>=0 && f<c.frames && sheet.look && clipPlay(sheet.look, clip);
+      if(play){
+        /* a step shorter than a paint (34ms; Animation speed above 1x) joins the step after it. Motion off lands
+           the blow as the clip starts (nothing winds up), so the list starts on its launch step (CLIP_LAUNCH).
+           2026-10-06 (the review: at 2x a swing's last step lasted 22ms, and with Motion off its first one 18): what is
+           left for the last steps, when that is shorter than a paint, joins the steps before it (left: the 99ths still
+           to come), and with Motion off the steps are joined from the launch step on. At 1x nothing changes */
+        var hold=CLIP_HOLD[clip.name], T=ms*c.frames, min=34*99/T, q=(now-clip.t0)/T*99, a=0, i=ANIM.reduce ? CLIP_LAUNCH[clip.name]||0 : 0, left=99;
+        for(var k=i; k--;) left-=hold[k];
+        for(;i<8;i++){ a+=hold[i]; left-=hold[i]; if(a>=min && left>=min){ if(q<a) break; q-=a; a=0; } }
+        return {sx:play.f[i]*cell, sy:c.row*cell, step:i, lead:play.lead, off:clip.off};
+      }
+      /* 2026-10-06: a row played straight says so too when it is the off-hand swing (equip.js keeps the main weapon at its carry) */
+      if(f>=0 && f<c.frames) return clip.off ? {sx:f*cell, sy:c.row*cell, off:1} : {sx:f*cell, sy:c.row*cell};
+      /* 2026-10-05: the hero's idle picks up from its first frame as an action clip ends, not from wherever the clock is
+         (until the next clip is queued: setClip replaces this one and the idle is back on the clock) */
+      if(f>=c.frames && sheet.look) rest=clip.t0+c.frames*ms;
     }
     /* Expired clips fall through without mutating the simulation actor. */
   }
-  if(ANIM.reduce){ var st=m.static_row!==undefined ? m.static_row : (m.clips.idle?m.clips.idle.row:0); return {sx:0, sy:st*cell}; }
+  if(ANIM.reduce){
+    /* 2026-10-06: a look with a redrawn idle stands on its first frame, the stand every added row starts from */
+    var ns=sheet.look && clipRow(sheet,'idle'); if(ns) return {sx:0, sy:m.clips[ns].row*cell, add:ns};
+    var st=m.static_row!==undefined ? m.static_row : (m.clips.idle?m.clips.idle.row:0); return {sx:0, sy:st*cell};
+  }
   /* 2026-09-19: Justin - a sleeping creature kept playing its idle (the Myconid swayed about with a Z over it).
      Asleep it holds its still pose until something wakes it. */
   if(e.state==='asleep'){ var sr=m.static_row!==undefined ? m.static_row : (m.clips.idle?m.clips.idle.row:0); return {sx:0, sy:sr*cell}; }
-  if(sliding && m.clips.walk){ var w=m.clips.walk; return {sx:(Math.floor(now/CLIP_MS.walk)%w.frames)*cell, sy:w.row*cell}; }
-  if(m.clips.idle){ var id=m.clips.idle, ph=((e.id||0)*97)%500; return {sx:(Math.floor((now+ph)/CLIP_MS.idle)%id.frames)*cell, sy:id.row*cell}; }
+  /* 2026-10-06 (Justin picked the run for walking). The run row is a bound a tile, two tiles to its nine frames, and its
+     frame follows the time on the move, 4.5 frames a step, counted on through every chained step (game.js slideWalked):
+     so a foot that is down stays where it is put and the stride never steps back while a direction is held. The redrawn
+     idle of the clothed Fae stands where their new rows stand, so no row pops against it */
+  /* 2026-10-06: which of the two runs, by what the main hand holds (CLIP_ROW.walk) */
+  var nw=sliding && sheet.look && typeof slideWalked==='function' && clipRow(sheet,'walk',{art:typeof heldKeyOf==='function' && typeof castEquipmentFor==='function' ? heldKeyOf(castEquipmentFor(e).weapon) : null});
+  if(nw){ var rn=m.clips[nw]; return {sx:(Math.floor(slideWalked(e,now))%rn.frames)*cell, sy:rn.row*cell, add:nw}; }
+  var ni=!sliding && sheet.look && clipRow(sheet,'idle');   /* 2026-10-06: standing only (a look on the move with no run row keeps its walk row) */
+  if(ni){ var i2=m.clips[ni]; return {sx:(Math.floor((now+(rest===undefined ? ((e.id||0)*97)%500 : -rest))/CLIP_MS.idle)%i2.frames)*cell, sy:i2.row*cell, add:ni}; }
+  /* 2026-10-05 (slice 1c; Justin 09-22: walking stuttered, 10-04: 'feet movement during walking isn't there or
+     consistent'). The hero's walk frame came off the wall clock: about three frames a tile, starting anywhere in the
+     row. It follows the time on the move now, the whole row to two tiles at 1x, counted on through every chained step
+     (game.js slideWalked), so the feet keep their place in the stride and never step back while a direction is held */
+  if(sliding && m.clips.walk){ var w=m.clips.walk, wf=sheet.look && typeof slideWalked==='function' ? Math.floor(slideWalked(e,now)) : Math.floor(now/CLIP_MS.walk); return {sx:(wf%w.frames)*cell, sy:w.row*cell}; }
+  if(m.clips.idle){
+    var id=m.clips.idle, ph=rest===undefined ? ((e.id||0)*97)%500 : -rest, n=Math.floor((now+ph)/CLIP_MS.idle);
+    var loop=sheet.look && CLIP_PLAY[sheet.look] && CLIP_PLAY[sheet.look].idle;   /* 2026-10-05 (slice 1c): the look's calm loop */
+    return {sx:(loop ? loop[n%loop.length] : n%id.frames)*cell, sy:id.row*cell};
+  }
   return {sx:0, sy:(m.static_row||0)*cell};
 }
 function drawCharacterSprite(e, px, py, opts){
@@ -708,6 +961,10 @@ function drawCharacterSprite(e, px, py, opts){
     var cs = spriteOn ? castSheet(e.shadowClone?e.cloneLook:playerCastLook()) : null;
     if(cs){
       var fr=clipFrame(cs, e, opts.sliding), m=cs.m, cell=m.cell, sc=(TS*1.08)/m.stand;
+      /* 2026-10-06: the run row has its own flight (its feet leave the floor line by up to 14 px of the cell), and the slide's
+         hop would lift the foot that is down on frames 0, 4 and 5 by up to 10 px more (measured, boards/rows-hop.cjs): the hop
+         its caller took off is put back */
+      if(fr.add==='run' || fr.add==='run2') py+=renderPos(e).hop*TS*(e===player ? 0.10 : 0.14);   /* 2026-10-06: run2 has the run's legs */
       var w=cell*sc, h=cell*sc, dx=px+TS/2-w/2, dy=py+TS-(cell-m.foot)*sc;
       var rect=placementRect(dx,dy,w,h);dx=rect.x;dy=rect.y;w=rect.w;h=rect.h;
       // Keep the copied hands readable on dark floors: the former .42 brightness
@@ -752,8 +1009,8 @@ function drawCharacterSprite(e, px, py, opts){
     ctx.save(); ctx.globalAlpha=actorAlpha; ctx.imageSmoothingEnabled=spriteSheetSmoothing(ms,Math.min(w2,h2)/c2);
     if(opts.flip){ ctx.translate(px+TS/2,0); ctx.scale(-1,1); ctx.translate(-(px+TS/2),0); }
     if(mm.edge || (opts.outline && !paintedSheet(ms))){
-      var cut2=whiteCut(ms.img,f2.sx,f2.sy,c2,c2,mm.edge),edge2=mm.edge?Math.max(.6,s2):Math.max(1,Math.round(TS/40));
-      ctx.globalAlpha=actorAlpha*(mm.edge?.68:.11);
+      var cut2=whiteCut(ms.img,f2.sx,f2.sy,c2,c2,mm.edge),edge2=mm.edge?Math.max(.3,s2*.5):Math.max(.5,TS/80);
+      ctx.globalAlpha=actorAlpha*(mm.edge?.24:.07);
       var offsets=[[-edge2,0],[edge2,0],[0,-edge2],[0,edge2]];
       if(!mm.edge)offsets.push([-edge2,-edge2],[edge2,-edge2],[-edge2,edge2],[edge2,edge2]);
       offsets.forEach(function(d){ctx.drawImage(cut2,dx2+d[0],dy2+d[1],w2,h2);});
@@ -1070,7 +1327,7 @@ function drawTerrainPass(){
       var B=biome();
       var deepWater=t===WATER&&floorMeta.fwaDeep&&floorMeta.fwaDeep[i];
       ctx.globalAlpha=a; ctx.fillStyle = isWallLike(t) ? B.wall : t===CHASM ? '#050408' : t===LAVA ? '#B94820' : t===WATER ? deepWater?'#123C6C':'#243A4A' : B.floor; ctx.fillRect(px,py,TS,TS);
-      if(t===LAVA||deepWater)glyph(t===LAVA?'~':'≈',px,py,t===LAVA?'#FFC05A':'#70BFFF');
+      if(t===LAVA||deepWater)glyph(t===LAVA?'~':'â‰ˆ',px,py,t===LAVA?'#FFC05A':'#70BFFF');
       /* Block Art: a wall face shades the floor below it. (2026-09-27, Justin, render plan Q12: the painted walls have
          no such square-edged band; their art and the lightmap own the wall base. Not under Caverns or plane rock.) */
       if(!isWallLike(t) && isWallLike(at(x,y-1)) && t!==CHASM && !(typeof ptMat==='function' && ptMat(x,y))){
@@ -1218,6 +1475,8 @@ function drawGroundLayer(now, m, restX, restY){
 
 /* The player remains centered at world edges; reveal tools keep their bounded view. */
 function sceneCameraPoint(point){
+  var preview=typeof sandboxRoomPreviewBounds==='function'&&sandboxRoomPreviewBounds();
+  if(preview)return {x:preview.x+preview.w/2-viewW/2,y:preview.y+preview.h/2-viewH/2};
   if(revealAll)return {x:clamp(point.x-(viewW>>1),0,Math.max(0,MW-viewW)),y:clamp(point.y-(viewH>>1),0,Math.max(0,MH-viewH))};
   return {x:point.x-(viewW-1)/2,y:point.y-(viewH-1)/2};
 }
@@ -1298,14 +1557,14 @@ function drawScene(){
     if(typeof FoteChaosCampaign!=='undefined'&&FoteChaosCampaign.currentInfo(x,y))return;
     if(typeof FoteUnmakerPreview!=='undefined'&&FoteUnmakerPreview.drawGate(x,y,opx,opy,oa))return;
     if(ot===CHEST && typeof propShadow==='function') propShadow(x, y, opx, opy, oa, 'chest');
-    if(typeof drawSideDoor==='function' && drawSideDoor(x, y, ot, opx, opy, oa)) return;   /* doors in east/west walls (surface.js) */
+    if(!(ot===SEALED&&propAt(x,y)&&propAt(x,y).eventGate) && typeof drawSideDoor==='function' && drawSideDoor(x, y, ot, opx, opy, oa)) return;   /* ordinary doors in east/west walls (surface.js); event gates use their fitted art below */
     if(ot===OPEN){ drawOpenDoor(x, y, opx, opy, oa); return; }
     var isDoor=(ot===DOOR||ot===OPEN||ot===LOCKED||ot===TOLL||ot===ICEDOOR||ot===THORNS||ot===SEALED);
     if(spr){
       var big = ot===FORGE||ot===SHRINE||ot===EXIT;   /* 2026-09-19: the god statues are two tiles tall - a shrine stands on its tile and rises above it */
-      drawObj(spr, opx, opy, {feet:!isDoor && ot!==STAIRS && ot!==19 && ot!==BRIDGE, fit: isDoor?1.02 : ot===SHRINE?2.1 : ot===FORGE?2.3 : big?1.18 : (ot===STAIRS||ot===19)?0.95 : 0.85, alpha:oa, fill: isDoor});
+      drawObj(spr, opx, opy, {feet:!isDoor && ot!==CHEST && ot!==STAIRS && ot!==19 && ot!==BRIDGE, fit: isDoor?(propAt(x,y)&&propAt(x,y).eventGate?1.4:1.02) : ot===SHRINE?2.1 : ot===FORGE?2.3 : big?1.18 : (ot===STAIRS||ot===19)?0.95 : ot===CHEST?.68:0.85, alpha:oa, fill: isDoor&&!(propAt(x,y)&&propAt(x,y).eventGate)});
       if(ot===EXIT && !floorMeta.exitOpen && !floorMeta.caveExit){ ctx.globalAlpha=0.55*oa; ctx.fillStyle='#000'; ctx.fillRect(opx+TS*0.2,opy+TS*0.1,TS*0.6,TS*0.8); ctx.globalAlpha=1; }
-      if(ot===SEALED && !(floorMeta.crystalDoor && floorMeta.crystalDoor.x===x && floorMeta.crystalDoor.y===y)){ ctx.globalAlpha=0.35*oa; ctx.fillStyle='#6FB7FF'; ctx.fillRect(opx,opy,TS,TS); ctx.globalAlpha=1; }
+      if(ot===SEALED && !(propAt(x,y)&&propAt(x,y).eventGate) && !(floorMeta.crystalDoor && floorMeta.crystalDoor.x===x && floorMeta.crystalDoor.y===y)){ ctx.globalAlpha=0.35*oa; ctx.fillStyle='#6FB7FF'; ctx.fillRect(opx,opy,TS,TS); ctx.globalAlpha=1; }
     } else {
       ctx.globalAlpha=oa;
       var col={2:'#6B4B2A',7:'#53381F',3:'#E8B44A',4:'#7A5A2A',5:'#E2622B',9:'#8A8A9A',10:'#F6E7B0',11:'#9FD8FF',12:'#3E6B2E',13:'#9FD8FF',14:'#B8453A',17:'#7A5A34',18:'#6FB7FF'}[ot]||'#555';
@@ -1342,10 +1601,10 @@ function drawScene(){
     if(!(ALL||SEEN[p.y*W+p.x])) return;
     if(BLIND&&!VIS[p.y*W+p.x])return;
     var ppx=(p.x-camX)*TS, ppy=(p.y-camY)*TS, pa=(ALL||VIS[p.y*W+p.x])?1:fade45;
-    if(p.offeringBowl||p.eventRoom!==undefined&&!p.used)drawInteractionGlow(ppx,ppy,pa,now);
+    if(p.offeringBowl||p.cleansingShrine&&!p.used||p.eventRoom!==undefined&&!p.used)drawInteractionGlow(ppx,ppy,pa,now,!!(p.offeringBowl||p.cleansingShrine));
     if(!spriteOn){
       ctx.save();ctx.globalAlpha=pa;ctx.fillStyle=p.b?'#6A5A48':p.name==='vines'?'#4A6A32':'#4A4038';ctx.fillRect(ppx+TS*.15,ppy+TS*.15,TS*((p.w||1)-.3),TS*((p.h||1)-.3));
-      if(p.previewPortal||p.prisoner||p.altar||p.name==='elemental-lock'||p.name==='updraft-vent')glyph(p.previewPortal?'O':p.prisoner?'!':p.altar?'A':p.name==='updraft-vent'?'↑':'+',ppx,ppy,p.name==='updraft-vent'?'#CDEEFF':p.element?AFF_COL[p.element]:'#E8B44A');ctx.restore();return;
+      if(p.previewPortal||p.prisoner||p.altar||p.name==='elemental-lock'||p.name==='updraft-vent')glyph(p.previewPortal?'O':p.prisoner?'!':p.altar?'A':p.name==='updraft-vent'?'â†‘':'+',ppx,ppy,p.name==='updraft-vent'?'#CDEEFF':p.element?AFF_COL[p.element]:'#E8B44A');ctx.restore();return;
     }
     var artName=p.artName||p.name;
     var o=spriteOn ? objArt('props',artName)||objArt('structures',artName)||objArt('chests',artName)||objArt('terrain',artName) : null;   /* an opened chest's art lives with the chests */
@@ -1397,7 +1656,7 @@ function drawScene(){
     }
     if(it.kind==='heart' || it.kind==='managlobe'){ drawGlobe(it, ipx, ipy+bob, ia, now); return; }
     var o=spriteOn ? (objArt('items', itemArtName(it))) : null;
-    if(o) drawObj(o, ipx, ipy+TS*0.08+bob, {fit: ITEM_FIT[it.kind]||0.5, alpha:ia});
+    if(o) drawObj(o, ipx, ipy+TS*0.08+bob, {fit: ITEM_FIT[it.kind]||0.5, alpha:ia, loot:true});
     else { ctx.globalAlpha=ia; glyph(it.kind==='essence'?'\u2022':it.kind==='mote'?'\u25C6':it.kind==='food'?'%':it.kind==='sigil'?'?':it.kind==='armor'?'[':'/', ipx, ipy, it.kind==='mote'?AFF_COL[it.el]:it.kind==='essence'?'#B98AF0':'#E8B44A'); ctx.globalAlpha=1; }
     if(it.kind==='mote' && !ANIM.reduce){ ctx.save(); ctx.globalCompositeOperation='lighter'; ctx.globalAlpha=0.18+0.08*Math.sin(now/200+it.x); ctx.fillStyle=AFF_COL[it.el]; ctx.beginPath(); ctx.arc(ipx+TS/2,ipy+TS*0.58,TS*0.2,0,7); ctx.fill(); ctx.restore(); }
   });
@@ -1418,7 +1677,7 @@ function drawScene(){
       var px=px0+poff[0]+shakeOf(player), py=py0+poff[1]-prp.hop*TS*0.10;
       ctx.globalAlpha=0.35; ctx.fillStyle='#000'; ctx.beginPath(); ctx.ellipse(px0+TS/2,py0+TS*0.9,TS*0.28,TS*0.1,0,0,7); ctx.fill(); ctx.globalAlpha=1;
       var fade = player.hidden>0 ? 0.5 : 1;
-      var flip = player.face==='west';
+      var flip = heroFlip(player);
       if(!drawCharacter(player, px, py, {alpha:fade, flip:flip, flash:flashOf(player), sliding:motionActive(player,now)})){
         ctx.globalAlpha=fade; ctx.fillStyle=player.col||'#E8B44A'; roundRect(px+TS*0.14,py+TS*0.1,TS*0.72,TS*0.72,TS*0.16); ctx.fill(); glyph('@',px,py,'#120F0D'); ctx.globalAlpha=1;
       }
@@ -1468,7 +1727,7 @@ function drawScene(){
       if(e.merchantRoom!==undefined&&!e.foe&&e.hp>0&&(revealAll||vis[idxOf(e.x,e.y)]))mark('?',px0+TS*.39,py0-TS*.16,'#FFD24A');
       if(e.surprised && e.foe) { mark('!',px0+TS*0.78,py0+TS*0.02,'#FFD24A'); }
       if(e.state==='asleep') { mark('z',px0+TS*0.78,py0+TS*0.08+(ANIM.reduce?0:Math.sin(now/400+e.id)*2),'#CFE0FF'); }
-      if(e.keyholder){ if(spriteOn)drawObj(objArt('items','item-key-iron'), px0+TS*0.52, py0-TS*0.34, {fit:0.4});else mark('k',px0+TS*.8,py0-TS*.2,'#E8B44A'); }
+      if(e.keyholder){ if(spriteOn)drawObj(objArt('items','item-key-iron'), px0+TS*0.52, py0-TS*0.34, {fit:0.4, loot:true});else mark('k',px0+TS*.8,py0-TS*.2,'#E8B44A'); }
       /* 2026-09-20: Justin - "we need some art for conditions and not just a black placeholder symbol". The icons
          were drawn straight onto the scene, so a dark one over a dark creature read as a black box. Each sits on a
          small chip of its own colour now, with a dark rim, so it reads against anything. */
@@ -1535,6 +1794,15 @@ function drawScene(){
   drawStairsPointer(now);
   // Lighting, particles and ground effects cannot color the empty world margins.
   drawMapMargins();
+}
+/* 2026-10-05 (slice 1c): the hero's art has two sides. A move, blow or shot with no left or right part names neither
+   (game.js faceOf gives north or south), and the hero snapped to face right on every straight step up or down. He keeps
+   the side he last had, remembered here at draw time and never saved. (It sits with drawScene, its one caller,
+   so the tests that cut drawScene out of this file by its text take it along.) */
+var FACE_SIDE=new WeakMap();
+function heroFlip(e){
+  if(e.face==='west' || e.face==='east') FACE_SIDE.set(e, e.face==='west');
+  return !!FACE_SIDE.get(e);
 }
 
 /* Compact summoned elemental; all movement respects reduced-motion settings. */

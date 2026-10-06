@@ -29,6 +29,7 @@ function createProp(x,y,name,extra){
   var d=PROPS[name]||{}, p={x:x,y:y,name:name};
   for(var k in d) p[k]=d[k];
   for(var e in (extra||{})) p[e]=extra[e];
+  if(/mushroom|shroom|fungus/.test(name))p.burn=1;
   if(p.b&&typeof DEEP_GEN!=='undefined'&&DEEP_GEN){
     for(var py=y;py<y+(p.h||1);py++)for(var px=x;px<x+(p.w||1);px++){
       var room=roomAt(px,py);
@@ -369,6 +370,9 @@ function generateOnce(seed){
   if(bidx()===1&&!floorMeta.boss)specials.push(['heroes-tomb',6,9,1]);
   if(inDeep()&&!floorMeta.boss)specials.push(['harvester-camp',16,20,1]);
   if(bidx()<4&&!floorMeta.boss)specials.push([['portcullis-cache','funeral-bell','crystal-resonance','silk-survivor'][bidx()],2+bidx()*5,20,.4]);
+  if(bidx()<4&&!floorMeta.boss&&(bidx()>0||floorNo>=3))Object.keys(ELEMENTAL_ROOM_KINDS).forEach(function(element){specials.push(['elemental-'+element,3+bidx()*5,20,.3]);});
+  // The opening Dungeon floors use gentle room rosters; depth 3 unlocks the biome pool.
+  if(bidx()===0&&floorNo<=2)specials=specials.filter(function(s){return ['bone-vault','portcullis-cache','zoo','barracks','ruined-treasury'].indexOf(s[0])<0;});
   var ritualDone=false;
   function zooFamily(kind){return kind==='zoo'||kind==='myconid-nursery'||kind==='beetle-nest';}
   var nSpecial = floorMeta.boss ? 1 : (floorNo===1 ? 2 : 2 + (rng()<0.5?1:0));
@@ -406,7 +410,7 @@ function generateOnce(seed){
   for(i=0;i<nTraps*3 && feats.filter(function(f){ return !f.room; }).length<nTraps;i++){
     var tr=pick(rooms); if(tr.role==='start'||tr.chestAmbush||tr.ritual||tr.residentKinds||tr.merchant||tr.consecratedStone||tr.hiddenSigil||tr.rareEvent||tr.special==='flooded-cache') continue;
     var tx=tr.x+ri(0,tr.w-1), ty=tr.y+ri(0,tr.h-1);
-    if(roomAt(tx,ty)!==tr||at(tx,ty)!==FLOOR || propAt(tx,ty) || nearDoor(tx,ty) || feats.some(function(f){return Math.abs(f.x-tx)+Math.abs(f.y-ty)<3;})) continue;
+    if(roomAt(tx,ty)!==tr||at(tx,ty)!==FLOOR || propAt(tx,ty) || nearDoor(tx,ty) || (tr.trapBypass&&tr.trapBypass.indexOf(idxOf(tx,ty))>=0) || feats.some(function(f){return Math.abs(f.x-tx)+Math.abs(f.y-ty)<3;})) continue;
     feats.push({x:tx,y:ty,kind:pick(trapKinds),found:false});
   }
 
@@ -638,7 +642,7 @@ function carvePocket(minW,minH,maxW,maxH, avoid){
     var inside = side===0 ? {x:dx,y:dy+1} : side===1 ? {x:dx,y:dy-1} : side===2 ? {x:dx+1,y:dy} : {x:dx-1,y:dy};
     if(at(inside.x,inside.y)!==FLOOR || propAt(inside.x,inside.y) || nearExplosive(inside.x,inside.y)) continue;
     for(y=ry;y<ry+h;y++) for(x=rx;x<rx+w;x++) setT(x,y,FLOOR);
-    var room={x:rx,y:ry,w:w,h:h,cx:rx+(w>>1),cy:ry+(h>>1),id:1000+rooms.length,pocket:true,previewApproach:{x:inside.x,y:inside.y}};
+    var room={x:rx,y:ry,w:w,h:h,cx:rx+(w>>1),cy:ry+(h>>1),id:1000+rooms.length,pocket:true,previewApproach:{x:inside.x,y:inside.y},previewDoor:{x:dx,y:dy}};
     rooms.push(room);
     return {room:room, door:{x:dx,y:dy}, host:host, inside:inside};
   }
@@ -715,14 +719,19 @@ function buildUncommonEvent(kind,host){
   if(cells.length<8){abandonPocket();return;}
   var name={'portcullis-cache':'lever-up','funeral-bell':'crypt-funeral-bell','crystal-resonance':'resonance-crystal','silk-survivor':'silk-wrapped-traveler'}[kind],focus=null;
   if(pk){
-    var spots=[];for(var y=host.y;y<host.y+host.h;y++)for(var x=host.x;x<host.x+host.w;x++)if((x!==pk.inside.x||y!==pk.inside.y)&&freeCell(x,y)&&roomFurnitureKeepsOpen(host,{x:x,y:y}))spots.push({x:x,y:y});
-    spots.sort(function(a,b){return dist(a,pk.inside)-dist(b,pk.inside);});if(spots.length)focus=addProp(spots[0].x,spots[0].y,name,{keep:true,eventRoom:r.id});
+    var reachable=bfsFrom(pk.inside.x,pk.inside.y),spots=[];
+    rooms.filter(function(candidate){return candidate!==r&&candidate!==host&&!candidate.pocket&&!candidate.role&&!candidate.uncommonEvent;}).forEach(function(candidate){
+      for(var y=candidate.y;y<candidate.y+candidate.h;y++)for(var x=candidate.x;x<candidate.x+candidate.w;x++)if(reachable[idxOf(x,y)]>=12&&freeCell(x,y)&&!nearDoor(x,y)&&roomFurnitureKeepsOpen(candidate,{x:x,y:y}))spots.push({x:x,y:y,d:reachable[idxOf(x,y)]});
+    });
+    spots.sort(function(a,b){return b.d-a.d;});
+    if(spots.length){var far=spots.slice(0,Math.max(1,Math.ceil(spots.length/4))),spot=pick(far);focus=addProp(spot.x,spot.y,name,{keep:true,eventRoom:r.id});}
   }
   else cells.some(function(c){focus=plan.furniture(c,name,{keep:true,eventRoom:r.id});return !!focus;});
   if(!focus){abandonPocket();return;}
   r.rareEvent=kind;r.uncommonEvent={kind:kind,used:false,focus:{x:focus.x,y:focus.y},cells:cells.map(function(c){return {x:c.x,y:c.y};}),mouths:plan.mouths};
   if(pk){
     var chest=cells[0];setT(chest.x,chest.y,CHEST);chestKind[idxOf(chest.x,chest.y)]='chest-gold';r.enhancedChest={x:chest.x,y:chest.y};
+    host.special=null;
     r.uncommonEvent.door=pk.door;addProp(pk.door.x,pk.door.y,'portcullis-closed',{keep:true,eventGate:true});
   }
   cells.forEach(function(c){plan.reserved.add(idxOf(c.x,c.y));});plan.publish();
@@ -802,6 +811,7 @@ function buildHeroesTomb(host){
     else addProp(x,y,'grave-flowers-moss-'+(1+(x+y)%4),{keep:true});
   }
   items.push({x:r.cx-1,y:r.cy,kind:'food',food:'ration'},{x:r.cx+1,y:r.cy,kind:'food',food:'ration'});
+  host.special=null;
   floorMeta.notes.push("A hidden hero's tomb offers a consecrated refuge.");
   return pk;
 }
@@ -904,8 +914,9 @@ function buildArmoryRoom(r){
   var stock=cells.filter(function(c){return !reserved.has(idxOf(c.x,c.y))&&!nearDoor(c.x,c.y);});
   stock.sort(function(a,b){return Math.abs((horizontal?a.y:a.x)-axis)-Math.abs((horizontal?b.y:b.x)-axis)||entranceDistance(b)-entranceDistance(a);});
   var racks=[];
-  stock.forEach(function(c){if(racks.length<2&&freeCell(c.x,c.y)&&roomFurnitureKeepsOpen(r,c)&&!racks.some(function(p){return dist(p,c)<2;})){var p=addProp(c.x,c.y,'weapon-rack',{keep:true});if(p)racks.push(p);}});
+  stock.forEach(function(c){if(racks.length<Math.min(6,Math.max(3,Math.floor(cells.length/12)))&&freeCell(c.x,c.y)&&roomFurnitureKeepsOpen(r,c)&&!racks.some(function(p){return dist(p,c)<2;})){var p=addProp(c.x,c.y,'weapon-rack',{keep:true});if(p)racks.push(p);}});
   var banner=stock.slice().reverse().find(function(c){return freeCell(c.x,c.y);});if(banner)addProp(banner.x,banner.y,'banner-stand');
+  if(floorNo>=3){r.namedGuardCount=namedRoomPopulation(r,4,7);namedRoomPosts(r,r.namedGuardCount,rewards[0]);}
 }
 
 var LIBRARY_THEMES={
@@ -916,9 +927,16 @@ var LIBRARY_THEMES={
 };
 function librarySigil(theme,element){
   var pool=LIBRARY_THEMES[theme].sigils.filter(function(k){return SIGILS[k]&&(!element||SIGILS[k].motes.includes(element));});
+  if(!pool.length)pool=LIBRARY_THEMES[theme].sigils.filter(function(k){return !!SIGILS[k];});
   var roll=rng(),grade=roll<.85?'singles':roll<.95?'pairs':roll<.99?'plus':'grand';
   var preferred=pool.filter(function(k){return SIGIL_ORDER[grade].includes(k)||(grade==='plus'&&SIGIL_ORDER.triple.includes(k));});
-  return pick(preferred.length?preferred:pool.filter(function(k){return SIGIL_ORDER.singles.includes(k);}));
+  var singles=pool.filter(function(k){return SIGIL_ORDER.singles.includes(k);});return pick(preferred.length?preferred:singles.length?singles:pool);
+}
+function libraryRewards(theme,element){
+  var first=librarySigil(theme,element),pool=LIBRARY_THEMES[theme].sigils.filter(function(k){return SIGILS[k]&&SIGILS[k].motes.length>=2&&(!element||SIGILS[k].motes.includes(element));});
+  if(!pool.length)pool=Object.keys(SIGILS).filter(function(k){return SIGILS[k].motes.length>=2;});
+  var distinct=pool.filter(function(k){return k!==first;}),second=pick(distinct.length?distinct:pool);
+  return [{kind:'sigil',use:first},{kind:'sigil',use:second},{kind:'off',it:clone(OFFHANDS.tome)}];
 }
 function buildLibraryRoom(r){
   var theme=pick(Object.keys(LIBRARY_THEMES)),spec=LIBRARY_THEMES[theme],element=theme==='elemental'?pick(ELEMENTS):null;
@@ -934,10 +952,8 @@ function buildLibraryRoom(r){
   var mouths=cells.filter(function(c){return dirs.some(function(d){return roomAt(c.x+d[0],c.y+d[1])!==r&&(walkable(c.x+d[0],c.y+d[1])||isDoorish(at(c.x+d[0],c.y+d[1])));});});
   cells.forEach(function(c){if(Math.abs(c.x-hub.x)<=1&&Math.abs(c.y-hub.y)<=1)reserve(c);});mouths.forEach(reserve);
   var prizes=cells.slice().sort(function(a,b){return dist(b,hub)-dist(a,hub);});
-  var rewards=[],roll=rng();
-  if(roll<.6||roll>=.85)rewards.push({kind:'sigil',use:librarySigil(theme,element)});
-  if(roll>=.6)rewards.push({kind:'mote',el:element||pick(spec.motes)});
-  if(rng()<.3){var gear=pick(spec.gear);rewards.push(gear==='dagger'?{kind:'weapon',it:clone(WEAPONS.dagger)}:{kind:'off',it:clone(OFFHANDS[gear])});}
+  var rewards=libraryRewards(theme,element);
+  if(rng()<.4)rewards.push({kind:'mote',el:element||pick(spec.motes)});
   rewards.forEach(function(it,n){var c=prizes[Math.min(n,prizes.length-1)];it.x=c.x;it.y=c.y;items.push(it);reserve(c);});
   r.storageAisle=Array.from(reserved);
   // Subjects have different shelf arrangements around the reserved reading area.
@@ -948,7 +964,9 @@ function buildLibraryRoom(r){
     return c.y===r.y||c.y===r.y+r.h-1;
   });
   stock.sort(function(a,b){return a.y-b.y||a.x-b.x;});
-  for(var n=0;n<stock.length&&n<Math.max(3,Math.floor((r.w+r.h)/2));n++)addProp(stock[n].x,stock[n].y,'bookshelf');
+  var shelfTarget=Math.min(10,Math.max(4,Math.floor((r.w+r.h)/2))),shelves=0;
+  var fallback=cells.filter(function(c){return !reserved.has(idxOf(c.x,c.y))&&!nearDoor(c.x,c.y)&&!stock.some(function(p){return p.x===c.x&&p.y===c.y;});});
+  stock.concat(fallback).forEach(function(c){if(shelves<shelfTarget&&freeCell(c.x,c.y)&&roomFurnitureKeepsOpen(r,c)&&addProp(c.x,c.y,'bookshelf',{keep:true}))shelves++;});
   var desk=cells.find(function(c){return !reserved.has(idxOf(c.x,c.y))&&freeCell(c.x,c.y)&&dist(c,hub)<=3;});if(desk)addProp(desk.x,desk.y,'table-candle');
 }
 
@@ -1044,7 +1062,7 @@ function buildSwordStoneRoom(r){
   var field=[];plan.cells.forEach(function(c){if(dist(c,stone)>2)return;var i=idxOf(c.x,c.y);floorMeta.consecratedGround[i]={power:1,damage:3};field.push(i);if(c!==stone){plan.reserved.add(i);setG(c.x,c.y,G_MOSS);}});
   r.consecratedStone={x:stone.x,y:stone.y,radius:2,cells:field};
   plan.publish();
-  plan.cells.filter(function(c){return dist(c,stone)>2;}).slice(0,4).forEach(function(c){plan.furniture(c,'candles',{keep:true});});
+  plan.cells.filter(function(c){return dist(c,stone)>2;}).slice(0,4).forEach(function(c){plan.furniture(c,'torch-stand',{keep:true});});
 }
 function merchantStock(){
   var stock=[{item:{kind:'ring',it:makeRing(null,false)},price:5000},{item:{kind:'amulet',it:makeAmulet(null,false)},price:5000}],types=['weapon','armor','off'];
@@ -1081,18 +1099,50 @@ function buildWatchpostRoom(r){
     if(cover.length<2&&!cover.some(function(p){return dist(p,c)<2;})&&plan.furniture(c,'pillar',{pillar:true,keep:true}))cover.push(c);
   });
   r.watchCover=cover;r.residentPosts=[];
-  cells.filter(function(c){return freeCell(c.x,c.y)&&!nearDoor(c.x,c.y)&&dist(c,chest)>1;}).sort(function(a,b){return (cover.length?Math.min.apply(null,cover.map(function(p){return dist(a,p);})):plan.depth(a))-(cover.length?Math.min.apply(null,cover.map(function(p){return dist(b,p);})):plan.depth(b));}).forEach(function(c){if(r.residentPosts.length<3&&!r.residentPosts.some(function(p){return dist(p,c)<2;}))r.residentPosts.push(c);});
+  cells.filter(function(c){return freeCell(c.x,c.y)&&!nearDoor(c.x,c.y)&&dist(c,chest)>1;}).sort(function(a,b){return (cover.length?Math.min.apply(null,cover.map(function(p){return dist(a,p);})):plan.depth(a))-(cover.length?Math.min.apply(null,cover.map(function(p){return dist(b,p);})):plan.depth(b));}).forEach(function(c){if(r.residentPosts.length<namedRoomPopulation(r,6,10)&&!r.residentPosts.some(function(p){return dist(p,c)<2;}))r.residentPosts.push(c);});
   var placed=0;cells.forEach(function(c){if(placed<2&&plan.furniture(c,placed?'weapon-rack':'crate'))placed++;});
 }
+// Named combat rooms concentrate their residents away from usable entrances.
+function buildZooRoom(host){
+  var size=Math.min(7,Math.max(4,Math.min(host.w,host.h))),pk=carvePocket(size,size,size,size,function(r){return r!==host;});
+  if(!pk){host.special='storage';buildStorageRoom(host,shuffled(edgeCells(host)));return;}
+  var r=pk.room;host.special=null;r.special='zoo';r.zoo=true;r.rareEvent='zoo';
+  setT(pk.door.x,pk.door.y,LOCKED);floorMeta.vault=true;
+  floorMeta.entrances=(floorMeta.entrances||[]).concat([pk.inside]);
+  var cells=interiorCells(r).concat(edgeCells(r)).filter(function(c){return freeCell(c.x,c.y);});
+  var chest=cells.pop();if(chest){setT(chest.x,chest.y,CHEST);chestKind[idxOf(chest.x,chest.y)]='chest-ornate';}
+  if(cells.length){var c=cells[cells.length-1],gear=randomGear();gear.x=c.x;gear.y=c.y;items.push(gear,{x:c.x,y:c.y,kind:'mote',el:pick(ELEMENTS)});}
+  var essenceCells=cells.filter(function(c){return freeCell(c.x,c.y);});
+  for(var n=0;n<3&&essenceCells.length;){var rewardCell=essenceCells.pop();if(!freeCell(rewardCell.x,rewardCell.y))continue;items.push({x:rewardCell.x,y:rewardCell.y,kind:'essence',n:ri(15,30)});n++;}
+  cells.forEach(function(c){setG(c.x,c.y,G_BONES);});setG(pk.inside.x,pk.inside.y,G_BONES);
+  floorMeta.notes.push('An iron door confines a room packed with sleeping monsters.');
+}
+function namedRoomPopulation(r,min,max){
+  return Math.min(max,Math.max(min,Math.floor(r.w*r.h/6)));
+}
+function namedRoomPosts(r,count,focus){
+  var cells=interiorCells(r).concat(edgeCells(r)).filter(function(c){return roomAt(c.x,c.y)===r&&freeCell(c.x,c.y)&&!nearDoor(c.x,c.y);});
+  cells.sort(function(a,b){return dist(a,focus||{x:r.cx,y:r.cy})-dist(b,focus||{x:r.cx,y:r.cy});});
+  r.residentPosts=cells.slice(0,count).map(function(c){return {x:c.x,y:c.y};});
+}
+function buildNestRoom(r){
+  var plan=specialRoomPlan(r);if(!plan.cells.length)return;
+  r.nest=true;r.nestCount=floorNo<=2?4:namedRoomPopulation(r,6,10);
+  var cells=plan.cells.slice().sort(function(a,b){return plan.depth(b)-plan.depth(a);}),focus=cells[0];
+  var reward={kind:'essence',n:ri(10,20),x:focus.x,y:focus.y};items.push(reward);plan.reserve(focus);
+  var food=cells.find(function(c){return dist(c,focus)===1;});if(food){items.push({kind:'food',food:'ration',x:food.x,y:food.y});plan.reserve(food);}
+  var placed=0;cells.forEach(function(c){if(dist(c,focus)<=3){setG(c.x,c.y,G_BONES);if(placed<4&&plan.furniture(c,'bones',{keep:true}))placed++;}});
+  plan.publish();namedRoomPosts(r,r.nestCount,focus);
+}
 function buildBarracksRoom(r){
-  r.barracks=true;var plan=specialRoomPlan(r);if(!plan.cells.length)return;
+  r.barracks=true;r.residentCount=namedRoomPopulation(r,6,10);var plan=specialRoomPlan(r);if(!plan.cells.length)return;
   var horizontal=r.w>=r.h,axis=horizontal?r.cy:r.cx;
   plan.cells.filter(function(c){return (horizontal?c.y:c.x)===axis;}).forEach(function(c){plan.reserve(c);});plan.publish();
   var edges=plan.cells.filter(function(c){return (horizontal?c.y===r.y||c.y===r.y+r.h-1:c.x===r.x||c.x===r.x+r.w-1);}).sort(function(a,b){return plan.depth(b)-plan.depth(a);});
   var names=['weapon-rack','table-candle','crate','barrel'],placed=0;
   edges.concat(plan.cells).forEach(function(c){if(placed<names.length&&plan.furniture(c,names[placed]))placed++;});
   var posts=plan.cells.filter(function(c){return freeCell(c.x,c.y)&&!nearDoor(c.x,c.y);}).sort(function(a,b){return plan.depth(b)-plan.depth(a);});
-  r.residentPosts=[];posts.forEach(function(c){if(r.residentPosts.length<3&&!r.residentPosts.some(function(p){return dist(p,c)<2;}))r.residentPosts.push({x:c.x,y:c.y});});
+  r.residentPosts=[];posts.forEach(function(c){if(r.residentPosts.length<namedRoomPopulation(r,6,10)&&!r.residentPosts.some(function(p){return dist(p,c)<2;}))r.residentPosts.push({x:c.x,y:c.y});});
 }
 function buildTreasuryRoom(r){
   var plan=specialRoomPlan(r);if(!plan.cells.length)return;
@@ -1102,6 +1152,7 @@ function buildTreasuryRoom(r){
   var rewardCells=prizes.filter(function(c){return freeCell(c.x,c.y)&&!(r.guardAt&&dist(c,r.guardAt)===0);}),rewards=[randomGear(),{kind:'essence',n:ri(20,35)}];
   rewards.forEach(function(it,n){var c=rewardCells[n];if(c){it.x=c.x;it.y=c.y;items.push(it);plan.reserve(c);}});
   if(r.guardAt)plan.reserve(r.guardAt);plan.publish();
+  if(floorNo>=3){r.namedGuardCount=namedRoomPopulation(r,3,6);namedRoomPosts(r,r.namedGuardCount,chest);}
   var placed=0;prizes.forEach(function(c){if(placed<2&&plan.furniture(c,'torch-stand'))placed++;});
 }
 function buildTrapRoom(r){
@@ -1110,10 +1161,14 @@ function buildTrapRoom(r){
   plan.reserve(chest,true);plan.publish();r.trapBypass=Array.from(plan.reserved);
   setT(chest.x,chest.y,CHEST);chestKind[idxOf(chest.x,chest.y)]=floorNo>=3?'chest-ornate':'chest-iron';
   var kinds=Object.keys(TRAPS).filter(function(k){return TRAPS[k].minFloor<=floorNo&&k!=='teleport'&&(k!=='pit'||!(floorMeta.boss||floorNo%5===0));});
-  plan.cells.forEach(function(c){if(at(c.x,c.y)===FLOOR&&!nearDoor(c.x,c.y)&&!plan.reserved.has(idxOf(c.x,c.y))&&rng()<.34)feats.push({x:c.x,y:c.y,kind:pick(kinds),found:false,room:true});});
+
   var reward=prizes.find(function(c){return freeCell(c.x,c.y)&&!plan.reserved.has(idxOf(c.x,c.y));})||prizes.find(function(c){return freeCell(c.x,c.y);});
   if(reward){items.push({x:reward.x,y:reward.y,kind:'essence',n:ri(15,30)});plan.reserve(reward,true);}
   plan.publish();r.trapBypass=Array.from(plan.reserved);
+  var trapCells=shuffled(plan.cells.filter(function(c){return at(c.x,c.y)===FLOOR&&!nearDoor(c.x,c.y)&&!propAt(c.x,c.y)&&!plan.reserved.has(idxOf(c.x,c.y))&&!feats.some(function(f){return f.x===c.x&&f.y===c.y;});}));
+  var trapCount=Math.min(trapCells.length,Math.max(6,Math.ceil(trapCells.length*.6)));
+  if(kinds.length)trapCells.slice(0,trapCount).forEach(function(c,n){feats.push({x:c.x,y:c.y,kind:pick(kinds),found:n%3!==2,room:true});});
+  r.authoredTrapCount=kinds.length?trapCount:0;
   // Scorch and bones suggest the risky shortcut, without marking every trap.
   shuffled(plan.cells.filter(function(c){return at(c.x,c.y)===FLOOR&&!plan.reserved.has(idxOf(c.x,c.y));})).slice(0,3).forEach(function(c){setG(c.x,c.y,rng()<.5?G_SCORCH:G_BONES);});
 }
@@ -1269,8 +1324,9 @@ function buildBoneGauntlet(host){
   function cell(depth,across){return horizontal?{x:forward>0?r.x+depth:r.x+r.w-1-depth,y:r.y+across}:{x:r.x+across,y:forward>0?r.y+depth:r.y+r.h-1-depth};}
   var chest=cell(4,2),plan=specialRoomPlan(r),cells=plan.cells;
   cells.forEach(function(c){setG(c.x,c.y,G_BONES);plan.reserved.add(idxOf(c.x,c.y));});plan.publish();
-  for(var depth=1;depth<=3;depth++)for(var across=0;across<5;across++){var c=cell(depth,across);feats.push({x:c.x,y:c.y,kind:'spikes',found:true,room:r.id});}
+  for(var depth=1;depth<=3;depth++)for(var across=0;across<5;across++){var c=cell(depth,across);feats.push({x:c.x,y:c.y,kind:'spikes',found:false,room:r.id});}
   setT(chest.x,chest.y,CHEST);chestKind[idxOf(chest.x,chest.y)]='chest-gold';
+  host.special=null;
   r.chestAmbush={theme:'bone-gauntlet',chest:chest,fired:false,roster:['shade','shade','acolyte','acolyte'],enhanced:true,cells:cells,mouths:plan.mouths,posts:[cell(4,0),cell(4,4),cell(0,0),cell(0,4)]};
   floorMeta.entrances=(floorMeta.entrances||[]).concat([pk.inside]);
 }
@@ -1294,12 +1350,28 @@ function releaseChestAmbush(x,y){
   if(spawned)log(a.theme==='bone-gauntlet'?'Two wraiths rise beside the treasure. Two acolytes appear at the entrance!':a.theme==='goblin-mine'?'A skeleton rises from the abandoned mine!':a.roster?'The bones stir. Guardians appear around the opened chest!':flooded?'The flooded cache stirs. A Drowned One and Root-bound rise to defend it!':a.theme==='beetle-nest'?'Beetles pour from the nest!':'The nursery stirs. Myconids close in!','c-you');
   return spawned;
 }
+function buildElementalRoom(element,r){
+  var plan=specialRoomPlan(r),theme=PLANE_PROPS[element],tier=bidx()<2?1:bidx(),kind=ELEMENTAL_ROOM_KINDS[element][tier-1];
+  r.elementalRoom={element:element,tier:tier};
+  r.barracks=true;r.residentKinds=[kind,kind,kind];r.residentCount=3;r.residentState='asleep';
+  var cells=plan.cells.slice().sort(function(a,b){return plan.depth(b)-plan.depth(a);}),chest=cells.find(function(c){return freeCell(c.x,c.y)&&!nearDoor(c.x,c.y)&&!plan.reserved.has(idxOf(c.x,c.y));});
+  if(chest){plan.reserve(chest);setT(chest.x,chest.y,CHEST);chestKind[idxOf(chest.x,chest.y)]='chest-wood';}
+  var posts=cells.filter(function(c){return freeCell(c.x,c.y)&&!nearDoor(c.x,c.y);}).slice(0,3);
+  r.residentPosts=posts;posts.forEach(function(c){plan.reserve(c);});
+  var decor=cells.filter(function(c){return freeCell(c.x,c.y)&&!plan.reserved.has(idxOf(c.x,c.y));}),rune=decor.shift();
+  if(rune)plan.furniture(rune,theme.rune,{keep:true});
+  decor.slice(0,Math.min(8,Math.max(3,Math.floor(cells.length/5)))).forEach(function(c,i){plan.furniture(c,i===0?theme.light:theme.decor[i%theme.decor.length],{keep:true});});
+  if(element==='earth')cells.forEach(function(c){if(at(c.x,c.y)===FLOOR&&!gAt(c.x,c.y))setG(c.x,c.y,G_MOSS);});
+  plan.publish();floorMeta.notes.push(element[0].toUpperCase()+element.slice(1)+' sanctuary: three tier '+tier+' elementalings guard a chest.');
+}
 function buildDefaultSpecial(kind, r){
   r.special=kind;
   var e=shuffled(edgeCells(r)), inner=shuffled(interiorCells(r)), i;
   function place(list, names, n, extra){ for(var k=0;k<n && list.length;){ var c=list.pop(); if(freeCell(c.x,c.y)&&addProp(c.x,c.y,names[k%names.length],extra))k++; } }
   function put(it){ var c;while(inner.length||e.length){c=inner.pop()||e.pop();if(freeCell(c.x,c.y))break;c=null;}if(!c)return;it.x=c.x;it.y=c.y;items.push(it); }
-  if(['portcullis-cache','funeral-bell','crystal-resonance','silk-survivor'].includes(kind)){
+  if(/^elemental-(fire|water|air|earth|shadow|light)$/.test(kind)){
+    buildElementalRoom(kind.slice(10),r);
+  } else if(['portcullis-cache','funeral-bell','crystal-resonance','silk-survivor'].includes(kind)){
     buildUncommonEvent(kind,r);
   } else if(kind==='adventurer-camp'){
     buildAdventurerCamp(r);
@@ -1340,21 +1412,11 @@ function buildDefaultSpecial(kind, r){
   } else if(kind==='armory'){
     buildArmoryRoom(r);
   } else if(kind==='nest'){
-    place(inner,['bones','bones'],2);   /* 2026-09-19: the straw bedding looked bad - gone */
-    put({kind:'essence',n:ri(10,20)});
-    r.nest=true;
+    buildNestRoom(r);
   } else if(kind==='prison'){
     buildPrisonRoom(r);
   } else if(kind==='zoo'){
-    r.zoo=true;
-    for(i=0;i<3 && inner.length;i++) put({kind:'essence',n:ri(15,30)});
-    put({kind:'mote',el:pick(ELEMENTS)}); put(randomGear());
-    var cc=inner.pop(); if(cc){ setT(cc.x,cc.y,CHEST); chestKind[idxOf(cc.x,cc.y)]='chest-ornate'; }
-    /* the clue: bones scattered at the thresholds */
-    for(var yy=r.y-1;yy<=r.y+r.h;yy++) for(var xx=r.x-1;xx<=r.x+r.w;xx++){
-      if(isDoorish(at(xx,yy))){ var nb=[[1,0],[-1,0],[0,1],[0,-1]]; for(var k2=0;k2<4;k2++){ var ox=xx+nb[k2][0], oy=yy+nb[k2][1]; if(at(ox,oy)===FLOOR && !roomAt(ox,oy)) setG(ox,oy,G_BONES); } }
-    }
-    floorMeta.notes.push('Bones and claw marks litter one doorway. A crowd of monsters sleeps behind it.');
+    buildZooRoom(r);
   } else if(kind==='sacrifice'){
     addProp(r.cx,r.cy,'altar-spikes',{keep:true});
     altars[idxOf(r.cx,r.cy)]={passes:0};
@@ -1390,9 +1452,10 @@ function populateRoomResidents(){
       if(post){r.ritual.priestPost=post;var priest=deepSpawnRaw('drowpriestess',post.x,post.y);priest.state='asleep';priest.guard=true;r.ritual.priestId=priest.id;}
       for(var n=0;n<2;n++){var blade=sp('drowblade');if(blade)blade.guard=true;}
     }
-    if(r.zoo){ var n=Math.min(9, 3+floorNo+Math.floor(r.w*r.h/16)); for(var i=0;i<n;i++) sp(rollMonster()); }
-    if(r.nest){ for(var j=0;j<ri(3,4);j++) sp('rat'); }
-    if(r.barracks){var band=r.residentKinds||['goblin','goblin','archer'];for(var k=0,n=r.residentCount||ri(2,3);k<n;k++){var resident=sp(r.residentKinds?band[k%band.length]:pick(band),r.residentState);if(resident&&r.residentKinds)resident.guard=true;}}
+    if(r.zoo){var zooCells=[];for(var zy=r.y;zy<r.y+r.h;zy++)for(var zx=r.x;zx<r.x+r.w;zx++)if(roomAt(zx,zy)===r&&walkable(zx,zy)&&!occupied(zx,zy))zooCells.push({x:zx,y:zy});zooCells.forEach(function(c){var resident=spawn(rollMonster(),c.x,c.y);resident.state='asleep';});}
+    if(r.nest){ for(var j=0,n=r.nestCount||4;j<n;j++) sp('rat'); }
+    if(r.barracks){var band=r.residentKinds||['goblin','goblin','archer'];for(var k=0,n=r.residentCount||namedRoomPopulation(r,6,10);k<n;k++){var resident=sp(r.residentKinds?band[k%band.length]:pick(band),r.residentState);if(resident&&r.residentKinds)resident.guard=true;}}
+    if(r.namedGuardCount){for(var ng=0;ng<r.namedGuardCount;ng++){var guard=sp(pick(['goblin','archer']));if(guard)guard.guard=true;}}
     if(r.guardAt){
       var post=r.guardAt;
       if(!walkable(post.x,post.y)||occupied(post.x,post.y))post=cells.filter(function(c){return walkable(c.x,c.y)&&!occupied(c.x,c.y);}).sort(function(a,b){return dist(a,r.guardAt)-dist(b,r.guardAt);})[0];

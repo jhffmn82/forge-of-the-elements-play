@@ -269,7 +269,8 @@
     function tile(key, label, ph){
       var it = wornItem(key);
       var both = key==='off' && player.twoHanded;
-      var icon = it ? (it.icon || (typeof iconNameForBag==='function' ? iconNameForBag({kind:it.kind, data:it}) : '')) : '';
+      /* 2026-10-05: a worn Holy Symbol shows its holder's god's disc (sheets.js wornIconName) */
+      var icon = it ? ((typeof wornIconName==='function' ? wornIconName(it) : it.icon) || (typeof iconNameForBag==='function' ? iconNameForBag({kind:it.kind, data:it}) : '')) : '';
       var col = it && typeof tierCol==='function' ? tierCol(it) : null;
       return '<div class="gslot'+(it?'':' empty')+'" data-slot="'+key+'"'+(col?' style="border-color:'+col+'"':'')+'>'+
              '<div class="ic"'+(icon?' data-gicon="'+icon+'"':'')+'>'+(it?'':'<span class="ph">'+ph+'</span>')+'</div>'+

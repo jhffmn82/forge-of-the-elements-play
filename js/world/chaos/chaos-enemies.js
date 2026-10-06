@@ -5,7 +5,7 @@
   'use strict';
   var groups={
     'prism-archives':['prism-seer','folded-horror','rift-skitter','lens-bearer'],
-    'rot-hollows':['plague-bloat','brood-carrier','bile-spitter','rotling'],
+    'rot-hollows':['plague-bloat','brood-carrier','bile-spitter'],
     'cinder-bastion':['horned-reaver','gorehound','ironbound','chain-reaver'],
     'violet-warrens':['lash-dancer','razor-dancer','silk-weaver','hookfang']
   };
@@ -46,7 +46,7 @@
     'plague-bloat':117,'brood-carrier':86,'bile-spitter':68,'rotling':19,
     'horned-reaver':79,'gorehound':68,'ironbound':110,'chain-reaver':68,
     'lash-dancer':68,'razor-dancer':68,'silk-weaver':68,'hookfang':72};
-  Object.keys(groups).forEach(function(biome){groups[biome].forEach(function(slug){
+  Object.keys(groups).forEach(function(biome){groups[biome].concat(biome==='rot-hollows'?['rotling']:[]).forEach(function(slug){
     var row=content[slug],kind='chaos-'+slug;row.sfx=voices[slug];
     if(slug==='lash-dancer'||slug==='razor-dancer'){row.spawnInvisible=true;}
     if(slug==='silk-weaver'||slug==='hookfang')row.spider=true;

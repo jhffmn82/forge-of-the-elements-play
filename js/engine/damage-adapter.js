@@ -88,7 +88,7 @@ function damageOutgoingRules(event){
   var outgoing=!event.options.outgoingModifiersApplied;
   if(outgoing&&typeof hostileCombatDamage==='function'&&!event.tags.has('reflected'))event.amount=hostileCombatDamage(source,event.amount);
   var holy=event.hit&&event.hit.att===player&&event.hit.view?actionInfusion('holy',event.hit.view):infusion('holy');
-  if(holy&&isBuffed()){
+  if(holy){
     if(outgoing&&holy==='fire'&&source===player&&target!==player)event.amount*=1+enchantValues('holy','fire').damageBonus;
     if(holy==='earth'&&target===player)event.amount*=1-enchantValues('holy','earth').damageReduction;
   }
@@ -100,11 +100,19 @@ function damageOutgoingRules(event){
     if(outgoing&&target.foe&&!event.tags.has('proc')&&typeof murkSummonDamage==='function')event.amount*=murkSummonDamage(source);
     if(outgoing&&source&&source.shadowClone&&source.cloneStats){
       var copied=source.cloneStats;
-      if(copied.holyFire&&FoteShadowClone.buffed(source))event.amount*=1+copied.holyFire;
+      if(copied.holyFire)event.amount*=1+copied.holyFire;
       if((copied.aff.fire||0)>=3&&target.st&&target.st.burn)event.amount*=1+.05*copied.aff.fire;
     }
     if(outgoing&&(source===player||source==='player')&&aff('fire')>=3&&target.st&&target.st.burn)event.amount*=1+.05*aff('fire');
     if(outgoing&&target.st&&target.st.hollow)event.amount*=1+.05*target.st.hollow.n;
+  }
+  if(typeof murkRank==='function'&&murkRank()>=3&&murkSummon(source)&&target.foe&&
+     !(source.shadowClone&&event.tags.has('attack'))&&!(event.procDepth>0)&&
+     !['proc','periodic','arc','reflected','environment','ground'].some(function(tag){return event.tags.has(tag);})){ 
+    var weapon=player.weapon,element=weapon&&weapon.enchant;
+    if(element)event.murkEnchant={element:element,values:enchantValues('weapon',element),
+      affinity:Object.assign({},player.aff||{}),luck:typeof luckBonus==='function'?luckBonus():0,
+      raw:event.amount,burn:typeof burnDmg==='function'?burnDmg():2+(player.aff.fire||0)};
   }
   return true;
 }

@@ -67,6 +67,16 @@
     });
     return out;
   }
+  function weaponHit(element,v,raw,corrupted,roll){
+    var hit={damage:0,type:element==='fire'?'fire':'dark',status:null,repeat:false,heal:0};
+    if(element==='fire'){hit.damage=Math.round(raw*v.extraDamage);if(roll(v.burnChance))hit.status={key:'burn',duration:v.burnDuration};}
+    if(element==='water'&&roll(v.chillChance))hit.status={key:'chill'};
+    if(element==='earth'&&roll(v.rootChance))hit.status={key:'root',duration:v.rootDuration};
+    if(element==='air')hit.repeat=roll(v.repeatChance);
+    if(element==='light')hit.heal=v.healPerHit;
+    if(element==='shadow'){if(corrupted)hit.damage+=v.corruptDamage;if(roll(v.procChance)){hit.damage+=Math.round(raw*v.extraDamage);hit.status={key:'corrupt',duration:v.corruptDuration};}}
+    return hit;
+  }
   function cap(s){return s[0].toUpperCase()+s.slice(1);}
   function number(v){return String(Number(v.toFixed(6)));}
   function percent(v){return Math.round(v*100)+'%';}
@@ -123,12 +133,12 @@
       if(el==='shadow')return 'Spell kills heal '+pct('killHeal')+' of max HP.';
     }
     if(slot==='holy'){
-      if(el==='fire')return '+'+pct('damageBonus')+' damage while buffed.';
-      if(el==='water')return '+'+pct('manaRegen')+' mana regeneration while buffed.';
-      if(el==='air')return 'Actions other than moving take '+pct('actionTimeReduction')+' less time while buffed.';
-      if(el==='earth')return pct('damageReduction')+' less damage taken while buffed.';
-      if(el==='light')return 'Gaining a buff heals '+pct('buffHeal')+' of max HP.';
-      if(el==='shadow')return '+'+pct('critChance')+' crit chance while buffed.';
+      if(el==='fire')return '+'+pct('damageBonus')+' damage.';
+      if(el==='water')return '+'+pct('manaRegen')+' mana regeneration.';
+      if(el==='air')return 'Actions other than moving take '+pct('actionTimeReduction')+' less time.';
+      if(el==='earth')return pct('damageReduction')+' less damage taken.';
+      if(el==='light')return 'Casting a prayer or invocation heals '+pct('buffHeal')+' of max HP.';
+      if(el==='shadow')return '+'+pct('critChance')+' crit chance.';
     }
     return '';
   }
@@ -136,7 +146,7 @@
     var table={};Object.keys(rules).forEach(function(slot){table[slot]={};elements.forEach(function(el){table[slot][el]=describe(slot,el,0,{},true);});});return table;
   }
   Object.keys(rules).forEach(function(slot){Object.keys(rules[slot]).forEach(function(el){Object.keys(rules[slot][el]).forEach(function(k){Object.freeze(rules[slot][el][k]);});Object.freeze(rules[slot][el]);});Object.freeze(rules[slot]);});Object.freeze(rules);
-  var api=Object.freeze({rules:rules,values:values,describe:function(slot,el,mastery,context){return describe(slot,el,mastery,context,false);},
+  var api=Object.freeze({rules:rules,values:values,weaponHit:weaponHit,describe:function(slot,el,mastery,context){return describe(slot,el,mastery,context,false);},
     formula:function(slot,el){return describe(slot,el,0,{},true);},formulaTable:formulaTable,gearBonus:gearBonus,amplifyBonus:amplifyBonus,godBonus:godBonus,scale:scale});
   root.FoteEnchantments=api;
   if(typeof module!=='undefined'&&module.exports)module.exports=api;

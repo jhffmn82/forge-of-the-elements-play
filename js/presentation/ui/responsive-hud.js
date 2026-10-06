@@ -301,6 +301,9 @@ var FoteResponsiveHUD=(function(){
     document.body.classList.add('fote-study');
     // All legacy component styles have loaded. Geometry precedes the material skin.
     document.head.append(node('responsiveHudStyles'),node('forgeSkin'));
+    // 2026-10-05 (item art, C4): moving a stylesheet reloads it, so the hotbar painted below is measured before this
+    // geometry applies (a 44px icon box, then shown at 58 to 70px). Icons are measured again once each sheet is back.
+    ['responsiveHudStyles','forgeSkin'].forEach(id=>node(id).addEventListener('load',()=>{if(typeof forgetIconSizes==='function')forgetIconSizes();if(mounted&&typeof player!=='undefined'&&player)abilityBar();},{once:true}));
     const hud=document.createElement('div');hud.id='studyHud';app.append(hud);
     const readouts=document.createElement('div');readouts.id='studyReadouts';hud.append(node('bars'),readouts);readouts.append(node('hud2'));
     const depth=document.createElement('span');depth.id='studyDepth';hud.prepend(depth);

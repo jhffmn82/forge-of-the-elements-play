@@ -59,14 +59,29 @@ var renderLightSources=FoteRendering.sequence([
   renderPass('stormward',addStormwardLight),renderPass('underdark-strength-and-lava',addUnderdarkLights)
 ]);
 function drawPropSurface(p,x,y,alpha){
-  if(p.fluid){
+  if((p.name==='bones'||p.name==='bone-pile')&&typeof drawStoneProp==='function'){
+    var bx=x+TS*.5,by=y+TS*.5;ctx.save();ctx.translate(bx,by);ctx.scale(.5,.5);ctx.translate(-bx,-by);
+    try{return drawStoneProp(p,x,y,alpha);}finally{ctx.restore();}
+  }
+  if(p.eventGate)return true; // The terrain door pass owns this gate sprite and its tile alignment.
+  if(p.fluid||p.name==='barrel'){
     var barrel=objArt('props',p.name)||objArt('props','barrel');
     if(barrel)return !!drawObj(barrel,x,y,{feet:true,fit:.9,alpha:alpha});
   }
 
   // An explicit set-piece sprite owns its appearance before any name-based
   // legacy decoration. Placement and depth remain the ordinary set renderer.
-  if(p.artName)return p.set?drawSetSprite(p,alpha):false;
+  if(p.artName){
+    var authoredFit=FoteEnvironmentProps.fit(p);
+    if(!authoredFit)return p.set?drawSetSprite(p,alpha):false;
+    var ox=x+TS*.5,oy=y+TS*authoredFit.anchor;
+    ctx.save();ctx.translate(ox,oy);ctx.scale(authoredFit.scale,authoredFit.scale);ctx.translate(-ox,-oy);
+    try{
+      if(p.set)return drawSetSprite(p,alpha);
+      var authored=objArt('props',p.artName)||objArt('chests',p.artName)||objArt('structures',p.artName);
+      return !!authored&&drawObj(authored,x,y,{feet:authoredFit.anchor!==.5,fit:.9,alpha:alpha,flash:flashOf(p)});
+    }finally{ctx.restore();}
+  }
   // A few props draw their painted art, or at a size of their own (environment-props.js fit).
   var fit=FoteEnvironmentProps.fit(p);if(!fit)return renderProp(p,x,y,alpha);
   var art=fit.paint&&FoteEnvironmentProps.art('props',p.name);
@@ -77,8 +92,8 @@ function drawPropSurface(p,x,y,alpha){
   ctx.save();ctx.translate(ax,ay);ctx.scale(fit.scale,fit.scale);ctx.translate(-ax,-ay);
   try{
     if(painted()||renderProp(p,x,y,alpha))return true;
-    var o=objArt('props',p.name);
-    return !!o&&drawObj(o,x,y,{feet:!p.flat,fit:p.flat?.82:.9,alpha:alpha,flash:flashOf(p)});
+    var o=objArt('props',p.name)||objArt('chests',p.name)||objArt('structures',p.name);
+    return !!o&&drawObj(o,x,y,{feet:!p.flat&&fit.anchor!==.5,fit:p.flat?.82:.9,alpha:alpha,flash:flashOf(p)});
   }finally{ctx.restore();}
 }
 function drawSurfaceDeco(){renderSurface();}
@@ -258,6 +273,7 @@ function querySceneArt(task){
       if(value===STAIRS&&inDeep())deepArt('stairs-down-drow');
     }else if(task.kind==='prop'){
       name=value.artName||value.name;
+      if(value.name==='bones'||value.name==='bone-pile'){groundBoneArt(value.x,value.y);return;}
       objArt('props',name)||objArt('structures',name)||objArt('chests',name)||objArt('terrain',name);
       var packed=typeof packNameFor==='function'&&packNameFor(value);if(packed)packArt(packed);
       if(value.set||value.soulSmoke)setArt(name);
@@ -269,7 +285,13 @@ function querySceneArt(task){
     }else if(task.kind==='item')objArt('items',itemArtName(value));
     else if(task.kind==='trap'){var trap=TRAPS[value.kind];if(trap)objArt('traps',trap.sprite);}
     else if(task.kind==='plate')objArt('structures',value.pressed?'plate-glow':'trap-plate')||objArt('traps','trap-plate');
-    else if(task.kind==='ground')objArt('terrain',GROUND_ART[value]);
+    else if(task.kind==='ground'){
+      if(value===G_BONES)groundBoneArt(task.x,task.y);
+      else if(value===G_GRASS&&cryptShrooms()){
+        var mushroom=cryptMushroomAppearance(task.x,task.y);sceneryClusterSource(mushroom.family,mushroom.variant);
+      }
+      else objArt('terrain',GROUND_ART[value]);
+    }
     else if(task.kind==='actor'){
       if(value.shadowClone)castSheet(value.cloneLook);
       else if(value.livingFlame)atl('living-flame.webp');
@@ -364,7 +386,7 @@ function floorArtMessage(hold,error){
   var node=document.getElementById('floorArtStatus');
   if(!node){node=document.createElement('div');node.id='floorArtStatus';node.setAttribute('role','status');node.style.cssText='position:fixed;z-index:99;bottom:20px;left:50%;transform:translateX(-50%);padding:12px 16px;border:1px solid #79634C;border-radius:8px;background:#17120F;color:#E5D5BD;font:14px sans-serif;text-align:center';document.body.appendChild(node);}
   node.style.fontSize='calc(14px + var(--ui-mobile-text-add,0px))';node.replaceChildren();
-  var text=document.createElement('span');text.textContent=error?'Some artwork could not load. ':'Preparing floor…';node.appendChild(text);
+  var text=document.createElement('span');text.textContent=error?'Some artwork could not load. ':'Preparing floorâ€¦';node.appendChild(text);
   if(error){var retry=document.createElement('button');retry.textContent='Retry';retry.style.cssText='margin-left:10px;padding:8px 12px;min-width:44px;min-height:44px';retry.onclick=function(){prepareFloorArt(hold);};node.appendChild(retry);}
 }
 function prepareFloorArt(hold){

@@ -210,6 +210,7 @@ var VEG_EARTH_PROP = {'fern':['fern','bush'], 'root-tangle':['root-tangle'], 'gl
 
 function drawEarthPlantProp(p, px, py, alpha){
   if(p && floorMeta && floorMeta.plane==='earth' && VEG_EARTH_PROP[p.name]){
+    if(p.name==='glow-mushrooms')return drawSceneryCluster('mushroom-earth',Math.floor(hash2(p.x,p.y,82)*5),px,py,alpha,hash2(p.x,p.y,83)<.5,vegSway(p.x,p.y,performance.now(),0)*.1);
     var kinds=VEG_EARTH_PROP[p.name], kind=kinds[Math.floor(hash2(p.x,p.y,81)*kinds.length)], n=kind==='root-tangle'?2:3;
     var o=vegArt('earth-'+kind+'-'+(1+Math.floor(hash2(p.x,p.y,82)*n)));
     if(o){

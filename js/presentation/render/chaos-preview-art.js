@@ -110,7 +110,24 @@
     "sh": 177
   }
 };
-  var animationLoads=Object.create(null);
+  var animationLoads=Object.create(null),detailedAnimations=Object.create(null);
+  // Wide set pieces need native detail at game zoom. Preserve the authored
+  // master and use the existing strip only for its moving light, not its pixels.
+  function detailedAnimation(name,img,spec){
+    if(name!=='violet-loom')return null;
+    var definition=definitions[name],master=atl(definition.file);if(!master)return null;
+    var entry=detailedAnimations[name];
+    if(entry&&entry.master===master&&entry.strip===img)return entry;
+    var width=512,height=Math.round(width*spec.sh/spec.sw),canvas=document.createElement('canvas');
+    canvas.width=width*spec.frames;canvas.height=height;
+    var g=canvas.getContext('2d');g.imageSmoothingEnabled=true;g.imageSmoothingQuality='high';
+    for(var frame=0;frame<spec.frames;frame++){
+      g.drawImage(master,definition.sx,definition.sy,definition.sw,definition.sh,frame*width,0,width,height);
+      g.save();g.globalCompositeOperation='source-atop';g.globalAlpha=.1;
+      g.drawImage(img,frame*spec.cell+spec.sx,spec.sy,spec.sw,spec.sh,frame*width,0,width,height);g.restore();
+    }
+    entry={master:master,strip:img,img:canvas,width:width,height:height};detailedAnimations[name]=entry;return entry;
+  }
   function activeTheme(){return typeof floorMeta!=='undefined'&&floorMeta&&floorMeta.chaosPreview&&floorMeta.chaosPreview.biome;}
   function themeKey(theme){return theme||activeTheme()||'prism-archives';}
   function belongs(name,theme){if(themeGroups[theme])return themeGroups[theme].some(function(key){return belongs(name,key);});var prefix=themePrefixes[theme];return typeof name==='string'&&!!prefix&&name.indexOf(prefix)===0;}
@@ -172,6 +189,8 @@
     // piece whenever it crosses the fog boundary.
     var still=!visibleSet(p,alpha)||(typeof ANIM!=='undefined'&&ANIM.reduce);
     var frame=still?0:Math.floor(Math.max(0,now)*spec.fps/1000)%spec.frames;
+    var detail=detailedAnimation(name,img,spec);
+    if(detail)return {img:detail.img,sx:frame*detail.width,sy:0,sw:detail.width,sh:detail.height,nm:name};
     return {img:img,sx:frame*spec.cell+spec.sx,sy:spec.sy,sw:spec.sw,sh:spec.sh,nm:name};
   }
   root.FoteChaosPreviewArt=Object.freeze({ready:ready,ensureAssets:ensureAssets,lookup:lookup,artForSet:artForSet});

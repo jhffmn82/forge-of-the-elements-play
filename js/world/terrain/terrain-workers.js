@@ -86,7 +86,7 @@
   deepTex=function(reg,name){var t=DC.tex[reg]&&DC.tex[reg][name];return t?{w:t.w,h:t.h,d:EMPTY}:null;};
  }
  function source(){
-  var page=[hash2,inb,idxOf,at,isWallLike,ptWallCell,ptVal,ptVor,ptFieldTables,ptSub,ptSolid,ptJag,ptKind,ptMix,ptFloorColor,ptGroundRaster,ptCellRaster,
+  var page=[hash2,inb,idxOf,at,isWallLike,ptWallCell,ptVal,ptVor,ptFieldTables,ptSub,ptSolid,ptJag,ptKind,ptMix,ptMineralStreak,ptFloorColor,ptGroundRaster,ptCellRaster,
    ptMossField,ptPoolField,ptFieldContext,ptPoolFx,ptMat,ptSalt,surfSalt,surfOff,ptCrystalAt,
    deepRegionAt,deepCellReg,deepContext,deepWallCell,deepPixReg,deepSolid,deepMix,deepRockCol,deepTexel,deepPresent,deepCellRaster];
   return [

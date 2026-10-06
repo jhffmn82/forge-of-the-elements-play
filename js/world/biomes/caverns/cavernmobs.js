@@ -69,6 +69,16 @@ CAVE_ELEMENT_TIERS.forEach(function(r){
   MONSTERS[r.kind]=Object.assign({},old,{name:r.name,sprite:r.sprite,hp:r.old==='stoneling'?77:53,dmg:[7,10],acc:old.acc+5,armor:(old.armor||0)+2,xp:55,art:.95,elementTier:2,band:[0,0],w:0});
   DROPS[r.kind]=DROPS[r.old];
 });
+/* Late-biome members of the same six elemental families. */
+var ELEMENTAL_ROOM_KINDS={fire:['emberling','cinderling','pyreling'],water:['tideling','rippleling','tideling3'],air:['galeling','gustling','stormling'],earth:['stoneling','mossling','cragling'],shadow:['wisp','duskling','umbraling'],light:['lumenling','gleamling','dawnling']};
+Object.keys(ELEMENTAL_ROOM_KINDS).forEach(function(element){
+  var kinds=ELEMENTAL_ROOM_KINDS[element],old=MONSTERS[kinds[0]],second=MONSTERS[kinds[1]],third=kinds[2];
+  old.elementTier=1;
+  MONSTERS[third]=Object.assign({},second,{name:element==='water'?'Tideling':third[0].toUpperCase()+third.slice(1),sprite:'m-'+(element==='water'?'tideling-tier3':third),hp:element==='earth'?112:78,dmg:[10,14],acc:old.acc+8,armor:(old.armor||0)+3,xp:85,art:1.05,elementTier:3,band:[0,0],w:0});
+  DROPS[third]=DROPS[kinds[0]];
+  var effect={fire:'Burning',water:'Chill',air:'Stun',earth:'Poison',light:'Blind',shadow:'Fear'}[element];
+  kinds.forEach(function(kind){MONSTERS[kind].elementalProcChance=.30;MONSTERS[kind].hint='30% chance to inflict '+effect+' on a landed attack.';});
+});
 
 /* special rooms and fallbacks ask for Dungeon kinds by name; in the Caverns they get Caverns ones */
 var CAVE_SWAP = {rat:'rootbound', bat:'rootbound', caverat:'rootbound', cavebat:'rootbound', slime:'caveslime', goblin:'stormbeetle', archer:'sparkjelly', brute:'stormbeetle', shaman:'myconid'};

@@ -119,7 +119,7 @@ function drawRecess(p, alpha){
   crRect(X+W/2-2*u, Y+H*0.06, 4*u, 4*u, CR_STONE.blockHi); crRect(X+W/2-1*u, Y+H*0.06+1*u, u, u, CR_STONE.carve); crRect(X+W/2+1*u, Y+H*0.06+1*u, u, u, CR_STONE.carve);
   /* the sarcophagus lying in the niche */
   var t=typeof setArt==='function' ? setArt('tomb-h') : null;
-  if(t){ var tw=iw*0.94, th=tw*(t.sh/t.sw); ctx.imageSmoothingEnabled=false; ctx.drawImage(t.img, t.sx, t.sy, t.sw, t.sh, ix+(iw-tw)/2, Y+H-th-u, tw, th); }
+  if(t){ var tw=iw*0.94, th=tw*(t.sh/t.sw); ctx.imageSmoothingEnabled=true; ctx.drawImage(t.img, t.sx, t.sy, t.sw, t.sh, ix+(iw-tw)/2, Y+H-th-u, tw, th); }
   /* a sill in front */
   crRect(X+W*0.08, Y+H-3*u, W*0.84, 3*u, CR_STONE.blockLo); crRect(X+W*0.08, Y+H-3*u, W*0.84, u, CR_STONE.blockHi);
   ctx.restore();
@@ -127,23 +127,23 @@ function drawRecess(p, alpha){
 var CR_SLAB = {};
 function graveSlabRaster(seed){
   if(CR_SLAB[seed]) return CR_SLAB[seed];
-  var W=28, H=58, c=document.createElement('canvas'); c.width=32; c.height=64;
-  var g=c.getContext('2d'), im=g.createImageData(32,64), D=im.data, ox=2, oy=3;
+  var W=28, H=58, c=document.createElement('canvas'); c.width=128; c.height=256;
+  var g=c.getContext('2d'), im=g.createImageData(128,256), D=im.data, ox=2, oy=3;
   function h(x,y,k){ return hash2(x+seed*7, y-seed*3, k); }
   /* carving mask: a cross in the upper half, four epitaph lines below */
   function carved(x,y){
     if(x>=12 && x<=15 && y>=6 && y<=24) return true;
     if(x>=7 && x<=20 && y>=11 && y<=13) return true;
-    for(var k=0;k<4;k++){ var yy=32+k*5, len=10+Math.floor(h(k,1,3)*8), x0=Math.floor((W-len)/2); if(y===yy && x>=x0 && x<x0+len && h(x,yy,4)>0.18) return true; }
+    for(var k=0;k<4;k++){ var yy=32+k*5, len=10+Math.floor(h(k,1,3)*8), x0=Math.floor((W-len)/2); if(Math.abs(y-yy)<.45 && x>=x0 && x<x0+len && h(x,yy,4)>0.18) return true; }
     return false;
   }
-  for(var y=0;y<64;y++) for(var x=0;x<32;x++){
-    var lx=x-ox, ly=y-oy, p=(y*32+x)*4;
+  for(var v=0;v<256;v++) for(var u=0;u<128;u++){
+    var x=(u+.5)/4,y=(v+.5)/4,lx=x-ox,ly=y-oy,p=(v*128+u)*4;
     /* chipped outline: corners and a few edge bites removed */
     var inside = lx>=0 && ly>=0 && lx<W && ly<H;
     if(inside){
       var edgeD=Math.min(lx, ly, W-1-lx, H-1-ly);
-      if(edgeD===0 && h(lx,ly,1)<0.18) inside=false;
+      if(edgeD<.25 && h(lx,ly,1)<0.18) inside=false;
       if((lx+ly<2) || (W-1-lx+ly<2) || (lx+H-1-ly<3) || (W-1-lx+H-1-ly<2)) inside=false;
       if(lx>18 && ly>44 && (lx-18)+(ly-44)>14) inside=false;                      /* a broken lower corner */
     }
@@ -173,9 +173,9 @@ function graveSlabRaster(seed){
 }
 function drawGraveSlab(p, alpha){
   var img=graveSlabRaster((p.x*31+p.y*17)%97);
-  ctx.save(); ctx.globalAlpha=alpha; ctx.imageSmoothingEnabled=false;
+  ctx.save(); ctx.globalAlpha=alpha; ctx.imageSmoothingEnabled=true;
   var X=Math.round((p.x-camX)*TS), Y=Math.round((p.y-camY)*TS);
-  ctx.drawImage(img, 0, 0, 32, 64, X, Y, Math.round((p.x+1-camX)*TS)-X, Math.round((p.y+2-camY)*TS)-Y);
+  ctx.drawImage(img, 0, 0, img.width, img.height, X, Y, Math.round((p.x+1-camX)*TS)-X, Math.round((p.y+2-camY)*TS)-Y);
   ctx.restore();
 }
 /* small edging stones around tombs, and a worn processional border leading away from a recess */
@@ -271,11 +271,12 @@ function drawSceneryCluster(family,variant,px,py,alpha,flip,shear){
   // Crates, pots and barrels use one readable object at each existing placement.
   // Saved group data still owns collision, breaking, loot and seeded layout.
   var source=sceneryClusterSource(family,variant);
-  if(source.single)return drawObjectSprite(source.art,px,py,{feet:true,fit:.78,alpha:alpha,flip:flip});
+  if(source.single)return drawObjectSprite(source.art,px,py,{feet:true,fit:family==='barrel'?.9:.78,alpha:alpha,flip:flip});
   var o=source.art;if(!o)return false;
   var baked=family.indexOf('mushroom-')===0&&typeof vegBaked==='function'?vegBaked(o):null;
-  ctx.save();ctx.globalAlpha=alpha;ctx.imageSmoothingEnabled=false;
-  ctx.translate(px+TS*.5,py+TS);if(shear)ctx.transform(1,0,-shear,1,0,0);if(flip)ctx.scale(-1,1);
+  ctx.save();ctx.globalAlpha=alpha;ctx.imageSmoothingEnabled=true;
+  var shrink=family==='mushroom-crypt'?1:family.indexOf('mushroom-')===0?.5:1;
+  ctx.translate(px+TS*.5,py+TS);ctx.scale(shrink,shrink);if(shear)ctx.transform(1,0,-shear,1,0,0);if(flip)ctx.scale(-1,1);
   if(baked)ctx.drawImage(baked,0,0,128,128,-TS*.5,-TS,TS,TS);
   else ctx.drawImage(o.img,o.sx,o.sy,128,128,-TS*.5,-TS,TS,TS);
   ctx.restore();return true;

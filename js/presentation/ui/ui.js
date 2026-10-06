@@ -142,7 +142,7 @@ function confirmBox(title, text, yesLabel, onYes){
    one within a tenth of it) draws nearest neighbour; any other enlargement goes through a whole-number nearest copy
    first, so the one filtered step only shrinks, at 'high' quality. keep: the page sets the canvas's CSS size, so only
    the backing store follows it. */
-var ICON_UP=new WeakMap(), ICON_SHOWN={};
+var ICON_UP=new WeakMap(), ICON_SHOWN={}, ICON_RUNES_SHARP=true;
 var STATIC_ART_REQUESTS=new WeakMap(),STATIC_ART_PENDING=new Set(),STATIC_ART_OBSERVER=null;
 function cancelStaticArtPaint(el,channel){
   var requests=STATIC_ART_REQUESTS.get(el),request=requests&&requests.get(channel||'art');
@@ -181,6 +181,8 @@ function watchStaticArt(el,files,repaint,owns,channel,metadata){
     STATIC_ART_OBSERVER.observe(document.documentElement,{childList:true,subtree:true});
   }
 }
+/* the remembered icon box sizes are measured again on their next paint; a rune's own key (no '|') is kept (C4, below) */
+function forgetIconSizes(){ Object.keys(ICON_SHOWN).forEach(function(key){ if(key.indexOf('|')>=0) delete ICON_SHOWN[key]; }); }
 function paintIconArt(c, o, w, h, trinket, keep){
   var d=window.devicePixelRatio||1, W=Math.max(1,Math.round(w*d)), H=Math.max(1,Math.round(h*d));
   c.width=W; c.height=H; if(!keep){ c.style.width=(W/d)+'px'; c.style.height=(H/d)+'px'; }
@@ -193,7 +195,10 @@ function paintIconArt(c, o, w, h, trinket, keep){
     src={img:u, sx:0, sy:0, sw:u.width, sh:u.height}; f/=k;
   }
   var x=c.getContext('2d'), dw=src.sw*f, dh=src.sh*f;
-  x.imageSmoothingEnabled=f<1; x.imageSmoothingQuality='high';
+  /* 2026-10-05 (item art): a 128px item picture (environment-items.webp: the foods, the knife, the Crypt core) shrunk to
+     under half its size was averaged soft at 'high', softer in a 38px bag cell than the 64px picture it replaced. That
+     one case takes the plain filter the floor already draws these pictures through. Every other icon keeps 'high'. */
+  x.imageSmoothingEnabled=f<1; x.imageSmoothingQuality=f<0.5 && o.res===2 && o.cell===128 ? 'low' : 'high';
   x.drawImage(src.img, src.sx,src.sy,src.sw,src.sh, Math.round((W-dw)/2), Math.round((H-dh)/2), dw, dh);
 }
 function paintArtCanvas(el, group, name, size){
@@ -207,13 +212,21 @@ function paintArtCanvas(el, group, name, size){
     /* a canvas the page stretches to its box (touch Gear tiles, the hotbar) is repainted at the size it is shown. For a
        box already on the page that size is remembered per kind of box and window size, so the hotbar's repaint every
        turn forces no layout; a detached one is measured on the next frame, once it has been placed. */
-    var key=el.isConnected && el.parentNode ? el.className+'<'+String(el.parentNode.className).split(' ')[0]+'@'+innerWidth+'x'+innerHeight+'x'+d+(document.body.classList.contains('touch')?'t':'') : null, known=key ? ICON_SHOWN[key] : undefined;
+    var legacy=el.isConnected && el.parentNode ? el.className+'<'+String(el.parentNode.className).split(' ')[0]+'@'+innerWidth+'x'+innerHeight+'x'+d+(document.body.classList.contains('touch')?'t':'') : null;
+    /* 2026-10-05 (item art, C4): that size outlived the layout it was measured in. The first hotbar paint measured a 44px
+       box while the overlay HUD's stylesheet was still reloading (responsive-hud.js mount), the slot then showed at 58 to
+       70px, and every later paint reused 44 and let the page stretch it, so every hotbar icon was soft. The body's classes
+       are the HUD layout, so they are part of the key, and forgetIconSizes above drops what was measured too early. A
+       sigil rune kept the old key, and so the size it had always been painted at. 2026-10-06 (Justin: 'sharper runes in
+       hotbar'): ICON_RUNES_SHARP is on, so a rune is painted at its shown size like every other icon; false restores the old path. */
+    var key=legacy && (String(name).indexOf('rune-')===0 && !ICON_RUNES_SHARP ? legacy : legacy+'|'+document.body.className), known=key ? ICON_SHOWN[key] : undefined;
     paintIconArt(c, o, known ? known[0] : S, known ? known[1] : S, trinket, !!known);
     el.innerHTML=''; el.appendChild(c);
     var shown=function(){ if(el.isConnected===false||el.firstChild!==c)return;var st=getComputedStyle(c), w=/px$/.test(st.width) && parseFloat(st.width), h=/px$/.test(st.height) && parseFloat(st.height);
       if(!(w>0 && h>0)) return;
       var stretched=Math.abs(w-S)*d>0.5 || Math.abs(h-S)*d>0.5;
       if(key) ICON_SHOWN[key]=stretched && [w,h];
+      if(legacy && ICON_SHOWN[legacy]===undefined) ICON_SHOWN[legacy]=stretched && [w,h];   /* the size a rune reads, taken when it always was */
       if(stretched) paintIconArt(c, o, w, h, trinket, true); };
     if(known===undefined){ if(key) shown(); else if(window.requestAnimationFrame) requestAnimationFrame(shown); }
     watch();
@@ -222,16 +235,18 @@ function paintArtCanvas(el, group, name, size){
   c.width=S*d; c.height=S*d; c.style.width=S+'px'; c.style.height=S+'px';
   var x=c.getContext('2d'); x.setTransform(d,0,0,d,0,0); x.imageSmoothingEnabled=true;
   if(group==='cast'){
-    /* 2026-09-22 (Justin): character selection draws the 256px doll cut-out (cast-<look>-doll.webp, the paper doll's
-       sheet), feet on the box's floor. The old portraits.webp is archived (2026-09-27): while a doll is unavailable the
-       look's own map-sheet still stands in while the preferred doll becomes ready. */
-    var cm=AS.cast && AS.cast[name], dm=cm && cm.doll, di=dm && atl('cast-'+name+'-doll.webp');
-    if(di){ var ds=S*0.98/dm.stand, dw=dm.cell*ds; x.drawImage(di,0,0,dm.cell,dm.cell,(S-dw)/2,S-(dm.cell-(dm.foot||0))*ds+S*0.02,dw,dw); el.innerHTML=''; el.appendChild(c); return; }
-    var si=cm && cm.static_row!=null && atl('cast-'+name+'.webp');
-    if(si){ var ss=S*0.98/cm.stand, sw=cm.cell*ss; x.drawImage(si,0,cm.static_row*cm.cell,cm.cell,cm.cell,(S-sw)/2,S-(cm.cell-(cm.foot||0))*ss+S*0.02,sw,sw); }
+    /* Creation thumbnails share the doll's source and stand selection. The exact
+       underwear idle is the fallback until its corrected native doll arrives. */
+    var cm=AS.cast && AS.cast[name],dm=cm && cm.doll,sheet=dollSheetFor(name),native=!!(sheet && sheet.m===dm);
+    if(sheet){
+      var sm=sheet.m,row=dollStillRow(sheet),ss=S*0.98/sm.stand,sw=sm.cell*ss;
+      x.drawImage(sheet.img,0,row*sm.cell,sm.cell,sm.cell,(S-sw)/2,S-(sm.cell-(sm.foot||0))*ss+S*0.02,sw,sw);
+    }
     el.innerHTML='';el.appendChild(c);
-    var files=[];if(dm)files.push('cast-'+name+'-doll.webp');if(!si&&cm&&cm.static_row!=null)files.push('cast-'+name+'.webp');
-    watchStaticArt(el,files,function(){paintArt(el,group,name,size);});return;
+    var files=[],named=el.getAttribute && el.getAttribute('data-look');
+    if(dm && !native)files.push('cast-'+name+'-doll.webp');
+    if(cm && !sheet)files.push('cast-'+name+'.webp');
+    watchStaticArt(el,files,function(){paintArt(el,group,name,size);},function(){return !named || el.getAttribute('data-look')===name;});return;
   } else if(AS.map){
     el.innerHTML='';el.appendChild(c);watch();return;
   }
@@ -593,6 +608,7 @@ function inspectHTML(mx,my){
   var restorationForge=typeof FoteUnmakerEncounter!=='undefined'&&FoteUnmakerEncounter.forgeInfo(mx,my);
   if(restorationForge)return '<div class="nm">'+restorationForge.name+'</div><div class="hint">'+restorationForge.hint+'</div>';
   if(p){
+    if(p.cleansingShrine)return '<div class="nm">Cleansing Shrine</div><div class="hint">'+(p.used?'Its blessing is spent.':'Interact to remove every curse from carried and equipped items.')+'</div>';
     if(p.offeringBowl)return '<div class="nm">Offering bowl</div><div class="hint">Interact to read the inscription. Stand beside the bowl and drop five pieces of gear or sigils at its feet to receive a scroll.</div>';
     if(p.previewPortal&&typeof FoteChaosPreview!=='undefined'){
       var gateway=FoteChaosPreview.atPortal(mx,my);

@@ -169,8 +169,11 @@ function setMotion(mode){
   if(typeof FoteResponsiveHUD!=='undefined')FoteResponsiveHUD.renderReadouts();
 }
 function faceOf(dx,dy){
-  /* Diagonal steps turn the side-facing body and equipment with their horizontal direction. */
-  if(dx && Math.abs(dx)>=Math.abs(dy)) return dx<0 ? 'west' : 'east';
+  /* Diagonal steps turn the side-facing body and equipment with their horizontal direction.
+     2026-10-05 (slice 1c): so does anything else with a left or right part. A shot or spell at a steep angle (one tile
+     left, three up) gave north, and the hero turned his back on it; a straight up or down one still gives north or
+     south, and the renderer keeps the side he had (render.js heroFlip). */
+  if(dx) return dx<0 ? 'west' : 'east';
   if(dy) return dy<0 ? 'north' : 'south';
   return null;
 }
@@ -198,6 +201,22 @@ function motionStart(e,now){
 function motionActive(e,now){var s=MOTION_STATE.get(e);return !!(s && s.mt && now-s.mt<(s.dur||MOVE_MS));}
 /* how far through its slide a figure is: 1 when it is standing still, below 0 while a slide waits to start */
 function slideFrac(e,now){var s=MOTION_STATE.get(e);return (s && s.mt) ? (now-s.mt)/(s.dur||MOVE_MS) : 1;}
+/* 2026-10-05 (slice 1c): the walk frames a sliding figure has shown since it last stood still, counted on through every
+   chained step. The hero's walk frame is its whole part (render.js clipFrame). Reads only.
+   2026-10-06 (the review: a step from rest showed frames for 23, 20 and 29 ms, and at 2x speed for 10 to 14): it counted
+   the ground covered, which eases in and out of a step from rest. It counts the time on the move now, WALK_PER_STEP
+   frames to a step (MOVE_MS), every frame as long as the next and none under WALK_FRAME_MS: at Animation speeds above 1x
+   a step shows fewer frames. A frame that would begin less than WALK_FRAME_MS before the slide ends is not begun; the
+   count then stops a hair short of it, so a step chained on from there begins that frame at once.
+   ended: the count the last slide ended on, whether or not it is still running (renderPos carries it over). */
+var WALK_PER_STEP=4.5, WALK_FRAME_MS=35;   /* the hero's nine frame walk row to two steps; one paint at 30 a second, and a millisecond */
+function slideWalked(e,now,ended){
+  var s=MOTION_STATE.get(e); if(!s || (!s.mt && !ended)) return 0;
+  if(s.st>MOTION_SHOWN) now=Math.min(now,s.mt);   /* a slide no frame has shown yet is still at its start (renderPos) */
+  var d=s.dur||MOVE_MS, ms=Math.max(WALK_FRAME_MS, MOVE_MS/WALK_PER_STEP), w=s.walk||0;
+  var v=w+(ended ? d : Math.max(0,Math.min(d,now-s.mt)))/ms, n=Math.floor(v);
+  return n>w && d-(n-w)*ms<WALK_FRAME_MS ? n-1e-6 : v;
+}
 function renderPos(e){
   var now=performance.now(),s=motionState(e);
   /* a slide no frame has shown yet stays at its start until it is started (motionStart) */
@@ -208,9 +227,15 @@ function renderPos(e){
        where the figure is drawn, at a steady pace: the slide lasts in proportion to the distance left and runs
        linear instead of easing to a stop at every tile. A step from rest keeps its ease in and out. */
     var chained=!!(s.mt && at-s.mt<(s.dur||MOVE_MS) && jump<=3);
+    /* 2026-10-05 (slice 1c): walk: the walk frames shown so far in this run of chained steps (slideWalked). stepped: when
+       the newest slide began, kept after it ends (render.js clipFrame drops an older hurt or cast clip by it).
+       2026-10-06: a step that comes within one step's time of the last slide's end counts on as well. On a frame that
+       came late the held key's next step missed the slide, and every step began the stride again at its first frame */
+    s.walk=chained?slideWalked(e,at):(s.stepped && at-s.stepped<(s.dur||MOVE_MS)+MOVE_MS)?Math.ceil(slideWalked(e,at,true)):0;   /* the next whole frame */
     s.fx=cur.x;s.fy=cur.y;s.x=e.x;s.y=e.y;s.lin=chained;s.hopHeight=1;
     s.dur=chained?Math.round(MOVE_MS*Math.max(0.5,jump)):MOVE_MS;
     s.mt=(ANIM.reduce || jump>3)?0:(e!==player && typeof fxClock==='number'?Math.max(now,fxClock):now);s.st=at=now;
+    if(s.mt)s.stepped=s.mt;
   }
   return slideAt(e,at);
 }
@@ -255,6 +280,8 @@ function resize(){
      rows, so phones, tablets and PCs keep the same coverage vertically. */
   var fitRows=innerWidth>innerHeight && typeof uiHudMode==='function' && uiHudMode()==='minimal';
   TS = fitRows ? Math.max(15,Math.floor(H/z[1])) : clamp(Math.floor(Math.min(W/z[0], H/z[1])), 15, 72);
+  var preview=typeof sandboxRoomPreviewBounds==='function'&&sandboxRoomPreviewBounds();
+  if(preview)TS=Math.min(TS,Math.max(6,Math.floor(Math.min(W/(preview.w+2),H/(preview.h+2)))));
   /* Cover landscape's map panel with whole tiles and clip the excess at its
      edges. Rounding down left a visible frame around the centered canvas.
      Keep CSS pixels tied to TS so tapping still picks the drawn tile. */

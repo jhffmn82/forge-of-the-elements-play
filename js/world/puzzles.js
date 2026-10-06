@@ -157,7 +157,7 @@ function placeSigilRoom(kind){
     /* 2026-09-18: the gauntlet used to lay every spike out in the open, so the room read as a tiled pattern
        rather than a threat. They are hidden like any other trap now - searching (F) finds them, the floor
        note still warns you the room is out there, and stone skin, Earth 3 or levitation still walk it. */
-    pzCells(room).forEach(function(p){ if(!loot.some(function(l){ return l.x===p.x&&l.y===p.y; }) && at(p.x,p.y)===FLOOR) feats.push({x:p.x,y:p.y,kind:'spikes',found:true,puzzle:true}); });
+    pzCells(room).forEach(function(p){ if(!loot.some(function(l){ return l.x===p.x&&l.y===p.y; }) && at(p.x,p.y)===FLOOR) feats.push({x:p.x,y:p.y,kind:'spikes',found:false,puzzle:true}); });
     pzLoot(loot, 3);
   } else if(kind==='sentinels'){
     pzLoot(guardianRewardCells(cells), 3);
@@ -187,7 +187,7 @@ function placeSigilRoom(kind){
       keeper.state='asleep';keeper.libraryRoom={x:door.x,y:door.y};sleepers++;
     });
     var lc=cells.filter(function(p){ return freeCell(p.x,p.y); });
-    for(var i=0;i<3 && i<lc.length;i++) items.push(i===0 ? {x:lc[i].x,y:lc[i].y,kind:'sigil',use:randomSigilUse()} : {x:lc[i].x,y:lc[i].y,kind:'essence',n:ri(25,40)+floorNo*4});
+    libraryRewards('forbidden',null).forEach(function(item,n){var c=lc[Math.min(n,lc.length-1)]||door;item.x=c.x;item.y=c.y;items.push(item);});
     edgeCells(room).filter(function(p){ return freeCell(p.x,p.y) && Math.abs(p.x-door.x)+Math.abs(p.y-door.y)>2; }).slice(0,4).forEach(function(p){if(puzzlePropKeepsRewardsOpen(room,p))addProp(p.x,p.y,'bookshelf',{keep:true});});
 
   }
@@ -313,14 +313,18 @@ var SPIKES_SRC = {name:'Spikes', base:{pierce:99}};
 
 function drawTrap(f,px,py,alpha,now){
   if(!spriteOn){
-    var block={dart:['#A69B87','↗'],fire:['#F58B42','F'],gas:['#91BC61','P'],frost:['#9FD8FF','I'],spark:['#FFE080','ϟ'],teleport:['#B58CFF','O'],web:['#D8D5C6','#'],alarm:['#E8B44A','!'],pit:['#94887C','□'],spikes:['#B9B3AA','^']}[f.kind]||['#B9B3AA','^'];
-    ctx.save();ctx.globalAlpha=alpha;ctx.fillStyle='#292421';ctx.fillRect(px+TS*.15,py+TS*.15,TS*.7,TS*.7);ctx.strokeStyle=block[0];ctx.lineWidth=Math.max(1,TS*.04);ctx.strokeRect(px+TS*.15,py+TS*.15,TS*.7,TS*.7);glyph(block[1],px,py,block[0]);ctx.restore();return;
+    var block={dart:['#A69B87','â†—'],fire:['#F58B42','F'],gas:['#91BC61','P'],frost:['#9FD8FF','I'],spark:['#FFE080','ÏŸ'],teleport:['#B58CFF','O'],web:['#D8D5C6','#'],alarm:['#E8B44A','!'],pit:['#94887C','â–¡'],spikes:['#B9B3AA','^']}[f.kind]||['#B9B3AA','^'];
+    ctx.save();ctx.globalAlpha=alpha;ctx.fillStyle='#292421';ctx.fillRect(px+TS*.1,py+TS*.1,TS*.8,TS*.8);ctx.strokeStyle=block[0];ctx.lineWidth=Math.max(1,TS*.04);ctx.strokeRect(px+TS*.1,py+TS*.1,TS*.8,TS*.8);glyph(block[1],px,py,block[0]);ctx.restore();return;
   }
   if(f.kind!=='spikes') return drawOrdinaryTrap(f, px, py, alpha, now);
-  var u=TS/32; ctx.save(); ctx.globalAlpha=alpha;
-  ctx.fillStyle='#2A2522'; ctx.fillRect(px+4*u,py+4*u,24*u,24*u);
-  ctx.fillStyle='#B9B3AA';
-  for(var i=0;i<3;i++) for(var j=0;j<3;j++){ var sx=px+(7+i*8)*u, sy=py+(9+j*8)*u; ctx.beginPath(); ctx.moveTo(sx,sy+5*u); ctx.lineTo(sx+2.5*u,sy-2*u); ctx.lineTo(sx+5*u,sy+5*u); ctx.closePath(); ctx.fill(); }
+  ctx.save();ctx.globalAlpha=alpha;
+  for(var i=0;i<5;i++){
+    var sx=px+TS*(.2+.6*hash2(f.x,f.y,701+i)),sy=py+TS*(.25+.55*hash2(f.x,f.y,711+i)),h=TS*(.12+.07*hash2(f.x,f.y,721+i)),w=TS*.045;
+    ctx.fillStyle='rgba(21,18,16,.8)';ctx.beginPath();ctx.ellipse(sx,sy,w*1.7,w*.7,0,0,Math.PI*2);ctx.fill();
+    var metal=ctx.createLinearGradient(sx-w,sy,sx+w,sy);metal.addColorStop(0,'#514E4B');metal.addColorStop(.45,'#C7C1B2');metal.addColorStop(1,'#77746C');ctx.fillStyle=metal;
+    ctx.beginPath();ctx.moveTo(sx-w,sy);ctx.lineTo(sx+TS*.015,sy-h);ctx.lineTo(sx+w,sy);ctx.closePath();ctx.fill();
+    ctx.strokeStyle='#DED7C8';ctx.lineWidth=Math.max(.5,TS*.008);ctx.beginPath();ctx.moveTo(sx,sy-h*.86);ctx.lineTo(sx-w*.2,sy-h*.12);ctx.stroke();
+  }
   ctx.restore();
 
 }
@@ -458,7 +462,15 @@ function buildGeneratedPuzzles(seed){
 
   floorMeta.puzzles=[]; floorMeta.searched={};
   if(floorMeta.boss || !RUN) return;
-  var plan=puzzlePlan()[floorNo]; if(!plan) return;
+  var planned=puzzlePlan();
+  // Reorder only unbuilt opening slots. Moving a reward into an old cached
+  // floor would lose it, and moving its combat room forward would repeat it.
+  var committed=RUN.floorStash&&Object.keys(planned).some(function(f){return !!RUN.floorStash[f];});
+  if(bidx()===0&&floorNo<=2&&!committed&&planned[2]&&['sentinels','library'].indexOf(planned[2].sigilRoom)>=0){
+    var later=[3,4].find(function(f){return planned[f]&&['sentinels','library'].indexOf(planned[f].sigilRoom)<0;});
+    if(later){var early=planned[2];planned[2]=planned[later];planned[later]=early;}
+  }
+  var plan=planned[floorNo]; if(!plan) return;
   var saved=rng; rng=mulberry32(((seed||0)^0x51c1)>>>0);
   try{ if(plan.sigilRoom) buildSigilRoom(plan.sigilRoom); if(plan.crystal) buildCrystalVault(); }
   finally{ rng=saved; }

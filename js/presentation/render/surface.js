@@ -200,43 +200,29 @@ function mossRaster(x, y){
   if(!any) return null;
   g.putImageData(im,0,0); c.environmentTerrain={pixels:D,nativeDetail:true}; return c;
 }
-function bonesRaster(x, y){
-  // Native canvas decoration: fine contours instead of magnified 32px blocks.
-  var R=128,c=document.createElement('canvas');c.width=R;c.height=R;
-  var g=c.getContext('2d'),salt=surfSalt(),H=function(k){return hash2(x,y,salt+60+k);};
-  g.scale(4,4);
-  function oval(cx,cy,rx,ry,col){g.fillStyle=col;g.beginPath();g.ellipse(cx,cy,rx,ry,0,0,Math.PI*2);g.fill();}
-  var n=3+Math.floor(H(0)*3);
-  for(var i=0;i<n;i++){
-    var cx=6+H(i*3+1)*20,cy=8+H(i*3+2)*16,len=4+H(i*5+4)*5;
-    g.save();g.translate(cx,cy);g.rotate(H(i*3+3)*Math.PI);
-    g.lineCap='round';g.strokeStyle='rgba(22,19,15,.45)';g.lineWidth=1.8;
-    g.beginPath();g.moveTo(-len/2+.3,.5);g.lineTo(len/2+.3,.5);g.stroke();
-    g.strokeStyle='#918776';g.lineWidth=1.25;g.beginPath();g.moveTo(-len/2,0);g.quadraticCurveTo(0,.5,len/2,0);g.stroke();
-    g.strokeStyle='#c4b9a1';g.lineWidth=.7;g.beginPath();g.moveTo(-len/2,-.2);g.quadraticCurveTo(0,.2,len/2,-.2);g.stroke();
-    [-1,1].forEach(function(end){oval(end*len/2,-.35,.65,.55,'#c9bea7');oval(end*len/2,.35,.6,.5,'#b2a58c');oval(end*len/2-.15,-.48,.3,.2,'#dfd2b6');});
-    g.restore();
-  }
-  if(H(30)<.5){
-    g.save();g.translate(11+H(31)*14,12+H(32)*10);g.rotate((H(33)-.5)*1.1);
-    oval(.35,.5,2.9,2.55,'rgba(22,19,15,.5)');
-    var bone=g.createLinearGradient(-2,-2,2,2);bone.addColorStop(0,'#d8ccb1');bone.addColorStop(.55,'#bdb097');bone.addColorStop(1,'#8e816c');
-    oval(0,-.3,2.65,2.2,bone);oval(0,1.45,1.8,.9,'#ac9c81');
-    oval(-1,-.15,.72,.83,'#403a31');oval(1,-.15,.72,.83,'#403a31');
-    oval(-1.12,-.3,.36,.45,'#292620');oval(.88,-.3,.36,.45,'#292620');
-    g.fillStyle='#51483b';g.beginPath();g.moveTo(0,.5);g.lineTo(-.4,1.1);g.lineTo(.4,1.1);g.fill();
-    g.strokeStyle='#776a55';g.lineWidth=.18;
-    for(var t=-1;t<=1;t+=.5){g.beginPath();g.moveTo(t,1.4);g.lineTo(t,2);g.stroke();}
-    g.beginPath();g.moveTo(.2,-2.25);g.lineTo(-.2,-1.65);g.lineTo(.2,-1.3);g.stroke();
-    g.restore();
-  }
-  return c;
+function groundBoneArt(x,y){
+  var sample=hash2(x,y,surfSalt()+60),variant=sample<.06?3:[0,1,2,4][Math.min(3,Math.floor((sample-.06)/.94*4))];
+  return objArt('props','ground-bones-'+variant);
+}
+function bonesRaster(x,y){
+  var o=groundBoneArt(x,y);if(!o)return null;
+  var c=document.createElement('canvas');c.width=c.height=128;
+  var g=c.getContext('2d');g.imageSmoothingEnabled=true;g.translate(64,64);
+  g.rotate((hash2(x,y,surfSalt()+61)-.5)*.7);
+  g.drawImage(o.img,o.sx,o.sy,o.sw,o.sh,-32,-32,64,64);return c;
 }
 /* A raster that names a detail mode (water, ooze, trampled grass, chasm edges) is shown at 128px, built from it
    once by environment-terrain.js. The others (moss, grime, bones) are drawn at their final detail already. */
 function cachedRaster(kind, x, y, fn){
+  if(kind==='ash@'||kind==='scorch@')kind+=':'+[-1,1].map(function(d){return gAt(x+d,y)+','+gAt(x,y+d);}).join(':')+':';
   var cells=surfCache(), key=kind+x+','+y;
-  if(!(key in cells)) cells[key]=fn(x,y);
+  if(!(key in cells)){
+    var raster=fn(x,y);
+    // Bone art may still be loading. Its owner redraws on completion; unlike
+    // an empty procedural patch, that temporary miss must remain uncached.
+    if(!raster&&fn===bonesRaster)return null;
+    cells[key]=raster;
+  }
   var c=cells[key], mode=c && c.environmentTerrain && c.environmentTerrain.detail;
   return mode ? FoteEnvironmentTerrain.enhance(c, x, y, mode) : c;
 }
@@ -278,7 +264,7 @@ function drawStoneSurface(){
 
 /* ---------------------------------------------------------------- flat props: bones and rubble lie in the floor */
 function drawStoneProp(p, px, py, alpha){
-  if(p.name==='bones'){ blitRaster(cachedRaster('pb', p.x, p.y, bonesRaster), px, py, alpha); return true; }
+  if(p.name==='bones'||p.name==='bone-pile'){ blitRaster(cachedRaster('pb', p.x, p.y, bonesRaster), px, py, alpha); return true; }
   if(p.name==='bookshelf'){
     /* shelves fill the tile's width so a row of them stands nearly flush against the wall */
     var o=objArt('props','bookshelf'); if(!o) return false;
@@ -356,7 +342,7 @@ function drawMasonryDoor(x, y, t, px, py, a){
 function isWaterAt(x,y){ return inb(x,y) && at(x,y)===WATER; }
 function waterSig(x,y){ var s=''; for(var yy=y-2;yy<=y+2;yy++) for(var xx=x-2;xx<=x+2;xx++) s+=isWaterAt(xx,yy)?'1':'0'; return s; }
 function waterRaster(x, y){
-  var R=32, cells=[];
+  var R=128, cells=[];
   for(var yy=y-2;yy<=y+2;yy++) for(var xx=x-2;xx<=x+2;xx++) if(isWaterAt(xx,yy)) cells.push([xx+0.5, yy+0.5]);
   if(!cells.length) return null;
   var c=document.createElement('canvas'); c.width=R; c.height=R;
@@ -410,7 +396,7 @@ function tramSig(x,y){
   return s;
 }
 function tramRaster(x, y){
-  var R=32, cells=[];
+  var R=128, cells=[];
   for(var yy=y-1;yy<=y+1;yy++) for(var xx=x-1;xx<=x+1;xx++){
     if(!inb(xx,yy) || isWallLike(at(xx,yy))) continue;
     var g=ground[idxOf(xx,yy)];
@@ -490,7 +476,7 @@ function drawPixelFlame(bx, by, H, wide, alpha, now, seed){
 
 /* glints on the water: a few pixels per tile that brighten, drift a little and fade, each on its own clock */
 function waterGlints(x, y, px, py){
-  var now=performance.now(), salt=surfSalt(), u=Math.max(1, Math.round(TS/32));
+  var now=performance.now(), salt=surfSalt(), u=Math.max(1, Math.round(TS/128));
   ctx.save(); ctx.imageSmoothingEnabled=false;
   for(var k=0;k<3;k++){
     var hx=hash2(x,y,salt+300+k), hy=hash2(x,y,salt+310+k), hp=hash2(x,y,salt+320+k), period=1800+1400*hash2(x,y,salt+330+k);
@@ -508,3 +494,25 @@ function waterGlints(x, y, px, py){
 
 /* Named floor-generation stages; ordered by generation-adapter.js. */
 function resetGeneratedSurface(seed){afterGeneratedInstall(function(){SURF_CACHE.key=null;},'surface-cache');}
+
+/* Charred stone is a continuous irregular stain, not overlapping disks. */
+function scorchRaster(x,y,ash){
+  var R=192,N=128,P=32,c=document.createElement('canvas');c.width=c.height=R;
+  var g=c.getContext('2d'),im=g.createImageData(R,R),D=im.data,salt=surfSalt()+1701;
+  function burned(xx,yy){var val=gAt(xx,yy);return val===G_SCORCH||val===G_ASH;}
+  var left=burned(x-1,y),right=burned(x+1,y),top=burned(x,y-1),bottom=burned(x,y+1);
+  for(var v=0;v<R;v++)for(var u=0;u<R;u++){
+    var fx=(u+.5-P)/N,fy=(v+.5-P)/N,wx=x+fx,wy=y+fy,edge=1;
+    if(!left)edge=Math.min(edge,(fx+.25)*2);
+    if(!right)edge=Math.min(edge,(1.25-fx)*2);
+    if(!top)edge=Math.min(edge,(fy+.25)*2);
+    if(!bottom)edge=Math.min(edge,(1.25-fy)*2);
+    var noise=ptVal(wx*6,wy*6,salt)*.65+ptVal(wx*19,wy*19,salt+1)*.35;
+    var fringe=Math.max(0,Math.min(1,(fx+.25)*4,(1.25-fx)*4,(fy+.25)*4,(1.25-fy)*4));
+    var density=fringe*Math.max(0,Math.min(1,(edge+noise*.4-.18)))*Math.max(0,Math.min(1,(noise-.19)*1.6));if(!density)continue;
+    var p=(v*R+u)*4,grain=hash2(u-P+x*N,v-P+y*N,salt+2),gray=ash?24+grain*32:10+grain*12;
+    D[p]=gray;D[p+1]=gray*.91;D[p+2]=gray*.85;D[p+3]=density*(ash?170:190);
+    if(ash&&grain>.986){D[p]=151;D[p+1]=141;D[p+2]=130;D[p+3]=density*170;}
+  }
+  g.putImageData(im,0,0);return c;
+}

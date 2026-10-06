@@ -42,7 +42,7 @@ function actionInfusion(kind,view){
   return o&&(o.icon||'').replace(/^item-/,'')===kind?o.enchant||null:null;
 }
 function actionDivine(view){return FoteStats.powers(view,statContent()).divine;}
-function actionCritBonus(view){return actionInfusion('holy',view)==='shadow'&&(view&&view.shadowClone?FoteShadowClone.buffed(view):isBuffed())?enchantValues('holy','shadow',view).critChance:0;}
+function actionCritBonus(view){return actionInfusion('holy',view)==='shadow'?enchantValues('holy','shadow',view).critChance:0;}
 function actionRootCrit(target,view){return actionInfusion('orb',view)==='earth'&&effectHasTag(target,'root')?enchantValues('orb','earth',view).critChance:0;}
 function actionCritMultiplier(view){return FoteActions.criticalMultiplier(view.stats.agi,actionInfusion('orb',view)==='shadow'?enchantValues('orb','shadow',view).critMultiplier:0);}
 function actionCriticalHit(event,rolled){
@@ -148,12 +148,12 @@ function resolveSpellStrike(f,A,amount,type,options){
     var targetAwake=f.state!=='asleep';
     var view=event.view=Object.assign({},player,{aff:Object.assign({},player.aff||{}),procLuck:typeof luckBonus==='function'?luckBonus():0}),numb=numbingDark(f),opening=offGuard(f)||player.hidden>0||numb;
     var unaware=opening||f.st&&(f.st.stun||f.st.frozen);
-    var crit=combatRoll((f.sapped?1:view.crit+actionCritBonus(view))+actionRootCrit(f,view)+(unaware&&player.aff.shadow?.05*player.aff.shadow:0),true);
+    var crit=combatRoll((f.sapped?1:view.crit+actionCritBonus(view))+actionRootCrit(f,view),true);
     crit=actionCriticalHit(event,crit);
     var singleTarget=!!(options.bolt||A.kind==='bolt')&&!A.piercing;
     var dark=singleTarget&&syllaOn()&&view.hidden>0?player.syllaDark||0:0;
     if(dark)amount*=1+SYLLA.darkPerRank*dark*actionDivine(view);
-    var base=FoteActions.spellDamage(amount,{bolt:!!options.bolt,numbing:numb,crit:crit,criticalMultiplier:actionCritMultiplier(view),lightUndead:A.el==='light'&&(f.base.undead||f.base.shadowy)});
+    var base=FoteActions.spellDamage(amount,{bolt:!!options.bolt,numbing:numb,surprise:!!unaware,crit:crit,criticalMultiplier:actionCritMultiplier(view),lightUndead:A.el==='light'&&(f.base.undead||f.base.shadowy)});
     event.hit={att:player,def:f,targetAwake:targetAwake,crit:crit,surprise:!!(options.bolt?unaware:opening),spell:true,singleTarget:singleTarget,actionId:event.actionId,view:view};
     LAST_HIT=event.hit;event.ability=A;event.statusBefore=Object.keys(f.st||{});
     if(!options.bolt){if(f.state!=='hunt'&&f.state!=='throne')f.state='hunt';f.caughtOff=-1;}
@@ -242,7 +242,7 @@ function rollWeaponHit(event){
   var who = att===player ? 'You' : att.name;
   var foe = def===player ? 'you' : def.name;
   var tAt = fxClock;
-  if(equipped) setClip(att, ranged ? 'ranged' : 'melee');
+  if(equipped) setClip(att, ranged ? 'ranged' : 'melee', view.weapon);   /* 2026-10-05: the weapon swung picks the swing's play list (render.js CLIP_PLAY) */
   else setClip(att, 'attack');
   var tSwing = Math.max(performance.now(), fxClock);   /* the release or swing frame, after the clip's windup */
   if(ranged){ boltFx(att.x,att.y,def.x,def.y,'phys',{arrow:true,silentHit:true}); sfx('bow-shot',{at:tSwing,from:att}); }
@@ -251,7 +251,9 @@ function rollWeaponHit(event){
   if(def===player && att.foe) ch=hostileHitChance(ch);
   if(def.shadowClone&&def.cloneStats){
     var echoDefense=def.cloneStats;
-    if(ranged&&rng()<echoDefense.deflect||dist(att,def)<=1&&rng()<echoDefense.parry){floatText(def.x,def.y,'deflected','miss');return;}
+    if(ranged&&rng()<echoDefense.deflect){floatText(def.x,def.y,'deflected','miss');return;}
+    var echoParry=def.parry===undefined?echoDefense.parry:def.parry;
+    if(dist(att,def)<=1&&rng()<echoParry){floatText(def.x,def.y,'parried','miss');return;}
     ch-=echoDefense.luck||0;if(echoDefense.blur)ch=Math.max(.15,ch*.8);
   }
   if(def===player && player.parry && dist(att,def)<=1 && combatRoll(player.parry,true)){
@@ -259,7 +261,7 @@ function rollWeaponHit(event){
     if(att.hp>0)attack(player, att, 0.5, 'Riposte');
     return;
   }
-  var blocked = def.shadowClone&&def.cloneStats?rng()<def.cloneStats.block:(def===player && player.block && combatRoll(player.block,true));
+  var blocked = def.shadowClone&&def.cloneStats?rng()<(def.block===undefined?def.cloneStats.block:def.block):(def===player && player.block && combatRoll(player.block,true));
   if(att===player ? !combatRoll(ch,true) : def===player ? combatRoll(1-ch,true) : rng()>ch){
     log(combatText(who)+' miss'+(att===player?'':'es')+' '+combatText(foe)+'.','c-miss');
     floatText(def.x, def.y, 'miss', 'miss'); sfx('miss',{from:def}); if(att===player && def.state!=='hunt' && def.state!=='throne') def.state='hunt'; if(att===player) def.caughtOff=-1; return;
@@ -303,7 +305,7 @@ function rollWeaponDamage(event,strike){
     var pummelHit=att===player && view.weapon.unarmed && player.pummel>0;
     if(pummelHit)player.pummel--;
     var unaware = offGuard(def) || def.st.stun || def.st.frozen || (att.hidden>0||event.numbing) || (att===player && typeof smokeAmbush==='function' && smokeAmbush(def)) || def.surprised;
-    var critCh = (def.sapped?1:view.crit+actionCritBonus(view)) + actionRootCrit(def,view) + (unaware && actor.aff.shadow ? 0.05*actor.aff.shadow : 0);
+    var critCh = (def.sapped?1:view.crit+actionCritBonus(view)) + actionRootCrit(def,view);
     crit = att===player?combatRoll(critCh,true):rng()<critCh;
     if(att===player)crit=actionCriticalHit(event,crit);
     if(unaware){ surprise=true; base *= (att===player?isScoundrel():actor.cls==='scoundrel') ? 2.0 : 1.5; if(view.weapon.name.indexOf('Dagger')>=0) base*=1.2;
@@ -366,9 +368,10 @@ function resolveWeaponDamage(event,strike){
   if(att!==player && att.base && att.base.el && def.hp>0){
     el = att.base.el;
     var add = applyDamage(def,base*.5,elemToType(el),att,{attackRolled:true,tags:['proc','elemental-attack'],actionId:event.actionId});
-    if(add>0&&def.hp>0&&rng() < 0.22){
+    if((att.base.elementTier?phys>0||add>0:add>0)&&def.hp>0&&rng() < (att.base.elementalProcChance===undefined?.22:att.base.elementalProcChance)){
       if(el==='fire'&&applyStatus(def,'burn',3,underdarkEnemyStat(att,sDMG(2))).applied)note=' Burning';
       else if(el==='water'){var chilled=addChill(def);if(chilled.applied)note=chilled.key==='frozen'?' Frozen':' Chilled';}
+      else if(el==='earth'&&att.base.elementTier){if(applyStatus(def,'poison',3,sDMG(1+att.base.elementTier)).applied)note=' Poisoned';}
       else if(el==='earth'&&applyStatus(def,'root',2).applied)note=' Rooted';
       else if(el==='shadow'&&applyStatus(def,'fear',2).applied)note=' Afraid';
       else if(el==='air'&&applyStatus(def,'stun',1).applied)note=' Stunned';
@@ -409,4 +412,29 @@ function presentWeaponDamage(event,strike,damage){
   if(att===player && event.pendingExtra && event.pendingExtra===def && def.hp>0){ event.pendingExtra=null; attack(player,def,1,'Gust',{weapon:view.weapon,offhand:!!event.options.offhand,tags:['proc']}); }
   if(att.shadowClone && event.pendingExtra===def && def.hp>0){event.pendingExtra=null;attack(att,def,1,'Gust',{weapon:view.weapon,offhand:!!event.options.offhand,tags:['proc','shadow-clone']});}
   event.pendingExtra=null;
+}
+
+/* Murk's inherited weapon enchant belongs to the summon that landed the hit. */
+function applyMurkSummonEnchant(event){
+  var captured=event.murkEnchant;if(!captured||!(event.damage>0))return;
+  var source=event.source,target=event.target;
+  var hit=FoteEnchantments.weaponHit(captured.element,captured.values,captured.raw,
+    !!(target.st&&target.st.corrupt),function(chance){return pRoll(chance,captured.luck);});
+  var tags=['proc','enchant','murk-inherited'];
+  var options={tags:tags,actionId:event.actionId,outgoingModifiersApplied:true,
+    procAffinity:captured.affinity,procLuck:captured.luck};
+  if(hit.status&&target.hp>0){
+    var effectOptions={source:source,actionId:event.actionId,tags:tags,sourceAffinity:captured.affinity,
+      sourcePoint:{x:source.x,y:source.y},data:{sourceAffinity:captured.affinity},durationModifiers:false,bossControl:true};
+    var applied=hit.status.key==='chill'?gameEffects.addChill(target,effectOptions):
+      gameEffects.apply(target,hit.status.key,hit.status.duration,hit.status.key==='burn'?captured.burn:undefined,effectOptions);
+    if(applied.applied)combatActionNote(target,hit.status.key==='chill'?(applied.key==='frozen'?'Frozen':'Chilled'):
+      {burn:'Burning',root:'Rooted',corrupt:'Corrupted'}[hit.status.key]);
+  }
+  if(hit.damage>0){
+    var dealt=applyDamage(target,hit.damage,hit.type,source,options);
+    if(dealt>0&&hit.type==='dark'&&captured.affinity.shadow>=6&&target.hp>0)addHollow(target,1);
+  }
+  if(hit.repeat)applyDamage(target,captured.raw,event.type,source,Object.assign({},options,{attackRolled:true}));
+  if(hit.heal>0&&source.hp>0)gameDamage.heal(source,hit.heal*(gameEffects.has(source,'rot')?.5:1),source);
 }

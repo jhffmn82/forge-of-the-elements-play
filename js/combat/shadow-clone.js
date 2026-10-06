@@ -164,7 +164,7 @@
     refreshStats(e);
     if(s.resistanceContexts&&s.resistanceContexts[type]&&s.resistanceContexts[type].immune||type==='poison'&&e.buffs.poisonward>0){event.amount=0;return true;}
     if(e.tomb>0){event.amount=0;return true;}
-    if(buffed(e)&&s.holyEarth)d*=1-s.holyEarth;
+    if(s.holyEarth)d*=1-s.holyEarth;
     if(foe&&!event.options.attackRolled&&!event.tags.has('area')&&s.spellWard&&rng()<s.wardChance){block(e,source,d);d*=.25;floatText(e.x,e.y,'block','miss');}
     if(type==='phys')d=FoteDamage.physical(d,{armor:armorOf(e),pierce:source&&source.base&&source.base.pierce||0,heavy:!!(source&&source.base&&source.base.heavy),earth:s.earth,stone:e.st.stone,frozen:e.st.frozen})*resistMult(e,type);
     else d=FoteDamage.elemental(d,{resistance:resistMult(e,type),player:true,corrupt:type==='dark'&&e.st.corrupt});
@@ -196,7 +196,7 @@
     refreshStats(e);
   }
   function cost(e){var s=e.cloneStats;if(!s.timing)return Math.max(1,Math.round(s.castCost/(1-(e.st.chill?chillSlow(e):0))/(e.st.slow?(e.st.slow.mult||SYLLA.slowMult):1)));
-    refreshStats(e);return FoteCosts.action(Object.assign({},s.timing,{speed:e.speed,casting:false,attacking:e.cloneAction==='attack',unarmed:!!(e.weapon&&e.weapon.unarmed),dagger:!!(e.weapon&&/Dagger/.test(e.weapon.name||'')),rampage:e.buffs.rampage>0,storm:e.cloneStormTurns>0,holyAir:s.holyAir&&buffed(e),holyReduction:s.holyReduction,chill:e.st.chill?chillSlow(e):0,slow:e.st.slow?(e.st.slow.mult||SYLLA.slowMult):0}));}
+    refreshStats(e);return FoteCosts.action(Object.assign({},s.timing,{speed:e.speed,casting:false,attacking:e.cloneAction==='attack',unarmed:!!(e.weapon&&e.weapon.unarmed),dagger:!!(e.weapon&&/Dagger/.test(e.weapon.name||'')),rampage:e.buffs.rampage>0,storm:e.cloneStormTurns>0,holyAir:s.holyAir,holyReduction:s.holyReduction,chill:e.st.chill?chillSlow(e):0,slow:e.st.slow?(e.st.slow.mult||SYLLA.slowMult):0}));}
   function resistance(e,type){
     var s=e.cloneStats,c=s.resistanceContexts&&s.resistanceContexts[type];if(!c)return s.resist[type]===undefined?1:s.resist[type];
     return FoteActions.resistance(type,Object.assign({},c,{wet:!!isWet(e),chilled:!!e.st.chill,sanctuary:inSanctuary(e),divine:holyGroundStrength(e),

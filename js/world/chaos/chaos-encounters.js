@@ -4,7 +4,7 @@
   'use strict';
   var groups={
     'prism-archives':['prism-seer','folded-horror','lens-bearer','rift-skitter','rift-skitter','rift-skitter'],
-    'rot-hollows':['brood-carrier','rotling','rotling','plague-bloat','bile-spitter','rotling'],
+    'rot-hollows':['plague-bloat','plague-bloat','plague-bloat','brood-carrier','brood-carrier','bile-spitter'],
     'cinder-bastion':['ironbound','chain-reaver','horned-reaver','gorehound','horned-reaver','gorehound'],
     'violet-warrens':['lash-dancer','razor-dancer','hookfang','silk-weaver','hookfang','razor-dancer']
   };

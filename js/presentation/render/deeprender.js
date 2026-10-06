@@ -80,7 +80,7 @@ function deepTex(reg, name){
     return (DC.tex[k]={w:c.width, h:c.height, d:g.getImageData(0,0,c.width,c.height).data});
   }catch(e){ return null; }
 }
-function deepTexel(T, X, Y){ X=((X%T.w)+T.w)%T.w; Y=((Y%T.h)+T.h)%T.h; var p=(Y*T.w+X)*4; return p; }
+function deepTexel(T, X, Y){ X=((Math.floor(X)%T.w)+T.w)%T.w; Y=((Math.floor(Y)%T.h)+T.h)%T.h; var p=(Y*T.w+X)*4; return p; }
 
 /* ---------------------------------------------------------------- the solid rock, per pixel */
 /* 2026-09-28: one raster's view of the floor, read once (the run state's fields are getters): wall bits, regions and
@@ -164,7 +164,7 @@ function deepRockCol(rgn, wx, wy, salt, part, depth, lip){
 }
 
 /* ---------------------------------------------------------------- one baked cell (64 px) */
-var DEEP_RF = 32;
+var DEEP_RF = 128;
 var DEEP_TOP_DIM = 0.72;   /* cave rock tops sit a little darker than the floor, so a cave reads as a hollow in the rock */          /* the outline is worked out at 32 px a cell, the colour at 64 */
 function deepCellRaster(x, y){
   var salt=(typeof ptSalt==='function' ? ptSalt() : 7)+1301, RF=DEEP_RF, step=1/RF, FACE=RF;
@@ -188,48 +188,48 @@ function deepCellRaster(x, y){
       if(v2<RF) dn[v2*RF+u2] = (K(u2,v2) && dist>0 && dist<=FACE) ? dist : 0;
     }
   }
-  var c=document.createElement('canvas'); c.width=64; c.height=64;
-  var g=c.getContext('2d'), im=g.createImageData(64,64), D=im.data;
-  var terrainMask=new Uint8Array(64*64),terrainRegions=new Uint8Array(64*64),terrainShade=new Float32Array(64*64),terrainFaceY=new Uint8Array(64*64),wallDepth=new Float32Array(64*64).fill(-1);
+  var c=document.createElement('canvas'); c.width=RF; c.height=RF;
+  var g=c.getContext('2d'), im=g.createImageData(RF,RF), D=im.data;
+  var terrainMask=new Uint8Array(RF*RF),terrainRegions=new Uint8Array(RF*RF),terrainShade=new Float32Array(RF*RF),terrainFaceY=new Uint8Array(RF*RF),wallDepth=new Float32Array(RF*RF).fill(-1);
   var o0=surfOff(0), o1=surfOff(1), o2=surfOff(2), o3=surfOff(3), o4=surfOff(4);
-  for(var V=0; V<64; V++) for(var U=0; U<64; U++){
-    var mu=U>>1, mv=V>>1, kk=K(mu,mv), rgn=reg[(mv+1)*W+(mu+1)], T=TX[rgn], p=(V*64+U)*4, r, gg, b, q, sh=1;
+  for(var V=0; V<RF; V++) for(var U=0; U<RF; U++){
+    var mu=U, mv=V, kk=K(mu,mv), rgn=reg[(mv+1)*W+(mu+1)], T=TX[rgn], p=(V*RF+U)*4, r, gg, b, q, sh=1;
     var style=DEEP_STYLE[rgn];
     if(!kk){
       /* floor, darkened a little under a wall face above and beside rock */
-      q=deepTexel(T.floor, (x+o0)*64+U, (y+o1)*64+V); r=T.floor.d[q]; gg=T.floor.d[q+1]; b=T.floor.d[q+2];
-      for(var up=1; up<=10; up++){ if(K(mu,mv-up)){ sh=Math.min(sh, 0.5+0.5*(up-1)/10); break; } }
+      q=deepTexel(T.floor, (x+o0)*64+U*64/RF, (y+o1)*64+V*64/RF); r=T.floor.d[q]; gg=T.floor.d[q+1]; b=T.floor.d[q+2];
+      for(var up=1; up<=Math.round(RF*10/32); up++){ if(K(mu,mv-up)){ sh=Math.min(sh, 0.5+0.5*(up-1)/(RF*10/32)); break; } }
       if(K(mu-1,mv) || K(mu+1,mv)) sh*=0.86;
     } else {
       var d=dn[mv*RF+mu];
-      terrainMask[V*64+U]=d>0?1:2;
+      terrainMask[V*RF+U]=d>0?1:2;
       if(d>0){
-        var e=d*2-(V&1);                                  /* pixels above the ground line */
-        terrainFaceY[V*64+U]=64-Math.min(64,e);
-        if(style!=='rect')wallDepth[V*64+U]=terrainFaceY[V*64+U]/64;
+        var e=d;                                  /* pixels above the ground line */
+        terrainFaceY[V*RF+U]=RF-Math.min(RF,e);
+        if(style!=='rect')wallDepth[V*RF+U]=terrainFaceY[V*RF+U]/RF;
         if(style==='rect'){
-          q=deepTexel(T.face, (x+o2)*64+U, 64-Math.min(64,e)); r=T.face.d[q]; gg=T.face.d[q+1]; b=T.face.d[q+2];
+          q=deepTexel(T.face, (x+o2)*64+U*64/RF, (RF-Math.min(RF,e))*64/RF); r=T.face.d[q]; gg=T.face.d[q+1]; b=T.face.d[q+2];
         } else {
           /* 2026-09-19: Justin - "are there walls in the fire area?" The rock sampled from the wall-top texture read as
              darker floor. Cave rock is now drawn the Caverns' way (planeterrain.js ptCellRaster): a cliff of tall
              narrow facets, pale at the lip, deepening to the foot, in the region's own rock colours */
-          var cc=deepRockCol(rgn, x+U/64, y+V/64, salt, 'face', e/64, mv>0 ? (dn[(mv-1)*RF+mu]===0) : e>=62);
+          var cc=deepRockCol(rgn, x+U/RF, y+V/RF, salt, 'face', e/RF, mv>0 ? (dn[(mv-1)*RF+mu]===0) : e>=RF*62/64);
           r=cc[0]; gg=cc[1]; b=cc[2];
         }
       } else {
         if(style!=='rect'){
           /* the top of the rock: big angular masses, each plane lit by which way it faces (the Caverns' look) */
-          var ct=deepRockCol(rgn, x+U/64, y+V/64, salt, 'top', 0, false);
+          var ct=deepRockCol(rgn, x+U/RF, y+V/RF, salt, 'top', 0, false);
           r=ct[0]; gg=ct[1]; b=ct[2];
           if(!K(mu-1,mv) || !K(mu+1,mv) || !K(mu,mv-1)){ var E=DEEP_ROCK[rgn].edge; r=r*0.45+E[0]*0.55; gg=gg*0.45+E[1]*0.55; b=b*0.45+E[2]*0.55; }
         } else {
-          q=deepTexel(T.top, (x+o3)*64+U, (y+o4)*64+V); r=T.top.d[q]; gg=T.top.d[q+1]; b=T.top.d[q+2];
+          q=deepTexel(T.top, (x+o3)*64+U*64/RF, (y+o4)*64+V*64/RF); r=T.top.d[q]; gg=T.top.d[q+1]; b=T.top.d[q+2];
           if(!K(mu-1,mv) || !K(mu+1,mv) || !K(mu,mv-1)) sh=0.4;
           else if(!K(mu-2,mv) || !K(mu+2,mv) || !K(mu,mv-2)) sh*=0.85;
         }
       }
     }
-    terrainRegions[V*64+U]=rgn;terrainShade[V*64+U]=sh;
+    terrainRegions[V*RF+U]=rgn;terrainShade[V*RF+U]=sh;
     D[p]=Math.min(255,r*sh); D[p+1]=Math.min(255,gg*sh); D[p+2]=Math.min(255,b*sh); D[p+3]=255;
   }
   g.putImageData(im,0,0);
@@ -255,7 +255,7 @@ function deepRasterTile(x, y){
   }
   var img=C.cells[key];if(img&&!floorMeta.deepPresent)deepPresent();
   if(img&&typeof FoteEnvironmentTerrain!=='undefined')img=FoteEnvironmentTerrain.enhance(img,x,y,'deep',C.cells,key);
-  return img ? {img:img, sx:0, sy:0, sw:img.width, sh:img.height, crisp:img.width===64} : null;
+  return img ? {img:img, sx:0, sy:0, sw:img.width, sh:img.height, crisp:false} : null;
 }
 function deepIsRaster(x, y){ if(!inDeep() || !floorMeta.deepRegion) return false; return deepNeedsRaster(x, y, deepSig(x,y)); }
 
@@ -279,7 +279,7 @@ var DEEP_LAVA_T = 0.34;
 function deepLavaCells(x, y){ var out=[]; for(var oy=-2;oy<=2;oy++) for(var ox=-2;ox<=2;ox++) if(at(x+ox,y+oy)===LAVA) out.push([x+ox+0.5, y+oy+0.5]); return out; }
 function deepLavaSig(x, y){ var s=''; for(var oy=-2;oy<=2;oy++) for(var ox=-2;ox<=2;ox++){ var t=at(x+ox,y+oy); s+=t===LAVA?'1':isWallLike(t)?'2':'0'; } return s; }
 function deepLavaRasters(x, y){
-  var R=32, cells=deepLavaCells(x,y); if(!cells.length) return null;
+  var R=128, cells=deepLavaCells(x,y); if(!cells.length) return null;
   var walls=[]; for(var oy=-1;oy<=1;oy++) for(var ox=-1;ox<=1;ox++) if(isWallLike(at(x+ox,y+oy))) walls.push([x+ox+0.5, y+oy+0.5]);
   var salt=(typeof ptSalt==='function' ? ptSalt() : 7)+1409;
   var mask=document.createElement('canvas'); mask.width=R; mask.height=R;
@@ -401,7 +401,7 @@ function deepBottomPad(o){ return typeof packBottomPad==='function' ? packBottom
 function deepDrawPiece(p, alpha){
   var o=deepArt(p.name); if(!o) return false;
   var s=TS/64, w=p.w||1, h=p.h||1, X=(p.x-camX)*TS, Y=(p.y-camY)*TS, dx, dy, dw, dh, flip=false;
-  ctx.save(); ctx.globalAlpha=alpha; ctx.imageSmoothingEnabled=false;
+  ctx.save(); ctx.globalAlpha=alpha; ctx.imageSmoothingEnabled=true;
   if(p.curtain){
     /* the curtains are painted small and low in their cell: scaled up to fill the tunnel, wall to wall */
     var k = p.name==='web-curtain-h' ? TS*1.12/o.sw : TS*1.12/o.sh;
@@ -442,7 +442,7 @@ function drawUnderdarkDoor(x,y,t,px,py,alpha){
     var o=deepArt('stairs-down-drow');
     if(o){
       var s=TS/64, bottom=py+TS+deepBottomPad(o)*s*0.5, dw=o.sw*s/(o.res||1), dh=o.sh*s/(o.res||1), dx=px+(TS-o.fullW*s)/2+o.ox*s, dy=bottom-o.fullH*s+o.oy*s;
-      ctx.save(); ctx.globalAlpha=alpha; ctx.imageSmoothingEnabled=false;
+      ctx.save(); ctx.globalAlpha=alpha; ctx.imageSmoothingEnabled=true;
       ctx.drawImage(o.img, o.sx, o.sy, o.sw, o.sh, Math.round(dx), Math.round(dy), Math.round(dw), Math.round(dh));
       ctx.restore();
       if(typeof objFxDraw==='function') objFxDraw(o, Math.round(dx), Math.round(dy), Math.round(dw), Math.round(dh), alpha, false);
@@ -479,7 +479,7 @@ function drawUnderdarkPlants(now){
     if(sp.kind==='ashweed'){
       vegDraw(vegArt('volcanic-ashweed-'+(1+Math.floor(hash2(sp.x,sp.y,81)*3))), px+TS*(0.35+0.3*hash2(sp.x,sp.y,82)), py+TS*0.95, 0.85, sw*0.6, a, hash2(sp.x,sp.y,83)<0.5);
     } else {
-      /* two or three fungus of one kind, each on its own */
+      /* Underdark retains its authored fungus shapes and loose placement. */
       var n=2+Math.floor(hash2(sp.x,sp.y,72)*2), kind=1+Math.floor(hash2(sp.x,sp.y,71)*3);
       for(var k=0;k<n;k++){
         var ox=0.2+0.6*hash2(sp.x+k,sp.y,73), oy=0.55+0.4*hash2(sp.x,sp.y+k,74), sc=0.55+0.35*hash2(k,sp.x+sp.y,75);

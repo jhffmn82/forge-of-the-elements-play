@@ -7,7 +7,7 @@
    bulges a little way out into the floor; the floor's real texture shows everywhere else. The rim is shaded in
    the floor's own colour: a lit lip, a cliff face falling away into the dark, a faint shadow on the ground.
    Floating debris still drifts over the void. Used in the Dungeon, the Crypt and the Caverns (not the planes). */
-var CHS_R = 32;
+var CHS_R = 128;
 function chsVoidCell(x, y){ if(!inb(x,y)) return false; var t=at(x,y); return t===CHASM || t===BRIDGE; }
 function chsTint(){ return (typeof PT_MAT!=='undefined' && PT_MAT.cavern && PT_MAT.cavern.floor) || [90,86,82]; }
 function chsRaster(x, y){
@@ -17,7 +17,7 @@ function chsRaster(x, y){
   /* the 5x5 cells every pixel weighs, read once (2026-09-28: the map fields are getters) */
   for(var ny0=-2;ny0<=2;ny0++) for(var nx0=-2;nx0<=2;nx0++) near[(ny0+2)*5+nx0+2]=chsVoidCell(x+nx0,y+ny0)?1:0;
   for(var v=0; v<R; v++) for(var u=0; u<R; u++){
-    var wx=x+(u+0.5)/R, wy=y+(v+0.5)/R, sum=0, wsum=0, sub=R===32&&typeof ptFieldTables==='function'?v*32+u:-1;
+    var wx=x+(u+0.5)/R, wy=y+(v+0.5)/R, sum=0, wsum=0, sub=R===PT_R&&typeof ptFieldTables==='function'?v*R+u:-1;
     if(sub>=0){   /* the same weights, from planeterrain.js's table of them */
       var FT=ptFieldTables(), FW=FT.solid, k=0; wsum=FT.solidSum[sub];
       for(k=0;k<25;k++){ var w3=FW[sub*25+k]; if(w3 && near[k]) sum+=w3; }

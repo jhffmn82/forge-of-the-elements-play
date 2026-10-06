@@ -51,7 +51,7 @@ function oozeField(wx, wy, cells, salt){
   return f + (ptValG(wx*1.9, wy*1.9, salt)-0.5)*0.34 + (ptValG(wx*5.3, wy*5.3, salt+5)-0.5)*0.12;
 }
 function oozeRaster(x, y, fieldAt, material){
-  var R=material?64:32, cells=[], contains=fieldAt||isOozeAt;
+  var R=128, cells=[], contains=fieldAt||isOozeAt;
   for(var yy=y-2;yy<=y+2;yy++) for(var xx=x-2;xx<=x+2;xx++) if(contains(xx,yy)) cells.push([xx+0.5, yy+0.5]);
   if(!cells.length) return null;
   var c=document.createElement('canvas'); c.width=R; c.height=R;
@@ -380,38 +380,18 @@ decoratePlain = function(r){
    Same ground codes as grass: G_GRASS = a living patch, G_SHORT = trampled. They glow, they don't hide you or block sight,
    and stepping on a patch squashes it with a puff of spores. */
 function cryptShrooms(){ return typeof inCrypt==='function' && inCrypt() && !(floorMeta && floorMeta.plane); }
-function shroomRaster(x, y, squashed){
-  var R=32, salt=surfSalt()+57, c=document.createElement('canvas'); c.width=R; c.height=R;
-  var g=c.getContext('2d'); g.imageSmoothingEnabled=false;
-  var n = squashed ? 4+Math.floor(hash2(x,y,salt)*3) : 5+Math.floor(hash2(x,y,salt)*3), caps=[];
-  for(var k=0;k<n;k++) caps.push({u:3+hash2(x,y,salt+10+k)*26, v:7+hash2(x,y,salt+20+k)*23, s:(k===0?0.5:0)+hash2(x,y,salt+30+k)*(k===0?0.5:0.8)});
-  caps.sort(function(a,b){ return a.v-b.v; });
-  function px(u,v,col){ g.fillStyle=col; g.fillRect(Math.round(u),Math.round(v),1,1); }
-  caps.forEach(function(m){
-    var r = squashed ? 2+Math.round(m.s*2) : 2+Math.round(m.s*2), h = squashed ? 0 : 2+Math.round(m.s*3);
-    var cu=m.u, cv=m.v;
-    if(squashed){   /* a flattened splat of cap and a smear of glow */
-      for(var dx=-r-1; dx<=r+1; dx++) for(var dy=-1; dy<=1; dy++){ if(Math.abs(dx)+Math.abs(dy)*2>r+1) continue; px(cu+dx, cv+dy, (dx+dy)%2 ? '#5A2A8C' : '#3C1C60'); }
-      px(cu, cv, '#C890FF'); if(r>2) px(cu+2, cv, '#9A5AD8');
-      return;
-    }
-    for(var s=1; s<=h; s++){ px(cu, cv-s+1, s===1 ? '#8C7AA0' : '#D8CCE6'); if(r>3) px(cu+1, cv-s+1, '#B2A2C6'); }   /* stem */
-    var top=cv-h;
-    for(var dy2=-r; dy2<=1; dy2++) for(var dx2=-r; dx2<=r; dx2++){   /* dome cap */
-      var e=(dx2*dx2)/(r*r) + (dy2<0 ? (dy2*dy2)/(r*r*0.7) : 0);
-      if(e>1.05) continue;
-      var edge = e>0.7 || dy2===1, lit = dx2<0 && dy2<0;
-      px(cu+dx2, top+dy2, dy2===1 ? '#3A1660' : edge ? '#5C2496' : lit ? '#B46AF2' : '#8A3CD0');
-    }
-    px(cu-Math.round(r/2), top-Math.round(r/2), '#F0D2FF'); if(r>2) px(cu-Math.round(r/2)+1, top-Math.round(r/2), '#F0D2FF');   /* glowing spots */
-    if(r>2) px(cu+Math.round(r/2), top-1, '#E2B4FF'); if(r>4) px(cu, top-r+1, '#E2B4FF');
-  });
+function cryptMushroomAppearance(x,y){return {family:'mushroom-crypt',variant:Math.floor(hash2(x,y,301)*5)};}
+function shroomRaster(x,y,squashed){
+  var c=document.createElement('canvas');c.width=c.height=128;
+  var o=objArt('props','mushroom-spread-3-'+Math.floor(hash2(x,y,301)*5));
+  if(o){var g=c.getContext('2d');g.imageSmoothingEnabled=true;
+    g.drawImage(o.img,o.sx,o.sy,o.sw,o.sh,0,squashed?78:0,128,squashed?40:128);}
   return c;
 }
 function shroomGlowRaster(x, y){
-  var R=32, c=document.createElement('canvas'); c.width=R; c.height=R; var g=c.getContext('2d');
+  var R=128, c=document.createElement('canvas'); c.width=R; c.height=R; var g=c.getContext('2d');g.scale(4,4);
   var gr=g.createRadialGradient(16,18,1,16,18,15); gr.addColorStop(0,'rgba(190,110,255,0.55)'); gr.addColorStop(0.5,'rgba(140,60,230,0.22)'); gr.addColorStop(1,'rgba(90,30,180,0)');
-  g.fillStyle=gr; g.fillRect(0,0,R,R); return c;
+  g.fillStyle=gr; g.fillRect(0,0,32,32); return c;
 }
 /* Crypt mushrooms use five fixed clumps of the packet's authored sprites.
  * Their existing glow and trampled terrain are unchanged. */
@@ -421,8 +401,9 @@ function drawMushroomGrass(x,y,px,py,alpha,layer,now){
   now=now||performance.now();
   var t=ANIM.reduce?0:now/1000,pulse=.65+.35*Math.sin(t*1.8+hash2(x,y,5)*6.28);
   ctx.save();ctx.globalCompositeOperation='lighter';ctx.globalAlpha=alpha*pulse*.8;
-  ctx.drawImage(cachedRaster('shg@',x,y,shroomGlowRaster),0,0,32,32,px-TS*.25,py-TS*.25,TS*1.5,TS*1.5);ctx.restore();
-  return drawSceneryCluster('mushroom-crypt',Math.floor(hash2(x,y,301)*5),px,py,alpha,hash2(x,y,306)<.5,vegSway(x,y,now,0)*.5);
+  ctx.drawImage(cachedRaster('shg@',x,y,shroomGlowRaster),0,0,128,128,px-TS*.25,py-TS*.25,TS*1.5,TS*1.5);ctx.restore();
+  var appearance=cryptMushroomAppearance(x,y);
+  return drawSceneryCluster(appearance.family,appearance.variant,px,py,alpha,hash2(x,y,306)<.5,vegSway(x,y,now,0)*.5);
 }
 
 function drawMushroomGroundDecal(gv, x, y, px, py, alpha, now){

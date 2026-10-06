@@ -171,11 +171,19 @@ function wireChar(root){
 }
 
 /* ---------------------------------------------------------------- Equipment */
+/* 2026-10-05 (Justin: 'on the ground and inventory it's generic but once equiped it changes to your god's'): the icon
+   a worn slot shows. It is the item's own, except an equipped Holy Symbol, which shows its holder's god's disc when
+   there is a picture for that god (equip.js holySymbolOf). who: the holder, the player unless given. The bag, the
+   floor and the merchant never ask here, so there the symbol stays the plain one. */
+function wornIconName(it, who){
+  var own=typeof holySymbolOf==='function' && holySymbolOf(it, who||player);
+  return own && typeof FoteEnvironmentProps!=='undefined' && FoteEnvironmentProps.source('items','item-'+own) ? 'item-'+own : (it.icon||'');
+}
 function slotHTML(key, label, it, placeholder){
   if(!it || it===EMPTY_OFF) return '<div class="gslot empty" data-slot="'+key+'"><span class="ph">'+placeholder+'</span><span class="lab">'+label+'</span></div>';
   var col=(typeof tierCol==='function' && tierCol(it)) || 'var(--edge)';
   var ench=it.enchant && !it.unid ? '<span class="ench" style="background:'+AFF_COL[it.enchant]+'"></span>' : '';
-  return '<div class="gslot'+(it.cursed && !it.unid?' cursed':'')+'" data-slot="'+key+'" style="border-color:'+col+'"><span class="icon" data-gicon="'+(it.icon||'')+'"></span>'+ench+'<span class="lab">'+label+'</span></div>';
+  return '<div class="gslot'+(it.cursed && !it.unid?' cursed':'')+'" data-slot="'+key+'" style="border-color:'+col+'"><span class="icon" data-gicon="'+wornIconName(it)+'"></span>'+ench+'<span class="lab">'+label+'</span></div>';
 }
 /* Desktop and touch inventory share the same live resource counts. Zeroes stay
  * visible here because the minimal HUD leaves resources in the inventory. */

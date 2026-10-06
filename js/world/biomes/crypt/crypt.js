@@ -102,19 +102,24 @@ function turnCryptClouds(context){  if(!floorMeta || !floorMeta.clouds || !floor
 }
 var CLOUD_PUFF=null;
 function cloudPuff(){
-  if(CLOUD_PUFF) return CLOUD_PUFF;
-  var c=document.createElement('canvas'); c.width=c.height=64; var g=c.getContext('2d');
-  var gr=g.createRadialGradient(28,26,2,32,32,32);
-  gr.addColorStop(0,'rgba(170,225,110,0.95)'); gr.addColorStop(0.45,'rgba(120,190,70,0.6)'); gr.addColorStop(0.8,'rgba(80,140,50,0.18)'); gr.addColorStop(1,'rgba(60,110,40,0)');
-  g.fillStyle=gr; g.fillRect(0,0,64,64); CLOUD_PUFF=c; return c;
+  if(CLOUD_PUFF)return CLOUD_PUFF;
+  var R=128,c=document.createElement('canvas');c.width=c.height=R;
+  var g=c.getContext('2d'),im=g.createImageData(R,R),D=im.data;
+  for(var y=0;y<R;y++)for(var x=0;x<R;x++){
+    var nx=(x+.5)/R,ny=(y+.5)/R,r=Math.hypot((nx-.5)*2,(ny-.5)*2);
+    var wisps=ptVal(nx*5,ny*5,771)*.65+ptVal(nx*13,ny*13,772)*.35;
+    var a=Math.max(0,1-r)*Math.max(0,(wisps-.18)*1.55),p=(y*R+x)*4;
+    D[p]=153+wisps*32;D[p+1]=198+wisps*27;D[p+2]=89+wisps*24;D[p+3]=Math.min(255,a*290);
+  }
+  g.putImageData(im,0,0);CLOUD_PUFF=c;return c;
 }
 
 var FIELD_MIST_PUFFS={};
 function drawFieldMist(cells, color, now, opacity, remembered){
   var puff=FIELD_MIST_PUFFS[color];
   if(!puff){
-    puff=document.createElement('canvas');puff.width=puff.height=64;
-    var g=puff.getContext('2d');g.drawImage(cloudPuff(),0,0);g.globalCompositeOperation='source-in';g.fillStyle=color;g.fillRect(0,0,64,64);FIELD_MIST_PUFFS[color]=puff;
+    puff=document.createElement('canvas');puff.width=puff.height=128;
+    var g=puff.getContext('2d');g.drawImage(cloudPuff(),0,0);g.globalCompositeOperation='source-in';g.fillStyle=color;g.fillRect(0,0,128,128);FIELD_MIST_PUFFS[color]=puff;
   }
   var t=ANIM.reduce?0:(now||0)/1000;
   ctx.save();

@@ -159,6 +159,22 @@ function drawDeathRemains(){
   dying.forEach(function(f){drawCorpse(f,Math.max(0,(now-f.t0)/f.dur));});
 }
 
+/* 2026-10-05 (item art, C2): the arrow in flight is item-arrow, a picture of a lit torch flown flame first. An arrow can
+   be drawn here in its place, tip up at the origin of a turned context: a plum-edged wooden shaft, a steel head and two
+   dull red vanes, as long as the picture is (0.55 tile). 2026-10-06 (Justin picked the drawn arrow): it is
+   the only arrow now; the picture is no longer flown. */
+function drawArrowInFlight(){
+  var L=TS*0.55, w=Math.max(1.5,TS*0.028), hl=L*0.26, hw=Math.max(2,TS*0.055), fl=L*0.3, fw=Math.max(2,TS*0.05), edge=Math.max(0.75,TS/90);
+  function head(){ ctx.beginPath(); ctx.moveTo(0,-L/2); ctx.lineTo(hw,-L/2+hl); ctx.lineTo(0,-L/2+hl*0.72); ctx.lineTo(-hw,-L/2+hl); ctx.closePath(); }
+  function vanes(){ ctx.beginPath(); [-1,1].forEach(function(d){ ctx.moveTo(0,L/2-fl); ctx.lineTo(d*fw,L/2-fl*0.55); ctx.lineTo(d*fw,L/2); ctx.lineTo(0,L/2-fl*0.3); ctx.closePath(); }); }
+  ctx.lineJoin='round'; ctx.strokeStyle='#241A2B'; ctx.lineWidth=edge*2;
+  vanes(); ctx.stroke(); head(); ctx.stroke();
+  ctx.fillStyle='#241A2B'; ctx.fillRect(-w/2-edge, -L/2+hl*0.6, w+edge*2, L-hl*0.6);
+  ctx.fillStyle='#B8936A'; ctx.fillRect(-w/2, -L/2+hl*0.6, w, L-hl*0.6-edge);
+  vanes(); ctx.fillStyle='#A8483A'; ctx.fill();
+  head(); ctx.fillStyle='#D6DCE2'; ctx.fill();
+}
+
 function drawFX(){
   var now=performance.now(), dt=Math.min(64, now-FX_LAST); FX_LAST=now;
   var keep=[];
@@ -195,7 +211,7 @@ function drawFX(){
       var cx=f.ax+(f.bx-f.ax)*ease, cy=f.ay+(f.by-f.ay)*ease;
       var t=trailPalette(f.type);
       if(f.arrow){
-        var ang=Math.atan2(f.by-f.ay, f.bx-f.ax), ao=spriteOn?objArt('items','item-arrow'):null;
+        var ang=Math.atan2(f.by-f.ay, f.bx-f.ax), ao=null;
         var hx=(cx-camX+0.5)*TS, hy=(cy-camY+0.5)*TS;
         /* a light streak behind the point, fading back along the flight line */
         var tail=TS*1.25, txp=hx-Math.cos(ang)*tail, typ=hy-Math.sin(ang)*tail;
@@ -210,6 +226,7 @@ function drawFX(){
         /* the sprite is drawn pointing up, so +90 degrees aims it along the flight */
         ctx.save(); ctx.translate(hx,hy); ctx.rotate(ang + Math.PI/2);
         if(ao){ var s2=TS*0.55/Math.max(ao.sw,ao.sh); ctx.imageSmoothingEnabled=true; ctx.drawImage(ao.img,ao.sx,ao.sy,ao.sw,ao.sh,-ao.sw*s2/2,-ao.sh*s2/2,ao.sw*s2,ao.sh*s2); }
+        else if(spriteOn) drawArrowInFlight();
         else { ctx.fillStyle='#D8CFC0'; ctx.fillRect(-1,-TS*0.25,2,TS*0.5); }
         ctx.restore();
         for(var sp=0; sp<2; sp++)

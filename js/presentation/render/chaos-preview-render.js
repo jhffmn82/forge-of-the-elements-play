@@ -234,13 +234,48 @@
     g.strokeStyle=color;g.lineWidth=width;g.lineCap='round';g.beginPath();g.moveTo(x,y);
     g.bezierCurveTo(x+side*10,y+drop*.25,x-side*9,y+drop*.61,x+side*3,y+drop);g.stroke();
   }
+  // Share the actual cave master with the ground. Painted fracture detail
+  // remains native 128px per tile instead of turning each cliff into a curtain.
+  var cliffTextures=Object.create(null);
+  function paintCliffTexture(g,theme,x,y,w,h){
+    var textures=root.FoteEnvironmentTerrain&&root.FoteEnvironmentTerrain.workerTextures(),source=textures&&textures['cave-rock'];
+    if(!source)return;
+    var entry=cliffTextures[theme];
+    if(!entry||entry.source!==source.red){
+      var c=document.createElement('canvas');c.width=source.width;c.height=source.height;
+      var cg=c.getContext('2d'),im=cg.createImageData(c.width,c.height),a=im.data;
+      var lo=theme==='rot'?[48,44,29]:[44,32,66],hi=theme==='rot'?[162,140,98]:[165,129,183];
+      for(var i=0;i<source.red.length;i++){
+        var value=source.red[i]/255;
+        for(var ch=0;ch<3;ch++)a[i*4+ch]=Math.round(lo[ch]+(hi[ch]-lo[ch])*value);
+        a[i*4+3]=255;
+      }
+      cg.putImageData(im,0,0);entry=cliffTextures[theme]={source:source.red,canvas:c};
+    }
+    var pattern=g.createPattern(entry.canvas,'repeat');
+    pattern.setTransform(new DOMMatrix().scale(.25));
+    g.globalAlpha=.74;g.fillStyle=pattern;g.fillRect(x,y,w,h);g.globalAlpha=1;
+    // Small irregular bedding cracks follow the rock rather than a tile grid.
+    g.strokeStyle=theme==='rot'?'rgba(34,31,20,.28)':'rgba(31,22,47,.28)';g.lineWidth=.45;
+    for(var n=0;n<5;n++){
+      var cy=y+h*(.12+n*.15),dx=w*(.12+noise(x,n,83)*.42);
+      g.beginPath();g.moveTo(x+dx,cy);g.lineTo(x+dx+w*.17,cy-h*.024);
+      g.lineTo(x+dx+w*.36,cy+h*.017);g.stroke();
+    }
+  }
+  var sceneryView=null;
+  function sceneryCanvas(){
+    var c=document.createElement('canvas');c.width=sceneryView.w*128;c.height=sceneryView.h*128;
+    var g=c.getContext('2d');g.scale(4,4);g.translate(-sceneryView.x*R,-sceneryView.y*R);return c;
+  }
+  function sceneryContains(view){return view&&camX>=view.x&&camY>=view.y&&camX+viewW+1<=view.x+view.w&&camY+viewH+1<=view.y+view.h;}
   function buildRot(d){
-    var c=document.createElement('canvas');c.width=MW*R;c.height=MH*R;var g=c.getContext('2d'),mask=d.landMask,seed=d.seed||91;
+    var c=sceneryCanvas(),g=c.getContext('2d'),mask=d.landMask,seed=d.seed||91;
     function land(x,y){return x>=0&&y>=0&&x<MW&&y<MH&&!!mask[y*MW+x];}
     if(!d.mixedForeground){
-    var sky=g.createLinearGradient(0,0,c.width,c.height);sky.addColorStop(0,'#47B9C5');sky.addColorStop(.48,'#62D4BE');sky.addColorStop(1,'#529ACA');g.fillStyle=sky;g.fillRect(0,0,c.width,c.height);
+    var sky=g.createLinearGradient(0,0,(MW*R),(MH*R));sky.addColorStop(0,'#47B9C5');sky.addColorStop(.48,'#62D4BE');sky.addColorStop(1,'#529ACA');g.fillStyle=sky;g.fillRect(0,0,(MW*R),(MH*R));
     for(var n=0;n<29;n++){
-      var cx=noise(n,4,seed)*c.width,cy=noise(n,8,seed)*c.height,rad=R*(2+noise(n,9,seed)*5);
+      var cx=noise(n,4,seed)*(MW*R),cy=noise(n,8,seed)*(MH*R),rad=R*(2+noise(n,9,seed)*5);
       var mist=g.createRadialGradient(cx,cy,0,cx,cy,rad);mist.addColorStop(0,n%3?'rgba(118,235,217,.22)':'rgba(210,236,198,.17)');mist.addColorStop(1,'rgba(92,206,210,0)');g.fillStyle=mist;g.fillRect(cx-rad,cy-rad,rad*2,rad*2);
     }
     /* Rounded distant ledges, with no archive prisms or faceted blue shards. */
@@ -259,25 +294,26 @@
     for(var y=0;y<MH;y++)for(var x=0;x<MW;x++){
       if(!land(x,y))continue;var px=x*R,py=(y+1)*R;
       if(!land(x,y+1)){
-        var dep=R*(1.7+noise(x,y,seed)*1.9),tip=px+R*(.35+noise(x,y,seed+1)*.3),ledge=g.createLinearGradient(px,py,px+R*.5,py+dep);
-        ledge.addColorStop(0,'#BAA379');ledge.addColorStop(.2,'#93764F');ledge.addColorStop(.66,'#655038');ledge.addColorStop(1,'#3C3B2C');
-        g.fillStyle=ledge;g.beginPath();g.moveTo(px-1,py-1);g.lineTo(px+R+1,py-1);g.bezierCurveTo(px+R*1.02,py+dep*.3,px+R*.85,py+dep*.48,px+R*.76,py+dep*.7);g.bezierCurveTo(px+R*.65,py+dep*.82,tip+3,py+dep,tip,py+dep);g.bezierCurveTo(px+R*.28,py+dep*.91,px+R*.32,py+dep*.73,px+R*.2,py+dep*.64);g.bezierCurveTo(px-R*.04,py+dep*.5,px+R*.14,py+dep*.24,px-1,py-1);g.fill();
-        for(var q=0;q<6;q++){
-          var ux=px+R*(.19+noise(x*7+q,y,seed+7)*.62),uy=py+dep*(.12+noise(x*7+q,y,seed+8)*.54),pr=1+noise(x*7+q,y,seed+10)*2.2;
-          ellipse(g,ux,uy+.8,pr+1,pr*1.15,'rgba(226,202,151,.15)');ellipse(g,ux,uy,pr,pr*1.3,'rgba(34,34,22,.35)');
-        }
+        var dep=R*(1.15+noise(x,y,seed)*1.15),tip=px+R*(.35+noise(x,y,seed+1)*.3),ledge=g.createLinearGradient(px,py,px,py+dep);
+        ledge.addColorStop(0,'#A38A61');ledge.addColorStop(.4,'#766340');ledge.addColorStop(1,'#3C3B2C');
+        var face=new Path2D();face.moveTo(px-1,py-1);face.lineTo(px+R+1,py-1);
+        face.lineTo(px+R*.96,py+dep*.3);face.lineTo(px+R*.83,py+dep*.37);
+        face.lineTo(px+R*.86,py+dep*.62);face.lineTo(px+R*.64,py+dep*.8);
+        face.lineTo(tip+R*.13,py+dep);face.lineTo(tip-R*.13,py+dep*.94);
+        face.lineTo(px+R*.18,py+dep*.71);face.lineTo(px+R*.08,py+dep*.44);face.closePath();
+        g.save();g.clip(face);g.fillStyle=ledge;g.fillRect(px-1,py-1,R+2,dep+2);
+        paintCliffTexture(g,'rot',px-1,py-1,R+2,dep+2);g.restore();
         var roots=1+Math.floor(noise(x,y,seed+11)*3);
         for(var rt=0;rt<roots;rt++){
           var rootx=px+R*(.15+.7*(rt+noise(x,rt+y,seed+12))/roots),drop=dep*(.5+noise(x,rt+y,seed+13)*.5),side=rt%2?1:-1;
-          rootStrand(g,rootx+1,py+3,drop,side,2.8,'rgba(43,35,21,.45)');rootStrand(g,rootx,py+2,drop,side,1.6,'#B4A276');
+          rootStrand(g,rootx+1,py+3,drop,side,1.5,'rgba(43,35,21,.45)');rootStrand(g,rootx,py+2,drop,side,.8,'#9B8E65');
         }
         for(var m=0;m<5;m++){
           var mx=px+(m+.4)*R/5,mh=R*(.07+noise(x*5+m,y,seed+15)*.34);
-          ellipse(g,mx,py+2,5,3,m%2?'#7C9C38':'#54742C');rootStrand(g,mx,py+1,mh,.17,3,m%2?'#819D37':'#A8B94D');
+          for(var leaf=0;leaf<7;leaf++){var lx=mx+(noise(x*35+m*7+leaf,y,seed+51)-.5)*7,ly=py+noise(x,y*35+m*7+leaf,seed+52)*mh;polygon(g,[[lx-1.1,ly],[lx+.5,ly-1.2],[lx+1.3,ly+.2],[lx-.4,ly+1.1]],leaf%2?'#667C32':'#85943D');}
         }
       }
-      if(!land(x-1,y))ellipse(g,px+1,py-R*.35,R*.12,R*.63,'#95815B');
-      if(!land(x+1,y))ellipse(g,px+R-1,py-R*.3,R*.13,R*.63,'#645638');
+      // The terrain owns side rims; extra ellipses produced square corner blocks.
     }
     g.globalCompositeOperation='destination-out';for(var i=0;i<mask.length;i++)if(mask[i])g.fillRect(i%MW*R,Math.floor(i/MW)*R,R,R);g.globalCompositeOperation='source-over';
     var floorClip=new Path2D();for(var fi=0;fi<mask.length;fi++)if(mask[fi]&&!isWallLike(map[fi]))floorClip.rect(fi%MW*R,Math.floor(fi/MW)*R,R,R);
@@ -289,7 +325,7 @@
         g.strokeStyle=style[0];g.lineWidth=style[1];g.beginPath();g.moveTo(ax,ay+style[2]);g.bezierCurveTo(ax+dx*.38+dy*.15,ay+dy*.28-dx*.15,bx-dx*.24-dy*.1,by-dy*.22+dx*.1,bx,by);g.stroke();
       });
     });
-    g.restore();builds++;return {data:d,map:map,canvas:c};
+    g.restore();builds++;return {data:d,map:map,canvas:c,view:sceneryView};
   }
   function drawRotSpores(d,now){
     if(ANIM.reduce)return;var t=(now||0)/1000;
@@ -333,12 +369,12 @@
     return list;
   }
   function buildCinder(d){
-    var c=document.createElement('canvas');c.width=MW*R;c.height=MH*R;var g=c.getContext('2d'),mask=d.landMask,seed=d.seed||91;
+    var c=sceneryCanvas(),g=c.getContext('2d'),mask=d.landMask,seed=d.seed||91;
     function land(x,y){return x>=0&&y>=0&&x<MW&&y<MH&&!!mask[y*MW+x];}
     if(!d.mixedForeground){
-    var sky=g.createLinearGradient(0,0,c.width,c.height);sky.addColorStop(0,'#548FC1');sky.addColorStop(.5,'#73BEDA');sky.addColorStop(1,'#417FAB');g.fillStyle=sky;g.fillRect(0,0,c.width,c.height);
+    var sky=g.createLinearGradient(0,0,(MW*R),(MH*R));sky.addColorStop(0,'#548FC1');sky.addColorStop(.5,'#73BEDA');sky.addColorStop(1,'#417FAB');g.fillStyle=sky;g.fillRect(0,0,(MW*R),(MH*R));
     for(var n=0;n<23;n++){
-      var cx=noise(n,4,seed)*c.width,cy=noise(n,8,seed)*c.height,rad=R*(3+noise(n,9,seed)*5),mist=g.createRadialGradient(cx,cy,0,cx,cy,rad);
+      var cx=noise(n,4,seed)*(MW*R),cy=noise(n,8,seed)*(MH*R),rad=R*(3+noise(n,9,seed)*5),mist=g.createRadialGradient(cx,cy,0,cx,cy,rad);
       mist.addColorStop(0,n%3?'rgba(187,226,234,.24)':'rgba(228,207,169,.17)');mist.addColorStop(1,'rgba(147,206,230,0)');g.fillStyle=mist;g.fillRect(cx-rad,cy-rad,rad*2,rad*2);
     }
     // Distant fortress remnants have broad ledges and squared battlements.
@@ -383,7 +419,7 @@
       ellipse(g,x,y+2,rx+3,ry+3,'rgba(49,39,34,.65)');ellipse(g,x,y,rx,ry,'#727B78');ellipse(g,x,y,rx-3,ry-3,'#385A60');ellipse(g,x-3,y-2,rx*.8,ry*.67,'#4B7780');
       g.strokeStyle='rgba(206,183,138,.5)';g.lineWidth=1.4;g.beginPath();g.ellipse(x,y,rx,ry,0,Math.PI*.05,Math.PI*.95);g.stroke();
     });
-    g.restore();builds++;return {data:d,map:map,canvas:c};
+    g.restore();builds++;return {data:d,map:map,canvas:c,view:sceneryView};
   }
   function drawCinderEmbers(d,now){
     if(ANIM.reduce)return;var time=(now||0)/1000;
@@ -425,12 +461,12 @@
     d.portals.forEach(function(p){if(portalVisibility(p).visible)list.push({x:p.x+.5,y:p.y+.5,c:hexRGB(pairColor(p,d)),r:4.2,s:.98*pulse,wall:true,wr:4.2,ws:.65,tx:p.x,ty:p.y});});return list;
   }
   function buildViolet(d){
-    var c=document.createElement('canvas');c.width=MW*R;c.height=MH*R;var g=c.getContext('2d'),mask=d.landMask,seed=d.seed||91;
+    var c=sceneryCanvas(),g=c.getContext('2d'),mask=d.landMask,seed=d.seed||91;
     function land(x,y){return x>=0&&y>=0&&x<MW&&y<MH&&!!mask[y*MW+x];}
     if(!d.mixedForeground){
-    var sky=g.createLinearGradient(0,0,c.width,c.height);sky.addColorStop(0,'#454886');sky.addColorStop(.46,'#708BCE');sky.addColorStop(1,'#3D5CA8');g.fillStyle=sky;g.fillRect(0,0,c.width,c.height);
+    var sky=g.createLinearGradient(0,0,(MW*R),(MH*R));sky.addColorStop(0,'#454886');sky.addColorStop(.46,'#708BCE');sky.addColorStop(1,'#3D5CA8');g.fillStyle=sky;g.fillRect(0,0,(MW*R),(MH*R));
     for(var n=0;n<25;n++){
-      var cx=noise(n,4,seed)*c.width,cy=noise(n,8,seed)*c.height,rad=R*(2+noise(n,9,seed)*6),haze=g.createRadialGradient(cx,cy,0,cx,cy,rad);
+      var cx=noise(n,4,seed)*(MW*R),cy=noise(n,8,seed)*(MH*R),rad=R*(2+noise(n,9,seed)*6),haze=g.createRadialGradient(cx,cy,0,cx,cy,rad);
       haze.addColorStop(0,n%3?'rgba(189,167,233,.22)':'rgba(138,198,249,.25)');haze.addColorStop(1,'rgba(138,154,221,0)');g.fillStyle=haze;g.fillRect(cx-rad,cy-rad,rad*2,rad*2);
     }
     // Flowstone ledges hang in the blue void with softened mineral folds.
@@ -446,17 +482,22 @@
     for(var y=0;y<MH;y++)for(var x=0;x<MW;x++){
       if(!land(x,y))continue;var px=x*R,py=(y+1)*R;
       if(!land(x,y+1)){
-        var dep=R*(1.9+noise(x,y,seed)*1.65),tip=px+R*(.25+noise(x,y,seed+1)*.5),rock=g.createLinearGradient(px,py,px,py+dep);
+        var dep=R*(1.05+noise(x,y,seed)*1.55),tip=px+R*(.2+noise(x,y,seed+1)*.6),rock=g.createLinearGradient(px,py,px,py+dep);
         rock.addColorStop(0,'#AF91C6');rock.addColorStop(.23,'#826199');rock.addColorStop(.68,'#5D487E');rock.addColorStop(1,'#3F416D');
-        g.fillStyle=rock;g.beginPath();g.moveTo(px-1,py-1);g.lineTo(px+R+1,py-1);g.bezierCurveTo(px+R*.95,py+dep*.33,px+R*.9,py+dep*.72,tip,py+dep);g.bezierCurveTo(px+R*.2,py+dep*.7,px+R*.2,py+dep*.36,px-1,py-1);g.fill();
-        for(var rib=0;rib<3;rib++){
-          var ax=px+R*(.18+rib*.26),end=py+dep*(.58+noise(x*3+rib,y,seed+4)*.34);
-          g.strokeStyle=rib%2?'rgba(224,193,236,.24)':'rgba(49,35,74,.35)';g.lineWidth=rib%2?1.3:2.1;g.beginPath();g.moveTo(ax,py+3);g.bezierCurveTo(ax-6,py+dep*.27,tip+(ax-px-R*.5)*.35,end-9,tip+(ax-px-R*.5)*.2,end);g.stroke();
-        }
+        // Broken mineral ledges replace repeated curtain folds. The top edge
+        // still follows the exact land mask; only the hanging scenery changes.
+        var face=new Path2D();face.moveTo(px-1,py-1);face.lineTo(px+R+1,py-1);
+        face.lineTo(px+R*.94,py+dep*.22);face.lineTo(px+R*.77,py+dep*.27);
+        face.lineTo(px+R*.83,py+dep*.46);face.lineTo(px+R*.61,py+dep*.61);
+        face.lineTo(tip+R*.1,py+dep*.87);face.lineTo(tip,py+dep);
+        face.lineTo(tip-R*.12,py+dep*.91);face.lineTo(px+R*.22,py+dep*.56);
+        face.lineTo(px+R*.08,py+dep*.48);face.lineTo(px+R*.13,py+dep*.28);face.closePath();
+        g.save();g.clip(face);g.fillStyle=rock;g.fillRect(px-1,py-1,R+2,dep+2);
+        paintCliffTexture(g,'violet',px-1,py-1,R+2,dep+2);
+        g.restore();
         g.strokeStyle='#C9B2DA';g.lineWidth=1.7;g.beginPath();g.moveTo(px,py+1);g.quadraticCurveTo(px+R*.5,py+3,px+R,py+1);g.stroke();
       }
-      if(!land(x-1,y))ellipse(g,px+1,py-R*.4,R*.09,R*.58,'#AA8EC0');
-      if(!land(x+1,y))ellipse(g,px+R-1,py-R*.35,R*.1,R*.61,'#69547F');
+      // The terrain owns side rims and their rounded island corners.
     }
     g.globalCompositeOperation='destination-out';for(var i=0;i<mask.length;i++)if(mask[i])g.fillRect(i%MW*R,Math.floor(i/MW)*R,R,R);g.globalCompositeOperation='source-over';
     (d.filaments||[]).forEach(function(t){
@@ -471,7 +512,7 @@
       ellipse(g,x,y+1,rx+2,ry+2,'rgba(187,174,214,.55)');ellipse(g,x,y,rx,ry,'rgba(121,162,191,.68)');ellipse(g,x-2,y-2,rx*.75,ry*.62,'rgba(186,222,232,.38)');
       g.strokeStyle='rgba(233,222,251,.65)';g.lineWidth=.9;g.beginPath();g.ellipse(x,y,rx,ry,0,Math.PI*.06,Math.PI*.86);g.stroke();
     });
-    g.restore();builds++;return {data:d,map:map,canvas:c};
+    g.restore();builds++;return {data:d,map:map,canvas:c,view:sceneryView};
   }
   var VIOLET_LIGHTS={
     'violet-pavilion':{color:'#E9CAF8',radius:5,strength:1.02},
@@ -511,8 +552,8 @@
     return path;
   }
   function buildMixed(d){
-    var c=document.createElement('canvas');c.width=MW*R;c.height=MH*R;var g=c.getContext('2d'),sky=g.createLinearGradient(0,0,c.width,c.height);
-    sky.addColorStop(0,'#315F99');sky.addColorStop(1,'#487FAD');g.fillStyle=sky;g.fillRect(0,0,c.width,c.height);
+    var c=sceneryCanvas(),g=c.getContext('2d'),sky=g.createLinearGradient(0,0,(MW*R),(MH*R));
+    sky.addColorStop(0,'#315F99');sky.addColorStop(1,'#487FAD');g.fillStyle=sky;g.fillRect(0,0,(MW*R),(MH*R));
     // A shared blue sky with broad radial tints has no rectangular region
     // boundaries. The existing foreground builders keep every cliff opaque.
     var regions=regionData(d),skyColors={'prism-archives':'#386DA7','rot-hollows':'#62D4BE','cinder-bastion':'#73BEDA','violet-warrens':'#708BCE'};
@@ -525,10 +566,10 @@
     regions.forEach(function(region){
       var layer=build(Object.assign({},region,{mixedForeground:true})).canvas,b=mixedBounds(region),x=b.x*R,y=b.y*R,w=(b.right-b.x)*R,h=(b.bottom-b.y)*R;
       g.globalCompositeOperation='destination-out';for(var i=0;i<region.landMask.length;i++)if(region.landMask[i])g.fillRect(i%MW*R,Math.floor(i/MW)*R,R,R);g.globalCompositeOperation='source-over';
-      g.save();g.clip(mixedClip(region));g.drawImage(layer,x,y,w,h,x,y,w,h);g.restore();layer.width=layer.height=0;
+      g.save();g.clip(mixedClip(region));g.drawImage(layer,0,0,layer.width,layer.height,sceneryView.x*R,sceneryView.y*R,sceneryView.w*R,sceneryView.h*R);g.restore();layer.width=layer.height=0;
     });
     if(d.biome==='unmaker-crucible')buildCrucibleInlays(g,d);
-    return {data:d,map:map,canvas:c};
+    return {data:d,map:map,canvas:c,view:sceneryView};
   }
   // Authored ornament is cached with the floor. It has no collision, animation
   // timer or gameplay state, and drawVoid applies the ordinary discovery mask.
@@ -556,18 +597,18 @@
     if(rot(d))return buildRot(d);
     if(cinder(d))return buildCinder(d);
     if(violet(d))return buildViolet(d);
-    var c=document.createElement('canvas');c.width=MW*R;c.height=MH*R;var g=c.getContext('2d'),mask=d.landMask,seed=d.seed||91;
+    var c=sceneryCanvas(),g=c.getContext('2d'),mask=d.landMask,seed=d.seed||91;
     function land(x,y){return x>=0&&y>=0&&x<MW&&y<MH&&!!mask[y*MW+x];}
     if(!d.mixedForeground){
-    var sky=g.createLinearGradient(0,0,c.width,c.height);sky.addColorStop(0,'#254F89');sky.addColorStop(.48,'#386DA7');sky.addColorStop(1,'#235A8D');g.fillStyle=sky;g.fillRect(0,0,c.width,c.height);
+    var sky=g.createLinearGradient(0,0,(MW*R),(MH*R));sky.addColorStop(0,'#254F89');sky.addColorStop(.48,'#386DA7');sky.addColorStop(1,'#235A8D');g.fillStyle=sky;g.fillRect(0,0,(MW*R),(MH*R));
     /* Soft cloud banks and scattered distant fragments establish height;
      * deterministic placement never consumes the gameplay random stream. */
     for(var n=0;n<19;n++){
-      var cx=noise(n,4,seed)*c.width,cy=noise(n,8,seed)*c.height,rad=R*(3+noise(n,9,seed)*7);
+      var cx=noise(n,4,seed)*(MW*R),cy=noise(n,8,seed)*(MH*R),rad=R*(3+noise(n,9,seed)*7);
       var cloud=g.createRadialGradient(cx,cy,0,cx,cy,rad);cloud.addColorStop(0,n%3?'rgba(117,201,235,.24)':'rgba(171,162,225,.20)');cloud.addColorStop(1,'rgba(85,157,216,0)');g.fillStyle=cloud;g.fillRect(cx-rad,cy-rad,rad*2,rad*2);
     }
     for(var s=0;s<520;s++){
-      var sx=noise(s,11,seed)*c.width,sy=noise(s,12,seed)*c.height,size=noise(s,13,seed)>.965?1.8:.65;
+      var sx=noise(s,11,seed)*(MW*R),sy=noise(s,12,seed)*(MH*R),size=noise(s,13,seed)>.965?1.8:.65;
       g.globalAlpha=.12+noise(s,14,seed)*.36;g.fillStyle=s%6?'#A3C7E9':'#E4C788';g.fillRect(sx,sy,size,size);
     }
     g.globalAlpha=1;
@@ -608,16 +649,16 @@
       var x=(p.x+(p.w||1)/2)*R,y=(p.y+(p.h||1)/2)*R,r=R*2.05;g.strokeStyle='rgba(165,126,58,.56)';g.lineWidth=1.2;
       [r,r*.87].forEach(function(a){g.beginPath();g.ellipse(x,y,a,a*.82,0,0,Math.PI*2);g.stroke();});
       for(var j=0;j<12;j++){var a=j*Math.PI/6;g.beginPath();g.moveTo(x+Math.cos(a)*r*.87,y+Math.sin(a)*r*.87*.82);g.lineTo(x+Math.cos(a)*r,y+Math.sin(a)*r*.82);g.stroke();}
-    });g.restore();builds++;return {data:d,map:map,canvas:c};
+    });g.restore();builds++;return {data:d,map:map,canvas:c,view:sceneryView};
   }
   function drawVoid(now){
-    var d=data();if(!d||!d.landMask)return;if(!cache||cache.data!==d||cache.map!==map)cache=build(d);
+    var d=data();if(!d||!d.landMask)return;if(!cache||cache.data!==d||cache.map!==map||!sceneryContains(cache.view)){sceneryView={x:camX-4,y:camY-4,w:viewW+9,h:viewH+9};cache=build(d);}
     var clip=new Path2D(),any=false;
     // Cached floor ornaments must not paint over a temporary live wall.
     for(var y=camY;y<=camY+viewH;y++)for(var x=camX;x<=camX+viewW;x++)if(inb(x,y)&&!isWallLike(at(x,y))&&(revealAll||seen[idxOf(x,y)])){clip.rect((x-camX)*TS,(y-camY)*TS,TS+.1,TS+.1);any=true;}
     if(!any)return;
     ctx.save();ctx.clip(clip);ctx.globalAlpha=1;ctx.imageSmoothingEnabled=true;
-    ctx.drawImage(cache.canvas,camX*R,camY*R,(viewW+1)*R,(viewH+1)*R,0,0,(viewW+1)*TS,(viewH+1)*TS);
+    ctx.drawImage(cache.canvas,(camX-cache.view.x)*128,(camY-cache.view.y)*128,(viewW+1)*128,(viewH+1)*128,0,0,(viewW+1)*TS,(viewH+1)*TS);
     /* A few slow glints use the caller's shared time. No object owns a timer. */
     var phase=ANIM.reduce?0:(now||0)/7000;
     if(composite(d)){

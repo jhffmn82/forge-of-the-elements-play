@@ -92,6 +92,12 @@ function breakCurse(item,options){
   if(!(options&&options.deferRefresh)){derive(player);refreshBagNames();}
   log('The curse on your <b>'+gearName(item)+'</b> breaks.','c-kill');sfx('puzzle-solved');return true;
 }
+function cleanseCarriedCurses(){
+  var gear=new Set(wornGear().concat(player.sets||[],player.offSets||[]));
+  (player.bag||[]).forEach(function(entry){if(entry.data)gear.add(entry.data);});
+  var count=0;gear.forEach(function(item){if(breakCurse(item,{deferRefresh:true}))count++;});
+  if(count){derive(player);refreshBagNames();}return count;
+}
 /* Old saves may carry the retired second main/offhand set. Preserve every
  * distinct item, even when migration temporarily exceeds bag capacity. */
 function migrateRangedSlot(){

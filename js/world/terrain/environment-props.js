@@ -51,7 +51,9 @@
     if(!metadata){if(!failure)ensureMetadata().catch(function(){});return null;}
     var entry=metadata.groups[group]&&metadata.groups[group][name];if(!entry)return null;
     var img=atlas(entry.file);if(!img)return null;
-    return {img:img,sx:entry.sx,sy:entry.sy,sw:entry.sw,sh:entry.sh,fullW:entry.fullW,fullH:entry.fullH,ox:entry.ox,oy:entry.oy,res:entry.res,nm:name,frames:entry.frames,frameMs:entry.frameMs};
+    // 2026-10-05 (item art): item pictures on environment-items.webp say the cell they were drawn in (64 or 128), as a
+    // map sheet does, so a ring keeps its true size in a slot (ui.js paintIconArt) and 64px loot stays crisp (render.js).
+    return {img:img,sx:entry.sx,sy:entry.sy,sw:entry.sw,sh:entry.sh,fullW:entry.fullW,fullH:entry.fullH,ox:entry.ox,oy:entry.oy,res:entry.res,nm:name,frames:entry.frames,frameMs:entry.frameMs,cell:entry.cell};
   }
   function ensureAssets(){
     return ensureMetadata().then(function(data){return Promise.all(data.files.map(function(file){
@@ -63,9 +65,22 @@
      of the tile down from its top); bones at half size since 2026-09-26. Placement, footprint, breakability, lighting
      and loot stay the prop's, and a prop with authored art (artName) keeps it. */
   var FIT={'sword-in-stone':{paint:true},'bed-straw':{paint:true},chains:{paint:true,scale:.5,anchor:.5},bones:{paint:true,scale:.5,anchor:.5},
-    'bone-pile':{scale:.5,anchor:.5},pot:{scale:.8,anchor:.96}};
+    'bone-pile':{scale:.5,anchor:.5},pot:{scale:1,anchor:.5}};
   function fit(p){
-    if(!p||p.artName)return null;
+    if(!p)return null;
+    // Native Earth mushroom clusters already apply their one half-size reduction.
+    if(p.name==='glow-mushrooms'&&!p.artName&&typeof floorMeta!=='undefined'&&floorMeta&&floorMeta.plane==='earth')return null;
+    // Barrel groups retain the full-size fluid-barrel footprint.
+    if(p.name==='stack-group'&&(p.clusterFamily||(p.kinds||[])[0])==='barrel')return null;
+    if(p.artName&&/boss|pylon/.test(p.name||'')&&/^crystal-/.test(p.artName))return null;
+    if(/^crystal-(gold|violet|amber|fire|water|air)(-small)?$/.test(p.name||'')&&(!p.artName||p.artName===p.name))return /-small$/.test(p.name)?{paint:true,scale:.7,anchor:.96}:{scale:.7,anchor:.96};
+    var small=/^(scatter-water-|scatter-air-|embers-slag-|crystal-.+-small|pebbles|rubble-small|loose-stones)/.test(p.artName||p.name||'')||/mushroom|shroom|fungus/.test((p.name||'')+' '+(p.artName||''));
+    if(small)return {scale:.5,anchor:p.flat?.5:.96};
+    var vessel=(p.name||'')+' '+(p.artName||'');
+    // Crates and pots retain their original authored size, including saved groups.
+    if(/(?:^| )(?:pot|crate|stack-group)(?:-| |$)/.test(vessel)||p.name==='stack-group')return {scale:1,anchor:.5};
+    if(/(?:^| )(?:chest|urn|soul-urn|pot|crate|stack-group|brazier|soul-brazier|incense)(?:-| |$)/.test(vessel)||p.name==='stack-group'||p.name==='urn-group')return {scale:.8,anchor:.5};
+    if(p.artName)return null;
     var name=p.name==='stack-group'&&(p.clusterFamily||(p.kinds||[])[0])==='pot'?'pot':p.name;   // a stacked group of pots is a pot
     if(!Object.prototype.hasOwnProperty.call(FIT,name))return null;
     // The Crypt's packed bones keep their own art, at the same half size.

@@ -2,10 +2,10 @@
    holy.js - the holy symbol (2026-09-17).
    Base: every buff that lands on you lasts longer: +10% / +15% / +20% / +25% by tier, +3% per upgrade
    level, always at least +1 turn. It keeps its Invoke and prayer strength bonus on top.
-   Forge infusions (themed on being buffed; x1 + 0.3 per affinity point in the element):
+   Forge infusions (x1 + 0.3 per affinity point in the element):
    Fire Zeal +8% damage, Water Flow +15% mana regen, Air Swiftness 5% faster actions,
-   Earth Steadfast 5% less damage taken, Shadow Dread +3% crit - all while any buff is on you;
-   Light Radiance: gaining a buff heals 3% of max HP.
+   Earth Steadfast 5% less damage taken, Shadow Dread +3% crit - always active while equipped;
+   Light Radiance: casting a prayer or invocation heals 3% of max HP.
    ===================================================================== */
 
 var HOLY_DURATION = [0.10, 0.15, 0.20, 0.25], HOLY_DURATION_PER = 0.03;
@@ -41,20 +41,16 @@ function setResolvedBuffTimer(key, value){
 }
 function isBuffed(){ if(livingMountainStacks(player)>0)return true;var b=buffTimers(); for(var k in b) return true; return false; }
 
-/* a buff that is new or refreshed since the last turn is lengthened, and Radiance heals */
+/* A new or refreshed buff is lengthened once; Radiance belongs to cast payment. */
 
 function turnPrepareHolyBuffs(context){
   if(player && player.hp>0){
-    var now=buffTimers(), prev=player._buffSeen||{}, settled=player._buffDurationSeen||prev, pct=holyDurationPct(), gained=0;
+    var now=buffTimers(), prev=player._buffSeen||{}, settled=player._buffDurationSeen||prev, pct=holyDurationPct();
     for(var k in now){
       if(!(now[k] > (prev[k]||0))) continue;
-      gained++;
       if(pct>0&&now[k]>(settled[k]||0)) setResolvedBuffTimer(k, now[k] + Math.max(1, Math.round(now[k]*pct)));
     }
-    if(gained && infusion('holy')==='light'){
-      var h=Math.max(1, Math.round(player.maxhp*enchantValues('holy','light').buffHeal*gained));
-      if(player.race!=='gloomling')healPlayer(h);
-    }
+
   }
 
 }
@@ -69,3 +65,9 @@ function turnPrepareHolyBuffs(context){
 
 
 /* item card: show the duration bonus under the strength bonus */
+
+/* Radiance is paid once at actual prayer/invocation execution, never aim selection. */
+function holyRadianceCast(){
+  if(player.hp<=0||infusion('holy')!=='light'||player.race==='gloomling')return;
+  healPlayer(Math.max(1,Math.round(player.maxhp*enchantValues('holy','light').buffHeal)));
+}

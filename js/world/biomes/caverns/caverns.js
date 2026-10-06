@@ -18,8 +18,8 @@ function inCaverns(){ return typeof floorNo!=='undefined' && bidx()===2 && !(flo
 var CAVE_PIECES = {
   'stalagmite-tall-1':{b:1}, 'stalagmite-tall-2':{b:1}, 'stalagmite-tall-3':{b:1},
   'stalagmite-group-1':{b:1, w:2}, 'stalagmite-group-2':{b:1, w:2},
-  'giant-mushroom-1':{b:1, light:'#4FE0D0'}, 'giant-mushroom-2':{b:1, light:'#A070FF'}, 'giant-mushroom-3':{b:1, light:'#FFB050'},
-  'mushroom-pair-1':{b:1, w:2, light:'#E8C070'}, 'mushroom-pair-2':{b:1, w:2, light:'#60E0D0'},
+  'giant-mushroom-1':{b:1, burn:1, light:'#4FE0D0'}, 'giant-mushroom-2':{b:1, burn:1, light:'#A070FF'}, 'giant-mushroom-3':{b:1, burn:1, light:'#FFB050'},
+  'mushroom-pair-1':{b:1, burn:1, w:2, light:'#E8C070'}, 'mushroom-pair-2':{b:1, burn:1, w:2, light:'#60E0D0'},
   'geode-1':{b:1, w:2, light:'#40D0E0', dim:1}, 'geode-2':{b:1, w:2, light:'#9A70FF', dim:1},
   'pylon-1':{b:1, light:'#B090FF'}, 'pylon-2':{b:1, light:'#9FE8FF'},
   'glowing-pool-1':{b:1, w:2, h:2, light:'#5A7CFF'}, 'glowing-pool-2':{b:1, w:2, h:2, light:'#40E0D0'},
@@ -32,7 +32,7 @@ var CAVE_PIECES = {
   var clLight = {'small-mushrooms':['#70D0C0','#A080F0','#FFB060','#80D8B8'], 'glow-moss':['#50D8B0','#50D8B0','#50D8B0','#50D8B0'],
                  'crystal-shards':['#60D8F0','#A070F0','#60D0F0','#9080F0']};
   ['small-mushrooms','glow-moss','crystal-shards','rubble','lost-miner','cave-pearls'].forEach(function(k){
-    for(var v=1; v<=4; v++){ var d={flat:1, cluster:1}; if(clLight[k]){ d.light=clLight[k][v-1]; d.dim=1; } CAVE_PIECES['cl-'+k+'-'+v]=d; }
+    for(var v=1; v<=4; v++){ var d={flat:1, cluster:1}; if(k==='small-mushrooms')d.burn=1;if(clLight[k]){ d.light=clLight[k][v-1]; d.dim=1; } CAVE_PIECES['cl-'+k+'-'+v]=d; }
   });
   for(var n in CAVE_PIECES){ var d=CAVE_PIECES[n], p={cave:1}; for(var f in d) if(f!=='w' && f!=='h') p[f]=d[f]; PROPS[n]=p; }
 })();

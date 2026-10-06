@@ -56,7 +56,8 @@ function enchantPanelHTML(){
             : t.slot==='off' ? 'A weapon, shield, orb, tome or holy symbol takes an enchantment here. This does not.'
             : 'Cannot be enchanted.';
     var nu = can ? '<div class="new">'+(cur===el ? 'Already carries '+el : 'With '+el+': '+t.text[el])+'</div>' : '<div class="now c-info">'+why+'</div>';
-    return '<div class="enchcard'+(can && cur!==el ? '' : ' off')+'" data-etarget="'+i+'"><span class="ic" data-eicon="'+(t.it.icon||'')+'"></span>'+
+    /* 2026-10-05: these are worn pieces, so a Holy Symbol shows its holder's god's disc here too (sheets.js wornIconName) */
+    return '<div class="enchcard'+(can && cur!==el ? '' : ' off')+'" data-etarget="'+i+'"><span class="ic" data-eicon="'+(typeof wornIconName==='function' ? wornIconName(t.it) : (t.it.icon||''))+'"></span>'+
       '<div><div class="s">'+t.label+'</div><div class="t">'+gearName(t.it)+'</div>'+now+nu+'</div></div>';
   }).join('')+'</div>';
   return h;

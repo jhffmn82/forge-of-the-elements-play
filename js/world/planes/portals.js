@@ -60,6 +60,7 @@ var PLANE_PROPS = {
   earth:  {decor:['fern','root-tangle','glow-mushrooms','fern'], light:'glow-mushrooms', lightCol:'#D8F0A0', rune:'rune-stone-earth', center:null, stone:'mossy-boulder'}
 };
 ['crystal-gold','crystal-gold-small','stalagmite-light','crystal-violet','stalagmite-shadow','fern','root-tangle','glow-mushrooms','stepping-stone','sun-dais'].forEach(function(n){ PROPS[n]=PROPS[n]||{flat:1}; });
+PROPS['glow-mushrooms'].burn=1;
 PROPS['rune-stone-light']={b:1}; PROPS['rune-stone-shadow']={b:1}; PROPS['rune-stone-earth']={b:1}; PROPS['mossy-boulder']={b:1};
 PROPS['stepping-stone']={flat:1};
 
@@ -181,7 +182,7 @@ var PLANE_ROSTER = {
   /* fixed: these are tuned for the plane they guard, so spawn() does not put the dungeon floor curve on top */
   function mk(o){ o.band=[0,0]; o.w=0; o.speed=o.speed||100; o.range=o.range||1; o.fixed=true; return o; }
   /* Light (Justin's creatures, 2026-09-17) */
-  M.dawnsentinel = mk({name:'Dawn Sentinel', sprite:'m-dawn-sentinel', col:'#F6E7B0', ch:'D', hp:75, dmg:[8,11], acc:66, eva:12, armor:5, xp:42, reflects:4, el:'light', art:1.05, sfx:'golem'});
+  M.dawnsentinel = mk({name:'Dawn Sentinel', sprite:'m-dawn-sentinel', col:'#F6E7B0', ch:'D', hp:75, dmg:[8,11], acc:66, eva:12, armor:5, xp:42, reflects:4, el:'light', art:1.3, sfx:'golem'});
   M.halowisp     = mk({name:'Halo Wisp', sprite:'m-halo-wisp', col:'#FFE08A', ch:'w', hp:24, dmg:[4,6], acc:60, eva:34, armor:0, xp:30, healer:true, flying:true, el:'light', art:0.75, sfx:'wisp'});
   M.prismscarab  = mk({name:'Prism Scarab', sprite:'m-prism-scarab', col:'#C8F0FF', ch:'p', hp:55, dmg:[6,9], acc:66, eva:14, armor:3, xp:36, range:4, prism:true, el:'light', art:0.85, sfx:'spider'});
   /* 2026-09-18 (Justin): both wardens brought to the Heart's 110 HP and 8-12 - 150/140 and 9-14 was out of reach at level 8 */

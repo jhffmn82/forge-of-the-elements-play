@@ -78,7 +78,8 @@ function applyEarlyFloorEnemyTuning(e,deferHealth){
 }
 function betaEnemyBalance(e){
  applyEarlyFloorEnemyTuning(e);
- if(!e.foe||e.ally||floorMeta.plane)return;
+ if(!e.foe||e.ally)return;
+ if(floorMeta.plane){applyElementalingBiomeTuning(e);return;}
  if(!e.beta11Balanced){
   e.beta11Balanced=true;
   var b=Math.floor((floorNo-1)/5),extra=e.kind==='greenslime'?0:([1,2,0,3,0][b]||0);e.dmg=(e.dmg||e.base.dmg).map(function(v){return v+extra;});
@@ -86,6 +87,23 @@ function betaEnemyBalance(e){
  }
   applyUnderdarkEnemyTuning(e);
   if(typeof applyCavernEnemyTuning==='function')applyCavernEnemyTuning(e);
+  applyElementalingBiomeTuning(e);
+}
+/* Slightly tougher than a strong ordinary resident, after the same biome
+ * tuning. Their existing half-strength elemental damage counts toward the
+ * damage target, rather than accidentally granting another 50% increase. */
+function applyElementalingBiomeTuning(e){
+ if(!e||!e.base||!e.base.elementTier||!e.foe||e.ally||e.elementalBiomeTuningVersion===1||!Number.isFinite(e.maxhp)||e.maxhp<=0)return;
+ var biome=Math.floor((floorNo-1)/5),plane=floorMeta.plane;
+ var reference=plane?{fire:'flamedancer',water:'drownedone',air:'windwisp',earth:'burrower',light:'halowisp',shadow:'umbralhound'}[plane]:biome===0&&floorNo<=2?'goblin':['brute','gravebeetle','rootbound','drowblade'][biome];
+ var normal=MONSTERS[reference];if(!normal)return;
+ var hpFactor=!plane&&biome===3?1.2*1.25:!plane&&biome===2?1.15:1;
+ var damageFactor=!plane&&biome===3?1.25:1,extra=plane?0:([1,2,0,3][biome]||0);
+ var fraction=e.hp/e.maxhp,shape=e.base.el==='earth'?1.2:e.base.el==='air'?.9:1;
+ e.maxhp=Math.max(1,Math.round(sHP(normal.hp)*hpFactor*1.15*shape));
+ if(e.hp>0)e.hp=Math.max(1,Math.min(e.maxhp,Math.round(e.maxhp*fraction)));
+ e.dmg=normal.dmg.map(function(value){return Math.max(1,Math.round((sDMG(value)+extra)*damageFactor*1.1/1.5));});
+ e.elementalBiomeTuningVersion=1;
 }
 
 /* Native hostiles only: the saved marker belongs to actor stats, while fixed

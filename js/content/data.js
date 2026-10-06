@@ -167,8 +167,8 @@ var GODS = {
       "bonespear"
     ],
     "boons": [
-      "Life Drain: your direct hits have a 10% chance per rank to deal 2 shadow damage per rank, scaled by Divine Power. Heal yourself for the damage dealt.",
-      "Grave Strength: summons gain Life Drain and +5% HP, movement speed, attack speed and damage per rank. Their Life Drain heals them.",
+      "Life Drain: +5% chance per rank to drain life on direct hits. Your Life Drain damage scales with Divine Power.",
+      "Grave Strength: summons gain your weapon enchantment, Life Drain, and +5% HP, movement speed, attack speed and damage per rank. Their healing restores their own HP.",
       "Lich: your servant becomes a Lich and revives once, after 1 turn, at half HP. Gain +2% Divine Power per Vitality above 10."
     ],
     "gain": "Kills of the living, extra for kills by your undead."
@@ -878,7 +878,7 @@ var PROPS = {
   'barrel-water':{b:1,br:1,burn:1,fluid:'water',artName:'barrel'},
   'brazier-lit':{b:1,light:'#FF9A40'}, 'brazier-unlit':{b:1}, 'torch-stand':{b:1,light:'#FFB050'},
   'bones':{flat:1}, 'weapon-rack':{b:1}, 'bookshelf':{b:1,burn:1}, 'cage':{b:1}, 'statue':{b:1}, 'statue-broken':{b:1},
-  'mushrooms':{flat:1,light:'#6FB7FF',dim:1}, 'vines':{flat:1,burn:1}, 'ice-block':{b:1,br:1,melt:1}, 'altar-spikes':{b:1,altar:1},
+  'mushrooms':{flat:1,burn:1,light:'#6FB7FF',dim:1}, 'vines':{flat:1,burn:1}, 'ice-block':{b:1,br:1,melt:1}, 'altar-spikes':{b:1,altar:1},
   'alchemy-table':{b:1}, 'fountain':{b:1,drink:1}, 'bed-straw':{flat:1,burn:1}, 'table-candle':{b:1,light:'#FFC870',dim:1},
   'cart':{b:1,br:1,burn:1}, 'chains':{flat:1}, 'rubble':{flat:1}, 'web':{flat:1,burn:1,web:1}, 'banner-stand':{b:1,burn:1},
   'shrine':{b:1}, 'pillar':{b:1}, 'elemental-lock':{b:1}, 'lever-up':{b:1}, 'lever-down':{b:1}, 'boss-throne':{b:1},

@@ -1,9 +1,9 @@
 {
   "version": "Beta 1.6",
-  "built": "2026-10-05T14:29:21.521152+00:00",
-  "epoch": 1791210561,
-  "source": "Cursed Mending stops HP regeneration without HP drain; runtime 73dd0340399a6c3d50e766f63982b70254669c0072af86fc195cc903c55c3488",
+  "built": "2026-10-06T19:49:05.381059+00:00",
+  "epoch": 1791316145,
+  "source": "Combined map and Claude art Play test; runtime 1acafbb057507d1f17e0ceb645eac601e4c2062314f093d126f48b4664d38aa2",
   "candidate": true,
   "releaseState": "playtest",
-  "revision": "beta16-mending-hotfix-20261005-142921"
+  "revision": "beta16-combined-art-20261006-194905"
 }

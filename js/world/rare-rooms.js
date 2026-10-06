@@ -2,7 +2,7 @@
 var HIDDEN_SIGIL_ROOMS=[
  [{id:'cartographer',name:"Cartographer's Nook",sigil:'mapping',props:['bookshelf','table-candle','bookshelf'],ground:'moss'},
   {id:'slime-chamber',name:'Slime Chamber',sigil:'ascension',slimes:true}],
- [{id:'cleansing-shrine',name:'Cleansing Shrine',sigil:'purify',props:['fountain','candles','statue'],ground:'moss'},
+ [{id:'cleansing-shrine',name:'Cleansing Shrine',sigil:'purify',props:['fountain','torch-stand','statue'],ground:'moss'},
   {id:'embalmer-cell',name:"Embalmer's Cell",sigil:'rot',props:['alchemy-table','urn','bones'],ground:'bones'}],
  [{id:'fungal-pantry',name:'Fungal Pantry',sigil:'naturesbounty',props:['glow-mushrooms','kobold-crate','mushrooms'],ground:'grass'},
   {id:'petrified-shrine',name:'Petrified Shrine',sigil:'stoneskin2',props:['mossy-boulder','statue-broken','rune-stone-earth'],ground:'moss'}],
@@ -19,8 +19,16 @@ function rareFloorRoll(biome,salt,chance){
 function hiddenSigilTheme(){
  var preview=globalThis.FoteRoomPreview;if(RUN.sandbox&&preview&&preview.type==='hidden')return preview.kind==='last-expedition'?LAST_EXPEDITION:HIDDEN_SIGIL_ROOMS.flat().find(function(r){return r.id===preview.kind;});
  if(rareFloorRoll(0,0x45585044,.05)===floorNo)return LAST_EXPEDITION;
- var biome=bidx();if(biome>3||rareFloorRoll(biome,0x48494445^biome*7919,.10)!==floorNo)return null;
- var event=mulberry32((rareRunSeed()^0x53494749^biome*104729)>>>0);return HIDDEN_SIGIL_ROOMS[biome][Math.floor(event()*2)];
+ var biome=bidx();if(biome>3)return null;
+ var selectedFloor=rareFloorRoll(biome,0x48494445^biome*7919,.10);
+ var event=mulberry32((rareRunSeed()^0x53494749^biome*104729)>>>0),theme=HIDDEN_SIGIL_ROOMS[biome][Math.floor(event()*2)];
+ if(biome===0&&theme.slimes&&selectedFloor===2){
+  // An older saved floor may already contain this discovery; do not repeat it.
+  var previous=RUN.floorStash&&RUN.floorStash[2];
+  if(previous&&(previous.rooms||[]).some(function(r){return r.slimeChamber||r.hiddenSigil&&r.hiddenSigil.id==='slime-chamber';}))return null;
+  selectedFloor=3;
+ }
+ return selectedFloor===floorNo?theme:null;
 }
 function uniqueRareKind(){
  if(rareFloorRoll(1,0x424F4E45,.05)===floorNo)return 'bone-gauntlet';
@@ -41,11 +49,19 @@ function dressHiddenSigil(pk,spec){
   var rewards=[{kind:'food',food:foods[0]},{kind:'food',food:foods[1]||foods[0]},makeExpeditionReward()];
   rewards.forEach(function(it,n){var c=cells[n+1]||prize;it.x=c.x;it.y=c.y;items.push(it);plan.reserve(c);});
  }
+ if(spec.id==='petrified-shrine'){for(var n=0;n<3;n++){var c=cells[n+1]||prize;items.push({x:c.x,y:c.y,kind:'mote',el:'earth'});plan.reserve(c);}}
+ if(spec.id==='fungal-pantry'){
+  ['skewer','skewer','glowstew'].forEach(function(food,n){var c=cells[n+1]||prize;items.push({x:c.x,y:c.y,kind:'food',food:food});plan.reserve(c);});
+ }
  if(spec.slimes){r.slimeChamber=true;floorMeta.ooze=floorMeta.ooze||{};cells.forEach(function(c){floorMeta.ooze[idxOf(c.x,c.y)]=1;plan.reserved.add(idxOf(c.x,c.y));});}
  else{
   cells.forEach(function(c){setG(c.x,c.y,spec.ground==='bones'?G_BONES:spec.ground==='grass'?G_GRASS:G_MOSS);});
   var corners=cells.filter(function(c){return !plan.reserved.has(idxOf(c.x,c.y))&&!nearDoor(c.x,c.y)&&c!==prize;});
-  (spec.props||[]).forEach(function(name){var c=corners.shift();if(c)plan.furniture(c,name,{keep:true});});
+  (spec.props||[]).forEach(function(name){var c=corners.shift();if(c)plan.furniture(c,name,{keep:true,cleansingShrine:spec.id==='cleansing-shrine'&&name==='fountain'});});
+ }
+ if(spec.id==='fungal-pantry'){
+  var mushroomCells=shuffled(cells.filter(function(c){return freeCell(c.x,c.y)&&!nearDoor(c.x,c.y)&&!plan.reserved.has(idxOf(c.x,c.y));}));
+  mushroomCells.slice(0,Math.ceil(mushroomCells.length*.75)).forEach(function(c,n){addProp(c.x,c.y,n%3===0?'glow-mushrooms':'mushrooms',{keep:true,flat:1,b:0});});
  }
  // Preserve all open cells through later biome dressing, not just the reward route.
  cells.forEach(function(c){if(!propAt(c.x,c.y))plan.reserved.add(idxOf(c.x,c.y));});plan.publish();
@@ -69,6 +85,7 @@ function buildUniqueRareRoom(kind,r){
   if(typeof FoteChaosEnemyArt!=='undefined')FoteChaosEnemyArt.sheet('m-chaos-prism-seer');
  }else{
   r.barracks=true;r.residentKinds=['drowpriestess'];r.residentCount=3;r.residentState='asleep';
+  var tomeCell=cells[cells.length-1];if(tomeCell){items.push({x:tomeCell.x,y:tomeCell.y,kind:'off',it:clone(OFFHANDS.tome)});plan.reserve(tomeCell);}
   ['transmutation','wisdom','ascension'].forEach(function(use){var c=cells.shift();if(c){items.push({x:c.x,y:c.y,kind:'sigil',use:use});plan.reserve(c);}});
   var prize=cells.shift();if(prize){setT(prize.x,prize.y,CHEST);chestKind[idxOf(prize.x,prize.y)]='chest-gold';r.enhancedChest={x:prize.x,y:prize.y};plan.reserve(prize);}
   r.residentPosts=cells.slice().reverse().filter(function(c){return !nearDoor(c.x,c.y);}).slice(0,3);

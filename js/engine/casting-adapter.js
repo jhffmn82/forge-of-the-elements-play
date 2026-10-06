@@ -37,7 +37,7 @@ var SELF_CASTS={
 };
 function castSelf(key,A){
   var action=SELF_CASTS[key];if(!action)return false;
-  if(A.divine){spendSpellMana(A);startInvokeCd(key);setClip(player,key==='bellow'?'melee':'cast');}
+  if(A.divine){spendSpellMana(A);startInvokeCd(key);setClip(player,key==='bellow'?'melee':'cast',null);}   /* 2026-10-05: a bellow is no weapon swing, so its row plays straight */
   return action(A,godRank(),divineStrength())!==false;
 }
 function castElementSelf(A){

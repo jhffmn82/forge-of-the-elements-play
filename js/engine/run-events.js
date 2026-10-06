@@ -3,6 +3,7 @@
 // Unknown instructions and the raw notes used by generators remain unchanged.
 var FLOOR_ENTRY_NOTICES={
   'Bones and claw marks litter one doorway. A crowd of monsters sleeps behind it.':'Monster zoo: sleeping enemies.',
+  'An iron door confines a room packed with sleeping monsters.':'Locked zoo: packed with sleeping monsters.',
   'One room swallows light. Only Light or Fire affinity cuts through it.':'Dark room: Light or Fire reveals it.',
   '<b>A crystal vault</b> glints somewhere on this floor. Its crystal key lies about; inside, you may take one treasure.':'Crystal vault: find key; choose one treasure.',
   '<b>Chasm vault.</b> A chasm splits a side room with treasure beyond. Floating would carry you over.':'Chasm vault: levitation crosses the gap.',

@@ -40,19 +40,19 @@ function packedCaveArt(name){
 /* draw a piece at its natural size: the canvas's bottom centre on the footprint's bottom centre */
 function caveArtScale(o){
   // Crystal pylons fit their one-tile footing; their glow uses this scale too.
-  var scale=/^pylon-[12]$/.test(o.nm||'')?.55:/^(giant-mushroom|mushroom-pair)/.test(o.nm||'')?.65:1;
+  var scale=/^cl-crystal-shards-[1-4]$/.test(o.nm||'')?.5:/^pylon-[12]$/.test(o.nm||'')?.55:/^(giant-mushroom|mushroom-pair)/.test(o.nm||'')?.65:1;
   return TS/64*scale;
 }
 function drawCaveSprite(o, cx, bottom, alpha, flipX){
   if(o.nm==='kobold-crate'){
-    ctx.save();ctx.globalAlpha=alpha;ctx.imageSmoothingEnabled=false;
+    ctx.save();ctx.globalAlpha=alpha;ctx.imageSmoothingEnabled=true;
     var cs=Math.min(TS*.68/o.sw,TS*.74/o.sh), cw=o.sw*cs,ch=o.sh*cs;
     if(flipX){ctx.translate(cx,0);ctx.scale(-1,1);ctx.translate(-cx,0);}
     ctx.drawImage(o.img,o.sx,o.sy,o.sw,o.sh,cx-cw/2,bottom-ch,cw,ch);
     ctx.restore();return;
   }
   var s=caveArtScale(o), left=cx-o.fullW*s/2, top=bottom-o.fullH*s;
-  ctx.save(); ctx.globalAlpha=alpha; ctx.imageSmoothingEnabled=false;
+  ctx.save(); ctx.globalAlpha=alpha; ctx.imageSmoothingEnabled=true;
   if(flipX){ ctx.translate(cx, 0); ctx.scale(-1, 1); ctx.translate(-cx, 0); }
   ctx.drawImage(o.img, o.sx, o.sy, o.sw, o.sh, left+o.ox*s, top+o.oy*s, o.sw*s/(o.res||1), o.sh*s/(o.res||1));
   ctx.restore();
@@ -102,7 +102,7 @@ function drawCaveBridge(x, y, px, py, alpha){
   var painted=spriteOn?caveBridgeFrames():null;
   if(painted){
     var frame=painted[(((horiz?x:y)%4)+4)%4];
-    ctx.save();ctx.globalAlpha=alpha;ctx.imageSmoothingEnabled=false;
+    ctx.save();ctx.globalAlpha=alpha;ctx.imageSmoothingEnabled=true;
     ctx.translate(px+TS/2,py+TS/2);if(!horiz)ctx.rotate(Math.PI/2);
     ctx.drawImage(frame,-TS/2,-TS/2,TS,TS);ctx.restore();return;
   }
@@ -172,7 +172,7 @@ function drawCaveWalls(now){
     var o=caveArt(w.n); if(!o) return;
     var below=idxOf(w.x,w.y+1), a=(revealAll||vis[i]||vis[below]) ? 1 : memA(0.42), px=(w.x-camX)*TS, py=(w.y-camY)*TS, s=TS/64;
     if(/^wf-glowworm-curtain/.test(w.n)){drawGlowwormCurtain(w,px,py,a,now);return;}
-    ctx.save(); ctx.globalAlpha=a; ctx.imageSmoothingEnabled=false;
+    ctx.save(); ctx.globalAlpha=a; ctx.imageSmoothingEnabled=true;
     /* wall art attaches at its top: the waterfall's lip sits at the top of the rock and its basin on the floor below */
     var top = w.fall ? py : py+TS*0.18;
     ctx.drawImage(o.img, o.sx, o.sy, o.sw, o.sh, px+o.ox*s, top+o.oy*s, o.sw*s/(o.res||1), o.sh*s/(o.res||1));

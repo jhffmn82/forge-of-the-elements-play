@@ -23,6 +23,7 @@
   root.vegArt=art;
   root.vegDraw=function(o,cx,base,scale,shear,alpha,flip){
     if(!o)return;
+    if(/mushroom|shroom|fungus/.test(o.nm||''))scale*=.5;
     var s=TS/64*scale/o.res,w=o.sw*s,h=o.sh*s,b=vegBaked(o);
     ctx.save();ctx.globalAlpha=alpha;ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='low';
     ctx.translate(cx,base);ctx.transform(1,0,-shear,1,0,0);if(flip)ctx.scale(-1,1);
@@ -31,6 +32,9 @@
     ctx.restore();
   };
   root.sceneryClusterArt=function(family,variant){
+    var mushroomFamilies=['mushroom-teal','mushroom-violet','mushroom-amber','mushroom-crypt','mushroom-earth'];
+    var mushroomRow=mushroomFamilies.indexOf(family);
+    if(mushroomRow>=0&&root.FoteEnvironmentProps)return root.FoteEnvironmentProps.art('props','mushroom-spread-'+mushroomRow+'-'+(((Math.floor(variant)||0)%5+5)%5));
     var row=loaded?meta.clusters.families.indexOf(family):-1;
     if(row<0)return null;
     var cell=meta.clusters.cell,col=((Math.floor(variant)||0)%5+5)%5;

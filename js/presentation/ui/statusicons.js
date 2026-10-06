@@ -57,7 +57,9 @@ var STATUS_INFO = {
   wizardhunter:{name:'Wizard Hunter',icon:'ic-charge',d:'After being hurt by magic, elemental damage or a ranged attack, movement and attacks are faster for 3 turns.'},
   /* other timers on the player */
   hidden:    {name:'Hidden', icon:'st-hidden', d:'Enemies can\'t see you; your next hit is a surprise attack.'},
-  stillness: {name:'Stillness', icon:'item-amulet', unit:'steps', d:'Moving costs no time for the remaining steps. Attacking or any other action ends Stillness.'},
+  /* 2026-10-05 (item art, C3): Stillness shows the worn amulet or the run's look (statusList below); with neither it fell
+     back to item-amulet, an 8x9px speck. The fallback is a real amulet picture now. */
+  stillness: {name:'Stillness', icon:'item-amulet-tear', unit:'steps', d:'Moving costs no time for the remaining steps. Attacking or any other action ends Stillness.'},
   resolve:   {name:'Resolve',icon:'st-stone',d:'Immune to Stun, Root, Freeze and knockback.'},
   snuffed:   {name:'Light Snuffed',icon:'st-blind',bad:1,d:'Light radius reduced to 2 tiles.'},
   levitate:  {name:'Floating', icon:'st-floating', d:'Cross chasms and water; ignore roots, webs, floor traps and ground hazards. Clears roots and webs on use.'}

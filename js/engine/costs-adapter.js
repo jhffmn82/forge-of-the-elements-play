@@ -5,7 +5,7 @@ function actorTiming(actor){
     chill:actor.st&&actor.st.chill?chillSlow(actor):0,slow:slow?(slow.mult||SYLLA.slowMult):0};
 }
 function playerTiming(){
-  var c=actorTiming(player),weapon=player.weapon||{},holy=infusion('holy')==='air'&&isBuffed();
+  var c=actorTiming(player),weapon=player.weapon||{},holy=infusion('holy')==='air';
   c.agility=player.stats.agi;c.divine=divineStrength();c.rank=godRank();c.grom=player.god==='grom';
   c.attacking=player.lastAttack;c.unarmed=weapon.unarmed;c.dagger=/Dagger/.test(weapon.name||'');
   c.rampage=buff('rampage')&&player.lastAttackMelee;c.hunter=player.wizardHunterUntil>player.t;
@@ -49,7 +49,7 @@ function spendSpellMana(A){
   var cost=costOf(A);
   player.mp-=cost;player._actualSpellCost=cost;
   SPELL_PAYMENTS.set(player,{ability:A,cost:cost,eligible:!A.tech&&!A.divine,conducted:false});
-  if(A.divine)vellumManaPiety(cost);
+  if(A.divine){vellumManaPiety(cost);holyRadianceCast();}
   if(!A.tech)player.castingSpell=true;
   return cost;
 }

@@ -4,7 +4,7 @@
  'use strict';
  if(root.FoteEnvironmentTerrain)return;
  var manifest=null,manifestPending=null,manifestFailure=null,images=new Map(),loading=new Map(),failures=new Map(),high=new Map(),cacheMap=null,cacheMeta=null;
- var S=128,builds=0,frameBuilt=0,frameDeadline=0,peakBuildMs=0,frameMs=0,peakFrameMs=0,fireGround=new Map(),rockTops=new Map();
+ var S=128,builds=0,frameBuilt=0,frameDeadline=0,peakBuildMs=0,frameMs=0,peakFrameMs=0,fireGround=new Map(),rockTops=new Map(),masonryReflections=new Map();
  var elementalPlanes=['light','shadow','earth','fire','water','air'];
  var oldFrame=drawFramePasses;
  function phone(){return document.body.classList.contains('touch');}
@@ -89,7 +89,7 @@
    else if(floorMeta.chaosPreview)themes=['prism','cinder'];
    else if(typeof player!=='undefined'&&player)themes=[theme(player.x,player.y)];
   }}
-  var keys=['stone-detail','fluid-detail'];if(typeof inCaverns==='function'&&inCaverns()||themes.some(function(t){return t==='caverns'||t==='underdark'||t==='volcanic'||elementalPlanes.indexOf(t)>=0;}))keys.push('cave-rock');if(typeof floorMeta!=='undefined'&&floorMeta&&floorMeta.lava)keys.push('lava-flow');themes.forEach(function(t){['floor','face','top','rim-n','rim-v'].forEach(function(n){var k=t+'-'+n;if(manifest.assets[k])keys.push(k);});});
+  var keys=['stone-detail','fluid-detail'];if(typeof floorMeta!=='undefined'&&floorMeta&&floorMeta.chaosPreview||typeof inCaverns==='function'&&inCaverns()||themes.some(function(t){return t==='caverns'||t==='underdark'||t==='volcanic'||elementalPlanes.indexOf(t)>=0;}))keys.push('cave-rock');if(typeof floorMeta!=='undefined'&&floorMeta&&floorMeta.lava)keys.push('lava-flow');themes.forEach(function(t){['floor','face','top','rim-n','rim-v'].forEach(function(n){var k=t+'-'+n;if(manifest.assets[k])keys.push(k);});});
   return keys;
  }
  function ensureAssets(themes){
@@ -101,7 +101,26 @@
  function sample(name,x,y,t){
   var entry=get((t||theme(x,y))+'-'+name);if(!entry)return null;
   var spec=entry.spec,w=entry.img.naturalWidth/spec.columns,h=entry.img.naturalHeight/spec.rows;
-  return {img:entry.shaded||entry.img,sx:wrap(x,spec.columns)*w,sy:wrap(y,spec.rows)*h,sw:w,sh:h,deepDim:entry.shaded?0:spec.dim||0};
+  var image=entry.shaded||entry.img,sx=wrap(x,spec.columns),sy=wrap(y,spec.rows);
+  // Reflect whole masonry repeats at their joins, rather than connecting two
+  // unrelated cropped stones. Keep the original master and cache only visible
+  // reflected cells: a doubled atlas would cost 44 MB of additional decoded art.
+  if(name==='floor'&&/^(dungeon|crypt)-/.test(spec.file.replace('environment-terrain-',''))){
+   var rx=wrap(x,spec.columns*2),ry=wrap(y,spec.rows*2),flipX=rx>=spec.columns,flipY=ry>=spec.rows;
+   sx=flipX?spec.columns*2-1-rx:rx;sy=flipY?spec.rows*2-1-ry:ry;
+   if(flipX||flipY){
+    var key=[spec.file,sx,sy,flipX?1:0,flipY?1:0].join(':'),tile=masonryReflections.get(key);
+    if(tile){masonryReflections.delete(key);masonryReflections.set(key,tile);}
+    else{
+     tile=canvas(w,h,'masonry-reflection-'+key);var paint=tile.getContext('2d');
+     paint.translate(flipX?w:0,flipY?h:0);paint.scale(flipX?-1:1,flipY?-1:1);
+     paint.drawImage(image,sx*w,sy*h,w,h,0,0,w,h);masonryReflections.set(key,tile);
+     if(masonryReflections.size>128)masonryReflections.delete(masonryReflections.keys().next().value);
+    }
+    return {img:tile,sx:0,sy:0,sw:w,sh:h,deepDim:entry.shaded?0:spec.dim||0};
+   }
+  }
+  return {img:image,sx:sx*w,sy:sy*h,sw:w,sh:h,deepDim:entry.shaded?0:spec.dim||0};
  }
  function rim(name,index,x,y){return sample(name,name==='rim-n'?index:0,name==='rim-v'?index:0,theme(x,y));}
  function masonrySample(name,x,y){var t=theme(x,y),deep=t==='temple'||t==='underdark'||t==='volcanic';
@@ -186,6 +205,11 @@
   var translucent=mode==='fluid'||mode==='chasm'||mode==='lava-crust'||mode==='vegetation';
   var isPlane=mode==='plane',isDeep=mode==='deep',chasm=mode==='chasm',grainScale=mode==='vegetation'?.10:.24;
   var nearest=ax.nearest,lo=ax.lo,hi=ax.hi,fraction=ax.fraction,i;
+  // The archived detail master contains coarse slab outlines. Keep only a
+  // trace of its material; continuous fine grain must not stamp a second,
+  // pixelated floor layout over the native 128px contours.
+  function grainHash(x,y,s){var h=(Math.imul(x,374761393)+Math.imul(y,668265263)+s)|0;h=Math.imul(h^(h>>>13),1274126177);return ((h^(h>>>16))>>>0)/4294967295;}
+  function grainNoise(x,y,s){var ix=Math.floor(x),iy=Math.floor(y),fx=x-ix,fy=y-iy;fx*=fx*(3-2*fx);fy*=fy*(3-2*fy);var a=grainHash(ix,iy,s),b=grainHash(ix+1,iy,s),c=grainHash(ix,iy+1,s),e=grainHash(ix+1,iy+1,s);return (a+(b-a)*fx)*(1-fy)+(c+(e-c)*fx)*fy-.5;}
   var detailRow=new Int32Array(S),detailCol=new Int32Array(S),rockRow=null,rockCol=null,directCols=[],directRows=[],PARTS={floor:0,face:1,top:2};
   for(i=0;i<S;i++){detailRow[i]=wrap(y*S+i,dh)*dw;detailCol[i]=wrap(x*S+i,dw);}
   if(rockPixels){rockRow=new Int32Array(S);rockCol=new Int32Array(S);for(i=0;i<S;i++){rockRow[i]=mirror(y*S+i,rh)*rw;rockCol[i]=mirror(x*S+i,rw);}}
@@ -197,8 +221,9 @@
    var k=rowOf.indexOf(palette);if(k>=0)return rows[k];
    var r={topLow:[],topSpan:[],faceLow:[],faceSpan:[],lip:[],edge:[]};
    for(var ch=0;ch<3;ch++){
-    var topLow=palette.topLo[ch]*(plane?1:.7),faceLow=palette.faceLo[ch]*(plane?1:.65);
-    r.topLow.push(topLow);r.topSpan.push(palette.topHi[ch]-topLow);r.faceLow.push(faceLow);r.faceSpan.push(palette.lip[ch]*.85-faceLow);r.lip.push(palette.lip[ch]);r.edge.push(palette.edge[ch]);
+    var topGrade=plane?.61:.72,faceGrade=plane?.5:.58;
+    var topLow=palette.topLo[ch]*topGrade,faceLow=palette.faceLo[ch]*faceGrade;
+    r.topLow.push(topLow);r.topSpan.push(palette.topHi[ch]*topGrade-topLow);r.faceLow.push(faceLow);r.faceSpan.push(palette.lip[ch]*.85*faceGrade-faceLow);r.lip.push(palette.lip[ch]);r.edge.push(palette.edge[ch]);
    }
    rowOf.push(palette);rows.push(r);return r;
   }
@@ -231,7 +256,18 @@
     var same=!mask||mask[a]===kind&&mask[b]===kind&&mask[c]===kind&&mask[e]===kind;
     var coverage=translucent?(source[a*4+3]*(1-fx)+source[b*4+3]*fx)*(1-fy)+(source[c*4+3]*(1-fx)+source[e*4+3]*fx)*fy:source[sp+3];
     var direct=DIRECT?DIRECT[cell]:undefined;
-    var dp=dRow+detailCol[u],grain=((POOL[cell]?fd[dp]:d[dp])-128)*grainScale;
+    var dp=dRow+detailCol[u],wx=x+(u+.5)/S,wy=y+(v+.5)/S;
+    var grain=POOL[cell]||mode==='fluid'?((POOL[cell]?fd[dp]:d[dp])-128)*.12:
+      (d[dp]-128)*.015+grainNoise(wx*12,wy*12,37)*8+grainNoise(wx*38,wy*38,91)*4+(grainHash(x*S+u,y*S+v,173)-.5)*2;
+    if(mode==='vegetation')grain*=.45;
+    // Caverns are rough weathered rock, not a smooth paving material. Use
+    // the painted rock master at native density without polygon slab seams.
+    if(isPlane&&(naturalWalls||o.naturalFloor||plane)&&kind===0&&!POOL[cell]&&rockPixels){
+      var floorRock=rockPixels[rRow+rockCol[u]]-128;
+      var roughness=plane?Math.max(.28,Math.min(.42,.18+plane.grain*8)):.34;
+      grain+=floorRock*roughness+grainNoise(wx*5,wy*5,227)*(plane?roughness*28:12);
+    }
+    if(isDeep&&FIRE[cell]&&rockPixels)grain+=(rockPixels[rRow+rockCol[u]]-128)*.42+grainNoise(wx*5,wy*5,227)*14;
     if(isPlane&&kind===2)grain=0; // The native void stays flat and dark.
     var directPixel=0;if(direct){var slot=SLOT[cell],dx=(directCols[slot]||directCol(slot,TX[cell],direct.spec.width))[u],dy=FACE[cell]?Math.min(S-1,faceY[cell]*S/n+(v%(S/n))):(directRows[slot]||directRow(slot,TY[cell],direct.spec.height))[v];directPixel=(dy*direct.spec.width+dx)*4;}
     var pal=null,face=0,depth=0,tone=0,lip=0,edge=0,energy=0;
@@ -298,10 +334,12 @@
  function kernelInputs(source,info,n,x,y,mode,T){
   var detail=T.get(mode==='fluid'?'fluid-detail':'stone-detail');if(!detail)return null;
   var mask=info.mask,regions=info.regions,fluid=mode==='plane'?T.get('fluid-detail'):null;
-  var plane=mode==='plane'&&floorMeta&&elementalPlanes.indexOf(floorMeta.plane)>=0?PT_MAT[floorMeta.plane]:null;
-  if(plane&&ptMat(x,y)!==plane)plane=null;
-  var rock=info.naturalWalls||plane||mode==='deep'?T.get('cave-rock'):null;
-  if((info.naturalWalls||plane||mode==='deep')&&!rock)return null;
+  // Resolve the raster's own material: preview/mixed cells and volcanic ground
+  // may have a different material from the floor's global plane.
+  var cellMaterial=mode==='plane'?(info.terrainMaterial||ptMat(x,y)):null;
+  var plane=cellMaterial&&elementalPlanes.some(function(key){return PT_MAT[key]===cellMaterial;})?cellMaterial:null;
+  var rock=info.naturalWalls||info.naturalFloor||plane||mode==='deep'?T.get('cave-rock'):null;
+  if((info.naturalWalls||info.naturalFloor||plane||mode==='deep')&&!rock)return null;
   if(mode==='plane'&&!fluid)return null;
   var material=null;if(mode==='deep'){
    material=DEEP_REGIONS.map(function(t){return {floor:T.get(t+'-floor'),face:T.get(t+'-face'),top:T.get(t+'-top')};});
@@ -312,8 +350,8 @@
   return {S:S,n:n,source:source,mask:mask,regions:regions,shade:info.shade,faceY:info.faceY,wallDepth:info.wallDepth,pool:info.pool,
    x:x,y:y,mode:mode,axis:axis(n),detail:detail.red,dw:detail.width,dh:detail.height,fluid:fluid?fluid.red:null,
    rock:rock?rock.red:null,rockWidth:rock?rock.width:0,rockHeight:rock?rock.height:0,
-   plane:plane,naturalWalls:info.naturalWalls,minerals:plane&&mask?planeMinerals(source,mask,plane):null,material:material,
-   offsets:mode==='deep'?[surfOff(0),surfOff(1),surfOff(2),surfOff(3),surfOff(4)]:null,cavern:typeof PT_MAT!=='undefined'?PT_MAT.cavern:null,
+   plane:plane,naturalWalls:info.naturalWalls,naturalFloor:info.naturalFloor,minerals:plane&&mask?planeMinerals(source,mask,plane):null,material:material,
+   offsets:mode==='deep'?[surfOff(0),surfOff(1),surfOff(2),surfOff(3),surfOff(4)]:null,cavern:info.naturalMaterial||(typeof PT_MAT!=='undefined'?PT_MAT.cavern:null),
    firePixels:fire?fire.environmentTerrain.pixels:null,fireAxis:fire?axis(fire.width):null,fireWidth:fire?fire.width:0,
    deepStyle:typeof DEEP_STYLE!=='undefined'?DEEP_STYLE:null,deepRock:typeof DEEP_ROCK!=='undefined'?DEEP_ROCK:null,dst:null};
  }
@@ -468,9 +506,10 @@
  root.FoteEnvironmentTerrain=Object.freeze({ensureAssets:ensureAssets,ready:ready,themeAt:theme,rim:rim,sample:sample,
   masonry:masonrySample,deepTop:deepTop,floorSample:function(x,y){return masonrySample('floor',x,y);},
   lavaFlow:function(){var entry=get('lava-flow');return entry&&entry.img;},
+  rockSurface:function(){var entry=get('cave-rock');return entry&&entry.img;},
   surface:function(name,x,y){var entry=get(theme(x,y)+'-'+name);return entry&&entry.img;},metadata:function(){return manifest;},enhance:enhance,
-  diagnostics:function(){return {ready:!!manifest,loaded:images.size,pending:loading.size,cachedCells:high.size,builds:builds,peakBuildMs:peakBuildMs,peakFrameMs:peakFrameMs,pixelsPerCell:S,lastBake:lastBake&&Object.assign({},lastBake),bakes:bakes.map(function(b){return Object.assign({},b);})};},
-  reset:function(){forget();fireGround.clear();rockTops.clear();aheadQueue=[];aheadKey='';},beginFrame:beginFrame,bakeView:bakeView,bakeViewNow:bakeViewNow,ahead:ahead,
+  diagnostics:function(){return {ready:!!manifest,loaded:images.size,pending:loading.size,cachedCells:high.size,masonryReflectionCells:masonryReflections.size,builds:builds,peakBuildMs:peakBuildMs,peakFrameMs:peakFrameMs,pixelsPerCell:S,lastBake:lastBake&&Object.assign({},lastBake),bakes:bakes.map(function(b){return Object.assign({},b);})};},
+  reset:function(){forget();fireGround.clear();rockTops.clear();masonryReflections.clear();aheadQueue=[];aheadKey='';},beginFrame:beginFrame,bakeView:bakeView,bakeViewNow:bakeViewNow,ahead:ahead,
   cacheCanvases:function(){return Array.from(high.values());},discardCell:function(cell){if(!high.has(cell))return false;drop(cell);return true;},install:install,kernelSource:kernelSource,workerTextures:workerTextures,
   workerDeepTextures:workerDeepTextures,rockTopReady:rockTopReady});
  if(typeof FoteLifecycle!=='undefined')FoteLifecycle.whenReady(function(){ensureAssets().catch(function(){/* Original materials remain the load-error fallback. */});});

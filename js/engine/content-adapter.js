@@ -146,7 +146,7 @@ function buildBossRoom(room){
 }
 function buildSpecial(kind,room){
   var deep=inDeep(),region=room.region||0;
-  if(deep&&/^(garden|nest|statues|storage)$/.test(kind)&&(region!==0||/^(garden|nest)$/.test(kind))){room.special=kind==='nest'?'nest-deep':kind;deepThemeRoom(room,true);return;}
+  if(deep&&/^(garden|statues|storage)$/.test(kind)&&(region!==0||kind==='garden')){room.special=kind;deepThemeRoom(room,true);return;}
   buildDefaultSpecial(kind,room);
   if(kind==='storage'&&inCrypt()&&!(floorMeta&&floorMeta.plane))buildUrnChamber(room);
   if(deep&&kind==='sacrifice'){

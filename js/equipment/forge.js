@@ -8,7 +8,7 @@ var T1_TEXT = {
   air:'+10% movement speed per point',
   earth:'Stone Skin: -1 physical damage per hit, per point',
   light:'10% chance per point that your hits Smite: 3-6 light damage, +1 per Light point',
-  shadow:'+5% crit chance per point on surprise attacks'
+  shadow:'Life Drain: direct hits can steal health'
 };
 /* 2026-09-23 (Justin): the sheet's element lines show the live total at the current affinity, not only the rate */
 var T1_LIVE = {
@@ -17,7 +17,7 @@ var T1_LIVE = {
   air:    function(n){ return '+'+(10*n)+'% movement speed'; },
   earth:  function(n){ return '-'+n+' physical damage per hit'; },
   light:  function(n){ return (10*n)+'% Smite chance on hit: '+(3+n)+'-'+(6+n)+' light damage'; },
-  shadow: function(n){ return '+'+(5*n)+'% crit chance on surprise attacks'; }
+  shadow: function(n){ return 'Life Drain: '+(10*n)+'% chance to deal '+(2*n)+' shadow damage and heal for damage dealt'; }
 };
 function t1Text(e, n){ return (T1_LIVE[e] && n>0) ? T1_LIVE[e](n) : (T1_TEXT[e]||''); }
 var ENCHANT_TEXT = FoteEnchantments.formulaTable();

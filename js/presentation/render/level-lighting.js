@@ -156,6 +156,7 @@ function drawLightmap(now, prp){
         rr = reg ? tAmb[reg - 1] : AMB[0];
         gg = reg ? tAmb[reg] : AMB[1];
         bb = reg ? tAmb[reg + 1] : AMB[2];
+        if(!wall&&typeof sandboxRoomPreviewAt==='function'&&sandboxRoomPreviewAt(x,y)){rr=Math.max(rr,.68);gg=Math.max(gg,.68);bb=Math.max(bb,.68);}
         var face = wall && !tWall[ct + TW];
         if (!wall || face) {
           var sx = fx0, sy = face ? y + 1 : fy0, stx = x, sty = face ? y + 1 : y, st = face ? ct + TW : ct;
