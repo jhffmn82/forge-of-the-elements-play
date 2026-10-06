@@ -1,9 +1,9 @@
 {
   "version": "Beta 1.6",
-  "built": "2026-10-06T21:07:14.632100+00:00",
-  "epoch": 1791320834,
-  "source": "Movement and cold-preview performance fix; runtime 8c980159ca91442dd9174c17cce79b5b959f53ac4a16377f92357783b0a77d56",
+  "built": "2026-10-06T21:37:01.270066+00:00",
+  "epoch": 1791322621,
+  "source": "Call-scoped geometry queries and bounded loot-image cache correction; runtime b76d1821cda5f0980433863a128e00edcb7d865e86d8dd063e152a80cffb1ed3",
   "candidate": true,
   "releaseState": "playtest",
-  "revision": "beta16-performance-20261006-210714"
+  "revision": "beta16-geometry-20261006-213701"
 }

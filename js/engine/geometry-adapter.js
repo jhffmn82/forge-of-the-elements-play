@@ -1,7 +1,10 @@
 /* One terrain policy and one visibility order serve movement, targeting and AI. */
 var terrainRules=FoteGeometry.terrain({floor:FLOOR,open:OPEN,stairs:STAIRS,rubble:RUBBLE,water:WATER,bridge:BRIDGE,exit:EXIT,
   upstairs:UPSTAIRS,portal:PORTAL,wall:WALL,door:DOOR,locked:LOCKED,iceDoor:ICEDOOR,thorns:THORNS,secret:SECRET,sealed:SEALED,toll:TOLL,chest:CHEST});
-function walkable(x,y){if(typeof FoteUnmakerPreview!=='undefined'&&!FoteUnmakerPreview.destinationAllowed(x,y))return false;var p=propGrid?propAt(x,y):null;return terrainRules.walkable(at(x,y),!!(p&&p.b),floorMeta.exitOpen);}
+// Fresh references for one synchronous actor search. Queries outside that
+// search use their ordinary live state; no view survives an actor action.
+function geometryQueryContext(width,height,frame){return {width:width,height:height,map:frame?FRAME_MAP:map,propGrid:propGrid,props:props,fireT:fireT,floorMeta:floorMeta};}
+function walkable(x,y,context){if(typeof FoteUnmakerPreview!=='undefined'&&!FoteUnmakerPreview.destinationAllowed(x,y))return false;var p=(context?context.propGrid:propGrid)?propAt(x,y,context):null;return terrainRules.walkable(at(x,y,context),!!(p&&p.b),(context?context.floorMeta:floorMeta).exitOpen);}
 function passable(x,y){if(typeof FoteUnmakerPreview!=='undefined'&&!FoteUnmakerPreview.destinationAllowed(x,y))return false;var p=propGrid?propAt(x,y):null;return terrainRules.passable(at(x,y),!!(p&&p.b),floorMeta.exitOpen);}
 function opaque(x,y){var p=propGrid&&propAt(x,y);return terrainRules.opaque(at(x,y),ground&&gAt(x,y)===G_GRASS,cryptShrooms(),p&&p.pillar);}
 function visionCast(context){

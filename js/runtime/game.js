@@ -57,7 +57,7 @@ var player={ id:0, ch:'@', x:2, y:2, t:0, st:{}, foe:false, build:'dwarf',
    thousands of times through at(), inb() and idxOf(). While a frame draws they are held here in plain variables
    (render.js holdFrameState); drawing changes none of them. Outside a frame these stay unset and the getters answer. */
 var FRAME_MAP=null, FRAME_MW=0, FRAME_MH=0;
-function at(x,y){ if(FRAME_MAP) return (x<0||y<0||x>=FRAME_MW||y>=FRAME_MH) ? WALL : FRAME_MAP[y*FRAME_MW+x]; return (x<0||y<0||x>=MW||y>=MH) ? WALL : map[y*MW+x]; }
+function at(x,y,context){ if(context) return (x<0||y<0||x>=context.width||y>=context.height) ? WALL : context.map[y*context.width+x]; if(FRAME_MAP) return (x<0||y<0||x>=FRAME_MW||y>=FRAME_MH) ? WALL : FRAME_MAP[y*FRAME_MW+x]; return (x<0||y<0||x>=MW||y>=MH) ? WALL : map[y*MW+x]; }
 function setT(x,y,v){
   if(!(x>=0&&y>=0&&x<MW&&y<MH)) return;
   /* a door that opens keeps its material for the renderer (render.js doorMaterial; Justin, 2026-09-27) */

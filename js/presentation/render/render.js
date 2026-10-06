@@ -192,7 +192,7 @@ function whiteCut(img, sx,sy,sw,sh,color){
    WHITE_CACHE: the 32 most recently drawn. A copy is the art's trimmed box times k each way, at most (64k)^2 pixels:
    64 KiB at k 2, 144 KiB at k 3. None is made at pixel ratio 1. Measured with 48 different pieces of loot on one
    screen before the 1080p rule below: the full 32 and 1.07 MiB on a pixel-ratio 2 laptop. */
-var LOOT_UP=new Map(), LOOT_UP_MAX=32;
+var LOOT_UP=new Map(), LOOT_UP_MAX=64;
 function lootCopy(o,k){
   var key=o.img.src+'|'+o.sx+','+o.sy+','+o.sw+','+o.sh+'x'+k, c=LOOT_UP.get(key);
   if(c){ LOOT_UP.delete(key); LOOT_UP.set(key,c); return c; }

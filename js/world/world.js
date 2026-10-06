@@ -12,11 +12,11 @@ var GROUND_ART = {1:'grass-tall',2:'grass-short',3:'ash',4:'puddle',5:'blood',6:
 var ground, fireT, props=[], propGrid, chestKind={}, floorMeta={}, levers=[], plates=null, altars={};
 var RUN = null;   /* run-wide state: forge floor, shrine floor and god, mote plan, heroic resolve, victory */
 
-function inb(x,y){ if(FRAME_MAP) return x>=0 && y>=0 && x<FRAME_MW && y<FRAME_MH; return x>=0 && y>=0 && x<MW && y<MH; }   /* FRAME_*: js/runtime/game.js at() */
-function idxOf(x,y){ return y*(FRAME_MAP ? FRAME_MW : MW)+x; }
+function inb(x,y,context){ if(context) return x>=0 && y>=0 && x<context.width && y<context.height; if(FRAME_MAP) return x>=0 && y>=0 && x<FRAME_MW && y<FRAME_MH; return x>=0 && y>=0 && x<MW && y<MH; }   /* FRAME_*: js/runtime/game.js at() */
+function idxOf(x,y,context){ return y*(context ? context.width : FRAME_MAP ? FRAME_MW : MW)+x; }
 function gAt(x,y){ return inb(x,y) ? ground[idxOf(x,y)] : 0; }
 function setG(x,y,v){ if(inb(x,y)){var i=idxOf(x,y),previous=ground[i];ground[i]=v;if(previous!==v&&v&&GROUND_ART[v])FoteContent.introduceAppearance(floorMeta,'ground',v);} }
-function propAt(x,y){ if(!inb(x,y)) return null; var i=propGrid[idxOf(x,y)]; return i>=0 ? props[i] : null; }
+function propAt(x,y,context){ if(!inb(x,y,context)) return null; var i=(context?context.propGrid:propGrid)[idxOf(x,y,context)]; return i>=0 ? (context?context.props:props)[i] : null; }
 function rebuildPropGrid(){
   propGrid.fill(-1);
   for(var i=0;i<props.length;i++)propGrid[idxOf(props[i].x,props[i].y)]=i;
