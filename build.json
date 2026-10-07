@@ -1,9 +1,9 @@
 {
   "version": "Beta 1.6",
-  "built": "2026-10-07T00:35:08.434024+00:00",
-  "epoch": 1791333308,
-  "source": "Map library rows, lighting and first-biome shrine followup; runtime de7cf0d80ba26ccc6d80a898ce12cf63d8855af6a345deabc05844cf58893182",
+  "built": "2026-10-07T00:48:55.410497+00:00",
+  "epoch": 1791334135,
+  "source": "Corrected player-facing Beta 1.6 notes; runtime 88d69340153df9b4dc2397cbb5c713fe977f9b4bd62588d612fc811c6dde4989",
   "candidate": true,
   "releaseState": "playtest",
-  "revision": "beta16-map-20261007-003508"
+  "revision": "beta16-notes-20261007-004855"
 }

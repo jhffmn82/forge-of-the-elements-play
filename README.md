@@ -25,4 +25,4 @@ tap to move and hold to inspect. A rotate prompt appears in portrait; the game d
 ## This repository
 
 Generated output only: the playable build, published by `tools/release/publish.py` from the source project. Last
-build: **2026-10-07T00:35:08.434024+00:00**.
+build: **2026-10-07T00:48:55.410497+00:00**.

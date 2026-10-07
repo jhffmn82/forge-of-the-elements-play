@@ -3,15 +3,20 @@ var FOTE_VERSION = 'Beta 1.6';
 /* Keep newest first; describe only changes already present in this build. */
 var FOTE_PATCHES = [
   {version:'Beta 1.6', notes:[
-    'Mobile play supports portrait and landscape without a rotation prompt or fullscreen request.',
-    'Sandbox character editor: choose a class or saved build, equip each slot, set item quality and enchantments, allocate attributes and infusions, then select a dungeon floor or elemental plane.',
-    'Reworked Sir Reginald with Lunge, rank-scaled accuracy, crit and armor, regenerating Last Stand, Fear and Root on ranged attackers, a weapon beam and Perfect Counter.',
-    'Wobbles has broader pranks and resource rewards. Favorite Toy converts 5% of pranks per rank. Tempt Fate costs 40 Favor and can drop sigils, motes, rings and amulets nearby.',
-    'Revised dual masteries, four-tile lightning jumps and animated Arc discharges.',
-    'Vellum supports divine casters with Arcane Lance, Mana Ward and Blink, plus Divine Power contributing to Spell Power at rank 3.',
-    'Build-compatible shrines appear earlier, and positive Piety gains accelerate in the final biomes.',
-    'Blind preserves explored terrain while limiting current sight to adjacent tiles. Vegetation preserves required floor routes.',
-    'Delayed barrel explosions and search effects expire when their original scene is replaced.'
+    "Expanded character animations, with weapon-specific punches, strikes, thrusts and bow shots. Equipment and god-specific holy-symbol artwork have been refreshed.",
+    "Retuned staff melee, Magic Missile and early enemy health and damage. Heavier Dungeon room encounters appear from floor 3, giving new builds a gentler opening.",
+    "More puzzles, special rooms and hidden discoveries, including the Offering Chamber, Greedy Vault, Funeral Bell, Silk Survivor and four rare once-per-biome encounters.",
+    "Updated elemental creatures, terrain, mushrooms, props and traps. Library shelves leave two clear rows between them, and lighting edges are slightly softer.",
+    "Vellum gains Arcane Lance, Mana Ward and Blink. Arcane Lance costs 5 Mana, reaches 5 tiles and has no cooldown; at rank 3, half your bonus Divine Power also improves Spell Power.",
+    "Sir Reginald supports melee builds with Lunge, a protective and regenerating Last Stand, Coward's Mark, a weapon beam and Perfect Counter.",
+    "Wobbles has more varied pranks and resource rewards. Favorite Toy unlocks at rank 3, converting pranks with a 5% chance per rank. Tempt Fate costs 40 Favor and can drop sigils, motes, rings and amulets nearby.",
+    "Revised dual elemental masteries, beam aiming and Upheaval walls. Lightning jumps reach enemies within 4 tiles and use animated electrical discharges.",
+    "Shrines favor eligible builds. Non-Cleric Dwarves are guaranteed Anvil and non-Cleric Gloomlings Murk somewhere on floors 1-4 in the first biome. New runs use this placement.",
+    "Positive Piety gains increase in the final biomes, helping late devotion catch up.",
+    "Tiny Spiderlings, Shroomlings and Rotlings no longer block ranged shots. Brood Carriers and Silk Weavers throw limited broods beside their target.",
+    "Mobile play requires landscape; turn your device sideways when the rotation prompt appears. Touch movement responds on press, supports delayed hold-to-move, and keeps pickup separate from Search.",
+    "Improved character framing, menu readability, artwork loading and introductory guidance. Floor entry waits for its destination artwork, and missing artwork can be retried.",
+    "Blind limits current sight to adjacent tiles. Cursed Mending stops HP regeneration without draining health."
   ]},
   {version:'Beta 1.5', notes:[
     "Hunger drains 20% more slowly to account for longer fights.",

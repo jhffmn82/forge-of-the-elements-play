@@ -1,46 +1,16 @@
-# Forge of the Elements — Beta 1.5
+# Forge of the Elements - Beta 1.6 playtest
 
-- Vellum's Arcane Lance has no cooldown. Saved games clear obsolete Lance and Communion waits.
-- God statue previews wait for their full-resolution artwork and refresh when it loads.
-- Touch movement accepts taps sooner. Holding a direction repeats after half a second, at no more than four steps per second; releasing stops repeats.
-- A circular grab button appears beside the enabled touch pad when regular loot is underfoot. Search stays available; hearts and mana globes remain automatic.
-- All character paper dolls fit their available boxes. Item icons repaint after their artwork loads, and character-creation audio guidance wraps below the start button.
-- Failed recorded music and sound effects no longer substitute obsolete synthesized audio; the current recording can recover on a later attempt.
-- The title automatically checks for newer builds and glows Update available beneath Version. Updating keeps saved games and settings.
-- Vellum grants spell knockback at rank 1, adds bonus Divine Power to Spell Power at rank 3, and grants 25% stronger equipment at rank 5.
-- Vellum gains Arcane Lance: 7 Mana, range 3, damage equal to 5 per god rank times Divine Power. Mana Ward is instant, lasts 4 turns and has an 8-action cooldown; Blink has range 5 and a 20-action cooldown.
-- Phone startup loads current-scene artwork in a small queue and releases unused atlases as you explore.
-- Music and sound effects have MP3 support for phones that cannot decode Ogg audio.
-- Failed artwork, animated portraits and audio can retry without reloading your run.
-- Favor uses your patron god's color and a five-point star; Essence uses its violet crystal color and a diamond consistently across the HUD and menus. Both HUD readouts use matching text sizes and alignment.
-- Regular Caverns enemies have 20% less base HP; Buried Ghouls have 40 base HP.
-- Hunger drains 20% more slowly to account for longer fights.
-- Guaranteed floor meals are placed on reachable tiles after room construction, with one meal per floor and a 45% chance of a second.
-- Earth-enchanted armor grants +1 armor plus 0.5 per Earth affinity point, with clearer Forge text.
-- The selected enchantment mote and active Forge tab now have a clear gold highlight.
-- Show touch pad controls the floating transparent pad in both Overlay and Classic, including tablets.
-- Mobile XP and Piety bars are slightly thicker.
-- Overlay shows a full food bar, Favor and Essence below it, and status icons beside the HP bar.
-- Classic UI places Essence and Favor side by side, without a Favor meter, and uses thicker XP and Piety bars.
-- Food status is always visible: Full in green, Hungry in amber and Starving in red, with a live hunger meter.
-- Classic UI is available again in Options under Desktop interface, with a windowed map, permanent log and room for all eight hotbar buttons. Small screens use Overlay.
-- The Portrait and bars size setting works again, and UI Theme is now a dropdown.
-- Water and poison barrel spills stay within a local 3-by-3 area. Fluid puzzle interactions are preserved.
-- Sleeping library guardians remain asleep until you enter their room.
-- Wobbles gifts and pranks now play a giggle with sparkles and a floating label. Gifts provide full healing, enhanced identified gear or more essence scaled by biome; pranks last four turns.
-- Animated portraits for all 16 race and gender combinations play two gentle idles, then a head turn and blink, independently of game turns. Taking damage triggers a brief flinch before returning to idle.
-- Water and poison barrels now use dedicated 128px artwork, with visible contents and distinct markings.
-- Rock Slime armor returns from 7 to 3, and regeneration returns from 3 to 2 HP per turn.
-- New title page with actual gameplay, clearer portraits for every race and gender, and larger portraits with readable level, rank and floor labels.
-- Revised puzzle and special rooms, rare encounters, libraries, storage rooms and map generation. Biome artwork preserves room mechanisms and routes to rewards.
-- Area effects and hazards are clearer. Chaos boss attacks and Prism Pylons use the same pulsing red warnings as other bosses.
-- The responsive HUD puts the wrapped log opposite the control pad and above the hotbar. Menu, Map and Explore share matching circles opposite the portrait. With a vertical phone hotbar, Inventory joins that row beside eight larger ability buttons. The map overlay is smaller and centered; Options is also available in the character tabs.
-- Bosses ignore pits. Ordinary enemies that fall through a pit survive and arrive on the next floor, without granting kill rewards.
-- Skeleton base HP is 32, up from 16. Other regular Crypt and Underdark enemies have 20% more base HP; Cavern enemies have 10% more base HP in addition to the earlier Cavern adjustment. Dungeon HP, bosses, minor summons and Chaos HP are unchanged.
-- Brutes, shamans and goblin archers deal 35% more damage on floor 3 and 50% more on floors 4–5. Floors 1–2 are unchanged. Crypt damage ramps from +20% on floor 6 to +35% on floor 10.
-- Enemy accuracy rises with depth, making lightly protected characters more vulnerable while keeping armor and evasion investment useful.
-- Crypt Wraiths act at normal speed. Grave Beetle and Grave Bloat clouds last one turn longer and deal one more damage per tick. Bone Archers poison, Shades chill and Necro-Acolytes frighten on damaging attacks, subject to immunity. Myconids and their variants face their movement and casting targets correctly.
-- At +3, Ring of Warding gives +20% resistance and Ring of Wizardry gives +20% maximum Mana and +10% spell damage. Ring of Striking gives +2 weapon damage and +2% crit chance at +0, rising to +5 damage and +5% crit at +3.
-- Vellum gains piety from Mana spent on invocations. Communion is instant and uses one status icon. Its Mana cost, Ward, duration and cooldown are unchanged.
-- Arcane Lance can target breakable objects. Damaging line and area spells also break props using their normal reactions. Frozen treasure still needs Fire.
-- Shadow clone melee attacks deal shadow damage. Combat damage, healing and clone health labels show whole numbers. Menu navigation and sheet tabs no longer show hover popups.
+- Expanded character animations, with weapon-specific punches, strikes, thrusts and bow shots. Equipment and god-specific holy-symbol artwork have been refreshed.
+- Retuned staff melee, Magic Missile and early enemy health and damage. Heavier Dungeon room encounters appear from floor 3, giving new builds a gentler opening.
+- More puzzles, special rooms and hidden discoveries, including the Offering Chamber, Greedy Vault, Funeral Bell, Silk Survivor and four rare once-per-biome encounters.
+- Updated elemental creatures, terrain, mushrooms, props and traps. Library shelves leave two clear rows between them, and lighting edges are slightly softer.
+- Vellum gains Arcane Lance, Mana Ward and Blink. Arcane Lance costs 5 Mana, reaches 5 tiles and has no cooldown; at rank 3, half your bonus Divine Power also improves Spell Power.
+- Sir Reginald supports melee builds with Lunge, a protective and regenerating Last Stand, Coward's Mark, a weapon beam and Perfect Counter.
+- Wobbles has more varied pranks and resource rewards. Favorite Toy unlocks at rank 3, converting pranks with a 5% chance per rank. Tempt Fate costs 40 Favor and can drop sigils, motes, rings and amulets nearby.
+- Revised dual elemental masteries, beam aiming and Upheaval walls. Lightning jumps reach enemies within 4 tiles and use animated electrical discharges.
+- Shrines favor eligible builds. Non-Cleric Dwarves are guaranteed Anvil and non-Cleric Gloomlings Murk somewhere on floors 1-4 in the first biome. New runs use this placement.
+- Positive Piety gains increase in the final biomes, helping late devotion catch up.
+- Tiny Spiderlings, Shroomlings and Rotlings no longer block ranged shots. Brood Carriers and Silk Weavers throw limited broods beside their target.
+- Mobile play requires landscape; turn your device sideways when the rotation prompt appears. Touch movement responds on press, supports delayed hold-to-move, and keeps pickup separate from Search.
+- Improved character framing, menu readability, artwork loading and introductory guidance. Floor entry waits for its destination artwork, and missing artwork can be retried.
+- Blind limits current sight to adjacent tiles. Cursed Mending stops HP regeneration without draining health.
