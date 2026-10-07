@@ -269,10 +269,15 @@ function querySceneArt(task){
       if(isWallLike(value))wallTile(task.x,task.y);
       else if(value!==CHASM)floorTile(task.x,task.y);
       tileSprite(task.x,task.y,value);
+      /* A disguised chest is not yet an actor. Its reveal sheet must be ready
+       * at floor entry, rather than first requested by the reveal frame. */
+      if(value===CHEST&&chestKind[idxOf(task.x,task.y)]==='mimic')mobSheet(MONSTERS.mimic.sprite);
       if(value===OPEN){var material=DOOR_ART[openDoorMaterial(task.x,task.y)]||DOOR_ART.wood;objArt('structures',material[0]);objArt('structures',material[1]);}
       if(value===STAIRS&&inDeep())deepArt('stairs-down-drow');
     }else if(task.kind==='prop'){
       name=value.artName||value.name;
+      var guardian=typeof puzzleGuardianSprite==='function'&&puzzleGuardianSprite(value);
+      if(guardian)mobSheet(guardian);
       if(value.name==='bones'||value.name==='bone-pile'){groundBoneArt(value.x,value.y);return;}
       objArt('props',name)||objArt('structures',name)||objArt('chests',name)||objArt('terrain',name);
       var packed=typeof packNameFor==='function'&&packNameFor(value);if(packed)packArt(packed);

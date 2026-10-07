@@ -1,9 +1,9 @@
 {
   "version": "Beta 1.6",
-  "built": "2026-10-07T00:48:55.410497+00:00",
-  "epoch": 1791334135,
-  "source": "Corrected player-facing Beta 1.6 notes; runtime 88d69340153df9b4dc2397cbb5c713fe977f9b4bd62588d612fc811c6dde4989",
+  "built": "2026-10-07T02:11:22.841936+00:00",
+  "epoch": 1791339082,
+  "source": "Prepare mimic and puzzle sentinel reveal artwork before floor entry; runtime a083fb15c661cccf368e3d3c3047aa6fcd12c71ae914d295760ca672478543ab",
   "candidate": true,
   "releaseState": "playtest",
-  "revision": "beta16-notes-20261007-004855"
+  "revision": "beta16-latent-art-20261007-021122"
 }

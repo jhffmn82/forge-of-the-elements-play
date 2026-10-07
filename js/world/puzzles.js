@@ -329,6 +329,10 @@ function drawTrap(f,px,py,alpha,now){
 
 }
 
+/* The dormant guardian and its awakened actor share one visual identity.
+ * Scene preparation can ask for it without spawning or revealing the enemy. */
+function puzzleGuardianSprite(prop){return prop&&prop.sentinel?'m-stoneling':null;}
+
 /* ---------------------------------------------------------------- the turn: rooms that act */
 
 function refreshBurningRoom(room){
@@ -363,7 +367,7 @@ function turnPuzzleHazards(context){ (floorMeta.puzzles||[]).forEach(refreshBurn
       room.puzzle.solved=true;
       var woke=props.filter(function(p){ return p.sentinel && roomAt(p.x,p.y)===room; });
       woke.forEach(function(p){
-        removeProp(p); var m=spawn('brute',p.x,p.y); m.name='Stone Sentinel';m.sentinelRoom=room.puzzle.door; m.maxhp=m.hp=40+floorNo*6; m.state='hunt'; m.base=Object.assign({},m.base,{armor:6, sprite:'m-stoneling', col:'#8C8C84'}); m.t=player.t;
+        removeProp(p); var m=spawn('brute',p.x,p.y); m.name='Stone Sentinel';m.sentinelRoom=room.puzzle.door; m.maxhp=m.hp=40+floorNo*6; m.state='hunt'; m.base=Object.assign({},m.base,{armor:6, sprite:puzzleGuardianSprite(p), col:'#8C8C84'}); m.t=player.t;
         burst(p.x,p.y,'earth',20,0.06);
       });
       SHAKE=8; log('<b>The stone sentinels wake!</b>','c-you'); sfx('golem-alert',{from:woke});
