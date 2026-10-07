@@ -100,7 +100,10 @@ function wobblesPassiveReward(){
 }
 function wobblesTeleportSpots(){
   var reachable=bfsFrom(player.x,player.y);
-  return safeWobbleSpots().filter(function(p){return reachable[idxOf(p.x,p.y)]>=0&&(p.x!==player.x||p.y!==player.y);});
+  var spots=safeWobbleSpots().filter(function(p){return reachable[idxOf(p.x,p.y)]>=0&&(p.x!==player.x||p.y!==player.y);});
+  var farthest=spots.reduce(function(n,p){return Math.max(n,dist(player,p));},0);
+  var minimum=Math.min(farthest,Math.max(8,Math.ceil(farthest*.65)));
+  return spots.filter(function(p){return dist(player,p)>=minimum;});
 }
 function wobblesSummonPlan(){
   var pool=[],preview=floorMeta.chaosPreview,region=null;
@@ -532,11 +535,11 @@ function resolveAmusement(){
  var mood=Math.max(0,Math.min(100,Number(player.amusement)||0)),odds=wobblesMoodOdds(mood),rank=godRank(),roll=rng();
  var prank=roll<odds.prank,converted=prank&&wobblesConvertPrank(rank);
  if(prank&&!converted){
-  player.amusement=Math.min(100,mood+50);
+  player.amusement=50;
   sfx('wobbles-giggle');sparkleFx(player.x,player.y,'magic',24);floatText(player.x,player.y,'Prank!','magic');
   wobblesPassivePrank();
  }else if(converted||roll<odds.prank+odds.reward){
-  player.amusement=Math.max(0,mood-50);
+  player.amusement=50;
   sfx('wobbles-giggle');sparkleFx(player.x,player.y,'magic',24);floatText(player.x,player.y,'Gift!','magic');
   wobblesPassiveReward();
  }

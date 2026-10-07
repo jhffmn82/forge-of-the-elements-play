@@ -385,7 +385,7 @@ function generateOnce(seed){
     if(i===0&&swordStoneFloor()===floorNo)chosen=['sword-in-stone',2,25,1];
     var rareKind=i===0?uniqueRareKind():null;if(rareKind)chosen=[rareKind,1,25,1];
     if(i===0&&RUN.sandbox&&globalThis.FoteRoomPreview&&globalThis.FoteRoomPreview.type==='special')chosen=[globalThis.FoteRoomPreview.kind,1,25,1];
-    var room=freeRoom(chosen[2],chosen[0]==='greedy-vault'?function(r){return !r.cave&&r.w===r.h;}:(chosen[0]==='ritual'||chosen[0]==='watchpost'||chosen[0]==='dark-wizard-library')?function(r){return !r.region;}:null);
+    var room=freeRoom(chosen[2],chosen[0]==='greedy-vault'?function(r){return !r.cave&&r.w===r.h&&r.w>=7;}:(chosen[0]==='ritual'||chosen[0]==='watchpost'||chosen[0]==='dark-wizard-library')?function(r){return !r.region;}:null);
     if(!room) continue;
     buildSpecial(chosen[0], room);
     if(zooFamily(chosen[0])) zooDone=true;
@@ -1280,6 +1280,8 @@ function buildBoneVault(r){
   cells.forEach(function(c){if(at(c.x,c.y)===FLOOR)setG(c.x,c.y,G_BONES);plan.reserved.add(idxOf(c.x,c.y));});plan.publish();
 }
 function buildGreedyVault(r){
+  // Two chest islands need a surrounding chasm moat plus an intact perimeter.
+  if(r.w<7||r.h<7)return;
   var plan=specialRoomPlan(r),cells=plan.cells.filter(function(c){return freeCell(c.x,c.y);}).sort(function(a,b){return plan.depth(b)-plan.depth(a);});
   if(cells.length<8)return;
   var first={x:r.cx-1,y:r.cy},second={x:r.cx+1,y:r.cy};if(!freeCell(first.x,first.y)||!freeCell(second.x,second.y))return;

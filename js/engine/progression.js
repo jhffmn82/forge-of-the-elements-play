@@ -26,8 +26,8 @@
     giftPools:Object.freeze({passive:freezePool([{kind:'sigil',weight:1},{kind:'mote',weight:1},{kind:'essence',weight:1}]),
       greater:freezePool([{kind:'mote',weight:50,count:2},{kind:'sigil',weight:25},{kind:'ring',weight:12.5},{kind:'amulet',weight:12.5}]),
       invoke:freezePool([{kind:'mote',weight:50},{kind:'essence',weight:25},{kind:'ring',weight:12.5},{kind:'amulet',weight:12.5}])}),
-    pranks:Object.freeze([{kind:'food',weight:25},{kind:'transmute',weight:25},{kind:'teleport',weight:20},{kind:'summon',weight:15},
-      {kind:'blind',weight:5,turns:6},{kind:'chill',weight:5,turns:6},{kind:'root',weight:5,turns:6}].map(Object.freeze))});
+    pranks:Object.freeze([{kind:'food',weight:5},{kind:'transmute',weight:5},{kind:'teleport',weight:40},{kind:'summon',weight:40},
+      {kind:'blind',weight:4,turns:6},{kind:'chill',weight:3,turns:6},{kind:'root',weight:3,turns:6}].map(Object.freeze))});
   function wobblesRules(){return wobblesPolicy;}
   function wobblesResources(view){
     function chance(current,maximum){return maximum>0&&current<maximum*wobblesPolicy.resourceThreshold?Math.max(0,Math.min(1,1-current/maximum)):0;}
