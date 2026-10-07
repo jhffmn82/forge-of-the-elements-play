@@ -188,7 +188,7 @@ function placeSigilRoom(kind){
     });
     var lc=cells.filter(function(p){ return freeCell(p.x,p.y); });
     libraryRewards('forbidden',null).forEach(function(item,n){var c=lc[Math.min(n,lc.length-1)]||door;item.x=c.x;item.y=c.y;items.push(item);});
-    edgeCells(room).filter(function(p){ return freeCell(p.x,p.y) && Math.abs(p.x-door.x)+Math.abs(p.y-door.y)>2; }).slice(0,4).forEach(function(p){if(puzzlePropKeepsRewardsOpen(room,p))addProp(p.x,p.y,'bookshelf',{keep:true});});
+    edgeCells(room).filter(function(p){ return (p.y-room.y)%3===0 && freeCell(p.x,p.y) && Math.abs(p.x-door.x)+Math.abs(p.y-door.y)>2; }).sort(function(a,b){return a.y-b.y||a.x-b.x;}).slice(0,4).forEach(function(p){if(puzzlePropKeepsRewardsOpen(room,p))addProp(p.x,p.y,'bookshelf',{keep:true});});
 
   }
   if(kind==='baths'||room.burning){

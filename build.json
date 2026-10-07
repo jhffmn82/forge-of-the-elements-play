@@ -1,9 +1,9 @@
 {
   "version": "Beta 1.6",
-  "built": "2026-10-06T21:37:01.270066+00:00",
-  "epoch": 1791322621,
-  "source": "Call-scoped geometry queries and bounded loot-image cache correction; runtime b76d1821cda5f0980433863a128e00edcb7d865e86d8dd063e152a80cffb1ed3",
+  "built": "2026-10-07T00:35:08.434024+00:00",
+  "epoch": 1791333308,
+  "source": "Map library rows, lighting and first-biome shrine followup; runtime de7cf0d80ba26ccc6d80a898ce12cf63d8855af6a345deabc05844cf58893182",
   "candidate": true,
   "releaseState": "playtest",
-  "revision": "beta16-geometry-20261006-213701"
+  "revision": "beta16-map-20261007-003508"
 }

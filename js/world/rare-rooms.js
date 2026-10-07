@@ -90,7 +90,7 @@ function buildUniqueRareRoom(kind,r){
   var prize=cells.shift();if(prize){setT(prize.x,prize.y,CHEST);chestKind[idxOf(prize.x,prize.y)]='chest-gold';r.enhancedChest={x:prize.x,y:prize.y};plan.reserve(prize);}
   r.residentPosts=cells.slice().reverse().filter(function(c){return !nearDoor(c.x,c.y);}).slice(0,3);
   r.residentPosts.forEach(function(c){plan.reserve(c);});
-  var shelfCells=cells.filter(function(c){return !plan.reserved.has(idxOf(c.x,c.y));});
+  var shelfCells=cells.filter(function(c){return (c.y-r.y)%3===0&&!plan.reserved.has(idxOf(c.x,c.y));}).sort(function(a,b){return a.y-b.y||a.x-b.x;});
   for(var n=0;n<Math.min(6,shelfCells.length);n++)plan.furniture(shelfCells[n],n%3===2?'pillar':'bookshelf',{keep:true,pillar:n%3===2});
  }
  cells.forEach(function(c){if(!propAt(c.x,c.y))plan.reserved.add(idxOf(c.x,c.y));});plan.publish();

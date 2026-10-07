@@ -5,7 +5,7 @@
  */
 var LEVEL_LIGHT_VALUES={wall_light_depth:1.15,wall_mass_floor:0.1,light_falloff:1.6,
  wall_bleed_rock:0.16,wall_bleed:0.45,crystal_wall_falloff:2.2,light_ceiling:0.3,
- bloom_threshold:1.1,bloom_gain:110,light_blur:0.38,bloom_alpha:0.3};
+ bloom_threshold:1.1,bloom_gain:110,light_blur:0.45,bloom_alpha:0.3};
 var LEVEL_LIGHT_TUNE={n:function(k){if(!(k in LEVEL_LIGHT_VALUES))throw Error('Missing light value '+k);return LEVEL_LIGHT_VALUES[k];},has:function(k){return k in LEVEL_LIGHT_VALUES;}};
 function levelKnown(x,y){return inb(x,y) && (revealAll || vis[idxOf(x,y)] || seen[idxOf(x,y)]);}
 function levelVisible(x,y){return inb(x,y) && (revealAll || vis[idxOf(x,y)]);}

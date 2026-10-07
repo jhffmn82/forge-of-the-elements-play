@@ -229,13 +229,13 @@ function newRunState(seed, choice){
   var deal=godDeal(choice);
   RUN.shrineGod = deal[0];                        /* the first card of the four-god deal */
   if(RUN.shrineFloor===RUN.forgeFloor && r()<0.5) RUN.shrineFloor = RUN.forgeFloor===3 ? 2 : 1;
-  // Non-Cleric Gloomlings meet Murk and Dwarves meet Anvil on floor one.
+  // Non-Cleric Gloomlings meet Murk and Dwarves meet Anvil in biome one.
   // Move the card rather than repeating it in a later biome; other planned
   // floors and mote RNG keep their original values. Existing saves are untouched.
   var firstGod=choice&&choice.cls!=='cleric'&&({gloomling:'murk',dwarf:'anvil'})[choice.race];
   if(firstGod){
     var index=deal.indexOf(firstGod);if(index>0)deal[index]=deal[0];
-    deal[0]=firstGod;RUN.shrineGod=firstGod;RUN.shrineFloor=1;
+    deal[0]=firstGod;RUN.shrineGod=firstGod;
   }
   return RUN;
 }
@@ -956,17 +956,11 @@ function buildLibraryRoom(r){
   if(rng()<.4)rewards.push({kind:'mote',el:element||pick(spec.motes)});
   rewards.forEach(function(it,n){var c=prizes[Math.min(n,prizes.length-1)];it.x=c.x;it.y=c.y;items.push(it);reserve(c);});
   r.storageAisle=Array.from(reserved);
-  // Subjects have different shelf arrangements around the reserved reading area.
-  var stock=cells.filter(function(c){if(reserved.has(idxOf(c.x,c.y))||nearDoor(c.x,c.y))return false;
-    if(theme==='holy')return c.x===r.x||c.x===r.x+r.w-1;
-    if(theme==='explorer')return (c.x-r.x)%3===0;
-    if(theme==='forbidden')return c.y< hub.y&&(c.x-r.x)%2===0||c.y===r.y+r.h-1;
-    return c.y===r.y||c.y===r.y+r.h-1;
-  });
+  // Horizontal shelf rows leave two complete floor rows between them.
+  var stock=cells.filter(function(c){return (c.y-r.y)%3===0&&!reserved.has(idxOf(c.x,c.y))&&!nearDoor(c.x,c.y);});
   stock.sort(function(a,b){return a.y-b.y||a.x-b.x;});
   var shelfTarget=Math.min(10,Math.max(4,Math.floor((r.w+r.h)/2))),shelves=0;
-  var fallback=cells.filter(function(c){return !reserved.has(idxOf(c.x,c.y))&&!nearDoor(c.x,c.y)&&!stock.some(function(p){return p.x===c.x&&p.y===c.y;});});
-  stock.concat(fallback).forEach(function(c){if(shelves<shelfTarget&&freeCell(c.x,c.y)&&roomFurnitureKeepsOpen(r,c)&&addProp(c.x,c.y,'bookshelf',{keep:true}))shelves++;});
+  stock.forEach(function(c){if(shelves<shelfTarget&&freeCell(c.x,c.y)&&roomFurnitureKeepsOpen(r,c)&&addProp(c.x,c.y,'bookshelf',{keep:true}))shelves++;});
   var desk=cells.find(function(c){return !reserved.has(idxOf(c.x,c.y))&&freeCell(c.x,c.y)&&dist(c,hub)<=3;});if(desk)addProp(desk.x,desk.y,'table-candle');
 }
 
