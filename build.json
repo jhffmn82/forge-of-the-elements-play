@@ -1,9 +1,9 @@
 {
   "version": "Beta 1.6",
-  "built": "2026-10-08T19:41:56.734452+00:00",
-  "epoch": 1791488516,
-  "source": "Neutral attribute colors and selected Dwarf Tourist creation idle/beer preview; runtime 81b5ce84d5b01b0744bc7e2a842f471307b6ed270404bb61686ee787cf3f501c",
+  "built": "2026-10-08T20:33:02.737696+00:00",
+  "epoch": 1791491582,
+  "source": "Matron ritual warning accumulation, stale Unmaker tail and malformed retained HUD shell hotfix; runtime d78c5657d2524a8fe8ff294310f2734b4f335592f706e9688eeca6bb540dd023",
   "candidate": true,
   "releaseState": "playtest",
-  "revision": "beta16-neutral-attributes-preview-20261008-194156"
+  "revision": "beta16-matron-warning-hotfix-20261008-203302"
 }

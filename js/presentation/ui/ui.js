@@ -374,9 +374,15 @@ function bossBar(){
   if(!b){ if(el) el.style.display='none'; return; }
   if(!el){ el=document.createElement('div'); el.id='bossbar'; el.className='bossbar'; $('map').appendChild(el); }
   el.style.display='block';
-  var warning=b.windup&&(b.windup.unmaker?{cleave:'GREAT CLEAVE',rupture:'RUPTURE',beam:'PRISM LANCE',ring:'INVERSION PULSE',pulse:'DISCORD PULSE '+b.windup.beat+'/2'}[b.windup.kind]:{slam:'GROUND SLAM in '+b.windup.due,ring:'SHOCKWAVE in '+b.windup.due,charge:'CHARGE!'}[b.windup.kind]);
-  var intent = b.dazed>0 ? ' &middot; <span style="color:#E8D27A">DAZED</span>' : warning ? ' &middot; <span style="color:#FF7A5A">'+warning+'</span>' : '';
-  if(!el.querySelector('.bb'))el.innerHTML='<span class="boss-label"></span><div class="bb"><i></i></div>';
+  var ritual=typeof matronBossWarning==='function'?matronBossWarning(b):'';
+  var warning=ritual||b.windup&&(b.windup.unmaker?{cleave:'GREAT CLEAVE',rupture:'RUPTURE',beam:'PRISM LANCE',ring:'INVERSION PULSE',pulse:'DISCORD PULSE '+b.windup.beat+'/2'}[b.windup.kind]:{slam:'GROUND SLAM in '+b.windup.due,ring:'SHOCKWAVE in '+b.windup.due,charge:'CHARGE!'}[b.windup.kind]);
+  var intent = b.dazed>0 ? ' &middot; <span style="color:#E8D27A">DAZED</span>' : warning ? ' &middot; <span style="color:'+(ritual?'#FF5A6A':'#FF7A5A')+'">'+warning+'</span>' : '';
+  // Take ownership once, including bars left by the old append-only Matron
+  // wrapper. Its warning spans lived outside .boss-label and must be removed.
+  if(el._bossShellVersion!==1){
+    el.innerHTML='<span class="boss-label"></span><div class="bb"><i></i></div>';
+    el._bossShellVersion=1;el._bossLabel=null;
+  }
   var label=b.name+intent;if(el._bossLabel!==label){el.querySelector('.boss-label').innerHTML=label;el._bossLabel=label;}
   setHudStyle(el.querySelector('.bb i'),'width',Math.max(0,Math.round(b.hp/b.maxhp*100))+'%');
 }

@@ -583,15 +583,14 @@ function matronAct(e){
 }
 
 
-/* the boss bar says what she is channelling and how close you are to breaking it */
-var _bossBarDeep = bossBar;
-bossBar = function(){
-  _bossBarDeep();
-  var M=matronState(), e=M && matronEnt(), el=$('bossbar');
-  if(!M || !M.rit || !e || !el || el.style.display==='none') return;
+/* Read-only current ritual intent. The shared HUD owns its one live label;
+   appending to retained boss-bar HTML would accumulate every earlier warning. */
+function matronBossWarning(e){
+  var M=matronState();
+  if(!M || !M.rit || !e || e.id!==M.id || e.hp<=0) return '';
   var nm=M.rit.kind==='tithe' ? 'BLOOD TITHE' : 'BROOD CALL', left=Math.max(0, M.rit.at-turn);
-  el.innerHTML=el.innerHTML.replace('<div class="bb">', ' &middot; <span style="color:#FF5A6A">'+nm+' in '+left+' &middot; break it '+Math.max(0,M.rit.hp0-e.hp)+'/'+M.rit.need+'</span><div class="bb">');
-};
+  return nm+' in '+left+' · break it '+Math.max(0,M.rit.hp0-e.hp)+'/'+M.rit.need;
+}
 /* her death: the circles go dark, her brood scatters, and the hall's exit is there to take her core to */
 function deepEnsureExit(e){
   var ex=floorMeta.exitAt;
