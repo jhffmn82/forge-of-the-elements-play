@@ -107,7 +107,11 @@ function gearName(item){
     if(AMULETS[item.amulet])return item.name+' ('+['I','II','III'][Math.max(0,Math.min(2,(item.level||1)-1))]+')'+(item.cursed?' (cursed)':'');
     return item.name+(item.plus?' +'+item.plus:'')+(item.cursed?' (cursed)':'');
   }
-  var key=itemKey(Object.assign({},item)),prefix=key?(TIER_NAME[tierNum(item)]||''):(item.tier&&item.tier!=='Rusty'?item.tier:'');
+  var key=itemKey(Object.assign({},item)),prefix='';
+  // Transmutation retains quality on Cameras and shirts too. Their lack of
+  // scaling stats must not turn a numeric tier into an apparent item count.
+  if(key||typeof item.tier==='number'&&item.tier!==0)prefix=TIER_NAME[tierNum(item)]||'';
+  else if(typeof item.tier==='string'&&item.tier!=='Rusty')prefix=item.tier;
   var name=(prefix?prefix+' ':'')+item.name;
   if(item.unid)return name+' ?';
   if(item.plus)name+=item.plus<0?' −'+Math.abs(item.plus):' +'+item.plus;

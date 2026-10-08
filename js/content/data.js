@@ -69,7 +69,7 @@ var OFFHANDS = {
   /* 2026-09-17: there is no separate off-hand dagger any more. Any light one-handed weapon goes in the off
      hand (see equipFromBag in systems.js), so a plain Dagger from WEAPONS is what the kits hand out and
      what drops. Old saves holding the retired item still work: itemKey resolves it to 'dagger' by name. */
-  camera:  {name:'Camera', block:0, note:'takes a lovely picture; does nothing else', icon:'item-holy', kind:'off', joke:true}
+  camera:  {name:'Camera', block:0, note:'takes a lovely picture; does nothing else', icon:'item-camera', kind:'off', joke:true}
 };
 function clone(o){ return JSON.parse(JSON.stringify(o)); }
 

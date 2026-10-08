@@ -35,7 +35,7 @@ function saveApply(data){
     restoreRandom:function(document,state){rng=mulberry32(Number.isInteger(document.rngState)?document.rngState:((state.worldSeed||1)^(state.turn*2654435761))>>>0);},
     migrations:[function(){recoveredInterruptedDeath=repairInterruptedPlayerDeath();},restoreRunReferences,removeBossFloorForges,ensureRunEarnings,migrateXpCurve,repairCoreProgress,repairBossCore,repairWallMemorials,repairDeadEndDoors,
       refreshCavernResidents,refreshEncounterTuning,repairSavedEffectClocks,
-      saveMigrateSigils,sigilNamesRefresh,ensureRuneLooks,repairTouristShirts,migrateRangedSlot,hideRetiredSwapSlots,restorePuzzleState,
+      saveMigrateSigils,sigilNamesRefresh,ensureRuneLooks,repairTouristGear,migrateRangedSlot,hideRetiredSwapSlots,restorePuzzleState,
       function(){if(typeof FoteChaosCampaign!=='undefined')FoteChaosCampaign.restore();if(typeof FoteUnmakerPreview!=='undefined')FoteUnmakerPreview.repairGates();if(typeof FoteUnmakerEncounter!=='undefined')FoteUnmakerEncounter.restore();},repairStairApproachTraps],
     recompute:function(){derive(player);}
   });
@@ -119,10 +119,17 @@ function deleteRunSaves(){
 function savedItemLists(){
   return [items||[]].concat(Object.keys(RUN.floorStash||{}).map(function(key){return RUN.floorStash[key].items||[];}),[RUN.planeStash&&RUN.planeStash.items||[],RUN.chaosEntryStash&&RUN.chaosEntryStash.items||[]]);
 }
-function repairTouristShirts(){
+function repairTouristGear(){
   var activeItems=new Set((items||[]).map(function(entry){return entry.it;})),appearanceChanged=false;
-  function repair(it){if(it&&(it.name==='Loud Shirt'||it.name==='Hawaiian Shirt'||it.key==='shirt')){if(activeItems.has(it)&&it.icon!==ARMORS.shirt.icon)appearanceChanged=true;it.name=ARMORS.shirt.name;it.icon=ARMORS.shirt.icon;it.note=ARMORS.shirt.note;}}
-  repair(player.armorItem);(player.bag||[]).forEach(function(b){repair(b.data);});
+  function repair(it){
+    if(!it)return;
+    var base=it.name==='Loud Shirt'||it.name==='Hawaiian Shirt'||it.key==='shirt'?ARMORS.shirt:
+      it.name==='Camera'||it.key==='camera'?OFFHANDS.camera:null;
+    if(!base)return;
+    if(activeItems.has(it)&&it.icon!==base.icon)appearanceChanged=true;
+    it.name=base.name;it.icon=base.icon;it.note=base.note;
+  }
+  repair(player.armorItem);repair(player.off);(player.bag||[]).forEach(function(b){repair(b.data);});
   savedItemLists().forEach(function(list){list.forEach(function(it){repair(it.it);});});
   refreshBagNames();
   if(appearanceChanged)FoteContent.appearanceChanged(floorMeta);

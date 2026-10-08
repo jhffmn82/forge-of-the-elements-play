@@ -38,7 +38,8 @@
   /* Old save aliases only. Dungeon vermin remain unchanged on floors 1-5. */
   M.caverat       = Object.assign({}, M.rat, {name:'Cave Rat',hp:42,dmg:[6,9],acc:66,eva:24,speed:135,xp:30,art:.85,band:[11,13],w:0});
   M.cavebat       = Object.assign({}, M.bat, {name:'Grotto Bat',hp:33,dmg:[4,6],acc:66,eva:28,speed:130,xp:28,art:.85,band:[11,12], w:0});
-  M.caveslime     = Object.assign({}, M.slime, {name:'Basalt Slime',hp:79,dmg:[7,10],acc:62,armor:5,xp:38,art:1,band:[11,15], w:10,
+  /* Basalt keeps its craggy crystal-backed art; the Dungeon Rock Slime has a separate new sheet. */
+  M.caveslime     = Object.assign({}, M.slime, {name:'Basalt Slime',sprite:'m-slime',artLeft:false,hp:79,dmg:[7,10],acc:62,armor:5,xp:38,art:1,band:[11,15], w:10,
                      hint:'Splits when wounded. Spits roots.'});
   delete M.caverat.biome; delete M.cavebat.biome; delete M.caveslime.biome;
   /* The Deep Maw: tuned by hand for floor 15, so no floor curve (fixed, like the plane elites) */

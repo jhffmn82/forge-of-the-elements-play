@@ -1,9 +1,9 @@
 {
   "version": "Beta 1.6",
-  "built": "2026-10-08T13:23:34.617721+00:00",
-  "epoch": 1791465814,
-  "source": "Approved full-height title footage centered at two-thirds width; preceding approved Play runtime 32620f78ede791fe60fb70cbdbae2d6b039a39a513a1607b21b4cfb36900848e",
+  "built": "2026-10-08T15:01:08.661745+00:00",
+  "epoch": 1791471668,
+  "source": "Approved Camera artwork/name/save repair, Basalt Slime art, native map cards and neutral HUD; runtime 402426b70fef87c0c95857471514cd4b708c8be8d2c1383417ce3b663fb81413",
   "candidate": true,
   "releaseState": "playtest",
-  "revision": "beta16-title-framing-20261008-132334"
+  "revision": "beta16-queued-fixes-20261008-150108"
 }

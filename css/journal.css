@@ -17,6 +17,21 @@ body.fote-journal.fote-study.study-minimal #app #bars .bar span {
 }
 body.fote-journal.fote-study.study-minimal #app #hpFill {background:linear-gradient(180deg,#a34736,#783125);box-shadow:inset 0 1px #da897438;}
 body.fote-journal.fote-study.study-minimal #app #mpFill {background:linear-gradient(180deg,#507788,#345564);box-shadow:inset 0 1px #a0ccdd30;}
+/* Keep the Ember vitals trim neutral so the resource colors read cleanly.
+ * These tokens belong only to the joined HUD; headings and status inks keep
+ * their meaning, and the portrait still follows background opacity. */
+body.fote-journal.fote-study.study-minimal[data-ui-theme=ember] #app #studyHud {
+ --ui-panel:#151719;--ui-log-tint:#111315;--ui-edge:#393d41;
+ --ui-frame-line:#393d41;--ui-frame-inner:#0d0f11c7;
+ --ui-ink:#edece8;--ui-bar-ink:#f2f2ef;--ui-bar-shadow:0 1px 1px #0009;
+ --ui-log-tint:color-mix(in srgb,#111315 var(--ui-background-percent,100%),transparent);
+}
+body.fote-journal.fote-study.study-minimal[data-ui-theme=ember] #app #hpFill {background:linear-gradient(180deg,#ab3f3f,#812c31);box-shadow:inset 0 1px #ea929230;}
+body.fote-journal.fote-study.study-minimal[data-ui-theme=ember] #app #mpFill {background:linear-gradient(180deg,#326f96,#254e72);box-shadow:inset 0 1px #99d4ee30;}
+body.fote-journal.fote-study.study-minimal[data-ui-theme=ember] #app #bars .bar .l {color:var(--ui-bar-ink);}
+body.fote-journal.fote-study.study-minimal[data-ui-theme=ember] #app #studyHunger .study-hunger-track {background:#111315;}
+body.fote-journal.fote-study.study-minimal[data-ui-theme=ember] #app #studyPietyBar {background:#111315c9;}
+body.fote-journal.fote-study.study-minimal[data-ui-theme=ember] #app :is(#studyLevel,#hud2 .study-favor) {color:#e2e3e1;}
 body.fote-journal.fote-study.study-minimal #app #studyRecentLog {
  text-align:left;
  font-family:var(--journal);font-weight:400;

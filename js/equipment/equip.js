@@ -209,7 +209,7 @@ function heldTipAngle(style, hand, side){
    picture, 'holy-<god>': held-holy-<god> in the hand (heldKeyOf), item-holy-<god> in the worn slot (sheets.js
    wornIconName). It is worked out from the holder's god each time it is drawn, so a change of faith shows at once, an
    old save needs nothing and nothing is stored on the item. A Shadow Clone keeps the god it was cast under. Null: no
-   god (the plain disc), or not a Holy Symbol (the Camera shares its icon and never changes). */
+   god (the plain disc), or not a Holy Symbol (joke gear never adopts a god's symbol). */
 function holySymbolOf(it, who){
   var god=who && (who.god || (who.cloneStats && who.cloneStats.statModel && who.cloneStats.statModel.god));
   return god && it && !it.joke && it.icon==='item-holy' ? 'holy-'+god : null;

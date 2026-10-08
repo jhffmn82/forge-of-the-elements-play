@@ -50,6 +50,7 @@ function toggleAutomap(force){
   drawAutomap();
   if(AUTOMAP_ON&&!wasOn){var first=landmarks&&landmarks.firstChild;if(first&&first.focus)first.focus({preventScroll:true});}
   else if(!AUTOMAP_ON&&wasOn){
+    hideCard();
     var restore=AUTOMAP_RETURN_FOCUS&&AUTOMAP_RETURN_FOCUS.isConnected&&AUTOMAP_RETURN_FOCUS!==document.body?AUTOMAP_RETURN_FOCUS:b;
     if(restore&&restore.focus)restore.focus({preventScroll:true});
     var active=document.activeElement;
@@ -92,6 +93,10 @@ function automapLandmark(x,y,t){
 function automapLandmarkKnown(p){
   for(var y=p.y;y<p.y+p.h;y++)for(var x=p.x;x<p.x+p.w;x++)if(inb(x,y)&&automapKnown(idxOf(x,y)))return true;
   return false;
+}
+function automapLandmarkCard(p){
+  if(!AUTOMAP_ON||!p||p.floor!==floorMeta||p.map!==map||!automapLandmarkKnown(p))return '';
+  return '<div class="nm">'+(p.label||AUTOMAP_SYMBOLS[p.kind].label)+'</div><div class="hint">Select to walk nearby.</div>';
 }
 /* Destination clicks only walk. The existing safe destination planner avoids
    traps, hazards and intermediate portals; the ordinary travel owner retains
@@ -178,6 +183,7 @@ function syncAutomapLandmarks(points,frame,W,H,g){
   var size=typeof matchMedia==='function'&&matchMedia('(pointer:coarse)').matches?44:36;
   var state=AUTOMAP_LANDMARK_STATE,key=[W,H,size,frame.cell,frame.ox,frame.oy].join(':')+'|'+points.map(function(p){return p.id;}).join('|');
   if(AUTOMAP_LAYOUT_DIRTY||state.floor!==floorMeta||state.map!==map||state.key!==key){
+    if(state.floor!==floorMeta||state.map!==map)hideCard();
     var blocked=automapBlockedAreas(W,H);positionAutomapHint(W,H,blocked);
     AUTOMAP_LAYOUT_DIRTY=false;state.floor=floorMeta;state.map=map;state.key=key;state.placed=automapPlaceLandmarks(points,frame,W,H,size,blocked);
     var kept={};
@@ -186,13 +192,19 @@ function syncAutomapLandmarks(points,frame,W,H,g){
       if(!button){
         button=document.createElement('button');button.type='button';button.setAttribute('data-game-ui','true');
         button.innerHTML='<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="'+art.path+'"/></svg>';
-        button.onclick=function(ev){ev.preventDefault();ev.stopPropagation();automapWalkTo(this._landmark);};host.appendChild(button);
+        hoverCard(button,function(){return automapLandmarkCard(button._landmark);});
+        button.addEventListener('focus',function(){
+          if(document.body.classList.contains('touch'))return;
+          var r=this.getBoundingClientRect();showCard(automapLandmarkCard(this._landmark),{clientX:r.left,clientY:r.bottom,isTrusted:false});
+        });
+        button.addEventListener('blur',hideCard);
+        button.onclick=function(ev){ev.preventDefault();ev.stopPropagation();hideCard();automapWalkTo(this._landmark);};host.appendChild(button);
       }
       p.floor=floorMeta;p.map=map;button._landmark=p;
-      button.setAttribute('aria-label','Walk to '+(p.label||art.label));button.title='Walk to '+(p.label||art.label);
+      button.setAttribute('aria-label','Walk to '+(p.label||art.label));button.setAttribute('aria-describedby','dtip');button.removeAttribute('title');
       button.style.color=art.color;button.style.left=(at.cx-size/2)+'px';button.style.top=(at.cy-size/2)+'px';kept[p.id]=button;
     });
-    Object.keys(state.buttons).forEach(function(id){if(!kept[id])state.buttons[id].remove();});state.buttons=kept;
+    Object.keys(state.buttons).forEach(function(id){if(!kept[id]){hideCard();state.buttons[id].remove();}});state.buttons=kept;
   }
   g.save();g.strokeStyle='rgba(235,213,170,.75)';g.lineWidth=1;
   state.placed.forEach(function(p){if(Math.hypot(p.cx-p.ax,p.cy-p.ay)<3)return;g.beginPath();g.moveTo(p.ax,p.ay);g.lineTo(p.cx,p.cy);g.stroke();g.fillStyle='#EBD5AA';g.fillRect(p.ax-1,p.ay-1,2,2);});g.restore();
