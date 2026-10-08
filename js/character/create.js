@@ -112,6 +112,79 @@ function statsFor(c){
   for(var k in s){ s[k]+= (rm[k]||0) + (cm[k]||0) + (c.race==='human'?1:0); }
   return s;
 }
+/* The selected male Dwarf Tourist showcases his authored idle and beer on
+ * creation only, including with the starting Camera. This private presentation
+ * clock never changes the kit actor or the dungeon's player-only beer rules. */
+var CREATION_PREVIEW=null;
+function stopCreationPreview(){
+  var p=CREATION_PREVIEW;if(!p)return;
+  CREATION_PREVIEW=null;if(p.frame!==null)cancelAnimationFrame(p.frame);
+  p.active=false;p.frame=null;
+  document.removeEventListener('visibilitychange',p.visibility);
+  p.intersection.disconnect();p.mutation.disconnect();p.resize.disconnect();
+}
+function startCreationPreview(host,size,who){
+  stopCreationPreview();
+  var look=castLookFor(who.look,who.god,who.cls);
+  if(look!=='dwarf-m-tourist'||!host||typeof requestAnimationFrame!=='function'||typeof cancelAnimationFrame!=='function'||
+    typeof IntersectionObserver!=='function'||typeof MutationObserver!=='function'||typeof ResizeObserver!=='function')return;
+  var p=CREATION_PREVIEW={host:host,actor:who,active:true,frame:null,elapsed:0,last:null,
+    inView:false,sheet:null,canvas:null,clip:'static',frameKey:'',reduced:false};
+  function owns(){return CREATION_PREVIEW===p&&host.isConnected&&$('bigPort')===host&&$('create').classList.contains('on');}
+  function queue(){if(owns()&&p.sheet&&!document.hidden&&p.inView&&p.frame===null)p.frame=requestAnimationFrame(tick);}
+  function paint(fr){
+    var m=p.sheet.m,S=size||150,d=window.devicePixelRatio||1;
+    if(host.clientWidth>0)S=Math.min(S,host.clientWidth/(m.cell*1.1/m.stand));
+    if(host.clientHeight>0)S=Math.min(S,host.clientHeight/1.31);
+    var w=m.cell*S*1.1/m.stand,pad=S*.06,c=p.canvas;
+    c.width=Math.round(w*d);c.height=Math.round((S*1.25+pad)*d);
+    c.style.width=c.width/d+'px';c.style.height=c.height/d+'px';
+    var g=c.getContext('2d');g.setTransform(d,0,0,d,0,0);
+    g.imageSmoothingEnabled=spriteSheetSmoothing(p.sheet,w/m.cell);
+    drawCastLayers(who,p.sheet,fr,(c.width/d-w)/2,c.height/d-pad-w+S*.02,w,w,g);
+  }
+  function tick(now){
+    p.frame=null;
+    if(!owns()){if(CREATION_PREVIEW===p)stopCreationPreview();return;}
+    if(document.hidden||!p.inView){p.last=null;return;}
+    if(ANIM.reduce){
+      if(!p.reduced){paintDoll(host,size,who);p.clip='static';p.frameKey='';p.reduced=true;}
+      p.last=null;queue();return;
+    }
+    if(p.reduced){cancelStaticArtPaint(host);host.replaceChildren(p.canvas);p.reduced=false;}
+    if(p.last!==null)p.elapsed+=now-p.last;
+    p.last=now;
+    var m=p.sheet.m,id=m.clips.idle2,wait=id.frames*CLIP_MS.idle*(m.clips.beer.after||10),fr;
+    if(p.elapsed>=wait){
+      fr=beerPlayFrame(m,p.elapsed-wait);
+      if(fr.after!==undefined){p.elapsed=fr.after;fr=null;}
+    }
+    if(!fr)fr={sx:(Math.floor(p.elapsed/CLIP_MS.idle)%id.frames)*m.cell,sy:id.row*m.cell,add:'idle2'};
+    p.clip=fr.add;
+    var key=fr.sx+':'+fr.sy;
+    if(key!==p.frameKey){p.frameKey=key;paint(fr);}
+    queue();
+  }
+  p.visibility=function(){
+    p.last=null;if(document.hidden&&p.frame!==null){cancelAnimationFrame(p.frame);p.frame=null;}else queue();
+  };
+  document.addEventListener('visibilitychange',p.visibility);
+  p.intersection=new IntersectionObserver(function(entries){
+    p.inView=entries[0].isIntersecting;p.last=null;
+    if(!p.inView&&p.frame!==null){cancelAnimationFrame(p.frame);p.frame=null;}else queue();
+  });p.intersection.observe(host);
+  p.mutation=new MutationObserver(function(){if(!owns()&&CREATION_PREVIEW===p)stopCreationPreview();});
+  p.mutation.observe($('create'),{attributes:true,attributeFilter:['class'],childList:true,subtree:true});
+  p.resize=new ResizeObserver(function(){p.frameKey='';});p.resize.observe(host);
+  atlReady('cast-'+look+'.webp').then(function(image){
+    if(!owns())return;
+    p.sheet={img:image,m:AS.cast[look],look:look};
+    p.canvas=document.createElement('canvas');p.canvas.setAttribute('aria-hidden','true');
+    if(!ANIM.reduce){cancelStaticArtPaint(host);host.replaceChildren(p.canvas);}
+    else p.reduced=true;
+    queue();
+  },function(){if(owns())stopCreationPreview();});
+}
 function openCreate(){
   var el=$('create');
   if(!el){ el=document.createElement('div'); el.id='create'; document.body.appendChild(el); }
@@ -123,6 +196,7 @@ function openCreate(){
   $('cBack').focus({preventScroll:true});
 }
 function renderCreate(){
+  stopCreationPreview();
   var el=$('create'), c=CHOICE;
   /* A choice redraws its own cards; keep keyboard focus on that same choice. */
   var active=document.activeElement,focusSelector='';
@@ -195,6 +269,7 @@ function renderCreate(){
      paintDoll), so it holds its weapon and shield and wears its armor; 196 keeps the figure the height it was */
   var kitActor=createRunCharacter(c).actor; derive(kitActor);
   paintDoll($('bigPort'),196,kitActor);
+  startCreationPreview($('bigPort'),196,kitActor);
   $('cname').oninput=function(){ c.name=this.value; };
   $('reroll').onclick=function(){ sfx('ui-click'); c.name=rollName(c); renderCreate(); };
   $('cTutorial').checked=typeof FoteGettingStarted==='undefined'||FoteGettingStarted.enabled();

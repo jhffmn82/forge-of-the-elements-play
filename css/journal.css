@@ -1,4 +1,4 @@
-/* Revision 6: field-journal HUD, saturated sheet inks and clear ivory copy.
+/* Revision 6: field-journal HUD and clear ivory copy.
  * Native control pad, buttons, hotbar surfaces, portrait frame and states
  * are inherited. No additional HUD panels or log backgrounds.
  */
@@ -62,8 +62,7 @@ body.fote-journal.fote-study.study-minimal #app #top #depth .study-position {
 body.fote-journal.fote-study.study-minimal #app #top #depth .study-position > span {white-space:nowrap;}
 body.fote-journal.fote-study.study-minimal[data-ui-theme^=vellum]:not(.ui-paper-faded) #app #top #depth .study-position {color:var(--ui-ink);}
 
-/* Saturated inks, with labels retained: amber, leaf green, coral and blue
- * keep attributes distinct. No extra panels or brighter fills. */
+/* Clear sheet copy with neutral attribute labels and values. */
 body.fote-journal #app #shade :is(#mChar,#mEquip) {
  --journal-sheet-ink:#f4ebdc;--journal-sheet-copy:#e5ddd0;--journal-sheet-label:#d3cec2;
  color:var(--journal-sheet-ink);
@@ -99,12 +98,11 @@ body.fote-journal #app #shade [data-journal-stat="might"] {--stat-ink:var(--jour
 body.fote-journal #app #shade [data-journal-stat="agility"] {--stat-ink:var(--journal-agility);}
 body.fote-journal #app #shade [data-journal-stat="vitality"] {--stat-ink:var(--journal-vitality);}
 body.fote-journal #app #shade [data-journal-stat="focus"] {--stat-ink:var(--journal-focus);}
-body.fote-journal #app #shade .stat[data-journal-stat] {
- border-left:2px solid var(--stat-ink);
-}
-body.fote-journal #app #shade .stat[data-journal-stat] > :is(span,b),
-body.fote-journal #app #shade :is(.kv,.res) > [data-journal-stat],
-body.fote-journal #app #shade .res > [data-journal-stat] > b {color:var(--stat-ink);}
+body.fote-journal #app #shade .kv > [data-journal-stat] {color:var(--stat-ink);}
+body.fote-journal #app #shade .stat[data-journal-stat] > span,
+body.fote-journal #app #shade .res > [data-journal-stat] {color:var(--journal-sheet-label);}
+body.fote-journal #app #shade .stat[data-journal-stat] > b,
+body.fote-journal #app #shade .res > [data-journal-stat] > b {color:var(--journal-sheet-ink);}
 body.fote-journal #app #shade .gearwrap .res {
  grid-template-columns:repeat(auto-fit,minmax(min(100%,calc(112px * var(--ui-text-scale,1) + var(--ui-mobile-text-add,0px))),1fr));
 }

@@ -60,10 +60,7 @@ body.fote-journal #create .creation-stats > span {color:#d3cec2;}
 body.fote-journal #create .creation-stats > b:not([data-journal-stat]) {
  color:#e5ddd0;font:400 calc(15px * var(--ui-text-scale,1) + var(--ui-mobile-text-add,0px))/1.4 var(--journal,Georgia,serif);
 }
-body.fote-journal #create .creation-stats > [data-journal-stat=might] {color:var(--journal-might,#efb34f);}
-body.fote-journal #create .creation-stats > [data-journal-stat=agility] {color:var(--journal-agility,#91cf63);}
-body.fote-journal #create .creation-stats > [data-journal-stat=vitality] {color:var(--journal-vitality,#f1816e);}
-body.fote-journal #create .creation-stats > [data-journal-stat=focus] {color:var(--journal-focus,#71bfee);}
+body.fote-journal #create .creation-stats > b[data-journal-stat] {color:#e5ddd0;}
 body.fote-journal #create .create-sound-note {color:#d3cec2;font-family:var(--journal,Georgia,serif);font-size:calc(14px * var(--ui-text-scale,1) + var(--ui-mobile-text-add,0px));}
 
 /* Options are labeled controls with legible help, not another set of panels.

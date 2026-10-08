@@ -909,6 +909,16 @@ function beerHandFree(e){
 }
 /* the standing frame of a look with a beer row: the beer while it plays, else the idle (the same frame clipFrame's own
    idle line gives until a beer has played; after one, the idle restarts where the beer ended) */
+/* Select the authored beer row without reading an actor, clock or run state.
+ * Once finished, after is the elapsed remainder used to resume ordinary idle. */
+function beerPlayFrame(m, elapsed){
+  var c=m.clips.beer;
+  for(var i=0;i<c.play.length;i++){
+    if(elapsed<c.play[i][1])return {sx:c.play[i][0]*m.cell,sy:c.row*m.cell,add:'beer'};
+    elapsed-=c.play[i][1];
+  }
+  return {after:elapsed};
+}
 function beerFrame(sheet, e, now, rest){
   var m=sheet.m, c=m.clips.beer, id=m.clips.idle2, cell=m.cell, B=BEER;
   if(!c || !c.play || !id || e!==player) return null;
@@ -926,9 +936,9 @@ function beerFrame(sheet, e, now, rest){
     if(now>=due) B.start=due;
   }
   if(B.start!==null){
-    var q=now-B.start;
-    for(var i=0;i<c.play.length;i++){ if(q<c.play[i][1]) return {sx:c.play[i][0]*cell, sy:c.row*cell, add:'beer'}; q-=c.play[i][1]; }
-    B.resume=base=now-q; B.start=null; B.from=B.resume;
+    var beer=beerPlayFrame(m,now-B.start);
+    if(beer.add)return beer;
+    B.resume=base=now-beer.after; B.start=null; B.from=B.resume;
   }
   return {sx:(Math.floor((now-base)/CLIP_MS.idle)%id.frames)*cell, sy:id.row*cell, add:'idle2'};
 }
