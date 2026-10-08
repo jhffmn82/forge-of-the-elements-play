@@ -324,6 +324,7 @@ function startGame(){
  * sleeping/concealed actors. Existing draw/UI requests cover current objects.
  * This is a startup set, not a list of every floor visited during a run. */
 function startupSceneAtlasFiles(){
+  if(typeof statusIconFiles==='function')statusIconFiles().forEach(function(file){atl(file);});
   var look=typeof playerCastLook==='function'?playerCastLook():player&&player.look;
   if(look){castSheet(look);var spec=AS.cast&&AS.cast[look];if(spec&&spec.doll)atl('cast-'+look+'-doll.webp');}
   var residents=(typeof ents!=='undefined'?ents:[]).concat(floorMeta&&floorMeta.buriedGhouls||[],floorMeta&&floorMeta.maw&&floorMeta.maw.ent||[],floorMeta&&floorMeta.pendingLich&&floorMeta.pendingLich.entity||[]);

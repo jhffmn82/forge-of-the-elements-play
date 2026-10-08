@@ -106,19 +106,29 @@ function actorFootprintField(e,target,options){
   }
   return field;
 }
+// A detour may initially lead farther from the target. Remember only its
+// rejoin distance, never a collision field: bodies and hazards can move.
+var actorRouteDetours=new WeakMap();
 function actorPathStep(e,target,field){
   if(!canActorMove(e))return false;
   field=entitySize(e)>1||e.base.aquatic?actorFootprintField(e,target):(field||actorFootprintField(e,target));
+  var routeMap=typeof FRAME_MAP!=='undefined'&&FRAME_MAP||map,size=entitySize(e),targetSize=entitySize(target);
+  var distance=field[idxOf(e.x,e.y)],detour=actorRouteDetours.get(e);
+  if(detour&&(detour.map!==routeMap||detour.targetX!==target.x||detour.targetY!==target.y||detour.targetSize!==targetSize||detour.size!==size||detour.x!==e.x||detour.y!==e.y||(distance>=0&&distance<detour.distance))){actorRouteDetours.delete(e);detour=null;}
   // Equally short routes should close toward the destination, not favor the
   // cardinal neighbors simply because they appear first in the shared list.
   function select(){return FoteActors.bestStep(e,function(x,y){return inb(x,y)?field[idxOf(x,y)]:-1;},function(x,y,dx,dy){return actorCellAllowed(e,x,y,dx,dy,{doors:true,avoidFire:true});},false,function(x,y){return (x-target.x)*(x-target.x)+(y-target.y)*(y-target.y);});}
-  var step=select();
-  if(!step&&dist(e,target)>1){
+  var step=detour?null:select();
+  if(detour||!step&&dist(e,target)>1){
     // The shared field ignores bodies. If its next step is occupied, route around
-    // the obstruction instead of repeatedly walking straight into it.
+    // the obstruction until we can rejoin it nearer the target. Switching back
+    // after the first escape step can send the actor straight back into a loop.
     field=actorFootprintField(e,target,{terrainOnly:false,doors:true,avoidFire:true});step=select();
+    if(step&&!detour){detour={map:routeMap,targetX:target.x,targetY:target.y,targetSize:targetSize,size:size,distance:distance<0?Infinity:distance};actorRouteDetours.set(e,detour);}
   }
-  return step?stepEnt(e,step.dx,step.dy):false;
+  var moved=step?stepEnt(e,step.dx,step.dy):false;
+  if(detour){if(moved){detour.x=e.x;detour.y=e.y;}else actorRouteDetours.delete(e);}
+  return moved;
 }
 function stepToward(e,x,y){
   if(!canActorMove(e))return false;

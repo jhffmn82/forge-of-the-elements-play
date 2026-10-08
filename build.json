@@ -1,9 +1,9 @@
 {
   "version": "Beta 1.6",
-  "built": "2026-10-08T15:01:08.661745+00:00",
-  "epoch": 1791471668,
-  "source": "Approved Camera artwork/name/save repair, Basalt Slime art, native map cards and neutral HUD; runtime 402426b70fef87c0c95857471514cd4b708c8be8d2c1383417ce3b663fb81413",
+  "built": "2026-10-08T15:49:11.483138+00:00",
+  "epoch": 1791474551,
+  "source": "Approved enemy detour and first-status artwork repairs; runtime f382c64cf56dbed2602301102ee961b85f953a95c36a0e88498f97c14df771e8",
   "candidate": true,
   "releaseState": "playtest",
-  "revision": "beta16-queued-fixes-20261008-150108"
+  "revision": "beta16-detour-status-20261008-154911"
 }

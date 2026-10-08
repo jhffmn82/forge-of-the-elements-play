@@ -302,7 +302,8 @@ function querySceneArt(task){
       if(value.name==='stack-group'||value.name==='urn-group'){
         var cluster=sceneryClusterAppearance(value);sceneryClusterSource(cluster.family,cluster.variant);
       }
-    }else if(task.kind==='item')objArt('items',itemArtName(value));
+    }else if(task.kind==='status-icons')statusIconFiles().forEach(function(file){atl(file);});
+    else if(task.kind==='item')objArt('items',itemArtName(value));
     else if(task.kind==='trap'){var trap=TRAPS[value.kind];if(trap)objArt('traps',trap.sprite);}
     else if(task.kind==='plate')objArt('structures',value.pressed?'plate-glow':'trap-plate')||objArt('traps','trap-plate');
     else if(task.kind==='ground'){
@@ -329,6 +330,7 @@ function electSceneArt(){
   var tasks=[],tiles=new Set(),grounds=new Set(),hero=player;
   function add(kind,value,x,y){if(kind==='tile'||kind==='ground')FoteContent.observeAppearance(floorMeta,kind,value);else if(kind==='plate')FoteContent.observeAppearance(floorMeta,kind,!!value.pressed);tasks.push({kind:kind,value:value,x:Number.isFinite(x)?x:hero.x,y:Number.isFinite(y)?y:hero.y});}
   add('hero',hero,hero.x,hero.y);
+  if(typeof statusIconFiles==='function')add('status-icons',null,hero.x,hero.y);
   for(var i=0;i<map.length;i++){
     var tile=map[i],key=tile+(tile===CHEST?':'+chestKind[i]:tile===OPEN?':'+openDoorMaterial(i%MW,Math.floor(i/MW)):'');
     if(!tiles.has(key)){tiles.add(key);add('tile',tile,i%MW,Math.floor(i/MW));}

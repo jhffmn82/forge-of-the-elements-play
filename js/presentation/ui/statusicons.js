@@ -67,6 +67,15 @@ var STATUS_INFO = {
 
 /* icon art as data URLs, so tooltips (HTML strings) can show them too */
 var STATUS_ICON_URL = {};
+/* Combat can introduce any condition after the HUD has stopped repainting.
+ * Elect the shared icon sources even with no active effects; the scene's
+ * existing atlas lease keeps both overhead chips and HUD icons ready. Item
+ * buffs retain their normal item-art loading rather than pinning those sheets. */
+function statusIconFiles(){
+  var files=[],icons=new Set(Object.keys(STATUS_INFO).map(function(key){return STATUS_INFO[key].icon;}).concat(['st-web']));
+  icons.forEach(function(icon){var spec=packedObjectSpec('icons',icon);if(spec&&files.indexOf(spec.file)<0)files.push(spec.file);});
+  return files;
+}
 function statusIconURL(icon){
   if(STATUS_ICON_URL[icon]!==undefined) return STATUS_ICON_URL[icon];
   var o=objArt('icons', icon) || (typeof anyObj==='function' && anyObj(icon));
@@ -77,7 +86,7 @@ function statusIconURL(icon){
     var c=document.createElement('canvas'); c.width=c.height=Math.max(o.sw,o.sh); var g=c.getContext('2d');
     g.drawImage(o.img, o.sx, o.sy, o.sw, o.sh, Math.floor((c.width-o.sw)/2), Math.floor((c.height-o.sh)/2), o.sw, o.sh);
     STATUS_ICON_URL[icon]=c.toDataURL();
-  }catch(e){ STATUS_ICON_URL[icon]=''; }
+  }catch(e){ return ''; }
   return STATUS_ICON_URL[icon];
 }
 function statusList(e){
@@ -155,22 +164,31 @@ function renderStatusBar(){
     }
     el._statusRecord=s;used.add(el);
     setHudAttribute(el,'data-si',i);setHudAttribute(el,'aria-label',s.name+(s.t>0?', '+s.t+' '+s.unit:''));setHudClass(el,'bad',s.bad);
-    var url=statusIconURL(s.icon),artKey=url||s.name.slice(0,3);
-    if(el._statusArtKey!==artKey){
-      var art=document.createElement(url?'img':'span');if(url){art.src=url;art.alt='';}else{art.className='fb';art.textContent=artKey;}
-      if(el._statusArt)el._statusArt.replaceWith(art);else el.insertBefore(art,el.firstChild);
-      el._statusArt=art;el._statusArtKey=artKey;
-    }
+    paintStatusBarIcon(el);
     var stacks=el.querySelector('.stacks');
     if(s.stacks){if(!stacks){stacks=document.createElement('span');stacks.className='stacks';el.appendChild(stacks);}setHudText(stacks,'×'+s.stacks);}
     else if(stacks)stacks.remove();
     setHudText(el.querySelector('.n'),s.t>0?s.t:'');
     var at=bar.querySelectorAll('[data-si]')[i];if(at!==el)bar.insertBefore(el,at||null);
   });
-  existing.forEach(function(el){if(!used.has(el))el.remove();});
+  existing.forEach(function(el){if(!used.has(el)){cancelStaticArtPaint(el,'status');el.remove();}});
   if(typeof FoteResponsiveHUD!=='undefined')FoteResponsiveHUD.renderStatusMeter();
 }
 
+/* Readiness paints only this retained icon: it must not dismiss a hover card,
+ * rebuild the status list, or require another action when motion is reduced. */
+function paintStatusBarIcon(el){
+  cancelStaticArtPaint(el,'status');
+  var s=el._statusRecord,icon=s.icon,owner=player,url=statusIconURL(icon),artKey=url||s.name.slice(0,3);
+  if(el._statusArtKey!==artKey){
+    var art=document.createElement(url?'img':'span');if(url){art.src=url;art.alt='';}else{art.className='fb';art.textContent=artKey;}
+    if(el._statusArt)el._statusArt.replaceWith(art);else el.insertBefore(art,el.firstChild);
+    el._statusArt=art;el._statusArtKey=artKey;
+  }
+  watchStaticArt(el,function(){return packedObjectSources('icons',icon,true);},function(){
+    delete STATUS_ICON_URL[icon];paintStatusBarIcon(el);
+  },function(){return player===owner&&el._statusRecord.icon===icon;},'status',true);
+}
 
 /* hovering an enemy lists its statuses */
 var _inspectHTMLStatus = inspectHTML;
