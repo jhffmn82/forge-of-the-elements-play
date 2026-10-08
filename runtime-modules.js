@@ -5,6 +5,7 @@ var FOTE_RUNTIME = {
   modules: [
   "js/engine/state.js",
   "js/engine/codec.js",
+  "js/vendor/fflate-0.8.2.js",
   "js/engine/persistence.js",
   "js/engine/inventory.js",
   "js/engine/content.js",

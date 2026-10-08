@@ -2,7 +2,7 @@
    save.js - title screen, saving and loading (2026-09-17).
    A save is a snapshot of every piece of run state (the character, the run, the current floor as it stands),
    graph-encoded so shared objects stay shared (a bag item on the hotbar, the player inside ents).
-   Three manual slots plus an autosave written on each new floor, kept in localStorage; any save can be
+   Three manual slots plus an autosave written on each new floor, losslessly compressed in localStorage; any save can be
    exported to a file and imported back. Loading never touches the game's data tables, so a save made
    before a balance change picks up the new rules.
    ===================================================================== */
@@ -28,6 +28,7 @@ function saveSnapshot(label){
     state:saveEncode(g), rngState:typeof rng.state==='function'?rng.state():null, log:logHtml};
 }
 function saveApply(data){
+  if(data&&data.storage)data=JSON.parse(FotePersistence.unpackStorage(JSON.stringify(data)));
   var recoveredInterruptedDeath=false;
   FotePersistence.restore(data,{
     decode:saveDecode,validate:FoteState.validate,state:gameState,
@@ -149,7 +150,11 @@ function importLegacySaves(){
   var copied=0;
   try{
     if(localStorage.getItem('astra-temple-legacy-import')) return 0;
-    LEGACY_KEYS.forEach(function(p){ var v=localStorage.getItem(p[0]); if(v!==null && localStorage.getItem(p[1])===null){ localStorage.setItem(p[1], v); copied++; } });
+    LEGACY_KEYS.forEach(function(p){ var v=localStorage.getItem(p[0]); if(v!==null && localStorage.getItem(p[1])===null){
+      if(p[1].indexOf('astra-temple-save-')===0||p[1]==='astra-temple-rescue')FotePersistence.writeStorage(localStorage,p[1],v);
+      else localStorage.setItem(p[1],v);
+      copied++;
+    } });
     localStorage.setItem('astra-temple-legacy-import', new Date().toISOString());
   }catch(e){}
   return copied;
@@ -161,7 +166,7 @@ function slotKey(s){ return 'astra-temple-save-'+s; }
 function readSlot(s){
   try{
     var raw = s==='rescue' ? localStorage.getItem('astra-temple-rescue') : localStorage.getItem(slotKey(s));
-    if(!raw) return null; var d=JSON.parse(raw);
+    if(!raw) return null; var d=JSON.parse(FotePersistence.unpackStorage(raw));
     if(s==='rescue') d.summary=d.summary||{}, d.savedAt=d.savedAt||'';
     return d;
   }catch(e){ return null; }
@@ -171,8 +176,8 @@ function writeSlot(s, label){
   gameTurns.flush();
   if(!player || !RUN){ return false; }
   if(RUN.over){ log('The dead cannot be saved.','c-info'); return false; }
-  try{ localStorage.setItem(slotKey(s), JSON.stringify(saveSnapshot(label))); return true; }
-  catch(e){ log('Saving failed: '+String(e.message||e)+'. Try exporting to a file.','c-you'); return false; }
+  try{ FotePersistence.writeStorage(localStorage,slotKey(s),JSON.stringify(saveSnapshot(label))); return true; }
+  catch(e){ log(FotePersistence.quotaError(e)?'Save storage is full. Export this run to a file; your previous saves are safe.':'Saving failed. Export this run to a file; your previous saves are safe.','c-you'); console.warn('Save storage failed:',e); return false; }
 }
 function saveTo(s){ if(writeSlot(s)){ log('<b>Saved</b> to '+(s==='auto'?'the autosave':'slot '+s)+'.','c-good'); sfx('ui-click'); return true; } return false; }
 function loadFrom(s){
