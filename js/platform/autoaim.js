@@ -34,7 +34,7 @@ function autoAimPick(){
 function autoAimLive(){ var e=aiming && aiming.auto; return e && e.hp>0 && e.foe && actorVisible(e) && ents.indexOf(e)>=0 ? e : null; }
 
 
-/* the mark: four thin corner brackets on the chosen enemy and a faint dotted path to it (2026-09-18: the first
+/* the mark: four thin corner brackets on the chosen enemy and a dotted path to it (2026-09-18: the first
    version - a pulsing box plus brackets plus bold dots - was too loud) */
 
 function drawAutoAimOverlay(){
@@ -43,11 +43,11 @@ function drawAutoAimOverlay(){
   function px(x){ return (x-camX)*TS-ox; } function py(y){ return (y-camY)*TS-oy; }
   ctx.save();
   if(!aiming.amulet && aiming.A.kind==='bolt'){
-    var target=autoAimPoint(e)||entityPoint(e,player),pts=boltPath(player.x,player.y,target.x,target.y);ctx.globalAlpha=0.35;ctx.fillStyle='#E8B44A';
+    var target=autoAimPoint(e)||entityPoint(e,player),pts=boltPath(player.x,player.y,target.x,target.y);ctx.globalAlpha=0.45;ctx.fillStyle='#E8B44A';
     for(var i=0;i<pts.length-1;i++) ctx.fillRect(px(pts[i].x)+TS/2-1.5, py(pts[i].y)+TS/2-1.5, 3, 3);
   }
   var x0=px(e.x)+2,y0=py(e.y)+2,S=TS*entitySize(e)-4,c=Math.max(3,TS*.13);
-  ctx.globalAlpha=0.7; ctx.strokeStyle="#E8B44A"; ctx.lineWidth=1; ctx.beginPath();
+  ctx.globalAlpha=.85; ctx.strokeStyle="#E8B44A"; ctx.lineWidth=1.25; ctx.beginPath();
   ctx.moveTo(x0, y0+c); ctx.lineTo(x0, y0); ctx.lineTo(x0+c, y0);
   ctx.moveTo(x0+S-c, y0); ctx.lineTo(x0+S, y0); ctx.lineTo(x0+S, y0+c);
   ctx.moveTo(x0, y0+S-c); ctx.lineTo(x0, y0+S); ctx.lineTo(x0+c, y0+S);

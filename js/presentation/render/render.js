@@ -658,13 +658,6 @@ function drawBaseGroundDecal(gv, x, y, px, py, alpha, now){
 }
 
 /* ---- characters: cast sheets with clips ---- */
-function drawInteractionGlow(px,py,alpha,now,ring){
-  ctx.save();var pulse=ANIM.reduce?1:.85+.15*Math.sin(now/550);ctx.globalAlpha=alpha*pulse;
-  var aura=ctx.createRadialGradient(px+TS*.5,py+TS*.55,TS*.12,px+TS*.5,py+TS*.55,TS*.65);
-  aura.addColorStop(0,'rgba(198,137,255,.65)');aura.addColorStop(1,'rgba(153,85,240,0)');ctx.fillStyle=aura;ctx.fillRect(px-TS*.15,py-TS*.1,TS*1.3,TS*1.3);
-  if(ring){ctx.strokeStyle='#DDBBFF';ctx.lineWidth=Math.max(1.5,TS*.025);ctx.beginPath();ctx.ellipse(px+TS*.5,py+TS*.78,TS*.43,TS*.2,0,0,Math.PI*2);ctx.stroke();}
-  ctx.restore();
-}
 var CLIP_MS = {idle:130, walk:60, cast:65, ranged:65, melee:55, hurt:75, death:95, attack:60};
 /* how long each action clip winds up before its projectile leaves or its blow connects */
 var CLIP_WINDUP = {melee:170, attack:170, ranged:300, cast:260};
@@ -1183,64 +1176,6 @@ function drawBossTelegraphs(now){
   });
 }
 
-/* ---- beacons: key interactables glow and shed sparks so they read at a glance, even from memory ---- */
-var BEACON_PROPS = {'fountain':'#7FC8FF', 'altar-spikes':'#B8453A', 'elemental-lock':'#C9A8FF', 'lever-up':'#E8D27A', 'lever-down':'#E8D27A', 'tablet':'#F6E7B0', 'cage':'#E8B44A', 'boss-throne':'#E2622B'};
-function beaconAt(x, y){
-  if(typeof FoteChaosCampaign!=='undefined'&&FoteChaosCampaign.currentInfo(x,y))return null;
-  var t=at(x,y);
-  if(t===STAIRS) return {col:'#9FD8FF', big:1};
-  if(t===EXIT) return floorMeta.exitOpen ? {col:'#9FD8FF', big:1} : null;
-  if(t===CHEST) return {col:'#E8B44A'};
-  if(t===SHRINE) return {col:(GODS[RUN.shrineGod]||{}).color||'#FFFFFF', big:1};
-  if(t===FORGE) return {col:'#FF8A3A', big:1};
-  if(t===LOCKED || t===TOLL) return {col:'#E8B44A', small:1};
-  return null;
-}
-function drawBeacons(now){
-  objGlintsFlush();
-  var list=[], x, y, W=MW, H=MH, S=seen, V=vis, blind=playerBlind(),all=revealAll&&!blind;   /* read once a frame (state getters) */
-  for(y=camY-1;y<=camY+viewH+1;y++) for(x=camX-1;x<=camX+viewW+1;x++){
-    if(x<0||y<0||x>=W||y>=H) continue; var i=y*W+x; if(!(all||S[i])) continue;
-    var b=beaconAt(x,y); if(b){ b.x=x; b.y=y; b.lit=all||V[i]; list.push(b); }
-  }
-  props.forEach(function(pp){
-    var c = pp.tablet ? '#F6E7B0' : pp.prisoner ? '#E8B44A' : pp.drink ? '#7FC8FF' : pp.altar ? '#B8453A'
-          : (pp.lever && pp.name==='lever-up') ? '#E8D27A' : pp.name==='elemental-lock' ? '#C9A8FF' : null;
-    if(!c) return;
-    var i=pp.y*W+pp.x; if(!(all||S[i])) return;
-    if(blind&&!V[i])return;
-    list.push({x:pp.x, y:pp.y, col:c, small:1, lit:all||V[i]});
-  });
-  if(!list.length) return;
-  ctx.save(); ctx.globalCompositeOperation='lighter';
-  list.forEach(function(b){
-    var cx=(b.x-camX+0.5)*TS, cy=(b.y-camY+0.62)*TS, rgb=hexRGB(b.col);
-    var pulse = ANIM.reduce ? 0.8 : 0.65 + 0.35*Math.sin(now/520 + b.x*1.3 + b.y*0.7);
-    var R=TS*(b.big?1.0:b.small?0.65:0.85), a=(b.lit?(b.big?0.4:0.55):0.3)*pulse;
-    var g=ctx.createRadialGradient(cx,cy,0,cx,cy,R);
-    g.addColorStop(0,'rgba('+(rgb[0]*255|0)+','+(rgb[1]*255|0)+','+(rgb[2]*255|0)+','+a+')');
-    g.addColorStop(1,'rgba(0,0,0,0)');
-    ctx.fillStyle=g; ctx.beginPath(); ctx.ellipse(cx,cy,R,R*0.7,0,0,Math.PI*2); ctx.fill();
-    /* a thin ring on the floor that breathes outward, so the spot reads even against bright light */
-    if(!ANIM.reduce){
-      var rp=(now/1400 + b.x*0.13) % 1;
-      ctx.globalAlpha=(1-rp)*(b.lit?0.55:0.3); ctx.strokeStyle=b.col; ctx.lineWidth=Math.max(1.5, TS*0.04);
-      ctx.beginPath(); ctx.ellipse(cx, cy+TS*0.2, TS*(0.3+0.3*rp), TS*(0.12+0.12*rp), 0, 0, Math.PI*2); ctx.stroke(); ctx.globalAlpha=1;
-    }
-    if(!b.lit || ANIM.reduce) return;
-    /* a few sparks drifting upward, on a loop seeded by the tile */
-    var n=b.big?5:3;
-    for(var k=0;k<n;k++){
-      var ph=((now/1600) + grassHash(b.x,b.y,k)) % 1;
-      var sx=cx + (grassHash(b.x,b.y,k+10)-0.5)*TS*0.8 + Math.sin(now/400+k)*TS*0.04;
-      var sy=cy + TS*0.2 - ph*TS*1.1;
-      ctx.globalAlpha=Math.sin(ph*Math.PI)*0.9;
-      ctx.fillStyle=b.col; var sz=Math.max(2, TS*0.05); ctx.fillRect(sx, sy, sz, sz);
-    }
-    ctx.globalAlpha=1;
-  });
-  ctx.restore();
-}
 /* screen-edge arrow toward stairs (or the open exit) that you have found but that is off screen */
 function drawStairsPointer(now){
   if(!RUN || !map) return;
@@ -1558,9 +1493,6 @@ function drawScene(){
     // Multi-tile preview gateways are painted once by the ordinary set renderer.
     if(spriteOn&&ot===PORTAL&&floorMeta&&floorMeta.chaosPreview){var gateway=propAt(x,y);if(gateway&&gateway.previewPortal)return;}
     var oa=(ALL||VIS[oi])?1:fade45, opx=(x-camX)*TS, opy=(y-camY)*TS, spr=spriteOn?tileSprite(x,y,ot):null;
-    if(ot===CHEST&&enhancedChestAt(x,y)){
-      drawInteractionGlow(opx,opy,oa,now);
-    }
     if(!spriteOn){
       ctx.save();ctx.globalAlpha=oa;
       if(ot===OPEN){ctx.strokeStyle='#AD8352';ctx.lineWidth=Math.max(2,TS*.07);ctx.strokeRect(opx+TS*.1,opy+TS*.1,TS*.8,TS*.8);glyph('/',opx,opy,'#AD8352');}
@@ -1619,7 +1551,6 @@ function drawScene(){
     if(!(ALL||SEEN[p.y*W+p.x])) return;
     if(BLIND&&!VIS[p.y*W+p.x])return;
     var ppx=(p.x-camX)*TS, ppy=(p.y-camY)*TS, pa=(ALL||VIS[p.y*W+p.x])?1:fade45;
-    if(p.offeringBowl||p.cleansingShrine&&!p.used||p.eventRoom!==undefined&&!p.used)drawInteractionGlow(ppx,ppy,pa,now,!!(p.offeringBowl||p.cleansingShrine));
     if(!spriteOn){
       ctx.save();ctx.globalAlpha=pa;ctx.fillStyle=p.b?'#6A5A48':p.name==='vines'?'#4A6A32':'#4A4038';ctx.fillRect(ppx+TS*.15,ppy+TS*.15,TS*((p.w||1)-.3),TS*((p.h||1)-.3));
       if(p.previewPortal||p.prisoner||p.altar||p.name==='elemental-lock'||p.name==='updraft-vent')glyph(p.previewPortal?'O':p.prisoner?'!':p.altar?'A':p.name==='updraft-vent'?'↑':'+',ppx,ppy,p.name==='updraft-vent'?'#CDEEFF':p.element?AFF_COL[p.element]:'#E8B44A');ctx.restore();return;
@@ -1780,28 +1711,8 @@ function drawScene(){
   if(lightingOn()) drawLightmap(now, prp);
   drawLights();
   if(typeof FoteChaosCurrentRenderer!=='undefined')FoteChaosCurrentRenderer.drawAll(now);
-  drawBeacons(now);
+  objGlintsFlush();
 
-  /* ---- aiming ---- */
-  if(aiming){
-    var A=aiming.A, reach = A.kind==='dash' ? 3 : spellRange(A);
-    for(var ty=camY;ty<camY+viewH+1;ty++) for(var tx=camX;tx<camX+viewW+1;tx++){
-      if(dist(player,{x:tx,y:ty})>reach || (tx===player.x&&ty===player.y)) continue;
-      if(!inb(tx,ty) || !(ALL||vis[idxOf(tx,ty)])) continue;
-      atTile(tx,ty,function(px,py){ ctx.fillStyle='rgba(226,98,43,.10)'; ctx.fillRect(px,py,TS,TS); });
-    }
-    if(inb(hoverX,hoverY)){
-      var ok=inRange(hoverX,hoverY);
-      var onFoe=ents.some(function(e){return e.foe&&actorVisible(e,true)&&entityOccupies(e,hoverX,hoverY);});
-      if(A.kind==='summon' && ok && (!walkable(hoverX,hoverY) || occupied(hoverX,hoverY))) ok=false;
-      var col = !ok ? '#B8453A' : (onFoe || A.kind==='dash' || A.kind==='summon' ? '#E8B44A' : '#8A7F74');
-      atTile(hoverX,hoverY,function(px,py){
-        ctx.strokeStyle=col; ctx.lineWidth=2; ctx.strokeRect(px+1,py+1,TS-2,TS-2);
-        ctx.fillStyle = ok ? 'rgba(232,180,74,.16)' : 'rgba(184,69,58,.16)'; ctx.fillRect(px+1,py+1,TS-2,TS-2); ctx.lineWidth=1;
-      });
-      if(ok && typeof previewPath==='function') previewPath(player.x,player.y,hoverX,hoverY,A);
-    }
-  }
   drawFX();
   ctx.restore(); TILE_FRAME=null;
 
@@ -1809,6 +1720,10 @@ function drawScene(){
   var vg=ctx.createRadialGradient(viewW*TS/2, viewH*TS/2, Math.min(viewW,viewH)*TS*0.35, viewW*TS/2, viewH*TS/2, Math.max(viewW,viewH)*TS*0.7);
   vg.addColorStop(0,'rgba(0,0,0,0)'); vg.addColorStop(1,'rgba(0,0,0,0.45)');
   ctx.fillStyle=vg; ctx.fillRect(0,0,viewW*TS,viewH*TS);
+  // Aim marks remain legible above the lighting and vignette.
+  ctx.save();ctx.translate(-camOX,-camOY);
+  drawTargetingCues();
+  ctx.restore();
   drawStairsPointer(now);
   // Lighting, particles and ground effects cannot color the empty world margins.
   drawMapMargins();

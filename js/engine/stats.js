@@ -187,7 +187,7 @@
     }
     return out;
   }
-  var api={discipline:discipline,reginald:reginald,compute:compute,computeWithRanged:computeWithRanged,passivesFor:passivesFor,rankOf:rankOf,powers:powers,focusBonus:focusBonus};
+  var api={discipline:discipline,reginald:reginald,compute:compute,computeWithRanged:computeWithRanged,abilityList:abilityList,passivesFor:passivesFor,rankOf:rankOf,powers:powers,focusBonus:focusBonus};
   root.FoteStats=Object.freeze(api);
   if(typeof module==='object'&&module.exports)module.exports=api;
 })(typeof globalThis==='object'?globalThis:this);

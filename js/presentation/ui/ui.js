@@ -716,6 +716,7 @@ window.addEventListener('keydown', function(ev){
   if(editing)return;
   if(RUN && (RUN.over || RUN.victory)){ ev.stopImmediatePropagation(); return; }
   var k=ev.key;
+  if(k==='Tab' && typeof AUTOMAP_ON!=='undefined' && AUTOMAP_ON)return;
   if(k==='v'){ audioInit(); toggleMute(); syncAudioButtons(); ev.stopImmediatePropagation(); return; }
   if(k==='n'){ audioInit(); toggleMusic(); syncAudioButtons(); ev.stopImmediatePropagation(); return; }
   if(openSheet && k!=='Escape' && k!=='p' && k!=='i' && k!=='Tab') return;

@@ -12,6 +12,13 @@ body.fote-journal:not([data-ui-theme^=vellum]) :is(#mHelp,#titleSettings,#mFaith
 
 /* Character choices use authored blurbs, traits and rules, with room to read
    them. Existing painted portraits and card faces remain the visual anchor. */
+#create .creation-actions {display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;}
+#create #rollCharacter {min-height:44px;max-width:100%;white-space:normal;}
+body.fote-journal #create #creationRollResult {
+ margin:12px 0 0;color:var(--journal-brass,#e3bb6a);
+ font:400 calc(15px * var(--ui-text-scale,1) + var(--ui-mobile-text-add,0px))/1.4 var(--journal,Georgia,serif);
+}
+#create #creationRollResult:empty {margin:0;}
 body.fote-journal #create .tag2 {
  max-width:760px;margin-inline:auto;color:#e5ddd0;
  font:400 calc(16px * var(--ui-text-scale,1) + var(--ui-mobile-text-add,0px))/1.4 var(--journal,Georgia,serif);
@@ -25,32 +32,23 @@ body.fote-journal #create .card {min-width:0;gap:6px;}
 body.fote-journal #create .card .choice-name {
  font-size:calc(21px * var(--ui-text-scale,1) + var(--ui-mobile-text-add,0px));line-height:1.1;
 }
-body.fote-journal #create .card :is(.choice-copy,.choice-style) {
+body.fote-journal #create .card :is(.choice-copy,.choice-style,.choice-summary,.choice-trait) {
  color:#e5ddd0;
  font:400 calc(14px * var(--ui-text-scale,1) + var(--ui-mobile-text-add,0px))/1.4 var(--journal,Georgia,serif);
 }
 body.fote-journal #create .card .choice-style {color:#d3cec2;font-style:italic;}
+body.fote-journal #create .card .choice-trait {color:var(--journal-agility,#91cf63);}
+#create .card .choice-summary {display:block;font-weight:400;}
 body.fote-journal #create .card .choice-ability {
  margin-top:auto;padding-top:7px;color:var(--journal-might,#efb34f);
  font:400 calc(12px * var(--ui-text-scale,1) + var(--ui-mobile-text-add,0px))/1.4 var(--mono,monospace);
 }
+body.fote-journal #create .card[data-cls] .choice-ability {margin:0 0 4px;padding:0;}
 body.fote-journal #create .choice-rule {color:var(--journal-vitality,#f1816e);font-weight:400;}
 body.fote-journal #create .card :is(.choice-refusal,.choice-benefit) {font:400 calc(14px * var(--ui-text-scale,1) + var(--ui-mobile-text-add,0px))/1.4 var(--journal,Georgia,serif);}
 body.fote-journal #create .card .choice-refusal {color:var(--journal-vitality,#f1816e);}
 body.fote-journal #create .card .choice-benefit {color:var(--journal-agility,#91cf63);}
 body.fote-journal #create .card:disabled {opacity:.78;cursor:not-allowed;}
-body.fote-journal #create .creation-trait {
- display:grid;grid-template-columns:minmax(110px,.35fr) minmax(0,1fr);gap:8px 18px;
- margin-top:12px;padding:12px 2px 0;border-top:1px solid var(--ui-edge,#3d3229);
-}
-body.fote-journal #create .creation-trait > b {
- color:var(--journal-agility,#91cf63);
- font:400 calc(16px * var(--ui-text-scale,1) + var(--ui-mobile-text-add,0px))/1.4 var(--journal,Georgia,serif);
-}
-body.fote-journal #create .creation-trait > p {
- margin:0;color:#e5ddd0;
- font:400 calc(16px * var(--ui-text-scale,1) + var(--ui-mobile-text-add,0px))/1.4 var(--journal,Georgia,serif);
-}
 body.fote-journal #create .creation-name-label {display:block;}
 body.fote-journal #create .creation-name-controls {display:flex;align-items:center;flex-wrap:wrap;gap:8px;}
 body.fote-journal #create #cname {flex:1 1 220px;min-width:0;max-width:100%;min-height:40px;}
@@ -117,7 +115,6 @@ body.fote-journal #mFaith .action-facts dt {color:var(--journal-menu-label);}
 @media(max-width:720px) {
  body.fote-journal :is(#app #shade #mHelp,#titleSettings) .optgrid {grid-template-columns:minmax(0,1fr);}
  body.fote-journal :is(#app #shade #mHelp,#titleSettings) .binds {grid-template-columns:minmax(0,1fr) auto;}
- body.fote-journal #create .creation-trait {grid-template-columns:minmax(0,1fr);gap:2px;}
 }
 @media(max-width:400px) {
  body.fote-journal #create .wrap {padding-inline:12px;}

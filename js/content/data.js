@@ -17,19 +17,24 @@ function cap(s){ return s ? s.charAt(0).toUpperCase()+s.slice(1) : s; }
    starting stat is below 10. */
 var RACES = {
   human:    {name:'Human', mods:{mig:0,agi:0,vit:0,foc:0}, speed:100,
+             summary:'Versatile adventurers, suited to any class.',
              blurb:'+1 to all stats. +1 stat point every 3 levels. +25% piety gain.',
              sexes:{m:'human-m', f:'human-f'}},
   elf:      {name:'Elf', mods:{agi:1, foc:2}, speed:110,
+             summary:'Swift and gifted, suited to Mages and Scoundrels.',
              blurb:'+10% speed. Spells cost 15% less mana. +1 range for ranged attacks and spells.',
              sexes:{m:'elf-m', f:'elf-f'}},
   dwarf:    {name:'Dwarf', mods:{mig:1, vit:2}, speed:100,
+             summary:'Strong and tough, suited to Fighters and Clerics.',
              blurb:'Weapons and armor gain one effective upgrade. No heavy armor evasion penalty. Forge upgrades cost 25% less.',
              sexes:{m:'dwarf-m', f:'dwarf-f'}},
   fae:      {name:'Fae', mods:{agi:2, foc:1}, speed:100, locked:true, capBonus:1,
+             summary:'Elemental specialists, suited to Scoundrels and Mages.',
              blurb:'Start with 1 affinity in your court\'s element. +1 affinity cap.',
              courts:{fire:'Ember Court', water:'Tide Court', air:'Gale Court', earth:'Stone Court'},
              sexes:{m:'fae-%s-m', f:'fae-%s-f'}},
   gloomling:{name:'Gloomling', mods:{vit:2, foc:1}, speed:100, locked:'shadow', capBonus:1,
+             summary:'Hardy Shadow specialists, suited to Mages and Clerics.',
              blurb:'Start with Shadow 1. +1 affinity cap, 20% less hunger. Take 25% more light damage.',
              sexes:{m:'gloomling-m', f:'gloomling-f'}}
 };
@@ -70,24 +75,29 @@ function clone(o){ return JSON.parse(JSON.stringify(o)); }
 
 var CLASSES = {
   fighter:  {name:'Fighter', mods:{mig:2,vit:2}, ability:'double', icon:'cls-fighter',
+             summary:'Tough melee fighters. Primary stat: Might.',
              passive:'Guard: 12% max HP shield; refills out of combat.',
-             blurb:'Sword and shield. Double Strike hits twice; Charge closes distance and stuns.',
+             blurb:'Sword, shield and chain shirt. Double Strike hits twice; Charge closes distance and stuns.',
              kit:{main:'sword', alt:'longsword', armor:'chain', off:'kite'}},
   cleric:   {name:'Cleric', mods:{foc:2,vit:2}, ability:'invoke', icon:'cls-cleric',
-             passive:'Starts sworn to a god of your choice (rank 1, 20 piety).',
-             blurb:'Start with a god and its invoke ability.',
+             summary:'Devout fighters bound to their god and its favored fighting style.',
+             passive:'Devout: rank 1, 20 starting piety and +25% piety gain.',
+             blurb:'Starting gear and divine ability depend on your god.',
              kit:{main:'mace', alt:'staff', armor:'leather', off:'holy'}},
   mage:     {name:'Mage', mods:{foc:3,vit:1}, ability:'missile', icon:'cls-mage',
+             summary:'Spellcasters who grow with elemental affinity. Primary stat: Focus.',
              passive:'Deep Reserves: +30% max mana.',
-             blurb:'Magic Missile always hits, ignores resistance and gains damage from affinity.',
+             blurb:'Staff and robe. Magic Missile always hits and carries weapon enchantments.',
              kit:{main:'wand', alt:'staff', armor:'robe', off:'orb'}},
   scoundrel:{name:'Scoundrel', mods:{agi:4}, ability:'sap', icon:'cls-scoundrel',
-             passive:'Sneaky: double surprise damage. Halve enemy detection chance and reduce detection range by 2 tiles. Shadowstep requires no adjacent enemies.',
-             blurb:'Bow and dagger. Sap disables an enemy and sets up a surprise attack.',
+             summary:'Fast, stealthy fighters with elemental tricks. Primary stat: Agility.',
+             passive:'Sneaky: double surprise damage; half enemy detection chance and 2 tiles less detection range.',
+             blurb:'Two daggers, bow and light armor. Sap sets up a surprise critical; Shadowstep needs no adjacent enemies.',
              kit:{main:'dagger', alt:'bow', armor:'leather', off:'dagger'}},
   tourist:  {name:'Tourist', mods:{}, ability:null, icon:'cls-tourist',
-             passive:'Well-Traveled: +1 extra stat point every 2 levels.',
-             blurb:'Extra XP and stat points. Starts with a dagger, shirt and camera.',
+             summary:'Here for a good time, not a long time.',
+             passive:'Well-Traveled: +25% XP; +1 stat point at creation and every 2 levels.',
+             blurb:'Dagger, shirt and camera.',
              kit:{main:'dagger', alt:null, armor:'shirt', off:'camera'}, extraFood:2}
 };
 
@@ -95,6 +105,7 @@ var CLASSES = {
 var GODS = {
   "grom": {
     "name": "Chad the Unclad",
+    "summary": "Favors unarmed Fighters who trust flesh over steel.",
     "refuses": "dwarf",
     "title": "god of the bare fist",
     "sprite": "shrine-grom",
@@ -114,6 +125,7 @@ var GODS = {
   },
   "grumbok": {
     "name": "Grumbok, Who Hates Wizards",
+    "summary": "Favors Fighters and weapon combat; rejects spellcasting.",
     "title": "god of honest violence",
     "sprite": "shrine-grumbok",
     "color": "#B8453A",
@@ -132,6 +144,7 @@ var GODS = {
   },
   "glimmer": {
     "name": "Saint Glimmer",
+    "summary": "Favors Light affinity, healing and smiting the undead.",
     "title": "saint of mending light",
     "sprite": "shrine-glimmer",
     "color": "#F6E7B0",
@@ -156,6 +169,7 @@ var GODS = {
   },
   "murk": {
     "name": "Mother Murk",
+    "summary": "Favors Gloomlings, Shadow affinity and undead servants.",
     "title": "mother of the quiet dead",
     "sprite": "shrine-murk",
     "color": "#8A6FB0",
@@ -175,6 +189,7 @@ var GODS = {
   },
   "reginald": {
     "name": "Sir Reginald the Unsneaky",
+    "summary": "Favors Fighters who meet their enemies head-on.",
     "title": "patron of the fair fight",
     "sprite": "shrine-reginald",
     "color": "#9FB0C0",
@@ -193,6 +208,7 @@ var GODS = {
   },
   "anvil": {
     "name": "Old Anvil",
+    "summary": "Favors Dwarves, forged gear and enchanted weapons.",
     "title": "the smith below",
     "sprite": "shrine-anvil",
     "color": "#E8B44A",
@@ -212,6 +228,7 @@ var GODS = {
   },
   "vellum": {
     "name": "Vellum, the Open Book",
+    "summary": "Favors Mages and Elves devoted to spellcasting.",
     "title": "keeper of every spell ever spoken",
     "sprite": "shrine-vellum",
     "color": "#7FA8FF",
@@ -231,6 +248,7 @@ var GODS = {
   },
   "wobbles": {
     "name": "Wobbles, the Giggling Chaos",
+    "summary": "Favors risk-takers of every class; fortune is never certain.",
     "title": "god of whatever happens next",
     "sprite": "shrine-wobbles",
     "color": "#D98BD0",
@@ -250,6 +268,7 @@ var GODS = {
   },
   "sylla": {
     "name": "Sylla the Patient",
+    "summary": "Favors Scoundrels, stealth and lingering status effects.",
     "title": "mother of the brood",
     "sprite": "shrine-sylla",
     "color": "#B81A3A",

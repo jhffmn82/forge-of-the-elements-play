@@ -56,7 +56,7 @@ var _betaPreview=previewPath;
 previewPath=function(ax,ay,x,y,A){
  _betaPreview.apply(this,arguments);if(!['blast','aoe','lflame','cone','beam','tomb','upheaval'].includes(A.kind))return;
  var walls=A.kind==='upheaval'?upheavalWallTiles(x,y):[],center=A.kind==='tomb'?foeAt(x,y):null;
- ctx.save();
+ ctx.save();ctx.lineWidth=1;
  effectFootprint(A,x,y).forEach(function(p){
   if(!vis[idxOf(p[0],p[1])])return;
   var wall=walls.some(function(w){return w[0]===p[0]&&w[1]===p[1];}),tomb=A.kind==='tomb'&&(center?entityOccupies(center,p[0],p[1]):p[0]===x&&p[1]===y);

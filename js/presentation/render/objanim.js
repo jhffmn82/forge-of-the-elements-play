@@ -130,7 +130,7 @@ function objFxDraw(o, dx, dy, w, h, alpha, flip){
       I.bright.slice(0,3).forEach(function(b, i){   /* the three brightest points: more reads as glitter, not a glint */
         var ph=((t*0.35 + hash2(i, seed|0, 5)) % 1)*2.2; if(ph>1) return;
         var a=Math.pow(Math.sin(Math.PI*ph), 3); if(a<0.05) return;
-        /* queued, and drawn after the lighting (drawBeacons below): drawn here, the dark pass swallowed it */
+        /* Queued for objGlintsFlush after lighting; the dark pass would swallow it here. */
         // A fitted prop can scale/translate its art. Carry that transform to
         // the later glint pass instead of leaving the reflection at full size.
         if(!transform)transform=ctx.getTransform();

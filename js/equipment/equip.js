@@ -14,13 +14,13 @@ var HELD = {
   longsword:{len:0.64, hand:'r', follow:1.0, tilt:-0.40, grip:0.80, two:true},
   axe:      {len:0.58, hand:'r', follow:1.0, tilt:-0.40, grip:0.84, two:true},
   mace:     {len:0.40, hand:'r', follow:1.0, tilt:-0.45, grip:0.86},
-  dagger:   {len:0.28, hand:'r', follow:1.0, tilt:-0.55, grip:0.82},
+  dagger:   {len:0.28, hand:'r', follow:1.0, tilt:-0.55, grip:0.82, offIdle:'blade'},
   spear:    {len:0.86, hand:'r', follow:0.5, tilt:-0.12, grip:0.62, two:true},
   staff:    {len:0.80, hand:'r', follow:0.4, tilt:-0.10, grip:0.62, two:true},
   wand:     {len:0.30, hand:'r', follow:1.0, tilt:-0.50, grip:0.85},
   /* 2026-09-27 (Justin, D2a): the Ceremonial Knife in the hand is the 64px bone-knife pixel art (held-censer), not the
      1254px painting shrunk 80 times; the painting stays the item icon (render.js) */
-  censer:   {len:0.28, hand:'r', follow:0.7, tilt:-0.30, grip:0.85},
+  censer:   {len:0.28, hand:'r', follow:0.7, tilt:-0.30, grip:0.85, offIdle:'blade'},
   bow:      {len:0.58, hand:'l', follow:0.3, tilt:0.08,  grip:0.50, two:true},
   buckler:  {len:0.30, hand:'l', shield:true},
   kite:     {len:0.42, hand:'l', shield:true},
@@ -450,7 +450,7 @@ function drawHeld(g, key, pose, rest, dx, dy, sc, drawH, enchant, now, tier, han
     } else {
       g.translate(hx, hy);
       var gside = hk==='r' ? 1 : -1;     /* 2026-10-05: outward by the hand, not by the half of the cell the fist is in */
-      var tip = aim ? -Math.PI/2 : swing && swing.a!==undefined ? swing.a*Math.PI/180 : heldTipAngle(heldStyle(key), at && at.carry ? at.carry[hk] : gh, gside);
+      var tip = aim ? -Math.PI/2 : swing && swing.a!==undefined ? swing.a*Math.PI/180 : heldTipAngle(at && at.style || heldStyle(key), at && at.carry ? at.carry[hk] : gh, gside);
       /* 2026-09-28 (Justin): in the attack the main-hand weapon points right, toward the target (the sprite is mirrored to face left) */
       if(strike && Math.cos(tip)<0) tip = Math.PI - tip;
       /* 2026-10-06: an added body row gives the angle itself (heldRowSwing, heldBowAim): nothing is mirrored after it, and its
@@ -621,7 +621,13 @@ function drawCastLayers(e, cs, fr, dx, dy, w, h, g, time){
     if(mainKey){ var mh=(sw && sw.hand) || HELD[mainKey].hand; items.push({key:mainKey, ench:wpn.enchant, tier:heldTier(wpn), aim:clip==='ranged' && aimBow, strike:clip==='melee' && !fr.off && (fr.step===undefined || (fr.step>2 && fr.step<7)), swing:sw, z:(keepMain||grip)[mh].z, at:at(mh, keepMain)}); }
     /* 2026-10-06: the holy symbol is a disc held like a buckler now (Justin), each god's too, so it takes the shield's
        rules: the carry, the floor, the death rule, and the striking weapon drawn in front of it */
-    if(offKey) items.push({key:offKey, ench:off.enchant, tier:heldTier(off), hand:'l', z:lay.l.z, at:at('l')});
+    if(offKey){
+      var offAt=at('l');
+      /* Short off-hand blades rest point-down like wands, including the paper doll.
+         The main hand and the walking, casting and attack rows keep their existing poses. */
+      if(clip==='idle' || clip==='static') offAt.style=HELD[offKey].offIdle;
+      items.push({key:offKey, ench:off.enchant, tier:heldTier(off), hand:'l', z:lay.l.z, at:offAt});
+    }
     /* 2026-10-06: an added row turns the weapon itself (heldRowSwing) or leaves it at its carry, so it is never mirrored
        to the target; its bow stands square to the arrow's line */
     if(add && mainKey){ if(add==='shoot' && aimBow) items[0].swing=heldBowAim(grip); else if(!sw || sw.a===undefined) items[0].strike=false; }

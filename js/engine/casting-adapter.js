@@ -106,10 +106,18 @@ function useAbility(i){
   }
   if(A.kind==='self'){if(castSelf(key,A)===false)return;if(key==='temper'){updateUI();return;}if(A.instant)FREE_ACTION=true;endTurn();}
 }
+/* Distance reach only. Target restrictions remain with each cast owner; Umbral
+ * reaches any explored tile, so it has no finite distance perimeter. */
+function aimRange(selection){
+  if(!selection||!selection.A)return 0;
+  var A=selection.A;
+  if(A.kind==='umbral')return Infinity;
+  return selection.amulet||selection.prayer?A.range:A.kind==='lunge'?FoteActions.lunge().range:A.kind==='charge'?ABILITIES.charge.range:A.kind==='upheaval'?A.range:A.kind==='dash'?3:spellRange(A);
+}
 function inRange(x,y){
   if(!aiming||!inb(x,y))return false;
   var A=aiming.A;if(A.kind==='umbral')return !!seen[idxOf(x,y)];
-  var range=aiming.prayer?A.range:A.kind==='lunge'?FoteActions.lunge().range:A.kind==='charge'?ABILITIES.charge.range:A.kind==='upheaval'?A.range:A.kind==='dash'?3:spellRange(A);
+  var range=aimRange(aiming);
   return dist(player,{x:x,y:y})<=range&&(revealAll||vis[idxOf(x,y)]);
 }
 

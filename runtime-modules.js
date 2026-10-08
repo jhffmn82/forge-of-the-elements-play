@@ -30,6 +30,7 @@ var FOTE_RUNTIME = {
   "js/content/enemy-lore.js",
   "js/world/world.js",
   "js/world/rare-rooms.js",
+  "js/presentation/render/targeting-cues.js",
   "js/presentation/render/render.js",
   "js/presentation/animation/cast-frame-alignment.js",
   "js/presentation/render/surface.js",

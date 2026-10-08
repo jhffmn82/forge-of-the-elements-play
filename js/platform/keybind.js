@@ -27,7 +27,15 @@ function keyLabel(k){ return k.indexOf('Numpad')===0 ? 'Numpad '+k.slice(6) : k=
 var REBINDING=null;
 window.addEventListener('keydown', function(ev){
   /* UI controls retain native key activation before any gameplay listener runs. */
-  if(ev.key!=='Escape'&&ev.target&&ev.target.closest&&ev.target.closest('[data-game-ui]')){ev.stopImmediatePropagation();return;}
+  if(ev.key!=='Escape'&&ev.target&&ev.target.closest&&ev.target.closest('[data-game-ui]')){
+    // Map symbols retain native button keys, but their map binding still closes
+    // the overlay. Consume this once here so a translated event cannot reopen it.
+    if(typeof AUTOMAP_ON!=='undefined'&&AUTOMAP_ON&&!REBINDING&&ev.target.closest('#automapLandmarks')&&['Enter',' ','Tab'].indexOf(ev.key)<0&&
+        (bindingEventKey(ev)===bindKey('map')||bindKey('map')==='m'&&ev.key==='M')){
+      ev.preventDefault();if(!ev.repeat)toggleAutomap(false);
+    }
+    ev.stopImmediatePropagation();return;
+  }
   if(ev.__fote) return;                                   /* our own translated event */
   var tgt=ev.target && ev.target.tagName; if(tgt==='INPUT' || tgt==='SELECT' || tgt==='TEXTAREA') return;
   var eventKey=bindingEventKey(ev),numpad=eventKey.indexOf('Numpad')===0;

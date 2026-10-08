@@ -448,12 +448,12 @@ function renderPlayerUI(){
 
 /* tooltip */
 var tip=$('tip');
-cv.addEventListener('mouseleave', function(){ tip.style.display='none'; hoverX=-1; hoverY=-1; if(aiming) draw(); });
+cv.addEventListener('mouseleave', function(){ tip.style.display='none'; hoverX=-1; hoverY=-1; if(player&&map&&!sharedAnimationWillDraw()) draw(); });
 cv.addEventListener('mousemove', function(ev){
   var r=cv.getBoundingClientRect();
   if(!seen || !vis || !map || !player){ tip.style.display='none'; return; }   /* the map can be mid-rebuild */
   var mx=camX+Math.floor((ev.clientX-r.left+camOX)/TS), my=camY+Math.floor((ev.clientY-r.top+camOY)/TS);
-  if(mx!==hoverX || my!==hoverY){ hoverX=mx; hoverY=my; if(aiming) draw(); }
+  if(mx!==hoverX || my!==hoverY){ hoverX=mx; hoverY=my; if(!sharedAnimationWillDraw()) draw(); }
   var html=''; try{ html=inspectHTML(mx,my); }catch(err){ html=''; }
   if(!html){ tip.style.display='none'; return; }
   tip.innerHTML=html; tip.style.display='block';

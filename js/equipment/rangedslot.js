@@ -76,7 +76,7 @@ function drawBowAimOverlay(){
   var e=bowLive(); if(!e || typeof ctx==='undefined' || !ctx) return;
   var ox=typeof camOX!=='undefined' ? camOX : 0, oy=typeof camOY!=='undefined' ? camOY : 0;
   var x0=(e.x-camX)*TS-ox+2,y0=(e.y-camY)*TS-oy+2,S=TS*entitySize(e)-4,c=Math.max(3,TS*.13);
-  ctx.save(); ctx.globalAlpha=0.7; ctx.strokeStyle='#9FD8FF'; ctx.lineWidth=1; ctx.beginPath();
+  ctx.save(); ctx.globalAlpha=.85; ctx.strokeStyle='#9FD8FF'; ctx.lineWidth=1.25; ctx.beginPath();
   ctx.moveTo(x0, y0+c); ctx.lineTo(x0, y0); ctx.lineTo(x0+c, y0);
   ctx.moveTo(x0+S-c, y0); ctx.lineTo(x0+S, y0); ctx.lineTo(x0+S, y0+c);
   ctx.moveTo(x0, y0+S-c); ctx.lineTo(x0, y0+S); ctx.lineTo(x0+c, y0+S);

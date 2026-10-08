@@ -1,9 +1,9 @@
 {
   "version": "Beta 1.6",
-  "built": "2026-10-08T03:14:03.778658+00:00",
-  "epoch": 1791429243,
-  "source": "Independent audit fixes, straight-route pathing, journal UI and runtime/performance corrections; runtime b18835d3a151fcdea987f8f0fe76bd85f0e6ddcdd98d071c27dbcb7fb3e8cf67",
+  "built": "2026-10-08T12:56:44.995234+00:00",
+  "epoch": 1791464204,
+  "source": "Approved audit follow-up, native navigation and quiet targeting, fluid barrel metadata and new intro; runtime 32620f78ede791fe60fb70cbdbae2d6b039a39a513a1607b21b4cfb36900848e",
   "candidate": true,
   "releaseState": "playtest",
-  "revision": "beta16-audit-rollup-20261008-031403"
+  "revision": "beta16-release-followup-20261008-125644"
 }

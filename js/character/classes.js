@@ -11,13 +11,13 @@ var FIGHTER_NO_BLOCK = true;   /* Shield Training is gone; tiers.js reads this *
 
 /* ---------------------------------------------------------------- tables */
 CLASSES.fighter.passive = 'Guard: 12% max HP shield; refills out of combat.';
-CLASSES.cleric.passive  = 'Devout: start at god rank 1 with 20 piety. +25% piety gain.';
+CLASSES.cleric.passive  = 'Devout: rank 1, 20 starting piety and +25% piety gain.';
 CLASSES.mage.passive    = 'Deep Reserves: +30% max mana.';
-CLASSES.mage.blurb      = 'Staff and robe. Magic Missile always hits, scales with affinity and carries weapon enchantments.';
+CLASSES.mage.blurb      = 'Staff and robe. Magic Missile always hits and carries weapon enchantments.';
 CLASSES.mage.kit        = {main:'staff', alt:null, armor:'robe', off:null};
-CLASSES.scoundrel.passive = 'Sneaky: double surprise damage. Halve enemy detection chance and reduce detection range by 2 tiles. Shadowstep requires no adjacent enemies.';
-CLASSES.scoundrel.blurb = 'Two daggers and a bow. Sap disables an enemy; the next hit is a surprise critical.';
-CLASSES.tourist.passive = 'Well-Traveled: +25% XP. +1 starting stat point and +1 every 2 levels.';
+CLASSES.scoundrel.passive = 'Sneaky: double surprise damage; half enemy detection chance and 2 tiles less detection range.';
+CLASSES.scoundrel.blurb = 'Two daggers, bow and light armor. Sap sets up a surprise critical; Shadowstep needs no adjacent enemies.';
+CLASSES.tourist.passive = 'Well-Traveled: +25% XP; +1 stat point at creation and every 2 levels.';
 RACES.human.blurb = '+1 to all stats. +1 stat point every 3 levels. +25% piety gain.';
 RACES.fae.blurb   = RACES.fae.blurb + ' Takes 25% more damage from the element opposite its court.';
 

@@ -67,7 +67,7 @@ function actorFootprintField(e,target,options){
   var mapWidth=MW,mapHeight=MH,frame=typeof FRAME_MAP!=='undefined'&&FRAME_MAP;
   var width=frame?FRAME_MW:mapWidth,height=frame?FRAME_MH:mapHeight;
   var context=typeof geometryQueryContext==='function'?geometryQueryContext(width,height,frame):null;
-  var field=new Int32Array(mapWidth*mapHeight).fill(-1),judged=new Int8Array(mapWidth*mapHeight),queue=[],n=entitySize(e),neighbors=FoteActors.neighbors;
+  var field=new Int32Array(mapWidth*mapHeight).fill(-1),judged=new Int8Array(mapWidth*mapHeight),cornerJudged=new Int8Array(mapWidth*mapHeight),queue=[],n=entitySize(e),neighbors=FoteActors.neighbors;
   options=Object.assign({terrainOnly:true,doors:true},options||{});
   // Bounds and indices stay fixed during this synchronous search. Keep the
   // frame view used by inb/idxOf, without reading run-state getters per edge.
@@ -76,11 +76,14 @@ function actorFootprintField(e,target,options){
    * once; a wall used to be judged again by every neighbour, for every wanderer, every turn. Nothing changes
    * during one search, so the field and every step taken from it are the same. */
   function allowed(x,y){var i=y*width+x;if(!judged[i])judged[i]=actorFootprintAllowed(e,x,y,options,context)?1:2;return judged[i]===1;}
+  // Corner clearance has a different policy from destination occupancy, but
+  // shares the same fixed actor, options and terrain during this search.
+  function cornerAllowed(x,y){var i=y*width+x;if(!cornerJudged[i])cornerJudged[i]=actorCornerCellAllowed(e,x,y,options,context)?1:2;return cornerJudged[i]===1;}
   for(var y=target.y-n;y<=target.y+entitySize(target);y++)for(var x=target.x-n;x<=target.x+entitySize(target);x++){
     if(!inside(x,y)||dist({x:x,y:y,base:e.base},target)!==1||!allowed(x,y))continue;
     // A diagonal behind two walls is not a reachable place beside the target.
     // Use the same corner rule as the eventual movement step.
-    if(n===1&&entitySize(target)===1&&x!==target.x&&y!==target.y&&!actorCornerCellAllowed(e,x,target.y,options,context)&&!actorCornerCellAllowed(e,target.x,y,options,context))continue;
+    if(n===1&&entitySize(target)===1&&x!==target.x&&y!==target.y&&!cornerAllowed(x,target.y)&&!cornerAllowed(target.x,y))continue;
     field[y*width+x]=0;queue.push({x:x,y:y});
   }
   for(var head=0;head<queue.length;head++){
@@ -93,7 +96,9 @@ function actorFootprintField(e,target,options){
       var dx=neighbors[k][0],dy=neighbors[k][1],nx=p.x+dx,ny=p.y+dy,index=ny*width+nx;
       if(!inside(nx,ny)||field[index]>=0||!allowed(nx,ny))continue;
       if(dx&&dy){
-        if(n===1&&e.ally){if(!actorCornerCellAllowed(e,nx,p.y,options,context)&&!actorCornerCellAllowed(e,p.x,ny,options,context))continue;}
+        // A side cell is clearance, not a destination. Match actorCellAllowed:
+        // closed doors seal corners, while another body's side cell need not.
+        if(n===1){if(!cornerAllowed(nx,p.y)&&!cornerAllowed(p.x,ny))continue;}
         else if(!allowed(nx,p.y)&&!allowed(p.x,ny))continue;
       }
       field[index]=nextDistance;queue.push({x:nx,y:ny});

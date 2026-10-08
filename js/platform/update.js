@@ -3,10 +3,10 @@ var FOTE_VERSION = 'Beta 1.6';
 /* Keep newest first; describe only changes already present in this build. */
 var FOTE_PATCHES = [
   {version:'Beta 1.6', notes:[
-    "Expanded character animations, with weapon-specific punches, strikes, thrusts and bow shots. Equipment and god-specific holy-symbol artwork have been refreshed.",
+    "Expanded character animations, with weapon-specific punches, strikes, thrusts and bow shots. Equipment and god-specific holy-symbol artwork have been refreshed. Updated opening footage shows the new sprites and animations.",
     "Retuned staff melee, Magic Missile and early enemy health and damage. Heavier Dungeon room encounters appear from floor 3, giving new builds a gentler opening.",
     "More puzzles, special rooms and hidden discoveries, including the Offering Chamber, Greedy Vault, Funeral Bell, Silk Survivor and four rare once-per-biome encounters.",
-    "Updated elemental creatures, terrain, mushrooms, props and traps. Library shelves leave two clear rows between them, and lighting edges are slightly softer.",
+    "Updated elemental creatures, terrain, mushrooms, props and traps. Library shelves leave two clear rows between them, and lighting edges are slightly softer. Water and poison barrels match regular barrel height.",
     "Vellum gains Arcane Lance, Mana Ward and Blink. Arcane Lance costs 5 Mana, reaches 5 tiles and has no cooldown; at rank 3, half your bonus Divine Power also improves Spell Power.",
     "Sir Reginald supports melee builds with Lunge, a protective and regenerating Last Stand, Coward's Mark, a weapon beam and Perfect Counter.",
     "Wobbles has more varied pranks and resource rewards. Favorite Toy unlocks at rank 3, converting pranks with a 5% chance per rank. Tempt Fate costs 40 Favor and can drop sigils, motes, rings and amulets nearby.",
@@ -16,6 +16,10 @@ var FOTE_PATCHES = [
     "Tiny Spiderlings, Shroomlings and Rotlings no longer block ranged shots. Brood Carriers and Silk Weavers throw limited broods beside their target.",
     "Mobile play requires landscape; turn your device sideways when the rotation prompt appears. Touch movement responds on press, supports delayed hold-to-move, and keeps pickup separate from Search.",
     "Refreshed menus with clearer text, stronger colors, matching utility icons, larger equipment portraits and improved touch tooltips. Character framing and introductory guidance have also improved.",
+    "Roll an editable random character before starting a run. Class cards keep abilities, guidance, equipment and traits together.",
+    "Discovered map landmarks can be selected to travel safely beside shrines, stairs, forges and portals. Arrival does not automatically use them.",
+    "Subtle targeting highlights keep area and cone footprints clear. Off-hand short blades point down while idle.",
+    "Enemy diagonal movement respects closed-door corners and occupied side tiles.",
     "Related pickups, periodic damage and ordinary defeats combine in the recent combat log. Individual history entries and tactical warnings remain available.",
     "Click-to-move prefers straight steps when shortest routes take the same number of turns.",
     "Reduced repeated terrain and interface rendering work. Offline updates keep completed game copies together, and floor loading includes more creatures revealed during play. Missing artwork can be retried.",
