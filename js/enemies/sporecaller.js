@@ -11,6 +11,13 @@ var FoteSporecaller=(function(){
  // Sporecaller and Root-bound share the retired vermin's combined weight of 16.
  MONSTERS.caverat.w=0;MONSTERS.cavebat.w=0;
  var RANGE=5,FIELD_LIFE=300,FIELD_COOLDOWN=600,SUPPORT_COOLDOWN=500;
+ var FIELD_ABILITY=Object.freeze({id:'spore-field',name:'Spore Field'});
+ function fieldCause(source){
+  var action=gameActions.current();
+  if(!action||action.source!==source)action=null;
+  return FoteActions.damageCause(action,{source:source,ability:FIELD_ABILITY,
+   actionId:action?action.actionId:null,tags:['environment','spore-field']},null);
+ }
  function fields(){return floorMeta.sporeFields||(floorMeta.sporeFields=[]);}
  function growth(){return floorMeta.sporeGrowth||(floorMeta.sporeGrowth={});}
  function visible(e){return inb(e.x,e.y)&&!!vis[idxOf(e.x,e.y)];}
@@ -28,7 +35,7 @@ var FoteSporecaller=(function(){
   // Put the target on the near edge, so one ordinary step can leave a 3x3 field.
   var center={x:target.x+Math.sign(e.x-target.x),y:target.y+Math.sign(e.y-target.y)};
   var cells=cellsAt(center);if(!cells.length||cells.indexOf(idxOf(target.x,target.y))<0)return false;
-  fields().push({owner:e.id,x:center.x,y:center.y,cells:cells,armedTurn:turn,fireAt:worldNow()+100,rooted:[]});
+  fields().push({owner:e.id,applicationCause:fieldCause(e),x:center.x,y:center.y,cells:cells,armedTurn:turn,fireAt:worldNow()+100,rooted:[]});
   e.sporeFieldReadyAt=worldNow()+FIELD_COOLDOWN;
   if(target.x!==e.x)e.facingLeft=target.x<e.x;
   setClip(e,'attack');sfx('shaman-cast',{from:e});
@@ -75,15 +82,18 @@ var FoteSporecaller=(function(){
     if(f.cells.some(function(i){return vis[i];})){sfx('trap-gas',{from:f});log('Spore field: Root, Poison'+(sprouts.length?'; '+sprouts.length+' Shroomling'+(sprouts.length===1?'':'s')+' summoned':'')+'.','c-you');}
    }
    if(clock>=f.expiresAt)return false;
+   // Older saves retain the field owner even after the caster is removed.
+   // Capture facts, not an actor reference or the command advancing this pulse.
+   if(!Object.prototype.hasOwnProperty.call(f,'applicationCause'))f.applicationCause=fieldCause({id:f.owner});
    targets().forEach(function(e){
     if(e.hp<=0||e.tomb>0||gameEffects.airborne(e)||f.cells.indexOf(idxOf(e.x,e.y))<0)return;
     var id=e===player?'player':e.id;
     if(f.rooted.indexOf(id)<0){
      f.rooted.push(id);
-     gameEffects.apply(e,'root',1,undefined,{durationModifiers:false});
+     gameEffects.apply(e,'root',1,undefined,{durationModifiers:false,applicationCause:f.applicationCause});
     }
     // Do not overwrite a stronger poison or bypass Earth/Unstoppable immunity.
-    if(!gameEffects.has(e,'poison'))gameEffects.apply(e,'poison',2,undefined,{data:{damageScale:.25}});
+    if(!gameEffects.has(e,'poison'))gameEffects.apply(e,'poison',2,undefined,{data:{damageScale:.25},applicationCause:f.applicationCause});
    });
    return true;
   });
@@ -121,8 +131,8 @@ var FoteSporecaller=(function(){
  }
  var greenPlants={};
  function plant(i,scale,alpha,now){
-  var x=i%MW,y=Math.floor(i/MW),v=(x*3+y*7)%5,o=sceneryClusterArt('mushroom-crypt',v);if(!o)return;
-  // This is the existing Crypt vegetation, tinted once at its original native
+  var x=i%MW,y=Math.floor(i/MW),v=(x*3+y*7)%5,o=FoteEnvironmentVegetation.clusterArt('mushroom-crypt',v);if(!o)return;
+  // Combat growth uses the original full-size Crypt clusters, independently of scenery spreads, tinted at native
   // resolution. No newly generated mushroom silhouettes or finer detail.
   if(!greenPlants[v]||greenPlants[v].source!==o.img){
    var canvas=document.createElement('canvas');canvas.width=128;canvas.height=128;

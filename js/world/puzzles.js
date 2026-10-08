@@ -313,7 +313,7 @@ var SPIKES_SRC = {name:'Spikes', base:{pierce:99}};
 
 function drawTrap(f,px,py,alpha,now){
   if(!spriteOn){
-    var block={dart:['#A69B87','â†—'],fire:['#F58B42','F'],gas:['#91BC61','P'],frost:['#9FD8FF','I'],spark:['#FFE080','ÏŸ'],teleport:['#B58CFF','O'],web:['#D8D5C6','#'],alarm:['#E8B44A','!'],pit:['#94887C','â–¡'],spikes:['#B9B3AA','^']}[f.kind]||['#B9B3AA','^'];
+    var block={dart:['#A69B87','↗'],fire:['#F58B42','F'],gas:['#91BC61','P'],frost:['#9FD8FF','I'],spark:['#FFE080','ϟ'],teleport:['#B58CFF','O'],web:['#D8D5C6','#'],alarm:['#E8B44A','!'],pit:['#94887C','□'],spikes:['#B9B3AA','^']}[f.kind]||['#B9B3AA','^'];
     ctx.save();ctx.globalAlpha=alpha;ctx.fillStyle='#292421';ctx.fillRect(px+TS*.1,py+TS*.1,TS*.8,TS*.8);ctx.strokeStyle=block[0];ctx.lineWidth=Math.max(1,TS*.04);ctx.strokeRect(px+TS*.1,py+TS*.1,TS*.8,TS*.8);glyph(block[1],px,py,block[0]);ctx.restore();return;
   }
   if(f.kind!=='spikes') return drawOrdinaryTrap(f, px, py, alpha, now);
@@ -339,7 +339,7 @@ function refreshBurningRoom(room){
   if(!room.burning||room.puzzle.solved)return;
   pzCells(room).forEach(function(c){if(at(c.x,c.y)===FLOOR)fireT[idxOf(c.x,c.y)]=Math.max(fireT[idxOf(c.x,c.y)],3);});
 }
-function turnPuzzleHazards(context){ (floorMeta.puzzles||[]).forEach(refreshBurningRoom);  if(player.windCarry && at(player.x,player.y)===CHASM) player.levitate=Math.max(player.levitate,1);
+function turnPuzzleHazards(context){ (floorMeta.puzzles||[]).forEach(refreshBurningRoom);  if(player.windCarry && aff('air')>=3 && at(player.x,player.y)===CHASM) player.levitate=Math.max(player.levitate,1);
   var e=floorMeta.everburn;
   if(e){ fireT[idxOf(e.x,e.y)]=Math.max(fireT[idxOf(e.x,e.y)],3); }
   var room=puzzleRoomAt(player.x,player.y);
@@ -433,7 +433,7 @@ function searchAround(resting, quiet){
   }
   feats.forEach(function(f){ if(!f.found && Math.max(Math.abs(f.x-player.x),Math.abs(f.y-player.y))<=2 && rng()<ch){ f.found=true; found++; log('You find '+(/^[AEIOU]/.test(trapName(f.kind))?'an':'a')+' <b>'+trapName(f.kind)+' trap</b>.','c-info'); sfx('trap-spot'); if(typeof trapSpotFx==='function') trapSpotFx(f); } });
   if(found) computeFOV();
-  else if(!quiet) log('You search carefully'+(prev?' again':'')+' and find nothing.','c-info');
+  else if(!quiet) log('You search carefully'+(prev?' again':'')+' and find nothing.','c-info',{transient:false});
   endTurn();
 }
 window.addEventListener('keydown', function(ev){
@@ -491,7 +491,7 @@ function movePuzzleGate(dx,dy){
   if(!player || player.hp<=0) return false;
   var nx=player.x+dx, ny=player.y+dy, t=at(nx,ny), room=puzzleRoomAt(nx,ny);
   /* Air 3: the wind carries you over a chasm */
-  if(t===CHASM && aff('air')>=3 && !(player.levitate>0)){ player.levitate=1; player.windCarry=true; }
+  if(t===CHASM && aff('air')>=3){ player.levitate=Math.max(player.levitate||0,1); player.windCarry=true; }
   /* Fire 3 burns a barricade on contact */
   if(t===THORNS && aff('fire')>=3){ var br=(floorMeta.puzzles||[]).filter(function(r){ return r.puzzle.kind==='barricade' && r.puzzle.door.x===nx && r.puzzle.door.y===ny; })[0];
     setT(nx,ny,OPEN); burst(nx,ny,'fire',20,0.06); if(br) solvePuzzle(br, 'your fire burns the barricade away.'); else log('Your fire burns the thorns away.','c-kill'); endTurn(); return true; }

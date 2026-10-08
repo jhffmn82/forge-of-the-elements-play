@@ -35,11 +35,15 @@
     var mushroomFamilies=['mushroom-teal','mushroom-violet','mushroom-amber','mushroom-crypt','mushroom-earth'];
     var mushroomRow=mushroomFamilies.indexOf(family);
     if(mushroomRow>=0&&root.FoteEnvironmentProps)return root.FoteEnvironmentProps.art('props','mushroom-spread-'+mushroomRow+'-'+(((Math.floor(variant)||0)%5+5)%5));
+    return sourceClusterArt(family,variant);
+  };
+  // Original full-size clusters remain available to combat effects.
+  function sourceClusterArt(family,variant){
     var row=loaded?meta.clusters.families.indexOf(family):-1;
     if(row<0)return null;
     var cell=meta.clusters.cell,col=((Math.floor(variant)||0)%5+5)%5;
     return {img:images[meta.clusters.file],sx:col*cell,sy:row*cell,sw:cell,sh:cell};
-  };
-  root.FoteEnvironmentVegetation=Object.freeze({ensureAssets:ensureAssets,ready:function(){return loaded;},art:art,metadata:function(){return meta;},error:function(){return failure;}});
+  }
+  root.FoteEnvironmentVegetation=Object.freeze({ensureAssets:ensureAssets,ready:function(){return loaded;},art:art,metadata:function(){return meta;},clusterArt:sourceClusterArt,error:function(){return failure;}});
   ensureAssets().catch(function(){/* the loading screen's Retry fetches again */});
 })(globalThis);

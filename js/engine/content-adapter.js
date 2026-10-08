@@ -115,18 +115,29 @@ function addProp(x,y,name,extra){return propCreation.place({x:x,y:y,name:name,ex
 function placePreparedUrn(x,y,extra){return propCreation.place({x:x,y:y,name:'urn-group',extra:extra},'crypt-mushrooms');}
 
 function spawn(kind,x,y,options){
+  return spawnRaw(spawnSpecies(kind,x,y,options,false)[0],x,y);
+}
+/* Scene readiness asks for every possible species without constructing an
+ * actor or rolling gameplay RNG. Actual spawns use the same ordered rules and
+ * retain the original weighted/uniform choice at each random boundary. */
+function spawnSpecies(kind,x,y,options,preview){
   options=options||{};
+  var kinds=[kind];
   if(!options.skipDeep&&deepMobsOn()){
-    if(DEEP_SWAP[kind])kind=DEEP_SWAP[kind];
-    else if(!DEEP_GEN&&MONSTERS[kind]&&MONSTERS[kind].region!==undefined){var region=deepRegionAt(x,y);if(region>=0&&MONSTERS[kind].region!==region){var regional=deepPool(region);if(regional.length)kind=weightedMonster(regional);}}
+    if(DEEP_SWAP[kind])kinds=[DEEP_SWAP[kind]];
+    else if(!DEEP_GEN&&MONSTERS[kind]&&MONSTERS[kind].region!==undefined){var region=deepRegionAt(x,y);if(region>=0&&MONSTERS[kind].region!==region){var regional=deepPool(region,preview);if(regional.length)kinds=preview?regional.map(function(row){return row[0];}):[weightedMonster(regional)];}}
   }
-  if(CAVE_SWAP[kind]&&inCaverns())kind=CAVE_SWAP[kind];
-  if(inCaverns()&&/^(goblin|archer|brute|shaman)$/.test(kind)){
-    var pool=caveRoster().filter(function(p){return !MONSTERS[p[0]].boss;});
-    if(pool.length)kind=kind==='brute'?pool.slice().sort(function(a,b){return MONSTERS[b[0]].hp-MONSTERS[a[0]].hp;})[0][0]:pool[Math.floor(rng()*pool.length)][0];
-  }
-  if(inCrypt()&&CRYPT_SWAP[kind])kind=CRYPT_SWAP[kind];
-  return spawnRaw(kind,x,y);
+  var result=[];
+  kinds.forEach(function(species){
+    if(CAVE_SWAP[species]&&inCaverns())species=CAVE_SWAP[species];
+    var choices=[species];
+    if(inCaverns()&&/^(goblin|archer|brute|shaman)$/.test(species)){
+      var pool=caveRoster().filter(function(p){return !MONSTERS[p[0]].boss;});
+      if(pool.length)choices=species==='brute'?[pool.slice().sort(function(a,b){return MONSTERS[b[0]].hp-MONSTERS[a[0]].hp;})[0][0]]:preview?pool.map(function(row){return row[0];}):[pool[Math.floor(rng()*pool.length)][0]];
+    }
+    choices.forEach(function(choice){if(inCrypt()&&CRYPT_SWAP[choice])choice=CRYPT_SWAP[choice];if(result.indexOf(choice)<0)result.push(choice);});
+  });
+  return result;
 }
 function deepSpawnRaw(kind,x,y){var e=spawn(kind,x,y,{skipDeep:true});betaEnemyBalance(e);return e;}
 

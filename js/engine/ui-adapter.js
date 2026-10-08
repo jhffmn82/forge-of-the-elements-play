@@ -1,24 +1,4 @@
 /* Hotbar and HUD have one owner; slot actions and presentation stages are explicit. */
-function renderAmuletHotbar(){
-
-  var btns=$('hotbar').querySelectorAll('.slot[data-i]');
-  for(var i=0;i<btns.length;i++){
-    var idx=+btns[i].getAttribute('data-i'), s=player.hotbar[idx];
-    if(!s || s.type!=='amulet' || !player.amulet) continue;
-    var a=player.amulet, ready=(a.charges||0)>0;   /* the charge line itself is written by renderAmuletCharges */
-    var b=document.createElement('button');
-    b.className='slot hasico'; b.setAttribute('data-i', idx); b.title=AMULETS[a.amulet] ? gearName(a) : 'Amulet';
-    if(!ready) b.disabled=true;
-    b.innerHTML='<span class="ico"></span><span class="k">'+(idx+1)+'</span><span class="n">'+gearName(a)+'</span><span class="c">'+(ready?'ready':'no charges')+'</span>';
-    btns[i].replaceWith(b);
-    (function(bb, ii){ bb.onclick=function(){ sfx('ui-click'); pressSlotIndex(ii); };
-      bb.oncontextmenu=function(ev){ ev.preventDefault(); player.hotbar[ii]=null; abilityBar(); };
-      dragSource(bb, 'hot:'+ii);
-      dropTarget(bb, function(tag){ hotbarDrop(ii, tag); });   /* the replaced slot still takes a drop */
-      var ico=bb.querySelector('.ico'); if(ico&&a.icon)paintArt(ico,'items',a.icon,28); })(b, idx);
-  }
-}
-
 function renderAmuletCharges(){
 
   var btns=$('hotbar').querySelectorAll('.slot[data-i]');
@@ -27,9 +7,9 @@ function renderAmuletCharges(){
     if(!s || s.type!=='amulet' || !a) continue;
     var c=btns[i].querySelector('.c'); if(!c) continue;
     amuletSync(a);
-    c.textContent = aiming && aiming.amulet ? 'aiming...' : a.charges+'/'+amuletCap(a)+' charges'+(a.charges<amuletCap(a) ? ' · '+(a.unid?'?':amuletKillsNeeded(a)-(a.progress||0))+' kills' : '');
-    btns[i].disabled = a.charges<=0;
-    if(aiming && aiming.amulet) btns[i].classList.add('armed');
+    setHudText(c,aiming && aiming.amulet ? 'aiming...' : a.charges+'/'+amuletCap(a)+' charges'+(a.charges<amuletCap(a) ? ' · '+(a.unid?'?':amuletKillsNeeded(a)-(a.progress||0))+' kills' : ''));
+    if(btns[i].disabled!==(a.charges<=0))btns[i].disabled=a.charges<=0;
+    setHudClass(btns[i],'armed',!!(aiming&&aiming.amulet));
   }
 }
 
@@ -55,16 +35,22 @@ function flashHotbarReady(button){
 }
 function renderHotbarCooldowns(){
   syncHotbarCooldownActor();
+  CD_FLASHES.forEach(function(flash,button){if(!button.isConnected){clearTimeout(flash.timer);CD_FLASHES.delete(button);button.classList.remove('cdready');}});
   if(!player || !player.hotbar || !$('hotbar')) return;
   $('hotbar').querySelectorAll('.slot[data-i]').forEach(function(b){
     var s=player.hotbar[+b.getAttribute('data-i')], key=null, left=0, c=b.querySelector('.c');
-    if(s && s.type==='ability' && ABILITIES[s.key] && ABILITIES[s.key].cd){ key=s.key; left=cdLeft(key); if(c) c.textContent = left ? left+' turns' : 'ready'; }
+    var line=b._hotbarBaseLine||'';
+    if(s && s.type==='ability' && ABILITIES[s.key] && ABILITIES[s.key].cd){ key=s.key; left=cdLeft(key);line=left?left+' turns':'ready'; }
     /* prayers and invokes on a cooldown (DIVINE_COOLDOWNS): the same "N turns" badge */
-    else if(s && (s.type==='prayer' || s.type==='ability')){ key=s.type==='prayer' ? prayerCdKey(s.key) : s.key; left=cdLeft(key); if(left && c) c.textContent=left+' turns'; }
-    if(!key) return;
+    else if(s && (s.type==='prayer' || s.type==='ability')){ key=s.type==='prayer' ? prayerCdKey(s.key) : s.key; left=cdLeft(key);if(left)line=left+' turns'; }
+    if(key)setHudText(c,line);
+    if(b._hotbarCooldownKey!==key||left){var flash=CD_FLASHES.get(b);if(flash){clearTimeout(flash.timer);CD_FLASHES.delete(b);}b.classList.remove('cdready');}
+    b._hotbarCooldownKey=key;
+    setHudClass(b,'oncd',!!left);if(!left)b.style.removeProperty('--cdp');
+    if(!key)return;
     var was=CD_SPAN[key];
     if(left){ var span=Math.max(was||0, left, s.type==='ability' && ABILITIES[s.key] && cooldownTurns(ABILITIES[s.key].cd||0) || 0); CD_SPAN[key]=span;
-      b.classList.add('oncd'); b.style.setProperty('--cdp', Math.round(left/span*100)); }
+      setHudStyle(b,'--cdp',Math.round(left/span*100)); }
     else if(was){ delete CD_SPAN[key]; flashHotbarReady(b); }
   });
 }
@@ -75,40 +61,50 @@ function bindHotbarCards(){
   $('hotbar').querySelectorAll('.slot[data-i]').forEach(function(b){
     var i=+b.getAttribute('data-i');
     b.removeAttribute('title');
-    hoverCard(b, function(){ return hotbarCard(i); });
+    if(!b._hotbarCardBound){b._hotbarCardBound=true;hoverCard(b,function(){return hotbarCard(+b.getAttribute('data-i'));});}
     /* cooldowns and charges still show as a small number, since the text line is hidden */
     var s=player.hotbar[i], c=b.querySelector('.c'), txt=c ? c.textContent : '';
-    if(s && (/turns/.test(txt) || s.type==='amulet')){
+    var count=null,big=false;
+    if(s&&s.type==='item'&&s.ref.n>1)count=s.ref.n;
+    else if(s && (/turns/.test(txt) || s.type==='amulet')){
       var m=txt.match(/(\d+)\s*turns/), a=s.type==='amulet' && player.amulet;
-      var count=a ? (a.charges||0)+'/'+(typeof amuletCap==='function' ? amuletCap(a) : AMULET_MAX_CHARGES) : m && m[1];
-      if(count!==null && count!==false){ var d=document.createElement('span'); d.className='cdn'+(a ? '' : ' cdbig'); d.textContent=count; b.appendChild(d); }
+      count=a ? (a.charges||0)+'/'+(typeof amuletCap==='function' ? amuletCap(a) : AMULET_MAX_CHARGES) : m && m[1];big=!a;
     }
+    var d=b.querySelector('.cdn');
+    if(count!==null&&count!==false){if(!d){d=document.createElement('span');d.className='cdn';b.appendChild(d);}setHudClass(d,'cdbig',big);setHudText(d,count);}
+    else if(d)d.remove();
   });
 }
 
-function clearHotbarClickBindings(){
-  HOTBAR_CLICK_BINDINGS.forEach(function(binding,button){
+function releaseHotbarClickBinding(button,binding){
     binding.cancel();
     button.removeEventListener('touchstart',binding.start);
     button.removeEventListener('touchend',binding.cancel);
     button.removeEventListener('touchcancel',binding.cancel);
     button.removeEventListener('click',binding.click,true);
-    if(button.oncontextmenu===binding.context)button.oncontextmenu=null;
-  });
-  HOTBAR_CLICK_BINDINGS.clear();
+    if(button.oncontextmenu===binding.context)button.oncontextmenu=button._hotbarContext||null;
+    button._longPress=false;HOTBAR_CLICK_BINDINGS.delete(button);
+}
+function clearHotbarClickBindings(){
+  HOTBAR_CLICK_BINDINGS.forEach(function(binding,button){releaseHotbarClickBinding(button,binding);});
 }
 function bindHotbarClickSpells(){
-  /* Rebuilding slots releases their input callbacks as well as their DOM. */
-  clearHotbarClickBindings();
+  /* Keep an active gesture on a retained slot. Actual actor/slot replacement
+     releases its callbacks, including timers already queued by the browser. */
+  HOTBAR_CLICK_BINDINGS.forEach(function(binding,button){if(!binding.current())releaseHotbarClickBinding(button,binding);});
   if(!$('hotbar') || !player || !player.hotbar) return;
   $('hotbar').querySelectorAll('.slot[data-i]').forEach(function(b){
     var s=player.hotbar[+b.getAttribute('data-i')];
-    if(!s || s.type!=='ability' || !clickSpellable(s.key)) return;
+    var selectable=!!s&&s.type==='ability'&&clickSpellable(s.key),mark=b.querySelector('.clickmark');
+    if(selectable&&player.clickSpell===s.key){if(!mark){mark=document.createElement('span');mark.className='clickmark';mark.textContent='◎';mark.title='Your click ability';b.appendChild(mark);}}
+    else if(mark)mark.remove();
+    if(!selectable||HOTBAR_CLICK_BINDINGS.has(b))return;
     var owner=player,index=+b.getAttribute('data-i'),key=s.key,binding={press:null};
     function current(){
       var slot=player&&player.hotbar&&player.hotbar[index];
-      return player===owner&&b.isConnected&&HOTBAR_CLICK_BINDINGS.get(b)===binding&&slot&&slot.type==='ability'&&slot.key===key;
+      return player===owner&&b.isConnected&&HOTBAR_CLICK_BINDINGS.get(b)===binding&&slot&&slot.type==='ability'&&slot.key===key&&clickSpellable(key);
     }
+    binding.current=current;
     binding.cancel=function(){if(binding.press){clearTimeout(binding.press.timer);binding.press=null;}};
     binding.start=function(){
       binding.cancel();if(!current())return;
@@ -126,7 +122,6 @@ function bindHotbarClickSpells(){
     b.addEventListener('click',binding.click,true);
     b.addEventListener('touchend',binding.cancel);
     b.addEventListener('touchcancel',binding.cancel);
-    if(player.clickSpell===s.key){ var m=document.createElement('span'); m.className='clickmark'; m.textContent='◎'; m.title='Your click ability'; b.appendChild(m); }
   });
 }
 
@@ -216,7 +211,7 @@ function pressSlotIndex(i){
   }
 }
 
-function abilityBar(){renderHotbarSlots();renderAmuletHotbar();renderAmuletCharges();renderHotbarCooldowns();bindHotbarCards();bindHotbarClickSpells();renderTouchHotbar();if(typeof FoteResponsiveHUD!=='undefined')FoteResponsiveHUD.syncTouchControls();}
+function abilityBar(){renderHotbarSlots();renderAmuletCharges();renderHotbarCooldowns();bindHotbarCards();bindHotbarClickSpells();renderTouchHotbar();if(typeof FoteResponsiveHUD!=='undefined')FoteResponsiveHUD.syncTouchControls();}
 
 function compactHUDChips(){
 

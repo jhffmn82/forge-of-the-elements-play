@@ -376,7 +376,7 @@ function stackDiscipline(){
 function trollBloodRules(){var rule=FoteDamage.trollBlood(godRank(),divineStrength());rule.duration=fullDivineDuration(rule.duration);return rule;}
 function startPrayerCd(id){startDivineCd(prayerCdKey(id),DIVINE_COOLDOWNS.prayers[prayerId(id)]);}
 function startInvokeCd(key){startDivineCd(key,DIVINE_COOLDOWNS.invokes[key]);}
-function prayerRefused(id){var n=cdLeft(prayerCdKey(id)),health=prayerHealthCost(id),P=PRAYERS[prayerId(id)];log(n>0?P.name+': ready in '+n+' turns.':health&&player.hp<health+1?P.name+': needs '+(health+1)+' HP; costs '+health+'.':P.name+': unavailable.','c-info');sfx('ui-error');}
+function prayerRefused(id){var n=cdLeft(prayerCdKey(id)),health=prayerHealthCost(id),P=PRAYERS[prayerId(id)];if(n<=0)log(health&&player.hp<health+1?P.name+': needs '+(health+1)+' HP; costs '+health+'.':P.name+': unavailable.','c-info');sfx('ui-error');}
 function usePrayer(id){
   if(gameTurns.busy())return false;
   if(playerFearAction())return false;

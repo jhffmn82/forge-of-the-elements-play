@@ -161,7 +161,7 @@
 
     /* ---- long-press cards: across the screen, on the half away from the finger (see showCard below) */
     /* 2026-09-22 (Justin): the card sits bottom-left, above the hotbar, over the empty lower part of the sheet, where it can be read; it carries the item's buttons */
-    'body.touch #dtip{left:8px!important;right:auto!important;top:auto!important;bottom:var(--cardb,8px)!important;width:min(440px,calc(100vw - 16px))!important;max-width:none!important;font-size:calc(14px + var(--ui-mobile-text-add,0px));padding:10px 12px!important;z-index:85!important;pointer-events:auto!important}',   /* over the docked hotbar and tabs (60) */
+    'body.touch #dtip{left:var(--cardx,8px)!important;right:auto!important;top:auto!important;bottom:var(--cardb,8px)!important;width:var(--cardw,min(440px,calc(100vw - 16px)))!important;max-width:none!important;font-size:calc(14px + var(--ui-mobile-text-add,0px));padding:10px 12px!important;z-index:85!important;pointer-events:auto!important}',   /* over the docked hotbar and tabs (60) */
     'body.touch #dtip .tc-btns{display:flex;gap:8px;margin-top:10px}',
     'body.touch #dtip .tc-btns button{flex:1 1 auto;min-height:44px;font-size:calc(15px + var(--ui-mobile-text-add,0px))}',
     'body.touch #dtip .nm{font-size:calc(18px + var(--ui-mobile-text-add,0px))!important}',
@@ -281,8 +281,28 @@
     var _toggleClickTouch = toggleClickSpell;
     toggleClickSpell = function(key){ if(touch() && !menuCall) return; return _toggleClickTouch(key); };
   }
-  var hm=null, hmTimer=null, hmX=0, hmY=0, hmSwallow=false;
+  var hm=null, hmTimer=null, hmX=0, hmY=0, hmSwallow=false, hmPointerId=null;
   function closeHM(){ if(hm){ hm.remove(); hm=null; } }
+  function placeHM(){
+    if(!hm)return;
+    var hb=document.getElementById('hotbar'),r=hb?hb.getBoundingClientRect():null;
+    hm.style.left='8px';hm.style.right='8px';
+    if(r&&document.body.classList.contains('study-hotbar-vertical')){
+      if(r.left>innerWidth-r.right)hm.style.right=(innerWidth-r.left+8)+'px';
+      else hm.style.left=(r.right+8)+'px';
+      hm.style.top='8px';hm.style.bottom='auto';
+      hm.style.maxHeight=Math.max(0,innerHeight-16)+'px';
+    }else if(r&&r.top>innerHeight*.4){
+      hm.style.top='auto';hm.style.bottom=(innerHeight-r.top+8)+'px';
+      hm.style.maxHeight=Math.max(0,r.top-16)+'px';
+    }else{
+      var top=(r?r.bottom:60)+8;
+      hm.style.bottom='auto';hm.style.top=top+'px';
+      hm.style.maxHeight=Math.max(0,innerHeight-top-8)+'px';
+    }
+  }
+  /* Re-measure after the responsive HUD has moved on rotation/resize. */
+  window.addEventListener('resize',function(){if(hm)setTimeout(placeHM,80);});
   function openHM(i){
     closeHM(); var s=player && player.hotbar && player.hotbar[i]; if(!s) return;
     var btns=[];
@@ -295,8 +315,7 @@
     hm.innerHTML='<div class="hm-card">'+card+'</div><div class="hm-btns">'+
       btns.map(function(b){ return '<button data-a="'+b[0]+'" class="'+b[2]+'">'+b[1]+'</button>'; }).join('')+'</div>';
     document.body.appendChild(hm);
-    var hb=document.getElementById('hotbar'), r=hb ? hb.getBoundingClientRect() : null;
-    if(r && r.top > innerHeight*0.4) hm.style.bottom=(innerHeight-r.top+8)+'px'; else hm.style.top=((r?r.bottom:60)+8)+'px';
+    placeHM();
     hm.addEventListener('click', function(ev){
       var b=ev.target.closest('button'); if(!b) return;
       var a=b.getAttribute('data-a');
@@ -324,10 +343,17 @@
     if(lift.over) lift.over.classList.remove('over');
     lift=null;
   }
+  function cancelHotbarHold(){
+    clearTimeout(hmTimer);hmTimer=null;hmPointerId=null;
+    endLift();hmSwallow=false;
+  }
   document.addEventListener('pointerdown', function(ev){
     if(hm && !hm.contains(ev.target)){ closeHM(); hmSwallow=true; setTimeout(function(){ hmSwallow=false; }, 450); return; }
     if(!touch()) return;
     var slot=ev.target.closest && ev.target.closest('#hotbar .slot[data-i]'); if(!slot) return;
+    /* A second finger must not steal or release an existing hold/drag. */
+    if(hmPointerId!==null && hmPointerId!==ev.pointerId) return;
+    hmPointerId=ev.pointerId;
     hmX=ev.clientX; hmY=ev.clientY;
     clearTimeout(hmTimer); endLift();
     hmTimer=setTimeout(function(){
@@ -338,6 +364,7 @@
     }, 420);
   }, true);
   document.addEventListener('pointermove', function(ev){
+    if(hmPointerId!==null && hmPointerId!==ev.pointerId) return;
     if(hmTimer && (Math.abs(ev.clientX-hmX)>12 || Math.abs(ev.clientY-hmY)>12)){ clearTimeout(hmTimer); hmTimer=null; }
     if(!lift) return;
     if(!lift.moved && Math.abs(ev.clientX-lift.x)<10 && Math.abs(ev.clientY-lift.y)<10) return;
@@ -358,8 +385,11 @@
     if(over!==lift.over){ if(lift.over) lift.over.classList.remove('over'); lift.over=over; if(over) over.classList.add('over'); }
   }, {capture:true, passive:false});
   ['pointerup','pointercancel'].forEach(function(n){ document.addEventListener(n, function(ev){
+    if(hmPointerId!==null && hmPointerId!==ev.pointerId) return;
+    if(n==='pointercancel'){cancelHotbarHold();return;}
+    hmPointerId=null;
     if(hmTimer){ clearTimeout(hmTimer); hmTimer=null; }
-    if(turnSequenceBusy()){if(lift)endLift();return;}
+    if(turnSequenceBusy()){if(lift)endLift();if(hmSwallow)setTimeout(function(){hmSwallow=false;},350);return;}
     if(lift){
       var L=lift;
       if(n==='pointerup' && L.moved && L.over){
@@ -373,6 +403,8 @@
     }
     if(hmSwallow) setTimeout(function(){ hmSwallow=false; }, 350);    /* some browsers send no click after a long hold */
   }, true); });
+  window.addEventListener('blur',function(){cancelHotbarHold();closeHM();});
+  document.addEventListener('lostpointercapture',function(ev){if(hmPointerId!==null && hmPointerId===ev.pointerId)cancelHotbarHold();},true);
   /* ---------------- Gear, Char and Faith + hotbar together. While one is open on touch, the strip shows only the hotbar and the
      sheet stops just above it. Bag items drag immediately; a tap still reads their card. The worn amulet,
      abilities (Char) and prayers (Faith) retain their hold-and-drag gesture. */
@@ -510,8 +542,17 @@
   (function(){
     function placeCard(){
       var hb=document.getElementById('hotbar'), r=hb && hb.offsetParent ? hb.getBoundingClientRect() : null;
-      document.body.style.setProperty('--cardb', (r && r.top<innerHeight && r.height>0 ? Math.round(innerHeight-r.top)+8 : 8)+'px');
+      var left=8,width=Math.min(440,innerWidth-16),bottom=8;
+      if(r&&document.body.classList.contains('study-hotbar-vertical')){
+        if(r.left>innerWidth-r.right)width=Math.min(width,r.left-16);
+        else{left=r.right+8;width=Math.min(width,innerWidth-left-8);}
+      }else if(r&&r.top<innerHeight&&r.height>0)bottom=Math.round(innerHeight-r.top)+8;
+      document.body.style.setProperty('--cardx',left+'px');
+      document.body.style.setProperty('--cardw',Math.max(0,width)+'px');
+      document.body.style.setProperty('--cardb',bottom+'px');
+      document.body.style.setProperty('--cardh',Math.max(0,innerHeight-bottom-8)+'px');
     }
+    window.addEventListener('resize',function(){var t=document.getElementById('dtip');if(touch()&&t&&t.style.display!=='none')setTimeout(placeCard,80);});
     var _showCardTouch=showCard;
     showCard=function(html, ev){ var r=_showCardTouch.apply(this, arguments); if(touch()) placeCard(); return r; };
     function verb(it){ return it.kind==='weapon'?'Equip':it.kind==='armor'?'Wear':it.kind==='off'?'Take up':it.kind==='food'?'Eat':'Use'; }

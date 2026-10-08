@@ -5,15 +5,22 @@
   /* Wall-clock callbacks belong to the floor where they were scheduled. State
    * replacement covers generation/load; the epoch also covers cached-floor
    * travel away and back to the same map and metadata objects. */
-  function deferScene(state,fn,delay,timers){
+  function sceneCallback(state,fn){
     var keys=['RUN','player','map','floorMeta','floorNo','MW','MH'],values=keys.map(function(key){return state.get(key);});
     var revision=state.revision,epoch=sceneEpochs.get(state)||0,active=true;
+    return function(){
+      if(!active)return;active=false;
+      if(state.revision!==revision||(sceneEpochs.get(state)||0)!==epoch||!keys.every(function(key,i){return state.get(key)===values[i];}))return;
+      fn();
+    };
+  }
+  function deferScene(state,fn,delay,timers){
+    var guarded=sceneCallback(state,fn),active=true;
     var later=timers&&timers.setTimeout||function(callback,ms){return setTimeout(callback,ms);};
     var clear=timers&&timers.clearTimeout||function(id){clearTimeout(id);};
     var timer=later(function(){
       if(!active)return;active=false;
-      if(state.revision!==revision||(sceneEpochs.get(state)||0)!==epoch||!keys.every(function(key,i){return state.get(key)===values[i];}))return;
-      fn();
+      guarded();
     },delay);
     return function(){if(active){active=false;clear(timer);}};
   }
@@ -75,5 +82,5 @@
     list.forEach(function(stage){if(!stage.name||names.has(stage.name)||typeof stage.run!=='function')throw new Error('Invalid entry stage: '+stage.name);names.add(stage.name);});
     return Object.freeze({names:Object.freeze(Array.from(names)),run:function(context){for(var i=0;i<list.length;i++)if(list[i].run(context)===true)return true;return false;}});
   }
-  return Object.freeze({floorKeys:floorKeys,capture:capture,restore:restore,resumeClocks:resumeClocks,stages:stages,deferScene:deferScene});
+  return Object.freeze({floorKeys:floorKeys,capture:capture,restore:restore,resumeClocks:resumeClocks,stages:stages,sceneCallback:sceneCallback,deferScene:deferScene});
 });

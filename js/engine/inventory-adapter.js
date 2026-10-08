@@ -14,11 +14,12 @@ function inventoryFailure(plan){
   log(messages[plan.error]||'That action cannot be completed.','c-info');sfx(plan.error==='full'?'inventory-full':'ui-error');return false;
 }
 function gearBagIcon(kind){return kind==='weapon'?'⚔':kind==='ring'?'○':kind==='amulet'?'☥':'⛨';}
-function addBag(icon,name,extra){
+function addBag(icon,name,extra,onFailure){
   extra=extra||{};var kind=FoteInventory.bagKind(extra.kind,extra.data),isGear=FoteInventory.gear(kind);
   var uid=extra.uid||(!isGear?name:null),existing=uid&&player.bag.find(function(b){return b.uid===uid;});
   if(existing){existing.n++;return existing;}
-  if(player.bag.length>=BAG_MAX){inventoryFailure({error:'full'});return null;}
+  // Multi-item pickup reports a shared refusal once after trying every item.
+  if(player.bag.length>=BAG_MAX){(onFailure||inventoryFailure)({error:'full'});return null;}
   var entry={icon:icon,name:name,n:1,uid:uid||'g'+nextId++,kind:kind,data:extra.data};player.bag.push(entry);return entry;
 }
 function bagEntryFor(it){

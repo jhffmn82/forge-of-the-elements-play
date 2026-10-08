@@ -5,12 +5,13 @@
   else root.FoteRunHistory=api;
 })(globalThis,function(){
   'use strict';
-  var KEY='astra-temple-run-history',BACKUP=KEY+'-backup',VERSION=1,SCORE_VERSION=2;
+  var KEY='astra-temple-run-history',BACKUP=KEY+'-backup',VERSION=1,SCORE_VERSION=3;
   function count(value){return Math.max(0,Math.min(Number.MAX_SAFE_INTEGER,Math.floor(Number(value)||0)));}
   function text(value){return typeof value==='string'?value:'';}
   function score(record){
     var parts={xp:count(record.xpGained),essence:count(record.essenceGained),turns:Math.max(1,count(record.turns)),depth:count(record.depth),level:count(record.level),faithRank:count(record.faithRank),multiplier:record.won?2:1};
-    var total=((parts.xp+parts.essence)/parts.turns*parts.depth+parts.level+parts.faithRank)*parts.multiplier;
+    parts.levelMultiplier=1+parts.level/20;parts.faithMultiplier=1+parts.faithRank/5;
+    var total=(parts.xp+parts.essence)/parts.turns*parts.depth*parts.levelMultiplier*parts.faithMultiplier*parts.multiplier;
     return {version:SCORE_VERSION,total:Math.min(Number.MAX_SAFE_INTEGER,Math.round(total)),parts:parts};
   }
   function legacyId(row){
@@ -141,9 +142,11 @@
     var p=record.scoreParts;
     if(record.scoreUnavailable)return '<p class="run-note">This older record has no saved score or earnings totals.</p>';
     if(!p)return '<p class="run-note">No breakdown was saved for this score.</p>';
-    if(record.scoreVersion===FoteRunHistory.scoreVersion){
+    if(record.scoreVersion===FoteRunHistory.scoreVersion||record.scoreVersion===2){
       var rows=[['Total XP earned',p.xp],['Total essence earned',p.essence],['Turns',p.turns],['Deepest floor reached',p.depth],['Character level',p.level],['God rank',p.faithRank],['Victory multiplier','×'+p.multiplier]];
-      return '<details class="run-breakdown"><summary>How this score was earned</summary><dl>'+rows.map(function(pair){return '<dt>'+pair[0]+'</dt><dd>'+(typeof pair[1]==='string'?escaped(pair[1]):number(pair[1]))+'</dd>';}).join('')+'</dl><p>Add the XP and essence you earned, divide by turns, multiply by the deepest floor, then add your level and god rank. A win doubles the total. Spending essence never lowers your score.</p>'+(record.earningsEstimated?'<p>This run started before the game kept track of earnings, so its early XP is an estimate and its early essence counts only what was left in the pouch.</p>':'')+'</details>';
+      if(record.scoreVersion===3)rows.splice(6,0,['Level multiplier','×'+p.levelMultiplier],['God rank multiplier','×'+p.faithMultiplier]);
+      var explanation=record.scoreVersion===3?'Add the XP and essence you earned, divide by turns, multiply by the deepest floor, then multiply by (1 + character level / 20) and (1 + god rank / 5).':'Add the XP and essence you earned, divide by turns, multiply by the deepest floor, then add your level and god rank.';
+      return '<details class="run-breakdown"><summary>How this score was earned</summary><dl>'+rows.map(function(pair){return '<dt>'+pair[0]+'</dt><dd>'+(typeof pair[1]==='string'?escaped(pair[1]):number(pair[1]))+'</dd>';}).join('')+'</dl><p>'+explanation+' A win doubles the total. Spending essence never lowers your score.</p>'+(record.earningsEstimated?'<p>This run started before the game kept track of earnings, so its early XP is an estimate and its early essence counts only what was left in the pouch.</p>':'')+'</details>';
     }
     if(record.scoreVersion!==1)return '<p class="run-note">Score recorded under different scoring rules.</p>';
     return '<details class="run-breakdown"><summary>How this score was earned</summary><dl>'+[['Depth reached',p.depth],['Character level',p.level],['Campaign bosses',p.bosses],['Enemies defeated',p.kills],['Victory',p.victory]].map(function(pair){return '<dt>'+pair[0]+'</dt><dd>'+number(pair[1])+'</dd>';}).join('')+'</dl><p>1,000 per floor reached · 100 per level · 2,500 per campaign boss · 5 per kill (first 500) · 25,000 for victory. Time does not affect your score.</p></details>';

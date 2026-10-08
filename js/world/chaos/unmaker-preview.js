@@ -6,6 +6,28 @@
   'use strict';
   var encounterStarter=null,startingEncounter=false;
   function details(){return typeof floorMeta!=='undefined'&&floorMeta&&floorMeta.unmakerPreview||null;}
+  function ensurePreparationForge(){
+    var d=details(),preview=floorMeta&&floorMeta.chaosPreview;
+    if(!d||!preview)return false;
+    var point=null,cells=[];
+    for(var y=0;y<MH;y++)for(var x=0;x<MW;x++){
+      if(preview.regionByCell[idxOf(x,y)]!=='preparation')continue;
+      if(at(x,y)===FORGE){point={x:x,y:y};continue;}
+      if(at(x,y)===FLOOR&&!propAt(x,y)&&!items.some(function(it){return it.x===x&&it.y===y;})&&
+        !ents.some(function(e){return e.hp>0&&(typeof entityOccupies==='function'?entityOccupies(e,x,y):x>=e.x&&x<e.x+(e.w||1)&&y>=e.y&&y<e.y+(e.h||1));}))cells.push({x:x,y:y});
+    }
+    if(!point){
+      cells.sort(function(a,b){return Math.abs(a.x-43)+Math.abs(a.y-62)-Math.abs(b.x-43)-Math.abs(b.y-62)||a.y-b.y||a.x-b.x;});
+      point=cells[0];if(!point)return false;
+      if(typeof setT==='function')setT(point.x,point.y,FORGE);else map[idxOf(point.x,point.y)]=FORGE;
+    }
+    d.ordinaryForge=point;floorMeta.forge=true;floorMeta.forgeAt=point;
+    preview.landmarks=preview.landmarks||[];
+    var mark=preview.landmarks.find(function(value){return value.id==='preparation-forge';});
+    if(!mark){mark={id:'preparation-forge'};preview.landmarks.push(mark);}
+    Object.assign(mark,{kind:'forge',label:'Last Hearth crafting forge',regionId:'preparation',x:point.x,y:point.y,w:1,h:1});
+    return true;
+  }
   function gateAt(x,y){
     var d=details();if(!d)return null;
     if(x>=d.entryGate.x&&x<d.entryGate.x+d.entryGate.w&&y===d.entryGate.y)return d.entryGate;
@@ -306,11 +328,11 @@
       inlay('broken-ring','true-forge',{x:47.5,y:14,r:5.1,color:'#D6B978',arcs:[[0,6.283185307179586]]});
       inlay('disc','true-forge',{x:47.5,y:16.5,r:1.35,color:'#DAF4FF'});
       preview.decor.forEach(function(value){value.biome=preview.regions.find(function(entry){return entry.id===value.regionId;}).biome;});
-      syncGates();
+      syncGates();ensurePreparationForge();
       return author.finish(preview);
     }finally{root.rng=gameplayRng;}
   }
   root.FoteUnmakerPreview=Object.freeze({build:build,gateAt:gateAt,gateInfo:gateInfo,bumpGate:bumpGate,drawGate:drawGate,
-    repairGates:repairGates,destinationAllowed:destinationAllowed,setWalkthrough:setWalkthrough,
+    repairGates:repairGates,ensurePreparationForge:ensurePreparationForge,destinationAllowed:destinationAllowed,setWalkthrough:setWalkthrough,
     registerEncounter:registerEncounter,startEncounter:startEncounter,completeEncounter:completeEncounter});
 })(typeof window!=='undefined'?window:globalThis);

@@ -1,0 +1,68 @@
+/* Field-journal typography for native hover/hold cards. Item rarity, damage
+ * types and warnings keep the colors supplied by their rule-owned markup. */
+body:is(.fote-journal,.polish-preview) :is(#dtip,#hmenu) {
+ --journal-card-copy:calc(15px * var(--ui-text-scale,1) + var(--ui-mobile-text-add,0px));
+ --journal-card-value:calc(13px * var(--ui-text-scale,1) + var(--ui-mobile-text-add,0px));
+ --journal-card-secondary:var(--polish-secondary,var(--ash));
+ font-family:var(--journal,"Palatino Linotype",serif);
+ font-size:var(--journal-card-copy);
+ line-height:1.35;
+}
+body:is(.fote-journal,.polish-preview) #dtip {
+ max-width:min(340px,calc(100vw - 20px));
+}
+body:is(.fote-journal,.polish-preview) :is(#dtip,#hmenu) .nm {
+ font-family:var(--display);
+ font-size:calc(20px * var(--ui-text-scale,1) + var(--ui-mobile-text-add,0px))!important;
+ line-height:1.15;
+ margin-bottom:6px;
+ overflow-wrap:anywhere;
+}
+body:is(.fote-journal,.polish-preview) #hmenu .hm-card,
+body:is(.fote-journal,.polish-preview) #hmenu .hm-card :is(.row,.hint) {
+ font-size:var(--journal-card-copy);
+ line-height:1.35;
+}
+body:is(.fote-journal,.polish-preview) :is(#dtip,#hmenu) :is(.action-summary,.action-note,.hint) {
+ color:var(--journal-card-secondary);
+ overflow-wrap:anywhere;
+}
+body:is(.fote-journal,.polish-preview) :is(#dtip,#hmenu) .action-facts dt {
+ color:var(--journal-card-secondary);
+}
+body:is(.fote-journal,.polish-preview) :is(#dtip,#hmenu) :is(.action-facts dd,.row b) {
+ font-family:var(--mono);
+ font-size:var(--journal-card-value);
+ font-weight:400;
+ font-variant-numeric:tabular-nums;
+ white-space:normal;
+ overflow-wrap:anywhere;
+ min-width:0;
+}
+body:is(.fote-journal,.polish-preview) :is(#dtip,#hmenu) .row b {text-align:right;}
+body:is(.fote-journal,.polish-preview) #hmenu .hm-btns button,
+body:is(.fote-journal,.polish-preview) #dtip .tc-btns button {
+ font-family:var(--journal,"Palatino Linotype",serif);
+ font-size:var(--journal-card-copy);
+}
+/* The touch owner supplies the menu height available beside the hotbar.
+ * Only the description scrolls, leaving Close and item actions reachable. */
+#hmenu .hm-card {min-height:0;overflow-y:auto;overscroll-behavior:contain;}
+#hmenu .hm-btns {flex-shrink:0;}
+body:is(.fote-journal,.polish-preview).touch #dtip {
+ font-size:var(--journal-card-copy);
+ max-height:var(--cardh,calc(100dvh - var(--cardb,8px) - 8px));
+ overflow-y:auto;overscroll-behavior:contain;
+}
+body:is(.fote-journal,.polish-preview).touch #dtip .nm {
+ font-size:calc(20px * var(--ui-text-scale,1) + var(--ui-mobile-text-add,0px))!important;
+}
+/* Vellum's hover card is opaque paper. The native hold menu stays dark;
+ * give its copy light ink without changing the paper-colored action buttons. */
+body:is(.fote-journal,.polish-preview)[data-ui-theme^=vellum] #dtip {
+ --journal-card-secondary:var(--ash);
+}
+body:is(.fote-journal,.polish-preview)[data-ui-theme^=vellum] #hmenu .hm-card {
+ --ink:#f2e8dc;--ash:#c3b6a2;--dim:#a99a87;--gold:#e8b44a;
+ color:var(--ink);
+}

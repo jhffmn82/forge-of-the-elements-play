@@ -185,7 +185,8 @@ function watchStaticArt(el,files,repaint,owns,channel,metadata,onFailure){
   }
 }
 /* the remembered icon box sizes are measured again on their next paint; a rune's own key (no '|') is kept (C4, below) */
-function forgetIconSizes(){ Object.keys(ICON_SHOWN).forEach(function(key){ if(key.indexOf('|')>=0) delete ICON_SHOWN[key]; }); }
+var HOTBAR_ICON_REVISION=0;
+function forgetIconSizes(){ HOTBAR_ICON_REVISION++;Object.keys(ICON_SHOWN).forEach(function(key){ if(key.indexOf('|')>=0) delete ICON_SHOWN[key]; }); }
 function paintIconArt(c, o, w, h, trinket, keep){
   var d=window.devicePixelRatio||1, W=Math.max(1,Math.round(w*d)), H=Math.max(1,Math.round(h*d));
   c.width=W; c.height=H; if(!keep){ c.style.width=(W/d)+'px'; c.style.height=(H/d)+'px'; }
@@ -340,7 +341,7 @@ function bindHudResourceCard(element,kind){
   // Menu commands and sheet tabs already name their action. Shared controls
   // such as Map may move between the HUD and menu when the layout changes.
   if(isNavigation()){element.removeAttribute('aria-describedby');return;}
-  element.setAttribute('aria-describedby','dtip');
+  setHudAttribute(element,'aria-describedby','dtip');
   if(element._hudResourceCard===kind)return;
   element._hudResourceCard=kind;if(element.tabIndex<0)element.tabIndex=0;
   hoverCard(element,function(){return isNavigation()?null:hudResourceCard(kind);});
@@ -357,6 +358,12 @@ if($('bMute')) $('bMute').onclick=function(){ audioInit(); toggleMute(); syncAud
 if($('bMusic')) $('bMusic').onclick=function(){ audioInit(); toggleMusic(); syncAudioButtons(); };
 syncAudioButtons();
 
+/* HUD values update often; avoid replacing text nodes or invalidating layout
+   when the displayed value has not changed. These helpers own no game state. */
+function setHudText(el,value){if(el&&el.textContent!==String(value))el.textContent=String(value);}
+function setHudAttribute(el,name,value){if(el&&el.getAttribute(name)!==String(value))el.setAttribute(name,String(value));}
+function setHudStyle(el,name,value){if(el&&el.style.getPropertyValue(name)!==String(value))el.style.setProperty(name,String(value));}
+function setHudClass(el,name,on){if(el&&el.classList.contains(name)!==!!on)el.classList.toggle(name,!!on);}
 function activeBossEncounter(){
   if(!player || player.hp<=0 || (RUN && (RUN.over||RUN.victory)))return null;
   return ents.filter(function(e){return e.hp>0 && e.base && e.base.boss && e.state!=='throne';})[0]||null;
@@ -369,31 +376,33 @@ function bossBar(){
   el.style.display='block';
   var warning=b.windup&&(b.windup.unmaker?{cleave:'GREAT CLEAVE',rupture:'RUPTURE',beam:'PRISM LANCE',ring:'INVERSION PULSE',pulse:'DISCORD PULSE '+b.windup.beat+'/2'}[b.windup.kind]:{slam:'GROUND SLAM in '+b.windup.due,ring:'SHOCKWAVE in '+b.windup.due,charge:'CHARGE!'}[b.windup.kind]);
   var intent = b.dazed>0 ? ' &middot; <span style="color:#E8D27A">DAZED</span>' : warning ? ' &middot; <span style="color:#FF7A5A">'+warning+'</span>' : '';
-  el.innerHTML=b.name+intent+'<div class="bb"><i style="width:'+Math.max(0,Math.round(b.hp/b.maxhp*100))+'%"></i></div>';
+  if(!el.querySelector('.bb'))el.innerHTML='<span class="boss-label"></span><div class="bb"><i></i></div>';
+  var label=b.name+intent;if(el._bossLabel!==label){el.querySelector('.boss-label').innerHTML=label;el._bossLabel=label;}
+  setHudStyle(el.querySelector('.bb i'),'width',Math.max(0,Math.round(b.hp/b.maxhp*100))+'%');
 }
 function bars(){
   bossBar();
-  $('hFloor').textContent=floorNo; $('hBiome').textContent=(floorMeta && floorMeta.plane ? (PLANE_THEMES[floorMeta.plane]||{}).name : biomeName()); $('hTurn').textContent=turn;
+  setHudText($('hFloor'),floorNo);setHudText($('hBiome'),floorMeta && floorMeta.plane ? (PLANE_THEMES[floorMeta.plane]||{}).name : biomeName());setHudText($('hTurn'),turn);
   var shield=playerShield(), hpPct=clamp(player.hp/player.maxhp,0,1)*100, shPct=Math.min(100-hpPct, shield/player.maxhp*100);
   if(hpPct+shield/player.maxhp*100>100){ hpPct=Math.max(0, 100*player.hp/(player.hp+shield)); shPct=100-hpPct; }
-  $('hpFill').style.width=hpPct+'%';
-  var sf=$('shFill'); if(sf){ sf.style.left=hpPct+'%'; sf.style.width=(shield>0?shPct:0)+'%'; }
-  $('hpTxt').textContent=Math.max(0,Math.round(player.hp))+'/'+player.maxhp+(shield>0?' +'+Math.round(shield):'');
-  $('hpTxt').title = shield>0 ? 'Shield '+Math.round(shield)+': absorbs damage before your HP ('+shieldParts().join(', ')+')' : '';
-  $('mpFill').style.width=(clamp(player.mp/player.maxmp,0,1)*100)+'%';
-  $('mpTxt').textContent=Math.floor(player.mp)+'/'+player.maxmp;
-  $('xpFill').style.width=(clamp(player.xp/player.xpNext,0,1)*100)+'%';
+  setHudStyle($('hpFill'),'width',hpPct+'%');
+  var sf=$('shFill'); if(sf){setHudStyle(sf,'left',hpPct+'%');setHudStyle(sf,'width',(shield>0?shPct:0)+'%');}
+  setHudText($('hpTxt'),Math.max(0,Math.round(player.hp))+'/'+player.maxhp+(shield>0?' +'+Math.round(shield):''));
+  setHudAttribute($('hpTxt'),'title',shield>0 ? 'Shield '+Math.round(shield)+': absorbs damage before your HP ('+shieldParts().join(', ')+')' : '');
+  setHudStyle($('mpFill'),'width',(clamp(player.mp/player.maxmp,0,1)*100)+'%');
+  setHudText($('mpTxt'),Math.floor(player.mp)+'/'+player.maxmp);
+  setHudStyle($('xpFill'),'width',(clamp(player.xp/player.xpNext,0,1)*100)+'%');
   /* 2026-09-28 (Justin): the bar shows only the level; '777/1500' crushed it onto two rows on small screens. The
      fill still shows progress, and the exact numbers are on hover. */
-  $('xpBar').title=player.xp+' / '+player.xpNext+' XP';
-  $('lvTxt').textContent='LV '+player.level;
+  if(!$('xpBar')._hudResourceCard)setHudAttribute($('xpBar'),'title',player.xp+' / '+player.xpNext+' XP');
+  if(!document.body.classList.contains('study-classic'))setHudText($('lvTxt'),'LV '+player.level);
   var tags=[];
   var labels={burn:'burning',chill:'chilled',frozen:'frozen',root:'rooted',stun:'stunned',fear:'afraid',blind:'blind',poison:'poisoned',stone:'stone skin',wet:'wet',aura:'unholy aura',corrupt:'corrupt'};
   for(var k in player.st){ if(k.indexOf('imm_')===0) continue; tags.push('<span class="tag t-'+k+'">'+(labels[k]||k)+' '+player.st[k].t+'</span>'); }
   for(var b in player.buffs){ if(player.buffs[b]>0) tags.push('<span class="tag t-hidden">'+b+' '+player.buffs[b]+'</span>'); }
   if(player.hidden>0) tags.push('<span class="tag t-hidden">hidden '+player.hidden+'</span>');
   if(player.levitate>0) tags.push('<span class="tag t-chill">floating '+player.levitate+'</span>');
-  $('fx').innerHTML=tags.join('');
+  var fx=$('fx'),tagHTML=tags.join('');if(fx._hudTags!==tagHTML){fx.innerHTML=tagHTML;fx._hudTags=tagHTML;}
   if(typeof FoteResponsiveHUD!=='undefined'&&FoteResponsiveHUD.isMounted()){FoteResponsiveHUD.renderReadouts();return;}
   var hud=$('hud2'); if(!hud) return;
   var hp=player.hunger/HUNGER_MAX, hl = player.hunger<=0 ? 'Starving' : player.hunger<300 ? 'Hungry' : 'Full';
@@ -478,47 +487,57 @@ function prayerCost(pid){ var P=PRAYERS[prayerId(pid)]; return P.health ? prayer
 /* ---------------------------------------------------------------- hotbar with icons */
 function renderHotbarSlots(){
   syncHotbar();
-  var html='', i, s;
-  for(i=0;i<8;i++){
-    s=player.hotbar[i];
-    if(!s){ html+='<div class="slot empty" data-i="'+i+'"><span class="k">'+(i+1)+'</span><span class="n">empty</span></div>'; continue; }
-    if(s.type==='ability'){
-      var A=ABILITIES[s.key], off = (A.favor ? (player.favor||0)<A.favor : player.mp<costOf(A)) ? ' disabled' : '';
-      var armed = (aiming && player.abilities[aiming.i]===s.key) ? ' armed' : '';
-      html+='<button class="slot hasico'+armed+'" data-i="'+i+'" data-ico="'+(A.icon||'')+'"'+off+' title="'+(typeof liveDesc==='function' ? liveDesc(A) : A.desc).replace(/"/g,'&quot;')+'">'+
-            '<span class="ico"></span><span class="k">'+(i+1)+'</span><span class="n">'+A.name+'</span><span class="c">'+(A.favor ? A.favor+' Favor' : costOf(A)+' mana')+'</span></button>';
-    } else if(s.type==='prayer'){
-      var PR=PRAYERS[s.key], gcol=GODS[player.god] ? GODS[player.god].color : '#8A6FB0';
-      html+='<button class="slot hasico prayer-slot" style="--gc:'+gcol+'" data-i="'+i+'" data-ico="'+prayerIcon(s.key)+'"'+(canPray(s.key)?'':' disabled')+' title="'+(typeof prayerLive==='function' ? prayerLive(PR) : PR.desc).replace(/"/g,'&quot;')+'">'+
-            '<span class="ico"></span><span class="k">'+(i+1)+'</span><span class="n">'+PR.name+'</span><span class="c">'+prayerCost(s.key)+'</span></button>';
-    } else if(s.type==='amulet'){
-      html+='<button class="slot" data-i="'+i+'"><span class="k">'+(i+1)+'</span><span class="n">Amulet</span></button>';   /* filled in by gear.js */
-    } else if(s.type==='ranged'){
-      var rw=player.ranged, rn=rw ? (typeof gearName==='function' ? gearName(rw) : rw.name) : 'no bow';
-      html+='<button class="slot hasico" data-i="'+i+'" data-ico="'+((rw&&rw.icon)||'')+'"'+(rw?'':' disabled')+' title="Shoot your '+rn.replace(/"/g,'&quot;')+'"><span class="ico"></span>'+
-            '<span class="k">'+(i+1)+'</span><span class="n">'+rn+'</span><span class="c">shoot</span></button>';
-    } else {
-      var it=s.ref, n=it.n>1 ? ' &times;'+it.n : '';
-      /* 2026-09-27: a stack shows its count in the corner badge the cooldowns use (items never have one) */
-      html+='<button class="slot hasico" data-i="'+i+'" data-bagico="1" title="'+it.name+'"><span class="ico"></span>'+
-            '<span class="k">'+(i+1)+'</span><span class="n">'+it.name+n+'</span><span class="c">'+it.kind+'</span>'+(it.n>1 ? '<span class="cdn">'+it.n+'</span>' : '')+'</button>';
+  var bar=$('hotbar');if(!bar)return;
+  var layout=[HOTBAR_ICON_REVISION,innerWidth,innerHeight,window.devicePixelRatio||1,document.body.className,document.body.dataset.uiText||''].join('|');
+  for(var i=0;i<8;i++){
+    var s=player.hotbar[i],b=bar.children[i],tag=s?'BUTTON':'DIV';
+    if(!b||b.tagName!==tag){
+      var replacement=document.createElement(tag.toLowerCase());replacement.className='slot';replacement.setAttribute('data-i',i);
+      replacement.innerHTML=(s?'<span class="ico"></span>':'')+'<span class="k">'+(i+1)+'</span><span class="n"></span>'+(s?'<span class="c"></span>':'');
+      if(b)b.replaceWith(replacement);else bar.appendChild(replacement);b=replacement;
+      (function(button,index){
+        button.onclick=function(){sfx('ui-click');pressSlotIndex(index);};
+        button._hotbarContext=function(ev){ev.preventDefault();var slot=player.hotbar[index];if(slot&&slot.type!=='ability'&&slot.type!=='prayer'){player.hotbar[index]=null;abilityBar();}};
+        button.oncontextmenu=button._hotbarContext;
+        if(s)dragSource(button,'hot:'+index);
+        dropTarget(button,function(tag){hotbarDrop(index,tag);});
+      })(b,i);
+    }
+    var name='empty',line='',icon='',group='icons',disabled=false,armed=false;
+    if(s){
+      if(s.type==='ability'){
+        var A=ABILITIES[s.key];name=A.name;icon=A.icon||'';
+        disabled=A.favor?(player.favor||0)<A.favor:player.mp<costOf(A);
+        armed=!!(aiming&&player.abilities[aiming.i]===s.key);
+        line=A.favor?A.favor+' Favor':costOf(A)+' mana';
+      }else if(s.type==='prayer'){
+        name=PRAYERS[s.key].name;icon=prayerIcon(s.key);disabled=!canPray(s.key);line=prayerCost(s.key);
+        var color=GODS[player.god]?GODS[player.god].color:'#8A6FB0';setHudStyle(b,'--gc',color);
+      }else if(s.type==='amulet'){
+        var a=player.amulet;name=a?gearName(a):'Amulet';icon=a&&a.icon||'';group='items';
+        disabled=!a||(a.charges||0)<=0;armed=!!(aiming&&aiming.amulet);
+      }else if(s.type==='ranged'){
+        var rw=player.ranged;name=rw?(typeof gearName==='function'?gearName(rw):rw.name):'no bow';icon=rw&&rw.icon||'';line='shoot';disabled=!rw;
+      }else{
+        var it=s.ref;name=it.name+(it.n>1?' ×'+it.n:'');icon=iconNameForBag(it);line=it.kind;
+      }
+    }
+    setHudClass(b,'empty',!s);setHudClass(b,'hasico',!!s);setHudClass(b,'prayer-slot',!!s&&s.type==='prayer');setHudClass(b,'armed',armed);
+    if(s&&b.disabled!==disabled)b.disabled=disabled;
+    if(!s||s.type!=='prayer')b.style.removeProperty('--gc');
+    setHudText(b.querySelector('.n'),name);b._hotbarBaseLine=line;
+    if(!s||!['ability','prayer','amulet'].includes(s.type))setHudText(b.querySelector('.c'),line);
+    var ico=b.querySelector('.ico'),iconKey=[group,icon,layout].join('|');
+    if(ico&&b._hotbarIconKey!==iconKey){
+      var identity=group+'|'+icon;if(b._hotbarArtIdentity!==identity){b.style.removeProperty('--c');b._hotbarArtIdentity=identity;}
+      b._hotbarIconKey=iconKey;
+      if(icon)paintArt(ico,group,icon,28);
+      else{cancelStaticArtPaint(ico);cancelStaticArtPaint(ico,'chip');ico.replaceChildren();b.style.removeProperty('--c');b.style.removeProperty('--icon-exposure');b.removeAttribute('data-icon-family');}
     }
   }
-  $('hotbar').innerHTML=html;
-  var btns=$('hotbar').querySelectorAll('.slot[data-i]');
-  for(i=0;i<btns.length;i++){
-    (function(b){
-      var idx=+b.getAttribute('data-i'), ico=b.querySelector('.ico');
-      if(ico){ var nm=b.getAttribute('data-ico'); if(b.getAttribute('data-bagico')) nm=iconNameForBag(player.hotbar[idx].ref);
-        if(nm)paintArt(ico,'icons',nm,28); }
-      b.onclick=function(){ sfx('ui-click'); pressSlotIndex(idx); };
-      /* right-click clears items and amulets; abilities and prayers always keep a slot (drag to rearrange) */
-      b.oncontextmenu=function(ev){ ev.preventDefault(); var hs=player.hotbar[idx]; if(hs && hs.type!=='ability' && hs.type!=='prayer'){ player.hotbar[idx]=null; abilityBar(); } };
-      if(player.hotbar[idx]) dragSource(b, 'hot:'+idx);
-      dropTarget(b, function(tag){ hotbarDrop(idx, tag); });
-    })(btns[i]);
-  }
+  while(bar.children.length>8)bar.lastElementChild.remove();
 }
+
 function hotbarDrop(idx, tag){
   var bi=bagIndexFromTag(tag);
   if(bi>=0 && player.bag[bi]) hotbarPut(idx, {type:'item', ref:player.bag[bi]});
@@ -717,12 +736,12 @@ function restAlarms(){ return feats.filter(function(f){ return f.kind==='alarm' 
 function restHunters(){ return ents.filter(function(e){ return e.foe && e.hp>0 && e.state==='hunt'; }); }
 function rest(){
   if(ents.some(function(e){ return e.foe && actorVisible(e); })){ log('You cannot rest with enemies in sight.','c-info'); return; }
-  var n=0,restRun=RUN,restPlayer=player,restId=++REST_SEQUENCE,alarms=restAlarms(),hunters=restHunters(); log('You rest...','c-info');
+  var n=0,restRun=RUN,restPlayer=player,restId=++REST_SEQUENCE,alarms=restAlarms(),hunters=restHunters(); log('You rest...','c-info',{transient:false});
   (function step(){
     if(restId!==REST_SEQUENCE || RUN!==restRun || player!==restPlayer || uiOpen())return;
     if(turnSequenceBusy()){afterTurn(function(){setTimeout(step,0);});return;}
     if(n++>=150 || player.hp<=0) return;
-    if(player.hp>=player.maxhp && player.mp>=player.maxmp){ log('Rested.','c-good'); return; }
+    if(player.hp>=player.maxhp && player.mp>=player.maxmp){ log('Rested.','c-good',{transient:false}); return; }
     if(ents.some(function(e){ return e.foe && actorVisible(e); })){ log('Something approaches! You stop resting.','c-you'); return; }
     if(alarms.some(function(f){ return feats.indexOf(f)<0; })){ log('The alarm bell rouses you. You stop resting.','c-you'); return; }
     if(restHunters().some(function(e){ return hunters.indexOf(e)<0 && dist(e,player)<=REST_EARSHOT; })){ log('Something nearby is on the hunt. You stop resting.','c-you'); return; }

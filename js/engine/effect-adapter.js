@@ -34,6 +34,14 @@ function periodicEffectContext(e,key,tags,extra){
   if(known){options.cause=status.applicationCause;options.applicationCause=status.applicationCause;options.actionId=status.applicationCause?status.applicationCause.actionId:null;}
   return {source:source,options:options};
 }
+function presentPeriodicDamage(event,damage,type,label){
+  var part=label+': '+combatDamageNumber(damage,type),cause=event.status.applicationCause;
+  // Saved provenance, not the current enemy/player command, identifies a tick.
+  // Legacy statuses without a recorded origin stay separate. Fatal ticks also
+  // remain standalone immediately before the death transition.
+  var receipt=event.entity.hp>0&&cause?{scope:event.entity,key:'periodic:'+JSON.stringify(cause),item:part,suffix:'.'}:null;
+  log(part+'.','c-you',{receipt:receipt});
+}
 var gameEffects=FoteEffects.create({
   applicationCause:effectApplicationCause,
   pendingHit:function(e){return pendingHit(e);},
@@ -118,12 +126,12 @@ var gameEffects=FoteEffects.create({
     var e=event.entity,s=event.status,key=event.key,damage=0,context=periodicEffectContext(e,key,['periodic',key]);
     if(key==='bleed'){
       damage=dealDirectDamage(e,Math.max(1,s.d||2),'phys',context.source,context.options);e._hit=performance.now();floatText(e.x,e.y,String(damage),'blood');
-      if(e===player)log('Bleed: '+combatDamageNumber(damage,'phys')+'.','c-you');
+      if(e===player)presentPeriodicDamage(event,damage,'phys','Bleed');
       if(rng()<.35&&typeof setG==='function'&&gAt(e.x,e.y)===G_NONE)setG(e.x,e.y,G_BLOOD);
     }else if(key==='burn'){
       context.options.resistanceApplied=true;
       damage=dealDirectDamage(e,Math.max(1,Math.round(s.d*resistMult(e,'fire'))),'fire',context.source,context.options);e._hit=performance.now();floatText(e.x,e.y,String(damage),'fire');
-      if(e===player)log('Burn: '+combatDamageNumber(damage,'fire')+'.','c-you');
+      if(e===player)presentPeriodicDamage(event,damage,'fire','Burn');
       // Carry the Burn's author into ground fire, never its burning victim.
       if(gAt(e.x,e.y)===G_GRASS||gAt(e.x,e.y)===G_SHORT)ignite(e.x,e.y,context.source===player?'player':null);
     }else if(key==='poison'){
@@ -134,7 +142,7 @@ var gameEffects=FoteEffects.create({
       if(e.base&&e.base.sporeproof)damage=0;
       context.options.resistanceApplied=true;
       damage=dealDirectDamage(e,damage,'poison',context.source,context.options);floatText(e.x,e.y,String(damage),'poison');
-      if(e===player&&damage>0)log('Poison: '+combatDamageNumber(damage,'poison')+'.','c-you');
+      if(e===player&&damage>0)presentPeriodicDamage(event,damage,'poison','Poison');
     }else if(key==='aura'&&e===player){
       ents.slice().forEach(function(o){if(o.foe&&dist(o,player)<=2){var dealt=applyDamage(o,s.d||3,'dark',player);floatText(o.x,o.y,String(dealt),'dark');healPlayer(1);if(o.hp<=0)kill(o,player);}});
     }

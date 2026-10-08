@@ -99,7 +99,7 @@ function godOnKill(entity,source,cause){
     servant:!!(source&&source.undeadServant),unarmed:!!(cause&&cause.kind==='attack'&&cause.unarmed),
     spellcaster:base.spellcaster,element:base.el,undead:base.undead,shadowy:base.shadowy,
     // Universal foe credit does not change the lethal packet's actual method
-    // or source. Periodic statuses currently have no application provenance.
+    // or source. Periodic method remains distinct from its saved application.
     awake:cause&&cause.targetId===entity.id&&typeof cause.targetAwake==='boolean'?cause.targetAwake:entity.state!=='asleep',spellKill:!!(cause&&cause.kind==='spell'&&Number.isFinite(cause.sourceId)&&cause.sourceId===player.id),
     held:effectHasTag(entity,'root')||effectHasTag(entity,'slow')||status.poison||entity.syllaWeb>0,
     syllaKill:SYLLA.pietyKill,syllaBig:SYLLA.pietyBig});

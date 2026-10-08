@@ -63,7 +63,9 @@ function objFxInfo(o){
     }
     cand.sort(function(A,B){ return B[2]-A[2]; });
     for(var k=0;k<cand.length && info.bright.length<7;k++){      /* spaced-out glints */
-      var q=cand[k]; if(info.bright.every(function(e){ return Math.abs(e[0]-q[0])+Math.abs(e[1]-q[1])>=4; })) info.bright.push([q[0]/W, q[1]/H]);
+      // Stored anchors are normalized; compare in source pixels, at the same
+      // logical spacing for both the original atlas and its denser replacement.
+      var q=cand[k]; if(info.bright.every(function(e){ return Math.abs(e[0]*W-q[0])+Math.abs(e[1]*H-q[1])>=4*(o.res||1); })) info.bright.push([q[0]/W, q[1]/H]);
     }
     if(sw){ var mxs=0, mys=0; cand.forEach(function(q){ mxs+=q[0]*q[2]; mys+=q[1]*q[2]; });
       info.glow={x:mxs/sw/W, y:mys/sw/H, col:[Math.round(sr/sw), Math.round(sg/sw), Math.round(sb/sw)], n:cand.length/(W*H)}; }
@@ -81,12 +83,11 @@ function objGlintsFlush(){
   if(!OBJ_GLINTS.length) return;
   ctx.save();
   OBJ_GLINTS.forEach(function(q){
-    var x=q[0], y=q[1], a=q[2], L=q[3], hr=q[4], u=q[5];
-    var hg=ctx.createRadialGradient(x, y, 0, x, y, hr); hg.addColorStop(0, 'rgba(255,255,255,'+(0.3*a)+')'); hg.addColorStop(1, 'rgba(255,255,255,0)');
-    ctx.globalAlpha=1; ctx.fillStyle=hg; ctx.fillRect(x-hr, y-hr, hr*2, hr*2);
-    ctx.globalAlpha=a; ctx.fillStyle='#FFFFFF';
-    ctx.fillRect(x-u/2, y-L, u, L*2+u); ctx.fillRect(x-L, y-u/2, L*2+u, u);
-    ctx.globalAlpha=a*0.6; ctx.fillRect(x-u/2, y-u/2, u, u);
+    // Wall facets and painted formations share the same slender reflection.
+    // The object's existing queue still owns its timing, radius and opacity.
+    ctx.save();ctx.setTransform(q[6]);
+    ptStar(q[0],q[1],q[3],q[2],'#FFFFFF');
+    ctx.restore();
   });
   ctx.restore(); OBJ_GLINTS.length=0;
 }
@@ -125,11 +126,15 @@ function objFxDraw(o, dx, dy, w, h, alpha, flip){
     if(k==='twinkle'){
       /* 2026-09-19: Justin - the glint was a 1-pixel cross too brief to notice. Now a four-point star with a soft
          halo, each glint point on its own clock, so a crystal flashes every second or two */
+      var transform=null;
       I.bright.slice(0,3).forEach(function(b, i){   /* the three brightest points: more reads as glitter, not a glint */
         var ph=((t*0.35 + hash2(i, seed|0, 5)) % 1)*2.2; if(ph>1) return;
         var a=Math.pow(Math.sin(Math.PI*ph), 3); if(a<0.05) return;
         /* queued, and drawn after the lighting (drawBeacons below): drawn here, the dark pass swallowed it */
-        OBJ_GLINTS.push([Math.round(X(b[0])), Math.round(Y(b[1])), a*alpha*0.5, Math.round(u*(1+1.5*a)), u*2.5*a, u]);   /* Justin: exists, but quiet */
+        // A fitted prop can scale/translate its art. Carry that transform to
+        // the later glint pass instead of leaving the reflection at full size.
+        if(!transform)transform=ctx.getTransform();
+        OBJ_GLINTS.push([Math.round(X(b[0])), Math.round(Y(b[1])), a*alpha*0.5, Math.round(u*(1+1.5*a)), u*2.5*a, u,transform]);   /* Justin: exists, but quiet */
       });
     }
     if(k==='flame' && I.warm && typeof drawPixelFlame==='function'){

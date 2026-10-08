@@ -15,7 +15,7 @@
     'rift-skitter':{name:'Rift Skitter',hp:225,dmg:[15,23],acc:75,eva:48,armor:1,speed:135,art:.75},
     'lens-bearer':{name:'Lens Bearer',hp:225,dmg:[11,15],acc:69,eva:15,armor:4,speed:90,art:1.05,el:'light'},
     'plague-bloat':{name:'Plague Bloat',hp:390,dmg:[30,42],acc:70,eva:9,armor:3,speed:65,art:1.28,poisonTrail:'plague'},
-    'brood-carrier':{name:'Brood Carrier',hp:285,dmg:[14,21],acc:69,eva:12,armor:3,speed:85,art:1.14},
+    'brood-carrier':{name:'Brood Carrier',hp:285,dmg:[14,21],acc:69,eva:12,armor:3,speed:85,art:1.14,broodKind:'chaos-rotling'},
     'bile-spitter':{name:'Bile Spitter',hp:225,dmg:[9,15],acc:73,eva:20,armor:2,speed:95,art:.9},
     'rotling':{name:'Rotling',hp:32,dmg:[11,15],acc:70,eva:26,armor:0,speed:125,art:.64,rots:true,tiny:true},
     'horned-reaver':{name:'Horned Reaver',hp:263,dmg:[27,38],acc:75,eva:18,armor:4,speed:95,art:1.08},
@@ -24,7 +24,7 @@
     'chain-reaver':{name:'Chain Reaver',hp:225,dmg:[17,26],acc:77,eva:21,armor:3,speed:95,art:1.03},
     'lash-dancer':{name:'Lash Dancer',hp:225,dmg:[18,26],acc:78,eva:42,armor:2,speed:110,art:1.02},
     'razor-dancer':{name:'Razor Dancer',hp:225,dmg:[18,26],acc:77,eva:46,armor:2,speed:130,art:.95},
-    'silk-weaver':{name:'Silk Weaver',hp:225,dmg:[9,15],acc:74,eva:22,armor:2,speed:90,art:.93},
+    'silk-weaver':{name:'Silk Weaver',hp:225,dmg:[9,15],acc:74,eva:22,armor:2,speed:90,art:.93,broodKind:'chaos-spiderling'},
     'hookfang':{name:'Hookfang',hp:240,dmg:[24,33],acc:74,eva:18,armor:4,speed:100,art:1.04}
   };
   var immunities={
@@ -73,6 +73,7 @@
   function sameRegion(a,b){return !!regionAt(a.x,a.y)&&regionAt(a.x,a.y)===regionAt(b.x,b.y);}
   function now(){return worldNow();}
   function kindsForBiome(biome){return (groups[biome]||[]).map(function(slug){return 'chaos-'+slug;});}
+  function spawnKinds(actor){var base=MONSTERS[actor.kind];return base&&base.broodKind?[base.broodKind]:[];}
   function spawnEnemy(kind,x,y,options){
     options=options||{};var base=MONSTERS[kind],region=regionAt(x,y);
     if(!active()||!base||!base.chaosAI||!region||!walkable(x,y)||at(x,y)===PORTAL||occupied(x,y)||options.regionId&&options.regionId!==region)return null;
@@ -305,7 +306,7 @@
         return lensShield(e,target)||lensBeam(e,target);
       case 'chaos-plague-bloat':if(d<=2)return immediate(e,'vent',area(e.x,e.y,1,region),'vents poison','poison');break;
       case 'chaos-brood-carrier':
-        if(d<=6&&livingBrood(e)<3)return throwBrood(e,target,'chaos-rotling',1,'poison',200);
+        if(d<=6&&livingBrood(e)<3)return throwBrood(e,target,MONSTERS[e.kind].broodKind,1,'poison',200);
         if(d<=5&&clearShot(e,target))return immediate(e,'bile',area(target.x,target.y,1,region),'launches infectious poison','poison',{aim:{x:target.x,y:target.y},poisonTurns:4});break;
       case 'chaos-bile-spitter':if(d>=2&&d<=5&&clearShot(e,target))return immediate(e,'bile',area(target.x,target.y,1,region),'spits a bile patch','poison',{aim:{x:target.x,y:target.y}});break;
       case 'chaos-horned-reaver':if(d<=1){var dx=Math.sign(target.x-e.x),dy=Math.sign(target.y-e.y);tiles=area(e.x,e.y,1,region).filter(function(t){return (t[0]-e.x)*dx+(t[1]-e.y)*dy>0;});return immediate(e,'cleave',tiles,'Frontal Cleave');}break;
@@ -315,7 +316,7 @@
       case 'chaos-chain-reaver':if(d>=2){tiles=line(e,target,6);if(reaches(tiles,target))return immediate(e,'harpoon',tiles,'casts its hooked harpoon');}break;
       case 'chaos-lash-dancer':tiles=line(e,target,2);if(reaches(tiles,target))return immediate(e,'lash',tiles,'lashes with a barbed whip','blood');break;
       case 'chaos-silk-weaver':
-        if(d<=6&&livingBrood(e)<3)return throwBrood(e,target,'chaos-spiderling',3,'web',500);
+        if(d<=6&&livingBrood(e)<3)return throwBrood(e,target,MONSTERS[e.kind].broodKind,3,'web',500);
         if(d>=2&&!gameEffects.hasTag(target,'root')&&!gameEffects.hasTag(target,'slow')){tiles=line(e,target,5);if(reaches(tiles,target))return immediate(e,'web',tiles,'casts a silver web','web');}break;
     }return false;
   }
@@ -388,5 +389,5 @@
     var combat=floorMeta.chaosCombat;if(!combat)return;
     combat.hazards=combat.hazards.filter(function(h){h.tiles=h.tiles.filter(function(t){return t[0]!==x||t[1]!==y;});return h.tiles.length>0;});
   }
-  root.FoteChaosEnemies=Object.freeze({kindsForBiome:kindsForBiome,spawn:spawnEnemy,act:act,holdsPosition:holdsPosition,cellAllowed:cellAllowed,damageRules:damageRules,onDamaged:onDamaged,globalPulse:globalPulse,wash:wash});
+  root.FoteChaosEnemies=Object.freeze({kindsForBiome:kindsForBiome,spawnKinds:spawnKinds,spawn:spawnEnemy,act:act,holdsPosition:holdsPosition,cellAllowed:cellAllowed,damageRules:damageRules,onDamaged:onDamaged,globalPulse:globalPulse,wash:wash});
 })(typeof window!=='undefined'?window:globalThis);

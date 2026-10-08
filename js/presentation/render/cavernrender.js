@@ -63,8 +63,9 @@ function drawCaveProp(p, px, py, alpha){
   if(!o) return false;
   var w=p.w||1, h=p.h||1, X=(p.x-camX)*TS, Y=(p.y-camY)*TS, flip=hash2(p.x,p.y,5)<0.5 && !/burrow|pool|mine-support/.test(p.name);
   if(p.flat){
-    /* clusters and bedrolls: centred on their tile */
-    drawCaveArt(o, X+TS/2, Y+TS/2+o.fullH*TS/128, alpha, flip);
+    /* Centre the art's scaled canvas: a half-size crystal must not retain the
+       old full-size half-height and drift toward the tile below it. */
+    drawCaveArt(o, X+TS/2, Y+TS/2+o.fullH*caveArtScale(o)/2, alpha, flip);
     return true;
   }
   drawCaveArt(o, X+w*TS/2, Y+h*TS-TS*0.02, alpha, flip);

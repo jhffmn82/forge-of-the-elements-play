@@ -369,6 +369,9 @@
   var o=kernelInputs(source,info,n,x,y,mode,pageTextures);if(!o)return base;
   var out=canvas(S,S,mode+'-'+x+'-'+y),g=out.getContext('2d'),image=g.createImageData(S,S);
   o.dst=image.data;enhanceKernel(o);g.putImageData(image,0,0);
+  // Wall crystals belong above the finished rock. Cache the native painter's
+  // result once; these canvas-path cells already stay out of terrain workers.
+  if(info.crystal){g.save();g.scale(S/PT_R,S/PT_R);ptCrystal(g,x,y,ptSalt(),info.terrainMaterial||ptMat(x,y));g.restore();}
   return keep(out,base,x,y,cache,key,started);
  }
  // A finished 128px cell enters the cache (from enhance, or from a terrain worker with no base at all).

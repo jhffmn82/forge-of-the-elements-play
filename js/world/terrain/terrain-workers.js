@@ -170,11 +170,11 @@
   if(x<0||y<0||x>=MW||y>=MH)return null;var t=at(x,y);if(t===CHASM)return null;
   if(deepFloor()){
    var sig=deepSig(x,y);
-   if(deepNeedsRaster(x,y,sig)){var dk=x+','+y+':'+sig;return dk in cells||inflight.has('d'+dk)||nearBuilt(x,y)?null:[1,dk];}
-   if(isWallLike(t)&&DEEP_STYLE[deepCellReg(x,y)]!=='rect')return ET.rockTopReady(x,y)||inflight.has('r'+x+','+y)?null:[2,x+','+y];
+   if(deepNeedsRaster(x,y,sig)){var dk=x+','+y+':'+sig;return dk in cells||nearBuilt(x,y)?null:[1,dk];}
+   if(isWallLike(t)&&DEEP_STYLE[deepCellReg(x,y)]!=='rect')return ET.rockTopReady(x,y)?null:[2,x+','+y];
    return null;   // masonry and volcanic ground: the page
   }
-  var k=x+','+y;if(k in cells||inflight.has('p'+k))return null;
+  var k=x+','+y;if(k in cells)return null;
   var M=ptMat(x,y);if(!M)return null;
   var shared=ptVoidTile(x,y);if(shared){cells[k]=shared;return null;}
   return ptCrystalAt(x,y,M,ptSalt())?null:[0,k];
@@ -190,27 +190,51 @@
   var taken=new Set();
   if(failed||!list.length)return {taken:taken,done:Promise.resolve()};
   if(!pool&&!start()||FoteEnvironmentTerrain!==ET)return {taken:taken,done:Promise.resolve()};
-  var cells=cacheNow(),queue=[];
-  list.forEach(function(c){var j=job(c[0],c[1],cells);if(j){queue.push({x:c[0],y:c[1],kind:j[0],key:'pdr'[j[0]]+j[1],slot:j[1],urgent:!!now});taken.add(c[0]+','+c[1]);}});
+  var cells=cacheNow(),queue=[],keys=new Set(),owned=new Map();
+  function remember(q,r){if(q.cells===cells&&q.map===map)owned.set(q.key,{q:q,ready:r});}
+  urgent.forEach(function(u){u.list.forEach(function(q){remember(q,null);});});
+  inflight.forEach(function(q){remember(q,null);});
+  ready.forEach(function(r){remember(r.q,r);});
+  list.forEach(function(c){
+   var j=job(c[0],c[1],cells);if(!j)return;
+   var key='pdr'[j[0]]+j[1],existing=owned.get(key);
+   if(existing){
+    // A moving view overlaps the preceding ring. Its pending cells still
+    // belong to the workers; omitting them from taken rebuilt them on the
+    // page while the same expensive raster was already being computed.
+    if(now){
+     existing.q.urgent=true;
+     if(existing.ready){var index=ready.indexOf(existing.ready);if(index>=0)ready.splice(index,1);place(existing.q,existing.ready.image);}
+     else keys.add(key);
+    }
+    taken.add(c[0]+','+c[1]);return;
+   }
+   // A retired floor/cache may still have this transport key in flight.
+   // Never borrow its pixels or replace its entry; the page owns this cell.
+   if(inflight.has(key))return;
+   var q={x:c[0],y:c[1],kind:j[0],key:key,slot:j[1],urgent:!!now,cells:cells,map:map};
+   queue.push(q);owned.set(key,{q:q,ready:null});keys.add(key);taken.add(c[0]+','+c[1]);
+  });
   if(!now){later=queue;later.cells=cells;later.map=map;}
   else urgent.push({list:queue,cells:cells,map:map});
   // an urgent request resolves once each of its cells is in the cache or given up
-  var done=now&&queue.length?new Promise(function(resolve){waiting.push({keys:queue.map(function(q){return q.key;}),resolve:resolve});}):Promise.resolve();
+  var done=now&&keys.size?new Promise(function(resolve){waiting.push({keys:Array.from(keys),resolve:resolve});}):Promise.resolve();
   if(queue.length){floorState();pump();}
   return {taken:taken,done:done};
  }
  // The next job still worth sending: urgent (a held view) first, then the ring ahead of the view.
  function nextJob(current,deepOk){
   if(!deepOk&&deepFloor())return null;
-  while(urgent.length){var u=urgent[0];while(u.list.length){var q=u.list.shift();if(u.cells===current&&u.map===map&&!inflight.has(q.key)){q.cells=u.cells;q.map=u.map;return q;}}urgent.shift();}
-  while(later.length){var q2=later.shift();if(later.cells===current&&later.map===map&&!inflight.has(q2.key)){q2.cells=later.cells;q2.map=later.map;return q2;}}
+  while(urgent.length){var u=urgent[0];while(u.list.length){var q=u.list.shift();if(needed(q,current)&&!inflight.has(q.key))return q;}urgent.shift();}
+  while(later.length){var q2=later.shift();if(needed(q2,current)&&!inflight.has(q2.key))return q2;}
   return null;
  }
+ function needed(q,current){return q.cells===current&&q.map===map&&(q.kind===2?!ET.rockTopReady(q.x,q.y):!(q.slot in current));}
  // The page helps with a held view once its own share is done: it takes the queued job farthest from the view's
  // centre (the workers take the nearest), builds it itself, and the job leaves the queue.
  function steal(){
   var current=cacheNow();
-  for(var i=urgent.length-1;i>=0;i--){var u=urgent[i];while(u.list.length){var q=u.list.pop();if(u.cells===current&&u.map===map&&!inflight.has(q.key)){settle();return q;}}}
+  for(var i=urgent.length-1;i>=0;i--){var u=urgent[i];while(u.list.length){var q=u.list.pop();if(needed(q,current)&&!inflight.has(q.key)){settle();return q;}}}
   return null;
  }
  function pump(){

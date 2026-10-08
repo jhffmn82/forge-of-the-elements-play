@@ -30,7 +30,7 @@
     /* 2026-09-28 (Justin picked style D): a dark well, the ability's colour as a soft inner glow instead of a coloured border,
        and a shadow under each icon so it stands off the well */
     '#hotbar .slot{padding:0;align-items:center;justify-content:center;width:52px;height:52px;border:0;border-radius:8px;background:#141110;box-shadow:inset 0 0 0 1px #3a322b,inset 0 0 12px -2px var(--c,transparent),0 2px 3px rgba(0,0,0,.6)}',
-    '#hotbar .slot .ico canvas{filter:drop-shadow(0 0 1px #000) drop-shadow(0 2px 2px rgba(0,0,0,.8))}',
+    '#hotbar .slot .ico canvas{filter:brightness(var(--icon-exposure,1)) drop-shadow(0 0 1px #000) drop-shadow(0 2px 2px rgba(0,0,0,.8))}',
     '#hotbar .slot .k{color:#cbbba1;font-weight:600;text-shadow:0 1px 1px #000}',
     '#hotbar .slot.armed,#hotbar .slot.over{box-shadow:inset 0 0 0 2px var(--gold),inset 0 0 12px -2px var(--c,transparent),0 2px 3px rgba(0,0,0,.6)}',
     '#hotbar .slot:hover:not(:disabled){box-shadow:inset 0 0 0 1px var(--ember),inset 0 0 12px -2px var(--c,transparent),0 2px 3px rgba(0,0,0,.6)}',
@@ -42,7 +42,7 @@
     '#hotbar .slot .ico canvas{width:100%!important;height:100%!important;display:block}',
     '#hotbar .slot .k{top:2px;left:4px;right:auto;font-size:calc(9px + var(--ui-mobile-text-add,0px))}',
     '#hotbar .slot .cdn{position:absolute;right:3px;bottom:2px;font-size:calc(9px + var(--ui-mobile-text-add,0px));color:var(--gold);text-shadow:0 1px 2px #000}',
-    '#hotbar .slot.oncd .ico canvas{filter:grayscale(1) brightness(.45) drop-shadow(0 0 1px #000)}',
+    '#hotbar .slot.oncd .ico canvas{filter:brightness(var(--icon-exposure,1)) grayscale(1) brightness(.45) drop-shadow(0 0 1px #000)}',
     '#hotbar .slot.oncd::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:conic-gradient(rgba(0,0,0,.62) calc(var(--cdp,0) * 1%),rgba(0,0,0,0) 0)}',
     '#hotbar .slot .cdn.cdbig{left:0;right:0;top:50%;bottom:auto;transform:translateY(-50%);text-align:center;font-size:calc(20px + var(--ui-mobile-text-add,0px));font-weight:700;color:#fff;text-shadow:0 0 3px #000,0 1px 2px #000;z-index:2}',
     '#hotbar .slot.cdready{animation:cdready .7s ease-out}',
@@ -106,6 +106,55 @@ var ICON_BG_FIXED = {
   'pr-sanctuary':   ['#FFFFFF','#8A6A20']
 };
 var ICON_BG_CACHE = {};
+/* Slot accents describe the visible icon's family, not its average paint color.
+   Dark silhouettes get a small foreground lift; the authored art, scale and
+   native well stay intact. Unknown objects are classified by appearance only:
+   consulting a shuffled sigil/jewelry effect here would reveal identification. */
+var HOTBAR_ICON_EXPOSURE = {
+  'ic-into-the-dark':2, 'ic-shadow-swarm':1.6, 'ic-shadowstep':1.4,
+  'ic-umbral-passage':1.3, 'ic-shadow-bolt':1.15
+};
+function hotbarIconPresentation(name){
+  if(!name)return null;
+  var family='',color='',exposure=HOTBAR_ICON_EXPOSURE[name]||1;
+  if(name.indexOf('rune-')===0){
+    var bind=typeof BIND_RUNES!=='undefined'&&BIND_RUNES.indexOf(name.slice(5))>=0;
+    family=bind?'sigil-bind':'sigil';color=bind?'#C5A0FF':'#83D8FF';
+  }else if(typeof ABILITIES!=='undefined'){
+    var keys=Object.keys(ABILITIES);
+    for(var i=0;i<keys.length;i++){
+      var a=ABILITIES[keys[i]];if(a.icon!==name)continue;
+      if(a.god&&typeof GODS!=='undefined'&&GODS[a.god]){family='faith-'+a.god;color=GODS[a.god].color;}
+      else if(a.el){
+        family='element-'+a.el;
+        var type={water:'ice',air:'lightning',earth:'poison',shadow:'dark'}[a.el]||a.el;
+        color=typeof DMG_COL!=='undefined'&&DMG_COL[type];
+        if(!color)color=typeof AFF_COL!=='undefined'&&AFF_COL[a.el]||'#BFA1E2';
+      }else{family='martial';color='#9FB0C0';}
+      break;
+    }
+  }
+  if(!family&&typeof GODS!=='undefined'&&typeof prayerIcon==='function'){
+    var gods=Object.keys(GODS);
+    for(var g=0;g<gods.length&&!family;g++){
+      var god=GODS[gods[g]],prayers=god.prayers||[];
+      for(var p=0;p<prayers.length;p++)if(prayerIcon(prayers[p])===name){family='faith-'+gods[g];color=god.color;break;}
+    }
+  }
+  /* Retained/legacy prayers can have art even when no current god offers them. */
+  if(!family&&typeof PRAYERS!=='undefined'&&typeof prayerIcon==='function'){
+    var prayerKeys=Object.keys(PRAYERS);
+    for(var q=0;q<prayerKeys.length;q++)if(prayerIcon(prayerKeys[q])===name){family='prayer';color='#E8B44A';break;}
+  }
+  if(!family&&typeof FOODS!=='undefined'){
+    var foods=Object.keys(FOODS);
+    for(var f=0;f<foods.length;f++)if(FOODS[foods[f]].icon===name){family='provision';color='#D6A45F';break;}
+  }
+  if(!family&&/^item-(ring|amulet)(-|$)/.test(name)){family='trinket';color='#B9A5D5';}
+  if(!family&&name.indexOf('item-')===0){family='equipment';color='#9FB0C0';}
+  if(!family)return null;
+  return {family:family,color:ICON_BG_FIXED[name]?ICON_BG_FIXED[name][1]:color,exposure:exposure};
+}
 function iconBG(name){
   if(!name) return null;
   if(ICON_BG_FIXED[name]) return ICON_BG_FIXED[name];
@@ -140,9 +189,19 @@ function iconBG(name){
 /* paint the chip behind every hotbar icon, on the desktop bar and the touch one */
 function iconChipFor(el, name){
   if(el)cancelStaticArtPaint(el,'chip');
-  var bg=iconBG(name);
   var slot=el && el.closest ? el.closest('.slot, .gslot, .hbslot') : null;
   if(!slot) return;
+  if(slot.closest('#hotbar')){
+    var presentation=hotbarIconPresentation(name);
+    slot.style.setProperty('--icon-exposure',presentation?presentation.exposure:1);
+    slot.setAttribute('data-icon-family',presentation?presentation.family:'other');
+    if(presentation){
+      slot.style.setProperty('--c',presentation.color);
+      slot.style.background='';slot.style.borderColor='';slot.style.boxShadow='';
+      return;
+    }
+  }
+  var bg=iconBG(name);
   if(!bg){
     watchStaticArt(el,function(){return packedObjectSources('icons',name,true);},function(){iconChipFor(el,name);},function(){return el.closest('.slot, .gslot, .hbslot')===slot;},'chip',true);
     return;

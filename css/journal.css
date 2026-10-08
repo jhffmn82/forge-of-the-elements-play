@@ -1,0 +1,146 @@
+/* Revision 6: field-journal HUD, saturated sheet inks and clear ivory copy.
+ * Native control pad, buttons, hotbar surfaces, portrait frame and states
+ * are inherited. No additional HUD panels or log backgrounds.
+ */
+@font-face {font-family:"Forge Journal";src:url("fonts/journal/IMFePIrm28P.ttf") format("truetype");font-style:normal;font-weight:400;font-display:swap;}
+@font-face {font-family:"Forge Journal";src:url("fonts/journal/IMFePIit28P.ttf") format("truetype");font-style:italic;font-weight:400;font-display:swap;}
+body.fote-journal {
+ --polish-brass:#cfab68; --polish-ink:#eee4d5;
+ --polish-secondary:#c3b6a2;--journal:"Forge Journal","Palatino Linotype",serif;
+ --journal-might:#efb34f;--journal-agility:#91cf63;
+ --journal-vitality:#f1816e;--journal-focus:#71bfee;
+ --journal-brass:#e3bb6a;
+}
+body.fote-journal.fote-study.study-minimal #app #bars .bar span {
+ /* Native size and font at Normal; retain the Large-text scaling correction. */
+ font-size:calc(clamp(9px,calc(10px * var(--study-interface-scale,1) * var(--joined-size-scale)),15px) * var(--ui-text-scale,1) + var(--ui-mobile-text-add,0px))!important;
+}
+body.fote-journal.fote-study.study-minimal #app #hpFill {background:linear-gradient(180deg,#a34736,#783125);box-shadow:inset 0 1px #da897438;}
+body.fote-journal.fote-study.study-minimal #app #mpFill {background:linear-gradient(180deg,#507788,#345564);box-shadow:inset 0 1px #a0ccdd30;}
+body.fote-journal.fote-study.study-minimal #app #studyRecentLog {
+ text-align:left;
+ font-family:var(--journal);font-weight:400;
+ font-size:calc(max(14px,calc(14px * var(--ui-text-scale,1) * var(--study-interface-scale,1))) + var(--ui-mobile-text-add,0px));line-height:1.28;
+ color:var(--polish-ink);--ash:var(--polish-secondary);--dim:#a99a87;
+}
+body.fote-journal.fote-study.study-minimal #app #studyRecentLog b {font-weight:400;}
+body.fote-journal.fote-study.study-minimal #app #bars .bar .l {
+ font-family:var(--journal);font-size:1.05em;font-weight:400;
+}
+body.fote-journal.fote-study.study-minimal #app #studyHungerText {
+ font-family:var(--journal)!important;font-weight:400!important;
+ font-size:calc(var(--joined-readout-font) * var(--ui-text-scale,1) + var(--ui-mobile-text-add,0px) + 1px)!important;
+}
+body.fote-journal.fote-study.study-minimal #app #studyRecentLog .c-info {color:var(--polish-secondary);}
+body.fote-journal.fote-study.study-minimal #app #studyRecentLog :is(.c-gold,.c-kill) {color:var(--polish-brass);}
+
+/* Navigation details must stay readable when the surrounding HUD scales down. */
+body.fote-journal.fote-study.study-minimal #app #top #depth #hBiome {
+ font-size:calc(max(16px,calc(16px * max(1,var(--study-interface-scale,1)) * var(--ui-text-scale,1))) + var(--ui-mobile-text-add,0px));
+ max-width:100%;white-space:normal;overflow-wrap:anywhere;
+}
+body.fote-journal.fote-study.study-minimal #app #top #depth .study-position {
+ flex-wrap:wrap;column-gap:14px;row-gap:4px;max-width:100%;
+ font:400 calc(max(14px,calc(14px * max(1,var(--study-interface-scale,1)) * var(--ui-text-scale,1))) + var(--ui-mobile-text-add,0px))/1.25 var(--journal);
+ color:var(--polish-ink);
+}
+body.fote-journal.fote-study.study-minimal #app #top #depth .study-position > span {white-space:nowrap;}
+body.fote-journal.fote-study.study-minimal[data-ui-theme^=vellum]:not(.ui-paper-faded) #app #top #depth .study-position {color:var(--ui-ink);}
+
+/* Saturated inks, with labels retained: amber, leaf green, coral and blue
+ * keep attributes distinct. No extra panels or brighter fills. */
+body.fote-journal #app #shade :is(#mChar,#mEquip) {
+ --journal-sheet-ink:#f4ebdc;--journal-sheet-copy:#e5ddd0;--journal-sheet-label:#d3cec2;
+ color:var(--journal-sheet-ink);
+}
+/* Descriptions must read as game information, not faded decoration. Target
+ * the text owners instead of --dim/--ash, which also color resistances. */
+body.fote-journal #app #shade #mChar :is(.prow .d,.arow .d,.action-summary,.action-note),
+body.fote-journal #app #shade :is(#mChar,#mEquip) .c-info {
+ color:var(--journal-sheet-copy);
+}
+body.fote-journal #app #shade #mChar :is(.who,.action-facts dt),
+body.fote-journal #app #shade :is(#mChar,#mEquip) .kv > span:not([data-journal-stat]),
+body.fote-journal #app #shade #mEquip :is(.gslot .lab,.tg-hint) {
+ color:var(--journal-sheet-label);
+}
+body.fote-journal #app #shade :is(#mChar,#mEquip) .kv > b:not([data-journal-stat]),
+body.fote-journal #app #shade #mChar .action-facts dd {
+ color:var(--journal-sheet-ink);
+}
+body.fote-journal #app #shade :is(#mChar,#mEquip) :is(.sec,.tg-sec) {
+ color:var(--journal-brass);border-bottom-color:#8b6936;
+}
+body.fote-journal #app #shade #mChar .arow .n {color:var(--journal-ability,#efbf70);}
+body.fote-journal #app #shade #mChar .prow .n {color:var(--journal-passive,#aed276);}
+/* Opaque parchment needs darker colored inks; faded paper keeps the pale
+ * foreground used against the world underneath. */
+body.fote-journal[data-ui-theme^=vellum]:not(.ui-paper-faded) #app #shade :is(#mChar,#mEquip) {
+ --journal-sheet-ink:var(--ui-ink);--journal-sheet-copy:var(--ui-ash);--journal-sheet-label:var(--ui-dim);
+ --journal-might:#82530b;--journal-agility:#375a1e;--journal-vitality:#992f22;--journal-focus:#205778;
+ --journal-brass:#765215;--journal-ability:#82530b;--journal-passive:#375a1e;
+}
+body.fote-journal #app #shade [data-journal-stat="might"] {--stat-ink:var(--journal-might);}
+body.fote-journal #app #shade [data-journal-stat="agility"] {--stat-ink:var(--journal-agility);}
+body.fote-journal #app #shade [data-journal-stat="vitality"] {--stat-ink:var(--journal-vitality);}
+body.fote-journal #app #shade [data-journal-stat="focus"] {--stat-ink:var(--journal-focus);}
+body.fote-journal #app #shade .stat[data-journal-stat] {
+ border-left:2px solid var(--stat-ink);
+}
+body.fote-journal #app #shade .stat[data-journal-stat] > :is(span,b),
+body.fote-journal #app #shade :is(.kv,.res) > [data-journal-stat],
+body.fote-journal #app #shade .res > [data-journal-stat] > b {color:var(--stat-ink);}
+body.fote-journal #app #shade .gearwrap .res {
+ grid-template-columns:repeat(auto-fit,minmax(min(100%,calc(112px * var(--ui-text-scale,1) + var(--ui-mobile-text-add,0px))),1fr));
+}
+body.fote-journal #app #shade .gearwrap .res > span {gap:8px;}
+
+/* Give the full native doll more room. Its native sheet asks its existing renderer
+ * to repaint at the final size; CSS never magnifies or crops the canvas. */
+body.fote-journal:not(.touch) #app #shade .gdoll {grid-template-rows:repeat(3,96px);}
+body.fote-journal:not(.touch) #app #shade .gdoll .art {min-height:312px;}
+body.fote-journal.touch #app #shade .tgear .tg-portrait {min-height:228px;max-height:228px;}
+body.fote-journal:not(.touch) #app #shade .gearwrap {
+ grid-template-columns:minmax(150px,.65fr) minmax(300px,1.7fr) minmax(200px,1fr);
+}
+@media (min-width:641px) and (max-width:1100px) {
+ body.fote-journal:not(.touch) #app #shade .gdoll {grid-template-columns:68px minmax(110px,1fr) 68px;column-gap:8px;}
+}
+@media (max-width:900px) {
+ body.fote-journal:not(.touch) #app #shade .gdoll {grid-template-columns:52px minmax(0,1fr) 52px;grid-template-rows:repeat(3,76px);column-gap:8px;}
+ body.fote-journal:not(.touch) #app #shade .gdoll .art {min-height:252px;}
+ body.fote-journal:not(.touch) #app #shade .gslot {width:52px;height:52px;flex-shrink:0;}
+}
+@media (max-width:640px) {
+ body.fote-journal:not(.touch) #app #shade .gearwrap {grid-template-columns:minmax(0,1fr);}
+ body.fote-journal.touch #app #shade .tgear .tg-mid {grid-template-columns:minmax(0,1fr);}
+}
+@media (orientation:landscape) and (min-width:960px) and (min-height:600px) {
+ body.fote-journal.touch #app #shade .gearwrap {grid-template-columns:minmax(135px,.7fr) minmax(190px,1.6fr) minmax(210px,1.1fr)!important;}
+ body.fote-journal.touch #app #shade .gearwrap .gdoll {grid-template-rows:repeat(3,88px)!important;}
+ body.fote-journal.touch #app #shade .gearwrap .gdoll .art {height:288px;}
+}
+
+/* Bespoke symbols use the native buttons and their existing hit areas/states.
+ * Explore's stop/stairs symbols remain native so state changes stay explicit.
+ */
+body.fote-journal.fote-study.study-minimal #app #studyMenuToggle {--journal-symbol:url("icons/journal/journal.svg");}
+body.fote-journal.fote-study.study-minimal #app #bMap {--journal-symbol:url("icons/journal/map.svg");}
+body.fote-journal.fote-study.study-minimal #app #studyInventoryIcon {--journal-symbol:url("icons/journal/satchel.svg");}
+body.fote-journal.fote-study.study-minimal #app #studyExplore[data-explore-mode=explore][aria-pressed=false] {--journal-symbol:url("icons/journal/compass.svg");}
+body.fote-journal.fote-study.study-minimal #app :is(#studyMenuToggle,#bMap,#studyInventoryIcon)::before,
+body.fote-journal.fote-study.study-minimal #app #studyExplore[data-explore-mode=explore][aria-pressed=false]::before {
+ content:"";position:absolute;inset:0;margin:auto;width:64%;height:64%;pointer-events:none;
+ background:currentColor;mask-image:var(--journal-symbol);mask-size:contain;mask-position:center;mask-repeat:no-repeat;
+}
+body.fote-journal.fote-study.study-minimal #app :is(#studyMenuToggle,#bMap,#studyInventoryIcon) > svg,
+body.fote-journal.fote-study.study-minimal #app #studyExplore[data-explore-mode=explore][aria-pressed=false] > svg {visibility:hidden;}
+
+/* Lower the horizontal phone hotbar and its bag by 4px; retain device safe area. */
+@media (orientation:landscape) {
+ body.fote-journal.fote-study.study-minimal.study-small-touch:not(.study-hotbar-vertical) #app #hotbar,
+ body.fote-journal.fote-study.study-minimal.study-small-touch:not(.study-hotbar-vertical) #app > #studyInventoryIcon {
+  bottom:calc(4px + env(safe-area-inset-bottom,0px))!important;
+ }
+ body.fote-journal.fote-study.study-minimal.study-small-touch:not(.study-hotbar-vertical) #app > #studyInventoryIcon {top:auto!important;}
+}

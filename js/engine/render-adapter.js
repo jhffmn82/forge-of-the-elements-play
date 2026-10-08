@@ -131,22 +131,22 @@ function drawCaveArt(art,center,bottom,alpha,flip){
   var adjusted=bottom,opacity=alpha;
   if(art&&art.nm&&art.nm!=='kobold-crate'&&CAVE_STANDING.test(art.nm))adjusted+=caveBottomPad(art)*caveArtScale(art);
   if(art&&art.nm&&/^cl-cave-pearls/.test(art.nm))opacity*=.3;
-  var result=drawCaveSprite(art,center,adjusted,opacity,flip);drawCaveAnimation(art,center,bottom,alpha,flip);return result;
+  var result=drawCaveSprite(art,center,adjusted,opacity,flip);drawCaveAnimation(art,center,adjusted,alpha,flip);return result;
 }
-function floorTile(x,y){
-  if(inDeep()&&floorMeta.deepRegion){var raster=deepRasterTile(x,y);DEEP_RC=!!raster;DEEP_AT=deepCellReg(x,y);if(raster)return raster;}
+function floorTile(x,y,sourcesOnly){
+  if(inDeep()&&floorMeta.deepRegion){sourcesOnly=false;var raster=deepRasterTile(x,y);DEEP_RC=!!raster;DEEP_AT=deepCellReg(x,y);if(raster)return raster;}
   else {DEEP_RC=false;DEEP_AT=-1;}
-  return ptMat(x,y)?(ptTile(x,y)||{flat:ptFlat(x,y)}):masonryFloorTile(x,y);
+  return ptMat(x,y)?(sourcesOnly?null:ptTile(x,y)||{flat:ptFlat(x,y)}):masonryFloorTile(x,y);
 }
-function wallTile(x,y){
+function wallTile(x,y,sourcesOnly){
   if(inDeep()&&floorMeta.deepRegion){
-    var raster=deepRasterTile(x,y);DEEP_AT=deepCellReg(x,y);DEEP_RC=!!raster&&!deepBuiltWall(x,y);
+    sourcesOnly=false;var raster=deepRasterTile(x,y);DEEP_AT=deepCellReg(x,y);DEEP_RC=!!raster&&!deepBuiltWall(x,y);
     // A natural region's wall top (a built wall's too) is its 128px rock or the region's material top.
     var natural=DEEP_STYLE[DEEP_AT]!=='rect'&&!DEEP_RC?FoteEnvironmentTerrain.deepTop(x,y):null;if(natural)return natural;
     if(raster)return raster;
     if(DEEP_STYLE[DEEP_AT]!=='rect'){var top=surfImg('top');if(top)return {img:top,sx:smod(x+surfOff(3))*64,sy:smod(y+surfOff(4))*64,sw:64,sh:64,deepDim:wallFaces(x,y)?.5:1-DEEP_TOP_DIM};}
   }else {DEEP_RC=false;DEEP_AT=-1;}
-  return ptMat(x,y)?(ptTile(x,y)||{flat:ptFlat(x,y)}):masonryWallTile(x,y);
+  return ptMat(x,y)?(sourcesOnly?null:ptTile(x,y)||{flat:ptFlat(x,y)}):masonryWallTile(x,y);
 }
 function tileSprite(x,y,tile){
   if(tile===EXIT&&floorMeta&&floorMeta.caveExit){var caveExit=caveArt('worm-burrow-open');if(caveExit)return caveExit;}
@@ -261,13 +261,23 @@ var sceneArtEnabled=false,sceneArtLoading=null;
 function sceneArtAvailable(){return !!(sceneArtEnabled&&spriteOn&&player&&map&&map.length&&floorMeta);}
 function sceneArtCurrent(scope){return scope.active&&sceneArtAvailable()&&scope.map===map&&scope.meta===floorMeta&&scope.hero===player&&scope.appearanceRevision===FoteContent.appearanceRevision(scope.meta);}
 function querySceneArt(task){
+  var creatures=new Set(),summoners=new Set();
+  function summons(actor){
+    if(summoners.has(actor.kind))return;summoners.add(actor.kind);
+    if(typeof deepSummonKinds==='function')deepSummonKinds(actor).forEach(function(kind){creature(kind,task.x,task.y,{skipDeep:true});});
+    if(typeof FoteChaosEnemies!=='undefined'&&typeof FoteChaosEnemies.spawnKinds==='function')FoteChaosEnemies.spawnKinds(actor).forEach(function(kind){var base=MONSTERS[kind];if(base&&base.sprite)mobSheet(base.sprite);});
+  }
+  function creature(kind,x,y,options){
+    spawnSpecies(kind,x,y,options,true).forEach(function(species){if(creatures.has(species))return;creatures.add(species);var base=MONSTERS[species];if(base&&base.sprite)mobSheet(base.sprite);summons({kind:species});});
+  }
   function query(){
     var value=task.value,name;
     if(task.kind==='tile'){
       /* Ground sources belong to this scene too, even when the retained layer
-       * means their selectors will not run again for several seconds. */
-      if(isWallLike(value))wallTile(task.x,task.y);
-      else if(value!==CHASM)floorTile(task.x,task.y);
+       * means their selectors will not run again for several seconds. Natural
+       * pixels elect no source; Deep rasters still select their region atlases. */
+      if(isWallLike(value))wallTile(task.x,task.y,true);
+      else if(value!==CHASM)floorTile(task.x,task.y,true);
       tileSprite(task.x,task.y,value);
       /* A disguised chest is not yet an actor. Its reveal sheet must be ready
        * at floor entry, rather than first requested by the reveal frame. */
@@ -278,6 +288,11 @@ function querySceneArt(task){
       name=value.artName||value.name;
       var guardian=typeof puzzleGuardianSprite==='function'&&puzzleGuardianSprite(value);
       if(guardian)mobSheet(guardian);
+      /* A release can land beside the cage or within two tiles of the adjacent
+       * player. Query that bounded region without choosing a landing or species. */
+      if(value.prisoner)for(var dy=-3;dy<=3;dy++)for(var dx=-3;dx<=3;dx++)if(inb(value.x+dx,value.y+dy))creature(value.prisoner,value.x+dx,value.y+dy,{skipDeep:!!value.ritual});
+      var hatch=typeof deepHatchKind==='function'&&deepMobsOn()&&deepHatchKind(value);
+      if(hatch)creature(hatch,value.x,value.y,{skipDeep:true});
       if(value.name==='bones'||value.name==='bone-pile'){groundBoneArt(value.x,value.y);return;}
       objArt('props',name)||objArt('structures',name)||objArt('chests',name)||objArt('terrain',name);
       var packed=typeof packNameFor==='function'&&packNameFor(value);if(packed)packArt(packed);
@@ -298,6 +313,7 @@ function querySceneArt(task){
       else objArt('terrain',GROUND_ART[value]);
     }
     else if(task.kind==='actor'){
+      summons(value);
       if(value.shadowClone)castSheet(value.cloneLook);
       else if(value.livingFlame)atl('living-flame.webp');
       else if(typeof isShadeSummon==='function'&&isShadeSummon(value))shadeSummonSheet();
@@ -385,13 +401,13 @@ function floorArtPending(){
   return !!floorArt&&!floorArt.done&&floorArt.map===map&&floorArt.meta===floorMeta||
     !!terrainHold&&!terrainHold.done&&terrainHold.map===map&&terrainHold.meta===floorMeta;
 }
-function whenFloorDrawn(fn){if(floorArtPending())floorDrawn.push(fn);else fn();}
+function whenFloorDrawn(fn){if(floorArtPending())floorDrawn.push(FoteTransitions.sceneCallback(gameState,fn));else fn();}
 function floorArtMessage(hold,error){
   if(floorArt!==hold||hold.map!==map||hold.meta!==floorMeta)return;
   var node=document.getElementById('floorArtStatus');
   if(!node){node=document.createElement('div');node.id='floorArtStatus';node.setAttribute('role','status');node.style.cssText='position:fixed;z-index:99;bottom:20px;left:50%;transform:translateX(-50%);padding:12px 16px;border:1px solid #79634C;border-radius:8px;background:#17120F;color:#E5D5BD;font:14px sans-serif;text-align:center';document.body.appendChild(node);}
   node.style.fontSize='calc(14px + var(--ui-mobile-text-add,0px))';node.replaceChildren();
-  var text=document.createElement('span');text.textContent=error?'Some artwork could not load. ':'Preparing floorâ€¦';node.appendChild(text);
+  var text=document.createElement('span');text.textContent=error?'Some artwork could not load. ':'Preparing floor…';node.appendChild(text);
   if(error){var retry=document.createElement('button');retry.textContent='Retry';retry.style.cssText='margin-left:10px;padding:8px 12px;min-width:44px;min-height:44px';retry.onclick=function(){prepareFloorArt(hold);};node.appendChild(retry);}
 }
 function prepareFloorArt(hold){

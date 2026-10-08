@@ -156,7 +156,7 @@ function beetleArc(b){
   var opponents=[player].concat(ents.filter(function(o){return o!==player;})).filter(function(o){return o.hp>0&&caveOpponents(b,o);}),near=null,target=null;
   for(var i=0;i<others.length&&!target;i++){target=opponents.find(function(o){return dist(others[i],o)<=1;});if(target)near=others[i];}
   if(near){ boltFx(near.x,near.y,target.x,target.y,'lightning'); caveZap(target, FoteActors.inheritedAbilityDamage(near,sDMG(roll(BEETLE_ARC[0],BEETLE_ARC[1]))), near, 'Beetle Arc'); }
-  else if(caveVis(b.x,b.y)) log('Storm Beetles: Arc.','c-info');
+  else if(caveVis(b.x,b.y)) log('Storm Beetles: Arc.','c-info',{transient:false});
   sfx('lightning-hit',{from:b});
 }
 /* Spark Jelly: the sting jumps to up to two more targets within 2 tiles of whatever it stung */
@@ -386,7 +386,7 @@ function eelAct(e){
         if(z.cells.indexOf(idxOf(t.x,t.y))<0) return;
         hitAny=true; caveZap(t, roll(e.dmg[0], e.dmg[1]), e, t===player ? 'Shock Eel water' : null);
       });
-      if(!hitAny && caveVis(e.x,e.y)) log('Shock Eel: no hits.','c-info');
+      if(!hitAny && caveVis(e.x,e.y)) log('Shock Eel: no hits.','c-info',{transient:false});
        return;
     }
   }

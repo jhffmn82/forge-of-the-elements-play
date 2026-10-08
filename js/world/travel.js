@@ -29,13 +29,13 @@ function cursorFor(kind){
 /* ---------------------------------------------------------------- what a click on a tile means */
 function tileAt(ev){ var r=cv.getBoundingClientRect(); return {x:camX+Math.floor((ev.clientX-r.left+camOX)/TS), y:camY+Math.floor((ev.clientY-r.top+camOY)/TS)}; }
 function knownTile(x,y){ return inb(x,y) && (revealAll || seen[idxOf(x,y)]); }
-/* Player travel can cross a gap while Floating (or carried by Air 3).
+/* Mouse travel crosses gaps only with active Floating or an already active wind carry.
    Keep world walkability unchanged for grounded actors and floor generation. */
 function travelWalkable(x,y){
   if(walkable(x,y)) return true;
   if(!inb(x,y) || at(x,y)!==CHASM || !player) return false;
   if(floorMeta&&floorMeta.impassableVoid)return false;
-  if(!(player.levitate>0 || (typeof aff==='function' && aff('air')>=3))) return false;
+  if(!(player.levitate>1 || (player.windCarry&&typeof aff==='function'&&aff('air')>=3))) return false;
   var p=propAt(x,y); return !(p && p.b);
 }
 function useTile(t){ return t===DOOR || t===CHEST || t===SHRINE || t===FORGE || t===LOCKED || t===SEALED || t===ICEDOOR || t===THORNS || t===TOLL || (t===EXIT && !floorMeta.exitOpen); }
@@ -81,29 +81,48 @@ function clickIntent(x, y){
 }
 
 /* ---------------------------------------------------------------- paths over what you know */
-function travelPath(tx, ty, stopAdjacent, explore){
+function travelPath(tx, ty, stopAdjacent, explore, avoidChasms){
   var W=MW, prev=new Int32Array(MW*MH).fill(-1), start=idxOf(player.x,player.y), goal=explore&&!explore.destination?-1:idxOf(tx,ty), q=[start], h=0;
+  // Every step costs a turn. Among equally short routes, avoid extra diagonals.
+  // BFS finishes each depth before the next, so tied parents can improve in place.
+  var steps=new Int32Array(MW*MH), diagonals=new Int32Array(MW*MH), adjacent=-1;
   prev[start]=start;
   var knownTrap={}; feats.forEach(function(f){ if(f.found) knownTrap[idxOf(f.x,f.y)]=1; });
   while(h<q.length){
+    if(adjacent>=0 && steps[q[h]]>steps[adjacent])break;
     var i=q[h++]; if(i===goal) break;
     var x=i%W, y=(i/W)|0;
     if(explore && !explore.destination && i!==start && exploreFrontier(x,y,explore)){ goal=i; break; }
-    if(stopAdjacent && Math.max(Math.abs(x-tx),Math.abs(y-ty))<=1 && i!==start){ goal=i; break; }
+    if(stopAdjacent && Math.max(Math.abs(x-tx),Math.abs(y-ty))<=1 && i!==start){
+      if(adjacent<0 || diagonals[i]<diagonals[adjacent])adjacent=i;
+      continue;
+    }
+    if(adjacent>=0)continue;
     for(var dy=-1;dy<=1;dy++) for(var dx=-1;dx<=1;dx++){
       if(!dx && !dy) continue; var nx=x+dx, ny=y+dy; if(!inb(nx,ny)) continue; var ni=idxOf(nx,ny);
-      if(prev[ni]>=0 || !knownTile(nx,ny)) continue;
+      var nextSteps=steps[i]+1, nextDiagonals=diagonals[i]+(dx&&dy?1:0);
+      if(prev[ni]>=0 && (steps[ni]!==nextSteps || diagonals[ni]<=nextDiagonals)) continue;
+      if(!knownTile(nx,ny)) continue;
       var t=at(nx,ny), isGoal = ni===goal;
       var ok = travelWalkable(nx,ny) || t===DOOR || t===OPEN || (isGoal && (useTile(t) || t===EXIT));
+      if(avoidChasms&&t===CHASM)continue;
       if(!ok || (knownTrap[ni] && (!isGoal||explore))) continue;
       if(explore && (!exploreWalkable(nx,ny) || travelHazard(nx,ny)))continue;
       if(!isGoal && ents.some(function(e){ return e!==player && entityOccupies(e,nx,ny) && !e.ally && (explore?actorVisible(e):!actorConcealed(e)); })) continue;
-      prev[ni]=i; q.push(ni);
+      if(prev[ni]<0)q.push(ni);
+      prev[ni]=i; steps[ni]=nextSteps; diagonals[ni]=nextDiagonals;
     }
   }
+  if(adjacent>=0)goal=adjacent;
   if(goal<0 || prev[goal]<0) return null;
   var path=[], c=goal; while(c!==start){ path.push(c); c=prev[c]; }
-  return path.reverse().map(function(i){ return {x:i%W, y:(i/W)|0}; });
+  var result=path.reverse().map(function(i){ return {x:i%W, y:(i/W)|0}; });
+  if(!avoidChasms&&!(typeof aff==='function'&&aff('air')>=3)){
+    var lastGap=-1;result.forEach(function(p,n){if(at(p.x,p.y)===CHASM)lastGap=n;});
+    // Budget the approach, crossing and landing before committing mouse travel.
+    if(lastGap>=0&&lastGap+2>player.levitate)return travelPath(tx,ty,stopAdjacent,explore,true);
+  }
+  return result;
 }
 
 /* Explore selects reachable edges of the map the player has actually seen.
@@ -255,6 +274,8 @@ function travelStep(){
   if(!step){ var then=T.then; TRAVEL=null; if(then) then(); return; }
   var dx=step.x-player.x, dy=step.y-player.y;
   if(Math.max(Math.abs(dx),Math.abs(dy))!==1){ stopTravel(); return; }
+  // A queued route may outlive Floating or a bridge; validate before stepping.
+  if(at(step.x,step.y)===CHASM&&!travelWalkable(step.x,step.y)){stopTravel('You stop: the chasm is no longer safe to cross.');return;}
   if(T.explore&&travelHazard(step.x,step.y)){stopTravel('You stop exploring: the way is dangerous.');return;}
   var bx=player.x, by=player.y, bt=turn;
   lastDir=[dx,dy]; tryMove(dx,dy);

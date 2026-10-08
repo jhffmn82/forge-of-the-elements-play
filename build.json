@@ -1,9 +1,9 @@
 {
   "version": "Beta 1.6",
-  "built": "2026-10-07T03:17:51.938656+00:00",
-  "epoch": 1791343071,
-  "source": "Greedy Vault minimum size and Wobbles prank/mood corrections; runtime 6678dccdfcd87686a3e46a402f4f26b2031f4920f12fb70e782ace016f2c70bd",
+  "built": "2026-10-08T03:14:03.778658+00:00",
+  "epoch": 1791429243,
+  "source": "Independent audit fixes, straight-route pathing, journal UI and runtime/performance corrections; runtime b18835d3a151fcdea987f8f0fe76bd85f0e6ddcdd98d071c27dbcb7fb3e8cf67",
   "candidate": true,
   "releaseState": "playtest",
-  "revision": "beta16-map-wobbles-20261007-031751"
+  "revision": "beta16-audit-rollup-20261008-031403"
 }

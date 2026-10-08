@@ -39,7 +39,7 @@ function performPlayerMove(dx,dy){
   if(pr && bumpProp(pr)) return;
   var t=at(nx,ny);
   if(typeof FoteUnmakerPreview!=='undefined'&&FoteUnmakerPreview.bumpGate(nx,ny))return;
-  if(t===DOOR){ setT(nx,ny,OPEN); log('You open the door.','c-info'); sfx('door-open'); computeFOV(); endTurn(); return; }
+  if(t===DOOR){ setT(nx,ny,OPEN); log('You open the door.','c-info',{transient:false}); sfx('door-open'); computeFOV(); endTurn(); return; }
   if(t===CHEST){ openChest(nx,ny); endTurn(); return; }
   if(t===LOCKED){ return bumpLocked(nx,ny); }
   if(t===TOLL){ return bumpToll(nx,ny); }
@@ -79,7 +79,7 @@ function closeDoorAt(x, y){
   if(Math.max(Math.abs(x-player.x), Math.abs(y-player.y))!==1){ log('You need to stand next to the door.','c-info'); return true; }
   if(typeof FoteUnmakerPreview!=='undefined'&&FoteUnmakerPreview.gateAt(x,y)){log('The Crucible gates stay raised once opened.','c-info');return true;}
   if(!doorClosable(x,y)){ log(x===player.x&&y===player.y ? 'Step out of the doorway first.' : 'Something is in the way of the door.','c-info'); return true; }
-  setT(x,y,DOOR); log('You close the door.','c-info'); sfx('door-close'); computeFOV(); endTurn(); return true;
+  setT(x,y,DOOR); log('You close the door.','c-info',{transient:false}); sfx('door-close'); computeFOV(); endTurn(); return true;
 }
 function closeAdjacentDoors(){
   var open=[], blocked=0,crucibleGate=false;
@@ -91,7 +91,7 @@ function closeAdjacentDoors(){
   }
   if(!open.length){ log(crucibleGate?'The Crucible gates stay raised once opened.':at(player.x,player.y)===OPEN ? 'You are standing in the doorway. Step out of it to close the door.' : blocked ? 'Something is in the way of the door.' : 'There is no open door next to you.','c-info'); return; }
   open.forEach(function(c){ setT(c[0],c[1],DOOR); });
-  log(open.length>1 ? 'You close the doors.' : 'You close the door.','c-info'); sfx('door-close'); computeFOV(); endTurn();
+  log(open.length>1 ? 'You close the doors.' : 'You close the door.','c-info',{transient:false}); sfx('door-close'); computeFOV(); endTurn();
 }
 
 function trampleMapMushrooms(actor){
@@ -105,22 +105,34 @@ function trampleMapMushrooms(actor){
     }
   }
 }
+/* Exploration cues belong to an encountered item or stair, never to its text.
+ * A new floor/player or changed controls offers the cue again without adding
+ * presentation flags to saved gameplay objects. Revisits still enter history. */
+var ENTRY_HINTS=null;
 function entryItemsAndTerrain(){
+  var hintMap=typeof map==='undefined'?null:map;
+  var collectionReceipt={};
+  function collectedNote(part,cls){log('Picked up '+part+'.',cls,{receipt:{scope:collectionReceipt,key:'collection',item:part,prefix:'Picked up ',join:', ',suffix:'.'}});}
+  if(!ENTRY_HINTS||ENTRY_HINTS.map!==hintMap||ENTRY_HINTS.meta!==floorMeta||ENTRY_HINTS.player!==player)ENTRY_HINTS={map:hintMap,meta:floorMeta,player:player,items:new WeakMap(),stairs:new Map()};
+  var touchPickup=typeof uiUsesTouchInput==='function'&&uiUsesTouchInput();
+  var pickupKey=typeof bindKey==='function'&&typeof keyLabel==='function'?keyLabel(bindKey('grab')):'G';
+  var pickupControl=(touchPickup?'touch:'+String(typeof UI_TOUCH_PAD==='undefined'||UI_TOUCH_PAD):'key:'+pickupKey);
   trampleMapMushrooms(player);
   var here=items.filter(function(it){ return it.x===player.x && it.y===player.y; });
   here.forEach(function(it){
     if(items.indexOf(it)<0)return;
     var collected=false;
-    if(it.kind==='essence'){ removeItem(it); gainEssence(it.n); floatText(player.x,player.y,'+'+it.n,'magic'); log('Picked up '+it.n+' essence.','c-good'); sfx('pickup-essence',{vol:0.5}); collected=true; }
-    else if(it.kind==='mote'){ removeItem(it); player.motes[it.el]=(player.motes[it.el]||0)+1; log('Picked up <b>'+it.el+' mote</b>.','c-kill'); sfx('pickup-mote'); sparkleFx(player.x,player.y,TRAIL_EL(it.el),16); collected=true; }
-    else if(it.kind==='key'){ removeItem(it); player.keys[it.key]=(player.keys[it.key]||0)+1; log('Picked up <b>'+it.key+' key</b>.','c-kill'); sfx('pickup-key'); collected=true; }
-    else if(it.kind==='heart')log('<b>Heart</b>: +25% max HP when needed.','c-info');
-    else if(it.kind==='managlobe')log('<b>Mana globe</b>: +25% max Mana when needed.','c-info');
+    if(it.kind==='essence'){ removeItem(it); gainEssence(it.n); floatText(player.x,player.y,'+'+it.n,'magic'); collectedNote(it.n+' essence','c-good'); sfx('pickup-essence',{vol:0.5}); collected=true; }
+    else if(it.kind==='mote'){ removeItem(it); player.motes[it.el]=(player.motes[it.el]||0)+1; collectedNote('<b>'+it.el+' mote</b>','c-kill'); sfx('pickup-mote'); sparkleFx(player.x,player.y,TRAIL_EL(it.el),16); collected=true; }
+    else if(it.kind==='key'){ removeItem(it); player.keys[it.key]=(player.keys[it.key]||0)+1; collectedNote('<b>'+it.key+' key</b>','c-kill'); sfx('pickup-key'); collected=true; }
     else {
-      var pickupKey=typeof bindKey==='function'&&typeof keyLabel==='function'?keyLabel(bindKey('grab')):'G';
-      var pickupHint=typeof uiUsesTouchInput==='function'&&uiUsesTouchInput()?'Pick up':
+      var cue=player.x+','+player.y+':'+pickupControl,options={transient:ENTRY_HINTS.items.get(it)!==cue};
+      ENTRY_HINTS.items.set(it,cue);
+      var pickupHint=touchPickup?'Pick up':
         pickupKey.replace(/[&<>]/g,function(ch){return {'&':'&amp;','<':'&lt;','>':'&gt;'}[ch];})+' to pick up';
-      log('<b>'+itemLabel(it)+'</b> · '+pickupHint+'.','c-info');
+      if(it.kind==='heart')log('<b>Heart</b>: +25% max HP when needed.','c-info',options);
+      else if(it.kind==='managlobe')log('<b>Mana globe</b>: +25% max Mana when needed.','c-info',options);
+      else log('<b>'+itemLabel(it)+'</b> · '+pickupHint+'.','c-info',options);
     }
     if(collected&&it.crystal)claimCrystalVaultTreasure(it);
   });
@@ -130,7 +142,11 @@ function entryItemsAndTerrain(){
   }
   if(plates) pressPlateAt(player.x,player.y,player);
   var t=at(player.x,player.y);
-  if(t===STAIRS&&!(typeof FoteChaosCampaign!=='undefined'&&FoteChaosCampaign.entryHint())) log('Down to floor '+(floorNo+1)+': '+(document.body.classList.contains('touch') ? 'tap stairs.' : '<b>&gt;</b> or click.'),'c-kill');
+  if(t===STAIRS&&!(typeof FoteChaosCampaign!=='undefined'&&FoteChaosCampaign.entryHint())){
+    var stair=player.x+','+player.y,touchStairs=document.body.classList.contains('touch'),stairControl=touchStairs?'touch':'keyboard';
+    log('Down to floor '+(floorNo+1)+': '+(touchStairs ? 'tap stairs.' : '<b>&gt;</b> or click.'),'c-kill',{transient:ENTRY_HINTS.stairs.get(stair)!==stairControl});
+    ENTRY_HINTS.stairs.set(stair,stairControl);
+  }
   if(t===EXIT && floorMeta.exitOpen){ if(floorNo<LAST_FLOOR) descend(); else victory(); }
   if(t===CHASM && !(player.levitate>0)) fallIntoChasm();
 }
@@ -701,16 +717,18 @@ function identifySigil(use){
 
 function grab(){
   if(gameTurns.busy())return false;
-  var got=false,gotBagItem=false,gotSigil=false;
+  var got=false,gotBagItem=false,gotSigil=false,hadCandidate=false,failure=null,pickupReceipt={};
   items.filter(function(it){ return it.x===player.x && it.y===player.y; }).forEach(function(it){
     if(items.indexOf(it)<0)return;
-    if(it.rareLamp!==undefined){if(releaseSealedLamp(it))got=true;return;}
+    if(it.rareLamp!==undefined){hadCandidate=true;if(releaseSealedLamp(it))got=true;return;}
     var e=bagEntryFor(it); if(!e) return;
-    if(addBag(e[0],e[1],e[2])){ removeItem(it); got=true;gotBagItem=true;if(it.kind==='sigil')gotSigil=true; log('You pick up <b>'+itemLabel(it)+'</b>.','c-good'); sfx('pickup-item'); if(it.crystal)claimCrystalVaultTreasure(it); }
+    hadCandidate=true;
+    if(addBag(e[0],e[1],e[2],function(plan){failure=plan;})){ removeItem(it); got=true;gotBagItem=true;if(it.kind==='sigil')gotSigil=true; var label='<b>'+itemLabel(it)+'</b>';log('You pick up '+label+'.','c-good',{receipt:{scope:pickupReceipt,key:'pickup',item:label,prefix:'You pick up ',join:', ',suffix:'.'}}); sfx('pickup-item'); if(it.crystal)claimCrystalVaultTreasure(it); }
   });
   if(gotBagItem&&!gotSigil&&typeof FoteGettingStarted!=='undefined')FoteGettingStarted.offer('inventory');
   if(gotSigil&&typeof FoteGettingStarted!=='undefined')FoteGettingStarted.offer('sigils');
-  if(!got) log('Nothing here to pick up.','c-info');
+  if(failure)inventoryFailure(failure);
+  else if(!got&&!hadCandidate)log('Nothing here to pick up.','c-info');
   return got;
 }
 function consume(idx){ var it=player.bag[idx]; if(it.n>1) it.n--; else player.bag.splice(idx,1); }

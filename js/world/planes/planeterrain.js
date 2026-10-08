@@ -471,39 +471,67 @@ function ptCellRaster(x, y){
     D[p]=col[0]; D[p+1]=col[1]; D[p+2]=col[2]; D[p+3]=255;
   }
   g.putImageData(im,0,0);
-  /* Only a crystal is drawn with canvas paths. Without one the cell's pixels are D itself (every alpha is 255, so the
-     canvas holds them exactly) and the GPU canvas is not read back, which cost more than the pixels themselves. */
+  /* Keep the undecorated terrain pixels for the texture pass. The base canvas
+     includes its crystal for the loading fallback; enhancement draws the same
+     crystal after the rock, so its facets cannot be replaced by wall texture. */
   var crystal=ptCrystalAt(x,y,M,salt);
   if(crystal) ptCrystal(g, x, y, salt, M);
-  c.environmentTerrain={terrainMaterial:M,mask:terrainMask,pool:terrainPool,pixels:crystal?g.getImageData(0,0,R,R).data:D,naturalWalls:M===PT_MAT.cavern||!!M.organicRock,naturalMaterial:M.organicRock?M:null,naturalFloor:M===PT_MAT.cavern||!!M.organicRock,wallDepth:wallDepth,crystal:crystal};
+  c.environmentTerrain={terrainMaterial:M,mask:terrainMask,pool:terrainPool,pixels:D,naturalWalls:M===PT_MAT.cavern||!!M.organicRock,naturalMaterial:M.organicRock?M:null,naturalFloor:M===PT_MAT.cavern||!!M.organicRock,wallDepth:wallDepth,crystal:crystal};
   return c;
 }
 /* a cliff-face cell that grows a crystal (drawn with canvas paths, so on the page, never in a terrain worker) */
 function ptCrystalAt(x, y, M, salt){ return M.faceCrystals!==false && ptWallCell(x,y) && inb(x,y+1) && !ptWallCell(x,y+1) && hash2(x,y,salt+51)<0.16; }
+/* Painting and animated catches of light share the same seeded facets. */
+function ptCrystalShards(x,y,salt){
+  var n=1+Math.floor(hash2(x,y,salt+52)*2), bx=8+hash2(x,y,salt+53)*16, by=Math.round(32*0.66), shards=[];
+  for(var k=0;k<n;k++) shards.push({
+    ox:bx+(k-(n-1)/2)*3, oy:by+(hash2(x,y,salt+95+k)-0.5)*3,
+    h:7+hash2(x,y,salt+60+k)*8, w:1.6+hash2(x,y,salt+70+k)*1.6,
+    lean:(hash2(x,y,salt+80+k)-0.5)*4, cyan:hash2(x,y,salt+90+k)<0.35
+  });
+  return shards;
+}
 function ptCrystal(g, x, y, salt, M){
   /* crystals in a cliff face grow OUT of the rock at mid height, angled away from it: they must never look as if
      they were standing on the lip at the bottom of the face (that lip is the top of the wall, not a floor) */
   g.save();g.scale(PT_R/32,PT_R/32);
-  var n=1+Math.floor(hash2(x,y,salt+52)*2), bx=8+hash2(x,y,salt+53)*16, by=Math.round(32*0.66);
-  for(var k=0;k<n;k++){
-    var h=7+hash2(x,y,salt+60+k)*8, w=1.6+hash2(x,y,salt+70+k)*1.6;
-    var lean=(hash2(x,y,salt+80+k)-0.5)*4;                                          /* almost upright, just off the rock */
-    var ox=bx+(k-(n-1)/2)*3, oy=by+(hash2(x,y,salt+95+k)-0.5)*3;
+  var shards=ptCrystalShards(x,y,salt);
+  for(var k=0;k<shards.length;k++){
+    var shard=shards[k],h=shard.h,w=shard.w,lean=shard.lean,ox=shard.ox,oy=shard.oy;
     /* a dark socket where the crystal leaves the rock */
     g.fillStyle='rgba(18,14,26,0.5)'; g.beginPath(); g.ellipse(ox, oy, w*1.5, 1.6, 0, 0, 7); g.fill();
-    ptShard(g, ox, oy, w, h, lean, hash2(x,y,salt+90+k)<0.35, M);
-    /* a couple of chips of rock at the socket, so it reads as broken out of the wall */
-    g.fillStyle=M.rockHi; g.fillRect(Math.round(ox-w-1), Math.round(oy-1), 2, 2);
-    g.fillStyle=M.rockLo; g.fillRect(Math.round(ox+w-1), Math.round(oy), 2, 1);
+    ptWallShard(g,ox,oy,w,h,lean,shard.cyan,M);
+    /* Small fractured chips seat the crystal in its socket. */
+    g.fillStyle=M.rockLo;g.beginPath();g.moveTo(ox-w-1,oy+.3);g.lineTo(ox-w*.7,oy-1.3);g.lineTo(ox-w*.15,oy+.7);g.closePath();g.fill();
+    g.fillStyle=M.rockHi;g.beginPath();g.moveTo(ox+w*.35,oy+.5);g.lineTo(ox+w*.8,oy-.7);g.lineTo(ox+w+1,oy+.8);g.closePath();g.fill();
   }
   g.restore();
+}
+/* Thin mineral facets at terrain resolution, without the old square white
+   edge bars. Painted floor formations keep their separate authored art. */
+function ptWallShard(g,ox,by,w,h,lean,cyan,M){
+  var C=M.crystal,tipX=ox+lean,tipY=by-h,leftX=ox-w*.75+lean*.6,rightX=ox+w*.75+lean*.6,shoulderY=by-h*.78,ridgeX=ox+lean*.25;
+  function tone(hex,f){var n=parseInt(hex.slice(1),16);return 'rgb('+[n>>16&255,n>>8&255,n&255].map(function(v){return Math.min(255,Math.round(v*f));}).join(',')+')';}
+  function poly(points,ink){g.beginPath();g.moveTo(points[0],points[1]);for(var i=2;i<points.length;i+=2)g.lineTo(points[i],points[i+1]);g.closePath();g.fillStyle=ink;g.fill();}
+  function grade(a,b){var gradient=g.createLinearGradient(tipX,tipY,ox,by);gradient.addColorStop(0,a);gradient.addColorStop(1,b);return gradient;}
+  var body=cyan?C[3]:C[1],shade=cyan?C[3]:C[2];
+  poly([ox-w,by,leftX,shoulderY,tipX,tipY,rightX,shoulderY,ox+w,by],tone(shade,.48));
+  poly([ox-w+.15,by-.2,leftX+.12,shoulderY,tipX,tipY+.15,ridgeX,by-.25],grade(tone(body,1.04),tone(shade,.74)));
+  poly([ridgeX,by-.25,tipX,tipY+.15,rightX-.15,shoulderY+.15,ox+w*.5,by-.2],grade(body,tone(shade,.58)));
+  poly([ox+w*.5,by-.2,rightX-.15,shoulderY+.15,ox+w-.15,by-.2],grade(shade,tone(shade,.4)));
+  poly([leftX+.12,shoulderY,tipX,tipY+.15,ridgeX+lean*.1,shoulderY+h*.11],grade(C[0],body));
+  // A slanted internal fracture and narrow broken highlights give the mineral
+  // depth while leaving its lower end embedded in the rock.
+  poly([ox-w*.64+lean*.3,by-h*.42,ridgeX,by-h*.47,ox+w*.53+lean*.3,by-h*.39,ridgeX,by-h*.43],tone(body,.84));
+  g.strokeStyle=C[0];g.lineWidth=.16;g.beginPath();g.moveTo(leftX+.14,shoulderY+.25);g.lineTo(tipX,tipY+.18);g.lineTo(rightX-.22,shoulderY*.38+tipY*.62);g.stroke();
+  g.strokeStyle=tone(body,1.08);g.lineWidth=.12;g.beginPath();g.moveTo(tipX,tipY+h*.16);g.lineTo(ridgeX,by-h*.24);g.stroke();
 }
 function ptShard(g, ox, by, w, h, lean, cyan, M){
   /* a hexagonal prism seen three-quarter: a bright lit face, a mid face, a deep shadow face, lit edges picked out */
   var tipX=ox+lean, tipY=by-h, shX=ox+w*0.75+lean*0.6, shY=by-h*0.78, slX=ox-w*0.75+lean*0.6, slY=by-h*0.78, midX=ox+lean*0.25;
   function poly(pts, col){ g.beginPath(); g.moveTo(pts[0],pts[1]); for(var i=2;i<pts.length;i+=2) g.lineTo(pts[i],pts[i+1]); g.closePath(); g.fillStyle=col; g.fill(); }
   /* the shading comes from this plane's crystal palette, so Shadow's shards are violet and Earth's are green */
-  var C2=(ptMat()||PT_MAT.light).crystal;
+  var C2=M.crystal;
   function dk(h, k){ var n=parseInt(h.slice(1),16), r=((n>>16)&255)*k, g2=((n>>8)&255)*k, b2=(n&255)*k; return 'rgb('+(r|0)+','+(g2|0)+','+(b2|0)+')'; }
   var lit = cyan ? dk(C2[3],1.25) : C2[0], mid = cyan ? C2[3] : C2[1], dark = cyan ? dk(C2[3],0.72) : C2[2], deep = cyan ? dk(C2[3],0.5) : dk(C2[2],0.68);
   poly([ox-w, by, slX, slY, tipX, tipY, shX, shY, ox+w, by], deep);                          /* silhouette, dark on the shadow side */
@@ -519,7 +547,7 @@ function ptCrystalCells(){
   var M=ptMat(); if(!M||M.faceCrystals===false) return [];
   if(floorMeta._ptCrystals) return floorMeta._ptCrystals;
   var salt=ptSalt(), out=[];
-  for(var y=0;y<MH;y++) for(var x=0;x<MW;x++) if(ptWallCell(x,y) && inb(x,y+1) && !ptWallCell(x,y+1) && hash2(x,y,salt+51)<0.14) out.push({x:x,y:y});
+  for(var y=0;y<MH;y++) for(var x=0;x<MW;x++) if(ptCrystalAt(x,y,M,salt)) out.push({x:x,y:y});
   Object.defineProperty(floorMeta, '_ptCrystals', {value:out, enumerable:false, configurable:true, writable:true});   /* not saved */
   return out;
 }
@@ -1052,13 +1080,15 @@ function drawVeinGlints(now){
 
 /* ---------------------------------------------------------------- crystals twinkle: small four-point stars at their facets */
 function ptStar(cx, cy, r, a, col){
-  ctx.globalAlpha=a; ctx.fillStyle=col;
-  for(var i=0;i<r;i++){
-    var w=Math.max(1, Math.round((1-i/r)*2.2));
-    ctx.fillRect(cx-i, cy-w/2, 1, w); ctx.fillRect(cx+i, cy-w/2, 1, w);            /* the horizontal arms taper */
-    ctx.fillRect(cx-w/2, cy-i, w, 1); ctx.fillRect(cx-w/2, cy+i, w, 1);            /* and the vertical ones */
-  }
-  ctx.globalAlpha=a*0.8; ctx.fillRect(cx-1, cy-1, 2, 2);
+  var glow=ctx.createRadialGradient(cx,cy,0,cx,cy,r*.75);
+  glow.addColorStop(0,col);glow.addColorStop(1,'rgba(255,255,255,0)');
+  ctx.globalAlpha=a*.13;ctx.fillStyle=glow;ctx.fillRect(cx-r,cy-r,r*2,r*2);
+  var neck=Math.max(.45,r*.075);
+  ctx.globalAlpha=a*.72;ctx.fillStyle=col;ctx.beginPath();
+  ctx.moveTo(cx,cy-r);ctx.lineTo(cx+neck,cy-neck);ctx.lineTo(cx+r*.7,cy);
+  ctx.lineTo(cx+neck,cy+neck);ctx.lineTo(cx,cy+r);ctx.lineTo(cx-neck,cy+neck);
+  ctx.lineTo(cx-r*.7,cy);ctx.lineTo(cx-neck,cy-neck);ctx.closePath();ctx.fill();
+  ctx.globalAlpha=a;ctx.beginPath();ctx.arc(cx,cy,Math.max(.55,r*.09),0,Math.PI*2);ctx.fill();
 }
 function ptSparkle(p, X, Y, W, H, alpha){
   if(p.name==='pt-cluster'&&packPlaneCluster(p))return;
@@ -1091,7 +1121,8 @@ function drawCrystalFaceGlints(now){
     var ph=hash2(c.x,c.y,salt+71), sp=0.09+hash2(c.x,c.y,salt+72)*0.1, cyc=((t*sp+ph)%1);
     if(cyc>0.14) return;
     var f=Math.sin(cyc/0.14*Math.PI);
-    var px=Math.round((c.x-camX+0.3+0.4*hash2(c.x,c.y,salt+73))*TS), py=Math.round((c.y-camY+0.45)*TS);
+    var shard=ptCrystalShards(c.x,c.y,salt)[0];
+    var px=Math.round((c.x-camX+(shard.ox+shard.lean)/32)*TS), py=Math.round((c.y-camY+(shard.oy-shard.h+1)/32)*TS);
     ptStar(px, py, Math.max(3, Math.round(TS*0.13)), 0.6*f, '#FFFFFF');
   });
   ctx.restore(); ctx.globalAlpha=1;

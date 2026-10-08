@@ -165,6 +165,13 @@ function packedObjectSources(group,name,fallback,painted){
   return files;
 }
 function packedObjectArt(group, name){
+  if(group==='props'&&(name==='lever-up'||name==='lever-down')&&FoteEnvironmentProps.source(group,name)){
+    // These two paintings have separate lazy PNGs. Warm the other pose and
+    // retain this lever's matching painting while it loads, never an old icon.
+    var pose=FoteEnvironmentProps.art(group,name);
+    var other=FoteEnvironmentProps.art(group,name==='lever-up'?'lever-down':'lever-up');
+    return pose||other||null;
+  }
   var fresh=FoteEnvironmentProps.art(group,name); if(fresh) return fresh;   /* the environment-props atlases first */
   var spec=packedObjectSpec(group,name);if(!spec)return null;
   var img=atl(spec.file); if(!img) return null;
@@ -953,6 +960,14 @@ function clipFrame(sheet, e, sliding){
   }
   return {sx:0, sy:(m.static_row||0)*cell};
 }
+function drawActorContactShadow(e,px,py){
+  // Large sprites stand across their full footprint. Tall one-cell art keeps
+  // its existing shadow; proxy cells and special summons never enlarge it.
+  var n=!e.parent&&!isShadeSummon(e)&&!e.livingFlame&&e.base.big||1;
+  var scale=n>1?n*(e.base.bigScale||1):(e.base.art||0.9);
+  ctx.globalAlpha=0.35;ctx.fillStyle='#000';ctx.beginPath();
+  ctx.ellipse(px+TS*n/2,py+TS*0.9*n,TS*0.26*scale,TS*0.09*n,0,0,7);ctx.fill();ctx.globalAlpha=1;
+}
 function drawCharacterSprite(e, px, py, opts){
   if(!spriteOn)return false;
   if(e.livingFlame)return drawLivingFlame(e,px,py,opts);
@@ -1327,7 +1342,7 @@ function drawTerrainPass(){
       var B=biome();
       var deepWater=t===WATER&&floorMeta.fwaDeep&&floorMeta.fwaDeep[i];
       ctx.globalAlpha=a; ctx.fillStyle = isWallLike(t) ? B.wall : t===CHASM ? '#050408' : t===LAVA ? '#B94820' : t===WATER ? deepWater?'#123C6C':'#243A4A' : B.floor; ctx.fillRect(px,py,TS,TS);
-      if(t===LAVA||deepWater)glyph(t===LAVA?'~':'â‰ˆ',px,py,t===LAVA?'#FFC05A':'#70BFFF');
+      if(t===LAVA||deepWater)glyph(t===LAVA?'~':'≈',px,py,t===LAVA?'#FFC05A':'#70BFFF');
       /* Block Art: a wall face shades the floor below it. (2026-09-27, Justin, render plan Q12: the painted walls have
          no such square-edged band; their art and the lightmap own the wall base. Not under Caverns or plane rock.) */
       if(!isWallLike(t) && isWallLike(at(x,y-1)) && t!==CHASM && !(typeof ptMat==='function' && ptMat(x,y))){
@@ -1573,6 +1588,9 @@ function drawScene(){
   }
   for(y=camY;y<=camY+viewH;y++) for(x=camX;x<=camX+viewW;x++){
     if(x<0||y<0||x>=W||y>=H || !(ALL||SEEN[y*W+x]))continue;
+    // A bridge is a walking surface, not an upright obstacle. Interpolated
+    // actors approaching from the north must still stand above its deck.
+    if(MAP[y*W+x]===BRIDGE){paintTileObject(x,y);continue;}
     (function(tx,ty){standing(ty+1,function(){paintTileObject(tx,ty);});})(x,y);
   }
   /* pressure plates */
@@ -1604,7 +1622,7 @@ function drawScene(){
     if(p.offeringBowl||p.cleansingShrine&&!p.used||p.eventRoom!==undefined&&!p.used)drawInteractionGlow(ppx,ppy,pa,now,!!(p.offeringBowl||p.cleansingShrine));
     if(!spriteOn){
       ctx.save();ctx.globalAlpha=pa;ctx.fillStyle=p.b?'#6A5A48':p.name==='vines'?'#4A6A32':'#4A4038';ctx.fillRect(ppx+TS*.15,ppy+TS*.15,TS*((p.w||1)-.3),TS*((p.h||1)-.3));
-      if(p.previewPortal||p.prisoner||p.altar||p.name==='elemental-lock'||p.name==='updraft-vent')glyph(p.previewPortal?'O':p.prisoner?'!':p.altar?'A':p.name==='updraft-vent'?'â†‘':'+',ppx,ppy,p.name==='updraft-vent'?'#CDEEFF':p.element?AFF_COL[p.element]:'#E8B44A');ctx.restore();return;
+      if(p.previewPortal||p.prisoner||p.altar||p.name==='elemental-lock'||p.name==='updraft-vent')glyph(p.previewPortal?'O':p.prisoner?'!':p.altar?'A':p.name==='updraft-vent'?'↑':'+',ppx,ppy,p.name==='updraft-vent'?'#CDEEFF':p.element?AFF_COL[p.element]:'#E8B44A');ctx.restore();return;
     }
     var artName=p.artName||p.name;
     var o=spriteOn ? objArt('props',artName)||objArt('structures',artName)||objArt('chests',artName)||objArt('terrain',artName) : null;   /* an opened chest's art lives with the chests */
@@ -1696,7 +1714,7 @@ function drawScene(){
     var off=entOffset(e), rp=renderPos(e);
     atTile(rp.x,rp.y,function(px0,py0){
       var px=px0+off[0]+shakeOf(e), py=py0+off[1]-rp.hop*TS*0.14 - (e.base.flying ? TS*0.12 + (ANIM.reduce?0:Math.sin(now/180+e.id)*TS*0.04) : 0);
-      ctx.globalAlpha=0.35; ctx.fillStyle='#000'; ctx.beginPath(); ctx.ellipse(px0+TS/2,py0+TS*0.9,TS*0.26*(e.base.art||0.9),TS*0.09,0,0,7); ctx.fill(); ctx.globalAlpha=1;
+      drawActorContactShadow(e,px0,py0);
       /* 2026-09-28: a creature faces the way it last stepped or struck (it used to face the player whatever it did, so a wanderer
          walked backwards); one that has not moved yet faces the player */
       var flip = typeof e.facingLeft==='boolean' ? e.facingLeft : player.x < e.x;

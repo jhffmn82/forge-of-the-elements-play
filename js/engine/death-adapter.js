@@ -73,12 +73,19 @@ function deathAnimation(e,persistent){
   return visual;
 }
 
+function creatureDeathLogOptions(event){
+  var e=event.entity,cause=event.cause,action=typeof gameActions!=='undefined'&&gameActions.current();
+  if(e.base.boss||e.elite||!cause||!action||cause.actionId!==action.actionId||
+      ['periodic','environment','reflected','arc'].some(function(tag){return (cause.tags||[]).indexOf(tag)>=0;}))return;
+  return {receipt:{scope:RUN,key:'deaths:'+JSON.stringify([cause.actionId,cause.sourceId,cause.kind,cause.weaponKey,cause.abilityKey]),
+    item:combatText(e.name),join:', ',suffix:' die.'}};
+}
 function commitCreatureDeath(event){
   var e=event.entity,by=event.source;
   ents=ents.filter(function(other){return other!==e;});deathAnimation(e);
   if(e.ally){sfx('ally-death',{at:fxClock,from:e});log(combatText(e.name)+' falls.','c-info');return;}
   /* 2026-09-28 (Justin): quietDeath, a trap kill out of sight (triggerTrap): heard, not named */
-  if(e.base.sfx)sfx(e.base.sfx+'-death',{at:fxClock,from:e});var seenDeath=revealAll||vis[idxOf(e.x,e.y)],ourKill=by===player||!!(by&&by.ally);if(!e.quietDeath&&(seenDeath||ourKill))log(combatText(e.name)+' dies.','c-kill');   /* 1.3.2 ruling 2: an unseen death is quiet unless you or an ally made the kill */
+  if(e.base.sfx)sfx(e.base.sfx+'-death',{at:fxClock,from:e});var seenDeath=revealAll||vis[idxOf(e.x,e.y)],ourKill=by===player||!!(by&&by.ally);if(!e.quietDeath&&(seenDeath||ourKill))log(combatText(e.name)+' dies.','c-kill',creatureDeathLogOptions(event));   /* 1.3.2 ruling 2: an unseen death is quiet unless you or an ally made the kill */
   RUN.kills++;
   if(event.playerSide&&!e.noXp)gainXP(e.base.xp||10);
   godOnKill(e,by,event.cause);

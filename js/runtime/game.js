@@ -409,10 +409,14 @@ function hotbarRemove(i){
   player.hotbar[i]=null;
   abilityBar();
 }
-function kv(pairs){ return '<div class="kv">'+pairs.map(function(p){ return '<span>'+p[0]+'</span><b>'+p[1]+'</b>'; }).join('')+'</div>'; }
+function journalStatAttribute(key){
+  var ink={mig:'might',agi:'agility',vit:'vitality',foc:'focus',HP:'vitality',Mana:'focus'}[key];
+  return ink?' data-journal-stat="'+ink+'"':'';
+}
+function kv(pairs){ return '<div class="kv">'+pairs.map(function(p){ var ink=journalStatAttribute(p[0]);return '<span'+ink+'>'+p[0]+'</span><b'+ink+'>'+p[1]+'</b>'; }).join('')+'</div>'; }
 function statBox(n,v,key){
   var plus = (player.points>0 && key) ? ' <button class="plus" data-s="'+key+'">+</button>' : '';
-  return '<div class="stat"><span>'+n+'</span><b>'+v+plus+'</b></div>';
+  return '<div class="stat"'+journalStatAttribute(key)+'><span>'+n+'</span><b>'+v+plus+'</b></div>';
 }
 function eslot(label,name,sub,el,key){
   return '<div class="eslot'+(el?' el-'+el:'')+'"'+(key?' data-eq="'+key+'"':'')+'><span class="l">'+label+'</span>'+

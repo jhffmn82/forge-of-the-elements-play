@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" fill="none">
+  <title>Map</title>
+  <g stroke="#dfd2b9" stroke-linecap="round" stroke-linejoin="round">
+    <path d="m4.8 7.2 7.7-2.6 7 2.8 7.7-2.1v19.5l-7.7 2.6-7-2.8-7.7 2.1Z" stroke-width="1.5"/>
+    <path d="M12.5 4.9v5.5m0 4.5v9.3M19.5 7.8v9.1m0 4.6V27" stroke-width="1.2"/>
+    <path d="m7.8 19.7 2.1-2.5m1.8-1.5 3.1-1.9m2.3.2 2 1.6m2.1.4 2.6-2.8" stroke-width="1.2"/>
+    <path d="m21.8 9.2 3.3 3.3m0-3.3-3.3 3.3" stroke-width="1.5"/>
+    <path d="m7.7 21.2 1 1-1 1-1-1Z" fill="#dfd2b9" stroke="none"/>
+  </g>
+</svg>

@@ -3,7 +3,7 @@
    The approved study* selectors remain stable for skins and screenshot tooling. */
 var FoteResponsiveHUD=(function(){
   'use strict';
-  var mounted=false,frame=0,menuOpen=false,portraitRetry=0,pickupFrame=0;
+  var mounted=false,frame=0,menuOpen=false,portraitRetry=0,pickupFrame=0,positionFrame=0;
   const node=id=>document.getElementById(id);
   const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const num=n=>Math.round(n||0).toLocaleString('en-US');
@@ -108,6 +108,7 @@ var FoteResponsiveHUD=(function(){
     sheet.style.setProperty('--sheet-x',x+'px');sheet.style.setProperty('--sheet-y',y+'px');
     sheet.style.setProperty('--sheet-w',Math.max(0,width)+'px');sheet.style.setProperty('--sheet-h',Math.max(0,height)+'px');
     positionRecentLog();syncPickup();
+    if(typeof syncEquipmentDoll==='function')syncEquipmentDoll(false);
   }
   function positionRecentLog(){
     const recent=node('studyRecentLog');if(!recent)return;
@@ -128,6 +129,13 @@ var FoteResponsiveHUD=(function(){
       .filter(r=>r&&r.width&&r.height&&left<r.right&&left+width>r.left);
     if(blockers.length)recent.style.maxHeight=Math.max(0,innerHeight-(parseFloat(style.bottom)||inset)-Math.max(...blockers.map(r=>r.bottom))-10)+'px';
     recent.scrollTop=recent.scrollHeight;
+  }
+  function queuePositions(){
+    if(!mounted||positionFrame)return;
+    /* Layout writes can resize the observed map while the styles first settle.
+     * Leave ResizeObserver delivery before positioning, and share one frame
+     * across map, hotbar and resource-bar notifications. */
+    positionFrame=requestAnimationFrame(()=>{positionFrame=0;positionSheet();positionStatuses();});
   }
   function hasOverlay(){return menuOpen||document.body.classList.contains('study-log-history');}
   function setMenu(on,restoreFocus){
@@ -259,9 +267,9 @@ var FoteResponsiveHUD=(function(){
     const controls=node('dpad');if(!controls)return;
     const overlay=document.body.classList.contains('study-overlay-pad');
     const blocked=overlay&&(!!aiming||(typeof BOWAIM!=='undefined'&&!!BOWAIM)||uiOpen()||!player||player.hp<=0);
-    controls.classList.toggle('unavailable',blocked);
-    controls.setAttribute('aria-hidden',String(blocked));
-    controls.querySelectorAll('button').forEach(button=>{button.disabled=blocked;button.tabIndex=blocked?-1:0;});
+    setHudClass(controls,'unavailable',blocked);
+    setHudAttribute(controls,'aria-hidden',String(blocked));
+    controls.querySelectorAll('button').forEach(button=>{if(button.disabled!==blocked)button.disabled=blocked;if(button.tabIndex!==(blocked?-1:0))button.tabIndex=blocked?-1:0;});
   }
   function pickupItems(){
     if(typeof player==='undefined'||!player||player.hp<=0||typeof RUN!=='undefined'&&RUN&&(RUN.over||RUN.victory)||typeof items==='undefined')return [];
@@ -274,8 +282,8 @@ var FoteResponsiveHUD=(function(){
     const button=node('studyPickup');if(!button)return;
     const loot=pickupItems(),busy=!!loot.length&&typeof animBusy==='function'&&animBusy();
     const shown=!!loot.length&&document.body.classList.contains('study-touch')&&document.body.classList.contains('study-overlay-pad')&&!uiOpen()&&!aiming&&!(typeof BOWAIM!=='undefined'&&BOWAIM);
-    button.hidden=!shown;button.disabled=!shown||busy;button.tabIndex=button.disabled?-1:0;
-    button.setAttribute('aria-label',loot.length?'Pick up: '+loot.map(itemLabel).join(', '):'Pick up');
+    if(button.hidden!==!shown)button.hidden=!shown;if(button.disabled!==(!shown||busy))button.disabled=!shown||busy;if(button.tabIndex!==(button.disabled?-1:0))button.tabIndex=button.disabled?-1:0;
+    setHudAttribute(button,'aria-label',loot.length?'Pick up: '+loot.map(itemLabel).join(', '):'Pick up');
     if(shown){
       const pad=node('dpad').getBoundingClientRect(),bar=node('hotbar').getBoundingClientRect();
       const left=document.body.classList.contains('study-control-pad-left');
@@ -369,84 +377,115 @@ var FoteResponsiveHUD=(function(){
     mounted=true;bindMinimalControls();classify();syncAudioButtons();updateUI();
     window.addEventListener('resize',relayout);
     if(window.visualViewport)visualViewport.addEventListener('resize',relayout);
-    new ResizeObserver(positionSheet).observe(node('map'));
-    new ResizeObserver(positionSheet).observe(node('hotbar'));
-    new ResizeObserver(positionRecentLog).observe(node('studyHud'));
+    const layoutObserver=new ResizeObserver(queuePositions);
+    ['map','hotbar','studyHud','bars'].forEach(id=>layoutObserver.observe(node(id)));
     node('responsiveHudStyles').addEventListener('load',relayout);
     const firstVisibleLog=new ResizeObserver(()=>{if(node('log').clientHeight>0){node('log').scrollTop=node('log').scrollHeight;firstVisibleLog.disconnect();}});
     firstVisibleLog.observe(node('log'));
   }
+  function readoutControls(){
+    const hud=node('hud2');
+    if(hud._studyReadouts&&hud._studyReadouts.wallet.parentElement===hud)return hud._studyReadouts;
+    const wallet=document.createElement('div');wallet.className='study-wallet';
+    wallet.innerHTML='<button class="chip study-stock" data-study-panel="Equip"><span aria-hidden="true">◆</span><b class="study-essence-count"></b></button><button class="chip motechip study-motes" data-study-panel="Equip"></button>';
+    hud.replaceChildren(wallet);
+    const stock=wallet.querySelector('.study-stock'),motes=wallet.querySelector('.study-motes');
+    for(const element of ['fire','water','earth','air','light','shadow']){
+      const mote=document.createElement('span');mote.className='study-mote';mote.dataset.element=element;
+      mote.innerHTML='<i class="dot" style="background:'+AFF_COL[element]+'"></i><b></b>';motes.append(mote);
+    }
+    for(const button of [stock,motes])button.onclick=()=>showSheet('Equip');
+    bindHudResourceCard(stock,'stock');bindHudResourceCard(motes,'motes');
+    return hud._studyReadouts={wallet,stock,motes,piety:null,favor:null};
+  }
   function renderReadouts(){
     syncPickup();
     if(!mounted||!player)return;
-    const classic=document.body.classList.contains('study-classic');
-    syncExploreButton(node('studyExplore'));
-    node('studyDepth').textContent=node('hBiome').textContent+' · Floor '+node('hFloor').textContent;
-    bindHudResourceCard(node('studyExplore'),'explore');
+    const classic=document.body.classList.contains('study-classic'),controls=readoutControls();
+    const explore=node('studyExplore'),exploreState=[autoExploreActive(),!!floorMeta?.exploreComplete,explore.dataset.iconOnly].join('|');
+    if(explore._studyExploreState!==exploreState){syncExploreButton(explore);explore._studyExploreState=exploreState;}
+    setHudText(node('studyDepth'),node('hBiome').textContent+' · Floor '+node('hFloor').textContent);
+    bindHudResourceCard(explore,'explore');
     const hungry=player.hunger<=0?'Starving':player.hunger<300?'Hungry':'Full';
-    node('studyHungerText').textContent=hungry;
-    node('studyHungerFill').style.width=clamp(player.hunger/HUNGER_MAX*100,0,100)+'%';
-    node('studyHungerFill').style.background=hungry==='Full'?'#687b3e':hungry==='Starving'?'#b8503d':'#b87a32';
-    node('studyHunger').setAttribute('aria-label',hungry+'. Hunger '+num(player.hunger)+' / '+num(HUNGER_MAX));
-    node('studyHunger').classList.toggle('study-starving',player.hunger<=0);
-    node('studyHunger').classList.toggle('study-fed',hungry==='Full');
-    node('xpBar').setAttribute('aria-label','Level '+player.level+'. XP '+num(player.xp)+' / '+num(player.xpNext));
-    if(classic)node('lvTxt').textContent='XP '+num(player.xp)+' / '+num(player.xpNext);
-    bindHudResourceCard(node('bars').querySelector('.hp'),'hp');
-    bindHudResourceCard(node('bars').querySelector('.mp'),'mp');
-    bindHudResourceCard(node('xpBar'),'xp');
-    node('studyLevel').innerHTML='<small>LV</small><b>'+num(player.level)+'</b>';
-    node('studyRank').hidden=!player.god;node('studyPietyBar').hidden=!player.god;
+    setHudText(node('studyHungerText'),hungry);
+    setHudStyle(node('studyHungerFill'),'width',clamp(player.hunger/HUNGER_MAX*100,0,100)+'%');
+    if(node('studyHungerFill')._hungerState!==hungry){node('studyHungerFill').style.background=hungry==='Full'?'#687b3e':hungry==='Starving'?'#b8503d':'#b87a32';node('studyHungerFill')._hungerState=hungry;}
+    setHudAttribute(node('studyHunger'),'aria-label',hungry+'. Hunger '+num(player.hunger)+' / '+num(HUNGER_MAX));
+    setHudClass(node('studyHunger'),'study-starving',player.hunger<=0);setHudClass(node('studyHunger'),'study-fed',hungry==='Full');
+    setHudAttribute(node('xpBar'),'aria-label','Level '+player.level+'. XP '+num(player.xp)+' / '+num(player.xpNext));
+    if(classic)setHudText(node('lvTxt'),'XP '+num(player.xp)+' / '+num(player.xpNext));
+    bindHudResourceCard(node('bars').querySelector('.hp'),'hp');bindHudResourceCard(node('bars').querySelector('.mp'),'mp');bindHudResourceCard(node('xpBar'),'xp');
+    const level=node('studyLevel'),rankNode=node('studyRank');
+    if(!level.firstChild)level.innerHTML='<small>LV</small><b></b>';
+    if(!rankNode.firstChild)rankNode.innerHTML='<small>R</small><b></b>';
+    setHudText(level.querySelector('b'),num(player.level));
+    if(rankNode.hidden!==!player.god)rankNode.hidden=!player.god;
+    if(node('studyPietyBar').hidden!==!player.god)node('studyPietyBar').hidden=!player.god;
     paintPortrait();
-    node('studyPortrait').setAttribute('aria-label','Character, level '+player.level+(player.god?', '+GODS[player.god].name+', rank '+godRank():''));
-    let faith='';
+    setHudAttribute(node('studyPortrait'),'aria-label','Character, level '+player.level+(player.god?', '+GODS[player.god].name+', rank '+godRank():''));
     if(player.god){
+      if(!controls.piety){
+        controls.piety=document.createElement('button');controls.piety.className='chip faithchip study-piety';controls.piety.dataset.studyPanel='Faith';
+        controls.piety.innerHTML='<span class="gdot"></span><span class="rk"></span><span class="meter"><i></i></span>';
+        controls.favor=document.createElement('button');controls.favor.className='chip faithchip study-favor';controls.favor.dataset.studyPanel='Faith';
+        controls.favor.innerHTML='<span class="rk"></span><span class="meter sm"><i style="background:linear-gradient(90deg,#6B5A22,#E8D27A)"></i></span>';
+        node('hud2').insertBefore(controls.piety,controls.wallet);node('hud2').insertBefore(controls.favor,controls.wallet);
+        controls.piety.onclick=controls.favor.onclick=()=>showSheet('Faith');
+        bindHudResourceCard(controls.piety,'piety');bindHudResourceCard(controls.favor,'favor');
+      }
       const g=GODS[player.god],rank=godRank(),next=PIETY_RANKS[rank]||null,prev=PIETY_RANKS[rank-1]||0;
       const pct=next?clamp((player.piety-prev)/(next-prev),0,1)*100:100;
       const detail=g.name+', rank '+rank+'. Piety '+num(player.piety)+(next?' / '+num(next)+' for rank '+(rank+1):', maximum rank');
-      node('studyRank').innerHTML='<small>R</small><b>'+rank+'</b>';node('studyRank').style.color=g.color;
-      node('studyPietyFill').style.width=pct+'%';node('studyPietyFill').style.background=g.color;
-      node('studyPietyText').textContent='Piety '+num(player.piety)+(next?' / '+num(next):' (max)');
-      node('studyPietyBar').title=detail;node('studyPietyBar').setAttribute('aria-label',detail);bindHudResourceCard(node('studyPietyBar'),'piety');
-      faith='<button class="chip faithchip study-piety" data-study-panel="Faith" style="color:'+g.color+'" title="'+esc(detail)+'" aria-label="'+esc(detail)+'"><span class="gdot"></span><span class="rk">R'+rank+'</span><span class="meter"><i style="width:'+pct+'%;background:linear-gradient(90deg,'+hexA(g.color,.55)+','+g.color+')"></i></span></button>'+
-        '<button class="chip faithchip study-favor" data-study-panel="Faith" title="Favor '+num(player.favor)+' / 100. Spent on your god\'s abilities." aria-label="Favor '+num(player.favor)+' / 100"><span class="rk">✦ '+(classic?'Favor ':'')+num(player.favor)+'</span><span class="meter sm"><i style="width:'+clamp(player.favor,0,100)+'%;background:linear-gradient(90deg,#6B5A22,#E8D27A)"></i></span></button>';
-    }
-    const keys=(player.keys?.iron||0)+(player.keys?.crystal||0);
-    const economy='<button class="chip study-stock" data-study-panel="Equip" title="Essence '+num(player.essence)+', keys '+keys+'" aria-label="Essence '+num(player.essence)+', keys '+keys+'"><span aria-hidden="true">◆</span>'+(classic?'<span>Essence</span>':'')+'<b>'+num(player.essence)+'</b>'+(keys?'<span class="study-key-icon" aria-hidden="true">🗝</span><b>'+keys+'</b>':'')+'</button>';
+      setHudText(rankNode.querySelector('b'),rank);
+      if(controls.color!==g.color){
+        rankNode.style.color=g.color;node('studyPietyFill').style.background=g.color;
+        controls.piety.style.color=g.color;controls.piety.querySelector('.meter i').style.background='linear-gradient(90deg,'+hexA(g.color,.55)+','+g.color+')';controls.color=g.color;
+      }
+      setHudStyle(node('studyPietyFill'),'width',pct+'%');
+      setHudText(node('studyPietyText'),'Piety '+num(player.piety)+(next?' / '+num(next):' (max)'));
+      setHudAttribute(node('studyPietyBar'),'aria-label',detail);bindHudResourceCard(node('studyPietyBar'),'piety');
+      setHudAttribute(controls.piety,'aria-label',detail);setHudText(controls.piety.querySelector('.rk'),'R'+rank);setHudStyle(controls.piety.querySelector('.meter i'),'width',pct+'%');
+      setHudAttribute(controls.favor,'aria-label','Favor '+num(player.favor)+' / 100');setHudText(controls.favor.querySelector('.rk'),'✦ '+(classic?'Favor ':'')+num(player.favor));setHudStyle(controls.favor.querySelector('.meter i'),'width',clamp(player.favor,0,100)+'%');
+    }else if(controls.piety){controls.piety.remove();controls.favor.remove();controls.piety=controls.favor=null;controls.color=null;}
+    const keys=(player.keys?.iron||0)+(player.keys?.crystal||0),stock=controls.stock;
+    setHudAttribute(stock,'aria-label','Essence '+num(player.essence)+', keys '+keys);setHudText(stock.querySelector('.study-essence-count'),num(player.essence));
+    let essenceLabel=stock.querySelector('.study-essence-label');
+    if(classic&&!essenceLabel){essenceLabel=document.createElement('span');essenceLabel.className='study-essence-label';essenceLabel.textContent='Essence';stock.insertBefore(essenceLabel,stock.querySelector('b'));}
+    else if(!classic&&essenceLabel)essenceLabel.remove();
+    let keyIcon=stock.querySelector('.study-key-icon'),keyCount=stock.querySelector('.study-key-count');
+    if(keys){
+      if(!keyIcon){keyIcon=document.createElement('span');keyIcon.className='study-key-icon';keyIcon.setAttribute('aria-hidden','true');keyIcon.textContent='🗝';keyCount=document.createElement('b');keyCount.className='study-key-count';stock.append(keyIcon,keyCount);}
+      setHudText(keyCount,keys);
+    }else if(keyIcon){keyIcon.remove();keyCount.remove();}
     const elements=['fire','water','earth','air','light','shadow'];
-    const moteDetail=elements.map(k=>cap(k)+' '+num(player.motes[k])).join(', ');
-    const motes='<button class="chip motechip study-motes" data-study-panel="Equip" title="Motes: '+moteDetail+'" aria-label="Motes: '+moteDetail+'">'+elements.map(k=>'<span class="study-mote" title="'+cap(k)+' motes: '+num(player.motes[k])+'"><i class="dot" style="background:'+AFF_COL[k]+'"></i><b>'+num(player.motes[k])+'</b></span>').join('')+'</button>';
-    node('hud2').innerHTML=faith+'<div class="study-wallet">'+economy+motes+'</div>';
-    node('hud2').querySelectorAll('[data-study-panel]').forEach(b=>b.onclick=()=>showSheet(b.dataset.studyPanel));
-    bindHudResourceCard(node('hud2').querySelector('.study-piety'),'piety');
-    bindHudResourceCard(node('hud2').querySelector('.study-favor'),'favor');
-    bindHudResourceCard(node('hud2').querySelector('.study-stock'),'stock');
-    bindHudResourceCard(node('hud2').querySelector('.study-motes'),'motes');
-    const points=Math.max(0,Math.round(player.points||0));
-    node('xpBar').classList.toggle('study-points-pending',points>0);
-    node('studyChar').innerHTML='<span>Character</span>'+(points?'<span class="study-points" aria-hidden="true">'+points+'</span>':'');
-    node('studyChar').removeAttribute('title');
-    node('studyChar').setAttribute('aria-label',points?'Character: '+points+' unspent stat point'+(points===1?'':'s'):'Character');
-    const statPoints=node('studyStatPoints');statPoints.hidden=!points;statPoints.textContent='+'+points;
-    statPoints.title=points+' unspent stat point'+(points===1?'':'s')+'. Open Character.';statPoints.setAttribute('aria-label',statPoints.title);
-    statPoints.classList.toggle('study-still',typeof ANIM!=='undefined'&&ANIM.reduce);
-    bindHudResourceCard(statPoints,'points');
-    node('studyMenuChar').setAttribute('aria-label',node('studyChar').getAttribute('aria-label'));
-    node('studyGear').textContent='Inventory';
+    setHudAttribute(controls.motes,'aria-label','Motes: '+elements.map(k=>cap(k)+' '+num(player.motes[k])).join(', '));
+    controls.motes.querySelectorAll('.study-mote').forEach(mote=>{const k=mote.dataset.element;setHudText(mote.querySelector('b'),num(player.motes[k]));});
+    const points=Math.max(0,Math.round(player.points||0)),character=node('studyChar');
+    setHudClass(node('xpBar'),'study-points-pending',points>0);
+    if(!character.querySelector('span'))character.innerHTML='<span>Character</span>';
+    let badge=character.querySelector('.study-points');
+    if(points){if(!badge){badge=document.createElement('span');badge.className='study-points';badge.setAttribute('aria-hidden','true');character.append(badge);}setHudText(badge,points);}else if(badge)badge.remove();
+    character.removeAttribute('title');setHudAttribute(character,'aria-label',points?'Character: '+points+' unspent stat point'+(points===1?'':'s'):'Character');
+    const statPoints=node('studyStatPoints');if(statPoints.hidden!==!points)statPoints.hidden=!points;setHudText(statPoints,'+'+points);
+    setHudAttribute(statPoints,'title',points+' unspent stat point'+(points===1?'':'s')+'. Open Character.');setHudAttribute(statPoints,'aria-label',statPoints.title);
+    setHudClass(statPoints,'study-still',typeof ANIM!=='undefined'&&ANIM.reduce);bindHudResourceCard(statPoints,'points');
+    setHudAttribute(node('studyMenuChar'),'aria-label',character.getAttribute('aria-label'));setHudText(node('studyGear'),'Inventory');
     const amusement=node('studyAmusement');if(amusement)paintAmusement(amusement);
   }
+
   function paintAmusement(effect){
     const pct=clamp(Math.round(player.amusement||0),0,100);
-    effect.style.setProperty('--amusement',pct+'%');effect.querySelector('.n').textContent=pct+'%';
-    effect.setAttribute('aria-label','Amusement '+pct+' percent.');
+    const art=effect.querySelector('.study-amusement-art');
+    if(art&&!art.getAttribute('src')){const url=statusIconURL('pr-rolldice2');if(url)art.src=url;}
+    setHudStyle(effect,'--amusement',pct+'%');setHudText(effect.querySelector('.n'),pct+'%');
+    setHudAttribute(effect,'aria-label','Amusement '+pct+' percent.');
   }
   function renderStatusMeter(){
     if(!mounted||!player)return;
     const bar=node('statusbar');if(!bar)return;
     const parent=document.body.classList.contains('study-classic')?node('studyHud'):node('app');
-    if(bar.parentElement!==parent)parent.append(bar);
-    positionStatuses();
-    if(player.god!=='wobbles')return;
+    if(bar.parentElement!==parent){parent.append(bar);positionStatuses();}
+    if(player.god!=='wobbles'){const previous=node('studyAmusement');if(previous)previous.remove();return;}
     const existing=node('studyAmusement');if(existing){paintAmusement(existing);return;}
     const effect=document.createElement('button');effect.id='studyAmusement';effect.className='sico study-amusement-icon';effect.type='button';
     effect.innerHTML='<i class="study-amusement-fill"></i><img class="study-amusement-art" src="'+statusIconURL('pr-rolldice2')+'" alt="" aria-hidden="true"><span class="n"></span>';
@@ -455,8 +494,8 @@ var FoteResponsiveHUD=(function(){
   function positionStatuses(){
     if(!mounted)return;
     const hud=node('studyHud').getBoundingClientRect(),right=document.body.classList.contains('study-pad-right');
-    node('app').style.setProperty('--study-status-offset',(right?innerWidth-hud.left:hud.right)+'px');
-    node('app').style.setProperty('--study-status-top',(document.body.classList.contains('study-portrait')?hud.bottom+8:node('bars').querySelector('.hp').getBoundingClientRect().top)+'px');
+    setHudStyle(node('app'),'--study-status-offset',(right?innerWidth-hud.left:hud.right)+'px');
+    setHudStyle(node('app'),'--study-status-top',(document.body.classList.contains('study-portrait')?hud.bottom+8:node('bars').querySelector('.hp').getBoundingClientRect().top)+'px');
   }
   return Object.freeze({mount,setMenu,renderReadouts,renderStatusMeter,syncAudioButton,syncSheet,syncTouchControls,relayout,hasOverlay,isMounted:()=>mounted});
 })();

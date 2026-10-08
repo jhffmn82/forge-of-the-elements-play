@@ -1,21 +1,10 @@
-/* =====================================================================
-   offline.js - make the whole game available offline (2026-09-17).
-   sw.js serves from a cache and falls back to it when the network is gone, but its install-time precache
-   proved unreliable in the field (the cache came up empty), and caching only what had been fetched meant an
-   offline launch was missing whichever monster sheets, atlases and sounds you had not met yet.
-   So the page fills the cache itself: it reads precache.json (written by tools/build/deploy.py - the exact list of
-   files the build ships, about 122 MB at Beta 1.3.1) and pulls anything missing, a few at a time, after the game has
-   loaded. Same cache name the worker reads, so sw.js answers from it when offline.
-   2026-09-27 (1.3.1): only an INSTALLED copy stores the whole list: a home-screen or fullscreen app, or the
-   Android APK, whose WebView adds no marker of its own, so the standard '; wv)' WebView token on a top-level
-   page identifies it. A browser tab stores only the files it has already loaded: the worker caches everything
-   it serves, and a top-level tab (GitHub Pages) also re-stores what its first visit fetched before the worker
-   took over. The itch.io frame skips that step (see below).
-   Runs only where a service worker is actually registered, i.e. the https build, not the dev server.
-   ===================================================================== */
+/* Installed copies stage a complete revision before advertising offline readiness.
+ * Ordinary browser tabs retain lightweight caching of resources already loaded.
+ * sw.js shares the scoped active-revision pointer and never lets a verification
+ * request succeed through an older offline fallback. No save data is involved. */
 (function(){
   if(!('caches' in window) || !('serviceWorker' in navigator)) return;
-  var CACHE = 'astra-temple-v2', BATCH = 8;   /* must match sw.js: the worker removes only obsolete Astra caches */
+  var CACHE = 'astra-temple-v2', BATCH = 4;   /* shared control/partial cache; keep background bandwidth modest */
   /* the APK shows the game as the whole page; in-app WebViews that frame it (the itch.io app) carry '; wv)' too */
   var TOP = window.self===window.top;
   var INSTALLED = (typeof matchMedia==='function' && matchMedia('(display-mode: standalone), (display-mode: fullscreen), (display-mode: minimal-ui)').matches)
@@ -45,48 +34,117 @@
     if(done) setTimeout(function(){ if(badge){ badge.remove(); badge=null; } }, 6000);
   }
 
+  var SCOPE=new URL('./',location.href).href;
+  var POINTER=new URL('__fote_offline_revision__',SCOPE).href;
+  function pageBuild(){return (document.querySelector('meta[name="fote-build"]')||{}).content||'dev';}
+  function announceClient(){
+    var worker=navigator.serviceWorker.controller;
+    if(worker)worker.postMessage({type:'fote-offline-client',built:pageBuild(),installed:INSTALLED});
+  }
+  announceClient();
+  if(navigator.serviceWorker.addEventListener)navigator.serviceWorker.addEventListener('controllerchange',announceClient);
+  async function verifiedFetch(path,built){
+    var url=new URL(path,location.href);url.searchParams.set('fote-offline-verify',built);
+    var response=await fetch(url.href,{cache:'no-store'});
+    if(!response||response.status!==200||response.headers.get('X-Fote-Offline-Verified')!==built)
+      throw new Error('Offline file was not verified from the network: '+path);
+    return response;
+  }
+  function snapshotRequest(type,record){
+    return new Promise(function(resolve,reject){
+      var worker=navigator.serviceWorker.controller;if(!worker){reject(new Error('No active offline worker'));return;}
+      var channel=new MessageChannel(),timer=setTimeout(function(){channel.port1.close();var error=new Error('Offline request outcome unknown');error.outcome='unknown';reject(error);},30000);
+      channel.port1.onmessage=function(ev){clearTimeout(timer);channel.port1.close();if(ev.data&&ev.data.ok)resolve();else{var error=new Error('Offline request rejected');error.outcome=ev.data&&ev.data.rejected?'rejected':'unknown';reject(error);}};
+      worker.postMessage({type:type,record:record},[channel.port2]);
+    });
+  }
+  async function completedSnapshot(cache,built){
+    var entry=await cache.match(new URL('__fote_offline_build__/'+encodeURIComponent(built),SCOPE).href);
+    var record=entry&&await entry.json();
+    if(!record||record.built!==built||typeof record.cache!=='string'||record.cache.indexOf('astra-temple-revision-'+encodeURIComponent(SCOPE)+'-')!==0)return null;
+    var stored=await caches.open(record.cache),receipt=await stored.match(new URL('__fote_offline_complete__',SCOPE).href);
+    if(!receipt||(await receipt.json()).built!==built)return null;
+    var files=JSON.parse(record.files),present={};(await stored.keys()).forEach(function(req){present[req.url]=1;});
+    return files.every(function(p){return present[stripQuery(p)];})?record:null;
+  }
+  function incomplete(total,failed,message){
+    window.OFFLINE_READY={files:0,failed:failed,total:total,ready:false};
+    say(message||'Offline copy incomplete. Reconnect and reopen the game to retry.',false);
+  }
   async function fill(){
-    var reg = await navigator.serviceWorker.getRegistration();
-    if(!reg) return;                                     /* dev server: nothing to be offline for */
-    var list;
-    try { var r = await fetch('precache.json', {cache:'no-store'}); if(!r.ok) return; list = await r.json(); }
-    catch(e){ return; }
-    var cache = await caches.open(CACHE);
-    var have = {};
-    (await cache.keys()).forEach(function(req){ have[req.url] = 1; });
-    var loaded = {};                                     /* file -> the exact URL (?v= and all) this page loaded */
-    loaded[stripQuery('index.html')] = location.href;    /* this page is the worker's fallback for any navigation */
-    performance.getEntriesByType('resource').forEach(function(e){ loaded[stripQuery(e.name)] = e.name; });
-    var todo = list.filter(function(p){ return !have[stripQuery(p)] && (INSTALLED || loaded[stripQuery(p)]); });
-    if(!todo.length){
-      if(!INSTALLED) return;
-      /* an earlier launch (or a worker from before 1.3.1, which precached on install) may have got there
-         first - still confirm it, so a device can be handed over knowing it will play with no signal */
-      window.OFFLINE_READY = {files: list.length, failed: 0, total: list.length};
-      say('Offline copy ready: this device can play with no signal', true);
+    var reg=await navigator.serviceWorker.getRegistration();if(!reg)return;
+    var cache=await caches.open(CACHE),have={};
+    (await cache.keys()).forEach(function(req){have[req.url]=1;});
+    if(!INSTALLED){
+      var response;try{response=await fetch('precache.json',{cache:'no-store'});if(!response.ok)return;}catch(e){return;}
+      var list=await response.json();if(!Array.isArray(list))return;
+      var loaded={};loaded[stripQuery('index.html')]=location.href;
+      performance.getEntriesByType('resource').forEach(function(e){loaded[stripQuery(e.name)]=e.name;});
+      var todo=list.filter(function(p){return !have[stripQuery(p)]&&loaded[stripQuery(p)];});
+      for(var i=0;i<todo.length;i+=BATCH){
+        await Promise.all(todo.slice(i,i+BATCH).map(async function(path){
+          try{var res=await fetch(loaded[stripQuery(path)],{cache:'no-cache'});if(res&&res.status===200)await cache.put(stripQuery(path),res.clone());}catch(e){}
+        }));
+        await new Promise(function(resolve){setTimeout(resolve,30);});
+      }
       return;
     }
-    var done = 0, failed = 0;
-    say('Storing the game for offline play… 0%');
-    for(var i=0; i<todo.length; i+=BATCH){
-      await Promise.all(todo.slice(i, i+BATCH).map(async function(path){
-        try {
-          /* a file this page already loaded is asked for by its exact URL, so the HTTP cache answers (a 304)
-             instead of a second download */
-          var url = loaded[stripQuery(path)];
-          var res = await fetch(url || path, {cache: url ? 'no-cache' : 'no-store'});
-          if(res && res.status===200){ await cache.put(stripQuery(path), res.clone()); done++; }
-          else failed++;
-        } catch(e){ failed++; }
-      }));
-      await new Promise(function(r){ setTimeout(r, 30); });   /* leave the game some bandwidth */
-      say('Storing the game for offline play… '+Math.round((done+failed)/todo.length*100)+'%');
+    var built=pageBuild(),manifest,build,list,previous;
+    if(built==='dev')return;
+    announceClient();
+    previous=await completedSnapshot(cache,built);
+    if(previous){
+      var storedFiles=JSON.parse(previous.files).length;
+      window.OFFLINE_READY={files:storedFiles,failed:0,total:storedFiles,built:built,ready:true};
+      say('Offline copy ready: this device can play with no signal',true);return;
     }
-    if(!INSTALLED) return;                               /* a tab's partial copy is not announced */
-    window.OFFLINE_READY = {files: done, failed: failed, total: list.length};
-    say(failed ? 'Offline copy ready ('+failed+' files missed)' : 'Offline copy ready: this device can play with no signal', true);
-    if(typeof log==='function' && done)
-      log('This device now has the whole game stored: it plays with no signal at all.', 'c-info');
+    try{
+      build=await (await verifiedFetch('build.json',built)).json();
+      if(build.built!==built){incomplete(0,0,'A newer game is available. Reload online before storing it offline.');return;}
+      manifest=await verifiedFetch('precache.json',built);list=await manifest.clone().json();
+      if(!Array.isArray(list)||!list.length||!list.includes('index.html'))throw new Error('Invalid offline manifest');
+      if(list.some(function(p){var url=new URL(p,SCOPE);return typeof p!=='string'||url.href.indexOf(SCOPE)!==0||url.search||url.hash;}))throw new Error('Invalid offline path');
+      list=Array.from(new Set(list)).sort();
+    }catch(e){incomplete(0,1);return;}
+    var signature=JSON.stringify(list),prefix='astra-temple-revision-'+encodeURIComponent(SCOPE)+'-';
+    var attempt=typeof crypto!=='undefined'&&crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+'-'+Math.random().toString(36).slice(2);
+    var name=prefix+encodeURIComponent(built)+'-'+attempt,record={built:built,cache:name,files:signature};
+    try{await snapshotRequest('fote-offline-stage',record);}catch(e){incomplete(list.length,1);return;}
+    var staged=await caches.open(name);
+    // An unfinished revision is revalidated in full. Merely finding its URLs is
+    // not evidence of freshness, even if an interrupted earlier attempt wrote them.
+    var done=0,failed=0;
+    say('Storing the game for offline play… 0%',false);
+    for(var i=0;i<list.length;i+=BATCH){
+      await Promise.all(list.slice(i,i+BATCH).map(async function(path){
+        try{
+          var res=path==='precache.json'?manifest.clone():await verifiedFetch(path,built);
+          // The HTML stamp detects a release crossing even if a CDN serves an old shell.
+          if((path==='index.html'||path==='demo.html')&&!(await res.clone().text()).includes('name="fote-build" content="'+built+'"'))throw new Error('Offline shell revision mismatch');
+          await staged.put(stripQuery(path),res.clone());done++;
+        }catch(e){failed++;}
+      }));
+      await new Promise(function(resolve){setTimeout(resolve,30);});
+      say('Storing the game for offline play… '+Math.round((done+failed)/list.length*100)+'%',false);
+    }
+    if(!failed){
+      try{
+        var finalBuild=await (await verifiedFetch('build.json',built)).json();
+        var finalList=await (await verifiedFetch('precache.json',built)).json();
+        if(finalBuild.built!==built||JSON.stringify(Array.from(new Set(finalList)).sort())!==signature)throw new Error('Build changed while storing offline copy');
+      }catch(e){failed++;}
+    }
+    if(failed){try{await snapshotRequest('fote-offline-abort',record);}catch(e){}window.OFFLINE_READY={files:done,failed:failed,total:list.length,built:built,ready:false};say('Offline copy incomplete. Reconnect and reopen the game to retry.',false);return;}
+    // A single pointer write commits the completed snapshot. Until then the worker
+    // retains the previous coherent revision, and a newer open page cannot mix it in.
+    await staged.put(new URL('__fote_offline_complete__',SCOPE).href,new Response(JSON.stringify({built:built}),{headers:{'Content-Type':'application/json'}}));
+    // A timeout has an unknown commit outcome. The worker owns safe cleanup;
+    // the page never deletes a stage that might already have been committed.
+    try{await snapshotRequest('fote-offline-commit',record);}catch(e){incomplete(list.length,1);return;}
+    window.OFFLINE_READY={files:list.length,failed:0,total:list.length,built:built,ready:true};
+    say('Offline copy ready: this device can play with no signal',true);
+    if(typeof log==='function')log('This device now has the whole game stored for offline play.','c-info');
+
   }
 
   /* after the first turn or two, not during loading: the page's load event waits for the artwork preload, so

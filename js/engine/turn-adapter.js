@@ -79,9 +79,14 @@ function turnWorldPulse(clock){
     if(key==='afterglow'&&player.hp>0)healPlayer(Math.max(1,Math.round(player.maxhp*.05)));
   });
   if(player.hidden>0&&!(player._worldHiddenBorn>=clock))player.hidden--;
+  // Air 3 is continuous support over the current chasm, not an expiring spell.
+  // Refresh before expiry can fall; the later puzzle phase cannot undo a fall.
+  var windSupported=player.windCarry&&aff('air')>=3&&at(player.x,player.y)===CHASM;
+  if(player.windCarry&&!windSupported)player.windCarry=false;
   if(player.levitate>0&&!(player._worldLevitateBorn>=clock)){
-    player.levitate--;if(!player.levitate&&at(player.x,player.y)===CHASM)fallIntoChasm();
+    player.levitate--;if(!player.levitate&&!windSupported&&at(player.x,player.y)===CHASM)fallIntoChasm();
   }
+  if(windSupported)player.levitate=Math.max(player.levitate,1);
   groundTick();godsWorldAdvance(clock-100,clock);
   if(typeof FoteChaosEnemies!=='undefined')FoteChaosEnemies.globalPulse(clock);
   if(typeof FoteSporecaller!=='undefined')FoteSporecaller.pulse(clock);

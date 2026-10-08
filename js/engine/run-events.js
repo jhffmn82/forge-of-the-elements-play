@@ -32,12 +32,14 @@ function floorEntryNote(note){
   return note;
 }
 function floorIntro(){
-  log('<b>'+biomeName()+' · Floor '+floorNo+'</b>.','c-kill');
-  if(floorMeta.forge) log('<b>Elemental Forge</b>.','c-kill');
-  if(floorMeta.shrine) log('<b>'+GODS[RUN.shrineGod].name+' shrine</b>.','c-kill');
+  var entryReceipt={},notices=new Set();
+  function feature(html){log(html+'.','c-kill',{receipt:{scope:entryReceipt,key:'features',item:html,join:' · ',suffix:'.'}});}
+  feature('<b>'+biomeName()+' · Floor '+floorNo+'</b>');
+  if(floorMeta.forge) feature('<b>Elemental Forge</b>');
+  if(floorMeta.shrine) feature('<b>'+GODS[RUN.shrineGod].name+' shrine</b>');
   if(floorMeta.vault) log('Iron vault: key carried by a monster.','c-info');
   if(floorMeta.boss&&!inCaverns()&&!inDeep()&&!floorMeta.unmakerPreview) log(inCrypt() ? '<b>Morty\'s hall.</b> Break his phylactery to keep him dead.' : '<b>Warchief\'s hall.</b> Bring his core to the gate.','c-you');
-  (floorMeta.notes||[]).forEach(function(n){ log(floorEntryNote(n),'c-info'); });
+  (floorMeta.notes||[]).forEach(function(n){var text=floorEntryNote(n);log(text,'c-info',{transient:!notices.has(text)});notices.add(text);});
   playSceneMusic();
 
  if(floorMeta.boss&&inCaverns())log('<b>Deep Maw\'s hall.</b> Burrows cover the ground.','c-you');

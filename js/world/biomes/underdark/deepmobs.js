@@ -65,13 +65,16 @@ var DEEP_KINDS = ['drowblade','drowpriestess','thoughteater','webspitter','spide
 /* ---------------------------------------------------------------- tunables (placeholders, all of them) */
 var BLEED   = {turns:4, base:3, per:0.25};                 /* 2026-09-23 (Justin): 3 + 0.25 per floor (7 at floor 16), 4 turns; it ignores armour */
 var GLOBE   = {r:1, turns:5, cd:[10,14], first:[1,3]};     /* 3x3 of darkness on you for 5 turns */
-var PRIEST  = {healPct:0.50, healCd:4, ward:8, wardTurns:8, wardCd:7, callCd:9, callN:[1,2], capEach:2, capFloor:8, range:6};
+var PRIEST  = {healPct:0.50, healCd:4, ward:8, wardTurns:8, wardCd:7, callCd:9, callKind:'spiderling', callN:[1,2], capEach:2, capFloor:8, range:6};
 var WEBSHOT = {cd:4, range:5, pin:1, slow:3};
 var DRIDER  = {webCd:6, poison:[4,3]};                     /* fangs: poison 4 turns, 3 a turn */
 var SAP     = {cd:3, range:6, base:6, per:0.5, heal:2};    /* drains 6 + half the floor in MP (14 at 16); heals 2 HP per MP */
 var IMP     = {cd:1, range:6, burn:1.0};    /* 2026-09-23 (Justin): a bolt every turn, and a hit always burns */
 var MATRON  = {phase:[0.66, 0.33], ritTurns:3, ritBreak:0.08, ritEvery:[8,6,5], tithe:[18,26], titheCap:0.30, titheHeal:2,
-               venom:[12,18], venomCap:0.30, venomCd:5, webCd:5, broodDriders:2, broodSpiderlings:[2,3]};
+               venom:[12,18], venomCap:0.30, venomCd:5, webCd:5, driderKind:'drider', spiderKind:'spiderling', broodDriders:2, broodSpiderlings:[2,3]};
+/* Fixed offspring are shared by their native spawn and scene readiness. */
+function deepHatchKind(prop){return prop&&prop.hatch&&!prop.hatched?'spiderling':null;}
+function deepSummonKinds(actor){return actor.kind==='drowpriestess'?[PRIEST.callKind]:actor.kind==='matron'?[MATRON.driderKind,MATRON.spiderKind]:[];}
 
 /* ---------------------------------------------------------------- helpers */
 function deepVis(x,y){ return !!(revealAll || (vis && vis[idxOf(x,y)])); }
@@ -86,11 +89,11 @@ function deepRegionAt(x,y){
 }
 function deepHasRegions(){ return !!((floorMeta && floorMeta.deepRegion) || rooms.some(function(r){ return r.region!==undefined && r.region!==null; })); }
 var DEEP_CAP = {drider:2};                                 /* elites a floor (placeholder) */
-function deepPool(region){
+function deepPool(region,includeCapped){
   var out=[];
   DEEP_KINDS.forEach(function(k){
     var b=MONSTERS[k]; if(!b || !b.w || floorNo<b.band[0] || floorNo>b.band[1]) return; if(region>=0 && b.region!==region) return;
-    if(DEEP_CAP[k] && ents.filter(function(o){ return o.kind===k; }).length>=DEEP_CAP[k]) return;
+    if(!includeCapped && DEEP_CAP[k] && ents.filter(function(o){ return o.kind===k; }).length>=DEEP_CAP[k]) return;
     out.push([k, b.w]);
   });
   return out;
@@ -281,7 +284,7 @@ var DEEP_AI = {
       if(mine<PRIEST.capEach && all<PRIEST.capFloor){
         if(e.hp<=0)return true;
         var n=Math.min(ri(PRIEST.callN[0],PRIEST.callN[1]), PRIEST.capEach-mine, PRIEST.capFloor-all), got=0;
-        for(var k=0;k<n;k++){ var c=nearFree(e.x,e.y,1) || nearFree(e.x,e.y,2); if(!c || deepLava(c.x,c.y)) break; var s=deepSpawnRaw('spiderling', c.x, c.y); s.state='hunt';s.lastSeen={x:target.x,y:target.y}; s.noLoot=true; s.owner=e.id; s.t=e.t; sparkleFx(c.x,c.y,'web',14); got++; }
+        for(var k=0;k<n;k++){ var c=nearFree(e.x,e.y,1) || nearFree(e.x,e.y,2); if(!c || deepLava(c.x,c.y)) break; var s=deepSpawnRaw(PRIEST.callKind, c.x, c.y); s.state='hunt';s.lastSeen={x:target.x,y:target.y}; s.noLoot=true; s.owner=e.id; s.t=e.t; sparkleFx(c.x,c.y,'web',14); got++; }
         if(got){
           e.callCd=PRIEST.callCd;setClip(e,'attack');sfx('shaman-cast',{from:e});
           if(deepVis(e.x,e.y))log('Priestess: '+got+' Spiderlings summoned.','c-info');
@@ -353,7 +356,7 @@ var DEEP_AI = {
       recordHostileAttack(e,player,['attack','spell','ranged']);
       if(rng()<hostileHitChance(hitChance(accOf(e)+6, evaOf(player)),true)){
         var fd=deepHurt(player, roll(e.dmg[0], e.dmg[1]), 'fire', e, 'Fire Imp → you');
-        if(player.hp>0 && rng()<IMP.burn){ applyStatus(player,'burn',3,underdarkEnemyStat(e,sDMG(2))); log('Burning.','c-you'); }
+        if(player.hp>0 && rng()<IMP.burn){ var burn=applyStatus(player,'burn',3,underdarkEnemyStat(e,sDMG(2))); if(burn.applied&&!burn.previous)log('Burning.','c-you'); }
         ignite(player.x, player.y, null);
       } else {
         log('Fire Imp misses; ground ignited.','c-miss');
@@ -385,14 +388,14 @@ function deepHatchTick(){
     var w=p.w||1, h=p.h||1, near=false, seenIt=false;
     for(var y=p.y;y<p.y+h;y++) for(var x=p.x;x<p.x+w;x++){ if(vis[idxOf(x,y)]) seenIt=true; if(dist(player,{x:x,y:y})<=2) near=true; }
     if(!near || !seenIt) return;
-    p.hatched=true;
+    var childKind=deepHatchKind(p);p.hatched=true;
     removeProp(p);
     var big=/large|sac/.test(p.name), n=big ? ri(3,5) : ri(2,3), got=0;   /* placeholders */
     for(var yy=p.y;yy<p.y+h;yy++) for(var xx=p.x;xx<p.x+w;xx++){ if(inb(xx,yy) && walkable(xx,yy) && gAt(xx,yy)===G_NONE) setG(xx,yy,G_WEB); burst(xx,yy,'web',26,0.08); }
     for(var k=0;k<n;k++){
       var c=(k===0 && walkable(p.x,p.y) && !occupied(p.x,p.y)) ? {x:p.x,y:p.y} : (nearFree(p.x,p.y,1) || nearFree(p.x,p.y,2));
       if(!c || deepLava(c.x,c.y)) continue;
-      var s=deepSpawnRaw('spiderling', c.x, c.y); s.state='hunt'; s.t=player.t; s.caughtOff=turn; got++;
+      var s=deepSpawnRaw(childKind, c.x, c.y); s.state='hunt'; s.t=player.t; s.caughtOff=turn; got++;
     }
     sfx('trap-web',{from:p}); SHAKE=Math.max(SHAKE||0, 3);
     log('Cocoon: '+got+' Spiderlings hatch.','c-you');
@@ -497,13 +500,13 @@ function matronBrood(e, driders, spiders, why){
   var dAlive=ents.filter(function(o){ return o.kind==='drider'; }).length;
   for(var i=0;i<driders && dAlive<MATRON.broodDriders;i++,dAlive++){
     var c=nearFree(e.x,e.y,2) || nearFree(e.x,e.y,3); if(!c || deepLava(c.x,c.y)) break;
-    var d=deepSpawnRaw('drider', c.x, c.y); d.state='hunt'; d.noLoot=true; d.t=player.t; sparkleFx(c.x,c.y,'web',24); got.push('a <b>Drider</b>');
+    var d=deepSpawnRaw(MATRON.driderKind, c.x, c.y); d.state='hunt'; d.noLoot=true; d.t=player.t; sparkleFx(c.x,c.y,'web',24); got.push('a <b>Drider</b>');
   }
   var n=0;
   for(var k=0;k<spiders;k++){
     if(ents.filter(function(o){ return o.kind==='spiderling'; }).length>=PRIEST.capFloor) break;
     var s=nearFree(e.x,e.y,2); if(!s || deepLava(s.x,s.y)) break;
-    var sp=deepSpawnRaw('spiderling', s.x, s.y); sp.state='hunt'; sp.noLoot=true; sp.t=player.t; sparkleFx(s.x,s.y,'web',12); n++;
+    var sp=deepSpawnRaw(MATRON.spiderKind, s.x, s.y); sp.state='hunt'; sp.noLoot=true; sp.t=player.t; sparkleFx(s.x,s.y,'web',12); n++;
   }
   if(n) got.push((n>1 ? n : 'a')+' <b>Spiderling'+(n>1?'s':'')+'</b>');
   var who=got.join(' and ');

@@ -203,7 +203,7 @@ function equipHTML(){
   /* left: totals */
   h+='<div><div class="sec">Offense</div>'+kv([['Damage per hit',hr[0]+'-'+hr[1]],['Crit',Math.round(player.crit*100)+'%'],['Crit damage','&times;'+criticalMultiplier().toFixed(2)],['Accuracy',player.acc],['Range',player.range],['Attack speed',playerSpeedPercent('attack')],['Movement speed',playerSpeedPercent('move')],['Spell power','&times;'+spellPower({}).toFixed(2)],['Divine Power','&times;'+divineStrength().toFixed(2)]]);
   h+='<div class="sec">Defense</div>'+kv([['HP',Math.round(player.hp)+' / '+player.maxhp],['Shield',playerShield()],['Armor',player.armor],['Evasion',evaOf(player)],['Block',Math.round(player.block*100)+'%'],['Parry',Math.round(player.parry*100)+'%'],['Mana',Math.floor(player.mp)+' / '+player.maxmp],['Stealth',Math.round(stealthScore()*100)+'%']]);
-  h+='<div class="sec">Attributes</div><div class="res">'+['mig','agi','vit','foc'].map(function(k){ return '<span>'+STAT_LABEL[k]+'<b>'+player.stats[k]+'</b></span>'; }).join('')+'</div>';
+  h+='<div class="sec">Attributes</div><div class="res">'+['mig','agi','vit','foc'].map(function(k){ return '<span'+journalStatAttribute(k)+'>'+STAT_LABEL[k]+'<b>'+player.stats[k]+'</b></span>'; }).join('')+'</div>';
   h+='<div class="sec">Resistances</div>'+resHTML()+'</div>';
   /* middle: doll and slots */
   h+='<div class="gcol-worn"><div class="sec">Worn <span style="text-transform:none;letter-spacing:0">(hover for details, drag from the bag to equip)</span></div><div class="gdoll">'+
@@ -239,9 +239,35 @@ function slotCard(key){
      and the Fighter's bonus - under the same label. The total is named for what it is. */
   return bagCard({kind:'off', data:it}) + (player.block?'<div class="row"><span>Your block</span><b>'+Math.round(player.block*100)+'%</b></div>':'') + (player.parry?'<div class="row"><span>Your parry</span><b>'+Math.round(player.parry*100)+'%</b></div>':'');
 }
+/* Watch only the live equipment portrait. Resizing redraws native art at its
+ * final bounds/DPR; unchanged layout notifications retain the canvas. */
+var equipmentDollElement=null,equipmentDollSize='',equipmentDollObserver=null,equipmentDollFrame=0;
+function syncEquipmentDoll(force){
+  var next=openSheet==='Equip'?$('dollArt'):null;
+  if(next!==equipmentDollElement){
+    if(equipmentDollObserver)equipmentDollObserver.disconnect();
+    if(equipmentDollFrame){cancelAnimationFrame(equipmentDollFrame);equipmentDollFrame=0;}
+    equipmentDollElement=next;equipmentDollSize='';
+    if(next && typeof ResizeObserver==='function'){
+      if(!equipmentDollObserver)equipmentDollObserver=new ResizeObserver(function(){syncEquipmentDoll(false);});
+      equipmentDollObserver.observe(next);
+    }
+  }
+  if(!next || !next.clientWidth || !next.clientHeight)return;
+  var size=[next.clientWidth,next.clientHeight,window.devicePixelRatio||1].join(':');
+  if(!force && size===equipmentDollSize)return;
+  /* A canvas replacement inside ResizeObserver can change a nested scrollport
+   * during the same delivery. Paint once in the next frame instead. */
+  if(!force){
+    if(!equipmentDollFrame)equipmentDollFrame=requestAnimationFrame(function(){equipmentDollFrame=0;syncEquipmentDoll(true);});
+    return;
+  }
+  if(equipmentDollFrame){cancelAnimationFrame(equipmentDollFrame);equipmentDollFrame=0;}
+  equipmentDollSize=size;
+  if(typeof paintDoll==='function')paintDoll(next,280);else paintArt(next,'cast',playerCastLook(),280);
+}
 function wireEquip(root){
-  /* the doll box is wider now, so the figure is drawn bigger to match (2026-09-17) */
-  if(typeof paintDoll==='function') paintDoll($('dollArt'), 210); else paintArt($('dollArt'),'cast',playerCastLook(),210);
+  syncEquipmentDoll(true);
   root.querySelectorAll('[data-mote]').forEach(function(e){ paintArt(e,'items','mote-'+e.getAttribute('data-mote'),16); });
   root.querySelectorAll('[data-kicon]').forEach(function(e){ paintArt(e,'items',e.getAttribute('data-kicon'),18); });
   root.querySelectorAll('[data-gicon]').forEach(function(e){ var n=e.getAttribute('data-gicon'); if(n) e.appendChild(iconCanvas(n, 42, '?')); });

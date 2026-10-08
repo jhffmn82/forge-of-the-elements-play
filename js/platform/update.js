@@ -15,7 +15,10 @@ var FOTE_PATCHES = [
     "Positive Piety gains increase in the final biomes, helping late devotion catch up.",
     "Tiny Spiderlings, Shroomlings and Rotlings no longer block ranged shots. Brood Carriers and Silk Weavers throw limited broods beside their target.",
     "Mobile play requires landscape; turn your device sideways when the rotation prompt appears. Touch movement responds on press, supports delayed hold-to-move, and keeps pickup separate from Search.",
-    "Improved character framing, menu readability, artwork loading and introductory guidance. Floor entry waits for its destination artwork, and missing artwork can be retried.",
+    "Refreshed menus with clearer text, stronger colors, matching utility icons, larger equipment portraits and improved touch tooltips. Character framing and introductory guidance have also improved.",
+    "Related pickups, periodic damage and ordinary defeats combine in the recent combat log. Individual history entries and tactical warnings remain available.",
+    "Click-to-move prefers straight steps when shortest routes take the same number of turns.",
+    "Reduced repeated terrain and interface rendering work. Offline updates keep completed game copies together, and floor loading includes more creatures revealed during play. Missing artwork can be retried.",
     "Blind limits current sight to adjacent tiles. Cursed Mending stops HP regeneration without draining health."
   ]},
   {version:'Beta 1.5', notes:[

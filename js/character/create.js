@@ -116,38 +116,44 @@ function openCreate(){
 }
 function renderCreate(){
   var el=$('create'), c=CHOICE;
+  /* A choice redraws its own cards; keep keyboard focus on that same choice. */
+  var active=document.activeElement,focusSelector='';
+  if(active&&el.contains(active)){
+    ['race','sex','court','cls','god'].some(function(key){var value=active.getAttribute('data-'+key);if(value!==null){focusSelector='[data-'+key+'="'+value+'"]';return true;}return false;});
+    if(!focusSelector&&active.id==='reroll')focusSelector='#reroll';
+  }
   if(c.cls==='cleric' && creationRefuses(c,c.god))c.god='murk';
   if(!c.name) c.name=rollName(c);
   var h='<div class="wrap"><nav aria-label="Character selection" style="display:flex;padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) 0 env(safe-area-inset-left,0px);margin-bottom:4px"><button id="cBack" type="button" aria-label="Back to title" style="min-width:88px;min-height:44px"><span aria-hidden="true">&larr;</span> Back</button></nav><h1>Forge of the Elements</h1><div class="tag2">Descend twenty-five floors from the Dungeon into the Realm of Chaos. Fuse elemental motes, defeat the biome lords and seek the Forge of the Elements.</div>';
-  h+='<div class="step">1 &middot; Race</div><div class="cards">';
+  h+='<div class="step" id="creationRaceLabel">1 &middot; Race</div><div class="cards" role="group" aria-labelledby="creationRaceLabel">';
   Object.keys(RACES).forEach(function(r){
     var R=RACES[r], look=creationCastLook({race:r,sex:c.sex,court:c.court,cls:c.cls,god:c.god});
-    h+='<button class="card'+(c.race===r?' on':'')+'" data-race="'+r+'"><div class="port" data-look="'+look+'"></div><b>'+R.name+'</b><span>'+R.blurb+'</span></button>';
+    h+='<button type="button" class="card'+(c.race===r?' on':'')+'" data-race="'+r+'" aria-pressed="'+(c.race===r)+'"><div class="port" data-look="'+look+'"></div><b class="choice-name">'+R.name+'</b><span class="choice-copy">'+R.blurb+'</span></button>';
   });
-  h+='</div><div class="step">Appearance</div><div class="cards" style="grid-template-columns:repeat(auto-fill,minmax(120px,1fr))">'+
-     ['m','f'].map(function(s){ return '<button class="card'+(c.sex===s?' on':'')+'" data-sex="'+s+'"><b>'+(s==='m'?'Masculine':'Feminine')+'</b></button>'; }).join('')+'</div>';
+  h+='</div><div class="step" id="creationAppearanceLabel">Appearance</div><div class="cards creation-appearance" role="group" aria-labelledby="creationAppearanceLabel" style="grid-template-columns:repeat(auto-fill,minmax(120px,1fr))">'+
+     ['m','f'].map(function(s){ return '<button type="button" class="card'+(c.sex===s?' on':'')+'" data-sex="'+s+'" aria-pressed="'+(c.sex===s)+'"><b>'+(s==='m'?'Masculine':'Feminine')+'</b></button>'; }).join('')+'</div>';
   if(c.race==='fae'){
-    h+='<div class="step">Fae court (your primary element)</div><div class="cards">';
+    h+='<div class="step" id="creationCourtLabel">Fae court (your primary element)</div><div class="cards" role="group" aria-labelledby="creationCourtLabel">';
     Object.keys(RACES.fae.courts).forEach(function(el2){
-      h+='<button class="card'+(c.court===el2?' on':'')+'" data-court="'+el2+'"><div class="port" data-look="'+creationCastLook({race:'fae',sex:c.sex,court:el2,cls:c.cls,god:c.god})+'"></div><b style="color:'+AFF_COL[el2]+'">'+RACES.fae.courts[el2]+'</b><span>'+cap(el2)+' 1 from the start. '+T1_TEXT[el2]+'.</span></button>';
+      h+='<button type="button" class="card'+(c.court===el2?' on':'')+'" data-court="'+el2+'" aria-pressed="'+(c.court===el2)+'"><div class="port" data-look="'+creationCastLook({race:'fae',sex:c.sex,court:el2,cls:c.cls,god:c.god})+'"></div><b class="choice-name" style="color:'+AFF_COL[el2]+'">'+RACES.fae.courts[el2]+'</b><span class="choice-copy">'+cap(el2)+' 1 from the start. '+T1_TEXT[el2]+'.</span></button>';
     });
     h+='</div>';
   }
-  h+='<div class="step">2 &middot; Class</div><div class="cards">';
+  h+='<div class="step" id="creationClassLabel">2 &middot; Class</div><div class="cards" role="group" aria-labelledby="creationClassLabel">';
   Object.keys(CLASSES).forEach(function(k){
     var C=CLASSES[k], ab=C.ability ? (C.ability==='invoke' ? 'Chosen by your god' : ABILITIES[C.ability].name) : 'no ability';
     /* each class has its own card art (cls-*); the ability's icon is the fallback if it is missing */
     var ic = C.icon && objArt('icons', C.icon) ? C.icon
            : C.ability && C.ability!=='invoke' ? ABILITIES[C.ability].icon
            : C.ability==='invoke' ? 'ic-pray' : 'ic-wait';
-    h+='<button class="card'+(c.cls===k?' on':'')+'" data-cls="'+k+'"><div class="port class-symbol" data-icon="'+ic+'"></div><b>'+C.name+'</b><span>'+C.blurb+'</span><span style="color:var(--gold)">'+ab+'</span></button>';
+    h+='<button type="button" class="card'+(c.cls===k?' on':'')+'" data-cls="'+k+'" aria-pressed="'+(c.cls===k)+'"><div class="port class-symbol" data-icon="'+ic+'"></div><b class="choice-name">'+C.name+'</b><span class="choice-copy">'+C.blurb+'</span><span class="choice-ability">'+ab+'</span></button>';
   });
-  h+='</div>';
+  h+='</div><div class="creation-trait"><b>'+CLASSES[c.cls].name+' trait</b><p>'+CLASSES[c.cls].passive+'</p></div>';
   if(c.cls==='cleric'){
-    h+='<div class="step">Your god</div><div class="cards">';
+    h+='<div class="step" id="creationGodLabel">Your god</div><div class="cards" role="group" aria-labelledby="creationGodLabel">';
     Object.keys(GODS).forEach(function(g){
       var G=GODS[g], bad=creationRefuses(c, g);
-      h+='<button class="card'+(c.god===g?' on':'')+'" data-god="'+g+'" '+(bad?'disabled style="opacity:.4"':'')+'><div class="port" data-shrine="'+G.sprite+'"></div><b style="color:'+G.color+'">'+G.name+'</b><span><b style="font-family:inherit;font-size:calc(11px + var(--ui-mobile-text-add,0px));color:var(--ink)">Rule:</b> '+G.rule+'</span><span>Ability: '+ABILITIES[G.invoke].name+'</span>'+(bad?'<span class="c-you">Refuses you.</span>':'')+(G.loves===c.race?'<span class="c-good">Loves your kind: +25% piety gain.</span>':'')+'</button>';
+      h+='<button type="button" class="card'+(c.god===g?' on':'')+'" data-god="'+g+'" aria-pressed="'+(c.god===g)+'" '+(bad?'disabled':'')+'><div class="port" data-shrine="'+G.sprite+'"></div><b class="choice-name" style="color:'+G.color+'">'+G.name+'</b><span class="choice-style">'+G.title+'</span><span class="choice-copy"><strong class="choice-rule">Rule:</strong> '+G.rule+'</span><span class="choice-ability">Ability: '+ABILITIES[G.invoke].name+'</span>'+(bad?'<span class="c-you choice-refusal">Refuses you.</span>':'')+(G.loves===c.race?'<span class="c-good choice-benefit">Loves your kind: +25% piety gain.</span>':'')+'</button>';
     });
     h+='</div>';
   }
@@ -155,9 +161,9 @@ function renderCreate(){
   var kitNames=[kit.main&&WEAPONS[kit.main].name, kit.alt&&WEAPONS[kit.alt].name, kit.armor&&ARMORS[kit.armor].name, kit.off&&offKitItem(kit.off).name].filter(Boolean);
   if(c.cls==='cleric' && c.god==='grom') kitNames=['Fists (Chad forbids weapons and body armor)','Holy Symbol'];
   h+='<div class="summary"><div class="big" id="bigPort"></div><div>'+
-     '<div class="step" style="margin-top:0">3 &middot; Name</div><input id="cname" type="text" maxlength="24" value="'+c.name.replace(/"/g,'')+'"> <button id="reroll">Random</button>'+
+     '<label class="step creation-name-label" for="cname" style="margin-top:0">3 &middot; Name</label><div class="creation-name-controls"><input id="cname" type="text" maxlength="24" value="'+c.name.replace(/"/g,'')+'"> <button type="button" id="reroll">Random</button></div>'+
      '<div class="who" style="margin-top:8px;font-size:calc(13px + var(--ui-mobile-text-add,0px))">'+RACES[c.race].name+' '+C2.name+(c.cls==='cleric'?' of '+GODS[c.god].name:'')+(c.race==='fae'?' &middot; '+RACES.fae.courts[c.court]:'')+'</div>'+
-     '<div class="kv" style="max-width:420px"><span>Might</span><b>'+st.mig+'</b><span>Agility</span><b>'+st.agi+'</b><span>Vitality</span><b>'+st.vit+'</b><span>Focus</span><b>'+st.foc+'</b>'+
+     '<div class="kv creation-stats" style="max-width:420px"><span data-journal-stat="might">Might</span><b data-journal-stat="might">'+st.mig+'</b><span data-journal-stat="agility">Agility</span><b data-journal-stat="agility">'+st.agi+'</b><span data-journal-stat="vitality">Vitality</span><b data-journal-stat="vitality">'+st.vit+'</b><span data-journal-stat="focus">Focus</span><b data-journal-stat="focus">'+st.foc+'</b>'+
      '<span>Starting kit</span><b style="text-align:left">'+kitNames.join(', ')+'</b><span>Passive</span><b style="text-align:left;font-weight:400">'+C2.passive+'</b></div>'+
      '<label style="display:flex;align-items:center;gap:8px;margin-top:10px;font-size:calc(14px + var(--ui-mobile-text-add,0px))"><input id="cTutorial" type="checkbox" style="width:18px;height:18px"> Show tutorial</label>'+
      '<button class="go btn-primary" id="begin">Enter the Dungeon</button><p class="c-info create-sound-note">Sound and music start with your first tap or click. Change sound and music in Options.</p></div></div></div>';
@@ -183,6 +189,7 @@ function renderCreate(){
     audioInit();sfx('ui-click');$('create').classList.remove('on');
     if(newRun(Date.now()%1000000,CHOICE)!==false&&typeof FoteGettingStarted!=='undefined')FoteGettingStarted.onRunStarted();
   };
+  var restored=focusSelector&&el.querySelector(focusSelector);if(restored&&!restored.disabled)restored.focus({preventScroll:true});
 }
 
 /* ---------------------------------------------------------------- a new run */
