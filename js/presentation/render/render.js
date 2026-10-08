@@ -1010,7 +1010,9 @@ function clipFrame(sheet, e, sliding){
      (game.js slideWalked), so the feet keep their place in the stride and never step back while a direction is held */
   if(sliding && m.clips.walk){ var w=m.clips.walk, wf=sheet.look && typeof slideWalked==='function' ? Math.floor(slideWalked(e,now)) : Math.floor(now/CLIP_MS.walk); return {sx:(wf%w.frames)*cell, sy:w.row*cell}; }
   if(m.clips.idle){
-    var id=m.clips.idle, ph=rest===undefined ? ((e.id||0)*97)%500 : -rest, n=Math.floor((now+ph)/CLIP_MS.idle);
+    var id=m.clips.idle, ph=rest===undefined ? ((e.id||0)*97)%500 : -rest;
+    // Authored wingbeats can run at their own cadence without changing action timing.
+    var idleMs=Number.isFinite(id.frameMs)&&id.frameMs>0?id.frameMs:CLIP_MS.idle, n=Math.floor((now+ph)/idleMs);
     var loop=sheet.look && CLIP_PLAY[sheet.look] && CLIP_PLAY[sheet.look].idle;   /* 2026-10-05 (slice 1c): the look's calm loop */
     return {sx:(loop ? loop[n%loop.length] : n%id.frames)*cell, sy:id.row*cell};
   }
