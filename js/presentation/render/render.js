@@ -1574,7 +1574,7 @@ function drawScene(){
     var isDoor=(ot===DOOR||ot===OPEN||ot===LOCKED||ot===TOLL||ot===ICEDOOR||ot===THORNS||ot===SEALED);
     if(spr){
       var big = ot===FORGE||ot===SHRINE||ot===EXIT;   /* 2026-09-19: the god statues are two tiles tall - a shrine stands on its tile and rises above it */
-      drawObj(spr, opx, opy, {feet:!isDoor && ot!==CHEST && ot!==STAIRS && ot!==19 && ot!==BRIDGE, fit: isDoor?(propAt(x,y)&&propAt(x,y).eventGate?1.4:1.02) : ot===SHRINE?2.1 : ot===FORGE?2.3 : big?1.18 : (ot===STAIRS||ot===19)?0.95 : ot===CHEST?.68:0.85, alpha:oa, fill: isDoor&&!(propAt(x,y)&&propAt(x,y).eventGate)});
+      drawObj(spr, opx, opy, {feet:!isDoor && ot!==CHEST && ot!==STAIRS && ot!==19 && ot!==BRIDGE, fit: isDoor?(propAt(x,y)&&propAt(x,y).eventGate?1.4:1.02) : ot===SHRINE?2.1 : ot===FORGE?2.3 : big?1.18 : (ot===STAIRS||ot===19)?0.95 : 0.85, alpha:oa, fill: isDoor&&!(propAt(x,y)&&propAt(x,y).eventGate)});
       if(ot===EXIT && !floorMeta.exitOpen && !floorMeta.caveExit){ ctx.globalAlpha=0.55*oa; ctx.fillStyle='#000'; ctx.fillRect(opx+TS*0.2,opy+TS*0.1,TS*0.6,TS*0.8); ctx.globalAlpha=1; }
       if(ot===SEALED && !(propAt(x,y)&&propAt(x,y).eventGate) && !(floorMeta.crystalDoor && floorMeta.crystalDoor.x===x && floorMeta.crystalDoor.y===y)){ ctx.globalAlpha=0.35*oa; ctx.fillStyle='#6FB7FF'; ctx.fillRect(opx,opy,TS,TS); ctx.globalAlpha=1; }
     } else {

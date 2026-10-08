@@ -77,9 +77,9 @@
     var small=/^(scatter-water-|scatter-air-|embers-slag-|crystal-.+-small|pebbles|rubble-small|loose-stones)/.test(p.artName||p.name||'')||/mushroom|shroom|fungus/.test((p.name||'')+' '+(p.artName||''));
     if(small)return {scale:.5,anchor:p.flat?.5:.96};
     var vessel=(p.name||'')+' '+(p.artName||'');
-    // Crates and pots retain their original authored size, including saved groups.
-    if(/(?:^| )(?:pot|crate|stack-group)(?:-| |$)/.test(vessel)||p.name==='stack-group')return {scale:1,anchor:.5};
-    if(/(?:^| )(?:chest|urn|soul-urn|pot|crate|stack-group|brazier|soul-brazier|incense)(?:-| |$)/.test(vessel)||p.name==='stack-group'||p.name==='urn-group')return {scale:.8,anchor:.5};
+    // Chests, crates and pots retain their original authored size, including saved groups.
+    if(/(?:^| )(?:chest|pot|crate|stack-group)(?:-| |$)/.test(vessel)||p.name==='stack-group')return {scale:1,anchor:.5};
+    if(/(?:^| )(?:urn|soul-urn|pot|crate|stack-group|brazier|soul-brazier|incense)(?:-| |$)/.test(vessel)||p.name==='stack-group'||p.name==='urn-group')return {scale:.8,anchor:.5};
     if(p.artName)return null;
     var name=p.name==='stack-group'&&(p.clusterFamily||(p.kinds||[])[0])==='pot'?'pot':p.name;   // a stacked group of pots is a pot
     if(!Object.prototype.hasOwnProperty.call(FIT,name))return null;

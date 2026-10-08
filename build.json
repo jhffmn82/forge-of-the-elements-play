@@ -1,9 +1,9 @@
 {
   "version": "Beta 1.6",
-  "built": "2026-10-08T21:47:16.171182+00:00",
-  "epoch": 1791496036,
-  "source": "Bat visual flight at chest height; ground shadow and other flying creatures unchanged",
+  "built": "2026-10-08T21:57:49.630227+00:00",
+  "epoch": 1791496669,
+  "source": "Restore original closed and opened chest sizes; retain bat chest-height flight",
   "candidate": true,
   "releaseState": "playtest",
-  "revision": "beta16-bat-hover-20261008-214716"
+  "revision": "beta16-chest-scale-20261008-215749"
 }
