@@ -890,9 +890,9 @@ function shadeSummonSheet(){
 /* 2026-10-08 (Justin: 'the dwarf idle needs like 10 regular idles into the beer'; 'he only does it when his off hand
    is free'). The Dwarf male tourist's sheet has one more row, beer, with its play order written beside it
    (clips.beer.play: [frame, ms] pairs; clips.beer.after: the idle loops before it). After that many ordinary idle loops
-   in a row, with the off hand empty and no foe in view, the row plays once; then the idle starts again from its first
+   in a row, with the off hand empty or holding the Camera and no foe in view, the row plays once; then the idle starts again from its first
    frame and the count from nothing. A key, a click, a touch or the wheel, a turn passing, a clip, a step, a foe coming
-   into view or something put in the off hand ends it at once and starts the count again.
+   into view or another item put in the off hand ends it at once and starts the count again.
    It is a picture only: it reads the clock and the state and writes nothing but BEER, which nothing else reads. It sets
    no clip, so no turn waits for it and input is never held (turnPlayerAnimationWait reads e._clip only).
    A weapon in the main hand keeps the angle and the layer of the row's first frame, as in any idle (equip.js keep), and
@@ -901,11 +901,11 @@ var BEER={from:0, start:null, resume:null, seen:0, input:0, clip:null, turn:unde
 if(typeof window!=='undefined' && window.addEventListener) ['keydown','pointerdown','touchstart','wheel'].forEach(function(n){
   window.addEventListener(n, function(){ BEER.input=performance.now(); }, {capture:true, passive:true});
 });
-/* the off hand is empty: nothing in it (the Tourist's Camera counts as something), no two-hander, no bow */
+/* The Camera permits drinking; other offhand items, two-handers and bows occupy the beer hand. */
 function beerHandFree(e){
   var off=e.off, key=typeof heldKeyOf==='function' ? heldKeyOf(e.weapon) : null;
   if(e.twoHanded || (key && typeof HELD!=='undefined' && HELD[key] && HELD[key].hand==='l')) return false;
-  return !off || (typeof EMPTY_OFF!=='undefined' && off===EMPTY_OFF) || (!off.kind && off.name==='Empty');
+  return !off || (typeof EMPTY_OFF!=='undefined' && off===EMPTY_OFF) || (!off.kind && off.name==='Empty') || off.key==='camera' || off.name==='Camera';
 }
 /* the standing frame of a look with a beer row: the beer while it plays, else the idle (the same frame clipFrame's own
    idle line gives until a beer has played; after one, the idle restarts where the beer ended) */
