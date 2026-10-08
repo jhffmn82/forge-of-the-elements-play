@@ -1709,7 +1709,8 @@ function drawScene(){
     standing(renderPos(e).y+(!isShadeSummon(e)&&!e.livingFlame&&e.base.big||1),function(){
     var off=entOffset(e), rp=renderPos(e);
     atTile(rp.x,rp.y,function(px0,py0){
-      var px=px0+off[0]+shakeOf(e), py=py0+off[1]-rp.hop*TS*0.14 - (e.base.flying ? TS*0.12 + (ANIM.reduce?0:Math.sin(now/180+e.id)*TS*0.04) : 0);
+      // The bat's body flies at chest height; its contact shadow stays on the floor.
+      var px=px0+off[0]+shakeOf(e), py=py0+off[1]-rp.hop*TS*0.14 - (e.base.flying ? TS*(e.base.sprite==='m-bat'?0.50:0.12) + (ANIM.reduce?0:Math.sin(now/180+e.id)*TS*0.04) : 0);
       drawActorContactShadow(e,px0,py0);
       /* 2026-09-28: a creature faces the way it last stepped or struck (it used to face the player whatever it did, so a wanderer
          walked backwards); one that has not moved yet faces the player */
