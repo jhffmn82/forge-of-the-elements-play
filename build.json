@@ -1,9 +1,9 @@
 {
   "version": "Beta 1.6",
-  "built": "2026-10-08T12:56:44.995234+00:00",
-  "epoch": 1791464204,
-  "source": "Approved audit follow-up, native navigation and quiet targeting, fluid barrel metadata and new intro; runtime 32620f78ede791fe60fb70cbdbae2d6b039a39a513a1607b21b4cfb36900848e",
+  "built": "2026-10-08T13:23:34.617721+00:00",
+  "epoch": 1791465814,
+  "source": "Approved full-height title footage centered at two-thirds width; preceding approved Play runtime 32620f78ede791fe60fb70cbdbae2d6b039a39a513a1607b21b4cfb36900848e",
   "candidate": true,
   "releaseState": "playtest",
-  "revision": "beta16-release-followup-20261008-125644"
+  "revision": "beta16-title-framing-20261008-132334"
 }

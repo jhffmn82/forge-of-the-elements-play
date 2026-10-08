@@ -1,8 +1,9 @@
 /* The title uses recorded game-canvas footage and the existing menu actions. */
 #title{position:fixed;inset:0;z-index:45;display:none;overflow:hidden;background:#100e0c;}
 #title.on{display:block;}
-#title .title-film{position:absolute;inset:0 0 0 33%;background:#100e0c url(../art/title/combat-trailer-poster.jpg) center/contain no-repeat;}
-#title .title-film video{width:100%;height:100%;object-fit:contain;object-position:center;image-rendering:pixelated;}
+/* Keep the footage full height, centered two-thirds across the screen. */
+#title .title-film{position:absolute;inset:0 auto 0 66.666667%;height:100%;aspect-ratio:16/9;transform:translateX(-50%);background:#100e0c url(../art/title/combat-trailer-poster.jpg) center/cover no-repeat;}
+#title .title-film video{width:100%;height:100%;object-fit:cover;object-position:center;image-rendering:pixelated;}
 #title::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(90deg,#100e0c 0%,#100e0c 29%,#100e0cdd 34%,#100e0c30 41%,transparent 48%),linear-gradient(0deg,#100e0cbb,transparent 18%,transparent 88%,#100e0c77);}
 #title .title-content{position:absolute;inset:0;z-index:1;}
 #title .menu{position:absolute;left:max(32px,5vw,env(safe-area-inset-left,0px));top:50%;transform:translateY(-50%);width:clamp(270px,29vw,390px);max-height:calc(100% - 48px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));overflow-y:auto;display:flex;flex-direction:column;gap:10px;padding:3px;}
@@ -46,11 +47,10 @@ body[data-ui-theme] #title .title-playback{position:absolute;z-index:2;right:max
  body[data-ui-theme] #title .menu .title-primary{min-height:44px;font-size:calc(21px + var(--ui-mobile-text-add,0px));}
  #title .title-secondary{gap:5px;}
  body[data-ui-theme] #title .menu #tUpdate{margin-top:0;padding:2px 0;}
- #title .title-film{left:29%;}
  body[data-ui-theme] #title .title-playback{right:10px;bottom:8px;font-size:calc(10px + var(--ui-mobile-text-add,0px));}
 }
 @media(max-aspect-ratio:1/1){
- #title .title-film{inset:0;opacity:.5;}
+ #title .title-film{opacity:.5;}
  #title::after{background:linear-gradient(90deg,#100e0cf5,#100e0c80);}
  #title .menu{width:min(350px,calc(100% - 48px));left:24px;}
 }
