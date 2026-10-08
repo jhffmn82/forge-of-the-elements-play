@@ -88,6 +88,7 @@ function betaEnemyBalance(e){
   applyUnderdarkEnemyTuning(e);
   if(typeof applyCavernEnemyTuning==='function')applyCavernEnemyTuning(e);
   applyElementalingBiomeTuning(e);
+  applyUnderdarkEnemyDamageBonus(e);
 }
 /* Slightly tougher than a strong ordinary resident, after the same biome
  * tuning. Their existing half-strength elemental damage counts toward the
@@ -119,6 +120,15 @@ function applyUnderdarkEnemyTuning(e){
  if(e.hp>0)e.hp=Math.max(1,Math.min(e.maxhp,Math.round(e.maxhp*fraction)));
  e.dmg=(e.dmg||e.base.dmg).map(function(value){return underdarkEnemyStat(e,value);});
  e.underdark25Adjusted=true;
+}
+/* All hostiles encountered here, including visitors and elementalings. Apply
+ * after base/biome replacement, without changing fixed abilities or status ticks. */
+function applyUnderdarkEnemyDamageBonus(e){
+ if(!e||!e.foe||e.ally||!e.base||e.base.object||e.underdarkDamage3Adjusted||
+  floorNo<16||floorNo>20||floorMeta.plane||floorMeta.chaosPreview||!Number.isFinite(e.maxhp)||e.maxhp<=0)return;
+ var damage=e.dmg||e.base.dmg;
+ if(!Array.isArray(damage)||damage.length!==2||!damage.every(Number.isFinite))return;
+ e.dmg=damage.map(function(value){return value+3;});e.underdarkDamage3Adjusted=true;
 }
 
 

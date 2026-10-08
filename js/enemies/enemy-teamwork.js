@@ -92,6 +92,7 @@ var FoteEnemyTeamwork=(function(){
  function shaman(e,target){
   e.castCd=(e.castCd||0)-1;
   if(retreat(e,target))return true;
+  if(target.x!==e.x)e.facingLeft=target.x<e.x;   /* 2026-10-06 (Justin: 'the goblin shamans are facing away from the player'): it backed off facing the way it stepped, and cast with its back turned */
   if(dist(e,target)<=e.base.castRange&&e.castCd<=0&&clearShot(e,target)){
    e.castCd=e.base.castEvery;setClip(e,'attack');sfx('shaman-cast',{from:e});boltFx(e.x,e.y,target.x,target.y,'fire');
    var chance=hitChance(accOf(e)+10,evaOf(target));if(target===player)chance=hostileHitChance(chance,true);

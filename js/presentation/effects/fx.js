@@ -175,6 +175,7 @@ function drawArrowInFlight(){
   head(); ctx.fillStyle='#D6DCE2'; ctx.fill();
 }
 
+var FLOAT_TEXT_TILE=64;   /* the tile size past which floating text no longer grows (see the text branch of drawFX) */
 function drawFX(){
   var now=performance.now(), dt=Math.min(64, now-FX_LAST); FX_LAST=now;
   var keep=[];
@@ -194,7 +195,9 @@ function drawFX(){
       var px=(f.x-camX+0.5+f.jitter)*TS, py=(f.y-camY)*TS;
       var rise=TS*0.9*p;
       ctx.globalAlpha = p<0.75 ? 1 : (1-p)/0.25;
-      var fs=Math.max(9,Math.round(TS*(f.big?0.43:0.33)*(p<0.12 ? 0.7+p*2.5 : 1)));
+      /* 2026-10-06 (Justin: 'why is the text so large? we have to fix that'): a floating word was a third of a tile with no
+         limit, so at the closest zoom (96 px tiles) it was half again as large as at the usual one. It stops growing at a 64 px tile. */
+      var fs=Math.max(9,Math.round(Math.min(TS,FLOAT_TEXT_TILE)*(f.big?0.43:0.33)*(p<0.12 ? 0.7+p*2.5 : 1)));
       ctx.font='500 '+fs+'px "IBM Plex Mono",monospace'; ctx.textAlign='center'; ctx.textBaseline='middle';
       var width=ctx.measureText(String(f.text)).width;
       if(width>TS*1.8){

@@ -37,7 +37,7 @@ function transmutationKey(item,kind){
 }
 function transmutationKeys(item,kind){
   var key=transmutationKey(item,kind);if(!key)return [];
-  return Object.keys(transmutationCatalog(kind)).filter(function(k){return k!==key;});
+  return FoteGear.transmutationKeys(kind,key,transmutationCatalog(kind));
 }
 function transmutedGear(item,kind,key){
   var table=transmutationCatalog(kind),base=table[key];if(!base)return null;

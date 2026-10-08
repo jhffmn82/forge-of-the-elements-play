@@ -106,7 +106,7 @@ function rollCharacterChoice(){
   return c;
 }
 function lookFor(c){ var s=RACES[c.race].sexes[c.sex]; return c.race==='fae' ? s.replace('%s', c.court) : s; }
-function creationCastLook(c){return castLookFor(lookFor(c),c.cls==='cleric'?c.god:null);}
+function creationCastLook(c){return castLookFor(lookFor(c),c.cls==='cleric'?c.god:null,c.cls);}
 function statsFor(c){
   var s={mig:10,agi:10,vit:10,foc:10}, rm=RACES[c.race].mods, cm=CLASSES[c.cls].mods;
   for(var k in s){ s[k]+= (rm[k]||0) + (cm[k]||0) + (c.race==='human'?1:0); }

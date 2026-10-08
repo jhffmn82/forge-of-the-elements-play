@@ -789,8 +789,8 @@ Object.keys(ROW_HOLD).forEach(function(k){ ROW_HOLD[k]=ROW_HOLD[k].map(function(
 function clipRow(sheet, name, clip){
   var r=CLIP_ROW[name], look=sheet.look;
   if(!r || !look) return null;
-  var bare=/-unclad$/.test(look);
-  if(typeof r!=='string') r=!clip || (clip.art===undefined && !bare) ? null : r[clip.off || bare ? 'fist' : clip.art||'fist'];
+  var bare=/-unclad$/.test(look), tour=name==='melee' && /-tourist$/.test(look);   /* 2026-10-08: a tourist's old melee row is a plain copy, so a swing that names no weapon (a bellow) plays its punch row, as on the unclad looks */
+  if(typeof r!=='string') r=!clip || (clip.art===undefined && !bare && !tour) ? null : r[clip.off || bare ? 'fist' : clip.art||'fist'];
   var c=r && sheet.m.clips && sheet.m.clips[r];
   return c && c.old===name && !(CLIP_ROW_OFF && CLIP_ROW_OFF.test(look+' '+r)) ? r : null;
 }
@@ -843,21 +843,27 @@ function setClip(e, name, wpn){
   if(seen) fxClock = t0 + CLIP_WINDUP[name];
 }
 /* Appearance is derived from current faith; the saved look remains the same
- * race/court/sex identity when joining or leaving Chad. */
-function castLookFor(look,god){
-  var variant=look+'-unclad';
+ * race/court/sex identity when joining or leaving Chad.
+ * 2026-10-08: and from the class. A Tourist is drawn in the vacation outfit of the same race, court and sex
+ * ('<look>-tourist', tools/art/install-rows.py --tourist). The saved look stays the base look, so no save changes.
+ * Chad's rule keeps its priority: a Tourist who follows Chad is drawn in underwear like any other follower (the
+ * Dwarves have no underwear look, so a Dwarf Tourist of Chad keeps the tourist outfit). */
+function castLookFor(look,god,cls){
+  var variant=look+'-unclad', tourist=look+'-tourist';
+  /* 2026-10-08 (Justin, of a Tourist who follows Chad: 'i think they should stay in tourist geer'): the class goes first */
+  if(cls==='tourist' && AS.cast && AS.cast[tourist]) return tourist;
   return god==='grom' && !/^dwarf-[mf]$/.test(look) && AS.cast && AS.cast[variant] ? variant : look;
 }
-function playerCastLook(){return player && castLookFor(player.look,player.god);}
+function playerCastLook(){return player && castLookFor(player.look,player.god,player.cls);}
 function castSheet(look){
   var m=AS.cast && AS.cast[look], img=m && atl('cast-'+look+'.webp');
   if(img)return {img:img,m:m,look:look};
-  if(/-unclad$/.test(look)){
+  if(/-(unclad|tourist)$/.test(look)){
     /* Variant animations load on demand. The preloaded matching doll keeps
      * appearance and attachment anchors stable while that sheet arrives. */
     var doll=m && m.doll && atl('cast-'+look+'-doll.webp');
     if(doll)return {img:doll,m:m.doll,look:look};
-    return castSheet(look.replace(/-unclad$/,''));
+    return castSheet(look.replace(/-(unclad|tourist)$/,''));
   }
   return null;
 }
@@ -880,6 +886,51 @@ function shadeSummonSheet(){
   var ink=canvas.getContext('2d');ink.filter='grayscale(1) brightness(.72)';ink.drawImage(source.img,0,0);ink.filter='none';
   ink.globalCompositeOperation='source-atop';ink.fillStyle='rgba(27,16,43,.4)';ink.fillRect(0,0,canvas.width,canvas.height);
   var sheet={img:canvas,m:source.m};SHADE_SUMMON_ART={source:source.img,sheet:sheet};return sheet;
+}
+/* 2026-10-08 (Justin: 'the dwarf idle needs like 10 regular idles into the beer'; 'he only does it when his off hand
+   is free'). The Dwarf male tourist's sheet has one more row, beer, with its play order written beside it
+   (clips.beer.play: [frame, ms] pairs; clips.beer.after: the idle loops before it). After that many ordinary idle loops
+   in a row, with the off hand empty and no foe in view, the row plays once; then the idle starts again from its first
+   frame and the count from nothing. A key, a click, a touch or the wheel, a turn passing, a clip, a step, a foe coming
+   into view or something put in the off hand ends it at once and starts the count again.
+   It is a picture only: it reads the clock and the state and writes nothing but BEER, which nothing else reads. It sets
+   no clip, so no turn waits for it and input is never held (turnPlayerAnimationWait reads e._clip only).
+   A weapon in the main hand keeps the angle and the layer of the row's first frame, as in any idle (equip.js keep), and
+   the row's weapon-hand point is one point on every frame (install-rows.py), so it cannot wobble. */
+var BEER={from:0, start:null, resume:null, seen:0, input:0, clip:null, turn:undefined};
+if(typeof window!=='undefined' && window.addEventListener) ['keydown','pointerdown','touchstart','wheel'].forEach(function(n){
+  window.addEventListener(n, function(){ BEER.input=performance.now(); }, {capture:true, passive:true});
+});
+/* the off hand is empty: nothing in it (the Tourist's Camera counts as something), no two-hander, no bow */
+function beerHandFree(e){
+  var off=e.off, key=typeof heldKeyOf==='function' ? heldKeyOf(e.weapon) : null;
+  if(e.twoHanded || (key && typeof HELD!=='undefined' && HELD[key] && HELD[key].hand==='l')) return false;
+  return !off || (typeof EMPTY_OFF!=='undefined' && off===EMPTY_OFF) || (!off.kind && off.name==='Empty');
+}
+/* the standing frame of a look with a beer row: the beer while it plays, else the idle (the same frame clipFrame's own
+   idle line gives until a beer has played; after one, the idle restarts where the beer ended) */
+function beerFrame(sheet, e, now, rest){
+  var m=sheet.m, c=m.clips.beer, id=m.clips.idle2, cell=m.cell, B=BEER;
+  if(!c || !c.play || !id || e!==player) return null;
+  var L=id.frames*CLIP_MS.idle, t=typeof turn==='number' ? turn : undefined;
+  var ok=!ANIM.reduce && e.hp>0 && beerHandFree(e) && !(typeof foesInView==='function' && foesInView()>0);
+  if(!ok || B.input>B.from || now-B.seen>250 || B.clip!==(e._clip||null) || B.turn!==t){
+    if(B.start!==null){ B.start=null; B.resume=now; }
+    B.from=now;
+  }
+  B.seen=now; B.clip=e._clip||null; B.turn=t;
+  var base=rest===undefined ? -(((e.id||0)*97)%500) : rest;
+  if(B.resume!==null && B.resume>base) base=B.resume;
+  if(B.start===null && ok){
+    var due=base+(Math.max(0, Math.ceil((B.from-base)/L))+(c.after||10))*L;
+    if(now>=due) B.start=due;
+  }
+  if(B.start!==null){
+    var q=now-B.start;
+    for(var i=0;i<c.play.length;i++){ if(q<c.play[i][1]) return {sx:c.play[i][0]*cell, sy:c.row*cell, add:'beer'}; q-=c.play[i][1]; }
+    B.resume=base=now-q; B.start=null; B.from=B.resume;
+  }
+  return {sx:(Math.floor((now-base)/CLIP_MS.idle)%id.frames)*cell, sy:id.row*cell, add:'idle2'};
 }
 function clipFrame(sheet, e, sliding){
   var m=sheet.m, now=performance.now(), cell=m.cell, rest;
@@ -940,6 +991,8 @@ function clipFrame(sheet, e, sliding){
   var nw=sliding && sheet.look && typeof slideWalked==='function' && clipRow(sheet,'walk',{art:typeof heldKeyOf==='function' && typeof castEquipmentFor==='function' ? heldKeyOf(castEquipmentFor(e).weapon) : null});
   if(nw){ var rn=m.clips[nw]; return {sx:(Math.floor(slideWalked(e,now))%rn.frames)*cell, sy:rn.row*cell, add:nw}; }
   var ni=!sliding && sheet.look && clipRow(sheet,'idle');   /* 2026-10-06: standing only (a look on the move with no run row keeps its walk row) */
+  var nb=ni==='idle2' && m.clips.beer && typeof beerFrame==='function' && beerFrame(sheet, e, now, rest);   /* 2026-10-08: the Dwarf male tourist's beer */
+  if(nb) return nb;
   if(ni){ var i2=m.clips[ni]; return {sx:(Math.floor((now+(rest===undefined ? ((e.id||0)*97)%500 : -rest))/CLIP_MS.idle)%i2.frames)*cell, sy:i2.row*cell, add:ni}; }
   /* 2026-10-05 (slice 1c; Justin 09-22: walking stuttered, 10-04: 'feet movement during walking isn't there or
      consistent'). The hero's walk frame came off the wall clock: about three frames a tile, starting anywhere in the

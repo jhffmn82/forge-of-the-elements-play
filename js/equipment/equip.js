@@ -704,7 +704,7 @@ function dollStillRow(sheet){
 }
 function watchDollArt(el,size,who,portrait,currentPlayer){
   if(typeof watchStaticArt!=='function')return;
-  var look=castLookFor(who.look,who.god),m=AS.cast&&AS.cast[look],files=[];
+  var look=castLookFor(who.look,who.god,who.cls),m=AS.cast&&AS.cast[look],files=[];
   var sheet=dollSheetFor(look);
   if(m && m.doll && (!sheet || sheet.m!==m.doll))files.push('cast-'+look+'-doll.webp');
   if(m && !sheet && dollCastFallback(look))files.push('cast-'+look+'.webp');
@@ -713,14 +713,14 @@ function watchDollArt(el,size,who,portrait,currentPlayer){
   var repaint=function(){
     if(portrait)paintDollPortrait(el,size,who);else paintDoll(el,size,who);
   };
-  watchStaticArt(el,files,repaint,function(){return (!currentPlayer||who===player) && castLookFor(who.look,who.god)===look;},null,null,repaint);
+  watchStaticArt(el,files,repaint,function(){return (!currentPlayer||who===player) && castLookFor(who.look,who.god,who.cls)===look;},null,null,repaint);
 }
 function paintDoll(el, size, who){
   if(!el)return;
   var currentPlayer=!who||who===player;
   if(typeof cancelStaticArtPaint==='function')cancelStaticArtPaint(el);
   who=who||player;if(!who)return;
-  var look=castLookFor(who.look,who.god),cs=dollSheetFor(look),preferred=AS.cast&&AS.cast[look];
+  var look=castLookFor(who.look,who.god,who.cls),cs=dollSheetFor(look),preferred=AS.cast&&AS.cast[look];
   var hi=!!(cs && preferred && cs.m===preferred.doll);
   if(!cs){el.replaceChildren();watchDollArt(el,size,who,false,currentPlayer);return;}
   if((!AS.map || !AS.map.held) && !/-unclad$/.test(look)){paintArt(el,'cast',look,size);watchDollArt(el,size,who,false,currentPlayer);return;}
@@ -758,7 +758,7 @@ function paintDollPortrait(el,size,who){
   var currentPlayer=!who||who===player;
   if(typeof cancelStaticArtPaint==='function')cancelStaticArtPaint(el);
   who=who||player;if(!who)return false;
-  var look=castLookFor(who.look,who.god),sheet=dollSheetFor(look);
+  var look=castLookFor(who.look,who.god,who.cls),sheet=dollSheetFor(look);
   var full=AS.cast && AS.cast[look],dm=full && full.doll,native=!!(sheet && sheet.m===dm);
   if(!sheet){el.replaceChildren();watchDollArt(el,size,who,true,currentPlayer);return false;}
   var m=sheet.m,row=dollStillRow(sheet);

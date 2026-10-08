@@ -11,6 +11,11 @@
     charges=Math.min(charges,amuletCapacity({level:level}));
     return {level:level,charges:charges,progress:progress,charge:charges>0?0:Math.max(1,kills-(progress||0))};
   }
+  function transmutationKeys(kind,key,catalog){
+    if(!catalog||!catalog[key])return [];
+    // Tourist keepsakes may be transformed, but are never transmutation results.
+    return Object.keys(catalog).filter(function(next){return next!==key&&!(kind==='off'&&next==='camera')&&!(kind==='armor'&&next==='shirt');});
+  }
   function transmute(item,kind,key,base){
     if(!item||item.unarmed||!base||['ring','amulet','weapon','off','armor'].indexOf(kind)<0)return null;
     var identity=kind==='ring'?'ring':kind==='amulet'?'amulet':'key';
@@ -22,6 +27,6 @@
     if(kind==='amulet')['level','charges','progress','charge','uses'].forEach(function(field){if(Object.prototype.hasOwnProperty.call(item,field))next[field]=item[field];});
     return next;
   }
-  var api=Object.freeze({ringPower:ringPower,cursedMending:cursedMending,amuletCapacity:amuletCapacity,amuletKills:amuletKills,amuletState:amuletState,transmute:transmute});
+  var api=Object.freeze({ringPower:ringPower,cursedMending:cursedMending,amuletCapacity:amuletCapacity,amuletKills:amuletKills,amuletState:amuletState,transmutationKeys:transmutationKeys,transmute:transmute});
   root.FoteGear=api;if(typeof module==='object'&&module.exports)module.exports=api;
 })(typeof globalThis==='object'?globalThis:this);

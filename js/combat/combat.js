@@ -318,6 +318,7 @@ function monsterFireboltAct(e,target){
   if(e.castCd>0||!clearShot(e,target))return false;
   var ability={id:'monster-firebolt',name:'Firebolt',kind:'bolt',type:'fire',el:'fire'},tags=['spell','single-target','projectile','ranged'];
   gameActions.run('spell',e,target,{ability:ability,tags:tags},function(event){
+  if(target.x!==e.x)e.facingLeft=target.x<e.x;   /* a caster turns to what it casts at */
   e.castCd=e.base.castEvery;setClip(e,'attack');sfx('shaman-cast',{from:e});boltFx(e.x,e.y,target.x,target.y,'fire');
   var chance=hitChance(accOf(e)+10,evaOf(target));if(target===player)chance=hostileHitChance(chance,true);
   if(rng()<chance){

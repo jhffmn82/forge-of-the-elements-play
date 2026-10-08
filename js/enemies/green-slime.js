@@ -35,6 +35,8 @@ var FoteGreenSlime=(function(){
   var child=spawnRaw(e.kind,cell.x,cell.y,{base:Object.assign({},e.base),ally:!!e.ally});
   child.hp=hp;child.maxhp=e.maxhp;child.noLoot=true;child.noXp=true;child.slimeDescendant=true;child.state='hunt';
   child.name=e.name;child.base=Object.assign({},e.base);child.dmg=(e.dmg||e.base.dmg).slice();child.beta11Balanced=e.beta11Balanced;
+  // The copied damage already includes any applied Underdark bonus.
+  if(e.underdarkDamage3Adjusted)child.underdarkDamage3Adjusted=true;
   if(e.ally){
    child.foe=false;child.ally=true;child.state='ally';child.col=e.col;
    ['shade','shadeOwnerId','shadeSourceKind','shadeRootId','shadeLife','life','murkBaseHp','noReward'].forEach(function(key){if(e[key]!==undefined)child[key]=e[key];});
