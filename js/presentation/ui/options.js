@@ -206,7 +206,7 @@ function settingsHTML(){
   BIND_ACTIONS.forEach(function(b){var k=bindKey(b[0]);bindings+='<span>'+b[1]+'</span><button data-bind="'+b[0]+'" class="'+(REBINDING===b[0]?'wait':BINDS[b[0]]?'custom':'')+'">'+(REBINDING===b[0]?'press a key':keyLabel(k))+'</button>';});
   bindings+='</div><div class="optrow"><button id="bindReset">Reset keyboard controls</button></div><div class="c-info">Arrow keys always move. Esc closes windows.</div></details>';
   var h='<div class="opt-how-to"><button type="button" id="howToPlay">How to play</button><span class="c-info">Movement, turns, items and character growth.</span></div><div class="optgrid">';
-  h+='<section class="opt-section"><div class="sec">Interface</div>';
+  h+='<section class="opt-section"><div class="sec">Interface</div>'+row(touch?'touchPad':'desktopPad','Movement pad',[['on','On'],['off','Off']],(touch?UI_TOUCH_PAD:UI_DESKTOP_PAD)?'on':'off',phone?'With the pad off, Search stays available beside the hotbar.':'');
   if(innerWidth>=960&&innerHeight>=600)h+=appearanceSegments('uiHudMode','Interface layout',UI_HUD_MODES,UI_HUD_MODE);
   h+=appearanceDropdown('uiTheme','Theme',UI_THEMES,UI_THEME)+appearanceSegments('uiTextSize','Text size',UI_TEXT_SIZES,UI_TEXT_SIZE)+appearanceSegments('uiStatusSize','Status size',UI_STATUS_SIZES,UI_STATUS_SIZE)+appearanceSegments('uiSide','Status position',{left:'Left',right:'Right'},UI_SIDE)+
     '<label class="optrow ui-opacity-row"><span>Button transparency <output id="uiOpacityValue" for="uiOpacity">'+(100-UI_OPACITY)+'%</output></span><input type="range" id="uiOpacity" min="0" max="100" step="5" value="'+(100-UI_OPACITY)+'" aria-label="Button transparency" aria-describedby="uiOpacityHint"></label><div id="uiOpacityHint" class="c-info">Fades hotbar and map action button backgrounds; panels, text and icons stay solid.</div><div class="optrow"><button type="button" id="resetUITheme">Reset theme and transparency</button></div></section>';
@@ -217,7 +217,7 @@ function settingsHTML(){
     row('motion','Ambient motion',[['auto','Auto'],['on','On'],['off','Off']],ANIM.mode,'Sway, flicker and bobbing. Auto follows your device motion preference.')+
     row('speed','Animation speed',[[1,'1&times;'],[1.5,'1.5&times;'],[2,'2&times;'],[3,'3&times;']],ANIM_SPEED)+'</section>';
   h+='<section class="opt-section"><div class="sec">Controls</div>'+appearanceSegments('uiHotbarLayout',phone?'Landscape hotbar':'Hotbar layout',UI_HOTBAR_LAYOUTS,UI_HOTBAR_LAYOUT)+(phone?'<div class="c-info">Portrait uses two rows. Landscape uses your chosen layout.</div>':'')+
-    row(touch?'touchPad':'desktopPad','Movement pad',[['on','On'],['off','Off']],(touch?UI_TOUCH_PAD:UI_DESKTOP_PAD)?'on':'off',phone?'With the pad off, Search stays available beside the hotbar.':'')+
+
     appearanceSegments('uiPadSide','Pad position',UI_PAD_SIDES,UI_PAD_SIDE)+appearanceSegments('uiPhonePadSize','Pad size',UI_PHONE_PAD_SIZES,UI_PHONE_PAD_SIZE)+'</section>';
   h+='<section class="opt-section"><div class="sec">Audio</div>'+row('mute','Sound',[[0,'On'],[1,'Off']],AUDIO.muted?1:0)+row('music','Music',[[1,'On'],[0,'Off']],AUDIO.musicOn?1:0)+
     '<label class="optrow"><span>Effects volume</span><input type="range" id="volSfx" min="0" max="100" value="'+Math.round((AUDIO.vol.sfx||0)*100)+'"></label><label class="optrow"><span>Music volume</span><input type="range" id="volMusic" min="0" max="100" value="'+Math.round((AUDIO.vol.music||0)*100)+'"></label></section>'+bindings;

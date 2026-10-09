@@ -1193,6 +1193,11 @@ body.fote-study.study-minimal.study-touch.study-small-touch.study-hotbar-vertica
 body.fote-study.study-minimal.study-touch.study-small-touch.study-hotbar-vertical.study-pad-right:not(.study-portrait):not(.study-tablet) #app #studyActionBar{right:auto;left:calc(var(--minimal-inset) + env(safe-area-inset-left,0px));}
 }
 /* Larger phone actions share the landscape hotbar's column rhythm. */
+@media (orientation:landscape) and (max-height:599px){
+body.fote-study.study-minimal.study-touch.study-small-touch:not(.study-tablet):not(.study-portrait):not(.study-hotbar-vertical){--minimal-hotbar-gap:4px;--minimal-slot:min(80px,calc((100vw - 2 * var(--minimal-inset) - 7 * var(--minimal-hotbar-gap) - env(safe-area-inset-left,0px) - env(safe-area-inset-right,0px)) / 8));}
+/* Center the horizontal rail inside the same safe area used to size its slots. */
+body.fote-study.study-minimal.study-touch.study-small-touch:not(.study-tablet):not(.study-portrait):not(.study-hotbar-vertical) #app #hotbar{left:calc((100vw + env(safe-area-inset-left,0px) - env(safe-area-inset-right,0px)) / 2);}
+}
 /* Keep map detail visible through phone controls without fading their icons. */
 body.fote-study #app :is(#studyMenuToggle,#bMap,#studyExplore,#studyInventoryIcon,#studySearch,#studyCancelAim),
 body.fote-study #app #hotbar .slot{background:var(--ui-control-background,var(--ui-log-tint))!important;}
