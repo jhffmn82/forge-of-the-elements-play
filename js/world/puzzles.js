@@ -32,7 +32,7 @@ var PUZZLE_KINDS = {
 
 /* ---------------------------------------------------------------- the plan: which floors get which room */
 function puzzlePlan(){
-  var preview=globalThis.FoteRoomPreview;if(RUN.sandbox&&preview&&preview.type==='puzzle'){var forced={};forced[floorNo]=preview.kind==='crystal'?{crystal:true}:{sigilRoom:preview.kind};return forced;}
+  var preview=globalThis.FoteRoomPreview;if(RUN.sandbox&&preview&&preview.type==='puzzle'){var forced={};forced[floorNo]=preview.kind==='crystal'?{crystal:true}:preview.kind==='elemental-lock'?{elementalTreasure:true}:{sigilRoom:preview.kind};return forced;}
   var b=bidx();
   if(b===0 && RUN.puzzlePlan) return RUN.puzzlePlan;
   RUN.puzzlePlans=RUN.puzzlePlans||{}; if(b>0 && RUN.puzzlePlans[b]) return RUN.puzzlePlans[b];
@@ -42,7 +42,7 @@ function puzzlePlan(){
   var k1=kinds[Math.floor(r()*kinds.length)], k2;
   do { k2=kinds[Math.floor(r()*kinds.length)]; } while(PUZZLE_KINDS[k2].el===PUZZLE_KINDS[k1].el);
   plan[floors[0]]={sigilRoom:k1}; plan[floors[1]]={sigilRoom:k2};
-  plan[floors[2]]={crystal:true};
+  plan[floors[2]]=r()<.5?{crystal:true}:{elementalTreasure:true};
   if(b===0) RUN.puzzlePlan=plan; else RUN.puzzlePlans[b]=plan;
   return plan;
 }
@@ -200,6 +200,37 @@ function placeSigilRoom(kind){
   placeSolution(kind);
   floorMeta.notes.push('<b>'+P.name+'.</b> '+P.note);
   floorMeta.entrances=(floorMeta.entrances||[]);
+}
+function elementalTreasureEquipment(element){
+  var choices={fighter:['mace','axe'],warrior:['mace','axe'],scoundrel:['bow','dagger'],mage:['wand','staff'],cleric:['censer','sigil'],tourist:Object.keys(WEAPONS)};
+  var key=pick(choices[player.cls]||choices.fighter);
+  if(key==='sigil')return {kind:'sigil',use:pick(Object.keys(SIGILS).filter(function(k){return SIGILS[k].motes.length>=2;}))};
+  var it=clone(WEAPONS[key]);it.tier=Math.min(3,2+Math.floor(bidx()/2));it.plus=2+bidx();it.enchant=element;it.cursed=false;it.unid=true;tierNormalize(it);
+  return {kind:'weapon',it:it};
+}
+function buildElementalTreasureRoom(){
+  var pk=carvePocket(4,3,5,4);if(!pk)return false;
+  var room=pk.room,element=pick(ELEMENTS),cost=bidx()+1;
+  var lock=null,lockData={keep:true,element:element,moteCost:cost,motesOnly:true,door:{x:pk.door.x,y:pk.door.y}};
+  function placeLock(cell){var owner=cell&&roomAt(cell.x,cell.y);return owner&&freeCell(cell.x,cell.y)&&roomFurnitureKeepsOpen(owner,cell)?addProp(cell.x,cell.y,'elemental-lock',lockData):null;}
+  for(var attempt=0;attempt<80&&!lock;attempt++)lock=placeLock(mainRoomCell());
+  if(!lock)lock=placeLock(pk.inside);
+  if(!lock){
+    // Prop admission can reject a reserved aisle after the path check passes.
+    // Restore the newly carved pocket rather than leave treasure without a lock.
+    for(var y=room.y;y<room.y+room.h;y++)for(var x=room.x;x<room.x+room.w;x++)setT(x,y,WALL);
+    rooms.splice(rooms.indexOf(room),1);return false;
+  }
+  var lockCell={x:lock.x,y:lock.y};
+  room.special='elemental-treasure';room.rareEvent='elemental-treasure';
+  setT(pk.door.x,pk.door.y,SEALED);
+  var cells=farFrom(pzCells(room).filter(function(c){return freeCell(c.x,c.y);}),pk.door);
+  var rewards=[elementalTreasureEquipment(element),rng()<.5?{kind:'ring',it:makeRing(null,false)}:{kind:'amulet',it:makeAmulet(null,false)}];
+  for(var i=0;i<3;i++)rewards.push({kind:'essence',n:ri(30,50)+floorNo*5});
+  rewards.forEach(function(it,n){var c=cells[n];it.x=c.x;it.y=c.y;items.push(it);});
+  room.elementalTreasure={door:pk.door,lock:{x:lockCell.x,y:lockCell.y},element:element,moteCost:cost};
+  floorMeta.notes.push('<b>Elemental treasury.</b> A sealed treasure room requires '+cost+' '+element+' mote'+(cost===1?'':'s')+'. All its treasures are yours once opened.');
+  return true;
 }
 function buildCrystalVault(){
   var pk=carvePocket(4,3,6,4)||carvePocket(3,3,5,4); if(!pk) return;
@@ -476,7 +507,7 @@ function buildGeneratedPuzzles(seed){
   }
   var plan=planned[floorNo]; if(!plan) return;
   var saved=rng; rng=mulberry32(((seed||0)^0x51c1)>>>0);
-  try{ if(plan.sigilRoom) buildSigilRoom(plan.sigilRoom); if(plan.crystal) buildCrystalVault(); }
+  try{ if(plan.sigilRoom) buildSigilRoom(plan.sigilRoom); if(plan.crystal) buildCrystalVault(); if(plan.elementalTreasure) buildElementalTreasureRoom(); }
   finally{ rng=saved; }
 }
 

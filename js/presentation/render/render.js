@@ -1507,6 +1507,92 @@ function drawMapMargins(){
   ctx.restore();
 }
 
+/* ---- map beacons: compact floor markers for live, meaningful interactions ---- */
+function mapBeaconTile(x,y,t){
+  if(t!==STAIRS&&t!==EXIT&&t!==CHEST&&t!==FORGE&&t!==SHRINE)return null;
+  // Chaos currents have their own gate artwork and cues instead of the underlying tile.
+  if(typeof FoteChaosCampaign!=='undefined'&&FoteChaosCampaign.currentInfo(x,y))return null;
+  if(t===STAIRS || t===EXIT&&floorMeta.exitOpen)return '#9FD8FF';
+  if(t===CHEST){
+    var kind=chestKind[idxOf(x,y)];
+    if(kind!=='mimic'&&(kind==='chest-gold'||enhancedChestAt(x,y)))return '#E8B44A';
+  }
+  if(t===FORGE)return '#FF8A3A';
+  if(t===SHRINE)return (GODS[RUN.shrineGod]||{}).color||'#E6D9BC';
+  return null;
+}
+function mapBeaconProp(p){
+  if(p.used)return null;
+  if(p.cleansingShrine)return '#BCA0EF';
+  if(p.offeringBowl){
+    var room=puzzleRoomAt(p.x,p.y);
+    return room&&room.puzzle&&!room.puzzle.solved?'#73EE75':null;
+  }
+  if(p.eventRoom!==undefined){
+    var eventRoom=rooms.find(function(r){return r.id===p.eventRoom;}),event=eventRoom&&eventRoom.uncommonEvent;
+    return event&&!event.used&&(event.kind==='portcullis-cache'||event.kind==='silk-survivor')?'#E8D27A':null;
+  }
+  if(p.altar)return sacrificeNextReward(p)!==null?'#D96A60':null;
+  if(p.prisoner)return !p.ritual||p.captiveHp>0?'#E8D27A':null;
+  if(p.name==='elemental-lock')return !p.opened?AFF_COL[p.element]||'#C9A8FF':null;
+  var lever=leverDetails(p);
+  if(lever)return !lever.used?'#E8D27A':null;
+  if(p.name==='final-forge'&&typeof FoteUnmakerEncounter!=='undefined'){
+    var forge=FoteUnmakerEncounter.forgeInfo(p.x,p.y);
+    return forge&&forge.ready?'#FF8A3A':null;
+  }
+  return null;
+}
+/* One small texture per color, independent of tile size. No new particles or
+ * light sources, and no per-frame gradient allocation for each marker. */
+var MAP_BEACON_GLOWS=Object.create(null);
+function mapBeaconGlow(color){
+  if(MAP_BEACON_GLOWS[color])return MAP_BEACON_GLOWS[color];
+  var canvas=document.createElement('canvas');canvas.width=canvas.height=64;
+  var ink=canvas.getContext('2d'),glow=ink.createRadialGradient(32,32,0,32,32,32);
+  glow.addColorStop(0,hexA(color,.26));glow.addColorStop(.5,hexA(color,.14));glow.addColorStop(1,hexA(color,0));
+  ink.fillStyle=glow;ink.fillRect(0,0,64,64);
+  MAP_BEACON_GLOWS[color]=canvas;return canvas;
+}
+function drawMapBeacon(x,y,w,h,color,alpha,now,scale){
+  scale=scale||1;
+  var cx=(x-camX+w*.5)*TS,cy=(y-camY+h-.18)*TS;
+  var pulse=ANIM.reduce||alpha<1?1:.84+.16*Math.sin(now/720+x*1.3+y*.7);
+  ctx.save();ctx.globalAlpha=alpha*pulse;ctx.imageSmoothingEnabled=true;
+  ctx.drawImage(mapBeaconGlow(color),cx-TS*w*.48*scale,cy-TS*.18*scale,TS*w*.96*scale,TS*.36*scale);
+  ctx.globalAlpha=alpha*(.58+.16*pulse);ctx.strokeStyle=color;ctx.lineWidth=Math.max(1,Math.min(2,TS*.018));
+  ctx.beginPath();ctx.ellipse(cx,cy,TS*w*.38*scale,TS*.14*scale,0,0,Math.PI*2);ctx.stroke();ctx.restore();
+}
+function drawMapBeacons(now){
+  var W=MW,H=MH,M=map,S=seen,V=vis,blind=playerBlind(),all=revealAll&&!blind;
+  var x0=Math.max(0,camX-1),y0=Math.max(0,camY-1),x1=Math.min(W-1,camX+viewW+1),y1=Math.min(H-1,camY+viewH+1);
+  // This pass is above the lightmap: memory needs its own steady, dim alpha.
+  function admission(x,y){var i=y*W+x;return all||V[i]?1:!blind&&S[i]?.35:0;}
+  function paint(x,y,w,h,color,alpha,scale,prop){
+    if(!prop&&scale===1){drawMapBeacon(x,y,w,h,color,alpha,now);return;}
+    // Larger circles extend beyond the anchor tile, but never into unknown cells.
+    var left=Math.floor(Math.min(x,x+w*.5-w*.48*scale)),right=Math.ceil(Math.max(x+w,x+w*.5+w*.48*scale));
+    var top=Math.floor(Math.min(y,y+h-.18-.18*scale)),bottom=Math.ceil(Math.max(y+h,y+h-.18+.18*scale));
+    ctx.save();ctx.beginPath();
+    for(var yy=Math.max(0,top);yy<Math.min(H,bottom);yy++)for(var xx=Math.max(0,left);xx<Math.min(W,right);xx++){
+      if(admission(xx,yy))ctx.rect((xx-camX)*TS,(yy-camY)*TS,TS,TS);
+    }
+    ctx.clip();drawMapBeacon(x,y,w,h,color,alpha,now,scale);ctx.restore();
+  }
+  for(var y=y0;y<=y1;y++)for(var x=x0;x<=x1;x++){
+    var alpha=admission(x,y);if(!alpha)continue;
+    var tile=M[y*W+x],color=mapBeaconTile(x,y,tile);
+    if(color)paint(x,y,1,1,color,alpha,tile===FORGE?1.8:tile===SHRINE?1.6:1,false);
+  }
+  props.forEach(function(p){
+    var w=p.w||1,h=p.h||1;
+    if(p.x+w<x0||p.x>x1||p.y+h<y0||p.y>y1||p.x<0||p.y<0||p.x>=W||p.y>=H)return;
+    var alpha=admission(p.x,p.y);if(!alpha)return;
+    var color=mapBeaconProp(p);if(!color)return;
+    paint(p.x,p.y,w,h,color,alpha,p.name==='final-forge'?1.35:p.cleansingShrine?1.25:1,true);
+  });
+}
+
 /* ============================================================== draw */
 function drawScene(){
   if(!map || !ground) return;
@@ -1709,8 +1795,8 @@ function drawScene(){
     standing(renderPos(e).y+(!isShadeSummon(e)&&!e.livingFlame&&e.base.big||1),function(){
     var off=entOffset(e), rp=renderPos(e);
     atTile(rp.x,rp.y,function(px0,py0){
-      // The bat's body flies at chest height; its contact shadow stays on the floor.
-      var px=px0+off[0]+shakeOf(e), py=py0+off[1]-rp.hop*TS*0.14 - (e.base.flying ? TS*(e.base.sprite==='m-bat'?0.50:0.12) + (ANIM.reduce?0:Math.sin(now/180+e.id)*TS*0.04) : 0);
+      // Only displayed bats get chest-height flight; summons can retain a bat's base data.
+      var px=px0+off[0]+shakeOf(e), py=py0+off[1]-rp.hop*TS*0.14 - (e.base.flying ? TS*(e.base.sprite==='m-bat'&&!isShadeSummon(e)&&!e.livingFlame?0.50:0.12) + (ANIM.reduce?0:Math.sin(now/180+e.id)*TS*0.04) : 0);
       drawActorContactShadow(e,px0,py0);
       /* 2026-09-28: a creature faces the way it last stepped or struck (it used to face the player whatever it did, so a wanderer
          walked backwards); one that has not moved yet faces the player */
@@ -1778,6 +1864,8 @@ function drawScene(){
   drawLights();
   if(typeof FoteChaosCurrentRenderer!=='undefined')FoteChaosCurrentRenderer.drawAll(now);
   objGlintsFlush();
+
+  drawMapBeacons(now);
 
   drawFX();
   ctx.restore(); TILE_FRAME=null;

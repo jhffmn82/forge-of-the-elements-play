@@ -30,6 +30,7 @@ function forgeConfirm(title, text, yesLabel, onYes){
   var tab=forgeTab,body=$('forgeBody'),corePickup=body&&body.hasAttribute('data-core-infusion');
   function back(){ if(corePickup){openCoreInfusion();return;} openForge(); forgeTab=tab; renderForge(); }
   openModal(title, '<p>'+text+'</p>', [{label:'Cancel', fn:function(){ back(); }}, {label:yesLabel, cls:'primary', fn:function(){ onYes(); back(); }}]);
+  var confirm=document.querySelector('#mFoot .primary');if(confirm)confirm.setAttribute('data-forge-confirm','');
 }
 
 /* ---------------------------------------------------------------- enchanting */

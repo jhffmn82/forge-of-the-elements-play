@@ -28,6 +28,8 @@ var REBINDING=null;
 window.addEventListener('keydown', function(ev){
   /* UI controls retain native key activation before any gameplay listener runs. */
   if(ev.key!=='Escape'&&ev.target&&ev.target.closest&&ev.target.closest('[data-game-ui]')){
+    // A held activation key must not accept a newly focused Forge confirmation.
+    if(ev.repeat&&(ev.key==='Enter'||ev.key===' ')&&ev.target.hasAttribute('data-forge-confirm'))ev.preventDefault();
     // Map symbols retain native button keys, but their map binding still closes
     // the overlay. Consume this once here so a translated event cannot reopen it.
     if(typeof AUTOMAP_ON!=='undefined'&&AUTOMAP_ON&&!REBINDING&&ev.target.closest('#automapLandmarks')&&['Enter',' ','Tab'].indexOf(ev.key)<0&&

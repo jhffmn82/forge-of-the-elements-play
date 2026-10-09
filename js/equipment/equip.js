@@ -43,6 +43,7 @@ var HELD = {
                would reach past the feet) stands up out of a hanging fist, follows a raised or thrusting forearm;
      guard   - one-handed swords and knives rest raised toward the face's direction, across the body from the rear hand;
      placed  - a shield or holy symbol sits on the forearm, a tome in the hand, an orb in the palm, all upright while the figure stands.
+     across  - (the two-handed axe, 2026-10-09) level in both hands, on the line through both fists: heldAcross, below.
    2026-10-05 (Justin: 'this isn't his hand, he has the orb hovering on his forearm'; 'gear must read right in idle and
    walk as well as in attacks'). Measured on every clothed look and frame (boards/contact.cjs): the fist points are on the
    painted hands (mean under 2.5 cell px), and the orb was 14.6 px off its hand, on the map and on the doll alike.
@@ -73,7 +74,7 @@ var HELD = {
    HELD_STYLE is the rest carry of each item, one value per item (the mace: 2026-10-06, Justin picked 'upright', which
    stands at the shoulder; 'blade' hung as it always had, 'guard' is raised like the sword). FOTE_HELD_CARRY, review boards only (the game never sets
    it), swaps that value so the other carries can be shown side by side. */
-var HELD_STYLE={sword:'guard', longsword:'upright', axe:'upright', mace:'upright', dagger:'guard', wand:'blade', censer:'guard',
+var HELD_STYLE={sword:'guard', longsword:'upright', axe:'across', mace:'upright', dagger:'guard', wand:'blade', censer:'guard',
   spear:'upright', staff:'upright', bow:'upright'};
 /* GRIP_PULL: the share of the way a hanging item is drawn toward straight down (a blade) or straight up (an upright item),
    weighted by how far the forearm hangs, so nothing snaps as an arm rises. GRIP_BLADE_BEND: a hanging blade's outward cant. */
@@ -82,6 +83,21 @@ var GRIP_PULL=0.5, GRIP_BLADE_BEND=6*Math.PI/180, GRIP_SHIELD_ON_FOREARM=0.30, G
    (2.5 px of 128; boards/contact.cjs measures it). GRIP_HAND_REACH: how far from that middle a hand's own pixels are looked for. */
 var GRIP_HAND=0.02, GRIP_HAND_REACH=0.045;
 function heldStyle(key){ return (typeof FOTE_HELD_CARRY!=='undefined' && FOTE_HELD_CARRY && FOTE_HELD_CARRY[key]) || HELD_STYLE[key] || 'blade'; }
+/* 2026-10-09 (Justin, of the two-handed axe standing upright in the idle: 'it's just held straight up ... could we have it
+   horizontal, held in both hands?'). across: a two-hander lies on the line through both fists of the clip's first frame,
+   which on every row is the stand, so it is level across the hips with its head to the front. Both hands close over it
+   in the idle, the run and on the doll; in a cast or a hit the weapon hand keeps it at that angle while the other hand
+   leaves it; a swing row keeps its own angles from wind-up to follow-through and only its first and last step take
+   this one. Not in the fall (the death rule lays it down as it lays an upright item) and not in a bow shot. Returns the
+   angle in radians, or undefined where the rule does not apply: then the item stands as an upright one does. */
+function heldAcross(key, m, clip, add, offKey){
+  var H=HELD[key];
+  if(!H || !H.two || heldStyle(key)!=='across' || offKey || clip==='death' || clip==='ranged') return undefined;
+  var first=m.grips && m.grips[add||clip] && m.grips[add||clip][0];
+  if(!first || !first.r || !first.l || first.r.z<0 || first.l.z<0) return undefined;
+  return Math.atan2(first.l.f[1]-first.r.f[1], first.l.f[0]-first.r.f[0]);
+}
+function heldAcrossFists(clip){ return clip==='idle' || clip==='walk' || clip==='static' ? ['r','l'] : null; }
 /* how far this hand has come down from where it rests to the floor, 0 to 1 (the death clip lays gear down by it) */
 function heldFall(m, grip, hn, floor){
   var rest=m.grips.idle && m.grips.idle[0] && m.grips.idle[0][hn], y0=rest ? rest.f[1] : floor*0.7;
@@ -461,7 +477,7 @@ function drawHeld(g, key, pose, rest, dx, dy, sc, drawH, enchant, now, tier, han
          falling Elf whose sword hand has one) */
       /* 2026-10-06: toward the side it will lie on when the fall is over (the clip's last frame), not the side its tip
          leans to on this frame: a long weapon lay pointing behind a falling figure, then ahead of it one frame later */
-      if(fall && (gh.a===undefined || heldStyle(key)==='upright')) tip += fall*angDiff(Math.cos(at.end ? heldTipAngle(heldStyle(key), at.end[hk], gside) : tip)<0 ? Math.PI : 0, tip);
+      if(fall && (gh.a===undefined || heldStyle(key)==='upright' || heldStyle(key)==='across')) tip += fall*angDiff(Math.cos(at.end ? heldTipAngle(heldStyle(key), at.end[hk], gside) : tip)<0 ? Math.PI : 0, tip);
       /* the floor. Dying, the item turns about its fist until neither end is under the line: the head end keeps
          GRIP_THICK of the art's width clear (an axe or mace head rests on the floor and the handle runs down to the
          hand), the butt end may just touch. Whatever is still under after that, or in life (a pole's butt or a hanging
@@ -612,6 +628,9 @@ function drawCastLayers(e, cs, fr, dx, dy, w, h, g, time){
     /* 2026-10-05: the idle and the walk keep the angle and the layer of their first frame (see the head of this file) */
     /* 2026-10-06 (the merge): on an added row (run, idle2) the carry is that row's own first frame */
     var keep=(clip==='idle' || clip==='walk') && m.grips[add||clip] && m.grips[add||clip][0] || null, lay=keep || grip;
+    /* 2026-10-09: a two-hander carried across the body (heldAcross). A step that has its own angle keeps it */
+    var acr=mainKey ? heldAcross(mainKey, m, clip, add, offKey) : undefined;
+    if(acr!==undefined && (!sw || sw.a===undefined)) sw=Object.assign({}, sw, {a:acr*180/Math.PI, row:1, fists:heldAcrossFists(clip) || (sw && sw.fists) || [HELD[mainKey].hand]});
     /* 2026-10-06 (Justin: 'during cast the spear in the dwarfs hand was wobbling'): the weapon hand does not cast, and its
        forearm turns a few degrees from frame to frame in the cast art, which rocked a spear or staff about the fist. In a
        cast the main-hand weapon keeps the angle and the layer of the cast's first frame, as an idle or walk loop does. A

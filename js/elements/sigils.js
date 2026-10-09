@@ -24,7 +24,7 @@ var SIGIL_ORDER = {
     haste:     {name:'Sigil of Haste', motes:['air','air'], desc:'Move, attack and cast 30% faster for 20 turns.'},
     stoneskin2:{name:'Earth sigil+', motes:['earth','earth'], desc:'Clear Poison and Stun. Gain a shield and Stone Skin for 30 turns: immunity to Poison, Stun and poison damage, plus physical protection.'},
     heal2:     {name:'Light sigil+', motes:['light','light'], desc:'Heal to full and cleanse harmful statuses.'},
-    vanish2:   {name:'Shadow sigil+', motes:['shadow','shadow'], desc:'Vanish for 5 turns; enemies lose track of you.'},
+    vanish2:   {name:'Shadow sigil+', motes:['shadow','shadow'], hideTurns:10},
     cinder:    {name:'Sigil of Cinder Stride', motes:['fire','air'], desc:'Move, attack and cast 50% faster for 10 turns, leaving fire where you step.'},
     magma:     {name:'Sigil of the Molten Ring', motes:['fire','earth'], desc:'Ignite ground within 2 tiles for 5 turns and Burn nearby enemies for 3 turns. Your attacks and single-target spells deal +5 fire damage for 5 turns.'},
     sunburst:  {name:'Sigil of Sunburst', motes:['fire','light'], desc:'Deal light damage to all visible enemies and Blind them for 3 turns.'},
@@ -41,6 +41,7 @@ var SIGIL_ORDER = {
     wisdom:    {name:'Sigil of Wisdom', motes:['fire','water','air','earth','light','shadow'], desc:'Gain 1 level, up to level 20. Keep your current XP progress.'}
   };
   for(var k in add) S[k]=add[k];
+  ['vanish','vanish2'].forEach(function(key){S[key].desc='Vanish for '+S[key].hideTurns+' turns; enemies lose track of you.';});
   S.identify.name='Sigil of Knowledge'; S.identify.motes=['water'];
   /* 2026-09-17: identifying the entire pack made every unknown drop pointless - the single sigil now reads
      what you are actually wearing (and your sigils); the + version is what identifies the whole bag. */

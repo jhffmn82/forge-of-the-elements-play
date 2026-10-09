@@ -41,7 +41,7 @@ applyStatus(player,'stone',15); log('Stone Skin; Poison and Stun cleared.','c-go
 healPlayer(Math.round(player.maxhp*.35));player.buffs.afterglow=15;sparkleFx(player.x,player.y,'heal',30);
 },
 "vanish":function(context){var use=context.use,F=floorNo,bountySpots=context.spots;
-player.hidden=5; ents.forEach(function(e){ if(e.foe && e.state==='hunt'){ e.state='wander'; e.lastSeen=null; } }); sigilBuffNotice('hidden','Hidden','c-good'); sfx('vanish');
+player.hidden=SIGILS[use].hideTurns; ents.forEach(function(e){ if(e.foe && e.state==='hunt'){ e.state='wander'; e.lastSeen=null; } }); sigilBuffNotice('hidden','Hidden','c-good'); sfx('vanish');
 },
 "identify":function(context){var use=context.use,F=floorNo,bountySpots=context.spots;
 Object.keys(SIGILS).forEach(function(k){ if(player.bag.some(function(b){ return b.kind==='sigil' && b.data.use===k; })) identifySigil(k); });
@@ -82,7 +82,7 @@ applyStatus(player,'stone',30); giveWard(player.maxhp*0.2, 30); log('Stone Skin,
 restoreActorHealth(player,player);cleanseAll();sparkleFx(player.x,player.y,'heal',30);
 },
 "vanish2":function(context){var use=context.use,F=floorNo,bountySpots=context.spots;
-player.hidden=5; ents.forEach(function(e){ if(e.foe && e.state==='hunt'){ e.state='wander'; e.lastSeen=null; } }); sigilBuffNotice('hidden','Hidden','c-good');
+player.hidden=SIGILS[use].hideTurns; ents.forEach(function(e){ if(e.foe && e.state==='hunt'){ e.state='wander'; e.lastSeen=null; } }); sigilBuffNotice('hidden','Hidden','c-good');
 },
 "cinder":function(context){var use=context.use,F=floorNo,bountySpots=context.spots;
 player.buffs.cinder=10; derive(player); player._cinderAt={x:player.x,y:player.y}; log('Cinder Stride: +50% speed; leave burning ground.','c-fire');

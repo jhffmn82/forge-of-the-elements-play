@@ -1,6 +1,6 @@
 # Forge of the Elements
 
-**Beta 1.6 playtest candidate.** This build is being tested here before formal release. The public `/forge` and itch.io builds retain their released versions.
+**Beta 1.6 hotfix playtest.**
 
 A browser roguelike: explore elemental dungeons, shape your build at the Forge, and face each biome's boss.
 The current Play build includes guided onboarding, landscape mobile controls, early-game combat updates and closer map zoom.
@@ -25,4 +25,4 @@ tap to move and hold to inspect. A rotate prompt appears in portrait; the game d
 ## This repository
 
 Generated output only: the playable build, published by `tools/release/publish.py` from the source project. Last
-build: **2026-10-08T22:04:52.022477+00:00**.
+build: **2026-10-09T16:37:18.430896+00:00**.

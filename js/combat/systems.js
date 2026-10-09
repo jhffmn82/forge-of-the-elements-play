@@ -4,7 +4,7 @@
    ========================================================================== */
 
 var BAG_MAX = 25;   /* Five rows of five slots. */
-function hungerCost(cost){ return cost/100 * 1.6 * (player.race==='gloomling' ? 0.8 : 1); }
+function hungerCost(cost){ return cost/100 * 1.76 * (player.race==='gloomling' ? 0.8 : 1); }
 
 function bossNameForFloor(){
   var live=typeof ents!=='undefined' && ents.filter(function(e){return e.foe&&e.base&&e.base.boss&&e.hp>0;})[0];
@@ -244,7 +244,7 @@ function bumpSealed(x,y){
   }
 
   var lock=props.filter(function(p){ return p.name==='elemental-lock' && p.door && p.door.x===x && p.door.y===y; })[0];
-  if(lock){ log('Sealed by elemental magic. The pedestal nearby wants one <b>'+lock.element+' mote</b>.','c-info'); return; }
+  if(lock){ log('Sealed by elemental magic. A lock pedestal elsewhere on this floor requires '+(lock.moteCost||1)+' '+lock.element+' mote'+((lock.moteCost||1)===1?'':'s')+'.','c-info');return; }
   if(plates && plates.door.x===x && plates.door.y===y){ log('Sealed. Three plates in this room hum faintly; a broken tablet names their order.','c-info'); return; }
   log('Sealed.','c-info');
 }
@@ -323,15 +323,18 @@ function bumpProp(p){
   }
   if(p.puzzleSwitch)return activatePuzzleSwitch(p);
   if(p.name==='elemental-lock' && !p.opened){
-    if(player.motes[p.element]>0){
-      confirmBox('Elemental lock', 'Offer the lock one <b>'+p.element+' mote</b>?', 'Offer the mote', function(){
-        player.motes[p.element]--; if(player.motes[p.element]<=0) delete player.motes[p.element];
-        p.opened=true; setT(p.door.x,p.door.y,OPEN); log('The lock drinks the mote. The seal dissolves.','c-kill'); sfx('puzzle-solved'); sparkleFx(p.x,p.y,TRAIL_EL(p.element),30); computeFOV(); endTurn();
+    var cost=p.moteCost||1;
+    if((player.motes[p.element]||0)>=cost){
+      confirmBox('Elemental lock', 'Offer the lock <b>'+cost+' '+p.element+' mote'+(cost===1?'':'s')+'</b>?', 'Offer the mote', function(){
+        if(p.opened||(player.motes[p.element]||0)<cost)return;
+        player.motes[p.element]-=cost; if(player.motes[p.element]<=0) delete player.motes[p.element];
+        p.opened=true; p.b=0; setT(p.door.x,p.door.y,OPEN); log('The lock drinks the mote. The seal dissolves.','c-kill'); sfx('puzzle-solved'); sparkleFx(p.x,p.y,TRAIL_EL(p.element),30); computeFOV(); endTurn();
       }); return true;
     }
+    if(p.motesOnly){log('The lock requires '+cost+' '+p.element+' mote'+(cost===1?'':'s')+'.','c-info');return true;}
     var fee=50+floorNo*5;
     confirmBox('Elemental lock', 'The lock wants one <b>'+p.element+' mote</b>. It will also accept <b>'+fee+' essence</b> (you have '+player.essence+').', player.essence>=fee?'Pay '+fee+' essence':null, function(){
-      spendEssence(fee); p.opened=true; setT(p.door.x,p.door.y,OPEN); log('The lock grudgingly accepts the essence.','c-kill'); sfx('puzzle-solved'); computeFOV(); endTurn();
+      spendEssence(fee); p.opened=true; p.b=0; setT(p.door.x,p.door.y,OPEN); log('The lock grudgingly accepts the essence.','c-kill'); sfx('puzzle-solved'); computeFOV(); endTurn();
     }); return true;
   }
   if(p.lever){
@@ -481,10 +484,14 @@ function explode(x,y,src){
   }
   if(typeof puzzleSpellTiles==='function')puzzleSpellTiles({el:'fire',type:'fire'},blastTiles);
 }
+function sacrificeNextReward(p){
+  var a=altars[idxOf(p.x,p.y)]||{passes:0};
+  return a.passes<3 ? 3 : a.passes<5 ? 5 : a.passes<7 ? 7 : null;
+}
 function sacrifice(p){
   var a=altars[idxOf(p.x,p.y)]||(altars[idxOf(p.x,p.y)]={passes:0});
   var cost=Math.max(1, Math.round(player.maxhp*0.15)), lethal=player.hp<=cost;
-  var nextReward = a.passes<3 ? 3 : a.passes<5 ? 5 : a.passes<7 ? 7 : null;
+  var nextReward = sacrificeNextReward(p);
   if(!nextReward){ log('The altar is sated.','c-info'); return true; }
   confirmBox('Sacrifice altar', 'Press your hand onto the spikes for <b>'+cost+' HP</b>. What it gives, and when, is its own business.'+(lethal?'<br><span class="c-you"><b>This would kill you.</b></span>':''),
     lethal ? 'Offer anyway' : 'Offer blood', function(){

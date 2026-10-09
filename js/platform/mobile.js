@@ -22,10 +22,23 @@
   /* Mobile play requires landscape; the browser/device still owns rotation.
      This prompt does not request fullscreen or use the orientation-lock API. */
   var orientationBlocked=false,orientationFocus=null,orientationAppInert=false,cancelOrientationPress=null;
+  function deviceIsPortrait(){
+    /* An embedded game or iPad multitasking pane can stay tall after the
+       device turns. Screen orientation owns the gate; viewport shape still
+       owns responsive layout and is the fallback when no screen API exists. */
+    var orientation=window.screen&&window.screen.orientation,type=orientation&&orientation.type;
+    if(type==='landscape-primary'||type==='landscape-secondary')return false;
+    if(type==='portrait-primary'||type==='portrait-secondary')return true;
+    /* Older iPad Safari exposes the device orientation on window instead. */
+    var angle=window.orientation;
+    if(angle===90||angle===-90)return false;
+    if(angle===0||angle===180)return true;
+    return innerHeight>innerWidth;
+  }
   function syncOrientationPrompt(){
     if(!DEVICE)return;
     var prompt=document.getElementById('orientationPrompt');if(!prompt)return;
-    var blocked=innerHeight>innerWidth,app=document.getElementById('app');
+    var blocked=deviceIsPortrait(),app=document.getElementById('app');
     prompt.hidden=!blocked;document.body.classList.toggle('needs-landscape',blocked);
     if(blocked&&!orientationBlocked){
       orientationFocus=document.activeElement;
@@ -203,6 +216,8 @@
   function relayout(){ sync(); if(typeof abilityBar==='function' && typeof RUN!=='undefined' && RUN && !document.getElementById('loadVeil')) abilityBar(); }
   window.addEventListener('resize', function(){ setTimeout(relayout, 0); });
   window.addEventListener('orientationchange', function(){ setTimeout(relayout, 120); });
+  if(window.screen&&screen.orientation&&typeof screen.orientation.addEventListener==='function')
+    screen.orientation.addEventListener('change', function(){ setTimeout(relayout, 0); });
   if(window.visualViewport) visualViewport.addEventListener('resize', function(){ setTimeout(relayout, 0); });
 
   if(DEVICE){

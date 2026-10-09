@@ -661,7 +661,7 @@ function inspectHTML(mx,my){
     }
     var pn=({'urn-group':'urns','stack-group':p.kinds && p.kinds.indexOf('pot')>=0 && p.kinds.indexOf('crate')<0 ? 'pots' : 'crates and barrels','urn-shattered':'broken urn','urn-tall':'urn','urn-squat':'urn','urn-ornate':'urn','barrel-explosive':'powder barrel','altar-spikes':'sacrifice altar','drow-altar-blood':'sacrifice altar'})[p.name] || p.name.replace(/-/g,' ');
     var hint = p.breakReward ? 'A blade is embedded in the moss-covered stone.' : p.merchantId!==undefined ? 'Browse the merchant stock. Purchases cost essence.' : p.ritual&&p.prisoner ? 'Captive: '+p.captiveHp+'/'+p.captiveMaxhp+' HP. The ritual drains 2 HP per round. Free them or interrupt the priestess.' : p.ex ? 'Explodes when broken or burned.' : p.br ? 'Breakable. Might hold something.' : p.tablet ? 'A broken tablet. Read it.' :
-      p.altar ? 'Offer blood for rewards.' : p.prisoner ? 'Someone is locked inside. Let them out and hope they are grateful.' : p.name==='elemental-lock' ? 'Wants one '+p.element+' mote.' : p.drink ? 'Drink from it.' :
+      p.altar ? 'Offer blood for rewards.' : p.prisoner ? 'Someone is locked inside. Let them out and hope they are grateful.' : p.name==='elemental-lock' ? (p.opened?'Its seal has dissolved.':'Wants '+(p.moteCost||1)+' '+p.element+' mote'+((p.moteCost||1)===1?'':'s')+'.') : p.drink ? 'Drink from it.' :
       p.bush ? 'Cut it down. Sometimes a heart is tucked underneath.' : '';
     /* 2026-09-19: Justin - scenery you cannot do anything with gets no card at all */
     if(!hint) return '';
