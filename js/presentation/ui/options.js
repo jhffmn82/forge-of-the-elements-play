@@ -30,9 +30,10 @@ function speedFxList(){
    stacks with the layout's own choice instead of replacing it. Closer = fewer, bigger tiles. */
 /* Canonical resize brings each multiplied target two tiles closer: landscape
    Far/Normal/Close/Closest target 16/12/10/8 rows; width follows the map panel. */
-var MAP_ZOOM_MUL = {far:18/12, normal:14/12, close:1, closest:10/12}, MAP_ZOOM='normal';
-try { MAP_ZOOM = localStorage.getItem('astra-temple-map-zoom') || 'normal'; } catch(e){}
-if(!MAP_ZOOM_MUL[MAP_ZOOM]) MAP_ZOOM='normal';
+var MAP_ZOOM_MUL = {far:18/12, normal:14/12, close:1, closest:10/12};
+var MAP_ZOOM_DEFAULT=uiUsesTouchInput()&&Math.min(innerWidth,innerHeight)<600?'close':'normal',MAP_ZOOM=MAP_ZOOM_DEFAULT;
+try { MAP_ZOOM = localStorage.getItem('astra-temple-map-zoom') || MAP_ZOOM_DEFAULT; } catch(e){}
+if(!Object.prototype.hasOwnProperty.call(MAP_ZOOM_MUL,MAP_ZOOM)) MAP_ZOOM=MAP_ZOOM_DEFAULT;
 
 /* Map art is a display preference shared by ordinary Options and Sandbox. */
 try{spriteOn=localStorage.getItem('astra-temple-map-art')!=='block';}catch(e){}
@@ -99,8 +100,8 @@ function setHighContrast(on){
   if(typeof draw==='function')draw();
 }
 function uiHotbarLayout(){return UI_HOTBAR_LAYOUT;}
-var UI_HOTBAR_LAYOUT=uiUsesTouchInput()&&Math.min(innerWidth,innerHeight)<600?'vertical':'horizontal',UI_TOUCH_PAD=true;
-try{UI_HOTBAR_LAYOUT=localStorage.getItem('fote-ui-hotbar-layout')||UI_HOTBAR_LAYOUT;UI_TOUCH_PAD=localStorage.getItem('fote-ui-touch-pad')!=='off';}catch(e){}
+var UI_HOTBAR_LAYOUT=uiUsesTouchInput()&&Math.min(innerWidth,innerHeight)<600?'vertical':'horizontal',UI_TOUCH_PAD=!(uiUsesTouchInput()&&Math.min(innerWidth,innerHeight)<600);
+try{UI_HOTBAR_LAYOUT=localStorage.getItem('fote-ui-hotbar-layout')||UI_HOTBAR_LAYOUT;var savedTouchPad=localStorage.getItem('fote-ui-touch-pad');if(savedTouchPad==='on'||savedTouchPad==='off')UI_TOUCH_PAD=savedTouchPad==='on';}catch(e){}
 var UI_THEME='ember',UI_TEXT_SIZE='normal',UI_OPACITY=100,UI_SIDE='left',UI_DESKTOP_PAD=false,UI_PHONE_PAD_SIZE='normal';
 try{UI_SIDE=localStorage.getItem('fote-ui-side')||localStorage.getItem('fote-study-pad-side')||UI_SIDE;UI_DESKTOP_PAD=(localStorage.getItem('fote-ui-desktop-pad')||localStorage.getItem('fote-study-desktop-pad'))==='shown';}catch(e){}
 if(UI_SIDE!=='left'&&UI_SIDE!=='right')UI_SIDE='left';
