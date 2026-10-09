@@ -1155,9 +1155,9 @@ body.fote-study.study-minimal.study-touch.study-portrait #app #top #depth{flex:n
 body.fote-study.study-minimal.study-touch.study-portrait #app #top #depth .study-position{flex-wrap:wrap;row-gap:4px;}
 
 @media (orientation:landscape) and (max-height:599px){
-/* Short landscape keeps eight touch slots compact and reserves their strip only while targeting. */
+/* Phone landscape spreads eight touch slots down the available side rail. */
 body.fote-study.study-minimal.study-touch.study-small-touch:not(.study-portrait):not(.study-tablet){--minimal-slot:max(48px,calc(55px * var(--study-interface-scale,1)));}
-body.fote-study.study-minimal.study-touch.study-small-touch.study-hotbar-vertical:not(.study-portrait):not(.study-tablet) #app #hotbar{grid-template-columns:repeat(2,var(--minimal-slot))!important;grid-template-rows:repeat(4,var(--minimal-slot))!important;top:calc(var(--minimal-inset) + var(--minimal-action-size) + 8px + env(safe-area-inset-top,0px));bottom:auto;transform:none;}
+body.fote-study.study-minimal.study-touch.study-small-touch.study-hotbar-vertical:not(.study-portrait):not(.study-tablet) #app #hotbar{grid-template-columns:repeat(2,var(--phone-rail-slot))!important;grid-template-rows:repeat(4,minmax(48px,1fr))!important;top:calc(var(--minimal-inset) + 2 * var(--minimal-action-size) + var(--minimal-menu-gap) + 4px + env(safe-area-inset-top,0px));bottom:calc(var(--minimal-inset) + env(safe-area-inset-bottom,0px));height:auto!important;transform:none;}
 body.fote-study.study-minimal.study-touch.study-small-touch:not(.study-portrait):not(.study-tablet) #app #studyCancelAim:not([hidden]){display:flex;pointer-events:auto;position:relative;inset:auto;align-items:center;justify-content:center;width:var(--minimal-action-size);height:var(--minimal-action-size);min-height:44px;padding:0;border-radius:50%;}
 body.fote-study.study-minimal.study-touch.study-small-touch:not(.study-portrait):not(.study-tablet) #app #studyActionBar.study-targeting :is(#studyMenuToggle,#bMap,#studyExplore){display:none!important;}
 body.fote-study.study-minimal.study-touch.study-small-touch:not(.study-portrait):not(.study-tablet):has(#studyActionBar.study-targeting) #app :is(#studyHud,#statusbar,#studyInventoryIcon,#studyRecentLog){visibility:hidden;}
@@ -1185,4 +1185,26 @@ body.fote-study.study-touch.study-small-touch #studySearch svg{width:24px;height
 @media (orientation:landscape) and (max-height:599px){
 body.fote-study.study-minimal.study-touch.study-small-touch:not(.study-portrait):not(.study-tablet) #app #studyActionBar{right:calc(var(--minimal-inset) + env(safe-area-inset-right,0px));left:auto;}
 body.fote-study.study-minimal.study-touch.study-small-touch.study-pad-right:not(.study-portrait):not(.study-tablet) #app #studyActionBar{right:auto;left:calc(var(--minimal-inset) + env(safe-area-inset-left,0px));}
+}
+
+@media (orientation:landscape) and (max-height:599px){
+body.fote-study.study-minimal.study-touch.study-small-touch.study-hotbar-vertical:not(.study-portrait):not(.study-tablet){--phone-rail-slot:max(48px,calc((100dvh - 2 * var(--minimal-inset) - 2 * var(--minimal-action-size) - var(--minimal-menu-gap) - 4px - 3 * var(--minimal-hotbar-gap) - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px)) / 4));}
+body.fote-study.study-minimal.study-touch.study-small-touch.study-hotbar-vertical:not(.study-portrait):not(.study-tablet) #app #studyActionBar{display:grid;grid-template-columns:repeat(2,var(--phone-rail-slot));grid-template-rows:repeat(2,var(--minimal-action-size));column-gap:var(--minimal-hotbar-gap);row-gap:var(--minimal-menu-gap);justify-items:center;right:calc(var(--minimal-inset) + env(safe-area-inset-right,0px));left:auto;}
+body.fote-study.study-minimal.study-touch.study-small-touch.study-hotbar-vertical.study-pad-right:not(.study-portrait):not(.study-tablet) #app #studyActionBar{right:auto;left:calc(var(--minimal-inset) + env(safe-area-inset-left,0px));}
+}
+/* Larger phone actions share the landscape hotbar's column rhythm. */
+/* Keep map detail visible through phone controls without fading their icons. */
+body.fote-study #app :is(#studyMenuToggle,#bMap,#studyExplore,#studyInventoryIcon,#studySearch,#studyCancelAim),
+body.fote-study #app #hotbar .slot{background:var(--ui-control-background,var(--ui-log-tint))!important;}
+body.fote-study.study-minimal.study-touch.study-small-touch:not(.study-tablet){--minimal-action-size:max(55px,calc(60px * var(--study-interface-scale,1)));}
+body.fote-study.study-minimal.study-touch.study-small-touch:not(.study-tablet) #app #studyActionBar svg{width:max(32.5px,calc(35px * var(--study-interface-scale,1)));height:max(32.5px,calc(35px * var(--study-interface-scale,1)));}
+body.fote-study.study-minimal.study-touch.study-small-touch:not(.study-tablet) #studySearch svg{width:30px;height:30px;}
+@media (orientation:landscape) and (max-height:599px){
+body.fote-study.study-minimal.study-touch.study-small-touch.study-hotbar-vertical:not(.study-portrait):not(.study-tablet){--minimal-menu-gap:var(--minimal-hotbar-gap);}
+/* Short landscape screens keep all eight square slots and full-size actions visible. */
+body.fote-study.study-minimal.study-touch.study-small-touch.study-hotbar-vertical.study-short:not(.study-portrait):not(.study-tablet){--phone-rail-slot:max(48px,calc((100dvh - 2 * var(--minimal-inset) - var(--minimal-action-size) - 4px - 3 * var(--minimal-hotbar-gap) - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px)) / 4));}
+body.fote-study.study-minimal.study-touch.study-small-touch.study-hotbar-vertical.study-short:not(.study-portrait):not(.study-tablet) #app #studyActionBar{grid-template-columns:repeat(4,var(--minimal-action-size));grid-template-rows:var(--minimal-action-size);}
+body.fote-study.study-minimal.study-touch.study-small-touch.study-hotbar-vertical.study-short:not(.study-portrait):not(.study-tablet) #app #hotbar{top:calc(var(--minimal-inset) + var(--minimal-action-size) + 4px + env(safe-area-inset-top,0px));}
+/* Search stays opposite the mirrored rail so it cannot cover an ability slot. */
+body.fote-study.study-minimal.study-touch.study-small-touch.study-hotbar-vertical.study-pad-right:not(.study-portrait):not(.study-tablet) #app #studySearch:not([hidden]){left:auto;right:calc(var(--minimal-inset) + env(safe-area-inset-right,0px));}
 }

@@ -102,12 +102,14 @@ function setHighContrast(on){
 function uiHotbarLayout(){return UI_HOTBAR_LAYOUT;}
 var UI_HOTBAR_LAYOUT=uiUsesTouchInput()&&Math.min(innerWidth,innerHeight)<600?'vertical':'horizontal',UI_TOUCH_PAD=!(uiUsesTouchInput()&&Math.min(innerWidth,innerHeight)<600);
 try{UI_HOTBAR_LAYOUT=localStorage.getItem('fote-ui-hotbar-layout')||UI_HOTBAR_LAYOUT;var savedTouchPad=localStorage.getItem('fote-ui-touch-pad');if(savedTouchPad==='on'||savedTouchPad==='off')UI_TOUCH_PAD=savedTouchPad==='on';}catch(e){}
-var UI_THEME='ember',UI_TEXT_SIZE='normal',UI_OPACITY=100,UI_SIDE='left',UI_DESKTOP_PAD=false,UI_PHONE_PAD_SIZE='normal';
+var UI_OPACITY_DEFAULT=uiUsesTouchInput()&&Math.min(innerWidth,innerHeight)<600?0:100;
+var UI_THEME='ember',UI_TEXT_SIZE='normal',UI_OPACITY=UI_OPACITY_DEFAULT,UI_SIDE='left',UI_DESKTOP_PAD=false,UI_PHONE_PAD_SIZE='normal';
 try{UI_SIDE=localStorage.getItem('fote-ui-side')||localStorage.getItem('fote-study-pad-side')||UI_SIDE;UI_DESKTOP_PAD=(localStorage.getItem('fote-ui-desktop-pad')||localStorage.getItem('fote-study-desktop-pad'))==='shown';}catch(e){}
 if(UI_SIDE!=='left'&&UI_SIDE!=='right')UI_SIDE='left';
 if(savedPadSide==='auto')UI_PAD_SIDE=UI_SIDE==='right'?'left':'right';
-try{UI_THEME=localStorage.getItem('fote-ui-theme')||UI_THEME;UI_TEXT_SIZE=localStorage.getItem('fote-ui-text')||UI_TEXT_SIZE;UI_OPACITY=Number(localStorage.getItem('fote-ui-opacity')||100);UI_PHONE_PAD_SIZE=localStorage.getItem('fote-ui-touch-pad-size')||(localStorage.getItem('fote-ui-phone-pad-size')==='compact'?'compact':'normal');}catch(e){}
+try{UI_THEME=localStorage.getItem('fote-ui-theme')||UI_THEME;UI_TEXT_SIZE=localStorage.getItem('fote-ui-text')||UI_TEXT_SIZE;UI_OPACITY=Number(localStorage.getItem('fote-ui-opacity')||UI_OPACITY_DEFAULT);UI_PHONE_PAD_SIZE=localStorage.getItem('fote-ui-touch-pad-size')||(localStorage.getItem('fote-ui-phone-pad-size')==='compact'?'compact':'normal');}catch(e){}
 function applyUIAppearance(){
+
   if(!Object.prototype.hasOwnProperty.call(UI_THEMES,UI_THEME))UI_THEME='ember';
   if(!Object.prototype.hasOwnProperty.call(UI_TEXT_SIZES,UI_TEXT_SIZE))UI_TEXT_SIZE='normal';
   if(!Object.prototype.hasOwnProperty.call(UI_STATUS_SIZES,UI_STATUS_SIZE))UI_STATUS_SIZE='normal';
@@ -123,11 +125,16 @@ function applyUIAppearance(){
   document.body.dataset.uiStatusSize=UI_STATUS_SIZE;
   document.body.style.setProperty('--ui-status-scale',UI_STATUS_SIZE==='large'?'1.6':UI_STATUS_SIZE==='compact'?'1':'1.3');
   document.body.style.setProperty('--ui-text-scale',UI_TEXT_SIZE==='large'?'1.12':UI_TEXT_SIZE==='small'?'.9':'1');
-  UI_OPACITY=Number.isFinite(UI_OPACITY)?Math.max(10,Math.min(100,UI_OPACITY)):100;
-  document.body.classList.toggle('ui-paper-faded',UI_THEME.indexOf('vellum')===0&&UI_OPACITY<65);
-  document.body.style.setProperty('--ui-background-opacity',String(UI_OPACITY/100));
-  document.body.style.setProperty('--ui-background-percent',UI_OPACITY+'%');
+  UI_OPACITY=Number.isFinite(UI_OPACITY)?Math.max(0,Math.min(100,UI_OPACITY)):UI_OPACITY_DEFAULT;
+  document.body.classList.toggle('ui-paper-faded',false);
+  document.body.style.setProperty('--ui-background-opacity','1');
+  document.body.style.setProperty('--ui-background-percent','100%');
   applyUIPaintCompatibility();
+  var controlColor=getComputedStyle(document.body).getPropertyValue('--ui-log').trim();
+  var controlHex=/^#([0-9a-f]{6}|[0-9a-f]{3})$/i.exec(controlColor);
+  var controlRGB=controlHex?controlHex[1]:'151210';
+  if(controlRGB.length===3)controlRGB=controlRGB.split('').map(function(c){return c+c;}).join('');
+  document.body.style.setProperty('--ui-control-background','rgba('+parseInt(controlRGB.slice(0,2),16)+','+parseInt(controlRGB.slice(2,4),16)+','+parseInt(controlRGB.slice(4,6),16)+','+(UI_OPACITY/100)+')');
   if(typeof FoteResponsiveHUD!=='undefined')FoteResponsiveHUD.relayout();
 }
 /* Older Android browsers can accept a custom property's text but reject its
@@ -142,7 +149,7 @@ function applyUIPaintCompatibility(){
     return;
   }
   if(typeof getComputedStyle!=='function')return;
-  var style=getComputedStyle(document.body),alpha=UI_OPACITY/100;
+  var style=getComputedStyle(document.body),alpha=1;
   function color(name,fallback){
     var value=style.getPropertyValue(name).trim(),match=/^#([0-9a-f]{6}|[0-9a-f]{3})$/i.exec(value);
     var hex=match?match[1]:fallback;
@@ -161,8 +168,8 @@ applyUIAppearance();
 // Re-read the loaded palette before the first real UI appears.
 if(typeof FoteLifecycle!=='undefined')FoteLifecycle.whenReady(applyUIAppearance);
 function resetUITheme(){
-  UI_THEME='ember';UI_OPACITY=100;
-  try{localStorage.setItem('fote-ui-theme',UI_THEME);localStorage.setItem('fote-ui-opacity','100');}catch(e){}
+  UI_THEME='ember';UI_OPACITY=UI_OPACITY_DEFAULT;
+  try{localStorage.setItem('fote-ui-theme',UI_THEME);localStorage.setItem('fote-ui-opacity',String(UI_OPACITY));}catch(e){}
   applyUIAppearance();
 }
 function appearanceSegments(id,label,choices,value){
@@ -202,7 +209,7 @@ function settingsHTML(){
   h+='<section class="opt-section"><div class="sec">Interface</div>';
   if(innerWidth>=960&&innerHeight>=600)h+=appearanceSegments('uiHudMode','Interface layout',UI_HUD_MODES,UI_HUD_MODE);
   h+=appearanceDropdown('uiTheme','Theme',UI_THEMES,UI_THEME)+appearanceSegments('uiTextSize','Text size',UI_TEXT_SIZES,UI_TEXT_SIZE)+appearanceSegments('uiStatusSize','Status size',UI_STATUS_SIZES,UI_STATUS_SIZE)+appearanceSegments('uiSide','Status position',{left:'Left',right:'Right'},UI_SIDE)+
-    '<label class="optrow ui-opacity-row"><span>Panel transparency <output id="uiOpacityValue" for="uiOpacity">'+(100-UI_OPACITY)+'%</output></span><input type="range" id="uiOpacity" min="0" max="90" step="5" value="'+(100-UI_OPACITY)+'" aria-label="Panel transparency" aria-describedby="uiOpacityHint"></label><div id="uiOpacityHint" class="c-info">Fades panel and button backgrounds; text and icons stay solid.</div><div class="optrow"><button type="button" id="resetUITheme">Reset theme and transparency</button></div></section>';
+    '<label class="optrow ui-opacity-row"><span>Button transparency <output id="uiOpacityValue" for="uiOpacity">'+(100-UI_OPACITY)+'%</output></span><input type="range" id="uiOpacity" min="0" max="100" step="5" value="'+(100-UI_OPACITY)+'" aria-label="Button transparency" aria-describedby="uiOpacityHint"></label><div id="uiOpacityHint" class="c-info">Fades hotbar and map action button backgrounds; panels, text and icons stay solid.</div><div class="optrow"><button type="button" id="resetUITheme">Reset theme and transparency</button></div></section>';
   h+='<section class="opt-section"><div class="sec">Map</div>'+row('mapzoom','Map zoom',[['far','Far'],['normal','Normal'],['close','Close'],['closest','Closest']],MAP_ZOOM)+
     row('highContrast','High contrast',[['on','On'],['off','Off']],UI_HIGH_CONTRAST?'on':'off','Brightens characters and ground items. On by default on mobile.')+
     row('light','Lighting',[['on','On'],['off','Off']],(typeof lightingOn==='function'?lightingOn():true)?'on':'off')+
@@ -266,6 +273,7 @@ function wireSettings(root){
       if(id==='mapart')setMapArt(v);
       if(id==='desktopPad'){UI_DESKTOP_PAD=v==='on'||v==='shown';try{localStorage.setItem('fote-ui-desktop-pad',UI_DESKTOP_PAD?'shown':'hidden');}catch(e){}if(typeof FoteResponsiveHUD!=='undefined')FoteResponsiveHUD.relayout();}
       if(id==='touchPad')setTouchPadVisible(v==='on');
+
       if(id==='highContrast')setHighContrast(v==='on');
       if(id==='mapzoom'){ MAP_ZOOM=v; try{ localStorage.setItem('astra-temple-map-zoom', v); }catch(e){} resize(); }
       if(id==='speed'){ ANIM_SPEED=parseFloat(v)||1; try{ localStorage.setItem('astra-temple-anim-speed', String(ANIM_SPEED)); }catch(e){} applyAnimSpeed(); }
