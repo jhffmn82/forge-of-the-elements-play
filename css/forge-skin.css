@@ -357,7 +357,7 @@ body.fote-study[data-ui-theme=ember] #app #top #studyNav button{background:trans
 body.fote-study.study-minimal[data-ui-theme] #app :is(#map,#hotbar)::after{display:none;}
 body.fote-study.study-minimal[data-ui-theme] #app #studyHud{background:none;border:0;box-shadow:none;}
 body.fote-study.study-minimal[data-ui-theme] #app #hotbar{background:none;box-shadow:none;}
-body.fote-study.study-minimal[data-ui-theme] #app :is(#studyMenuToggle,#studyExplore,#bMap,#studyLogClose,#studyInventoryIcon,#studyPortrait){
+body.fote-study.study-minimal[data-ui-theme] #app :is(#studyMenuToggle,#studyExplore,#bMap,#studyLogClose,#studyInventoryIcon,#studyPortrait,#studySearch,#studyCancelAim){
  background:var(--ui-log-tint);border:1px solid var(--ui-edge);box-shadow:none;color:var(--ui-ink);text-shadow:none;
 }
 body.fote-study.study-minimal[data-ui-theme] #app #top{background:var(--ui-header-face);border-color:var(--ui-edge);box-shadow:0 4px 16px #0006;}

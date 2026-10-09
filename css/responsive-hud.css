@@ -1112,3 +1112,39 @@ body.fote-study.study-touch #modal #mX::after{content:'×';font:24px/1 var(--mon
 body.touch #modal.tutorial-coach footer{flex-wrap:wrap;}
 body.touch #modal.tutorial-coach footer>.tutorial-preference{flex-basis:100%;}
 body.fote-study.study-minimal #studyNav #sbQuick{display:contents!important;}
+
+/* Portrait targeting keeps every map tile available. Cancel temporarily uses
+   Explore's existing action position; the movement pad stays hidden. */
+#studyCancelAim{display:none;}
+body.fote-study.study-minimal.study-touch.study-portrait #app #studyCancelAim:not([hidden]){display:flex;pointer-events:auto;align-items:center;justify-content:center;width:var(--minimal-action-size);height:var(--minimal-action-size);min-height:44px;padding:0;border-radius:50%;}
+body.fote-study.study-touch.study-portrait #app #studyActionBar.study-targeting #studyExplore{display:none!important;}
+
+/* Existing full-width hotbar and transparent, adjustable overlay pad. */
+body.fote-study.study-minimal.study-touch.study-portrait.study-overlay-pad{--study-overlay-pad-size:168px;}
+body.fote-study.study-minimal.study-touch.study-portrait #app #studyActionBar{display:grid;grid-template-columns:repeat(2,var(--minimal-action-size));gap:4px;}
+body.fote-study.study-minimal.study-touch.study-portrait #app #studyActionBar.study-targeting{grid-template-columns:var(--minimal-action-size);}
+body.fote-study.study-minimal.study-touch.study-portrait #app #studyActionBar.study-targeting #studyCancelAim{grid-area:1/1;}
+body.fote-study.study-minimal.study-touch.study-portrait:has(#studyActionBar.study-targeting) #studyRecentLog{visibility:hidden;}
+/* Both slot grids stay at the top; totals and the doll remain available below. */
+body.fote-study.study-touch.study-portrait #app #shade .tgear .tg-top{grid-template-columns:100px minmax(0,1fr)!important;gap:6px!important;}
+body.fote-study.study-touch.study-portrait #app #shade .tgear .tg-top>div{min-width:0;}
+body.fote-study.study-touch.study-portrait #app #shade .tgear .tg-slots{grid-template-columns:repeat(2,minmax(48px,1fr))!important;gap:4px!important;}
+body.fote-study.study-touch.study-portrait #app #shade .tgear .gslot{height:70px!important;min-height:70px;padding:4px 2px;gap:2px;}
+body.fote-study.study-touch.study-portrait #app #shade .tgear .gslot .ic{width:30px;height:30px;}
+body.fote-study.study-touch.study-portrait #app #shade .tgear .gslot .ph{line-height:30px;}
+body.fote-study.study-touch.study-portrait #app #shade .tgear .gslot .nm{display:none;}
+body.fote-study.study-touch.study-portrait #app #shade .tgear .gslot .lab{font-size:calc(10px * var(--ui-text-scale,1) + var(--ui-mobile-text-add,0px))!important;letter-spacing:0;line-height:1.1;}
+body.fote-study.study-touch.study-portrait #app #shade .tgear .tg-cells{grid-template-columns:repeat(4,minmax(48px,1fr))!important;gap:4px!important;}
+body.fote-study.study-touch.study-portrait #app #shade .tgear .cell{min-height:48px!important;height:48px!important;aspect-ratio:auto;}
+
+body.fote-study.study-touch.study-portrait #app #shade:has(.tgear) .bodyw{padding:8px!important;}
+
+/* Centered portrait hotbar, four top-right actions, and search when the pad is off. */
+body.fote-study.study-minimal.study-touch.study-portrait #app #hotbar{left:calc(var(--minimal-inset) + env(safe-area-inset-left,0px))!important;right:calc(var(--minimal-inset) + env(safe-area-inset-right,0px))!important;transform:none!important;width:auto!important;}
+body.fote-study.study-minimal.study-touch.study-portrait #app #studyActionBar{grid-template-columns:var(--minimal-action-size);left:auto!important;right:calc(var(--minimal-inset) + env(safe-area-inset-right,0px))!important;top:calc(var(--minimal-inset) + env(safe-area-inset-top,0px))!important;}
+body.fote-study.study-minimal.study-touch.study-portrait #app #studySearch:not([hidden]){display:flex;position:absolute;align-items:center;justify-content:center;pointer-events:auto;left:calc(var(--minimal-inset) + env(safe-area-inset-left,0px));bottom:calc(var(--minimal-inset) + var(--minimal-hotbar-height) + 8px + env(safe-area-inset-bottom,0px));z-index:48;width:var(--minimal-action-size);height:var(--minimal-action-size);min-height:44px;padding:0;border-radius:50%;}
+body.fote-study.study-touch.study-portrait #studySearch svg{width:24px;height:24px;}
+
+body.fote-study.study-minimal.study-touch.study-portrait #app #studyActionBar.study-targeting :is(#studyMenuToggle,#bMap,#studyInventoryIcon){display:none!important;}
+
+#studySearch[hidden]{display:none!important;}

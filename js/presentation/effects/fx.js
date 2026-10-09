@@ -197,11 +197,13 @@ function drawFX(){
       ctx.globalAlpha = p<0.75 ? 1 : (1-p)/0.25;
       /* 2026-10-06 (Justin: 'why is the text so large? we have to fix that'): a floating word was a third of a tile with no
          limit, so at the closest zoom (96 px tiles) it was half again as large as at the usual one. It stops growing at a 64 px tile. */
-      var fs=Math.max(9,Math.round(Math.min(TS,FLOAT_TEXT_TILE)*(f.big?0.43:0.33)*(p<0.12 ? 0.7+p*2.5 : 1)));
+      var portraitText=typeof document!=='undefined'&&document.body&&document.body.classList.contains('study-touch')&&document.body.classList.contains('study-portrait');
+      var textFloor=portraitText?(f.big?16:14):9;
+      var fs=Math.max(textFloor,Math.round(Math.min(TS,FLOAT_TEXT_TILE)*(f.big?0.43:0.33)*(p<0.12 ? 0.7+p*2.5 : 1)));
       ctx.font='500 '+fs+'px "IBM Plex Mono",monospace'; ctx.textAlign='center'; ctx.textBaseline='middle';
       var width=ctx.measureText(String(f.text)).width;
       if(width>TS*1.8){
-        fs=Math.max(9,Math.floor(fs*TS*1.8/width));
+        fs=Math.max(textFloor,Math.floor(fs*TS*1.8/width));
         ctx.font='500 '+fs+'px "IBM Plex Mono",monospace';
       }
       var textY=py+TS*(0.45+(f.offsetY||0))-rise;

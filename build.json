@@ -1,9 +1,9 @@
 {
   "version": "Beta 1.6",
-  "built": "2026-10-09T16:37:18.430896+00:00",
-  "epoch": 1791563838,
-  "source": "Tourist v2 animations and axe carry; audit markers and Shade height; Elemental Treasury; iPad orientation detection; queued Vanishing, hunger and Forge input fixes. Portrait work excluded.",
+  "built": "2026-10-09T16:58:12.913264+00:00",
+  "epoch": 1791565092,
+  "source": "Phone portrait test integration and saved High Contrast option; preserves Tourist v2, Water Fae artwork, audit and Treasury hotfixes",
   "candidate": true,
   "releaseState": "playtest",
-  "revision": "beta16-tourist-v2-hotfix-20261009-163718"
+  "revision": "beta16-phone-portrait-20261009-165812"
 }

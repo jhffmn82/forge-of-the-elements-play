@@ -19,60 +19,15 @@
   var DEVICE = q==='1' ? true : q==='0' ? false : !!coarse;
   window.MOBILE = DEVICE;
 
-  /* Mobile play requires landscape; the browser/device still owns rotation.
-     This prompt does not request fullscreen or use the orientation-lock API. */
-  var orientationBlocked=false,orientationFocus=null,orientationAppInert=false,cancelOrientationPress=null;
-  function deviceIsPortrait(){
-    /* An embedded game or iPad multitasking pane can stay tall after the
-       device turns. Screen orientation owns the gate; viewport shape still
-       owns responsive layout and is the fallback when no screen API exists. */
-    var orientation=window.screen&&window.screen.orientation,type=orientation&&orientation.type;
-    if(type==='landscape-primary'||type==='landscape-secondary')return false;
-    if(type==='portrait-primary'||type==='portrait-secondary')return true;
-    /* Older iPad Safari exposes the device orientation on window instead. */
-    var angle=window.orientation;
-    if(angle===90||angle===-90)return false;
-    if(angle===0||angle===180)return true;
-    return innerHeight>innerWidth;
+  /* Both orientations are playable. Rotation is a presentation change, never
+     an input-blocking overlay or a request for fullscreen/orientation lock. */
+  var orientationBlocked=false,cancelOrientationPress=null;
+  window.FoteMobileOrientation=Object.freeze({isBlocked:function(){return false;}});
+  function cancelRotatingInput(){
+    if(typeof stopTravel==='function')stopTravel();
+    if(typeof stopDirectionPad==='function')stopDirectionPad();
+    if(cancelOrientationPress)cancelOrientationPress();
   }
-  function syncOrientationPrompt(){
-    if(!DEVICE)return;
-    var prompt=document.getElementById('orientationPrompt');if(!prompt)return;
-    var blocked=deviceIsPortrait(),app=document.getElementById('app');
-    prompt.hidden=!blocked;document.body.classList.toggle('needs-landscape',blocked);
-    if(blocked&&!orientationBlocked){
-      orientationFocus=document.activeElement;
-      orientationAppInert=!!(app&&app.hasAttribute('inert'));
-      if(typeof stopTravel==='function')stopTravel();
-      if(typeof stopDirectionPad==='function')stopDirectionPad();
-      if(cancelOrientationPress)cancelOrientationPress();
-    }
-    var wasBlocked=orientationBlocked;
-    if(app&&(blocked||wasBlocked))app.toggleAttribute('inert',blocked||orientationAppInert);
-    orientationBlocked=blocked;
-    if(blocked){if(!prompt.contains(document.activeElement))prompt.focus({preventScroll:true});}
-    else if(wasBlocked){
-      var focus=orientationFocus;orientationFocus=null;
-      if(focus&&focus.isConnected&&!(focus.closest&&focus.closest('[inert]')))focus.focus({preventScroll:true});
-      orientationAppInert=false;
-    }
-  }
-  function mountOrientationPrompt(){
-    if(!DEVICE||document.getElementById('orientationPrompt'))return;
-    var prompt=document.createElement('section');prompt.id='orientationPrompt';prompt.hidden=true;prompt.tabIndex=-1;
-    prompt.setAttribute('role','dialog');prompt.setAttribute('aria-modal','true');prompt.setAttribute('aria-labelledby','orientationTitle');prompt.setAttribute('aria-describedby','orientationStatus');
-    prompt.innerHTML='<div><h2 id="orientationTitle">Turn your device sideways</h2><p id="orientationStatus">Forge of the Elements plays in landscape. Enable auto-rotate, then turn your device sideways.</p></div>';
-    document.body.appendChild(prompt);
-    document.addEventListener('keydown',function(event){
-      if(!orientationBlocked)return;
-      event.preventDefault();event.stopImmediatePropagation();prompt.focus({preventScroll:true});
-    },true);
-    ['pointerdown','click'].forEach(function(type){document.addEventListener(type,function(event){
-      if(orientationBlocked&&!prompt.contains(event.target)){event.preventDefault();event.stopImmediatePropagation();}
-    },true);});
-    document.addEventListener('focusin',function(event){if(orientationBlocked&&!prompt.contains(event.target))prompt.focus({preventScroll:true});},true);
-  }
-  window.FoteMobileOrientation=Object.freeze({isBlocked:function(){return orientationBlocked;}});
 
   /* the phone layout also comes on in a narrow desktop window, where the desktop bars overflow anyway */
   function wantTouch(){
@@ -87,9 +42,6 @@
   (function(){
     var st=document.createElement('style');
     st.textContent=[
-      '#orientationPrompt[hidden]{display:none!important}',
-      '#orientationPrompt{position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;box-sizing:border-box;padding:24px;padding-top:calc(24px + env(safe-area-inset-top,0px));padding-bottom:calc(24px + env(safe-area-inset-bottom,0px));background:#0f0d0c;color:#eee5d7;text-align:center;overflow:auto;outline:none}',
-      '#orientationPrompt>div{max-width:390px}#orientationPrompt h2{font-size:calc(22px + var(--ui-mobile-text-add,0px));line-height:1.25;margin:0 0 16px}#orientationPrompt p{font-size:calc(16px + var(--ui-mobile-text-add,0px));line-height:1.5;margin:0;color:#cfc3b3}',
       /* one row of hotbar slots in both orientations: eight slots wide, as tall as the row allows */
       'body.touch #hotbar{grid-template-columns:repeat(8,minmax(0,1fr))!important;grid-template-rows:48px!important;gap:5px!important}',
       'body.touch #hotbar .slot{width:auto!important;height:48px!important}',
@@ -210,14 +162,14 @@
     var on=wantTouch(), was=document.body.classList.contains('touch');
     document.body.classList.toggle('touch', on);
     if(on && !was) shortenTop();
-    applyZoom();syncOrientationPrompt();
+    applyZoom();
   }
   /* icons are painted at their slot's exact size, so a layout change during a run repaints them (CSS would stretch the old ones) */
   function relayout(){ sync(); if(typeof abilityBar==='function' && typeof RUN!=='undefined' && RUN && !document.getElementById('loadVeil')) abilityBar(); }
   window.addEventListener('resize', function(){ setTimeout(relayout, 0); });
-  window.addEventListener('orientationchange', function(){ setTimeout(relayout, 120); });
+  window.addEventListener('orientationchange', function(){ cancelRotatingInput();setTimeout(relayout, 120); });
   if(window.screen&&screen.orientation&&typeof screen.orientation.addEventListener==='function')
-    screen.orientation.addEventListener('change', function(){ setTimeout(relayout, 0); });
+    screen.orientation.addEventListener('change', function(){ cancelRotatingInput();setTimeout(relayout, 0); });
   if(window.visualViewport) visualViewport.addEventListener('resize', function(){ setTimeout(relayout, 0); });
 
   if(DEVICE){
@@ -282,6 +234,7 @@
                  ['stow','Ranged','&#127993;']];
     function wornItem(key){ return (typeof slotItem==='function') ? slotItem(key) : null; }
     function tile(key, label, ph){
+      if(innerWidth<600&&innerHeight>innerWidth)label=({main:'Main',off:'Off',amulet:'Neck',stow:'Range'})[key]||label;
       var it = wornItem(key);
       var both = key==='off' && player.twoHanded;
       /* 2026-10-05: a worn Holy Symbol shows its holder's god's disc (sheets.js wornIconName) */
@@ -374,7 +327,7 @@
       var b=document.querySelector('#tabs button[data-p="Sand"]'); if(b) b.remove();
       if(typeof openSheet!=='undefined' && openSheet==='Sand' && typeof showSheet==='function') showSheet(null);
     }
-    mountOrientationPrompt();sync();
+    sync();
     /* the audio buttons rewrite their own labels, so shorten them again each time they do */
     if(typeof syncAudioButtons==='function'){
       var _sync=syncAudioButtons;

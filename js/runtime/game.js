@@ -268,7 +268,12 @@ function resize(){
   // The minimal phone HUD frees the map to show desktop Normal coverage.
   // Keep mobile's traditional targets and explicit close/wide choices intact.
   if(zoomKey==='phone' && typeof uiHudMode==='function' && uiHudMode()==='minimal'){
-    z=innerWidth>innerHeight?ZOOM.normal:[ZOOM.normal[0],ZOOM.normal[0]];
+    /* Upright phones use their authored phone coverage: the desktop 20-tile
+       target makes characters and loot too small at 360 CSS pixels. Tablets
+       and landscape retain the previous coverage; Map zoom still applies. */
+    z=innerWidth<600&&innerHeight>innerWidth&&document.body.classList.contains('touch')
+      ?(ZOOM.phone||[15,15])
+      :innerWidth>innerHeight?ZOOM.normal:[ZOOM.normal[0],ZOOM.normal[0]];
   }
   /* Opts > Map zoom (options.js) scales that. It lives here, not in a wrapper, because the map's
      ResizeObserver below holds this function itself - a wrapper was skipped whenever a sheet closed. */
@@ -276,6 +281,8 @@ function resize(){
   // Each zoom shows one fewer tile on either side of the player. Keep the
   // authored presets intact and retain their minimum target counts.
   z=[Math.max(7,Math.round(z[0]*zm)-2),Math.max(6,Math.round(z[1]*zm)-2)];
+  // Keep six-tile targeting plus an edge gutter at every portrait zoom.
+  if(innerWidth<600&&innerHeight>innerWidth&&document.body.classList.contains('touch')&&typeof uiHudMode==='function'&&uiHudMode()==='minimal')z[0]=Math.max(15,z[0]);
   /* Floating controls do not reserve map space. Landscape zoom is measured in
      rows, so phones, tablets and PCs keep the same coverage vertically. */
   var fitRows=innerWidth>innerHeight && typeof uiHudMode==='function' && uiHudMode()==='minimal';

@@ -112,7 +112,7 @@ var FoteResponsiveHUD=(function(){
   }
   function positionRecentLog(){
     const recent=node('studyRecentLog');if(!recent)return;
-    recent.style.width='';recent.style.maxHeight='';
+    recent.style.width='';recent.style.maxHeight='';recent.style.bottom='';recent.style.height='';
     const style=getComputedStyle(recent),right=document.body.classList.contains('study-control-pad-left');
     const inset=parseFloat(style.getPropertyValue('--minimal-inset'))||8;
     const edge=parseFloat(right?style.right:style.left)||inset;
@@ -247,10 +247,12 @@ var FoteResponsiveHUD=(function(){
     if(node('studyActionBar').parentElement!==app)app.append(node('studyActionBar'));
     if(panelButtons.some((button,index)=>panels.children[index]!==button))panels.append(...panelButtons);
     const actions=node('studyActionBar');
-    const actionButtons=[node('studyMenuToggle'),node('bMap'),explore];
+    const actionButtons=[node('studyMenuToggle'),node('bMap')];
     const phonePortrait=document.body.classList.contains('study-small-touch')&&document.body.classList.contains('study-portrait');
-    if(phonePortrait)actionButtons.push(inventory);
-    else if(inventory.parentElement!==app)app.append(inventory);
+    if(phonePortrait)actionButtons.push(explore,inventory,node('studyCancelAim'));
+    else actionButtons.push(explore);
+    if(!phonePortrait&&inventory.parentElement!==app)app.append(inventory);
+
     if(actionButtons.some((button,index)=>actions.children[index]!==button))actions.append(...actionButtons);
     if(hud.parentElement!==app)app.append(hud);
     if(status&&status.parentElement!==app)app.append(status);
@@ -264,6 +266,13 @@ var FoteResponsiveHUD=(function(){
   }
   function syncTouchControls(){
     syncPickup();
+    const phone=document.body.classList.contains('study-minimal')&&document.body.classList.contains('study-portrait')&&document.body.classList.contains('study-touch');
+    const search=node('studySearch');
+    if(search){search.hidden=!phone||UI_TOUCH_PAD||!!aiming||(typeof BOWAIM!=='undefined'&&!!BOWAIM)||uiOpen()||!player||player.hp<=0;}
+    const cancel=node('studyCancelAim');
+    const showCancel=document.body.classList.contains('study-minimal')&&document.body.classList.contains('study-portrait')&&document.body.classList.contains('study-touch')&&(!!aiming||(typeof BOWAIM!=='undefined'&&!!BOWAIM))&&!uiOpen();
+    if(cancel){cancel.hidden=!showCancel;cancel.tabIndex=showCancel?0:-1;}
+    setHudClass(node('studyActionBar'),'study-targeting',showCancel);
     const controls=node('dpad');if(!controls)return;
     const overlay=document.body.classList.contains('study-overlay-pad');
     const blocked=overlay&&(!!aiming||(typeof BOWAIM!=='undefined'&&!!BOWAIM)||uiOpen()||!player||player.hp<=0);
@@ -281,7 +290,7 @@ var FoteResponsiveHUD=(function(){
   function syncPickup(){
     const button=node('studyPickup');if(!button)return;
     const loot=pickupItems(),busy=!!loot.length&&typeof animBusy==='function'&&animBusy();
-    const shown=!!loot.length&&document.body.classList.contains('study-touch')&&document.body.classList.contains('study-overlay-pad')&&!uiOpen()&&!aiming&&!(typeof BOWAIM!=='undefined'&&BOWAIM);
+    const shown=!!loot.length&&document.body.classList.contains('study-touch')&&(document.body.classList.contains('study-overlay-pad')||document.body.classList.contains('study-portrait'))&&!uiOpen()&&!aiming&&!(typeof BOWAIM!=='undefined'&&BOWAIM);
     if(button.hidden!==!shown)button.hidden=!shown;if(button.disabled!==(!shown||busy))button.disabled=!shown||busy;if(button.tabIndex!==(button.disabled?-1:0))button.tabIndex=button.disabled?-1:0;
     setHudAttribute(button,'aria-label',loot.length?'Pick up: '+loot.map(itemLabel).join(', '):'Pick up');
     if(shown){
@@ -335,6 +344,11 @@ var FoteResponsiveHUD=(function(){
     const menu=document.createElement('button');menu.id='studyMenuToggle';menu.type='button';
     menu.setAttribute('aria-label','Menu');menu.setAttribute('aria-controls','top');menu.setAttribute('aria-expanded','false');
     menu.innerHTML='<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 7h12M6 12h12M6 17h12"/></svg>';app.append(menu);
+    const search=document.createElement('button');search.id='studySearch';search.type='button';search.hidden=true;search.dataset.gameUi='true';search.setAttribute('aria-label','Wait and search');
+    search.innerHTML=lineIcon('<circle cx="10.5" cy="10.5" r="5.5"/><path d="m15 15 4 4"/>');
+    search.onclick=function(event){event.preventDefault();event.stopPropagation();if(uiOpen()||aiming||(typeof BOWAIM!=='undefined'&&BOWAIM)||!player||player.hp<=0)return;node('dpad').querySelector('[data-d="5"]').click();};app.append(search);bindHudResourceCard(search,'search');
+    const cancel=document.createElement('button');cancel.id='studyCancelAim';cancel.type='button';cancel.hidden=true;cancel.dataset.gameUi='true';cancel.setAttribute('aria-label','Cancel targeting');
+    cancel.innerHTML=lineIcon('<path d="m6 6 12 12M18 6 6 18"/>');cancel.onclick=function(event){event.preventDefault();event.stopPropagation();cancelAim();syncTouchControls();};app.append(cancel);
     const actions=document.createElement('nav');actions.id='studyActionBar';actions.setAttribute('aria-label','Game actions');app.append(actions);
     const logClose=document.createElement('button');logClose.id='studyLogClose';logClose.type='button';logClose.textContent='Close history';app.append(logClose);
     const position=document.createElement('span');position.className='study-position';

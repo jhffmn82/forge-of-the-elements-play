@@ -89,6 +89,15 @@ function uiUsesTouchInput(){
   try{var override=new URLSearchParams(location.search).get('touch');if(override==='0'||override==='1')return override==='1';}catch(e){}
   return !!((typeof MOBILE!=='undefined'&&MOBILE)||(typeof navigator!=='undefined'&&navigator.maxTouchPoints>0)||(typeof matchMedia==='function'&&matchMedia('(pointer:coarse)').matches));
 }
+// Explicit preferences win over the device default; boot never writes a choice.
+var UI_HIGH_CONTRAST=uiUsesTouchInput();
+try{var savedContrast=localStorage.getItem('fote-ui-high-contrast');if(savedContrast==='on'||savedContrast==='off')UI_HIGH_CONTRAST=savedContrast==='on';}catch(e){}
+function setHighContrast(on){
+  UI_HIGH_CONTRAST=!!on;
+  try{localStorage.setItem('fote-ui-high-contrast',UI_HIGH_CONTRAST?'on':'off');}catch(e){}
+  if(typeof drawTerrainNow==='function')drawTerrainNow();
+  if(typeof draw==='function')draw();
+}
 function uiHotbarLayout(){return UI_HOTBAR_LAYOUT;}
 var UI_HOTBAR_LAYOUT='horizontal',UI_TOUCH_PAD=true;
 try{UI_HOTBAR_LAYOUT=localStorage.getItem('fote-ui-hotbar-layout')||UI_HOTBAR_LAYOUT;UI_TOUCH_PAD=localStorage.getItem('fote-ui-touch-pad')!=='off';}catch(e){}
@@ -161,6 +170,12 @@ function appearanceSegments(id,label,choices,value){
 function appearanceDropdown(id,label,choices,value){
   return '<label class="optrow opt-appearance"><span>'+label+'</span><select id="'+id+'">'+Object.keys(choices).map(function(k){return '<option value="'+k+'"'+(k===value?' selected':'')+'>'+choices[k]+'</option>';}).join('')+'</select></label>';
 }
+function setTouchPadVisible(on){
+  UI_TOUCH_PAD=!!on;
+  if(typeof stopDirectionPad==='function')stopDirectionPad();
+  try{localStorage.setItem('fote-ui-touch-pad',UI_TOUCH_PAD?'on':'off');}catch(e){}
+  applyUIAppearance();
+}
 var UI_APPEARANCE_CHOICES={uiHudMode:UI_HUD_MODES,uiSide:{left:'Left',right:'Right'},uiPadSide:UI_PAD_SIDES,uiHotbarLayout:UI_HOTBAR_LAYOUTS,uiPhonePadSize:UI_PHONE_PAD_SIZES,uiStatusSize:UI_STATUS_SIZES,uiTheme:UI_THEMES,uiTextSize:UI_TEXT_SIZES};
 function setAppearanceSetting(id,value){
   if(!Object.prototype.hasOwnProperty.call(UI_APPEARANCE_CHOICES,id)||!Object.prototype.hasOwnProperty.call(UI_APPEARANCE_CHOICES[id],value))return false;
@@ -191,6 +206,7 @@ function settingsHTML(){
      '<label class="optrow"><span>Music volume</span><input type="range" id="volMusic" min="0" max="100" value="'+Math.round((AUDIO.vol.music||0)*100)+'"></label>'+
      '<div class="sec">Display</div>'+
      appearanceSegments('uiHudMode','Desktop interface',UI_HUD_MODES,UI_HUD_MODE)+'<div class="c-info">Classic UI keeps a windowed map and a permanent combat log. Smaller windows use Overlay.</div>'+
+     appearanceSegments('highContrast','High contrast mode',{on:'On',off:'Off'},UI_HIGH_CONTRAST?'on':'off')+'<div class="c-info">Brightens characters and ground items with a faint dark edge. On by default for mobile devices.</div>'+
      appearanceSegments('uiStatusSize','Portrait and bars',UI_STATUS_SIZES,UI_STATUS_SIZE)+
      appearanceSegments('uiSide','Portrait side',{left:'Left',right:'Right'},UI_SIDE)+
      appearanceSegments('uiPadSide','Control pad side',UI_PAD_SIDES,UI_PAD_SIDE)+
@@ -255,7 +271,8 @@ function wireSettings(root){
       if(id==='motion'){ if(typeof setMotion==='function') setMotion(v); }
       if(id==='mapart')setMapArt(v);
       if(id==='desktopPad'){UI_DESKTOP_PAD=v==='on'||v==='shown';try{localStorage.setItem('fote-ui-desktop-pad',UI_DESKTOP_PAD?'shown':'hidden');}catch(e){}if(typeof FoteResponsiveHUD!=='undefined')FoteResponsiveHUD.relayout();}
-      if(id==='touchPad'){UI_TOUCH_PAD=v==='on';try{localStorage.setItem('fote-ui-touch-pad',v);}catch(e){}applyUIAppearance();}
+      if(id==='touchPad')setTouchPadVisible(v==='on');
+      if(id==='highContrast')setHighContrast(v==='on');
       if(id==='mapzoom'){ MAP_ZOOM=v; try{ localStorage.setItem('astra-temple-map-zoom', v); }catch(e){} resize(); }
       if(id==='speed'){ ANIM_SPEED=parseFloat(v)||1; try{ localStorage.setItem('astra-temple-anim-speed', String(ANIM_SPEED)); }catch(e){} applyAnimSpeed(); }
       sfx('ui-click'); refreshOptions(root);

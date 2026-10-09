@@ -1026,6 +1026,10 @@ function drawActorContactShadow(e,px,py){
   ctx.globalAlpha=0.35;ctx.fillStyle='#000';ctx.beginPath();
   ctx.ellipse(px+TS*n/2,py+TS*0.9*n,TS*0.26*scale,TS*0.09*n,0,0,7);ctx.fill();ctx.globalAlpha=1;
 }
+/* Optional contrast uses authored sprites and retains the existing visibility policy. */
+function phoneActorClarity(){
+  return typeof UI_HIGH_CONTRAST!=='undefined'&&UI_HIGH_CONTRAST;
+}
 function drawCharacterSprite(e, px, py, opts){
   if(!spriteOn)return false;
   if(e.livingFlame)return drawLivingFlame(e,px,py,opts);
@@ -1051,6 +1055,7 @@ function drawCharacterSprite(e, px, py, opts){
         var anchorShift=FoteCastFrameAlignment.offset(cs.look,m,fr);
         if(anchorShift)ctx.translate(anchorShift*w/cell,0);
       }
+      if(e===player&&phoneActorClarity())ctx.filter='brightness(1.2) drop-shadow(0px 0px 0.45px rgba(23,18,15,.55))';
       if(typeof drawCastLayers==='function') drawCastLayers(e, cs, fr, dx, dy, w, h); else ctx.drawImage(cs.img, fr.sx, fr.sy, cell, cell, dx, dy, w, h);
       if(opts.flash>0){ ctx.globalAlpha*=opts.flash; ctx.drawImage(whiteCut(cs.img,fr.sx,fr.sy,cell,cell), dx,dy,w,h); }
       ctx.restore();
@@ -1081,6 +1086,7 @@ function drawCharacterSprite(e, px, py, opts){
     var actorAlpha=(opts.alpha===undefined?1:opts.alpha)*(isShade ? .62 : 1);
     ctx.save(); ctx.globalAlpha=actorAlpha; ctx.imageSmoothingEnabled=spriteSheetSmoothing(ms,Math.min(w2,h2)/c2);
     if(opts.flip){ ctx.translate(px+TS/2,0); ctx.scale(-1,1); ctx.translate(-(px+TS/2),0); }
+    if(opts.outline&&phoneActorClarity())ctx.filter='brightness(1.2) drop-shadow(0px 0px 0.45px rgba(23,18,15,.55))';
     if(mm.edge || (opts.outline && !paintedSheet(ms))){
       var cut2=whiteCut(ms.img,f2.sx,f2.sy,c2,c2,mm.edge),edge2=mm.edge?Math.max(.3,s2*.5):Math.max(.5,TS/80);
       ctx.globalAlpha=actorAlpha*(mm.edge?.24:.07);
@@ -1754,10 +1760,13 @@ function drawScene(){
       ctx.fillStyle=kg; ctx.beginPath(); ctx.arc(ipx+TS/2, ipy+TS*0.58, TS*0.62, 0, 7); ctx.fill();
       if(!ANIM.reduce && Math.random()<0.10) sparkleFx(it.x, it.y, 'ice', 1);
     }
-    if(it.kind==='heart' || it.kind==='managlobe'){ drawGlobe(it, ipx, ipy+bob, ia, now); return; }
+    ctx.save();
+    if(phoneActorClarity())ctx.filter='brightness(1.2) drop-shadow(0px 0px 0.45px rgba(23,18,15,.55))';
+    if(it.kind==='heart' || it.kind==='managlobe'){ drawGlobe(it, ipx, ipy+bob, ia, now); ctx.restore(); return; }
     var o=spriteOn ? (objArt('items', itemArtName(it))) : null;
     if(o) drawObj(o, ipx, ipy+TS*0.08+bob, {fit: ITEM_FIT[it.kind]||0.5, alpha:ia, loot:true});
     else { ctx.globalAlpha=ia; glyph(it.kind==='essence'?'\u2022':it.kind==='mote'?'\u25C6':it.kind==='food'?'%':it.kind==='sigil'?'?':it.kind==='armor'?'[':'/', ipx, ipy, it.kind==='mote'?AFF_COL[it.el]:it.kind==='essence'?'#B98AF0':'#E8B44A'); ctx.globalAlpha=1; }
+    ctx.restore();
     if(it.kind==='mote' && !ANIM.reduce){ ctx.save(); ctx.globalCompositeOperation='lighter'; ctx.globalAlpha=0.18+0.08*Math.sin(now/200+it.x); ctx.fillStyle=AFF_COL[it.el]; ctx.beginPath(); ctx.arc(ipx+TS/2,ipy+TS*0.58,TS*0.2,0,7); ctx.fill(); ctx.restore(); }
   });
   /* fire on the ground */
