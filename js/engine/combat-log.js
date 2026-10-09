@@ -24,6 +24,8 @@
     }
     function state(){
       var time=now(),live=entries.filter(function(e){return e.expiresAt>time||inTurn&&e.batch===batch;});
+      // Mobile shows one command's complete results; history and desktop keep their existing windows.
+      if(doc&&doc.body&&doc.body.classList.contains('study-touch'))live=live.filter(function(e){return e.batch===batch;});
       return {enabled:enabled,history:history,visible:enabled&&!history&&live.length>0,
         entries:live.map(function(e){return {id:e.id,html:e.html,cls:e.cls,warning:e.warning,expiresAt:e.expiresAt,fading:!(inTurn&&e.batch===batch)&&time>=e.expiresAt-fadeAge};})};
     }

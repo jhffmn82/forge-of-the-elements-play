@@ -165,11 +165,11 @@
     applyZoom();
   }
   /* icons are painted at their slot's exact size, so a layout change during a run repaints them (CSS would stretch the old ones) */
-  function relayout(){ sync(); if(typeof abilityBar==='function' && typeof RUN!=='undefined' && RUN && !document.getElementById('loadVeil')) abilityBar(); }
+  function relayout(){ sync(); if(typeof FoteResponsiveHUD!=='undefined'&&typeof FoteResponsiveHUD.relayout==='function')FoteResponsiveHUD.relayout(); if(typeof abilityBar==='function' && typeof RUN!=='undefined' && RUN && !document.getElementById('loadVeil')) abilityBar(); }
   window.addEventListener('resize', function(){ setTimeout(relayout, 0); });
   window.addEventListener('orientationchange', function(){ cancelRotatingInput();setTimeout(relayout, 120); });
   if(window.screen&&screen.orientation&&typeof screen.orientation.addEventListener==='function')
-    screen.orientation.addEventListener('change', function(){ cancelRotatingInput();setTimeout(relayout, 0); });
+    screen.orientation.addEventListener('change', function(){ cancelRotatingInput();setTimeout(relayout, 0);setTimeout(relayout, 120); });
   if(window.visualViewport) visualViewport.addEventListener('resize', function(){ setTimeout(relayout, 0); });
 
   if(DEVICE){

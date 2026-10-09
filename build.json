@@ -1,9 +1,9 @@
 {
   "version": "Beta 1.6",
-  "built": "2026-10-09T17:22:04.419687+00:00",
-  "epoch": 1791566524,
-  "source": "Portrait menu metadata overlap fix; retains reviewed phone portrait, High Contrast and all prior content/art hotfixes",
+  "built": "2026-10-09T17:39:47.344650+00:00",
+  "epoch": 1791567587,
+  "source": "Mobile rotation HUD refresh and latest-turn message overlay; retains all reviewed portrait, artwork and gameplay fixes",
   "candidate": true,
   "releaseState": "playtest",
-  "revision": "beta16-portrait-menu-20261009-172204"
+  "revision": "beta16-mobile-followups-20261009-173947"
 }
