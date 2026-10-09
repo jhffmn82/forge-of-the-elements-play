@@ -1,9 +1,9 @@
 {
   "version": "Beta 1.6",
-  "built": "2026-10-09T16:58:12.913264+00:00",
-  "epoch": 1791565092,
-  "source": "Phone portrait test integration and saved High Contrast option; preserves Tourist v2, Water Fae artwork, audit and Treasury hotfixes",
+  "built": "2026-10-09T17:22:04.419687+00:00",
+  "epoch": 1791566524,
+  "source": "Portrait menu metadata overlap fix; retains reviewed phone portrait, High Contrast and all prior content/art hotfixes",
   "candidate": true,
   "releaseState": "playtest",
-  "revision": "beta16-phone-portrait-20261009-165812"
+  "revision": "beta16-portrait-menu-20261009-172204"
 }

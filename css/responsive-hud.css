@@ -1148,3 +1148,8 @@ body.fote-study.study-touch.study-portrait #studySearch svg{width:24px;height:24
 body.fote-study.study-minimal.study-touch.study-portrait #app #studyActionBar.study-targeting :is(#studyMenuToggle,#bMap,#studyInventoryIcon){display:none!important;}
 
 #studySearch[hidden]{display:none!important;}
+
+/* Portrait menu header must contain both metadata rows before navigation. */
+body.fote-study.study-minimal.study-touch.study-portrait #app #top #brand{height:auto!important;min-height:0;flex:none;}
+body.fote-study.study-minimal.study-touch.study-portrait #app #top #depth{flex:none;min-width:0;box-sizing:border-box;}
+body.fote-study.study-minimal.study-touch.study-portrait #app #top #depth .study-position{flex-wrap:wrap;row-gap:4px;}
