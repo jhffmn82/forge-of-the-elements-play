@@ -3,7 +3,7 @@
    The approved study* selectors remain stable for skins and screenshot tooling. */
 var FoteResponsiveHUD=(function(){
   'use strict';
-  var mounted=false,frame=0,menuOpen=false,portraitRetry=0,pickupFrame=0,positionFrame=0,portraitAim=false;
+  var mounted=false,frame=0,menuOpen=false,portraitRetry=0,pickupFrame=0,positionFrame=0;
   const node=id=>document.getElementById(id);
   const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const num=n=>Math.round(n||0).toLocaleString('en-US');
@@ -249,9 +249,9 @@ var FoteResponsiveHUD=(function(){
     const actions=node('studyActionBar');
     const actionButtons=[node('studyMenuToggle'),node('bMap')];
     const phonePortrait=document.body.classList.contains('study-small-touch')&&document.body.classList.contains('study-portrait');
-    if(phonePortrait)actionButtons.push(explore,inventory,node('studyCancelAim'));
+    if(Math.min(innerWidth,innerHeight)<600&&document.body.classList.contains('study-small-touch')&&document.body.classList.contains('study-touch'))actionButtons.push(explore,inventory,node('studyCancelAim'));
     else actionButtons.push(explore);
-    if(!phonePortrait&&inventory.parentElement!==app)app.append(inventory);
+    if((Math.min(innerWidth,innerHeight)>=600||!document.body.classList.contains('study-small-touch'))&&inventory.parentElement!==app)app.append(inventory);
 
     if(actionButtons.some((button,index)=>actions.children[index]!==button))actions.append(...actionButtons);
     if(hud.parentElement!==app)app.append(hud);
@@ -266,14 +266,13 @@ var FoteResponsiveHUD=(function(){
   }
   function syncTouchControls(){
     syncPickup();
-    const phone=document.body.classList.contains('study-minimal')&&document.body.classList.contains('study-portrait')&&document.body.classList.contains('study-touch');
+    const phone=document.body.classList.contains('study-minimal')&&document.body.classList.contains('study-small-touch')&&document.body.classList.contains('study-touch')&&Math.min(innerWidth,innerHeight)<600;
     const search=node('studySearch');
     if(search){search.hidden=!phone||UI_TOUCH_PAD||!!aiming||(typeof BOWAIM!=='undefined'&&!!BOWAIM)||uiOpen()||!player||player.hp<=0;}
     const cancel=node('studyCancelAim');
-    const showCancel=document.body.classList.contains('study-minimal')&&document.body.classList.contains('study-portrait')&&document.body.classList.contains('study-touch')&&(!!aiming||(typeof BOWAIM!=='undefined'&&!!BOWAIM))&&!uiOpen();
+    const showCancel=document.body.classList.contains('study-minimal')&&document.body.classList.contains('study-small-touch')&&document.body.classList.contains('study-touch')&&Math.min(innerWidth,innerHeight)<600&&(!!aiming||(typeof BOWAIM!=='undefined'&&!!BOWAIM))&&!uiOpen();
     if(cancel){cancel.hidden=!showCancel;cancel.tabIndex=showCancel?0:-1;}
     setHudClass(node('studyActionBar'),'study-targeting',showCancel);
-    if(portraitAim!==showCancel){portraitAim=showCancel;if(phone)resize();}
     const controls=node('dpad');if(!controls)return;
     const overlay=document.body.classList.contains('study-overlay-pad');
     const blocked=overlay&&(!!aiming||(typeof BOWAIM!=='undefined'&&!!BOWAIM)||uiOpen()||!player||player.hp<=0);

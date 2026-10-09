@@ -392,7 +392,10 @@ function basicMonsterBehavior(e){
      Charge      - marks a straight line toward you, lands next turn. Dodge it and he hits the wall, dazed 2 turns (+50% damage taken).
      Shockwave   - below a third of his health every slam is followed by a ring 3-4 tiles out: step back in close.
    Between them he cleaves whatever stands next to him. */
-var BOSS_ROTATION = [['cleave','cleave','slam','cleave','cleave','charge'], ['cleave','slam','cleave','charge']];
+/* 2026-10-09 (Justin: 'in actual play grukk doesn't seem to do anything'; asked whether each phase should open with his slam:
+   'yes'). The same moves, as often as before, in another order: the Axe Slam leads each list, and a new phase starts its list
+   again (bossTurn). It stood third, took two more turns to land, and a hero dealing 17 or more a turn never saw it. */
+var BOSS_ROTATION = [['slam','cleave','cleave','cleave','cleave','charge'], ['slam','cleave','cleave','charge']];
 function tilesWithin(cx, cy, rMin, rMax){
   var out=[];
   for(var y=cy-rMax;y<=cy+rMax;y++) for(var x=cx-rMax;x<=cx+rMax;x++){
@@ -455,9 +458,10 @@ function bossTurn(e, see, d){
     return true;
   }
   if((e.phase===0 && pct<0.66) || (e.phase===1 && pct<0.33)){
-    e.phase++; log('<b>Grukk</b> calls reinforcements!'+(e.phase===2?' Enraged: slams cause shockwaves.':''),'c-you'); sfx('warchief-roar',{from:e}); SHAKE=10;
+    e.phase++; e.rot=0; log('<b>Grukk</b> calls reinforcements!'+(e.phase===2?' Enraged: slams cause shockwaves.':''),'c-you'); sfx('warchief-roar',{from:e}); SHAKE=10;
     for(var j=0;j<2;j++){ var c=nearFree(e.x,e.y,3); if(c){ var g=spawn(j===0?'goblin':'archer',c.x,c.y); g.state='hunt'; g.noXp=false; sparkleFx(c.x,c.y,'earth',10); } }
-    return true;
+    /* 2026-10-09 (Justin, after a turn-by-turn log of the fight: 'maybe calling goblins not costing him his turn would help'): the
+       call no longer ends his turn. He went two of his six turns without acting against a hero who deals about 28 a turn. */
   }
   if(!see) return false;
   var rot=BOSS_ROTATION[e.phase>=1?1:0];

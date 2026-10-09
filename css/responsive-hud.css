@@ -1153,3 +1153,36 @@ body.fote-study.study-minimal.study-touch.study-portrait #app #studyActionBar.st
 body.fote-study.study-minimal.study-touch.study-portrait #app #top #brand{height:auto!important;min-height:0;flex:none;}
 body.fote-study.study-minimal.study-touch.study-portrait #app #top #depth{flex:none;min-width:0;box-sizing:border-box;}
 body.fote-study.study-minimal.study-touch.study-portrait #app #top #depth .study-position{flex-wrap:wrap;row-gap:4px;}
+
+@media (orientation:landscape) and (max-height:599px){
+/* Short landscape keeps eight touch slots compact and reserves their strip only while targeting. */
+body.fote-study.study-minimal.study-touch.study-small-touch:not(.study-portrait):not(.study-tablet){--minimal-slot:max(48px,calc(55px * var(--study-interface-scale,1)));}
+body.fote-study.study-minimal.study-touch.study-small-touch.study-hotbar-vertical:not(.study-portrait):not(.study-tablet) #app #hotbar{grid-template-columns:repeat(2,var(--minimal-slot))!important;grid-template-rows:repeat(4,var(--minimal-slot))!important;top:calc(var(--minimal-inset) + var(--minimal-action-size) + 8px + env(safe-area-inset-top,0px));bottom:auto;transform:none;}
+body.fote-study.study-minimal.study-touch.study-small-touch:not(.study-portrait):not(.study-tablet) #app #studyCancelAim:not([hidden]){display:flex;pointer-events:auto;position:relative;inset:auto;align-items:center;justify-content:center;width:var(--minimal-action-size);height:var(--minimal-action-size);min-height:44px;padding:0;border-radius:50%;}
+body.fote-study.study-minimal.study-touch.study-small-touch:not(.study-portrait):not(.study-tablet) #app #studyActionBar.study-targeting :is(#studyMenuToggle,#bMap,#studyExplore){display:none!important;}
+body.fote-study.study-minimal.study-touch.study-small-touch:not(.study-portrait):not(.study-tablet):has(#studyActionBar.study-targeting) #app :is(#studyHud,#statusbar,#studyInventoryIcon,#studyRecentLog){visibility:hidden;}
+
+body.fote-study.study-minimal.study-touch.study-small-touch:not(.study-portrait):not(.study-tablet) #app #studyActionBar{display:flex;flex-direction:row;top:calc(var(--minimal-inset) + env(safe-area-inset-top,0px));}
+body.fote-study.study-minimal.study-touch.study-small-touch:not(.study-portrait):not(.study-tablet) #app #studyActionBar.study-targeting #studyInventoryIcon{display:none!important;}
+}
+
+/* Native settings groups: concise headings, wrap-safe controls and preserved disclosure state. */
+body.fote-study .opt-section,body.fote-study .opt-section-details{min-width:0;}
+body.fote-study .opt-section .optrow{gap:8px;flex-wrap:wrap;align-items:center;justify-content:space-between;}
+body.fote-study .opt-section .seg{max-width:100%;flex-wrap:wrap;}
+body.fote-study .opt-section-details summary{cursor:pointer;min-height:44px;display:list-item;line-height:1.5;padding-block:10px;color:var(--ui-ink);}
+body.fote-study.study-touch .opt-section .optrow{display:grid;grid-template-columns:minmax(0,1fr);}
+body.fote-study.study-touch .opt-section :is(button,select){min-height:44px;}
+body.fote-study.study-touch .opt-section .seg{display:flex;gap:4px;}
+body.fote-study.study-touch .opt-section .seg button{min-width:44px;}
+body.fote-study.study-touch .opt-section input[type=range]{width:100%;min-width:0;}
+
+body.fote-study.study-minimal.study-touch.study-small-touch:not(.study-portrait):not(.study-tablet) #app #studySearch:not([hidden]){display:flex;position:absolute;align-items:center;justify-content:center;pointer-events:auto;left:calc(var(--minimal-inset) + env(safe-area-inset-left,0px));bottom:calc(2 * var(--minimal-inset) + var(--minimal-slot) + env(safe-area-inset-bottom,0px));z-index:48;width:var(--minimal-action-size);height:var(--minimal-action-size);min-height:44px;padding:0;border-radius:50%;}
+body.fote-study.study-minimal.study-touch.study-small-touch.study-hotbar-vertical:not(.study-portrait):not(.study-tablet) #app #studySearch{bottom:calc(var(--minimal-inset) + env(safe-area-inset-bottom,0px));}
+body.fote-study.study-touch.study-small-touch #studySearch svg{width:24px;height:24px;}
+
+/* Landscape actions align with the hotbar edge; inventory now belongs to the row. */
+@media (orientation:landscape) and (max-height:599px){
+body.fote-study.study-minimal.study-touch.study-small-touch:not(.study-portrait):not(.study-tablet) #app #studyActionBar{right:calc(var(--minimal-inset) + env(safe-area-inset-right,0px));left:auto;}
+body.fote-study.study-minimal.study-touch.study-small-touch.study-pad-right:not(.study-portrait):not(.study-tablet) #app #studyActionBar{right:auto;left:calc(var(--minimal-inset) + env(safe-area-inset-left,0px));}
+}

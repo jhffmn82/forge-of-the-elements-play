@@ -75,8 +75,8 @@ if($('bArt'))$('bArt').textContent=spriteOn?'Art: sprites':'Art: blocks';
 })();
 function segHTML(id, opts, cur, label){ return '<span class="seg" data-seg="'+id+'"'+(label?' role="group" aria-labelledby="'+label+'"':'')+'>'+opts.map(function(o){ var selected=String(o[0])===String(cur);return '<button type="button" data-v="'+o[0]+'" class="'+(selected?'on':'')+'" aria-pressed="'+selected+'">'+o[1]+'</button>'; }).join('')+'</span>'; }
 var UI_THEMES={ember:'Ember (Default)',forge:'Forge',vellum:'Vellum - Ivory','vellum-sand':'Vellum - Sand','vellum-ash':'Vellum - Ash',charcoal:'Charcoal',slate:'Slate',obsidian:'Obsidian',runestone:'Runestone'}, UI_TEXT_SIZES={small:'Small',normal:'Standard',large:'Large'};
-var UI_PHONE_PAD_SIZES={compact:'Compact',normal:'Normal (Default)',large:'Large'};
-var UI_STATUS_SIZES={compact:'Compact',normal:'Normal (Default)',large:'Large'},UI_STATUS_SIZE='normal';
+var UI_PHONE_PAD_SIZES={compact:'Compact',normal:'Normal',large:'Large'};
+var UI_STATUS_SIZES={compact:'Compact',normal:'Normal',large:'Large'},UI_STATUS_SIZE='normal';
 try{UI_STATUS_SIZE=localStorage.getItem('fote-ui-status-size')||UI_STATUS_SIZE;}catch(e){}
 var UI_HOTBAR_LAYOUTS={vertical:'Vertical',horizontal:'Horizontal'};
 var UI_PAD_SIDES={left:'Left',right:'Right'},UI_PAD_SIDE='left';
@@ -99,7 +99,7 @@ function setHighContrast(on){
   if(typeof draw==='function')draw();
 }
 function uiHotbarLayout(){return UI_HOTBAR_LAYOUT;}
-var UI_HOTBAR_LAYOUT='horizontal',UI_TOUCH_PAD=true;
+var UI_HOTBAR_LAYOUT=uiUsesTouchInput()&&Math.min(innerWidth,innerHeight)<600?'vertical':'horizontal',UI_TOUCH_PAD=true;
 try{UI_HOTBAR_LAYOUT=localStorage.getItem('fote-ui-hotbar-layout')||UI_HOTBAR_LAYOUT;UI_TOUCH_PAD=localStorage.getItem('fote-ui-touch-pad')!=='off';}catch(e){}
 var UI_THEME='ember',UI_TEXT_SIZE='normal',UI_OPACITY=100,UI_SIDE='left',UI_DESKTOP_PAD=false,UI_PHONE_PAD_SIZE='normal';
 try{UI_SIDE=localStorage.getItem('fote-ui-side')||localStorage.getItem('fote-study-pad-side')||UI_SIDE;UI_DESKTOP_PAD=(localStorage.getItem('fote-ui-desktop-pad')||localStorage.getItem('fote-study-desktop-pad'))==='shown';}catch(e){}
@@ -192,45 +192,35 @@ function setAppearanceSetting(id,value){
   applyUIAppearance();return true;
 }
 function settingsHTML(){
-  var h='<div class="opt-how-to"><button type="button" id="howToPlay">How to play</button><span class="c-info">Movement, turns, items and character growth.</span></div><div class="optgrid"><div><div class="sec">Key bindings <span style="text-transform:none;letter-spacing:0">(click, then press a key; Esc cancels)</span></div><div class="binds">';
-  BIND_ACTIONS.forEach(function(b){
-    var k=bindKey(b[0]);
-    h+='<span>'+b[1]+'</span><button data-bind="'+b[0]+'" class="'+(REBINDING===b[0]?'wait':BINDS[b[0]]?'custom':'')+'">'+(REBINDING===b[0]?'press a key':keyLabel(k))+'</button>';
-  });
-  h+='</div><div style="margin-top:8px;display:flex;gap:8px;align-items:center"><button id="bindReset">Reset to defaults</button><span class="c-info" style="font-size:calc(11px + var(--ui-mobile-text-add,0px))">Arrow keys always move. Esc closes windows.</span></div></div>';
-  var lightOn = typeof lightingOn==='function' ? lightingOn() : true;
-  h+='<div><div class="sec">Audio</div>'+
-     '<div class="optrow"><span>Sound</span>'+segHTML('mute', [[0,'On'],[1,'Off']], AUDIO.muted?1:0)+'</div>'+
-     '<div class="optrow"><span>Music</span>'+segHTML('music', [[1,'On'],[0,'Off']], AUDIO.musicOn?1:0)+'</div>'+
-     '<label class="optrow"><span>Effects volume</span><input type="range" id="volSfx" min="0" max="100" value="'+Math.round((AUDIO.vol.sfx||0)*100)+'"></label>'+
-     '<label class="optrow"><span>Music volume</span><input type="range" id="volMusic" min="0" max="100" value="'+Math.round((AUDIO.vol.music||0)*100)+'"></label>'+
-     '<div class="sec">Display</div>'+
-     appearanceSegments('uiHudMode','Desktop interface',UI_HUD_MODES,UI_HUD_MODE)+'<div class="c-info">Classic UI keeps a windowed map and a permanent combat log. Smaller windows use Overlay.</div>'+
-     appearanceSegments('highContrast','High contrast mode',{on:'On',off:'Off'},UI_HIGH_CONTRAST?'on':'off')+'<div class="c-info">Brightens characters and ground items with a faint dark edge. On by default for mobile devices.</div>'+
-     appearanceSegments('uiStatusSize','Portrait and bars',UI_STATUS_SIZES,UI_STATUS_SIZE)+
-     appearanceSegments('uiSide','Portrait side',{left:'Left',right:'Right'},UI_SIDE)+
-     appearanceSegments('uiPadSide','Control pad side',UI_PAD_SIDES,UI_PAD_SIDE)+
-     appearanceSegments('uiHotbarLayout','Hotbar orientation',UI_HOTBAR_LAYOUTS,UI_HOTBAR_LAYOUT)+
-     '<div class="optrow"><span id="padVisibilityLabel">Show touch pad</span>'+segHTML(uiUsesTouchInput()?'touchPad':'desktopPad',[['on','On'],['off','Off']],(uiUsesTouchInput()?UI_TOUCH_PAD:UI_DESKTOP_PAD)?'on':'off','padVisibilityLabel')+'</div>'+
-     appearanceSegments('uiPhonePadSize','Touch control size',UI_PHONE_PAD_SIZES,UI_PHONE_PAD_SIZE)+
-     appearanceDropdown('uiTheme','UI theme',UI_THEMES,UI_THEME)+
-     appearanceSegments('uiTextSize','Text size',UI_TEXT_SIZES,UI_TEXT_SIZE)+
-     '<label class="optrow ui-opacity-row"><span>UI transparency <output id="uiOpacityValue" for="uiOpacity">'+(100-UI_OPACITY)+'%</output></span><input type="range" id="uiOpacity" min="0" max="90" step="5" value="'+(100-UI_OPACITY)+'" aria-label="UI transparency" aria-describedby="uiOpacityHint"></label><div id="uiOpacityHint" class="c-info">Fades panel and button backgrounds. Text, icons and bars stay solid.</div>'+
-     '<div class="optrow"><button type="button" id="resetUITheme">Reset theme and transparency</button></div>'+
-     '<div class="optrow"><span>Map zoom</span>'+segHTML('mapzoom', [['far','Far'],['normal','Normal'],['close','Close'],['closest','Closest']], MAP_ZOOM)+'</div>'+
-     '<div class="optrow"><span>Block art</span>'+segHTML('mapart', [['block','On'],['sprite','Off']], spriteOn?'sprite':'block')+'</div>'+
-     '<div class="optrow"><span>Dynamic lighting</span>'+segHTML('light', [['on','On'],['off','Off']], lightOn?'on':'off')+'</div>'+
-     '<div class="optrow"><span>Motion (sway, flicker, bob)</span>'+segHTML('motion', [['auto','Auto'],['on','On'],['off','Off']], ANIM.mode)+'</div>'+
-     '<div class="optrow"><span>Animation speed</span>'+segHTML('speed', [[1,'1&times;'],[1.5,'1.5&times;'],[2,'2&times;'],[3,'3&times;']], ANIM_SPEED)+'</div>'+
-     '<div class="sec">Reading the map</div><div class="legend">'+
-     '<b>Dim tiles</b><span>remembered, not in sight</span><b>z over a head</b><span>asleep: surprise it</span><b>Key over a head</b><span>it carries a key</span>'+
-     '<b>Bones at a door</b><span>a monster zoo behind it</span><b>Uneven stones</b><span>a hidden door nearby ('+(uiUsesTouchInput()?'use the center search button':'search with '+keyLabel(bindKey('search')))+')</span><b>Tall grass</b><span>blocks sight, burns</span></div></div></div>';
+  var touch=uiUsesTouchInput(),phone=touch&&Math.min(innerWidth,innerHeight)<600;
+  function row(id,label,choices,value,hint){return '<div class="optrow"><span id="'+id+'Label">'+label+'</span>'+segHTML(id,choices,value,id+'Label')+'</div>'+(hint?'<div class="c-info">'+hint+'</div>':'');}
+  var bindings='<details id="uiKeyBindings" class="opt-section-details"'+(touch?'':' open')+'><summary>Keyboard controls</summary><div class="c-info">Select a binding, then press a key. Esc cancels.</div><div class="binds">';
+  BIND_ACTIONS.forEach(function(b){var k=bindKey(b[0]);bindings+='<span>'+b[1]+'</span><button data-bind="'+b[0]+'" class="'+(REBINDING===b[0]?'wait':BINDS[b[0]]?'custom':'')+'">'+(REBINDING===b[0]?'press a key':keyLabel(k))+'</button>';});
+  bindings+='</div><div class="optrow"><button id="bindReset">Reset keyboard controls</button></div><div class="c-info">Arrow keys always move. Esc closes windows.</div></details>';
+  var h='<div class="opt-how-to"><button type="button" id="howToPlay">How to play</button><span class="c-info">Movement, turns, items and character growth.</span></div><div class="optgrid">';
+  h+='<section class="opt-section"><div class="sec">Interface</div>';
+  if(innerWidth>=960&&innerHeight>=600)h+=appearanceSegments('uiHudMode','Interface layout',UI_HUD_MODES,UI_HUD_MODE);
+  h+=appearanceDropdown('uiTheme','Theme',UI_THEMES,UI_THEME)+appearanceSegments('uiTextSize','Text size',UI_TEXT_SIZES,UI_TEXT_SIZE)+appearanceSegments('uiStatusSize','Status size',UI_STATUS_SIZES,UI_STATUS_SIZE)+appearanceSegments('uiSide','Status position',{left:'Left',right:'Right'},UI_SIDE)+
+    '<label class="optrow ui-opacity-row"><span>Panel transparency <output id="uiOpacityValue" for="uiOpacity">'+(100-UI_OPACITY)+'%</output></span><input type="range" id="uiOpacity" min="0" max="90" step="5" value="'+(100-UI_OPACITY)+'" aria-label="Panel transparency" aria-describedby="uiOpacityHint"></label><div id="uiOpacityHint" class="c-info">Fades panel and button backgrounds; text and icons stay solid.</div><div class="optrow"><button type="button" id="resetUITheme">Reset theme and transparency</button></div></section>';
+  h+='<section class="opt-section"><div class="sec">Map</div>'+row('mapzoom','Map zoom',[['far','Far'],['normal','Normal'],['close','Close'],['closest','Closest']],MAP_ZOOM)+
+    row('highContrast','High contrast',[['on','On'],['off','Off']],UI_HIGH_CONTRAST?'on':'off','Brightens characters and ground items. On by default on mobile.')+
+    row('light','Lighting',[['on','On'],['off','Off']],(typeof lightingOn==='function'?lightingOn():true)?'on':'off')+
+    row('mapart','Map art',[['sprite','Sprites'],['block','Blocks']],spriteOn?'sprite':'block')+
+    row('motion','Ambient motion',[['auto','Auto'],['on','On'],['off','Off']],ANIM.mode,'Sway, flicker and bobbing. Auto follows your device motion preference.')+
+    row('speed','Animation speed',[[1,'1&times;'],[1.5,'1.5&times;'],[2,'2&times;'],[3,'3&times;']],ANIM_SPEED)+'</section>';
+  h+='<section class="opt-section"><div class="sec">Controls</div>'+appearanceSegments('uiHotbarLayout',phone?'Landscape hotbar':'Hotbar layout',UI_HOTBAR_LAYOUTS,UI_HOTBAR_LAYOUT)+(phone?'<div class="c-info">Portrait uses two rows. Landscape uses your chosen layout.</div>':'')+
+    row(touch?'touchPad':'desktopPad','Movement pad',[['on','On'],['off','Off']],(touch?UI_TOUCH_PAD:UI_DESKTOP_PAD)?'on':'off',phone?'With the pad off, Search stays available beside the hotbar.':'')+
+    appearanceSegments('uiPadSide','Pad position',UI_PAD_SIDES,UI_PAD_SIDE)+appearanceSegments('uiPhonePadSize','Pad size',UI_PHONE_PAD_SIZES,UI_PHONE_PAD_SIZE)+'</section>';
+  h+='<section class="opt-section"><div class="sec">Audio</div>'+row('mute','Sound',[[0,'On'],[1,'Off']],AUDIO.muted?1:0)+row('music','Music',[[1,'On'],[0,'Off']],AUDIO.musicOn?1:0)+
+    '<label class="optrow"><span>Effects volume</span><input type="range" id="volSfx" min="0" max="100" value="'+Math.round((AUDIO.vol.sfx||0)*100)+'"></label><label class="optrow"><span>Music volume</span><input type="range" id="volMusic" min="0" max="100" value="'+Math.round((AUDIO.vol.music||0)*100)+'"></label></section>'+bindings;
+  h+='<details id="uiMapGuide" class="opt-section-details"><summary>Reading the map</summary><div class="legend"><b>Dim tiles</b><span>remembered, not in sight</span><b>z over a head</b><span>asleep: surprise it</span><b>Key over a head</b><span>it carries a key</span><b>Bones at a door</b><span>a monster zoo behind it</span><b>Uneven stones</b><span>a hidden door nearby ('+(touch?'use Search':'search with '+keyLabel(bindKey('search')))+')</span><b>Tall grass</b><span>blocks sight, burns</span></div></details></div>';
   return h;
 }
 function optionsHTML(){return settingsHTML();}
 function refreshOptions(settingsRoot){
   var title=$('titleSettings'),isTitle=title&&typeof modalOpen!=='undefined'&&modalOpen;
   var root=settingsRoot||(isTitle?title:$('mHelp'));
+  var disclosureState=root?Array.from(root.querySelectorAll('.opt-section-details[id]')).map(function(e){return {id:e.id,open:e.open};}):[];
   var active=document.activeElement,selector='',scroller=root&&(root.closest('.bodyw')||root.parentElement),scroll=scroller?scroller.scrollTop:0;
   if(root){
     if(root.contains(active)){
@@ -242,6 +232,9 @@ function refreshOptions(settingsRoot){
   if(isTitle&&root===title){
     root.innerHTML=settingsHTML();wireSettings(root);
   }else if(typeof refreshSheet==='function')refreshSheet();
+  if(root&&root.id)root=$(root.id)||root;
+  if(root)scroller=root.closest('.bodyw')||root.parentElement;
+  disclosureState.forEach(function(e){var detail=root&&root.querySelector('#'+e.id);if(detail)detail.open=e.open;});
   var focus=root&&selector&&root.querySelector(selector);if(focus)focus.focus({preventScroll:true});
   if(scroller)scroller.scrollTop=scroll;
 }

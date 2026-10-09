@@ -281,8 +281,6 @@ function resize(){
   // Each zoom shows one fewer tile on either side of the player. Keep the
   // authored presets intact and retain their minimum target counts.
   z=[Math.max(7,Math.round(z[0]*zm)-2),Math.max(6,Math.round(z[1]*zm)-2)];
-  // Preserve range-six coverage while aiming; ordinary play honors the chosen zoom.
-  if(innerWidth<600&&innerHeight>innerWidth&&document.body.classList.contains('touch')&&typeof uiHudMode==='function'&&uiHudMode()==='minimal'&&((typeof aiming!=='undefined'&&aiming)||(typeof BOWAIM!=='undefined'&&BOWAIM)))z[0]=Math.max(15,z[0]);
   /* Floating controls do not reserve map space. Landscape zoom is measured in
      rows, so phones, tablets and PCs keep the same coverage vertically. */
   var fitRows=innerWidth>innerHeight && typeof uiHudMode==='function' && uiHudMode()==='minimal';
