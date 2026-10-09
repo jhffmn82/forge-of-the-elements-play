@@ -249,7 +249,7 @@ var FoteResponsiveHUD=(function(){
     const actions=node('studyActionBar');
     const actionButtons=[node('studyMenuToggle'),node('bMap')];
     const phonePortrait=document.body.classList.contains('study-small-touch')&&document.body.classList.contains('study-portrait');
-    if(Math.min(innerWidth,innerHeight)<600&&document.body.classList.contains('study-small-touch')&&document.body.classList.contains('study-touch'))actionButtons.push(explore,inventory,node('studyCancelAim'));
+    if(Math.min(innerWidth,innerHeight)<600&&document.body.classList.contains('study-small-touch')&&document.body.classList.contains('study-touch'))actionButtons.push(explore,inventory);
     else actionButtons.push(explore);
     if((Math.min(innerWidth,innerHeight)>=600||!document.body.classList.contains('study-small-touch'))&&inventory.parentElement!==app)app.append(inventory);
 
@@ -268,11 +268,13 @@ var FoteResponsiveHUD=(function(){
     syncPickup();
     const phone=document.body.classList.contains('study-minimal')&&document.body.classList.contains('study-small-touch')&&document.body.classList.contains('study-touch')&&Math.min(innerWidth,innerHeight)<600;
     const search=node('studySearch');
-    if(search){search.hidden=!phone||UI_TOUCH_PAD||!!aiming||(typeof BOWAIM!=='undefined'&&!!BOWAIM)||uiOpen()||!player||player.hp<=0;}
+    if(search){search.hidden=!phone||UI_TOUCH_PAD||uiOpen()||!player||player.hp<=0;}
     const cancel=node('studyCancelAim');
     const showCancel=document.body.classList.contains('study-minimal')&&document.body.classList.contains('study-small-touch')&&document.body.classList.contains('study-touch')&&Math.min(innerWidth,innerHeight)<600&&(!!aiming||(typeof BOWAIM!=='undefined'&&!!BOWAIM))&&!uiOpen();
     if(cancel){cancel.hidden=!showCancel;cancel.tabIndex=showCancel?0:-1;}
     setHudClass(node('studyActionBar'),'study-targeting',showCancel);
+    setHudClass(document.body,'study-phone-targeting',showCancel);
+    if(cancel&&cancel.parentElement!==node('app'))node('app').append(cancel);
     const controls=node('dpad');if(!controls)return;
     const overlay=document.body.classList.contains('study-overlay-pad');
     const blocked=overlay&&(!!aiming||(typeof BOWAIM!=='undefined'&&!!BOWAIM)||uiOpen()||!player||player.hp<=0);
