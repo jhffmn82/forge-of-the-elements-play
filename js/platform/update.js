@@ -3,6 +3,7 @@ var FOTE_VERSION = 'Beta 1.7';
 /* Keep newest first; describe only changes already present in this build. */
 var FOTE_PATCHES = [
   {version:'Beta 1.7', notes:[
+    "Starting a character now waits for the selected hero and dungeon to be drawn before leaving character creation. Artwork Retry remains usable while a floor is loading.",
     "Dimensional lighting is now the default, with directional surface shading, regional ambient light and local illumination from torches, crystals and luminous creatures. Visibility and combat rules are unchanged.",
     "Refactored the game's foundation and reduced repeated work in floor generation, saves, enemy pathfinding and rendering. Artwork loads by scene and terrain caches release unused resources.",
     "Gameplay, balance, controls and existing saves are preserved. The Lighting option and browser graphics fallback remain available. This is a playtest build."

@@ -19,7 +19,11 @@ function directionPadButton(t){
   var b=t&&t.closest&&t.closest('button[data-d]');
   return b&&b.closest('#dpad')&&typeof DIRS!=='undefined'&&DIRS[b.getAttribute('data-d')]?b:null;
 }
-function blockPendingInput(ev){PACING.pending=null;ev.preventDefault();ev.stopImmediatePropagation();}
+function blockPendingInput(ev){
+  // The floor hold must not block the Retry button that can release it.
+  if(ev.target&&ev.target.closest&&ev.target.closest('#floorArtStatus button'))return;
+  PACING.pending=null;ev.preventDefault();ev.stopImmediatePropagation();
+}
 
 /* 2026-09-22 (Justin: walking stuttered). Holding a direction used to wait for each slide to end, then a frame,
    then start the next from a standstill: a stop at every tile. A movement key (move=true) is released once every

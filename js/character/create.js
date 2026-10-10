@@ -277,8 +277,14 @@ function renderCreate(){
   $('cTutorial').checked=typeof FoteGettingStarted==='undefined'||FoteGettingStarted.enabled();
   $('cTutorial').onchange=function(){if(typeof FoteGettingStarted!=='undefined')FoteGettingStarted.setEnabled(this.checked);};
   $('begin').onclick=function(){
-    audioInit();sfx('ui-click');$('create').classList.remove('on');
-    if(newRun(Date.now()%1000000,CHOICE)!==false&&typeof FoteGettingStarted!=='undefined')FoteGettingStarted.onRunStarted();
+    audioInit();sfx('ui-click');
+    if(newRun(Date.now()%1000000,CHOICE)===false)return;
+    // Keep the preview dungeon covered until the selected run is actually drawn.
+    whenFloorDrawn(function(){
+      el.classList.remove('on');
+      if(typeof FotePortraitAnimation!=='undefined')FotePortraitAnimation.refresh();
+      if(typeof FoteGettingStarted!=='undefined')FoteGettingStarted.onRunStarted();
+    });
   };
   var restored=focusSelector&&el.querySelector(focusSelector);if(restored&&!restored.disabled)restored.focus({preventScroll:true});
   if(c.cls==='scoundrel')c.kit='melee';

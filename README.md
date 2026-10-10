@@ -10,6 +10,8 @@ audio, fonts and save format are preserved. Lighting is enabled by default, with
 a Canvas fallback when WebGL2 is unavailable. Block art remains in Options.
 The update also fixes cross-floor fire attribution and releases retired Chaos
 art from animation caches.
+Character creation stays visible until the chosen hero and floor are drawn;
+artwork Retry remains available while a floor is loading.
 
 Keyboard: WASD or arrows to move, QEZC diagonals, 1-8 hotbar, Tab character sheet,
 `i` equipment, `>` stairs. Mouse and phone touch controls remain available.
@@ -23,4 +25,4 @@ the repeatable export and an itch.io ZIP. Automated browser tests cover gameplay
 save compatibility, UI, dimensional compositing, recovery and nested-path play.
 Physical-phone GPU and memory performance still require device testing.
 
-Build: **10/10/2026 18:57:55**. Revision: `foundation17-20261010185755396`.
+Build: **10/10/2026 19:08:28**. Revision: `foundation17-20261010190828431`.
