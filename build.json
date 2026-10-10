@@ -1,9 +1,9 @@
 {
   "version": "Beta 1.6",
-  "built": "2026-10-09T23:04:08.406896+00:00",
-  "epoch": 1791587048,
-  "source": "Phone targeting keeps controls visible while map taps pass through to the canvas; Cancel remains independent at lower left",
+  "built": "2026-10-10T03:43:46.206345+00:00",
+  "epoch": 1791603826,
+  "source": "Approved character head sizes and outfit proportions with aligned hands and sharper selected faces; all mobile controls preserved",
   "candidate": true,
   "releaseState": "playtest",
-  "revision": "beta16-phone-targeting-20261009-230408"
+  "revision": "beta16-claude-heads-20261010-034346"
 }
