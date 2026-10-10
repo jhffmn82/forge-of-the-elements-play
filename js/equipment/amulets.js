@@ -27,11 +27,6 @@ var AMULET_MAX_CHARGES = 3;
 /* older saves or items made before the rework */
 function amuletOk(a){ return a && AMULETS[a.amulet]; }
 function amuletThornsWard(){return Math.round(player.maxhp*.35);}
-function amuletDescription(a){
-  if(typeof amuletDetails==='function')return actionDetailsText(amuletDetails(a));
-  if(a.cursed&&!a.unid)return 'Cursed: spends a charge and triggers a random trap instead of its normal power.';
-  return AMULETS[a.amulet].desc;
-}
 
 
 /* ---------------------------------------------------------------- recharge from kills */
@@ -53,7 +48,7 @@ function failCursedAmulet(a){
   abilityBar();endTurn();return true;
 }
 
-useAmulet = function(){
+function useAmulet(){
   if(gameTurns.busy())return false;
   if(playerFearAction())return false;
   var a=player.amulet; if(!a){ log('You are not wearing an amulet.','c-info'); return; }
@@ -83,7 +78,7 @@ useAmulet = function(){
     log('Thorns: Rooted; '+player.ward+' ward.','c-good'); sparkleFx(player.x,player.y,'earth',30);
   }
   endTurn();
-};
+}
 
 /* aimed amulets resolve through the normal click-to-aim flow */
 

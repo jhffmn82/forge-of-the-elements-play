@@ -36,7 +36,6 @@ var CAVE_PIECES = {
   });
   for(var n in CAVE_PIECES){ var d=CAVE_PIECES[n], p={cave:1}; for(var f in d) if(f!=='w' && f!=='h') p[f]=d[f]; PROPS[n]=p; }
 })();
-function cavePiece(name){ return CAVE_PIECES[name] || null; }
 function caveVariant(base, n){ return base+'-'+(1+Math.floor(rng()*n)); }
 
 /* the shared room builders ask for dungeon furniture: the Caverns answer with their own */
@@ -490,14 +489,12 @@ function caveDecorate(){
   });
 }
 /* ordinary chambers: a tall piece or two against the rock, sometimes a kobold camp. Kept sparse: open ground to fight on. */
-var _decoratePlainCave = decoratePlain;
-decoratePlain = function(r){
-  if(!r || !r.cave || !inCaverns()) return _decoratePlainCave(r);
+function decorateCavernRoom(r){
   if(rng()<0.4) caveTallPiece(r);
   if(r.n>=50 && rng()<0.2) caveTallPiece(r);
   if(!floorMeta.koboldCamp && r.role!=='start' && r.n>=30 && rng()<0.15) caveKoboldCamp(r);
   if(!floorMeta.cavePool && r.n>=45 && rng()<0.2){ var s=caveTallSpot(r, 2, 2); if(s){ cavePlace(s.x, s.y, caveVariant('glowing-pool', 2)); floorMeta.cavePool=true; } }
-};
+}
 function caveKoboldCamp(r){
   var cells=shuffled(interiorCells(r)).filter(function(c){ return caveFootFree(c.x, c.y, 1, 1, r); });
   for(var i=0;i<cells.length;i++){

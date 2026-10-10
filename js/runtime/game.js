@@ -59,12 +59,20 @@ var player={ id:0, ch:'@', x:2, y:2, t:0, st:{}, foe:false, build:'dwarf',
 var FRAME_MAP=null, FRAME_MW=0, FRAME_MH=0;
 function at(x,y,context){ if(context) return (x<0||y<0||x>=context.width||y>=context.height) ? WALL : context.map[y*context.width+x]; if(FRAME_MAP) return (x<0||y<0||x>=FRAME_MW||y>=FRAME_MH) ? WALL : FRAME_MAP[y*FRAME_MW+x]; return (x<0||y<0||x>=MW||y>=MH) ? WALL : map[y*MW+x]; }
 function setT(x,y,v){
-  if(!(x>=0&&y>=0&&x<MW&&y<MH)) return;
-  /* a door that opens keeps its material for the renderer (render.js doorMaterial; Justin, 2026-09-27) */
-  if(v===OPEN && floorMeta && typeof doorMaterial==='function'){ var m=doorMaterial(x,y); if(m) (floorMeta.doorMaterials=floorMeta.doorMaterials||{})[y*MW+x]=m; }
-  var previous=map[y*MW+x];map[y*MW+x]=v;
-  if(previous!==v)FoteContent.introduceAppearance(floorMeta,'tile',v);
-  if(typeof invalidatePlaneTerrain==='function')invalidatePlaneTerrain(x,y,previous,v);
+  if(x>=0&&y>=0&&x<MW&&y<MH){
+    /* a door that opens keeps its material for the renderer (render.js doorMaterial; Justin, 2026-09-27) */
+    if(v===OPEN && floorMeta && typeof doorMaterial==='function'){ var m=doorMaterial(x,y); if(m) (floorMeta.doorMaterials=floorMeta.doorMaterials||{})[y*MW+x]=m; }
+    var previous=map[y*MW+x];map[y*MW+x]=v;
+    if(previous!==v)FoteContent.introduceAppearance(floorMeta,'tile',v);
+    if(typeof invalidatePlaneTerrain==='function')invalidatePlaneTerrain(x,y,previous,v);
+  }
+  /* Carving a wall removes its mounted pieces and their light together. */
+  if(isWallLike(v))return;
+  for(var i=props.length-1;i>=0;i--){var p=props[i];if(p.wall&&p.b&&p.x===x&&p.y===y){
+    props.splice(i,1);
+    if(floorMeta&&floorMeta.planeLights)floorMeta.planeLights=floorMeta.planeLights.filter(function(l){return !(l.x===x&&Math.abs(l.y-(y+.9))<.001);});
+  }}
+  if(floorMeta&&floorMeta.caveDeco&&floorMeta.caveDeco.walls)floorMeta.caveDeco.walls=floorMeta.caveDeco.walls.filter(function(w){return !(w.x===x&&w.y===y);});
 }
 function biome(){ return BIOMES[Math.min(BIOMES.length-1, Math.floor((floorNo-1)/5))]; }
 
@@ -100,6 +108,8 @@ var DMG_COL={phys:'#F2E8DC', fire:'#E2622B', ice:'#62A8D8', lightning:'#E8B44A',
              poison:'#7FA05A', dark:'#8A6FB0', light:'#FFF1CC', magic:'#C9A8FF', heal:'#7FA05A', miss:'#6E635B'};
 var fxClock=0;
 function fxAt(dur, hold, unseen){          /* each effect starts after the one before it */
+  dur/=ANIM_SPEED;
+  if(hold!==undefined)hold/=ANIM_SPEED;
   var now=performance.now();
   var t=Math.max(now, fxClock);
   /* 2026-09-27: one the player cannot see holds nothing back (a wanderer on a trap across the floor held the next move) */
@@ -323,12 +333,39 @@ function ensureDtip(){
 }
 
 function showCard(html, ev){
-  if(!html){hideCard();return;}
-  var t=ensureDtip();
-  t.innerHTML=html; t.style.display='block';
-  var x=Math.min(ev.clientX+14, window.innerWidth-t.offsetWidth-10);
-  var y=Math.min(ev.clientY+14, window.innerHeight-t.offsetHeight-10);
-  t.style.left=Math.max(6,x)+'px'; t.style.top=Math.max(6,y)+'px';
+  var touch=document.body.classList.contains('touch');
+  // Compatibility mousemove must not create a persistent hover card on touch.
+  if(!(touch&&ev&&ev.isTrusted)){
+    if(!html)hideCard();
+    else{
+      var t=ensureDtip();
+      t.innerHTML=html;t.style.display='block';
+      var x=Math.min(ev.clientX+14,window.innerWidth-t.offsetWidth-10);
+      var y=Math.min(ev.clientY+14,window.innerHeight-t.offsetHeight-10);
+      t.style.left=Math.max(6,x)+'px';t.style.top=Math.max(6,y)+'px';
+    }
+    if(touch){
+      var card=document.getElementById('dtip');
+      if(card){
+        var top=(parseFloat(document.body.style.getPropertyValue('--toph'))||52)+8;
+        if(ev&&ev.clientY<innerHeight/2){card.style.top='auto';card.style.bottom='calc(8px + env(safe-area-inset-bottom,0px))';}
+        else{card.style.bottom='auto';card.style.top=top+'px';}
+      }
+    }
+  }
+  if(touch)placeTouchCard();
+}
+function placeTouchCard(){
+  var hb=document.getElementById('hotbar'),r=hb&&hb.offsetParent?hb.getBoundingClientRect():null;
+  var left=8,width=Math.min(440,innerWidth-16),bottom=8;
+  if(r&&document.body.classList.contains('study-hotbar-vertical')){
+    if(r.left>innerWidth-r.right)width=Math.min(width,r.left-16);
+    else{left=r.right+8;width=Math.min(width,innerWidth-left-8);}
+  }else if(r&&r.top<innerHeight&&r.height>0)bottom=Math.round(innerHeight-r.top)+8;
+  document.body.style.setProperty('--cardx',left+'px');
+  document.body.style.setProperty('--cardw',Math.max(0,width)+'px');
+  document.body.style.setProperty('--cardb',bottom+'px');
+  document.body.style.setProperty('--cardh',Math.max(0,innerHeight-bottom-8)+'px');
 }
 function hideCard(){ if(dtip) dtip.style.display='none'; }
 function hoverCard(el, htmlFn){
@@ -427,22 +464,6 @@ function eslot(label,name,sub,el,key){
   return '<div class="eslot'+(el?' el-'+el:'')+'"'+(key?' data-eq="'+key+'"':'')+'><span class="l">'+label+'</span>'+
     (name?'<span class="v">'+name+'</span>':'<span class="v none">empty</span>')+
     (sub?'<span class="l" style="text-transform:none;letter-spacing:.02em;color:var(--ash)">'+sub+'</span>':'')+'</div>';
-}
-function passiveList(){
-  var names={mig:'Might',agi:'Agility',vit:'Vitality',foc:'Focus'}, out='';
-  for(var k in PASSIVES){
-    var next=null;
-    PASSIVES[k].forEach(function(p){
-      if(player.stats[k] >= p.at)
-        out += '<div class="abrow"><span class="k">'+p.at+'</span><span><span style="color:var(--ink)">'+p.name+
-               '</span><div class="d">'+p.d+'</div></span><span style="color:var(--moss)">on</span></div>';
-      else if(!next) next=p;
-    });
-    if(next) out += '<div class="abrow" style="opacity:.5"><span class="k">'+next.at+'</span><span>'+
-      '<span style="color:var(--ash)">'+next.name+'</span><div class="d">needs '+names[k]+' '+next.at+'</div></span>'+
-      '<span style="color:var(--dim)">'+(next.at-player.stats[k])+' to go</span></div>';
-  }
-  return out;
 }
 function renderPlayerUI(){
   abilityBar(); bars(); panes();

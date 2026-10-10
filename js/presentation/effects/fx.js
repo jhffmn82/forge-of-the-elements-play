@@ -67,7 +67,7 @@ function beamFx(tiles,type,opts){
   opts=opts||{};
   var palette=trailPalette(type,'magic');
   var beam={k:'beam',tiles:tiles.map(function(t){return t.slice();}),col:opts.col||palette.glow||palette.col[0],dur:opts.dur||(ANIM.reduce?180:320)};
-  beam.t0=fxAt(beam.dur,beam.dur*.65,!tiles.some(function(t){return inb(t[0],t[1])&&(revealAll||vis[idxOf(t[0],t[1])]);}));
+  beam.t0=fxAt(beam.dur,beam.dur*.65,!tiles.some(function(t){return inb(t[0],t[1])&&(revealAll||sceneVisibility()[idxOf(t[0],t[1])]);}));
   fx.push(beam);
 }
 
@@ -120,7 +120,9 @@ function drawCorpse(f, p, opacity){
     var dx=px+TS/2-(box[0]+box[2]/2)*s, dy=py+TS*0.97-(box[1]+box[3])*s;
     ctx.save(); ctx.globalAlpha = opacity*(f.remains?1:p<0.75?1:(1-p)/0.25); ctx.imageSmoothingEnabled=spriteSheetSmoothing(ms,s);
     if(f.e.flip){ ctx.translate(px+TS/2,0); ctx.scale(-1,1); ctx.translate(-(px+TS/2),0); }
-    ctx.drawImage(ms.img, fr*cell, c.row*cell, cell, cell, dx, dy, cell*s, cell*s); ctx.restore();
+    ctx.drawImage(ms.img, fr*cell, c.row*cell, cell, cell, dx, dy, cell*s, cell*s);
+    if(typeof FoteNormalLighting!=='undefined')FoteNormalLighting.record(ctx,{img:ms.img,sx:fr*cell,sy:c.row*cell,sw:cell,sh:cell},{x:dx,y:dy,w:cell*s,h:cell*s},{surface:actorLightSurface(f.e,px+TS/2,py+TS*.97)});
+    ctx.restore();
     return;
   }
   /* No usable death clip: the standing sprite flashes and keels onto its side. */
@@ -134,6 +136,7 @@ function drawCorpse(f, p, opacity){
     ctx.translate(fx0, fy0); ctx.rotate(dir*ease*Math.PI*0.5); ctx.translate(-fx0, -fy0);
     ctx.imageSmoothingEnabled=spriteSheetSmoothing(ms,s2);
     ctx.drawImage(ms.img, 0, srow*cell2, cell2, cell2, px+TS/2-(box2[0]+box2[2]/2)*s2, py+TS*0.97-(box2[1]+box2[3])*s2, cell2*s2, cell2*s2);
+    if(typeof FoteNormalLighting!=='undefined')FoteNormalLighting.record(ctx,{img:ms.img,sx:0,sy:srow*cell2,sw:cell2,sh:cell2},{x:px+TS/2-(box2[0]+box2[2]/2)*s2,y:py+TS*.97-(box2[1]+box2[3])*s2,w:cell2*s2,h:cell2*s2},{surface:actorLightSurface(f.e,px+TS/2,py+TS*.97)});
     if(p<0.25 && typeof whiteCut==='function'){ ctx.globalAlpha*= (0.25-p)/0.25*0.8; ctx.drawImage(whiteCut(ms.img,0,srow*cell2,cell2,cell2), px+TS/2-(box2[0]+box2[2]/2)*s2, py+TS*0.97-(box2[1]+box2[3])*s2, cell2*s2, cell2*s2); }
     ctx.restore();
     if(!f.dust && p>0.4){ f.dust=true; if(typeof burst==='function') burst(f.e.x, f.e.y, 'earth', 10, 0.03); }
@@ -152,7 +155,7 @@ function drawDeathRemains(){
     var e=c.e,i=idxOf(e.x,e.y);
     if(worldNow()>=c.expiresAt||!(revealAll||seen[i]))return;
     if(animating.has(c))return;
-    drawCorpse({e:e,remains:c,dust:true},1,(revealAll||vis[i])?1:memA(.45));
+    drawCorpse({e:e,remains:c,dust:true},1,(revealAll||sceneVisibility()[i])?1:memA(.45));
   });
   /* 2026-09-27 (render plan C8): the death clip plays here, lit and under whoever stands nearby, like the remains it
      becomes. Drawn with the effects, over the lighting, the body was about twice as bright until the clip ended. */
@@ -259,14 +262,14 @@ function drawFX(){
       ctx.save();ctx.globalCompositeOperation='lighter';ctx.lineCap='round';ctx.lineJoin='round';ctx.beginPath();
       var beamPrior=null;
       f.tiles.forEach(function(tile,index){
-        if(!inb(tile[0],tile[1])||!(revealAll||vis[idxOf(tile[0],tile[1])])){beamPrior=null;return;}
+        if(!inb(tile[0],tile[1])||!(revealAll||sceneVisibility()[idxOf(tile[0],tile[1])])){beamPrior=null;return;}
         var prior=beamPrior,x=(tile[0]-camX+.5)*TS,y=(tile[1]-camY+.5)*TS;beamPrior=tile;
         if(!prior||Math.max(Math.abs(prior[0]-tile[0]),Math.abs(prior[1]-tile[1]))>1){
           ctx.moveTo(x,y);
           // A single affected cell still has a visible beam core. A move-only
           // subpath paints nothing, including a segment isolated by fog.
           var next=f.tiles[index+1];
-          if(!next||!inb(next[0],next[1])||!(revealAll||vis[idxOf(next[0],next[1])])||Math.max(Math.abs(next[0]-tile[0]),Math.abs(next[1]-tile[1]))>1)ctx.lineTo(x+.01,y);
+          if(!next||!inb(next[0],next[1])||!(revealAll||sceneVisibility()[idxOf(next[0],next[1])])||Math.max(Math.abs(next[0]-tile[0]),Math.abs(next[1]-tile[1]))>1)ctx.lineTo(x+.01,y);
         }
         else ctx.lineTo(x,y);
       });

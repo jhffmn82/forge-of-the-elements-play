@@ -10,16 +10,6 @@ function foesInView(){ return ents.filter(function(e){ return e.foe && vis[idxOf
 /* ---------------------------------------------------------------- Murk: the servant rises again once */
 
 /* ---------------------------------------------------------------- Anvil: cheaper upgrades, and +4 */
-var _upgradeCostCap = upgradeCost;
-upgradeCost = function(it){
-  if(!it) return null;
-  var mw = capstone('anvil');
-  if(mw && !it.cursed && (it.plus||0)===3){
-    return Math.round((it.kind==='ring' ? RING_RANK_COST[RING_RANK_COST.length-1] : 3000*tierCostMult(it)) * 0.7 * (player.race==='dwarf' ? 0.75 : 1));
-  }
-  var c=_upgradeCostCap(it);
-  return c===null ? null : Math.round(c * (mw ? 0.7 : 1));
-};
 
 /* =====================================================================
    Hearts and mana globes: every kill has a 15% chance to drop each.

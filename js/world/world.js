@@ -15,7 +15,13 @@ var RUN = null;   /* run-wide state: forge floor, shrine floor and god, mote pla
 function inb(x,y,context){ if(context) return x>=0 && y>=0 && x<context.width && y<context.height; if(FRAME_MAP) return x>=0 && y>=0 && x<FRAME_MW && y<FRAME_MH; return x>=0 && y>=0 && x<MW && y<MH; }   /* FRAME_*: js/runtime/game.js at() */
 function idxOf(x,y,context){ return y*(context ? context.width : FRAME_MAP ? FRAME_MW : MW)+x; }
 function gAt(x,y){ return inb(x,y) ? ground[idxOf(x,y)] : 0; }
-function setG(x,y,v){ if(inb(x,y)){var i=idxOf(x,y),previous=ground[i];ground[i]=v;if(previous!==v&&v&&GROUND_ART[v])FoteContent.introduceAppearance(floorMeta,'ground',v);} }
+function setG(x,y,v){
+  if(!inb(x,y))return;
+  var i=idxOf(x,y),previous=ground[i];
+  if(v===G_SHORT&&previous===G_GRASS&&cryptShrooms()&&typeof burst==='function'&&(revealAll||vis[i]))burst(x,y,'magic',10,0.035);
+  ground[i]=v;
+  if(previous!==v&&v&&GROUND_ART[v])FoteContent.introduceAppearance(floorMeta,'ground',v);
+}
 function propAt(x,y,context){ if(!inb(x,y,context)) return null; var i=(context?context.propGrid:propGrid)[idxOf(x,y,context)]; return i>=0 ? (context?context.props:props)[i] : null; }
 function rebuildPropGrid(){
   propGrid.fill(-1);
@@ -255,7 +261,7 @@ function commitGeneratedFloor(floorClock){
 function generateOnce(seed){
   rng = mulberry32(seed>>>0);
   map=new Uint8Array(MW*MH); seen=new Uint8Array(MW*MH); vis=new Uint8Array(MW*MH);
-  ground=new Uint8Array(MW*MH); fireT=new Uint8Array(MW*MH); propGrid=new Int16Array(MW*MH).fill(-1);
+  ground=new Uint8Array(MW*MH); fireT=new Uint8Array(MW*MH); fireSrc=new Uint8Array(MW*MH); propGrid=new Int16Array(MW*MH).fill(-1);
   feats=[]; items=[]; ents=[]; props=[]; chestKind={}; levers=[]; plates=null; altars={};
   var BP=biomePlan();
   /* Ordinary crafting forges stay on the biome's planned non-boss floor. */
@@ -511,11 +517,10 @@ function placeGeneratedFood(){
 }
 
 function bfsFrom(sx,sy,canTraverse){
-  var d=new Int32Array(MW*MH).fill(-1), q=[sx,sy], h=0;
+  var d=new Int32Array(MW*MH).fill(-1), q=[sx,sy], h=0,nb=[[1,0],[-1,0],[0,1],[0,-1]];
   d[idxOf(sx,sy)]=0;
   while(h<q.length){
     var x=q[h++], y=q[h++], cd=d[idxOf(x,y)];
-    var nb=[[1,0],[-1,0],[0,1],[0,-1]];
     for(var i=0;i<4;i++){
       var nx=x+nb[i][0], ny=y+nb[i][1];
       if(!inb(nx,ny) || d[idxOf(nx,ny)]>=0) continue;
@@ -578,6 +583,8 @@ function decorateEdges(r, names, n, lightOnly){
   for(var i=0;i<Math.min(n,e.length);i++) addProp(e[i].x,e[i].y,names[i%names.length]);
 }
 function decoratePlain(r){
+  if(inDeep()){deepThemeRoom(r,false);return;}
+  if(r&&r.cave&&inCaverns())return decorateCavernRoom(r);
   var roll=rng();
   if(roll<0.35) decorateEdges(r, pick([['torch-stand'],['brazier-lit'],['brazier-unlit','torch-stand']]), ri(1,2));
   var n=ri(0,3), inner=shuffled(interiorCells(r));
@@ -587,11 +594,12 @@ function decoratePlain(r){
     if(PROPS[nm].b){ var e=shuffled(edgeCells(r))[0]; if(e) addProp(e.x,e.y,nm); }
     else addProp(inner[i].x,inner[i].y,nm);
   }
+  if(cryptShrooms()&&!r.hall)decorateCryptRoom(r);
 }
 
 /* ---- gear, sigils ---- */
 
-function randomSigilUse(){ return pick(['firestorm','mana','levitate','stoneskin','heal','vanish','heal','identify','mapping','blink']); }
+
 
 /* ---- pockets: carve a small room off an existing one, behind one door tile ---- */
 /* a dead-end hallway 3-5 tiles long leading out of a room, solid rock on both sides; returns its far end.

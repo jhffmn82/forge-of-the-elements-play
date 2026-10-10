@@ -309,6 +309,12 @@ function castClickSpell(foe,selected){
   return false;
 }
 function handleMapClick(ev){
+  if(MAPVIEW.on && player){
+    var point=tileAt(ev),x=point.x,y=point.y;if(!inb(x,y))return true;
+    var spot=(walkable(x,y)&&!occupied(x,y))?{x:x,y:y}:nearFree(x,y,2);
+    if(spot){player.x=spot.x;player.y=spot.y;player._lx=undefined;player._mt=null;computeFOV();draw();}
+    return true;
+  }
   var p=tileAt(ev), it=clickIntent(p.x, p.y);
   if(!it) return false;
   stopTravel();
@@ -397,7 +403,8 @@ setTimeout(function(){   /* registered after boot.js, so its door-closing click 
 /* only the single-target basics can be click spells: Magic Missile, Sap and the rank 2 bolts */
 var CLICK_SPELLS = ['missile','sap','firebolt','frostshard','spark','root','smite','shadowbolt'];
 function clickSpellable(key){ return CLICK_SPELLS.indexOf(key)>=0 && !!ABILITIES[key]; }
-function toggleClickSpell(key){
+function toggleClickSpell(key,fromTouchMenu){
+  if(document.body.classList.contains('touch')&&!fromTouchMenu)return;
   if(!clickSpellable(key)){ log('Only Magic Missile, Sap and the rank 2 element abilities can be click abilities.','c-info'); return; }
   player.clickSpell = player.clickSpell===key ? null : key;
   log(player.clickSpell ? 'Clicking an enemy now casts <b>'+ABILITIES[key].name+'</b>.' : 'Clicking an enemy no longer uses an ability.','c-info');

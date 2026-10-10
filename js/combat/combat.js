@@ -5,8 +5,6 @@ function enchantContext(actor){
 function enchantValues(slot,el,actor){actor=actor||player;return FoteEnchantments.values(slot,el,actor&&actor.aff&&actor.aff[el]||0,enchantContext(actor));}
 function gearPassiveBonus(actor){return FoteEnchantments.gearBonus(enchantContext(actor).vellumRank);}
 function gearPassiveValue(value,actor){return FoteEnchantments.amplifyBonus(value,gearPassiveBonus(actor));}
-function enchantGodBonus(){return FoteEnchantments.godBonus(enchantContext());}
-function orbRootCrit(target){return infusion('orb')==='earth'&&target&&effectHasTag(target,'root')?enchantValues('orb','earth').critChance:0;}
 function criticalMultiplier(){return FoteActions.criticalMultiplier(player.stats.agi,infusion('orb')==='shadow'?enchantValues('orb','shadow').critMultiplier:0);}
 
 /* ============================================================================
@@ -47,13 +45,9 @@ var PASSIVES={
 };
 var AOE_HIT=false;   /* set while resolving area attacks, so Magic Barrier ignores them */
 function godRank(){ return player.god ? pietyRank(player.piety||0) : 0; }
-function adjacentFoes(){ var n=0; ents.forEach(function(e){ if(e.foe && e.hp>0 && dist(e,player)<=1) n++; }); return n; }
 function hasGod(id){ return player.god===id; }
 
-function affinityCap(){
-  var base = RUN && RUN.bossDead ? 2 : 1;
-  return base + ((RACES[player.race]||{}).capBonus||0);
-}
+
 function enchantScale(el){return FoteEnchantments.scale(player.aff&&player.aff[el]||0,enchantContext());}
 function buff(name){ return player.buffs && player.buffs[name] > 0; }
 function itemPlus(it){ return (it && it.plus||0) + (it && it.tier==='Trusty' ? 1 : 0) + (player.race==='dwarf' && it && (it.dmg && !it.unarmed || it.weight) ? 1 : 0); }
@@ -246,12 +240,6 @@ function projectileLine(source,target,options){
   return null;
 }
 function clearShot(a,b){return !!projectileLine(a,b);}
-function previewPath(ax,ay,bx,by,A){
-  if(A.kind!=='bolt') return;
-  var pts=boltPath(ax,ay,bx,by); ctx.globalAlpha=0.35; ctx.fillStyle='#E8B44A';
-  for(var i=0;i<pts.length-1;i++) ctx.fillRect((pts[i].x-camX+0.5)*TS-1.5,(pts[i].y-camY+0.5)*TS-1.5,3,3);
-  ctx.globalAlpha=1;
-}
 
 
 /* ---------------------------------------------------------------- monster AI */

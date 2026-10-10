@@ -6,6 +6,7 @@
 var MAPVIEW = {on:false};
 
 function mapviewSetOn(on){
+  if(!FOTE_RUNTIME.development)return;
   MAPVIEW.on=on;
   if(on && RUN) RUN.mapViewed=true;
   revealAll=on ? true : revealAll;
@@ -17,6 +18,7 @@ function mapviewSetOn(on){
   draw(); updateUI();
 }
 function mapviewGo(reroll){
+  if(!FOTE_RUNTIME.development)return;
   if(!player || !RUN) return;
   if(!MAPVIEW.on) mapviewSetOn(true);
   var v=$('mvDepth') ? $('mvDepth').value : String(floorNo);
@@ -69,17 +71,3 @@ function mapviewGo(reroll){
 
 
 /* you cannot be hurt */
-
-
-/* never save a map-mode run */
-var _writeSlotMapview = writeSlot;
-writeSlot = function(){ if(RUN && RUN.mapViewed) return false; return _writeSlotMapview.apply(this, arguments); };
-/* click a tile to go there (travel.js owns map clicks; this answers first while map mode is on) */
-var _handleMapClickMapview = handleMapClick;
-handleMapClick = function(ev){
-  if(!MAPVIEW.on || !player) return _handleMapClickMapview(ev);
-  var p=tileAt(ev), x=p.x, y=p.y; if(!inb(x,y)) return true;
-  var spot = (walkable(x,y) && !occupied(x,y)) ? {x:x,y:y} : nearFree(x,y,2);
-  if(spot){ player.x=spot.x; player.y=spot.y; player._lx=undefined; player._mt=null; computeFOV(); draw(); }
-  return true;
-};

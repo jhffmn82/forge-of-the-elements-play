@@ -75,50 +75,36 @@ function leavePlane(){
   log('You step back into the '+biomeName()+'. Behind you the portal gutters and goes dark.','c-kill');playSceneMusic();writeSlot('auto','floor '+floorNo);
 }
 
-var planeGeneration=FoteTransitions.stages([
-  {name:'plane-layout-and-actors',run:function(c){generatePlaneBase(c.element,c.seed);}},
-  {name:'plane-prop-clearance',run:function(c){clearBuiltPlaneProps(c.element,c.seed);}},
-  {name:'plane-clusters',run:function(c){dressPlaneClusters(c.element,c.seed);}},
-  {name:'elemental-plane-hazards',run:function(c){dressElementalPlane(c.element,c.seed);}}
-]);
 function buildPlaneFloor(element,seed){
-  return generationTransaction(function(){resetMapDimensions();planeGeneration.run({element:element,seed:seed});if(typeof FoteShadowClone!=='undefined')FoteShadowClone.arrive();arriveRarePet();afterGeneratedInstall(presentGeneratedPlane);});
+  return generationTransaction(function(){
+    resetMapDimensions();generatePlaneBase(element,seed);
+    clearBuiltPlaneProps(element,seed);dressPlaneClusters(element,seed);dressElementalPlane(element,seed);
+    FoteShadowClone.arrive();arriveRarePet();afterGeneratedInstall(presentGeneratedPlane);
+  });
 }
 
-var tileEntry=FoteTransitions.stages([
-  {name:'persistent-webs',run:function(){if(typeof FoteEnemyFields!=='undefined')FoteEnemyFields.enter(player);}},
-  {name:'trample-spore-mushrooms',run:function(){if(typeof FoteSporecaller!=='undefined')FoteSporecaller.trample(player);return player.hp<=0;}},
-  {name:'collect-core',run:entryCollectCores},
-  {name:'collect-globes',run:entryCollectGlobes},
-  {name:'scale-essence',run:entryScaleEssence},
-  {name:'items-traps-plates-and-exits',run:entryItemsAndTerrain},
-  {name:'upstairs-hint',run:entryUpstairsHint},
-  {name:'portal-prompt',run:entryPortalPrompt},
-  {name:'healing-stanches-bleed',run:function(c){if(player.hp>c.hpBefore)deepStanch(player);}}
-]);
-function stepOn(){tileEntry.run({hpBefore:player.hp});}
-
-var movementEntry=FoteTransitions.stages([
-  {name:'face-direction',run:function(c){
-    if(!player||player.hp<=0||RUN.victory)return true;
-    /* Bumps turn too, including terrain actions that finish before ordinary movement. */
-    var face=faceOf(c.dx,c.dy);if(face)player.face=face;
-  }},
-  {name:'impassable-void',run:function(c){
-    if(floorMeta&&floorMeta.impassableVoid&&at(player.x+c.dx,player.y+c.dy)===CHASM){log('The void cannot be crossed. Use a bridge or portal.','c-info');return true;}
-  }},
-  {name:'plane-terrain',run:function(c){return movePlaneTerrain(c.dx,c.dy);}},
-  {name:'deep-terrain',run:function(c){return moveDeepTerrain(c.dx,c.dy);}},
-  {name:'reach-attack',run:function(c){return moveReachAttack(c.dx,c.dy);}},
-  {name:'corpse-bump',run:function(c){return moveCorpse(c.dx,c.dy);}},
-  {name:'core-gate',run:function(c){return moveCoreGate(c.dx,c.dy);}},
-  {name:'puzzle-bump',run:function(c){c.puzzleEntry=!!(player&&player.hp>0);return movePuzzleGate(c.dx,c.dy);}},
-  {name:'move-or-interact',run:function(c){
-    var x=player.x,y=player.y;performPlayerMove(c.dx,c.dy);
-    if(!c.puzzleEntry)return;
-    if(player.windCarry&&at(player.x,player.y)!==CHASM)player.windCarry=false;
-    // Puzzle water damage historically follows the movement's elapsed turn.
-    if(player.x!==x||player.y!==y)afterTurn(enterTile);
-  }}
-]);
-function tryMove(dx,dy){if(!gameTurns.busy()&&!playerFearAction())movementEntry.run({dx:dx,dy:dy});}
+/* Entry order is gameplay: collection precedes traps and prompts. An entry
+ * handler returns true only when it has completed or interrupted the step. */
+function stepOn(){
+  var hpBefore=player.hp;
+  FoteEnemyFields.enter(player);FoteSporecaller.trample(player);
+  if(player.hp<=0)return;
+  if(entryCollectCores()===true||entryCollectGlobes()===true||entryScaleEssence()===true)return;
+  if(entryItemsAndTerrain()===true||entryUpstairsHint()===true||entryPortalPrompt()===true)return;
+  if(player.hp>hpBefore)deepStanch(player);
+}
+function tryMove(dx,dy){
+  if(gameTurns.busy()||playerFearAction()||!player||player.hp<=0||RUN.victory)return;
+  // Bumps turn too, including terrain actions that finish before movement.
+  var face=faceOf(dx,dy);if(face)player.face=face;
+  if(floorMeta&&floorMeta.impassableVoid&&at(player.x+dx,player.y+dy)===CHASM){log('The void cannot be crossed. Use a bridge or portal.','c-info');return;}
+  if(movePlaneTerrain(dx,dy)===true||moveDeepTerrain(dx,dy)===true||moveReachAttack(dx,dy)===true||
+    moveCorpse(dx,dy)===true||moveCoreGate(dx,dy)===true)return;
+  var puzzleEntry=!!(player&&player.hp>0);
+  if(movePuzzleGate(dx,dy)===true)return;
+  var x=player.x,y=player.y;performPlayerMove(dx,dy);
+  if(!puzzleEntry)return;
+  if(player.windCarry&&at(player.x,player.y)!==CHASM)player.windCarry=false;
+  // Puzzle water damage historically follows the movement's elapsed turn.
+  if(player.x!==x||player.y!==y)afterTurn(enterTile);
+}

@@ -329,83 +329,125 @@ function musicEnds(buf){ /* a song with an ending rather than a loop: its last h
   return peak<0.01;
 }
 function playMusic(kind){
+  if(isSceneMusic(kind))kind=sceneScore();
   syncRunSfx();
   /* pendingMusic is the request waiting for the first user gesture, not a
      historical track.  Leaving the old request here allowed a load or a
      downstairs transition to fall back to the earlier biome later. */
-  if(!AUDIO.ctx){ AUDIO.pendingMusic=kind; return; }
-  AUDIO.pendingMusic=null;
-  if(AUDIO.musicKind===kind){
-    if(AUDIO.musicLoading||!AUDIO.musicFailed||performance.now()<(AUDIO.musicRetryAt||0))return;
-  }else{stopMusic();AUDIO.musicKind=kind;}
-  var request=++AUDIO_MUSIC_REQUEST;AUDIO.musicLoading=true;
-  loadFile('music-'+kind, function(buf){
-    if(AUDIO.musicKind!==kind || request!==AUDIO_MUSIC_REQUEST) return;
-    AUDIO.musicLoading=false;
-    var c=AUDIO.ctx;
-    if(buf){
-      var prior=AUDIO.music;
-      /* Justin, 2026-09-22: the menu song fades in softly. A track that ends (its last half second is silent,
-         a song rather than a loop) plays once and comes back after a rest instead of looping mid-phrase. */
-      var fade=(kind==='menu'||kind==='title')?6:2, once=musicEnds(buf), s, g, timer=null, stopped=false;
-      function start(){
-        s=c.createBufferSource(); s.buffer=buf; s.loop=!once; g=c.createGain(); g.gain.setValueAtTime(0,c.currentTime); g.gain.linearRampToValueAtTime(musicGain(kind),c.currentTime+fade);
-        s.connect(g); g.connect(AUDIO.musicBus);
-        s.onended=function(){ s.disconnect(); g.disconnect();
-          if(once && !stopped && AUDIO.musicKind===kind && request===AUDIO_MUSIC_REQUEST)
-            timer=setTimeout(function(){ timer=null; if(!stopped && AUDIO.musicKind===kind && request===AUDIO_MUSIC_REQUEST) start(); }, AUDIO.musicRestMs||5000); };
-        s.start();
-      }
-      start();
-      if(prior){try{prior.stop();}catch(error){}}
-      AUDIO.music={stop:function(){ stopped=true; if(timer){clearTimeout(timer);timer=null;} g.gain.cancelScheduledValues(c.currentTime);g.gain.setTargetAtTime(0,c.currentTime,.25); s.stop(c.currentTime+1.1); }};
-      AUDIO.musicFailed=false;AUDIO.musicFailures=0;AUDIO.musicRetryAt=0;
-    } else {
-      AUDIO.musicFailed=true;AUDIO.musicFailures=(AUDIO.musicFailures||0)+1;AUDIO.musicRetryAt=performance.now()+audioRetryDelay(AUDIO.musicFailures);
-      /* A missing or rejected recording must not revive the retired procedural
-         score. The next eligible scene request or audio-unlock gesture retries
-         this recording with the same bounded backoff. */
+  if(!AUDIO.ctx)AUDIO.pendingMusic=kind;
+  else {
+    AUDIO.pendingMusic=null;
+    var same=AUDIO.musicKind===kind;
+    if(!same){stopMusic();AUDIO.musicKind=kind;}
+    if(!same||!(AUDIO.musicLoading||!AUDIO.musicFailed||performance.now()<(AUDIO.musicRetryAt||0))){
+      var request=++AUDIO_MUSIC_REQUEST;AUDIO.musicLoading=true;
+      loadFile('music-'+kind, function(buf){
+        if(AUDIO.musicKind!==kind || request!==AUDIO_MUSIC_REQUEST) return;
+        AUDIO.musicLoading=false;
+        var c=AUDIO.ctx;
+        if(buf){
+          var prior=AUDIO.music;
+          /* Justin, 2026-09-22: the menu song fades in softly. A track that ends (its last half second is silent,
+             a song rather than a loop) plays once and comes back after a rest instead of looping mid-phrase. */
+          var fade=(kind==='menu'||kind==='title')?6:2, once=musicEnds(buf), s, g, timer=null, stopped=false;
+          function start(){
+            s=c.createBufferSource(); s.buffer=buf; s.loop=!once; g=c.createGain(); g.gain.setValueAtTime(0,c.currentTime); g.gain.linearRampToValueAtTime(musicGain(kind),c.currentTime+fade);
+            s.connect(g); g.connect(AUDIO.musicBus);
+            s.onended=function(){ s.disconnect(); g.disconnect();
+              if(once && !stopped && AUDIO.musicKind===kind && request===AUDIO_MUSIC_REQUEST)
+                timer=setTimeout(function(){ timer=null; if(!stopped && AUDIO.musicKind===kind && request===AUDIO_MUSIC_REQUEST) start(); }, AUDIO.musicRestMs||5000); };
+            s.start();
+          }
+          start();
+          if(prior){try{prior.stop();}catch(error){}}
+          AUDIO.music={stop:function(){ stopped=true; if(timer){clearTimeout(timer);timer=null;} g.gain.cancelScheduledValues(c.currentTime);g.gain.setTargetAtTime(0,c.currentTime,.25); s.stop(c.currentTime+1.1); }};
+          AUDIO.musicFailed=false;AUDIO.musicFailures=0;AUDIO.musicRetryAt=0;
+        } else {
+          AUDIO.musicFailed=true;AUDIO.musicFailures=(AUDIO.musicFailures||0)+1;AUDIO.musicRetryAt=performance.now()+audioRetryDelay(AUDIO.musicFailures);
+          /* A missing or rejected recording must not revive the retired procedural
+             score. The next eligible scene request or audio-unlock gesture retries
+             this recording with the same bounded backoff. */
+        }
+      });
     }
-  });
-}
-function stopMusic(){ AUDIO_MUSIC_REQUEST++;if(AUDIO.music){ try{ AUDIO.music.stop(); }catch(e){} AUDIO.music=null; } AUDIO.musicKind=null;AUDIO.musicLoading=false;AUDIO.musicFailed=false;AUDIO.musicFailures=0;AUDIO.musicRetryAt=0; }
-function generativeMusic(kind){
-  var c=AUDIO.ctx, out=c.createGain(); out.gain.value=0; out.gain.linearRampToValueAtTime(1, c.currentTime+3); out.connect(AUDIO.musicBus);
-  var wet=c.createGain(); wet.gain.value=0.6; out.connect(AUDIO.verb);
-  var boss = kind==='boss', title = kind==='title'||kind==='menu', vict = kind==='victory';
-  var root = boss ? 55 : title ? 65.4 : 58.3;               /* A1, C2, Bb1 */
-  var scale = boss ? [0,1,3,5,7,8,10] : [0,2,3,5,7,8,10];  /* phrygian for the boss, aeolian otherwise */
-  var drones=[];
-  [1, 1.5, 2].forEach(function(mult, i){
-    var o=c.createOscillator(); o.type= i===0 ? 'sawtooth' : 'triangle'; o.frequency.value=root*mult;
-    var f=c.createBiquadFilter(); f.type='lowpass'; f.frequency.value= boss ? 500 : 320; f.Q.value=0.5;
-    var g=c.createGain(); g.gain.value= i===0 ? 0.05 : 0.035;
-    var lfo=c.createOscillator(); lfo.frequency.value=0.05+i*0.03; var lg=c.createGain(); lg.gain.value=90; lfo.connect(lg); lg.connect(f.frequency); lfo.start();
-    o.connect(f); f.connect(g); g.connect(out); o.start(); drones.push(o, lfo);
-  });
-  var alive=true, step=0;
-  function note(){
-    if(!alive) return;
-    var t=c.currentTime+0.05;
-    var deg=scale[Math.floor(Math.random()*scale.length)], oct= Math.random()<0.3 ? 4 : 8;
-    var f=root*oct*Math.pow(2,deg/12);
-    if(boss){
-      if(step%2===0){ var k=c.createOscillator(); k.type='sine'; k.frequency.setValueAtTime(90,t); k.frequency.exponentialRampToValueAtTime(40,t+0.18);
-        var kg=envGain(t,0.005,0.25,0.35); k.connect(kg); kg.connect(out); k.start(t); k.stop(t+0.3); }
-      if(step%4===3) { var s=c.createBufferSource(); if(!NOISE){ noise(t,0.01,0.0001); } s.buffer=NOISE; var hf=c.createBiquadFilter(); hf.type='highpass'; hf.frequency.value=5000; var hg=envGain(t,0.003,0.06,0.08); s.connect(hf); hf.connect(hg); hg.connect(out); s.start(t,Math.random()); s.stop(t+0.1); }
-      if(Math.random()<0.45){ var o2=c.createOscillator(); o2.type='sawtooth'; o2.frequency.value=f/2; var g2=envGain(t,0.02,0.35,0.05); var lp=c.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=1400; o2.connect(lp); lp.connect(g2); g2.connect(out); o2.start(t); o2.stop(t+0.5); }
-    } else if(Math.random()< (title?0.8:0.55)){
-      var o3=c.createOscillator(); o3.type= title ? 'triangle' : 'sine'; o3.frequency.value=f;
-      var g3=envGain(t,0.01, title?1.6:2.4, title?0.09:0.06); o3.connect(g3); g3.connect(out); o3.start(t); o3.stop(t+3);
-      if(Math.random()<0.3){ var o4=c.createOscillator(); o4.type='sine'; o4.frequency.value=f*1.5; var g4=envGain(t+0.4,0.01,1.8,0.03); o4.connect(g4); g4.connect(out); o4.start(t+0.4); o4.stop(t+2.5); }
-    }
-    if(!boss && Math.random()<0.08){ /* a distant water drip */
-      var d=c.createOscillator(); d.type='sine'; d.frequency.setValueAtTime(1800+Math.random()*900,t); d.frequency.exponentialRampToValueAtTime(700,t+0.08);
-      var dg=envGain(t,0.002,0.12,0.05); d.connect(dg); dg.connect(out); d.start(t); d.stop(t+0.2);
-    }
-    step++;
-    setTimeout(note, boss ? 240 : title ? 520 : 900 + Math.random()*900);
   }
-  note();
-  return {stop:function(){ alive=false; out.gain.linearRampToValueAtTime(0, c.currentTime+1.5); setTimeout(function(){ drones.forEach(function(o){ try{o.stop();}catch(e){} }); }, 1700); }};
+  syncAmbience(isSceneMusic(kind)?ambienceForScene():null);
+}
+function stopMusic(){ AUDIO_MUSIC_REQUEST++;if(AUDIO.music){ try{ AUDIO.music.stop(); }catch(e){} AUDIO.music=null; } AUDIO.musicKind=null;AUDIO.musicLoading=false;AUDIO.musicFailed=false;AUDIO.musicFailures=0;AUDIO.musicRetryAt=0;syncAmbience(null); }
+
+/* Scene score shares the HUD's encounter predicate. Floor changes call
+   playSceneMusic() directly, so a later biome never inherits Dungeon music. */
+var ASTRA_SCORE=['crypt','caverns','underdark','plane-fire','plane-water','plane-air','plane-earth','plane-light','plane-shadow','boss-grukk','boss-morty','boss-maw','boss-matron','chaos','boss-chaos','boss-unmaker'];
+var BIOME_SCORE=['dungeon','crypt','caverns','underdark','chaos'];
+window.AUDIO_FILES=window.AUDIO_FILES||[];ASTRA_SCORE.forEach(function(k){if(window.AUDIO_FILES.indexOf('music-'+k)<0)window.AUDIO_FILES.push('music-'+k);});   /* the packed registry lists them since the gap pass; never twice */
+['door-close','trap-gas','skeleton-death','crypt-bell'].forEach(function(n){if(window.AUDIO_FILES.indexOf(n)<0)window.AUDIO_FILES.push(n);});
+function floorScore(n){
+  n=Number(n)||1;
+  return BIOME_SCORE[Math.max(0,Math.min(BIOME_SCORE.length-1,Math.floor((n-1)/5)))];
+}
+function explorationScore(){
+  if(floorMeta && floorMeta.plane)return 'plane-'+floorMeta.plane;
+  /* A Forge is an object on a numbered floor, not a separate region.  Its
+     interaction keeps the Forge SFX, while exploration keeps the biome score. */
+  return floorScore(typeof floorNo==='number'?floorNo:1);
+}
+function sceneScore(){
+  var boss=activeBossEncounter();
+  if(!boss)return explorationScore();
+  var name=((boss.base&&boss.base.name)||boss.name||boss.kind||'').toLowerCase();
+  /* Each Unmaker form keeps this encounter ID, so changing its name or entity
+     does not restart the battle theme. Exact names support an unsplit form. */
+  if((boss.base&&boss.base.encounterId)==='unmaker'||/^(?:the )?unmaker$/.test(name.trim()))return 'boss-unmaker';
+  if(boss.kind==='warchief'||/\bgrukk\b/.test(name))return 'boss-grukk';
+  return /mort/.test(name)?'boss-morty':/maw/.test(name)?'boss-maw':/matron/.test(name)?'boss-matron':floorNo>=21?'boss-chaos':'boss';
+}
+function playSceneMusic(){
+  var kind=sceneScore();
+  /* Keep the resolved floor and score together.  Load, ascend and descend all
+     call this after changing floorNo, so the audio unlock can only resume the
+     score selected for that floor. */
+  AUDIO.sceneFloor=typeof floorNo==='number'?floorNo:1;
+  AUDIO.sceneScore=kind;
+  if(typeof document!=='undefined' && document.body)document.body.setAttribute('data-scene-music',kind);
+  return playMusic(kind);
+}
+function isSceneMusic(kind){return kind==='boss'||kind==='dungeon'||kind==='forge'||ASTRA_SCORE.includes(kind);}
+/* The HUD calls this after its readouts, including its responsive early exits.
+ * An exception while painting the HUD leaves audio untouched. */
+function syncSceneAudio(){
+  var kind=AUDIO.musicKind||AUDIO.pendingMusic;
+  if(!isSceneMusic(kind))return;
+  if(player.hp<=0||(RUN&&RUN.over)){stopMusic();AUDIO.pendingMusic=null;}
+  else if(RUN&&RUN.victory){if(AUDIO.musicKind)stopMusic();}
+  else playSceneMusic();
+}
+
+function ambienceForScene(){
+  if(activeBossEncounter())return null;
+  if(floorMeta && (floorMeta.forge||floorMeta.plane==='fire'))return 'amb-fire';
+  if(floorMeta && floorMeta.plane==='water')return 'amb-water';
+  // The replacement cavern score already contains quiet air and stone. Do
+  // not layer the old dungeon droplets back over its chirp-free ambience.
+  if(!(floorMeta&&floorMeta.plane)&&floorScore(typeof floorNo==='number'?floorNo:1)==='caverns')return null;
+  return 'amb-dungeon';
+}
+var AMBIENCE_REQUEST=0;
+function syncAmbience(name){
+  if(!AUDIO.ctx)return;
+  if(AUDIO.ambienceKind===name){
+    if(!name||AUDIO.ambienceLoading||!AUDIO.ambienceFailed||performance.now()<(AUDIO.ambienceRetryAt||0))return;
+  }else{AUDIO.ambienceFailed=false;AUDIO.ambienceFailures=0;AUDIO.ambienceRetryAt=0;}
+  AUDIO.ambienceKind=name;var request=++AMBIENCE_REQUEST;
+  if(AUDIO.ambience){AUDIO.ambience.stop();AUDIO.ambience=null;}
+  AUDIO.ambienceLoading=!!name;if(!name)return;
+  loadFile(name,function(buf){
+    if(AUDIO.ambienceKind!==name || request!==AMBIENCE_REQUEST)return;
+    AUDIO.ambienceLoading=false;
+    if(!buf){AUDIO.ambienceFailed=true;AUDIO.ambienceFailures=(AUDIO.ambienceFailures||0)+1;AUDIO.ambienceRetryAt=performance.now()+audioRetryDelay(AUDIO.ambienceFailures);return;}
+    AUDIO.ambienceFailed=false;AUDIO.ambienceFailures=0;AUDIO.ambienceRetryAt=0;
+    var c=AUDIO.ctx,s=c.createBufferSource(),g=c.createGain();s.buffer=buf;s.loop=true;
+    g.gain.setValueAtTime(0,c.currentTime);g.gain.linearRampToValueAtTime(.16,c.currentTime+2);
+    s.connect(g);g.connect(AUDIO.musicBus);s.onended=function(){s.disconnect();g.disconnect();};s.start();
+    AUDIO.ambience={stop:function(){g.gain.cancelScheduledValues(c.currentTime);g.gain.setTargetAtTime(0,c.currentTime,.2);s.stop(c.currentTime+1);}};
+  });
 }

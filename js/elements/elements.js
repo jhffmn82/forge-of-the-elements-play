@@ -77,15 +77,18 @@ function markGround(tiles, A){
 
 
 function drawElementGroundTelegraphs(now){
-
-  if(!iceG || iceG.length!==MW*MH) return;
+  var ice=iceG,rootsGround=rootG,W=MW,H=MH;
+  if(!ice || ice.length!==W*H) return;
   ctx.save();
-  var frost=[],roots=[];
-  for(var i=0;i<iceG.length;i++){
-    if(!iceG[i] && !rootG[i] && !holyG[i]) continue;
-    if(!(revealAll||vis[i])) continue;
-    if(iceG[i])frost.push(i);
-    if(rootG[i])roots.push(i);
+  var frost=[],roots=[],V=sceneVisibility(),all=revealAll;
+  /* Material patches draw one tile beyond the view and inspect neighbours two
+   * tiles farther out. Keep that full membership border and row-major order. */
+  var x0=Math.max(0,camX-3),x1=Math.min(W-1,camX+viewW+3),y0=Math.max(0,camY-3),y1=Math.min(H-1,camY+viewH+3);
+  for(var y=y0;y<=y1;y++)for(var x=x0;x<=x1;x++){
+    var i=y*W+x;
+    if((!ice[i]&&!rootsGround[i])||!(all||V[i]))continue;
+    if(ice[i])frost.push(i);
+    if(rootsGround[i])roots.push(i);
   }
   drawGroundMaterial('ice',frost,.78);drawGroundMaterial('roots',roots,.65);drawGroundRoots(roots,.88);
   ctx.restore();
@@ -178,8 +181,6 @@ function summonCount(){ return ents.filter(function(e){ return e.ally && (e.unde
 
 
 function lineTiles(dx,dy,len){ var out=[], x=player.x, y=player.y; for(var i=0;i<len;i++){ x+=dx; y+=dy; if(!inb(x,y) || opaque(x,y)) break; out.push([x,y]); } return out; }
-function bresenham(x0,y0,x1,y1,len){ var pts=[], dx=Math.abs(x1-x0), dy=Math.abs(y1-y0), sx=x0<x1?1:-1, sy=y0<y1?1:-1, err=dx-dy, x=x0, y=y0;
-  while(pts.length<len && !(x===x1 && y===y1)){ var e2=2*err; if(e2>-dy){ err-=dy; x+=sx; } if(e2<dx){ err+=dx; y+=sy; } pts.push([x,y]); } return pts; }
 
 
 /* ranged summons (Living Flame) */

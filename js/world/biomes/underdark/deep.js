@@ -66,7 +66,6 @@ var DEEP_PIECES = {
   for(var n in DEEP_PIECES){ var d=DEEP_PIECES[n], p={deep:1}; for(var f in d) if(f!=='w' && f!=='h') p[f]=d[f]; PROPS[n]=p; }
 })();
 var DEEP_BIG = /^(blood-font|candelabra-tall|cocoon-large|egg-sac|drow-|spider-idol|lava-forge|ritual-circle|stairs-down-drow)/;
-function deepPiece(name){ return DEEP_PIECES[name] || null; }
 function deepVar(base, n){ return base+'-'+(1+Math.floor(rng()*(n||4))); }
 function deepPlace(x, y, name, extra){
   var d=DEEP_PIECES[name]||{}, w=d.w||1, h=d.h||1;
@@ -366,9 +365,6 @@ function carveDeepLavaRoom(room, start){
 /* the special rooms: the furniture maps through DEEP_PROP; a few kinds become the region's own rooms */
 
 
-var _decoratePlainDeep = decoratePlain;
-decoratePlain = function(r){ if(!inDeep()) return _decoratePlainDeep(r); deepThemeRoom(r, false); };
-
 /* a free cell of this room: floor, nothing on it, not at a door or tunnel mouth, not by lava */
 function deepFree(x, y, r){ return at(x,y)===FLOOR && !propAt(x,y) && !itemAt(x,y) && !nearDoor(x,y) && !deepLavaAdjacent(x,y) && (!r || roomAt(x,y)===r) && !(r && x===r.cx && y===r.cy); }
 function deepFoot(x, y, w, h, r){ for(var yy=y; yy<y+h; yy++) for(var xx=x; xx<x+w; xx++) if(!deepFree(xx,yy,r)) return false; return true; }
@@ -566,9 +562,7 @@ function deepLavaLights(){
 /* ---------------------------------------------------------------- vegetation by region (vegetation.js grows the others)
    underdark: the violet cave grass in joined masses along the damp walls, fungus clumps; volcanic: sparse ashweed in
    little stands of three or four; temple: none (clean gothic stone). */
-var _vegGrowDeep = vegGrow;
-vegGrow = function(){
-  if(!inDeep()) return _vegGrowDeep.apply(this, arguments);
+function growDeepVegetation(){
   deepFinishRegions();
   var salt=Math.floor(rng()*1e6), N=MW*MH, spots=[], i, x, y;
   for(i=0;i<N;i++) if(ground[i]===G_GRASS || ground[i]===G_SHORT || ground[i]===G_MOSS) ground[i]=0;
@@ -614,7 +608,7 @@ vegGrow = function(){
   floorMeta.planeLights=floorMeta.planeLights||[];
   spots.forEach(function(sp){ if(sp.kind==='fungus' && hash2(sp.x,sp.y,salt+9)<0.35) floorMeta.planeLights.push({x:sp.x, y:sp.y+0.2, col:'#A77CFF', r:2.2, s:0.22}); });
   floorMeta.vegSpots=spots;
-};
+}
 
 /* ---------------------------------------------------------------- the last word on a new floor */
 
@@ -694,16 +688,6 @@ function buildDeepHall(r){
 
 /* ---------------------------------------------------------------- words */
 
-
-/* ---------------------------------------------------------------- hover cards */
-var _inspectHTMLDeep = inspectHTML;
-inspectHTML = function(mx, my){
-  if(inDeep() && inb(mx,my) && (revealAll||seen[idxOf(mx,my)])){
-    var p=propAt(mx,my), e=ents.some(function(o){ return o!==player && o.x===mx && o.y===my && (revealAll||vis[idxOf(mx,my)]); });
-    if(p && p.curtain && !e) return '<div class="nm">Web curtain</div><div class="hint">Blocks the way. One blow cuts it; fire burns it away.</div>';
-  }
-  return _inspectHTMLDeep.apply(this, arguments);
-};
 
 /* Named floor-generation stages; ordered by generation-adapter.js. */
 function finishGeneratedDeep(seed){

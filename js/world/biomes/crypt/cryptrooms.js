@@ -34,7 +34,6 @@ function placeUrnChamber(r){
     if(at(cx,r.y)===FLOOR && !itemAt(cx,r.y)){
       var slab=addSetPiece(cx, r.y, 'grave-slab', 1, 2, {keep:true}); if(slab){ slab.b=0; slab.flat=1; }
     }
-    floorMeta.cryptBorders=(floorMeta.cryptBorders||[]).concat([{x:cx-1, y:r.y, w:3, h:3, path:Math.min(r.h-3, 4)}]);
     floorMeta.cryptGlow=(floorMeta.cryptGlow||[]).concat([{x:cx, y:r.y-1}]);
   }
   /* vessels in burial rows: along the upper wall either side of the tomb, then along the side walls, with gaps */
@@ -68,29 +67,12 @@ function placeUrnChamber(r){
       for(var ry=q.y-1; ry<=q.y+q.h; ry++) for(var rx=q.x-1; rx<=q.x+q.w; rx++){ if(rx>=q.x && rx<q.x+q.w && ry>=q.y && ry<q.y+q.h) continue; if(freeCell(rx,ry) && !nearDoor(rx,ry)) ring.push({x:rx,y:ry}); }
       ring=shuffled(ring); if(ring.length) addProp(ring[0].x, ring[0].y, 'bones');
       if(ring.length>1){ floorMeta.ooze=floorMeta.ooze||{}; floorMeta.ooze[idxOf(ring[1].x,ring[1].y)]=1; }
-      floorMeta.cryptBorders=(floorMeta.cryptBorders||[]).concat([{x:q.x, y:q.y, w:q.w, h:q.h, tight:true}]);
       break;
     }
   }
   r.urnChamber=true;
 }
 
-
-/* ---------------------------------------------------------------- disturbed burials: bones beside, sometimes a leak of ooze */
-if(typeof scatterCrumbledTomb==='function'){
-  var _scatterCrumbled = scatterCrumbledTomb;
-  scatterCrumbledTomb = function(r){
-    var before=props.length, ok=_scatterCrumbled(r);
-    if(!ok) return ok;
-    var t=props[props.length-1]; if(!t || !/tomb/.test(t.name)) return ok;
-    var ring=[]; for(var y=t.y-1;y<=t.y+t.h;y++) for(var x=t.x-1;x<=t.x+t.w;x++){ if(x>=t.x && x<t.x+t.w && y>=t.y && y<t.y+t.h) continue; if(freeCell(x,y) && !nearDoor(x,y)) ring.push({x:x,y:y}); }
-    ring=shuffled(ring);
-    var nb=1+(rng()<0.5?1:0); for(var i=0;i<nb && ring.length;i++){ var c=ring.pop(); addProp(c.x,c.y,'bones'); }
-    if(rng()<0.45 && ring.length){ var l=ring.pop(); floorMeta.ooze=floorMeta.ooze||{}; floorMeta.ooze[idxOf(l.x,l.y)]=1; var l2=ring.filter(function(q){ return Math.abs(q.x-l.x)+Math.abs(q.y-l.y)===1; })[0]; if(l2) floorMeta.ooze[idxOf(l2.x,l2.y)]=1; }
-    floorMeta.cryptBorders=(floorMeta.cryptBorders||[]).concat([{x:t.x, y:t.y, w:t.w, h:t.h, tight:true}]);
-    return ok;
-  };
-}
 
 /* ---------------------------------------------------------------- drawing: recess, slab, borders, thresholds */
 var CR_STONE = {block:'#5E5870', blockHi:'#7C7590', blockLo:'#3A3548', mortar:'#211E2A', dark:'#0C0A12', slab:'#5A546C', slabHi:'#7A7390', slabLo:'#3A3548', carve:'#221F2C'};
@@ -178,30 +160,6 @@ function drawGraveSlab(p, alpha){
   ctx.drawImage(img, 0, 0, img.width, img.height, X, Y, Math.round((p.x+1-camX)*TS)-X, Math.round((p.y+2-camY)*TS)-Y);
   ctx.restore();
 }
-/* small edging stones around tombs, and a worn processional border leading away from a recess */
-function drawCryptBorders(){
-  var B=floorMeta && floorMeta.cryptBorders; if(!B) return;
-  var u=TS/32;
-  ctx.save();
-  B.forEach(function(b){
-    function stone(wx, wy, horiz, k){
-      var cx=Math.floor(wx), cy=Math.floor(wy); if(!inb(cx,cy) || !(revealAll||seen[idxOf(cx,cy)])) return;
-      if(hash2(Math.round(wx*4), Math.round(wy*4), 91+k)<0.12) return;                                          /* a few are missing */
-      var a=(revealAll||vis[idxOf(cx,cy)])?1:0.45, L=(5+hash2(Math.round(wx*8),Math.round(wy*8),92)*3)*u;
-      var px=(wx-camX)*TS, py=(wy-camY)*TS;
-      ctx.globalAlpha=a*0.9;
-      if(horiz){ crRect(px, py-2*u, L, 4*u, '#4A4558'); crRect(px, py-2*u, L, u, '#6C6680'); }
-      else { crRect(px-2*u, py, 4*u, L, '#4A4558'); crRect(px-2*u, py, u, L, '#6C6680'); }
-    }
-    var x0=b.x-(b.tight?0.08:0.12), y0=b.y-(b.tight?0.08:0.05), x1=b.x+b.w+(b.tight?0.08:0.12), y1=b.y+b.h+(b.tight?0.08:0.1), step=0.28;
-    for(var x=x0; x<x1-0.1; x+=step){ if(!b.path || true) stone(x, y1, true, 1); if(b.tight) stone(x, y0, true, 2); }
-    for(var y=y0; y<y1-0.1; y+=step){ stone(x0, y, false, 3); stone(x1, y, false, 4); }
-    if(b.path){   /* two lines of worn edging running out from the tomb toward the room */
-      for(var py2=y1; py2<y1+b.path; py2+=step){ if(hash2(0, Math.round(py2*4), 93)<0.3+0.15*(py2-y1)) continue; stone(b.x+0.35, py2, false, 5); stone(b.x+b.w-0.35, py2, false, 6); }
-    }
-  });
-  ctx.restore();
-}
 function cryptRoomsOn(){ return typeof inCrypt==='function' && inCrypt() && !(floorMeta && floorMeta.plane); }
 
 
@@ -279,6 +237,7 @@ function drawSceneryCluster(family,variant,px,py,alpha,flip,shear){
   ctx.translate(px+TS*.5,py+TS);ctx.scale(shrink,shrink);if(shear)ctx.transform(1,0,-shear,1,0,0);if(flip)ctx.scale(-1,1);
   if(baked)ctx.drawImage(baked,0,0,128,128,-TS*.5,-TS,TS,TS);
   else ctx.drawImage(o.img,o.sx,o.sy,128,128,-TS*.5,-TS,TS,TS);
+  if(typeof FoteNormalLighting!=='undefined')FoteNormalLighting.record(ctx,{img:baked||o.img,sx:baked?0:o.sx,sy:baked?0:o.sy,sw:128,sh:128},{x:-TS*.5,y:-TS,w:TS,h:TS},{normal:false});
   ctx.restore();return true;
 }
 PROPS['urn-group']={b:1,br:1,loot:.4,sfx:'pot-break'};
@@ -301,7 +260,7 @@ function drawUrnGroupProp(p,px,py,alpha){
   return false;
 }
 
-/* Named character presentation passes; composed by render-adapter.js. */
+/* Named character presentation passes; composed by presentation/render/renderer.js. */
 
 function prepareCryptActor(job){
   if(job.entity===player||!cryptRoomsOn())return;

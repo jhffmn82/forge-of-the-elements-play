@@ -9,10 +9,10 @@ var CORE_NAMES = ['Dungeon Core', 'Crypt Core', 'Cavern Core', 'Ruin Core', 'Aby
 function coreName(){ return CORE_NAMES[Math.min(CORE_NAMES.length-1, Math.floor((floorNo-1)/5))]; }
 
 /* The cap counts claimed cores; old absorbed-core counts seed the name ledger. */
-affinityCap = function(){
+function affinityCap(){
   if(RUN && RUN.cores===undefined) RUN.cores = RUN.bossDead && floorMeta && floorMeta.exitOpen ? 1 : 0;
   return 1 + (RUN ? RUN.cores : 0) + ((RACES[player.race]||{}).capBonus||0);
-};
+}
 
 function coreClaims(){
   if(!Array.isArray(RUN.coreClaims))RUN.coreClaims=CORE_NAMES.slice(0,Math.max(0,RUN.cores||0));
@@ -107,14 +107,6 @@ ITEM_FIT.core = 0.52;   /* a core's art name is in render.js itemArtName */
 /* the sealed gate takes the core */
 
 
-/* a line in the Equipment keys list while you carry one */
-var _equipHTMLCore = equipHTML;
-equipHTML = function(){
-  var h=_equipHTMLCore();
-  if(!player.core) return h;
-  var chip='<span class="mote keychip"><span class="kart" data-kicon="item-core-dungeon"></span>'+player.core+'</span>';
-  return h.replace(/(<div class="sec">Keys<\/div><div class="pouch">)(<span class="mote">no keys[^<]*<\/span>)?/, '$1'+chip);
-};
 
 /* Named travel and entry stages; ordered by transition-adapter.js. */
 function entryCollectCores(){

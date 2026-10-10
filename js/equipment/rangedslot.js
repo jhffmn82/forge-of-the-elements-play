@@ -90,7 +90,3 @@ function drawBowAimOverlay(){
 
 /* a bow sitting in the bag keeps its hotbar slot when you equip it from there: the slot becomes the bow slot
    instead of going empty, so the press that equipped it is the last press that ever equips it. */
-
-
-/* Named floor-generation stages; ordered by generation-adapter.js. */
-function migrateGeneratedRangedGear(seed){  if(typeof player!=='undefined' && player && player.sets && player.sets[1]){ migrateRangedSlot(); derive(player); } return; }

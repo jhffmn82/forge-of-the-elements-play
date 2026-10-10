@@ -106,11 +106,11 @@ function assignRunes(r){
   Object.keys(SIGILS).forEach(function(k){ looks[k] = RARE_SIGILS.indexOf(k)>=0 ? bind[bi++ % bind.length] : fut[fi++ % fut.length]; });
   return looks;
 }
-shuffleSigils = function(){
+function shuffleSigils(){
   sigilLook={}; sigilKnown={};
   RUN.sigilLooks = assignRunes(mulberry32((worldSeed^0x1234567)>>>0));
   Object.keys(SIGILS).forEach(function(k){ sigilLook[k]=runeTitle(RUN.sigilLooks[k]); sigilKnown[k]=false; });
-};
+}
 /* an older save still wearing the old looks: give it runes, keep what the player had learned */
 function ensureRuneLooks(){
   if(!RUN) return;
@@ -131,7 +131,7 @@ function sigilArtName(use){ var look=RUN && RUN.sigilLooks && RUN.sigilLooks[use
 
 function addSigilLights(L, now, prp){
   items.forEach(function(it){
-    if(it.kind!=='sigil' || !(revealAll||vis[idxOf(it.x,it.y)])) return;
+    if(it.kind!=='sigil' || !(revealAll||sceneVisibility()[idxOf(it.x,it.y)])) return;
     var use=it.use || (it.it && it.it.use), rare=RARE_SIGILS.indexOf(use)>=0, fl=ANIM.reduce ? 1 : 1+0.08*Math.sin(now/400+it.x*2+it.y);
     L.push({x:it.x, y:it.y, c:hexRGB(rare ? '#B9A2FF' : '#6FC4FF'), r:2.4, s:0.6*fl, tx:it.x, ty:it.y});
   });

@@ -608,20 +608,6 @@ function deepEnsureExit(e){
    rises on her silk with a red glow under her. Hovering creatures (the imp, the thought eater) bob. */
 
 
-/* ---------------------------------------------------------------- words: hover cards and the boss floor */
-var _inspectHTMLDeepMobs = inspectHTML;
-inspectHTML = function(mx, my){
-  var h=_inspectHTMLDeepMobs(mx, my);
-  if(!inb(mx,my)) return h;
-  var e=ents.filter(function(o){ return o.x===mx && o.y===my && o!==player; })[0];
-  if(e && h && e.kind==='matron')h=h.replace('on his throne','on her throne');
-  if(!h && !e){
-    var p=propAt(mx,my) || props.filter(function(q){ return q.hatch && !q.hatched && mx>=q.x && my>=q.y && mx<q.x+(q.w||1) && my<q.y+(q.h||1); })[0];
-    if(p && p.hatch && !p.hatched && (revealAll||seen[idxOf(mx,my)])) return '<div class="nm">Cocoon</div><div class="hint">Something twitches inside. It will burst if you come close.</div>';
-  }
-  return h;
-};
-
 
 /* Named floor-generation stages; ordered by generation-adapter.js. */
 function regionalizeGeneratedDeep(seed){if(deepMobsOn()){
@@ -630,7 +616,7 @@ function regionalizeGeneratedDeep(seed){if(deepMobsOn()){
   return;
 }
 
-/* Named character presentation passes; composed by render-adapter.js. */
+/* Named character presentation passes; composed by presentation/render/renderer.js. */
 
 function prepareUnderdarkActor(job){
   var e=job.entity,px=job.x,py=job.y;if(!e||e===player||!e.base)return;

@@ -274,7 +274,6 @@ function iconCanvas(name, size, fallbackText){
   }
   return span;
 }
-function itemIcon(name, size){ return iconCanvas(null, size, '\u2726'); }
 
 /* ---------------------------------------------------------------- HUD */
 (function buildHud(){
@@ -409,8 +408,8 @@ function bars(){
   if(player.hidden>0) tags.push('<span class="tag t-hidden">hidden '+player.hidden+'</span>');
   if(player.levitate>0) tags.push('<span class="tag t-chill">floating '+player.levitate+'</span>');
   var fx=$('fx'),tagHTML=tags.join('');if(fx._hudTags!==tagHTML){fx.innerHTML=tagHTML;fx._hudTags=tagHTML;}
-  if(typeof FoteResponsiveHUD!=='undefined'&&FoteResponsiveHUD.isMounted()){FoteResponsiveHUD.renderReadouts();return;}
-  var hud=$('hud2'); if(!hud) return;
+  if(typeof FoteResponsiveHUD!=='undefined'&&FoteResponsiveHUD.isMounted()){FoteResponsiveHUD.renderReadouts();syncSceneAudio();return;}
+  var hud=$('hud2'); if(!hud){syncSceneAudio();return;}
   var hp=player.hunger/HUNGER_MAX, hl = player.hunger<=0 ? 'Starving' : player.hunger<300 ? 'Hungry' : 'Full';
   var h='<span class="chip" title="Hunger">'+hl+' <span class="hunger"><i style="width:'+Math.round(hp*100)+'%"></i></span></span>';
   if(player.stillness>0) h+='<span class="chip" style="color:#9FD8FF" title="Time is frozen: moving is free">\u23F8 stillness '+player.stillness+'</span>';
@@ -420,22 +419,10 @@ function bars(){
   if(mc.length) h+='<span class="chip" title="Motes">'+mc.map(function(m){ return '<span class="dot" style="background:'+AFF_COL[m]+';width:8px;height:8px"></span>'+player.motes[m]; }).join(' ')+'</span>';
   if(player.god) h+=faithChipHTML();
   hud.innerHTML=h;
+  syncSceneAudio();
 }
 
 /* ---------------------------------------------------------------- ring and amulet slots on the doll */
-function trinketSlots(){
-  if(typeof RINGS==='undefined') return eslot('Amulet', null, '')+eslot('Rings', null, '');
-  var r=player.rings||[null,null], a=player.amulet;
-  function one(label, it, key, sub){
-    return '<div class="eslot" data-tr="'+key+'"><span class="l">'+label+'</span>'+(it?'<span class="v"'+(it.cursed&&!it.unid?' style="color:#D0605A"':'')+'>'+gearName(it)+'</span>':'<span class="v none">empty</span>')+
-      '<span class="l" style="text-transform:none;letter-spacing:.02em;color:var(--ash)">'+sub+'</span></div>';
-  }
-  if(a && typeof amuletSync==='function') amuletSync(a);
-  var aSub = a ? (a.charges!==undefined ? a.charges+'/'+amuletCap(a)+' charges'+(a.charges<amuletCap(a)?' &middot; next in '+(a.unid?'?':amuletKillsNeeded(a)-(a.progress||0))+' kills':'') : '') : 'activated; kills build charges';
-  return one('Amulet', a, 'amulet', aSub)+
-    one('Ring', r[0], 'ring0', r[0] ? (r[0].unid ? 'strength unknown' : ringLine(r[0])) : 'passive')+
-    one('Ring', r[1], 'ring1', r[1] ? (r[1].unid ? 'strength unknown' : ringLine(r[1])) : 'passive');
-}
 
 /* shield points on top of HP: Water's ice armor plus any active ward (Arcane Ward, Amulet of Thorns) */
 
@@ -558,6 +545,7 @@ function hotbarDrop(idx, tag){
 
 /* ---------------------------------------------------------------- sheets */
 function showSheet(name){
+  if(name==='Sand'&&!FOTE_RUNTIME.development)return;
   openSheet = (openSheet===name) ? null : name;
   var buttons=document.querySelectorAll('#tabs button');
   for(var i=0;i<buttons.length;i++) buttons[i].classList.toggle('on', buttons[i].getAttribute('data-p')===openSheet);
@@ -570,6 +558,15 @@ function showSheet(name){
     var body=$('shade').querySelector('.bodyw');if(body)body.scrollTop=0;
   }
   if(typeof FoteResponsiveHUD!=='undefined')FoteResponsiveHUD.syncSheet();
+  syncTouchSheet();
+}
+function syncTouchSheet(){
+  var on=document.body.classList.contains('touch')&&(openSheet==='Equip'||openSheet==='Char'||openSheet==='Faith');
+  document.body.classList.toggle('gearopen',on);
+  if(typeof resize==='function')resize();
+  var hotbar=document.getElementById('hotbar');
+  if(on&&hotbar)document.body.style.setProperty('--hotb',Math.max(0,innerHeight-hotbar.getBoundingClientRect().top)+'px');
+  else document.body.style.removeProperty('--hotb');
 }
 function refreshSheet(){
   if(!openSheet) return;
@@ -598,6 +595,22 @@ var TILE_HINTS = {5:'Bump it to fuse motes, craft sigils or enchant and upgrade 
   8:'A sheer drop. Float across or find a bridge.',18:'Something on this floor opens it. Bump it for a clue.',3:'Leads down to the next floor.',13:'Opens when the floor boss falls.',
   19:'Leads back up to the floor above.',20:'A doorway between worlds. Step in to cross over.'};
 function inspectHTML(mx,my){
+  var h;
+  if(inDeep()&&inb(mx,my)&&(revealAll||seen[idxOf(mx,my)])){
+    var curtain=propAt(mx,my),occupied=ents.some(function(o){return o!==player&&o.x===mx&&o.y===my&&(revealAll||vis[idxOf(mx,my)]);});
+    if(curtain&&curtain.curtain&&!occupied)h='<div class="nm">Web curtain</div><div class="hint">Blocks the way. One blow cuts it; fire burns it away.</div>';
+  }
+  if(h===undefined)h=inspectStatusHTML(inspectTargetHTML(mx,my),mx,my);
+  if(!inb(mx,my))return h;
+  var e=ents.filter(function(o){return o.x===mx&&o.y===my&&o!==player;})[0];
+  if(e&&h&&e.kind==='matron')h=h.replace('on his throne','on her throne');
+  if(!h&&!e){
+    var p=propAt(mx,my)||props.filter(function(q){return q.hatch&&!q.hatched&&mx>=q.x&&my>=q.y&&mx<q.x+(q.w||1)&&my<q.y+(q.h||1);})[0];
+    if(p&&p.hatch&&!p.hatched&&(revealAll||seen[idxOf(mx,my)]))return '<div class="nm">Cocoon</div><div class="hint">Something twitches inside. It will burst if you come close.</div>';
+  }
+  return h;
+}
+function inspectTargetHTML(mx,my){
   if(!inb(mx,my) || !(revealAll||seen[idxOf(mx,my)])) return '';
   if(playerBlind()&&!vis[idxOf(mx,my)])return '';
   var e=ents.find(function(o){return entityOccupies(o,mx,my)&&o!==player&&!actorConcealed(o);});

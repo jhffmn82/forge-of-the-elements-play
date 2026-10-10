@@ -169,7 +169,10 @@ function wobblesIntervention(big){
 function prayerList(){ return player.god ? (GODS[player.god].prayers||[]) : []; }
 
 
-function clearBad(){ ['burn','poison','chill','frozen','fear','blind','stun','root','corrupt'].forEach(function(k){ delete player.st[k]; }); }
+function clearBad(){
+  ['burn','poison','chill','frozen','fear','blind','stun','root','corrupt','slow'].forEach(function(k){delete player.st[k];});
+  player.syllaWeb=0;
+}
 
 /* ---------------------------------------------------------------- the shrine window */
 function pietyDepthText(){return 'Piety earned here is worth x'+pietyDepthMultiplier().toFixed(2)+'. Favor is not multiplied.';}
@@ -264,12 +267,11 @@ function refuseDivine(){log(GODS[player.god].name+' will not allow that.','c-inf
 
 function enforceDivineEquipment(p){
  if(!p.god||!p.bag||!p.sets)return;
- function stow(it,kind){if(!it||it===EMPTY_OFF||it.unarmed)return;p.bag.push({kind:kind,data:it,name:gearName(it),icon:it.icon,n:1});}
+ function stow(it,kind){if(!it||it===EMPTY_OFF||it.unarmed)return;tierNormalize(fixNegativePlus(it));p.bag.push({kind:kind,data:it,name:gearName(it),icon:it.icon,n:1});}
  p.sets.forEach(function(it,i){if(equipmentForbidden('weapon',it)){stow(it,'weapon');p.sets[i]=FISTS;}});
  [['armorItem','armor'],['off','off'],['ranged','weapon']].forEach(function(pair){var it=p[pair[0]];if(equipmentForbidden(pair[0]==='ranged'?'ranged':pair[1],it)){stow(it,pair[1]);p[pair[0]]=pair[0]==='off'?EMPTY_OFF:null;}});
 }
 
-function spendDivineSpell(n){player.favor-=n;player.castingSpell=true;return n;}
 
 function fullDivineDuration(n){var p=holyDurationPct();return n+(p>0?Math.max(1,Math.round(n*p)):0);}
 
@@ -529,7 +531,6 @@ function wobblesMoodOdds(amusement){
  var falloff=Math.log((.02-floor)/(.002-floor))/30;
  return {prank:floor+(.02-floor)*Math.exp((10-mood)*falloff),reward:floor+(.02-floor)*Math.exp((mood-90)*falloff)};
 }
-function wobblesMoodRules(amusement,rank){return FoteProgression.wobblesMoodOutcome(wobblesMoodOdds(amusement),rank===undefined?godRank():rank);}
 function resolveAmusement(){
  if(!player||player.god!=='wobbles'||player.hp<=0||(typeof RUN!=='undefined'&&RUN&&(RUN.over||RUN.victory)))return;
  var mood=Math.max(0,Math.min(100,Number(player.amusement)||0)),odds=wobblesMoodOdds(mood),rank=godRank(),roll=rng();

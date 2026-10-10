@@ -16,22 +16,27 @@ var SURF_P = 12;                        /* cells per repeat of each surface */
 /* Cache subtle mineral grain in the constructed stone surfaces. Work at the
    original two-pixel grain, preserving mortar and bevels and never using rng. */
 var WALL_GRAIN_CACHE = new WeakMap();
-function weatheredMasonry(img){
-  if(!img || !(img.naturalWidth||img.width)) return img;
-  if(WALL_GRAIN_CACHE.has(img)) return WALL_GRAIN_CACHE.get(img);
-  var c=document.createElement('canvas');
-  c.width=img.naturalWidth||img.width; c.height=img.naturalHeight||img.height;
-  var g=c.getContext('2d'); g.drawImage(img,0,0);
-  var im=g.getImageData(0,0,c.width,c.height), d=im.data;
+/* The same pixel kernel runs synchronously for tools and in Deep's preparation
+ * worker. Row bounds let the page fallback yield without changing arithmetic. */
+function weatherMasonryPixels(d,width,startRow,endRow){
   function grain(x,y,s){var n=Math.imul(x+17,374761393)^Math.imul(y+31,668265263)^s;n=Math.imul(n^(n>>>13),1274126177);return ((n^(n>>>16))>>>0)/4294967296;}
-  for(var y=0;y<c.height;y++)for(var x=0;x<c.width;x++){
-    var i=(y*c.width+x)*4, lum=(d[i]+d[i+1]+d[i+2])/3;
+  for(var y=startRow;y<endRow;y++)for(var x=0;x<width;x++){
+    var i=(y*width+x)*4, lum=(d[i]+d[i+1]+d[i+2])/3;
     if(!d[i+3]||lum<16)continue; // preserve deep joints without skipping dark brick
     var u=x>>1,v=y>>1,n=grain(u,v,71),patch=grain(u>>2,v>>2,193);
     var delta=((n-.5)*20+(patch-.5)*15)*Math.min(1,(lum-16)/22);
     if(n<.065)delta-=9; else if(n>.96)delta+=6;
     for(var k=0;k<3;k++)d[i+k]=Math.max(0,Math.min(255,d[i+k]+delta));
   }
+}
+function weatheredMasonry(img){
+  if(!img || !(img.naturalWidth||img.width)) return img;
+  if(WALL_GRAIN_CACHE.has(img)) return WALL_GRAIN_CACHE.get(img);
+  var c=document.createElement('canvas');
+  c.width=img.naturalWidth||img.width; c.height=img.naturalHeight||img.height;
+  var g=c.getContext('2d'); g.drawImage(img,0,0);
+  var im=g.getImageData(0,0,c.width,c.height);
+  weatherMasonryPixels(im.data,c.width,0,c.height);
   g.putImageData(im,0,0); WALL_GRAIN_CACHE.set(img,c); return c;
 }
 function surfImg(name,x,y){
@@ -101,22 +106,28 @@ function drawSurfaceDecal(i, px, py, alpha, opt){
   ctx.save(); ctx.globalAlpha=alpha*(opt.a===undefined?1:opt.a); ctx.imageSmoothingEnabled=false;
   var s=opt.s||1, w=TS*s;
   ctx.drawImage(img, i*64, 0, 64, 64, Math.round(px+(opt.dx||0)*TS+(TS-w)/2), Math.round(py+(opt.dy||0)*TS+(TS-w)/2), Math.round(w), Math.round(w));
+  if(typeof FoteNormalLighting!=='undefined'){
+    var surface=opt.surface||{kind:'ground'};
+    if(surface.kind==='wall')surface=Object.assign({},surface,{height:Math.round(w)/TS*1.2,footV:(py+TS-Math.round(py+(opt.dy||0)*TS+(TS-w)/2))/Math.round(w)});
+    FoteNormalLighting.record(ctx,{img:img,sx:i*64,sy:0,sw:64,sh:64},{x:Math.round(px+(opt.dx||0)*TS+(TS-w)/2),y:Math.round(py+(opt.dy||0)*TS+(TS-w)/2),w:Math.round(w),h:Math.round(w)},{surface:surface});
+  }
   ctx.restore();
 }
 function drawMasonryWallEdges(x, y, t, px, py, a){
-  var faceBelow = wallFaces(x,y);
+  var faceBelow = wallFaces(x,y), topSurface={kind:'ground',baseZ:1.2,admissionX:x,admissionY:y};
+  var wallSurface={kind:'wall',x:x,y:y+.5,height:1.2,footV:1,admissionX:x,admissionY:y,baseZ:0};
   ctx.save(); ctx.globalAlpha=a; ctx.imageSmoothingEnabled=false;
   if(faceBelow){
     /* (2026-09-27, render plan Q12: a face that ends beside open ground no longer gets painted dark and light end
        strips; the painted face art shows its own end.) A secret wall keeps its tell: a straight seam through the courses */
     if(t===SECRET){ ctx.fillStyle='rgba(20,22,28,0.7)'; ctx.fillRect(px+Math.round(TS*0.47),py+Math.round(TS*0.12),Math.max(1,Math.round(TS*0.04)),Math.round(TS*0.76)); }
-    else if(typeof wallTorchAt==='function' && wallTorchAt(x,y)) drawDeco(DECO.sconce, px, py, 1, {dy:-0.02});
+    else if(typeof wallTorchAt==='function' && wallTorchAt(x,y)) drawDeco(DECO.sconce, px, py, 1, {dy:-0.02,surface:wallSurface});
     else {
       var h=hash2(x,y,11);
       if(h<0.12){
         var rare=WALL_FACE_RARE[Math.floor(hash2(x,y,5)*WALL_FACE_RARE.length)];
-        if((rare===9 || rare===10) && !(typeof bidx==='function' && bidx()===1)) drawDeco(DECO.banner[rare===9?0:1], px, py, 1);   /* no banners in the Crypt */
-        else if(rare===1 || rare===2) drawDeco(DECO.crack[rare===1?0:1], px, py, 1, {a:0.55});
+        if((rare===9 || rare===10) && !(typeof bidx==='function' && bidx()===1)) drawDeco(DECO.banner[rare===9?0:1], px, py, 1, {surface:wallSurface});   /* no banners in the Crypt */
+        else if(rare===1 || rare===2) drawDeco(DECO.crack[rare===1?0:1], px, py, 1, {a:0.55,surface:wallSurface});
       }
     }
   } else {
@@ -124,9 +135,9 @@ function drawMasonryWallEdges(x, y, t, px, py, a){
     var rn=masonryRimArt('rim-n',smod(x+surfOff(5)),x,y), rw=Math.max(4, Math.round(TS*RIM/64));
     var rvW=masonryRimArt('rim-v',smod(y+surfOff(6)),x,y),rvE=masonryRimArt('rim-v',smod(y+surfOff(7)),x,y);
     var oN=openGround(x,y-1), oW=openGround(x-1,y), oE=openGround(x+1,y);
-    if(rn && oN) ctx.drawImage(rn.img,rn.sx,rn.sy,rn.sw,rn.sh,px,py,TS,rw);
-    if(rvW && oW) ctx.drawImage(rvW.img,rvW.sx,rvW.sy,rvW.sw,rvW.sh,px,py,rw,TS);
-    if(rvE && oE) ctx.drawImage(rvE.img,rvE.sx,rvE.sy,rvE.sw,rvE.sh,px+TS-rw,py,rw,TS);
+    if(rn && oN) drawMasonryArtwork(rn,px,py,TS,rw,topSurface);
+    if(rvW && oW) drawMasonryArtwork(rvW,px,py,rw,TS,topSurface);
+    if(rvE && oE) drawMasonryArtwork(rvE,px+TS-rw,py,rw,TS,topSurface);
     /* where a side run reaches the face row below it, it caps into that face's coping */
     var faceS = isWallLike(at(x,y+1)) && wallFaces(x,y+1);
     var caps=[];
@@ -138,10 +149,17 @@ function drawMasonryWallEdges(x, y, t, px, py, a){
     if(!oW && !oE && faceS && (openGround(x-1,y+1) || openGround(x+1,y+1))) caps.push([openGround(x-1,y+1)?0:1, 1]);
     caps.forEach(function(c){
       var cs=Math.round(rw*1.45), cx=px+(c[0]?TS-cs+Math.round((cs-rw)/2):-Math.round((cs-rw)/2)), cy=py+(c[1]?TS-cs+Math.round((cs-rw)/2):-Math.round((cs-rw)/2));
-      var cap=masonryCapArt(x,y); if(cap) ctx.drawImage(cap.img,cap.sx,cap.sy,cap.sw,cap.sh,cx,cy,cs,cs);
+      var cap=masonryCapArt(x,y); if(cap) drawMasonryArtwork(cap,cx,cy,cs,cs,topSurface);
     });
   }
   ctx.restore();
+}
+
+/* Record the native rim/cap placement, including side walls. Unsupported art
+ * clears the underlying floor normal with its own alpha, then uses relief. */
+function drawMasonryArtwork(art,x,y,w,h,surface){
+  ctx.drawImage(art.img,art.sx,art.sy,art.sw,art.sh,x,y,w,h);
+  if(typeof FoteNormalLighting!=='undefined')FoteNormalLighting.record(ctx,art,{x:x,y:y,w:w,h:h},{surface:surface||{kind:'ground',baseZ:1.2}});
 }
 
 /* ---------------------------------------------------------------- moss and bones: cached rasters with ragged edges */
@@ -228,7 +246,9 @@ function cachedRaster(kind, x, y, fn){
 }
 function blitRaster(c, px, py, alpha){
   if(!c) return;
-  ctx.save(); ctx.globalAlpha=alpha; ctx.imageSmoothingEnabled=c.width>32; ctx.drawImage(c, 0,0,c.width,c.height, px,py,TS,TS); ctx.restore();
+  ctx.save(); ctx.globalAlpha=alpha; ctx.imageSmoothingEnabled=c.width>32; ctx.drawImage(c, 0,0,c.width,c.height, px,py,TS,TS);
+  if(typeof FoteNormalLighting!=='undefined')FoteNormalLighting.record(ctx,{img:c,sx:0,sy:0,sw:c.width,sh:c.height},{x:px,y:py,w:TS,h:TS},{normal:false,surface:{kind:'ground'}});
+  ctx.restore();
 }
 
 /* moss and bones are drawn by the surface pass now */
@@ -246,7 +266,7 @@ function drawStoneSurface(){
   for(var y=camY; y<=camY+viewH; y++) for(var x=camX; x<=camX+viewW; x++){
     if(!inb(x,y)) continue; var i=idxOf(x,y); if(!(revealAll||seen[i])) continue;
     var t=map[i]; if(isWallLike(t) || t===CHASM || t===WATER || ptMat(x,y)) continue;
-    var px=(x-camX)*TS, py=(y-camY)*TS, a=(revealAll||vis[i])?1:memA(0.4);
+    var px=(x-camX)*TS, py=(y-camY)*TS, a=(revealAll||sceneVisibility()[i])?1:memA(0.4);
     blitRaster(cachedRaster('m', x, y, mossRaster), px, py, a);
     if(t!==FLOOR || ground[i] || propAt(x,y)) continue;
     var wn=isWallLike(at(x,y-1)), ws=isWallLike(at(x,y+1)), ww=isWallLike(at(x-1,y)), we=isWallLike(at(x+1,y));
@@ -272,6 +292,7 @@ function drawStoneProp(p, px, py, alpha){
     propShadow(p.x, p.y, px, py, alpha, 'bookshelf');
     ctx.save(); ctx.globalAlpha=alpha; ctx.imageSmoothingEnabled=false;
     ctx.drawImage(o.img, o.sx, o.sy, o.sw, o.sh, Math.round(px+(TS-w)/2), Math.round(py+TS*0.97-h), Math.round(w), Math.round(h));
+    if(typeof FoteNormalLighting!=='undefined')FoteNormalLighting.record(ctx,o,{x:Math.round(px+(TS-w)/2),y:Math.round(py+TS*.97-h),w:Math.round(w),h:Math.round(h)},{normal:false,surface:{kind:'sprite',x:p.x,y:p.y,height:Math.round(h)/TS,footV:1,admissionX:p.x,admissionY:p.y}});
     ctx.restore(); return true;
   }
   if(p.name==='rubble'){ drawDeco(DECO.pebble[Math.floor(hash2(p.x,p.y,surfSalt()+73)*3)], px, py, alpha, {s:1.05}); return true; }
@@ -294,6 +315,7 @@ function drawMasonryDoor(x, y, t, px, py, a){
   if(typeof FoteChaosPreviewRenderer!=='undefined')pal=FoteChaosPreviewRenderer.doorPalette(pal,crystal,iron);
   var lw=Math.max(6, Math.round(TS*0.26)), cx=px+Math.round(TS/2);
   function plankV(x0, y0, w, h){
+    if(typeof FoteNormalLighting!=='undefined')FoteNormalLighting.invalidate(ctx,{x:x0-1,y:y0,w:w+2,h:h});
     ctx.fillStyle='rgba(0,0,0,0.35)'; ctx.fillRect(x0+2, y0+1, w, h);
     ctx.fillStyle=pal.lo; ctx.fillRect(x0-1, y0, w+2, h);
     ctx.fillStyle=pal.leaf; ctx.fillRect(x0, y0, w, h);
@@ -302,6 +324,7 @@ function drawMasonryDoor(x, y, t, px, py, a){
     ctx.fillStyle=pal.band; ctx.fillRect(x0-1, y0+Math.round(h*0.2), w+2, 2); ctx.fillRect(x0-1, y0+Math.round(h*0.76), w+2, 2);
   }
   function plankH(x0, y0, w, h){
+    if(typeof FoteNormalLighting!=='undefined')FoteNormalLighting.invalidate(ctx,{x:x0,y:y0-1,w:w,h:h+2});
     ctx.fillStyle='rgba(0,0,0,0.35)'; ctx.fillRect(x0+1, y0+2, w, h);
     ctx.fillStyle=pal.lo; ctx.fillRect(x0, y0-1, w, h+2);
     ctx.fillStyle=pal.leaf; ctx.fillRect(x0, y0, w, h);
@@ -325,11 +348,11 @@ function drawMasonryDoor(x, y, t, px, py, a){
   }
   /* the frame: a capstone lintel along the wall above and below the doorway, outside the hall square,
      ending in square caps laid exactly where the wall's own corner caps sit so the two overlap */
-  var cs=Math.round(rw*1.45), ofs=Math.round((cs-rw)/2),cap=masonryCapArt(x,y);
+  var cs=Math.round(rw*1.45), ofs=Math.round((cs-rw)/2),cap=masonryCapArt(x,y),topSurface={kind:'ground',baseZ:1.2,admissionX:x,admissionY:y};
   [[py-rw, py-rw+rw-cs+ofs], [py+TS, py+TS-ofs]].forEach(function(r, k){
     var rn=masonryRimArt('rim-n',smod(x+surfOff(8+k)),x,y);
-    if(rn) ctx.drawImage(rn.img,rn.sx,rn.sy,rn.sw,rn.sh,px,r[0],TS,rw);
-    [[px-ofs], [px+TS-cs+ofs]].forEach(function(c){ if(cap)ctx.drawImage(cap.img,cap.sx,cap.sy,cap.sw,cap.sh,c[0],r[1],cs,cs); });
+    if(rn) drawMasonryArtwork(rn,px,r[0],TS,rw,topSurface);
+    [[px-ofs], [px+TS-cs+ofs]].forEach(function(c){ if(cap)drawMasonryArtwork(cap,c[0],r[1],cs,cs,topSurface); });
   });
   ctx.restore();
   return true;
@@ -376,8 +399,8 @@ function drawSurfaceWater(key, tileType){
     var near=false; for(var dy=-1;dy<=1 && !near;dy++) for(var dx=-1;dx<=1;dx++) if(isWaterAt(x+dx,y+dy)){ near=true; break; }
     if(!near) continue;
     var c=cachedRaster('w'+waterSig(x,y)+'@', x, y, waterRaster);
-    blitRaster(c, (x-camX)*TS, (y-camY)*TS, (revealAll||vis[i])?1:memA(0.4));
-    if(isWaterAt(x,y) && (revealAll||vis[i])) waterGlints(x, y, (x-camX)*TS, (y-camY)*TS);
+    blitRaster(c, (x-camX)*TS, (y-camY)*TS, (revealAll||sceneVisibility()[i])?1:memA(0.4));
+    if(isWaterAt(x,y) && (revealAll||sceneVisibility()[i])) waterGlints(x, y, (x-camX)*TS, (y-camY)*TS);
   }
   ctx.globalAlpha=1;
 

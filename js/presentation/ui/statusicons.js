@@ -191,9 +191,8 @@ function paintStatusBarIcon(el){
 }
 
 /* hovering an enemy lists its statuses */
-var _inspectHTMLStatus = inspectHTML;
-inspectHTML = function(mx, my){
-  var h=_inspectHTMLStatus(mx, my); if(!h) return h;
+function inspectStatusHTML(h,mx,my){
+  if(!h)return h;
   var e=ents.filter(function(o){ return o.x===mx && o.y===my && o!==player; })[0];
   if(!e || !(revealAll||vis[idxOf(mx,my)])) return h;
   var list=statusList(e);
@@ -203,6 +202,6 @@ inspectHTML = function(mx, my){
   var rows=list.map(function(s){ var url=statusIconURL(s.icon); return '<div class="tipstat">'+(url?'<img src="'+url+'" alt="">':'')+'<b class="'+(s.bad?'bad':'')+'">'+s.name+'</b>'+(s.t>0?'<span class="t">'+s.t+' turn'+(s.t===1?'':'s')+'</span>':'')+'</div>'; }).join('');
   var at=h.indexOf('<div class="odds">');
   return at>=0 ? h.slice(0,at)+rows+h.slice(at) : h+rows;
-};
+}
 
 STATUS_INFO.communion={name:'Communion',icon:'ic-arcane-ward',d:'Damaging attacks earn Favor once per action, even after the shield breaks.'};

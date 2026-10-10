@@ -1,7 +1,12 @@
 /* Release history and title-screen freshness checks. Saves are never cleared. */
-var FOTE_VERSION = 'Beta 1.6';
+var FOTE_VERSION = 'Beta 1.7';
 /* Keep newest first; describe only changes already present in this build. */
 var FOTE_PATCHES = [
+  {version:'Beta 1.7', notes:[
+    "Dimensional lighting is now the default, with directional surface shading, regional ambient light and local illumination from torches, crystals and luminous creatures. Visibility and combat rules are unchanged.",
+    "Refactored the game's foundation and reduced repeated work in floor generation, saves, enemy pathfinding and rendering. Artwork loads by scene and terrain caches release unused resources.",
+    "Gameplay, balance, controls and existing saves are preserved. The Lighting option and browser graphics fallback remain available. This is a playtest build."
+  ]},
   {version:'Beta 1.6', notes:[
     "Expanded character animations, with weapon-specific punches, strikes, thrusts and bow shots. Equipment and god-specific holy-symbol artwork have been refreshed. Updated opening footage shows the new sprites and animations.",
     "Retuned staff melee, Magic Missile and early enemy health and damage. Heavier Dungeon room encounters appear from floor 3, giving new builds a gentler opening.",

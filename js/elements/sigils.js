@@ -73,13 +73,13 @@ SIGIL_LOOKS = ['ashen','coiled','cracked','weeping','humming','bone','tarnished'
 
 /* found sigils (2026-09-17): the base six are the common find (85%, even odds); pairs 10% (Rot is Forge-only),
    sigil+ and the Aegis 4%, grand 1%. Every drop source (floors, chests, crates, monsters, puzzle rooms) uses this. */
-randomSigilUse = function(){
+function randomSigilUse(){
   var r=rng();
   if(r<0.85) return pick(SIGIL_ORDER.singles);
   if(r<0.95) return pick(SIGIL_ORDER.pairs.filter(function(k){ return k!=='rot'; }));
   if(r<0.99) return pick(SIGIL_ORDER.plus.concat(SIGIL_ORDER.triple));
   return pick(SIGIL_ORDER.grand);
-};
+}
 
 /* gods judge sigils by their motes */
 
@@ -227,7 +227,6 @@ function smokeMask(){
   return sm;
 }
 function smokeActive(){ var sm=smokeMask(); return sm && turn<sm.until ? sm : null; }
-function inSmoke(x,y){ var sm=smokeActive(); return !!(sm && inb(x,y) && sm._mask[idxOf(x,y)]); }
 function raiseSmoke(){
   var cells=[], rm=roomAt(player.x,player.y);
   if(rm){ for(var y=rm.y-1;y<=rm.y+rm.h;y++) for(var x=rm.x-1;x<=rm.x+rm.w;x++) if(inb(x,y) && at(x,y)!==WALL) cells.push(idxOf(x,y)); }

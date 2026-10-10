@@ -1,29 +1,26 @@
 # Forge of the Elements
 
-**Beta 1.6 portrait playtest candidate.**
+**Beta 1.7 dimensional-lighting playtest.**
 
-A browser roguelike: explore elemental dungeons, shape your build at the Forge, and face each biome's boss.
-The current Play build includes guided onboarding, portrait and landscape mobile controls, early-game combat updates and closer map zoom.
+[Play in your browser](https://jhffmn82.github.io/forge-of-the-elements-play/)
 
-## Play on a PC
+This update integrates dimensional lighting with a refactored foundation based on
+released 1.6. Existing gameplay rules, balance, controls, interface layouts, color art,
+audio, fonts and save format are preserved. Lighting is enabled by default, with
+a Canvas fallback when WebGL2 is unavailable. Block art remains in Options.
+The update also fixes cross-floor fire attribution and releases retired Chaos
+art from animation caches.
 
-**[Play in your browser](https://jhffmn82.github.io/forge-of-the-elements-play/)** - nothing to install.
-Keyboard: WASD or the arrow keys to move, QEZC for diagonals, 1-8 for the hotbar, Tab for the character
-sheet, `i` for equipment, `>` to take the stairs. The mouse works for all of it too: click a tile to walk
-there, click a monster to attack or shoot it.
+Keyboard: WASD or arrows to move, QEZC diagonals, 1-8 hotbar, Tab character sheet,
+`i` equipment, `>` stairs. Mouse and phone touch controls remain available.
 
-## Play on an Android phone or tablet
+On a phone, open the play link in a browser. Portrait and landscape are supported;
+tap to move and hold to inspect. Touch controls and High Contrast are in Options.
+The existing Android APK wrapper has not been rebuilt for this web update.
 
-**[Download the app (forge.apk)](https://github.com/jhffmn82/forge-of-the-elements-play/releases/latest/download/forge.apk)**
-Open the downloaded file, allow installs from your browser when Android asks, and "Forge" appears in the app
-drawer. It plays offline once it has loaded and picks up new builds by itself, so the app only needs installing once.
-This update changes the web game; the APK wrapper has not been rebuilt.
+This repository contains generated public output. The source checkout provides
+the repeatable export and an itch.io ZIP. Automated browser tests cover gameplay,
+save compatibility, UI, dimensional compositing, recovery and nested-path play.
+Physical-phone GPU and memory performance still require device testing.
 
-Or open the play link above in Chrome on the device. The web game supports portrait and landscape;
-tap to move and hold to inspect. Touch controls and High Contrast are adjustable in Options.
-The game does not request fullscreen or lock device orientation.
-
-## This repository
-
-Generated output only: the playable build, published by `tools/release/publish.py` from the source project. Last
-build: **2026-10-09T16:58:12.913264+00:00**.
+Build: **10/10/2026 18:57:55**. Revision: `foundation17-20261010185755396`.

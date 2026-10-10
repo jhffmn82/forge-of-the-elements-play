@@ -18,7 +18,6 @@ function enchantLive(slot,el){
 
 /* Ability text reports the current result, never its scaling formula.
  * Equipment and stat passives keep their separate bonus descriptions. */
-function lvRank(){ return typeof godRank==='function' ? godRank() : 0; }
 function lvDiv(){ return (typeof divineStrength==='function' ? divineStrength() : 1); }
 function lvNumber(n){return Number(n.toFixed(1));}
 function wobblesPassiveDetails(){return actionDetail('Wobbles may grant gifts, restore your strength or play a prank.');}
@@ -275,8 +274,3 @@ function actionDetailsHTML(detail,options){
   if(facts.length)h+='<dl class="action-facts">'+facts.map(function(f){return '<div><dt>'+actionEscape(f.label)+'</dt><dd>'+actionEscape(actionDisplayText(f.value,f.label))+'</dd></div>';}).join('')+'</dl>';
   return h+detail.notes.map(function(note){return '<p class="action-note">'+actionEscape(actionDisplayText(note))+'</p>';}).join('')+'</div>';
 }
-function actionDetailsText(detail,options){
-  return [actionDisplayText(detail.summary||'')].concat(actionFacts(detail,options).map(function(f){return f.label+': '+actionDisplayText(f.value,f.label)+'.';}),detail.notes.map(function(note){return actionDisplayText(note);})).filter(Boolean).join(' ');
-}
-function liveDesc(A){return actionDetailsText(abilityDetails(A));}
-function prayerLive(P){return actionDetailsText(prayerDetails(P));}

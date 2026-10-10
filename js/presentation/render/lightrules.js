@@ -40,6 +40,3 @@ function lightRulesPass(){
   });
   if(typeof rebuildPropGrid==='function') rebuildPropGrid();
 }
-
-/* Named floor-generation stages; ordered by generation-adapter.js. */
-function lightGeneratedFloor(seed){lightRulesPass();}

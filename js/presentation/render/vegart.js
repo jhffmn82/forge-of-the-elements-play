@@ -91,7 +91,7 @@ function drawOrdinaryPlants(now){
   S.forEach(function(sp){
     if(sp.x<camX-1 || sp.x>camX+viewW+1 || sp.y<camY-1 || sp.y>camY+viewH+1) return;
     var i=idxOf(sp.x,sp.y); if(!(revealAll||seen[i])) return;
-    var a=(revealAll||vis[i]) ? 1 : memA(0.42), px=(sp.x-camX)*TS, py=(sp.y-camY)*TS, sw=vegSway(sp.x,sp.y,now,vegBend(sp.x,sp.y));
+    var a=(revealAll||sceneVisibility()[i]) ? 1 : memA(0.42), px=(sp.x-camX)*TS, py=(sp.y-camY)*TS, sw=vegSway(sp.x,sp.y,now,vegBend(sp.x,sp.y));
     if(set==='caverns'){
       /* One of five baked arrangements per color; the entire clump sways
        * together and never reassembles itself as individual sprites. */
@@ -179,7 +179,7 @@ function drawVegMoss(){
   for(var y=camY-1; y<=camY+viewH+1; y++) for(var x=camX-1; x<=camX+viewW+1; x++){
     if(!inb(x,y)) continue; var i=idxOf(x,y); if(!(revealAll||seen[i]) || isWallLike(at(x,y))) continue;
     var sig=vegMossSig(x,y); if(sig.indexOf('1')<0) continue;
-    blitRaster(cachedRaster('vm'+sig+'@', x, y, vegMossRaster), (x-camX)*TS, (y-camY)*TS, (revealAll||vis[i])?1:memA(0.4));
+    blitRaster(cachedRaster('vm'+sig+'@', x, y, vegMossRaster), (x-camX)*TS, (y-camY)*TS, (revealAll||sceneVisibility()[i])?1:memA(0.4));
   }
   vegMossAhead();
 }
@@ -290,6 +290,3 @@ function vegRegrowTick(){
     S[k]=turn;
   }
 }
-
-/* Named floor-generation stages; ordered by generation-adapter.js. */
-function rememberGeneratedVegetation(seed){vegRemember();}

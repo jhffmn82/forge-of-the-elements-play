@@ -445,9 +445,11 @@ function repairCrystalVaultClaims(){
 
 /* ---------------------------------------------------------------- Search */
 function searchAround(resting, quiet){
+  if(!resting)searchSweepFx(quiet);
   if(gameTurns.busy())return false;
   if(!player || player.hp<=0) return;
-  if(playerFearAction())return false;
+  var secretCount=map.reduce(function(n,tile){return n+(tile===SECRET?1:0);},0);
+  if(playerFearAction()){searchDoorFx(secretCount);return false;}
   var spot=idxOf(player.x,player.y);
   floorMeta.searched=floorMeta.searched||{};
   var prev=floorMeta.searched[spot]||0; floorMeta.searched[spot]=prev+1;
@@ -466,6 +468,7 @@ function searchAround(resting, quiet){
   if(found) computeFOV();
   else if(!quiet) log('You search carefully'+(prev?' again':'')+' and find nothing.','c-info',{transient:false});
   endTurn();
+  searchDoorFx(secretCount);
 }
 window.addEventListener('keydown', function(ev){
   var tgt=ev.target && ev.target.tagName; if(tgt==='INPUT'||tgt==='SELECT') return;

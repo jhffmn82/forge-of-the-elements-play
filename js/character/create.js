@@ -239,9 +239,11 @@ function renderCreate(){
     });
     h+='</div>';
   }
-  var st=statsFor(c), C2=CLASSES[c.cls], kit=startingKit(c);
-  var kitNames=[kit.main&&WEAPONS[kit.main].name, kit.alt&&WEAPONS[kit.alt].name, kit.armor&&ARMORS[kit.armor].name, kit.off&&offKitItem(kit.off).name].filter(Boolean);
-  if(c.cls==='cleric' && c.god==='grom') kitNames=['Fists (Chad forbids weapons and body armor)','Holy Symbol'];
+  var st=statsFor(c), C2=CLASSES[c.cls], kit=kitFor(c);
+  var kitNames=[kit.main ? WEAPONS[kit.main].name : 'Fists'];
+  if(kit.alt)kitNames.push(WEAPONS[kit.alt].name);
+  if(kit.armor)kitNames.push(ARMORS[kit.armor].name);
+  if(kit.off)kitNames.push(offKitItem(kit.off).name);
   h+='<div class="summary"><div class="big" id="bigPort"></div><div>'+
      '<label class="step creation-name-label" for="cname" style="margin-top:0">3 &middot; Name</label><div class="creation-name-controls"><input id="cname" type="text" maxlength="24" value="'+c.name.replace(/"/g,'')+'"> <button type="button" id="reroll">Random name</button></div>'+
      '<div class="who" style="margin-top:8px;font-size:calc(13px + var(--ui-mobile-text-add,0px))">'+RACES[c.race].name+' '+C2.name+(c.cls==='cleric'?' of '+GODS[c.god].name:'')+(c.race==='fae'?' &middot; '+RACES.fae.courts[c.court]:'')+'</div>'+
@@ -279,6 +281,7 @@ function renderCreate(){
     if(newRun(Date.now()%1000000,CHOICE)!==false&&typeof FoteGettingStarted!=='undefined')FoteGettingStarted.onRunStarted();
   };
   var restored=focusSelector&&el.querySelector(focusSelector);if(restored&&!restored.disabled)restored.focus({preventScroll:true});
+  if(c.cls==='scoundrel')c.kit='melee';
 }
 
 /* ---------------------------------------------------------------- a new run */

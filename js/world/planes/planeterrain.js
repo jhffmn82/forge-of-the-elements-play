@@ -627,13 +627,86 @@ function ptFlat(x, y){ var M=ptMat(x,y); var c=!ptWallCell(x,y) ? M.floor : ptCe
 
 /* crystal glow is handled by the lighting system */
 
+function ptShadowDimensionalLight(){
+  return floorMeta&&floorMeta.plane==='shadow'&&typeof FoteNormalLighting!=='undefined'&&FoteNormalLighting.enabled();
+}
+function ptPlaneLightSource(l){
+  if(!floorMeta||!PT_MAT[floorMeta.plane]||typeof FoteNormalLighting==='undefined'||!FoteNormalLighting.enabled())return l;
+  // Route repair can move crystal props. Live geometry owns their sources;
+  // recognize the native producer's full signature, including older saves.
+  // Color alone cannot distinguish a crystal from an ordinary fixture. The
+  // saved source stays intact because Shadow moonlight reads its coordinates.
+  var M=PT_MAT[floorMeta.plane],crystal=l.col===M.crystalLight&&
+    (l.r===4.2&&l.s===.85||l.r===3&&l.s===.6);
+  return l.feature==='crystal'||crystal?null:l;
+}
+var PT_POOL_LIGHT_CACHE=null;
+function ptPlaneLightSources(){
+  var saved=floorMeta&&floorMeta.planeLights||[],M=floorMeta&&PT_MAT[floorMeta.plane];
+  if(!M||typeof FoteNormalLighting==='undefined'||!FoteNormalLighting.enabled())return saved;
+  // Pool membership is completed during generation, before the first paint.
+  // Gameplay removes authored lights by replacing their array; new fixtures
+  // append to it. Travel/load replace the floor or map. No render-frame key
+  // scan is needed for this immutable pool geometry.
+  var P=floorMeta.ptPool,cache=PT_POOL_LIGHT_CACHE;
+  if(cache&&cache.meta===floorMeta&&cache.pool===P&&cache.map===map&&cache.saved===saved&&cache.lights===saved.length)return cache.result;
+  var keys=P?Object.keys(P):[];
+  var el=floorMeta.plane,c=floorMeta.centerAt,pools=[],result=[];
+  saved.forEach(function(l){
+    if(!ptPlaneLightSource(l))return;
+    var onPool=P&&P[idxOf(Math.floor(l.x),Math.floor(l.y))];
+    var pool=l.feature==='pool'||(l.col===M.poolLight&&(onPool||l.r===4.4&&l.s===.9||l.r===3.6&&l.s===.8))||
+      (el==='shadow'&&c&&l.x===c.x&&l.y===c.y&&l.col===M.crystalGold)||
+      (el==='fire'&&l.col==='#FF7A2A')||(el==='water'&&l.col==='#4FA8E8');
+    (pool?pools:result).push(l);
+  });
+  // The saved water mean can lie on dry floor between separate pools. Derive
+  // one light per actual connected pool, without changing moonlight rules or
+  // saved source data. A center island cannot attract both pool lights now.
+  var remaining=new Set(keys.map(Number));
+  while(remaining.size){
+    var first=remaining.values().next().value,queue=[first],cells=[],sx=0,sy=0;remaining.delete(first);
+    for(var q=0;q<queue.length;q++){
+      var i=queue[q],x=i%MW,y=Math.floor(i/MW);cells.push(i);sx+=x;sy+=y;
+      [[x-1,y],[x+1,y],[x,y-1],[x,y+1]].forEach(function(v){
+        var ni=idxOf(v[0],v[1]);if(inb(v[0],v[1])&&remaining.delete(ni))queue.push(ni);
+      });
+    }
+    var cx=sx/cells.length,cy=sy/cells.length,best=first,distance=Infinity;
+    cells.forEach(function(i){var x=i%MW,y=Math.floor(i/MW),d=(x-cx)*(x-cx)+(y-cy)*(y-cy);if(d<distance){distance=d;best=i;}});
+    var x=best%MW,y=Math.floor(best/MW),radius=Math.min(5.5,Math.max(3,2+Math.sqrt(cells.length)*.45));
+    result.push({x:x,y:y,col:el==='shadow'?'#879DFF':M.poolLight,r:radius,
+      s:el==='shadow'?1.15:el==='fire'?1:.9,height:.65,falloff:1.8});
+  }
+  // Tiny diagnostic/legacy fixtures with no pool field retain their sources.
+  if(!keys.length)pools.forEach(function(l){result.push(l);});
+  PT_POOL_LIGHT_CACHE={meta:floorMeta,pool:P,map:map,saved:saved,lights:saved.length,result:result};
+  return result;
+}
 function addNaturalTerrainLights(L, now, prp){
   var M=ptMat(); if(!M||M.sourceLightsOnly) return L;
-  /* a wide, soft fill so the rock around you reads: without it, rock whose neighbours are all rock gets no light at all */
-  L.push({x:prp.x, y:prp.y, c:hexRGB(M.fill||'#FFFFFF'), r:13, s:0.34, tx:player.x, ty:player.y});
+  var shadow=ptShadowDimensionalLight(),blind=typeof playerBlind==='function'&&playerBlind(),all=revealAll&&!blind;
+  var crystalColor=shadow?'#AF82FF':M.crystalLight;
+  // Dimensional lighting uses the area's ambient profile for fill. Keep just
+  // the real player lamp and scenery sources rather than a second moving lamp.
+  if(typeof FoteNormalLighting==='undefined'||!FoteNormalLighting.enabled())L.push({x:prp.x, y:prp.y, c:hexRGB(M.fill||'#FFFFFF'), r:13, s:0.34, tx:player.x, ty:player.y});
   ptCrystalCells().forEach(function(c){
-    if(c.x<camX-4 || c.x>camX+viewW+4 || c.y<camY-4 || c.y>camY+viewH+4 || !(revealAll||seen[idxOf(c.x,c.y)])) return;
-    L.push({x:c.x, y:c.y+0.8, c:hexRGB(M.crystalLight), em:true, wall:true, wr:1.6, ws:1.2, r:2.6, s:0.55, tx:c.x, ty:c.y+1});
+    if(c.x<camX-4 || c.x>camX+viewW+4 || c.y<camY-4 || c.y>camY+viewH+4 || !(all||sceneVisibility()[idxOf(c.x,c.y)])) return;
+    L.push({x:c.x,y:c.y+.8,c:hexRGB(crystalColor),em:true,wall:true,wr:2,ws:1.35,r:3.2,s:1.1,height:1.1,tx:c.x,ty:c.y+1});
+  });
+  (typeof props==='undefined'?[]:props).forEach(function(p){
+    if(p.name!=='pt-cluster'&&p.name!=='pt-outcrop')return;
+    if(p.light||p.previewFocal||p.previewDecor)return;
+    // Packed clusters can choose a mundane stalagmite instead of a crystal.
+    var art=p.name==='pt-cluster'&&typeof packPlaneCluster==='function'&&packPlaneCluster(p);
+    if(p.name==='pt-outcrop'&&typeof PACK_PLANE_KIT!=='undefined'&&PACK_PLANE_KIT[floorMeta.plane])art=PACK_PLANE_KIT[floorMeta.plane][0];
+    var profile=art&&typeof crystalLightProfile==='function'&&crystalLightProfile(art);
+    if(art&&typeof packArt==='function'&&packArt(art)&&!profile)return;
+    var big=p.name==='pt-outcrop',size=p.size||1,r=big?4.4:size>=1?3.2:size>.5?2.2:1.8;
+    if(p.x<camX-r || p.x>camX+viewW+r || p.y<camY-r || p.y>camY+viewH+r || !(all||sceneVisibility()[idxOf(p.x,p.y)]))return;
+    var x=p.x+((p.w||1)-1)/2,y=p.y+((p.h||1)-1)/2;
+    L.push({x:x,y:y,c:hexRGB(profile?profile.color:crystalColor),em:true,r:r,s:big?1.25:size>=1?1.1:size>.5?.8:.6,
+      height:big?1.2:Math.max(.35,size*.8),falloff:1.7,tx:Math.floor(x),ty:Math.floor(y)});
   });
   return L;
 
@@ -1064,7 +1137,7 @@ function drawVeinGlints(now){
   ptGlints().forEach(function(g){
     if(mixedTerrain){M=ptMat(g.x,g.y);if(!M)return;}
     if(g.x<camX-1 || g.x>camX+viewW+1 || g.y<camY-1 || g.y>camY+viewH+1) return;
-    var i=idxOf(Math.floor(g.x), Math.floor(g.y)); if(!(revealAll||(M.sourceLightsOnly?vis[i]:seen[i]))) return;
+    var i=idxOf(Math.floor(g.x), Math.floor(g.y)); if(!(revealAll||(M.sourceLightsOnly?sceneVisibility()[i]:seen[i]))) return;
     var ph=((t*g.sp + g.ph)%1);
     if(ph>0.16) return;                                                        /* a brief catch of light, then dark for a while */
     var k=Math.sin(ph/0.16*Math.PI), px=(g.x-camX)*TS, py=(g.y-camY)*TS, r=TS*0.16;
@@ -1143,6 +1216,10 @@ function drawLargeCreature(e, px, py, opts){
       ctx.save(); ctx.globalAlpha=opts&&opts.alpha!==undefined?opts.alpha:1; ctx.imageSmoothingEnabled=spriteSheetSmoothing(ms,sc);
       if(opts&&opts.flip){ ctx.translate(px+TS*n/2,0); ctx.scale(-1,1); ctx.translate(-(px+TS*n/2),0); }
       ctx.drawImage(ms.img, fr.sx, fr.sy, cell, cell, dx, dy, w, h);
+      if(typeof FoteNormalLighting!=='undefined'){
+        var surface=actorLightSurface(e,px+TS*n/2,py+TS*n*.97);surface.x+=(n-1)/2;surface.y+=(n-1)/2;
+        FoteNormalLighting.record(ctx,{img:ms.img,sx:fr.sx,sy:fr.sy,sw:cell,sh:cell},{x:dx,y:dy,w:w,h:h},{surface:surface});
+      }
       if(opts&&opts.flash>0){ ctx.globalAlpha*=opts.flash; ctx.drawImage(whiteCut(ms.img,fr.sx,fr.sy,cell,cell), dx,dy,w,h); }
       ctx.restore();
       return true;
@@ -1205,7 +1282,7 @@ function ptPoolBubbles(){
   var FX=ptPoolFx(), P=FX && floorMeta.ptPool; if(!P) return;
   var t=(typeof ANIM!=='undefined' && ANIM.reduce) ? 0 : performance.now()/1000;
   for(var y=camY-1; y<=camY+viewH+1; y++) for(var x=camX-1; x<=camX+viewW+1; x++){
-    if(!inb(x,y)) continue; var i=idxOf(x,y); if(!P[i] || !(revealAll||vis[i])) continue;
+    if(!inb(x,y)) continue; var i=idxOf(x,y); if(!P[i] || !(revealAll||sceneVisibility()[i])) continue;
     var sh=(t*0.1 + hash2(x,y,141))%1;
     if(sh<0.7){ ctx.globalAlpha=0.12*Math.sin(sh/0.7*Math.PI); ctx.fillStyle=FX[3]; ctx.beginPath(); ctx.ellipse((x-camX+sh*1.2)*TS, (y-camY+0.35+0.3*hash2(x,y,143))*TS, TS*0.24, TS*0.05, -0.25, 0, 7); ctx.fill(); }
     /* a ripple ring now and then, spreading and fading (Earth) */
@@ -1227,7 +1304,7 @@ function ptPoolBubbles(){
 }
 
 
-/* Named character presentation passes; composed by render-adapter.js. */
+/* Named character presentation passes; composed by presentation/render/renderer.js. */
 
 function prepareNaturalActor(job){
   if(job.entity===player||!ptMat())return;

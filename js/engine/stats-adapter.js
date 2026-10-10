@@ -1,5 +1,5 @@
-/* Compatibility boundary for the existing sheets and action handlers.
- * Normalize authored gear explicitly, compute without mutation, then commit once. */
+/* Character stat updates. Carried items are normalized when acquired, changed,
+ * or loaded; recalculating the character never scans the inventory. */
 function statContent(){
   return {races:RACES,classes:CLASSES,gods:GODS,passives:PASSIVES,rings:RINGS,
     invokes:INVOKE_OF,elementAbilities:ELEMENT_ABILS,pietyRanks:PIETY_RANKS,
@@ -11,9 +11,7 @@ function normalizeActorGear(actor){
   if(!actor.buffs)actor.buffs={};
   if(!actor.rings)actor.rings=[null,null];
   actor.rings.forEach(function(item){if(item)fixNegativePlus(item);});
-  (actor.bag||[]).forEach(function(entry){if(entry.kind==='ring'&&entry.data)fixNegativePlus(entry.data);});
   var gear=(actor.sets||[]).concat([actor.ranged,actor.armorItem,actor.off]);
-  (actor.bag||[]).forEach(function(entry){if(['weapon','armor','off'].indexOf(entry.kind)>=0)gear.push(entry.data);});
   var seen=new Set();
   gear.forEach(function(item){if(item&&item!==EMPTY_OFF&&!seen.has(item)){seen.add(item);tierNormalize(item);}});
 }

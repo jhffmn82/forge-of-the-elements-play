@@ -7,9 +7,37 @@ var LEVEL_LIGHT_VALUES={wall_light_depth:1.15,wall_mass_floor:0.1,light_falloff:
  wall_bleed_rock:0.16,wall_bleed:0.45,crystal_wall_falloff:2.2,light_ceiling:0.3,
  bloom_threshold:1.1,bloom_gain:110,light_blur:0.45,bloom_alpha:0.3};
 var LEVEL_LIGHT_TUNE={n:function(k){if(!(k in LEVEL_LIGHT_VALUES))throw Error('Missing light value '+k);return LEVEL_LIGHT_VALUES[k];},has:function(k){return k in LEVEL_LIGHT_VALUES;}};
-function levelKnown(x,y){return inb(x,y) && (revealAll || vis[idxOf(x,y)] || seen[idxOf(x,y)]);}
-function levelVisible(x,y){return inb(x,y) && (revealAll || vis[idxOf(x,y)]);}
+// Ambient belongs to the area; luminous objects and the player supply local light.
+// Memory is deliberately below visible ambient and receives no direct lighting.
+var LEVEL_LIGHT_PROFILES={
+ dungeon:{ambient:[.50,.50,.50],memory:[.18,.19,.21]},
+ crypt:{ambient:[.15,.15,.15],memory:[.11,.12,.13]},
+ caverns:{ambient:[.15,.15,.15],memory:[.08,.09,.10]},
+ temple:{ambient:[.24,.24,.24],memory:[.12,.13,.14]},
+ underdark:{ambient:[.15,.15,.15],memory:[.08,.08,.10]},
+ volcanic:{ambient:[.10,.10,.10],memory:[.05,.05,.06]},
+ light:{ambient:[.35,.35,.35],memory:[.16,.17,.18]},
+ shadow:{ambient:[.15,.15,.15],memory:[.11,.12,.13]},
+ earth:{ambient:[.15,.15,.15],memory:[.08,.09,.08]},
+ fire:{ambient:[.10,.10,.10],memory:[.06,.06,.07]},
+ water:{ambient:[.12,.12,.12],memory:[.07,.08,.09]},
+ air:{ambient:[.25,.25,.25],memory:[.13,.14,.15]},
+ 'prism-archives':{ambient:[.14,.14,.14],memory:[.07,.08,.09]},
+ 'rot-hollows':{ambient:[.10,.10,.10],memory:[.05,.06,.05]},
+ 'cinder-bastion':{ambient:[.10,.10,.10],memory:[.05,.05,.06]},
+ 'violet-warrens':{ambient:[.10,.10,.10],memory:[.06,.05,.07]},
+ 'unmaker-crucible':{ambient:[.10,.10,.10],memory:[.05,.05,.06]}
+};
+function levelAmbientProfile(x,y){
+ var theme=typeof FoteChaosPreviewRenderer!=='undefined'&&FoteChaosPreviewRenderer.themeAt(x,y);
+ if(theme&&LEVEL_LIGHT_PROFILES[theme])return LEVEL_LIGHT_PROFILES[theme];
+ var plane=floorMeta&&floorMeta.plane;
+ if(plane&&LEVEL_LIGHT_PROFILES[plane])return LEVEL_LIGHT_PROFILES[plane];
+ if(typeof inDeep==='function'&&inDeep()&&floorMeta.deepRegion)return LEVEL_LIGHT_PROFILES[DEEP_REGIONS[deepCellReg(x,y)]];
+ return LEVEL_LIGHT_PROFILES[['dungeon','crypt','caverns'][Math.min(2,biomeIdx())]];
+}
 function levelWallAt(x,y){return isWallLike(at(x,y));}
+var LEVEL_LIGHT_DEPTH={caverns:1.38,underdark:1.26,volcanic:1.14,light:1.3,shadow:1,earth:1.1,fire:0.9,water:1.2,air:1.4},LEVEL_LIGHT_MATERIALS={};
 function levelMaterialAt(x,y){
  var id=floorMeta && floorMeta.plane;
  if(!id && typeof inDeep==='function' && inDeep())id=DEEP_REGIONS[deepCellReg(x,y)];
@@ -17,8 +45,18 @@ function levelMaterialAt(x,y){
  /* Painted cave detail catches nearby light 20% farther into visible rock.
   * This changes only natural Caverns/Underdark wall attenuation: constructed
   * walls, elemental planes, source strength, floor light and FOV keep their profiles. */
- var depth={caverns:1.38,underdark:1.26,volcanic:1.14,light:1.3,shadow:1,earth:1.1,fire:0.9,water:1.2,air:1.4}[id];
- return {id:id,depthLight:depth!==undefined,depthTiles:depth,massFloor:0.1};
+ if(LEVEL_LIGHT_MATERIALS[id])return LEVEL_LIGHT_MATERIALS[id];
+ var depth=LEVEL_LIGHT_DEPTH[id];
+ return LEVEL_LIGHT_MATERIALS[id]={id:id,depthLight:depth!==undefined,depthTiles:depth,massFloor:0.1};
+}
+/* Per-frame admission and LOS are refreshed, but their storage survives until
+ * the view or number of sources changes. No visibility or source state is cached. */
+function levelLightScratch(cells,sources){
+ var s=LM.tileScratch;
+ if(!s||s.inBounds.length!==cells)s=LM.tileScratch={inBounds:new Uint8Array(cells),known:new Uint8Array(cells),visible:new Uint8Array(cells),wall:new Uint8Array(cells),profiles:new Array(cells),ambient:new Float64Array(cells*3),ambientState:new Uint8Array(cells),los:null};
+ s.inBounds.fill(0);s.known.fill(0);s.visible.fill(0);s.profiles.fill(null);s.ambientState.fill(0);
+ if(!s.los||s.los.length!==cells*sources)s.los=new Uint8Array(cells*sources);else s.los.fill(0);
+ return s;
 }
 function drawLightmap(now, prp){
     var t=LEVEL_LIGHT_TUNE;
@@ -37,6 +75,18 @@ function drawLightmap(now, prp){
     if (!LM.img || LM.img.width !== W || LM.img.height !== H) { LM.img = LM.x.createImageData(W, H); LM.bl = LM.bx.createImageData(W, H); }
     var img = LM.img, bl = LM.bl, D = img.data, B = bl.data;
     var lights = gatherLights(now, prp);
+    var dimensional=typeof FoteNormalLighting!=='undefined'&&FoteNormalLighting.enabled();
+    // Reuse the native FOV/LOS and attenuation results for directional shading.
+    // No second visibility algorithm, light sorting, or rounded player position.
+    var lightCells=W*H, weights=null;
+    if(dimensional){
+      if(!LM.normalWeights||LM.normalWeights.length!==lights.length*lightCells)LM.normalWeights=new Uint8Array(lights.length*lightCells);
+      if(!LM.normalVisible||LM.normalVisible.length!==lightCells)LM.normalVisible=new Uint8Array(lightCells);
+      if(!LM.normalAmbient||LM.normalAmbient.length!==lightCells*3)LM.normalAmbient=new Float32Array(lightCells*3);
+      LM.normalAmbient.fill(0);
+      weights=LM.normalWeights;weights.fill(0);
+      LM.normalVisible.fill(0);
+    }
   var room=roomAt(player.x,player.y), darkRoom = room && room.dark && !(player.aff.light>0) && !(player.aff.fire>0);
   /* how dark each biome is: the dungeon is a lived-in, torch-lit place; the crypt and caverns are not */
   var BL = [ {amb:[0.50,0.51,0.58], mem:[0.55,0.58,0.70]},    /* dungeon */
@@ -46,13 +96,20 @@ function drawLightmap(now, prp){
   var PL = floorMeta && floorMeta.plane ? {light:{amb:[0.90,0.89,0.88], mem:[0.60,0.60,0.64]}, shadow:{amb:[0.30,0.26,0.40], mem:[0.40,0.36,0.52]}, earth:{amb:[0.42,0.44,0.34], mem:[0.46,0.48,0.40]}}[floorMeta.plane] : null;
   if(PL) BL=PL;
   var AMB = darkRoom ? [0.08,0.08,0.12] : BL.amb, MEM=BL.mem.map(function(v){ return v*0.45; });   /* the tile fade moved in here (memA) */
+  var regional=dimensional&&((typeof inDeep==='function'&&inDeep())||(typeof FoteChaosPreviewRenderer!=='undefined'&&FoteChaosPreviewRenderer.active()));
+  if(dimensional){
+    var area=levelAmbientProfile(player.x,player.y);
+    if(!darkRoom)AMB=area.ambient;
+    MEM=area.memory;
+  }
 
     if (!LM.vals || LM.vals.length !== W * H * 3) { LM.vals = new Float32Array(W * H * 3); LM.isWall = new Uint8Array(W * H); LM.depth = new Float32Array(W * H); }
     var vals = LM.vals, isWall = LM.isWall; vals.fill(0); isWall.fill(0);
     /* the tiles under the lightmap, and one row more (a wall face looks at the tile below it) */
-    var TW = W / S, TH = H / S, NT = TW * (TH + 1), tIn = new Uint8Array(NT), tKnown = new Uint8Array(NT), tVis = new Uint8Array(NT), tWall = new Uint8Array(NT);
-    var tProf = new Array(NT), tAmb = new Float64Array(NT * 3), tAmbState = new Uint8Array(NT), losSeen = new Uint8Array(lights.length * NT);
-    var mapW = MW, V = vis, SN = seen, all = revealAll, falloff;
+    var TW = W / S, TH = H / S, NT = TW * (TH + 1), tileScratch=levelLightScratch(NT,lights.length);
+    var tIn=tileScratch.inBounds,tKnown=tileScratch.known,tVis=tileScratch.visible,tWall=tileScratch.wall;
+    var tProf=tileScratch.profiles,tAmb=tileScratch.ambient,tAmbState=tileScratch.ambientState,losSeen=tileScratch.los;
+    var mapW = MW, V = sceneVisibility(), SN = seen, all = revealAll, falloff;
     for (var tb = 0; tb <= TH; tb++) for (var ta = 0; ta < TW; ta++) {
       var qx = ox + ta, qy = oy + tb, qt = tb * TW + ta, qi = qy * mapW + qx;
       tWall[qt] = levelWallAt(qx, qy) ? 1 : 0;
@@ -61,7 +118,12 @@ function drawLightmap(now, prp){
     /* deepAmbAt, once per tile: the offset of its three values in tAmb, plus one; 0 where it has none */
     function ambAt(wx, wy) {
       var qt = (wy - oy) * TW + (wx - ox), s = tAmbState[qt];
-      if (!s) { var r = typeof deepAmbAt==='function' ? deepAmbAt(wx, wy) : null; if (r) { tAmb[qt * 3] = r[0]; tAmb[qt * 3 + 1] = r[1]; tAmb[qt * 3 + 2] = r[2]; s = 2; } else s = 1; tAmbState[qt] = s; }
+      if (!s) {
+        var r=darkRoom&&dimensional?null:typeof deepAmbAt==='function'?deepAmbAt(wx,wy):null;
+        if(!r&&regional&&!darkRoom)r=levelAmbientProfile(wx,wy).ambient;
+        if(r){tAmb[qt*3]=r[0];tAmb[qt*3+1]=r[1];tAmb[qt*3+2]=r[2];s=2;}else s=1;
+        tAmbState[qt]=s;
+      }
       return s === 2 ? qt * 3 + 1 : 0;
     }
     function lightSees(k, L, x, y, qt) {
@@ -112,13 +174,14 @@ function drawLightmap(now, prp){
        plus bleed - rather than re-tuning it back to something similar. A NATURAL cell gets the
        depth-limited fade, with its own penetration distance and its own deep-mass floor, so a
        built temple wall and a spider-cavern wall on the same Underdark map light differently. */
-    var mats = {at:levelMaterialAt};
+    var materialProfiles = Object.create(null);
     var defPen = t.n('wall_light_depth'), defFloor = t.n('wall_mass_floor');
     function profileAt(wx, wy) {
       var key = (wy - oy) * TW + (wx - ox);
       var p = tProf[key];
       if (p) return p;
-      var m = mats ? mats.at(wx, wy) : null;
+      var m = levelMaterialAt(wx, wy);
+      if(m&&materialProfiles[m.id])return tProf[key]=materialProfiles[m.id];
       if (!m || !m.depthLight) {
         p = { on: false, penSub: 0, floor: defFloor };
       } else {
@@ -127,6 +190,7 @@ function drawLightmap(now, prp){
         p = { on: true, penSub: Math.max(0.35, pen * S),
               floor: m.massFloor === undefined ? defFloor : m.massFloor };
       }
+      if(m)materialProfiles[m.id]=p;
       tProf[key] = p;
       return p;
     }
@@ -147,16 +211,18 @@ function drawLightmap(now, prp){
       var fx0 = ox + (tx + 0.5) / S - 0.5, fy0 = oy + (ty + 0.5) / S - 0.5;
       if (!tIn[ct]) continue;
       if (!tKnown[ct]) continue;
+      if(dimensional)LM.normalVisible[cell]=tVis[ct]?255:0;
       var wall = !!tWall[ct];
       isWall[cell] = wall ? 1 : 0;
-      var rr, gg, bb;
-      if (!tVis[ct]) { rr = MEM[0]; gg = MEM[1]; bb = MEM[2]; }
+      var rr, gg, bb, ar=0, ag=0, ab=0;
+      if (!tVis[ct]) { var memory=regional?levelAmbientProfile(x,y).memory:MEM; ar=rr=memory[0]; ag=gg=memory[1]; ab=bb=memory[2]; }
       else {
         var reg = ambAt(x, y);
         rr = reg ? tAmb[reg - 1] : AMB[0];
         gg = reg ? tAmb[reg] : AMB[1];
         bb = reg ? tAmb[reg + 1] : AMB[2];
         if(!wall&&typeof sandboxRoomPreviewAt==='function'&&sandboxRoomPreviewAt(x,y)){rr=Math.max(rr,.68);gg=Math.max(gg,.68);bb=Math.max(bb,.68);}
+        ar=rr;ag=gg;ab=bb;
         var face = wall && !tWall[ct + TW];
         if (!wall || face) {
           var sx = fx0, sy = face ? y + 1 : fy0, stx = x, sty = face ? y + 1 : y, st = face ? ct + TW : ct;
@@ -167,22 +233,27 @@ function drawLightmap(now, prp){
             if (k === 0 ? !tVis[st] : !lightSees(k, L, stx, sty, st)) continue;
             var fq = 1 - d / L.r;
             if (falloff === undefined) falloff = t.n('light_falloff');
-            fq = Math.pow(fq, falloff) * L.s;
+            var exponent = typeof L.falloff==='number' && isFinite(L.falloff) && L.falloff>0 ? L.falloff : falloff;
+            fq = Math.pow(fq, exponent) * L.s;
             rr += L.c[0] * fq; gg += L.c[1] * fq; bb += L.c[2] * fq;
+            if(weights)weights[k*lightCells+cell]=Math.min(255,Math.round(fq*(face?reach(cell,x,y)*.9:1)*127.5));
           }
           if (face) {
             /* the lit lip fades with depth instead of filling the tile */
             var wf = reach(cell, x, y) * 0.9;
             rr *= wf; gg *= wf; bb *= wf;
+            ar*=wf;ag*=wf;ab*=wf;
           }
           else {
             /* smooth across tiles: a per-tile value showed as a grid */
             var n = 0.93 + 0.09 * (typeof ptVal==='function' ? ptVal(fx0*0.7,fy0*0.7,21) : hash2(x,y,21));
             rr *= n; gg *= n; bb *= n;
+            ar*=n;ag*=n;ab*=n;
           }
         } else { rr = -1; gg = 0; bb = 0; }
       }
       vals[o] = rr; vals[o + 1] = gg; vals[o + 2] = bb;
+      if(dimensional){LM.normalAmbient[o]=ar;LM.normalAmbient[o+1]=ag;LM.normalAmbient[o+2]=ab;}
     }
 
     /* wall tops: dark masses, faintly picking up the light of the open ground beside them */
@@ -229,6 +300,8 @@ function drawLightmap(now, prp){
         cr2 += WL.c[0] * wq; cg2 += WL.c[1] * wq; cb2 += WL.c[2] * wq;
       }
       vals[o2] = cr2; vals[o2 + 1] = cg2; vals[o2 + 2] = cb2;
+      // Rock-top bleed is resolved here, with no directional source admission.
+      if(dimensional){LM.normalAmbient[o2]=cr2;LM.normalAmbient[o2+1]=cg2;LM.normalAmbient[o2+2]=cb2;}
     }
 
     /* a soft ceiling, so stacked lights roll off instead of washing the tiles out */
@@ -249,6 +322,12 @@ function drawLightmap(now, prp){
     }
     LM.x.putImageData(img, 0, 0);
     LM.bx.putImageData(bl, 0, 0);
+    var shaded=false;
+    if(dimensional){
+      // Keep regional ambient independent of admitted direct light and its soft ceiling.
+      shaded=FoteNormalLighting.render(ctx,{now:now,tileSize:TS,cameraX:camX,cameraY:camY,lights:lights,
+        field:{width:W,height:H,originX:ox,originY:oy,samplesPerTile:S,weights:weights,weightScale:2,visible:LM.normalVisible,illumination:vals,ambient:LM.normalAmbient}});
+    }
     ctx.save();
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
@@ -256,7 +335,7 @@ function drawLightmap(now, prp){
     /* the light is worked out a tile at a time, so a wall casts a square-edged shadow and two
        texels a tile leaves square steps. A blur before it is laid down melts them into gradients. */
     ctx.filter = 'blur(' + Math.max(2, Math.round(TS * t.n('light_blur'))) + 'px)';
-    ctx.drawImage(LM.c, 0, 0, W, H, -TS, -TS, W * TS / S, H * TS / S);
+    if(!shaded)ctx.drawImage(LM.c, 0, 0, W, H, -TS, -TS, W * TS / S, H * TS / S);
     ctx.filter = 'none';
     ctx.globalCompositeOperation = 'lighter';
     ctx.globalAlpha = t.n('bloom_alpha');

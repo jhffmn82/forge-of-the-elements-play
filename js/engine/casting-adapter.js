@@ -114,11 +114,11 @@ function aimRange(selection){
   if(A.kind==='umbral')return Infinity;
   return selection.amulet||selection.prayer?A.range:A.kind==='lunge'?FoteActions.lunge().range:A.kind==='charge'?ABILITIES.charge.range:A.kind==='upheaval'?A.range:A.kind==='dash'?3:spellRange(A);
 }
-function inRange(x,y){
+function inRange(x,y,visibility){
   if(!aiming||!inb(x,y))return false;
   var A=aiming.A;if(A.kind==='umbral')return !!seen[idxOf(x,y)];
   var range=aimRange(aiming);
-  return dist(player,{x:x,y:y})<=range&&(revealAll||vis[idxOf(x,y)]);
+  return dist(player,{x:x,y:y})<=range&&(revealAll||(visibility||vis)[idxOf(x,y)]);
 }
 
 function resolveTargetedCast(x,y,selection){

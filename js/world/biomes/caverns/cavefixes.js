@@ -116,7 +116,7 @@ function drawMawSkirts(){
     if(p.x+3<camX || p.x-1>camX+viewW || p.y+3<camY || p.y-1>camY+viewH) return;
     var i=idxOf(p.x,p.y); if(!(revealAll||seen[i])) return;
     var k=floorNo+':'+p.x+','+p.y, c=MAW_SKIRT[k]||(MAW_SKIRT[k]=mawSkirtRaster(p.x-1, p.y-1));
-    ctx.save(); ctx.imageSmoothingEnabled=false; ctx.globalAlpha=(revealAll||vis[i]) ? 1 : memA(0.42);
+    ctx.save(); ctx.imageSmoothingEnabled=false; ctx.globalAlpha=(revealAll||sceneVisibility()[i]) ? 1 : memA(0.42);
     ctx.drawImage(c, 0, 0, c.width, c.height, Math.round((p.x-1-camX)*TS), Math.round((p.y-1-camY)*TS), TS*4, TS*4);
     ctx.restore();
   });

@@ -31,14 +31,6 @@ function kitFor(c){
   if(c.cls==='scoundrel') return SCOUNDREL_KITS.melee;   /* one kit, always */
   return CLASSES[c.cls].kit;
 }
-function kitNames(c){
-  var k=kitFor(c), out=[];
-  out.push(k.main ? WEAPONS[k.main].name : 'Fists');
-  if(k.alt) out.push(WEAPONS[k.alt].name);
-  if(k.armor) out.push(ARMORS[k.armor].name);
-  if(k.off) out.push(offKitItem(k.off).name);
-  return out;
-}
 
 /* abilities */
    /* 2026-09-17: techniques cost 7 so martials keep their rhythm on the leaner mana pool */
@@ -49,14 +41,6 @@ function kitNames(c){
 
 
 /* ---------------------------------------------------------------- creation */
-var _renderCreateCls = renderCreate;
-renderCreate = function(){
-  _renderCreateCls();
-  var c=CHOICE, el=$('create'); if(!el) return;
-  var sum=el.querySelector('.summary');
-  if(c.cls==='scoundrel') c.kit='melee';   /* 2026-09-20: one kit, so the picker is gone */
-  el.querySelectorAll('.summary .kv span').forEach(function(sp){ if(sp.textContent==='Starting kit' && sp.nextElementSibling) sp.nextElementSibling.textContent=kitNames(c).join(', '); });
-};
 
 /* ---------------------------------------------------------------- a new run */
 
@@ -82,7 +66,6 @@ var XP_CURVE_VERSION=3, XP_GROWTH=1.275;
 var XP_GROWTH_BY_VERSION={1:1.55, 2:1.267, 3:XP_GROWTH};
 function xpToNextAt(growth, level){ return Math.round(50*Math.pow(growth, level-1)/5)*5; }
 function xpToNext(level){ return xpToNextAt(XP_GROWTH, level); }
-function legacyXpToNext(level){ return xpToNextAt(1.55, level); }
 function lifetimeXp(p, cost){
   var total=p.xp||0;for(var level=1;level<(p.level||1);level++)total+=cost(level);return total;
 }

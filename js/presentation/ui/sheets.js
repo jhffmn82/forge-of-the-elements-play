@@ -194,6 +194,7 @@ function equipResourcesHTML(sectionClass){
   var keys=[['iron','Iron key','item-key-iron'],['crystal','Crystal key','item-key-crystal']].map(function(k){
     return '<span class="mote keychip"><span class="kart" data-kicon="'+k[2]+'"></span>'+k[1]+' &times;'+count(player.keys&&player.keys[k[0]])+'</span>';
   }).join('');
+  if(sectionClass==='sec'&&player.core)keys='<span class="mote keychip"><span class="kart" data-kicon="item-core-dungeon"></span>'+player.core+'</span>'+keys;
   return '<div class="'+sectionClass+'">Keys</div><div class="pouch">'+keys+'</div>'+
     '<div class="'+sectionClass+'">Pouch &middot; '+count(player.essence)+' essence</div><div class="pouch">'+motes+'</div>';
 }

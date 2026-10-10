@@ -39,11 +39,11 @@ function upheavalImpactTiles(walls){
  }});
  return tiles;
 }
-function effectFootprint(A,x,y){
- var out=[],r=A.radius||0;
+function effectFootprint(A,x,y,visibility){
+ var out=[],r=A.radius||0,V=visibility||vis;
  if(A.kind==='tomb')return glacialTombTiles(x,y);
  if(A.kind==='upheaval')return upheavalImpactTiles(upheavalWallTiles(x,y));
- if(A.kind==='cone'){var ang=Math.atan2(y-player.y,x-player.x);for(var cy=player.y-6;cy<=player.y+6;cy++)for(var cx=player.x-6;cx<=player.x+6;cx++){if(!inb(cx,cy)||(cx===player.x&&cy===player.y)||!vis[idxOf(cx,cy)])continue;var d=dist(player,{x:cx,y:cy});if(d>6)continue;var a=Math.atan2(cy-player.y,cx-player.x),diff=Math.abs(Math.atan2(Math.sin(a-ang),Math.cos(a-ang)));if(diff<=Math.PI/8+.12/d)out.push([cx,cy]);}return out;}
+ if(A.kind==='cone'){var ang=Math.atan2(y-player.y,x-player.x);for(var cy=player.y-6;cy<=player.y+6;cy++)for(var cx=player.x-6;cx<=player.x+6;cx++){if(!inb(cx,cy)||(cx===player.x&&cy===player.y)||!V[idxOf(cx,cy)])continue;var d=dist(player,{x:cx,y:cy});if(d>6)continue;var a=Math.atan2(cy-player.y,cx-player.x),diff=Math.abs(Math.atan2(Math.sin(a-ang),Math.cos(a-ang)));if(diff<=Math.PI/8+.12/d)out.push([cx,cy]);}return out;}
  if(A.kind==='beam'){var lance=typeof LANCE!=='undefined'&&A===LANCE,rules=lance?FoteActions.reginaldLance():null;return FoteGeometry.beamTiles(player,{x:x,y:y},{range:lance?rules.range:spellRange(A),width:lance?rules.width:3,inBounds:inb,opaque:opaque});}
 
  if(A.kind==='blast'||A.kind==='aoe'||A.kind==='quake'||A.kind==='lflame'){
@@ -52,23 +52,9 @@ function effectFootprint(A,x,y){
  }
  return [[x,y]];
 }
-var _betaPreview=previewPath;
-previewPath=function(ax,ay,x,y,A){
- _betaPreview.apply(this,arguments);if(!['blast','aoe','lflame','cone','beam','tomb','upheaval'].includes(A.kind))return;
- var walls=A.kind==='upheaval'?upheavalWallTiles(x,y):[],center=A.kind==='tomb'?foeAt(x,y):null;
- ctx.save();ctx.lineWidth=1;
- effectFootprint(A,x,y).forEach(function(p){
-  if(!vis[idxOf(p[0],p[1])])return;
-  var wall=walls.some(function(w){return w[0]===p[0]&&w[1]===p[1];}),tomb=A.kind==='tomb'&&(center?entityOccupies(center,p[0],p[1]):p[0]===x&&p[1]===y);
-  ctx.fillStyle=wall?'rgba(177,141,82,.55)':tomb?'rgba(165,225,255,.55)':A.kind==='tomb'?'rgba(115,195,245,.20)':'rgba(240,175,70,.20)';
-  ctx.strokeStyle=tomb?'rgba(225,250,255,.95)':A.kind==='tomb'?'rgba(150,220,255,.8)':'rgba(255,205,110,.8)';
-  var px=(p[0]-camX)*TS,py=(p[1]-camY)*TS;ctx.fillRect(px,py,TS,TS);ctx.strokeRect(px+1,py+1,TS-2,TS-2);
- });
- ctx.restore();
-};
 
 
-function drawLastCastSurface(){var f=floorMeta.lastCastTiles;if(!f||f.until<performance.now())return;ctx.save();ctx.fillStyle='rgba(255,200,100,.18)';ctx.strokeStyle='rgba(255,220,145,.8)';f.tiles.forEach(function(p){if(vis[idxOf(p[0],p[1])]){var x=(p[0]-camX)*TS,y=(p[1]-camY)*TS;ctx.fillRect(x,y,TS,TS);ctx.strokeRect(x+2,y+2,TS-4,TS-4);}});ctx.restore();
+function drawLastCastSurface(){var f=floorMeta.lastCastTiles;if(!f||f.until<performance.now())return;ctx.save();ctx.fillStyle='rgba(255,200,100,.18)';ctx.strokeStyle='rgba(255,220,145,.8)';f.tiles.forEach(function(p){if(sceneVisibility()[idxOf(p[0],p[1])]){var x=(p[0]-camX)*TS,y=(p[1]-camY)*TS;ctx.fillRect(x,y,TS,TS);ctx.strokeRect(x+2,y+2,TS-4,TS-4);}});ctx.restore();
 }
 /* Preserve content HP; the saved marker keeps floor-one damage tuning idempotent. */
 function applyEarlyFloorEnemyTuning(e,deferHealth){

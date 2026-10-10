@@ -28,7 +28,7 @@ function saveSnapshot(label){
     state:saveEncode(g), rngState:typeof rng.state==='function'?rng.state():null, log:logHtml};
 }
 function saveApply(data){
-  if(data&&data.storage)data=JSON.parse(FotePersistence.unpackStorage(JSON.stringify(data)));
+  if(data&&data.storage)data=FotePersistence.readStorage(data);
   var recoveredInterruptedDeath=false;
   FotePersistence.restore(data,{
     decode:saveDecode,validate:FoteState.validate,state:gameState,
@@ -36,7 +36,7 @@ function saveApply(data){
     restoreRandom:function(document,state){rng=mulberry32(Number.isInteger(document.rngState)?document.rngState:((state.worldSeed||1)^(state.turn*2654435761))>>>0);},
     migrations:[function(){recoveredInterruptedDeath=repairInterruptedPlayerDeath();},restoreRunReferences,removeBossFloorForges,ensureRunEarnings,migrateXpCurve,repairCoreProgress,repairBossCore,repairWallMemorials,repairDeadEndDoors,
       refreshCavernResidents,refreshEncounterTuning,repairSavedEffectClocks,
-      saveMigrateSigils,sigilNamesRefresh,ensureRuneLooks,repairTouristGear,migrateRangedSlot,hideRetiredSwapSlots,restorePuzzleState,
+      saveMigrateSigils,sigilNamesRefresh,ensureRuneLooks,repairTouristGear,migrateRangedSlot,normalizeLoadedInventory,hideRetiredSwapSlots,restorePuzzleState,
       function(){if(typeof FoteChaosCampaign!=='undefined')FoteChaosCampaign.restore();if(typeof FoteUnmakerPreview!=='undefined')FoteUnmakerPreview.repairGates();if(typeof FoteUnmakerEncounter!=='undefined')FoteUnmakerEncounter.restore();},repairStairApproachTraps],
     recompute:function(){derive(player);}
   });
@@ -81,6 +81,16 @@ function restoreRunReferences(){
   // Retired Challenge/Coward flags do not carry old damage or AI rules into
   // the new Fear/Root kit, including actors on cached floors and planes.
   var savedScenes=Object.keys(RUN.floorStash||{}).map(function(key){return RUN.floorStash[key];}).concat([RUN.planeStash,RUN.chaosEntryStash]);
+  // Old ordinary floors could share fire authorship. Preserve its saved bytes,
+  // but give distinct maps independent ownership before gameplay resumes.
+  var fireOwners=new Map([[fireSrc,new Map([[map,fireSrc]])]]);
+  savedScenes.filter(Boolean).forEach(function(scene){
+    var authors=scene.fireSrc;if(!(authors instanceof Uint8Array))return;
+    var owners=fireOwners.get(authors);
+    if(!owners){fireOwners.set(authors,new Map([[scene.map,authors]]));return;}
+    if(!owners.has(scene.map))owners.set(scene.map,authors.slice());
+    scene.fireSrc=owners.get(scene.map);
+  });
   [ents].concat(savedScenes.filter(Boolean).map(function(scene){return scene.ents||[];})).forEach(function(actors){actors.forEach(function(e){
     ['challenged','cowardMark','challengeUntil','challengeT','challengeBoost','mendingDebt'].forEach(function(key){delete e[key];});
   });});
@@ -166,12 +176,13 @@ function slotKey(s){ return 'astra-temple-save-'+s; }
 function readSlot(s){
   try{
     var raw = s==='rescue' ? localStorage.getItem('astra-temple-rescue') : localStorage.getItem(slotKey(s));
-    if(!raw) return null; var d=JSON.parse(FotePersistence.unpackStorage(raw));
+    if(!raw) return null; var d=FotePersistence.readStorage(raw);
     if(s==='rescue') d.summary=d.summary||{}, d.savedAt=d.savedAt||'';
     return d;
   }catch(e){ return null; }
 }
 function writeSlot(s, label){
+  if(RUN && RUN.mapViewed)return false;
   if(gameTurns.running()){afterTurn(function(){writeSlot(s,label);});return true;}
   gameTurns.flush();
   if(!player || !RUN){ return false; }
@@ -281,12 +292,12 @@ function exitGame(){
 }
 function closeTitle(){var el=$('title');if(el)el.classList.remove('on');if(typeof FotePortraitAnimation!=='undefined')FotePortraitAnimation.refresh();if(typeof stopTitleVersionChecks==='function')stopTitleVersionChecks();syncTitleFilm();}
 function latestSave(){
-  var best=null, bestSlot=null;
-  SAVE_SLOTS.forEach(function(s){ var d=readSlot(s); if(d && d.summary && typeof d.savedAt==='string' && Number.isFinite(Date.parse(d.savedAt)) && (!best || d.savedAt>best.savedAt)){ best=d; bestSlot=s; } });
-  return bestSlot;
+  var best=null;
+  SAVE_SLOTS.forEach(function(s){ var d=readSlot(s); if(d && d.summary && typeof d.savedAt==='string' && Number.isFinite(Date.parse(d.savedAt)) && (!best || d.savedAt>best.d.savedAt))best={s:s,d:d}; });
+  return best;
 }
 function renderTitleMenu(){
-  var el=$('title'), last=latestSave(), lastD=last ? readSlot(last) : null;
+  var el=$('title'), newest=latestSave(), last=newest&&newest.s, lastD=newest&&newest.d;
   titleContent().innerHTML='<div class="menu">'+
     '<header class="title-heading"><p class="title-kicker">A turn-based roguelike</p><h1><span>Forge</span><small>of the</small><span>Elements</span></h1><p class="title-pitch">Elemental magic. Strange gods.<br>One life.</p></header>'+
     (last ? '<button id="tContinue" class="title-primary">Continue<span class="sub">'+(lastD.summary.name||'')+' &middot; level '+lastD.summary.level+' &middot; floor '+lastD.summary.floor+'</span></button>' : '')+
@@ -315,7 +326,7 @@ function openTitleSettings(){
 }
 function slotRows(mode){
   var rows=SAVE_SLOTS.map(function(s){ return {s:s, d:readSlot(s)}; });
-  var rescue=readSlot('rescue'); if(rescue && mode==='load') rows.push({s:'rescue', d:rescue});
+  var rescue=mode==='load'&&readSlot('rescue'); if(rescue) rows.push({s:'rescue', d:rescue});
   return '<div class="slots">'+rows.map(function(r){
     var name = r.s==='auto' ? 'Autosave' : r.s==='rescue' ? 'Recovered' : 'Slot '+r.s;
     var act='';
@@ -344,23 +355,5 @@ function renderAbout(){
     '<div class="panelfoot"><span></span><button id="tBack">Back</button></div></div>';
   $('tBack').onclick=renderTitleMenu;
 }
-
-/* ---------------------------------------------------------------- Options: save / load section */
-var _optionsHTMLSave = optionsHTML;
-optionsHTML = function(){
-  var h=_optionsHTMLSave();
-  var dead = RUN && RUN.over;
-  return '<div class="sec">Save game</div>'+(dead ? '<p class="c-info" style="font-size:calc(11.5px + var(--ui-mobile-text-add,0px))">The dead cannot be saved.</p>' : slotRows('save'))+
-    '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px"><button id="oExport"'+(dead?' disabled':'')+'>Export to file</button><button id="oImport">Import from file</button><button id="oTitle">Quit to title</button><button id="oExit">Exit game</button></div>'+h;
-};
-var _wireOptionsSave = wireOptions;
-wireOptions = function(root){
-  _wireOptionsSave(root);
-  root.querySelectorAll('[data-save]').forEach(function(b){ b.onclick=function(){ if(saveTo(b.getAttribute('data-save'))) refreshSheet(); }; });
-  var ex=$('oExport'); if(ex) ex.onclick=exportSave;
-  var im=$('oImport'); if(im) im.onclick=importSave;
-  var ox=$('oExit'); if(ox) ox.onclick=function(){ confirmBox('Exit game', 'Unsaved progress since your last save is lost.', 'Exit', function(){ closeModal(); if(openSheet) showSheet(openSheet); openTitle(); exitGame(); }); };
-  var tt=$('oTitle'); if(tt) tt.onclick=function(){ confirmBox('Quit to title', 'Unsaved progress since your last save is lost.', 'Quit', function(){ closeModal(); if(openSheet) showSheet(openSheet); openTitle(); }); };
-};
 
 /* the end screen: a winner can save the character to carry on later */

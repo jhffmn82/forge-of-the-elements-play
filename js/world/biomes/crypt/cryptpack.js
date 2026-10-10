@@ -157,6 +157,13 @@ function packDraw(p, name, alpha){
 
   if(flip){ ctx.translate(dx+dw/2, 0); ctx.scale(-1, 1); ctx.translate(-(dx+dw/2), 0); }
   ctx.drawImage(o.img, o.sx, o.sy, o.sw, o.sh, dx, dy, dw, dh);
+  var emission=typeof crystalLightProfile==='function'&&crystalLightProfile(name);
+  if(emission&&typeof FoteNormalLighting!=='undefined'){
+    FoteNormalLighting.record(ctx,o,{x:dx,y:dy,w:dw,h:dh},{surface:{
+      kind:flat?'ground':p.wall?'wall':'sprite',x:p.x+(w-1)/2,y:p.wall?p.y+.5:p.y+h-1,
+      height:dh/TS,footV:1,admissionX:Math.floor(p.x),admissionY:Math.floor(p.y),
+      emission:mapEmissionVisible(p.x,p.y)?emission.emission:0}});
+  }
   ctx.restore();
   if(typeof objFxDraw==='function') objFxDraw(o, dx, dy, dw, dh, alpha, flip);
   return true;
@@ -246,21 +253,6 @@ function drawSetPiece(p,alpha){
    converted props (barrels to urns, the dungeon's bone scatter) slip through. */
 function packLight(x, y, col, r, s){ floorMeta.planeLights=floorMeta.planeLights||[]; floorMeta.planeLights.push({x:x, y:y, col:col, r:r, s:s}); }
 function packWallAt(x, y){ return inb(x,y) && isWallLike(at(x,y)) && at(x,y)!==DOOR; }
-/* 2026-09-22 (Justin): fix it at the source as well. Whenever a tile that held a wall-mounted piece stops being a
-   wall (a corridor carved after decoration, a door cut, a dead end opened), the piece and its light go with it,
-   and a Caverns wall feature drawn on that tile is dropped. The repair below stays for floors saved before this. */
-var _setTWallPieces = setT;
-setT = function(x, y, v){
-  _setTWallPieces(x, y, v);
-  if(typeof isWallLike==='function' && isWallLike(v)) return;
-  if(typeof props!=='undefined' && props.length){
-    for(var i=props.length-1; i>=0; i--){ var p=props[i]; if(p.wall && p.b && p.x===x && p.y===y){
-      props.splice(i,1);
-      if(floorMeta && floorMeta.planeLights) floorMeta.planeLights=floorMeta.planeLights.filter(function(l){ return !(l.x===x && Math.abs(l.y-(y+.9))<.001); });
-    } }
-  }
-  if(floorMeta && floorMeta.caveDeco && floorMeta.caveDeco.walls) floorMeta.caveDeco.walls=floorMeta.caveDeco.walls.filter(function(w){ return !(w.x===x && w.y===y); });
-};
 /* Corridors carved after room decoration can leave a wall memorial on floor.
    Repair deterministically, including old saves, without moving gameplay objects. */
 function repairWallMemorials(){
@@ -339,35 +331,6 @@ function packDecorateRoom(r){
     }
   }
 }
-var _decoratePlainPack = decoratePlain;
-decoratePlain = function(r){
-  _decoratePlainPack(r);
-  if(packCryptOn() && !r.hall) packDecorateRoom(r);
-};
-/* the urn chamber: candles either side of the grave slab under the niche */
-
-/* Morty's hall: candles in the top chapel, cobwebs and plaques in the side chapels (the dais and the monument stand alone) */
-if(typeof stampCryptHall==='function'){
-  var _stampCryptHallPack = stampCryptHall;
-  stampCryptHall = function(ox, oy, mode){
-    var hall=_stampCryptHallPack(ox, oy, mode);
-    function P(x,y){ return {x:ox+x, y:oy+y}; }
-    function put(x,y,name,extra){ var c=P(x,y); if(!inb(c.x,c.y) || propAt(c.x,c.y)) return null; return addProp(c.x, c.y, name, Object.assign({keep:true}, extra||{})); }
-    [[10,3],[16,3]].forEach(function(q, i){ var c=put(q[0], q[1], 'candles-'+(i?4:2)); if(c && mode!=='boss') packLight(c.x, c.y+0.2, '#FFC878', 2.2, 0.32); });
-    put(5,7,'wall-cobweb',{wall:true, flat:1, b:0, webLeft:false}); put(22,7,'wall-cobweb',{wall:true, flat:1, b:0, webLeft:true});
-    if(put(1,7,'wall-plaque',{wall:true, b:1})) packLight(ox+1, oy+7.9, '#7CFFA0', 1.8, 0.22);
-    if(put(25,7,'wall-plaque',{wall:true, b:1})) packLight(ox+25, oy+7.9, '#7CFFA0', 1.8, 0.22);
-    return hall;
-  };
-}
-/* the rune tomb's rune lights the floor in front of it, a little */
-var _addSetPiecePack = addSetPiece;
-addSetPiece = function(x, y, name, w, h, extra){
-  var p=_addSetPiecePack(x, y, name, w, h, extra);
-  if(p && name==='tomb-rune' && packCryptOn() && floorMeta) packLight(x, y+h-0.2, '#7CFFA0', 2.2, 0.3);
-  return p;
-};
-
 /* ---------------------------------------------------------------- the rules, enforced once the floor is built */
 var PACK_KINDS = {urn:/^(urn-group)$/, bone:/^(bones|bone-pile)$/, candle:/^candles-\d$/, moss:/^grave-flowers-moss-\d$/};
 function packKindOf(p){ for(var k in PACK_KINDS) if(PACK_KINDS[k].test(p.name)) return k; return null; }

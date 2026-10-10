@@ -50,11 +50,16 @@ RINGS.keeneyes.unit='% chance a turn to spot traps you can see';
 function tierCostMult(it){ if(!it || it.kind==='ring' || typeof tierNum!=='function') return 1; var t=tierNum(it); return t>=3 ? 4 : t===2 ? 2 : 1; }
 function upgradeCost(it){
   if(!it) return null;
+  var masterwork=capstone('anvil'),dwarf=player.race==='dwarf'?.75:1;
+  if(masterwork&&!it.cursed&&(it.plus||0)===3){
+    return Math.round((it.kind==='ring'?RING_RANK_COST[RING_RANK_COST.length-1]:3000*tierCostMult(it))*.7*dwarf);
+  }
   var plus=it.plus||0;
   if(it.cursed) plus=-1;
   if(plus>=3) return null;
   var base = it.kind==='ring' ? RING_RANK_COST[Math.max(0,plus)] : UPGRADE_COST[Math.max(0,plus)] * tierCostMult(it);
-  return Math.round(base * (player.race==='dwarf' ? 0.75 : 1));
+  // The racial discount rounds before the divine discount on ordinary ranks.
+  return Math.round(Math.round(base*dwarf)*(masterwork?.7:1));
 }
 /* 2026-09-17: an unidentified piece cannot be upgraded - you would be paying essence for a bonus you
    cannot see, on something that might be cursed. The Forge lists it, greyed, saying why. */

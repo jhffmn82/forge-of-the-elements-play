@@ -17,6 +17,7 @@
 
 /* ---------------------------------------------------------------- who a god refuses */
 function refusalText(id){
+  if(id==='sylla'&&(player.aff.fire||0)>0)return 'Sylla will not take fire into her brood.';
   if(clericGodLocked(id)) return 'Clerics are bound to their chosen god and cannot convert.';
   var g=GODS[id];
   if(g.refuses && player.race===g.refuses) return g.name+' will not accept a '+RACES[player.race].name+'.';
@@ -40,6 +41,7 @@ function godAffinityRefusal(id){
   return null;
 }
 function godRefuses(id){
+  if(id==='sylla'&&(player.aff.fire||0)>0)return true;
   if(clericGodLocked(id)) return true;
   var g=GODS[id];
   if(g.refuses && player.race===g.refuses) return true;

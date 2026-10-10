@@ -39,7 +39,6 @@ function setResolvedBuffTimer(key, value){
   player._buffDurationSeen=player._buffDurationSeen||Object.assign({},player._buffSeen||{});
   player._buffDurationSeen[key]=value;
 }
-function isBuffed(){ if(livingMountainStacks(player)>0)return true;var b=buffTimers(); for(var k in b) return true; return false; }
 
 /* A new or refreshed buff is lengthened once; Radiance belongs to cast payment. */
 

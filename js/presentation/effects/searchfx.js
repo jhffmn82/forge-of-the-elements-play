@@ -45,28 +45,13 @@ function searchSweepFx(quiet){
   }
 }
 
-/* wrap the search itself: sweep first, then let it resolve, and ping whatever turns up */
-if(typeof searchAround==='function'){
-  var _searchAroundFx = searchAround;
-  searchAround = function(resting, quiet){
-    var secretsBefore = 0, i;
-    if(typeof map!=='undefined') for(i=0;i<map.length;i++) if(map[i]===SECRET) secretsBefore++;
-
-    if(!resting) searchSweepFx(quiet);   /* no new sound: there is no search sample, and the finds have their own */
-
-    var r = _searchAroundFx(resting, quiet);
-
-    /* a found door gets a ring of its own, so the eye goes straight to it (a found trap rings where it is found:
-       trapSpotFx, 2026-09-28) */
-    var secretsAfter = 0;
-    if(typeof map!=='undefined') for(i=0;i<map.length;i++) if(map[i]===SECRET) secretsAfter++;
-    if(secretsAfter < secretsBefore && typeof ringFx==='function'){
-      /* the door that just appeared is the nearest DOOR tile inside the searched square */
-      for(var dy=-2; dy<=2; dy++) for(var dx=-2; dx<=2; dx++){
-        var tx=player.x+dx, ty=player.y+dy;
-        if(inb(tx,ty) && at(tx,ty)===DOOR){ ringFx(tx, ty, '#FFE08A', 1.4); break; }
-      }
-    }
-    return r;
-  };
+/* Search owns the action; presentation owns its completion markers. The
+ * before/after count includes doors revealed by the action's world phase. */
+function searchDoorFx(secretsBefore){
+  var secretsAfter=map.reduce(function(n,tile){return n+(tile===SECRET?1:0);},0);
+  if(secretsAfter>=secretsBefore)return;
+  for(var dy=-2;dy<=2;dy++)for(var dx=-2;dx<=2;dx++){
+    var tx=player.x+dx,ty=player.y+dy;
+    if(inb(tx,ty)&&at(tx,ty)===DOOR){ringFx(tx,ty,'#FFE08A',1.4);break;}
+  }
 }

@@ -99,7 +99,6 @@ function presentRestoredFloor(at){
   arriveFallenEnemies();
   computeFOV(); resize(); updateUI(); draw();
 }
-function findTile(t){ for(var i=0;i<map.length;i++) if(map[i]===t) return {x:i%MW, y:(i/MW)|0}; return null; }
 
 
 function placeArrivalStairs(){

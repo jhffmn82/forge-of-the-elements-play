@@ -17,6 +17,7 @@ var VEG = {
 };
 function vegNoise(x, y, s){ return typeof ptVal==='function' ? ptVal(x, y, s) : hash2(Math.floor(x), Math.floor(y), s); }
 function vegGrow(){
+  if(inDeep())return growDeepVegetation();
   var cave = typeof inCaverns==='function' && inCaverns();
   if(typeof map==='undefined' || !map || !ground || (bidx()!==0 && !cave) || (floorMeta && floorMeta.plane)) return;
   var priorProps=new Set(props),priorRoutes=inspectGeneratedFloor().targets,priorReach=bfsFrom(player.x,player.y,generationRouteCell);
@@ -129,6 +130,3 @@ function vegGrow(){
     if(clear.size){for(i=props.length-1;i>=0;i--)if(!priorProps.has(props[i])&&props[i].bush&&clear.has(idxOf(props[i].x,props[i].y)))props.splice(i,1);rebuildPropGrid();}
   }
 }
-
-/* Named floor-generation stages; ordered by generation-adapter.js. */
-function growGeneratedVegetation(seed){vegGrow();}

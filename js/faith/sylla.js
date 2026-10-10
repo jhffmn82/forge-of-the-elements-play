@@ -88,8 +88,6 @@ function syllaWeb(t, r){
    moveCost() as well or a slowed player would still walk at full pace. */
 
 
-var _clearBadSyl = clearBad;
-clearBad = function(){ _clearBadSyl(); delete player.st.slow; player.syllaWeb=0; };
 
 /* One successful weapon, bow or spell hit pays out here. The damage adapter
    admits a hostile hit once, using its explicit hit identity rather than the
@@ -157,33 +155,17 @@ function prayVenomBurst(){
 /* ---------------------------------------------------------------- her rule
    No fire (affinity, enchantment, sigil, spell or a torch put to the grass), no shields, nothing heavier
    than leather. The amounts match the other gods' violations in gods.js. */
-function syllaFireSigil(use){
-  var S = (typeof SIGILS!=='undefined') && SIGILS[use];
-  if(!S || !S.motes) return false;
-  if(S.motes.length >= ELEMENTS.length) return false;      /* the grand sigils take one of everything */
-  return S.motes.indexOf('fire') >= 0;
-}
 
 
 /* "she will not have you setting things alight": once a turn, so a single fire spell is not billed twice */
-var _igniteSyl = ignite;
-ignite = function(x, y, src){
+function syllaIgnition(x,y,src){
   if(src==='player' && syllaOn() && player.syllaBurnT!==turn && inb(x,y) && !fireT[idxOf(x,y)]){
     var g=gAt(x,y), p=propAt(x,y);
     if(g===G_GRASS || g===G_SHORT || (typeof G_WEB!=='undefined' && g===G_WEB) || (p && p.burn)){
       player.syllaBurnT=turn; pietyViolation('you setting the world alight', SYLLA.sigilViolation);
     }
   }
-  return _igniteSyl(x, y, src);
-};
-/* fire in you already: she wants no part of it, the way Saint Glimmer wants no part of shadow */
-var _godRefusesSyl = godRefuses;
-godRefuses = function(id){ return (id==='sylla' && (player.aff.fire||0)>0) ? true : _godRefusesSyl(id); };
-var _refusalTextSyl = refusalText;
-refusalText = function(id){
-  if(id==='sylla' && (player.aff.fire||0)>0) return 'Sylla will not take fire into her brood.';
-  return _refusalTextSyl(id);
-};
+}
 
 /* ---------------------------------------------------------------- housekeeping
    Into the Dark's opener and a half-thrown web do not survive leaving the floor or abandoning her. */

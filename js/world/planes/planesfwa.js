@@ -270,7 +270,7 @@ function fwaDress(el, seed){
     floorMeta.fwaVents=vents;
   }
   /* the terrain rasters were built before any of this: throw them away so the pool field is read again,
-     and let the next draw rebuild every visible cell at once (render-adapter.js), not 14 a frame over flat squares */
+     and let the next draw rebuild every visible cell at once (presentation/render/renderer.js), not 14 a frame over flat squares */
   if(typeof PT_CACHE!=='undefined') PT_CACHE.key=null;
   if(typeof renderPreviousMap!=='undefined') renderPreviousMap=null;
   computeFOV(); resize(); draw();
@@ -624,7 +624,7 @@ function fwaDrawLava(){
   ctx.save();
   for(var y=camY-1; y<=camY+viewH+1; y++) for(var x=camX-1; x<=camX+viewW+1; x++){
     if(!fwaIsLava(x,y)) continue; var i=idxOf(x,y); if(!(revealAll||seen[i])) continue;
-    var px=(x-camX)*TS, py=(y-camY)*TS, a=(revealAll||vis[i]) ? 1 : 0.5;
+    var px=(x-camX)*TS, py=(y-camY)*TS, a=(revealAll||sceneVisibility()[i]) ? 1 : 0.5;
     var open=0, nb=[[1,0],[-1,0],[0,1],[0,-1]];
     for(var n=0;n<4;n++) if(!fwaIsLava(x+nb[n][0], y+nb[n][1])) open++;
     /* crust: dark plates drifting on the flow, a bright seam where they part. Only well inside the flow, so
@@ -656,7 +656,7 @@ function fwaDrawDeep(){
   var M=PT_MAT.water, t=ANIM.reduce ? 0 : performance.now()/1000, lit=[], mem=[];
   for(var y=camY-1; y<=camY+viewH+1; y++) for(var x=camX-1; x<=camX+viewW+1; x++){
     if(!inb(x,y)) continue; var i=idxOf(x,y); if(!D[i] || !(revealAll||seen[i])) continue;
-    ((revealAll||vis[i]) ? lit : mem).push([x,y]);
+    ((revealAll||sceneVisibility()[i]) ? lit : mem).push([x,y]);
   }
   if(!lit.length && !mem.length) return;
   ctx.save();
@@ -696,7 +696,7 @@ function fwaDrawWind(){
     var wx=s.x + dx*(travel-0.5)*span, wy=s.y + dy*(travel-0.5)*span;
     if(wx<camX-1 || wx>camX+viewW+1 || wy<camY-1 || wy>camY+viewH+1) return;
     var cx=Math.floor(wx), cy=Math.floor(wy);
-    if(!inb(cx,cy) || !(revealAll||vis[idxOf(cx,cy)]) || isWallLike(at(cx,cy))) return;
+    if(!inb(cx,cy) || !(revealAll||sceneVisibility()[idxOf(cx,cy)]) || isWallLike(at(cx,cy))) return;
     var fade=Math.sin(travel*Math.PI);                                        /* in and out at the ends of its run */
     ctx.globalAlpha=s.a*fade*0.5;
     ctx.strokeStyle='rgba(232,244,255,0.9)'; ctx.lineWidth=Math.max(1, TS*0.035);

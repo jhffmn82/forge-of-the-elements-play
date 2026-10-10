@@ -15,8 +15,6 @@ function applyAnimSpeed(){
   for(var w in BASE_WINDUP) CLIP_WINDUP[w] = Math.round(BASE_WINDUP[w]/ANIM_SPEED);
 }
 applyAnimSpeed();
-var _fxAtOpt = fxAt;
-fxAt = function(dur, hold, unseen){ return _fxAtOpt(dur/ANIM_SPEED, hold===undefined ? undefined : hold/ANIM_SPEED, unseen); };
 /* effects carry their own duration: shorten each one as it is queued */
 function speedFxList(){
   if(!fx || fx._sp) return;
@@ -224,7 +222,11 @@ function settingsHTML(){
   h+='<details id="uiMapGuide" class="opt-section-details"><summary>Reading the map</summary><div class="legend"><b>Dim tiles</b><span>remembered, not in sight</span><b>z over a head</b><span>asleep: surprise it</span><b>Key over a head</b><span>it carries a key</span><b>Bones at a door</b><span>a monster zoo behind it</span><b>Uneven stones</b><span>a hidden door nearby ('+(touch?'use Search':'search with '+keyLabel(bindKey('search')))+')</span><b>Tall grass</b><span>blocks sight, burns</span></div></details></div>';
   return h;
 }
-function optionsHTML(){return settingsHTML();}
+function optionsHTML(){
+  var h=settingsHTML(),dead=RUN&&RUN.over;
+  return '<div class="sec">Save game</div>'+(dead ? '<p class="c-info" style="font-size:calc(11.5px + var(--ui-mobile-text-add,0px))">The dead cannot be saved.</p>' : slotRows('save'))+
+    '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px"><button id="oExport"'+(dead?' disabled':'')+'>Export to file</button><button id="oImport">Import from file</button><button id="oTitle">Quit to title</button><button id="oExit">Exit game</button></div>'+h;
+}
 function refreshOptions(settingsRoot){
   var title=$('titleSettings'),isTitle=title&&typeof modalOpen!=='undefined'&&modalOpen;
   var root=settingsRoot||(isTitle?title:$('mHelp'));
@@ -283,4 +285,11 @@ function wireSettings(root){
   var vs=root.querySelector('#volSfx'); if(vs) vs.oninput=function(){ AUDIO.vol.sfx=vs.value/100; if(AUDIO.sfxBus) AUDIO.sfxBus.gain.value=AUDIO.vol.sfx; audioSave(); };
   var vm=root.querySelector('#volMusic'); if(vm) vm.oninput=function(){ AUDIO.vol.music=vm.value/100; if(AUDIO.musicBus && AUDIO.musicOn) AUDIO.musicBus.gain.value=AUDIO.vol.music; audioSave(); };
 }
-function wireOptions(root){wireSettings(root);}
+function wireOptions(root){
+  wireSettings(root);
+  root.querySelectorAll('[data-save]').forEach(function(b){b.onclick=function(){if(saveTo(b.getAttribute('data-save')))refreshSheet();};});
+  var ex=$('oExport');if(ex)ex.onclick=exportSave;
+  var im=$('oImport');if(im)im.onclick=importSave;
+  var ox=$('oExit');if(ox)ox.onclick=function(){confirmBox('Exit game','Unsaved progress since your last save is lost.','Exit',function(){closeModal();if(openSheet)showSheet(openSheet);openTitle();exitGame();});};
+  var tt=$('oTitle');if(tt)tt.onclick=function(){confirmBox('Quit to title','Unsaved progress since your last save is lost.','Quit',function(){closeModal();if(openSheet)showSheet(openSheet);openTitle();});};
+}

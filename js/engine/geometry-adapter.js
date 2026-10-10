@@ -3,8 +3,12 @@ var terrainRules=FoteGeometry.terrain({floor:FLOOR,open:OPEN,stairs:STAIRS,rubbl
   upstairs:UPSTAIRS,portal:PORTAL,wall:WALL,door:DOOR,locked:LOCKED,iceDoor:ICEDOOR,thorns:THORNS,secret:SECRET,sealed:SEALED,toll:TOLL,chest:CHEST});
 // Fresh references for one synchronous actor search. Queries outside that
 // search use their ordinary live state; no view survives an actor action.
-function geometryQueryContext(width,height,frame){return {width:width,height:height,map:frame?FRAME_MAP:map,propGrid:propGrid,props:props,fireT:fireT,floorMeta:floorMeta};}
-function walkable(x,y,context){if(typeof FoteUnmakerPreview!=='undefined'&&!FoteUnmakerPreview.destinationAllowed(x,y))return false;var p=(context?context.propGrid:propGrid)?propAt(x,y,context):null;return terrainRules.walkable(at(x,y,context),!!(p&&p.b),(context?context.floorMeta:floorMeta).exitOpen);}
+function geometryQueryContext(width,height,frame){
+  var meta=floorMeta;
+  return {width:width,height:height,map:frame?FRAME_MAP:map,propGrid:propGrid,props:props,fireT:fireT,floorMeta:meta,
+    chaosMovement:!!(meta&&(meta.chaosPreview||meta.ritualChaos||meta.chaosIncursion)),unmakerPreview:!!(meta&&meta.unmakerPreview)};
+}
+function walkable(x,y,context){if((!context||context.unmakerPreview)&&typeof FoteUnmakerPreview!=='undefined'&&!FoteUnmakerPreview.destinationAllowed(x,y))return false;var p=(context?context.propGrid:propGrid)?propAt(x,y,context):null;return terrainRules.walkable(at(x,y,context),!!(p&&p.b),(context?context.floorMeta:floorMeta).exitOpen);}
 function passable(x,y){if(typeof FoteUnmakerPreview!=='undefined'&&!FoteUnmakerPreview.destinationAllowed(x,y))return false;var p=propGrid?propAt(x,y):null;return terrainRules.passable(at(x,y),!!(p&&p.b),floorMeta.exitOpen);}
 function opaque(x,y){var p=propGrid&&propAt(x,y);return terrainRules.opaque(at(x,y),ground&&gAt(x,y)===G_GRASS,cryptShrooms(),p&&p.pillar);}
 function visionCast(context){
@@ -50,12 +54,11 @@ function visionSandboxRoom(){
   var preview=sandboxRoomPreviewBounds();if(!preview||!vis)return;
   for(var y=preview.y;y<preview.y+preview.h;y++)for(var x=preview.x;x<preview.x+preview.w;x++)if(inb(x,y)){var i=idxOf(x,y);vis[i]=1;seen[i]=1;}
 }
-var visionStages=FoteTransitions.stages([
-  {name:'radius-and-sight',run:visionCast},{name:'smoke-mask',run:visionSmoke},
-  {name:'plane-rock-band',run:visionRockBand},{name:'darkness-mask-and-darksight',run:visionDeepDarkness},
-  {name:'blind-adjacent-sight',run:visionBlind},{name:'sandbox-room-preview',run:visionSandboxRoom}
-]);
-function computeFOV(radius){visionStages.run({radius:radius});}
+function computeFOV(radius){
+  var context={radius:radius};
+  visionCast(context);visionSmoke(context);visionRockBand(context);
+  visionDeepDarkness(context);visionBlind(context);visionSandboxRoom();
+}
 /* Actor concealment never changes tile FOV: the floor and its lights remain
  * visible. Spawn invisibility breaks on an attack/cast or actual HP damage;
  * Dawn and authoring reveal can detect it without permanently breaking it. */
@@ -63,10 +66,11 @@ function actorConcealed(e){
   return !!(e&&e!==player&&e.base&&e.base.spawnInvisible&&!e.visibilityRevealed&&!revealAll&&!(e.foe&&player&&player.dawnUntil>turn));
 }
 function playerBlind(){return !!(player&&typeof gameEffects!=='undefined'&&gameEffects.has(player,'blind'));}
-function actorVisible(e,allowDawn){
+function actorVisible(e,allowDawn,visibility){
   if(!e||actorConcealed(e))return false;
   if(!playerBlind()&&(revealAll||allowDawn&&e.foe&&player&&player.dawnUntil>turn))return true;
-  for(var y=e.y;y<e.y+entitySize(e);y++)for(var x=e.x;x<e.x+entitySize(e);x++)if(inb(x,y)&&vis[idxOf(x,y)])return true;
+  var visible=visibility||vis;
+  for(var y=e.y;y<e.y+entitySize(e);y++)for(var x=e.x;x<e.x+entitySize(e);x++)if(inb(x,y)&&visible[idxOf(x,y)])return true;
   return false;
 }
 function revealActor(e){if(e&&e.base&&e.base.spawnInvisible)e.visibilityRevealed=true;}

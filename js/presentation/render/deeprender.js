@@ -38,7 +38,7 @@ var DEEP_BUDGET = 1e9;      /* 2026-09-28: no per-frame cap; a cell is built in 
 function deepCache(){
   var key=(typeof worldSeed==='number'?worldSeed:0)+':'+floorNo;
   if(DC.key!==key || DC.map!==map){
-    DC.key=key; DC.map=map; DC.cells={}; DC.lava={};
+    DC.key=key; DC.map=map; DC.cells={}; DC.lava={}; DC.present=null;
     var R=floorMeta.deepRegion, N=MW*MH, i, x, y;
     DC.rmix=new Uint8Array(N); DC.lock=new Uint8Array(N);
     for(y=0;y<MH;y++) for(x=0;x<MW;x++){
@@ -70,6 +70,96 @@ function deepNeedsRaster(x, y, sig){
 }
 
 /* ---------------------------------------------------------------- texture pixels */
+/* Elect the raster's nine source sheets without constructing a cell, reading a
+ * canvas or weathering a whole atlas inside an otherwise short asset query. */
+function deepTextureSources(){
+  DEEP_REGIONS.forEach(function(region){['floor','top','face'].forEach(function(name){atl('surface-'+region+'-'+name+'.webp');});});
+}
+function deepTextureWorker(){
+  self.onmessage=function(event){
+    var job=event.data,image=job.image;
+    try{
+      var c=new OffscreenCanvas(image.width,image.height),g=c.getContext('2d');g.drawImage(image,0,0);image.close();
+      var pixels=g.getImageData(0,0,c.width,c.height),surface=null;
+      if(job.weather){
+        weatherMasonryPixels(pixels.data,c.width,0,c.height);g.putImageData(pixels,0,0);
+        // Match the original weathered canvas -> texture canvas conversion,
+        // including premultiplied alpha rounding at transparent edges.
+        var copy=new OffscreenCanvas(c.width,c.height),ink=copy.getContext('2d');ink.drawImage(c,0,0);pixels=ink.getImageData(0,0,c.width,c.height);
+        surface=c.transferToImageBitmap();
+      }
+      var result={width:c.width,height:c.height,pixels:pixels.data.buffer,surface:surface},transfer=[result.pixels];if(surface)transfer.push(surface);
+      self.postMessage(result,transfer);
+    }catch(error){image.close();self.postMessage({error:String(error&&error.message||error)});}
+  };
+}
+async function deepTextureOnPage(image,weather,current){
+  if(current&&!current())return null;
+  var c=document.createElement('canvas');c.width=image.naturalWidth||image.width;c.height=image.naturalHeight||image.height;
+  var g=c.getContext('2d');g.drawImage(image,0,0);var pixels=g.getImageData(0,0,c.width,c.height),surface=null;
+  if(weather){
+    for(var row=0;row<c.height;){
+      if(current&&!current())return null;
+      var end=performance.now()+4;
+      do{var next=Math.min(c.height,row+8);weatherMasonryPixels(pixels.data,c.width,row,next);row=next;}while(row<c.height&&performance.now()<end);
+      if(row<c.height)await new Promise(function(resolve){setTimeout(resolve,0);});
+    }
+    g.putImageData(pixels,0,0);surface=c;
+    var copy=document.createElement('canvas');copy.width=c.width;copy.height=c.height;var ink=copy.getContext('2d');ink.drawImage(c,0,0);pixels=ink.getImageData(0,0,c.width,c.height);
+  }
+  return {width:c.width,height:c.height,pixels:pixels.data.buffer,surface:surface};
+}
+var DEEP_TEXTURE_PREP=null;
+function prepareDeepTextures(){
+  if(!inDeep()||!floorMeta.deepRegion)return Promise.resolve();
+  if(DEEP_TEXTURE_PREP&&DEEP_TEXTURE_PREP.map===map&&DEEP_TEXTURE_PREP.meta===floorMeta)return DEEP_TEXTURE_PREP.promise;
+  var prep={map:map,meta:floorMeta,promise:null};DEEP_TEXTURE_PREP=prep;
+  function current(){return prep.map===map&&prep.meta===floorMeta;}
+  prep.promise=(async function(){
+    var worker=null;
+    try{
+      if(typeof Worker==='function'&&typeof OffscreenCanvas==='function'&&typeof createImageBitmap==='function'){
+        var url=URL.createObjectURL(new Blob(['var weatherMasonryPixels=',weatherMasonryPixels.toString(),';(',deepTextureWorker.toString(),')();'],{type:'application/javascript'}));
+        try{worker=new Worker(url);}catch(error){}finally{URL.revokeObjectURL(url);}
+      }
+      for(var region=0;region<DEEP_REGIONS.length;region++)for(var name of ['floor','top','face']){
+        if(prep.map!==map||prep.meta!==floorMeta)return;
+        var key=region+':'+name;if(DC.tex[key])continue;
+        var image=await atlReady('surface-'+DEEP_REGIONS[region]+'-'+name+'.webp'),weather=name!=='floor',source=image,result=null;
+        if(!current())return;
+        if(weather&&WALL_GRAIN_CACHE.has(image)){source=WALL_GRAIN_CACHE.get(image);weather=false;}
+        if(worker)try{
+          var bitmap=await createImageBitmap(source);
+          if(!current()){bitmap.close();return;}
+          result=await new Promise(function(resolve,reject){
+            var timer=setTimeout(function(){reject(Error('Deep texture worker timed out'));},15000);
+            worker.onmessage=function(event){clearTimeout(timer);if(event.data.error)reject(Error(event.data.error));else resolve(event.data);};
+            worker.onerror=function(event){clearTimeout(timer);event.preventDefault();reject(Error(event.message||'Deep texture worker failed'));};
+            try{worker.postMessage({image:bitmap,weather:weather},[bitmap]);}catch(error){clearTimeout(timer);bitmap.close();reject(error);}
+          });
+        }catch(error){worker.terminate();worker=null;}
+        if(!result){if(!current())return;result=await deepTextureOnPage(source,weather,current);}
+        if(!current()){if(result&&result.surface&&result.surface.close)result.surface.close();return;}
+        DC.tex[key]={w:result.width,h:result.height,d:new Uint8ClampedArray(result.pixels)};
+        if(result.surface){
+          var surface=result.surface;
+          if(surface.close){
+            // Keep the displayed source a page canvas, as before. Browsers can
+            // choose different scaled filtering paths for ImageBitmap sources.
+            var canvas=document.createElement('canvas');canvas.width=surface.width;canvas.height=surface.height;canvas.getContext('2d').drawImage(surface,0,0);surface.close();surface=canvas;
+          }
+          WALL_GRAIN_CACHE.set(image,surface);
+        }
+        // A page fallback also gives input and painting a turn between sheets.
+        if(!worker)await new Promise(function(resolve){setTimeout(resolve,0);});
+      }
+    }finally{if(worker)worker.terminate();if(DEEP_TEXTURE_PREP===prep)DEEP_TEXTURE_PREP=null;}
+  })();
+  return prep.promise;
+}
+function releaseDeepTextures(){
+  DC.tex={};DC.cells={};DC.lava={};DC.key=null;DC.map=null;DC.present=null;DC.rmix=null;DC.lock=null;
+}
 function deepTex(reg, name){
   var k=reg+':'+name; if(DC.tex[k]) return DC.tex[k];
   var img=atl('surface-'+DEEP_REGIONS[reg]+'-'+name+'.webp'); if(!img) return null;
@@ -236,11 +326,15 @@ function deepCellRaster(x, y){
   c.environmentTerrain={mask:terrainMask,regions:terrainRegions,shade:terrainShade,faceY:terrainFaceY,pixels:D,wallDepth:wallDepth};
   return c;
 }
-/* The regions a floor has, kept on the floor the first time a cave raster is built or drawn (it has been saved
-   with the floor since 2026-09-19). A terrain worker builds rasters with its own copy, so the page notes it when it
-   draws one (deepRasterTile) or holds a view that has one (render-adapter.js holdTerrain), as it always did. */
+/* Texture readiness derives from the floor's regions. Keep that derived set in
+ * the renderer cache, also owned independently by each terrain worker. */
 function deepPresent(){
-  return floorMeta.deepPresent || (floorMeta.deepPresent=(function(){ var s={}; for(var i=0;i<floorMeta.deepRegion.length;i++) s[floorMeta.deepRegion[i]]=1; return s; })());
+  var cache=deepCache();
+  if(!cache.present){
+    var regions=cache.present={};
+    for(var i=0;i<floorMeta.deepRegion.length;i++)regions[floorMeta.deepRegion[i]]=1;
+  }
+  return cache.present;
 }
 function deepRasterTile(x, y){
   var C=deepCache(), sig=deepSig(x,y);
@@ -253,7 +347,7 @@ function deepRasterTile(x, y){
     if(r===undefined) return null;
     C.cells[key]=r;
   }
-  var img=C.cells[key];if(img&&!floorMeta.deepPresent)deepPresent();
+  var img=C.cells[key];
   if(img&&typeof FoteEnvironmentTerrain!=='undefined')img=FoteEnvironmentTerrain.enhance(img,x,y,'deep',C.cells,key);
   return img ? {img:img, sx:0, sy:0, sw:img.width, sh:img.height, crisp:false} : null;
 }
@@ -348,7 +442,7 @@ function drawDeepLava(now){
   g.globalAlpha=1; g.globalCompositeOperation='destination-in'; g.drawImage(DEEP_LM, 0, 0);
   g.globalCompositeOperation='source-over';
   ctx.save(); ctx.imageSmoothingEnabled=!!painted;
-  near.concat(list).forEach(function(c){ var rr=deepLavaRaster(c[0],c[1]); if(!rr) return; ctx.globalAlpha=(revealAll||vis[idxOf(c[0],c[1])]) ? 1 : memA(0.45); ctx.drawImage(rr.crust, 0,0,rr.crust.width,rr.crust.height, (c[0]-camX)*TS, (c[1]-camY)*TS, TS, TS); });
+  near.concat(list).forEach(function(c){ var rr=deepLavaRaster(c[0],c[1]); if(!rr) return; ctx.globalAlpha=(revealAll||sceneVisibility()[idxOf(c[0],c[1])]) ? 1 : memA(0.45); ctx.drawImage(rr.crust, 0,0,rr.crust.width,rr.crust.height, (c[0]-camX)*TS, (c[1]-camY)*TS, TS, TS); });
   ctx.globalAlpha=1;
   ctx.drawImage(DEEP_LB, 0, 0, W, H, -TS, -TS, W*TS/S, H*TS/S);
   /* the bright rim sits on top of the flow */
@@ -375,7 +469,7 @@ function drawDeepSurface(){
   var salt=surfSalt()+530, R=floorMeta.deepRegion;
   for(var y=camY; y<=camY+viewH; y++) for(var x=camX; x<=camX+viewW; x++){
     if(!inb(x,y)) continue; var i=idxOf(x,y); if(!(revealAll||seen[i])) continue;
-    var t=map[i], px=(x-camX)*TS, py=(y-camY)*TS, a=(revealAll||vis[i]) ? 1 : memA(0.4);
+    var t=map[i], px=(x-camX)*TS, py=(y-camY)*TS, a=(revealAll||sceneVisibility()[i]) ? 1 : memA(0.4);
     if(t===FLOOR && !roomAt(x,y) && !propAt(x,y) && !ground[i]){
       /* rubble where a hallway passes from one region's stone into the next */
       var seam=[[1,0],[-1,0],[0,1],[0,-1]].some(function(o){ var nx=x+o[0], ny=y+o[1]; return inb(nx,ny) && !isWallLike(at(nx,ny)) && R[idxOf(nx,ny)]!==R[i]; });
@@ -475,7 +569,7 @@ function drawUnderdarkPlants(now){
   S.forEach(function(sp){
     if(sp.x<camX-1 || sp.x>camX+viewW+1 || sp.y<camY-1 || sp.y>camY+viewH+1) return;
     var i=idxOf(sp.x,sp.y); if(!(revealAll||seen[i])) return;
-    var a=(revealAll||vis[i]) ? 1 : memA(0.42), px=(sp.x-camX)*TS, py=(sp.y-camY)*TS, sw=vegSway(sp.x,sp.y,now,vegBend(sp.x,sp.y));
+    var a=(revealAll||sceneVisibility()[i]) ? 1 : memA(0.42), px=(sp.x-camX)*TS, py=(sp.y-camY)*TS, sw=vegSway(sp.x,sp.y,now,vegBend(sp.x,sp.y));
     if(sp.kind==='ashweed'){
       vegDraw(vegArt('volcanic-ashweed-'+(1+Math.floor(hash2(sp.x,sp.y,81)*3))), px+TS*(0.35+0.3*hash2(sp.x,sp.y,82)), py+TS*0.95, 0.85, sw*0.6, a, hash2(sp.x,sp.y,83)<0.5);
     } else {
@@ -516,10 +610,12 @@ function drawAutomapLava(frame){
 var DEEP_AMB = [[0.25,0.20,0.23], [0.27,0.20,0.36], [0.46,0.235,0.175]];
 var DEEP_AMB_MAP = {key:null, v:null};
 function deepAmbBuild(){
-  var key=floorNo+':'+(floorMeta.seed||0)+':'+MW+'x'+MH;
-  if(DEEP_AMB_MAP.key===key) return DEEP_AMB_MAP.v;
+  var dimensional=typeof FoteNormalLighting!=='undefined'&&FoteNormalLighting.enabled();
+  var key=floorNo+':'+(floorMeta.seed||0)+':'+MW+'x'+MH+':'+dimensional;
+  if(DEEP_AMB_MAP.key===key&&DEEP_AMB_MAP.map===map&&DEEP_AMB_MAP.regions===floorMeta.deepRegion) return DEEP_AMB_MAP.v;
+  var palette=dimensional?DEEP_REGIONS.map(function(id){return LEVEL_LIGHT_PROFILES[id].ambient;}):DEEP_AMB;
   var N=MW*MH, a=new Float32Array(N*3), b=new Float32Array(N*3), R=floorMeta.deepRegion, i, j, x, y, c;
-  for(i=0;i<N;i++){ var A=DEEP_AMB[R[i]]||DEEP_AMB[0]; a[i*3]=A[0]; a[i*3+1]=A[1]; a[i*3+2]=A[2]; }
+  for(i=0;i<N;i++){ var A=palette[R[i]]||palette[0]; a[i*3]=A[0]; a[i*3+1]=A[1]; a[i*3+2]=A[2]; }
   /* 2026-09-19: Justin - "the walls need to block illumination better". The glow belongs to the open cave, not to the
      rock: a wall cell keeps it only where it faces open ground, and it falls away fast with every cell further in. */
   var dep=new Uint8Array(N); for(i=0;i<N;i++) dep[i]=isWallLike(map[i]) ? 9 : 0;
@@ -537,7 +633,7 @@ function deepAmbBuild(){
     for(y=0;y<MH;y++) for(x=0;x<MW;x++){ var o2=(y*MW+x)*3; for(c=0;c<3;c++){ var s2=0, n2=0; for(var d2=-2;d2<=2;d2++){ var yy=y+d2; if(yy<0||yy>=MH) continue; s2+=b[(yy*MW+x)*3+c]; n2++; } a[o2+c]=s2/n2; } }
   }
   for(i=0;i<N;i++){ if(!dep[i]) continue; var f2=FALL[Math.min(9,dep[i])]; a[i*3]*=f2; a[i*3+1]*=f2; a[i*3+2]*=f2; }   /* again after the blur, so the rock stays dark */
-  DEEP_AMB_MAP.key=key; DEEP_AMB_MAP.v=a; return a;
+  DEEP_AMB_MAP.key=key; DEEP_AMB_MAP.map=map; DEEP_AMB_MAP.regions=R; DEEP_AMB_MAP.v=a; return a;
 }
 var DEEP_AMB_OUT=[0,0,0];
 function deepAmbAt(x, y){

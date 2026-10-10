@@ -142,13 +142,6 @@ function packedObjectSpec(group,name){
   var g=AS.map && AS.map[group]; if(!g || !g.items[name]) return null;
   return {file:'map-'+group+'.webp',box:g.items[name],cell:g.cell};
 }
-function packedObjectReady(group,name,fallback){
-  /* Shrine selectors prefer the 256px set art over map-tile thumbnails. */
-  var spec=typeof name==='string'&&name.indexOf('shrine-')===0&&AS.map&&AS.map.set&&AS.map.set.items[name]?
-    packedObjectSpec('set',name):packedObjectSpec(group,name);
-  if(!spec&&fallback)PACKED_OBJECT_GROUPS.some(function(candidate){spec=packedObjectSpec(candidate,name);return !!spec;});
-  return spec?atlReady(spec.file):null;
-}
 /* Use the same metadata/spec owners as synchronous lookup. A preferred source
  * may be pending while a packed thumbnail remains usable. No second cache. */
 function packedObjectSources(group,name,fallback,painted){
@@ -244,6 +237,12 @@ function drawObjectSprite(o, px, py, opt){
     ctx.globalAlpha=(opt.alpha===undefined?1:opt.alpha);
   }
   ctx.drawImage(src.img, src.sx,src.sy,src.sw,src.sh, dx,dy,w,h);
+  if(typeof FoteNormalLighting!=='undefined'){
+    var surface=opt.surface||{kind:opt.feet?'sprite':'ground',x:camX+px/TS,y:camY+py/TS};
+    surface=Object.assign({height:h/TS*.8,footV:1,emission:mapArtworkEmission(o)},surface);
+    if(!mapEmissionVisible(surface.admissionX===undefined?camX+px/TS:surface.admissionX,surface.admissionY===undefined?camY+py/TS:surface.admissionY))surface.emission=0;
+    FoteNormalLighting.record(ctx,o,{x:dx,y:dy,w:w,h:h},{surface:surface});
+  }
   if(opt.flash>0){ ctx.globalAlpha*=opt.flash; ctx.drawImage(whiteCut(o.img,o.sx,o.sy,o.sw,o.sh), dx,dy,w,h); }
   ctx.restore();
   return true;
@@ -263,11 +262,12 @@ function tileRect(px, py){
   var x0=edge(px,m.a,m.e), y0=edge(py,m.d,m.f);
   return {x:x0, y:y0, w:edge(px+TS,m.a,m.e)-x0, h:edge(py+TS,m.d,m.f)-y0};
 }
-function blitSpriteTile(o, px, py, alpha){
+function blitSpriteTile(o, px, py, alpha, surface){
   if(!o) return false;
   var r=tileRect(px,py);
   ctx.globalAlpha=alpha; ctx.imageSmoothingEnabled=true;
   ctx.drawImage(o.img,o.sx,o.sy,o.sw,o.sh,r.x,r.y,r.w,r.h);
+  if(typeof FoteNormalLighting!=='undefined')FoteNormalLighting.record(ctx,o,r,{surface:surface||{kind:'ground'}});
   return true;
 }
 
@@ -357,10 +357,14 @@ function openDoorAperture(art){
 }
 function drawOpenDoorFloor(art,rect,x,y,px,py,alpha,floor){
   if(!floor)return;
+  if(typeof FoteNormalLighting!=='undefined')FoteNormalLighting.invalidate(ctx,{x:px,y:py,w:TS,h:TS});
   ctx.save();ctx.beginPath();ctx.rect(px,py,TS,TS);ctx.clip();
   ctx.translate(rect.x,rect.y);ctx.scale(rect.w/art.sw,rect.h/art.sh);ctx.clip(openDoorAperture(art));
   ctx.scale(art.sw/rect.w,art.sh/rect.h);ctx.translate(-rect.x,-rect.y);
-  blitTile(floor,px,py,alpha);ctx.restore();
+  // The aperture is a native Canvas clip. Leave this small clipped layer on
+  // the relief fallback instead of recording an unclipped floor rectangle.
+  var normalClip=typeof FoteNormalLighting!=='undefined'?FoteNormalLighting.captureLayer(ctx):null;
+  try{blitTile(floor,px,py,alpha);}finally{if(normalClip)FoteNormalLighting.finishLayer(normalClip);ctx.restore();}
 }
 /* 2026-09-27 (Justin, render plan Q22): an opened door keeps its closed door's material, recorded by setT (js/runtime/game.js) as
    it opens; every door used to open onto the wooden arch. Wood and iron have painted open states, and a spiked or
@@ -393,6 +397,7 @@ function drawOpenDoor(x, y, px, py, alpha){
       drawOpenDoorFloor(openArt,rect,x,y,px,py,alpha,floor);
       ctx.save();ctx.globalAlpha=alpha;ctx.imageSmoothingEnabled=true;
       ctx.drawImage(openArt.img,openArt.sx,openArt.sy,openArt.sw,openArt.sh,rect.x,rect.y,rect.w,rect.h);
+      if(typeof FoteNormalLighting!=='undefined')FoteNormalLighting.record(ctx,openArt,rect,{surface:{kind:'wall',x:x,y:y+.5,height:1.2,admissionX:x,admissionY:y}});
       ctx.restore();return;
     }
   }
@@ -442,7 +447,7 @@ function drawAtlasWangLayer(key, tileType){
     for(var i=0;i<4;i++){
       var cx=c[i][0], cy=c[i][1], on = inb(cx,cy) && (at(cx,cy)===tileType || (tileType===CHASM && at(cx,cy)===BRIDGE));
       if(on) any=true;
-      if(inb(cx,cy)){ if(all||seen[idxOf(cx,cy)]) known=true; if(all||vis[idxOf(cx,cy)]) lit=true; }
+      if(inb(cx,cy)){ if(all||seen[idxOf(cx,cy)]) known=true; if(all||sceneVisibility()[idxOf(cx,cy)]) lit=true; }
       bits += on ? '0' : '1';
     }
     if(!any || !known) continue;
@@ -1030,6 +1035,17 @@ function drawActorContactShadow(e,px,py){
 function phoneActorClarity(){
   return typeof UI_HIGH_CONTRAST!=='undefined'&&UI_HIGH_CONTRAST;
 }
+function actorLightSurface(e, footX, footY){
+  var rp=renderPos(e),m=ctx.getTransform(),scale=Math.max(.0001,Math.hypot(m.c,m.d)),ax=e.x,ay=e.y,n=entitySize(e);
+  // Visibility admits a large actor through any footprint cell. Keep its
+  // continuous light anchor, but sample admission at a cell the painter sees.
+  if(n>1){
+    var visible=sceneVisibility();
+    findVisible:for(var y=e.y;y<e.y+n;y++)for(var x=e.x;x<e.x+n;x++)if(inb(x,y)&&visible[idxOf(x,y)]){ax=x;ay=y;break findVisible;}
+  }
+  return {kind:'actor',x:rp.x,y:rp.y,admissionX:ax,admissionY:ay,
+    footY:m.b*footX+m.d*footY+m.f,zPerPixel:.8/(TS*scale),selfLight:e===player?.48:1,emission:actorGlowColor(e)?.82:0};
+}
 function drawCharacterSprite(e, px, py, opts){
   if(!spriteOn)return false;
   if(e.livingFlame)return drawLivingFlame(e,px,py,opts);
@@ -1056,7 +1072,11 @@ function drawCharacterSprite(e, px, py, opts){
         if(anchorShift)ctx.translate(anchorShift*w/cell,0);
       }
       if(e===player&&phoneActorClarity())ctx.filter='brightness(1.2) drop-shadow(0px 0px 0.45px rgba(23,18,15,.55))';
-      if(typeof drawCastLayers==='function') drawCastLayers(e, cs, fr, dx, dy, w, h); else ctx.drawImage(cs.img, fr.sx, fr.sy, cell, cell, dx, dy, w, h);
+      var castSurface=typeof FoteNormalLighting!=='undefined'?actorLightSurface(e,px+TS/2,dy+(cell-m.foot)*h/cell):null;
+      if(typeof drawCastLayers==='function') drawCastLayers(e, cs, fr, dx, dy, w, h,undefined,undefined,castSurface); else {
+        ctx.drawImage(cs.img, fr.sx, fr.sy, cell, cell, dx, dy, w, h);
+        if(typeof FoteNormalLighting!=='undefined')FoteNormalLighting.record(ctx,{img:cs.img,sx:fr.sx,sy:fr.sy,sw:cell,sh:cell},{x:dx,y:dy,w:w,h:h},{surface:castSurface});
+      }
       if(opts.flash>0){ ctx.globalAlpha*=opts.flash; ctx.drawImage(whiteCut(cs.img,fr.sx,fr.sy,cell,cell), dx,dy,w,h); }
       ctx.restore();
       return true;
@@ -1096,6 +1116,7 @@ function drawCharacterSprite(e, px, py, opts){
       ctx.globalAlpha=actorAlpha;
     }
     ctx.drawImage(ms.img, f2.sx, f2.sy, c2, c2, dx2, dy2, w2, h2);
+    if(typeof FoteNormalLighting!=='undefined')FoteNormalLighting.record(ctx,{img:ms.img,sx:f2.sx,sy:f2.sy,sw:c2,sh:c2},{x:dx2,y:dy2,w:w2,h:h2},{surface:actorLightSurface(e,px+TS/2,py+TS*.97)});
     if(opts.flash>0){ ctx.globalAlpha*=opts.flash; ctx.drawImage(whiteCut(ms.img,f2.sx,f2.sy,c2,c2), dx2,dy2,w2,h2); }
     ctx.restore();
     return true;
@@ -1128,6 +1149,9 @@ function drawGlobe(it, px, py, alpha, now){
 
 /* how big each kind of loot is on the floor, as a share of a tile: small things stay small */
 var ITEM_FIT = {relic:0.5,ring:0.42, amulet:0.46, essence:0.42, mote:0.42, key:0.46, sigil:0.5, food:0.52, off:0.58, armor:0.62, weapon:0.68};   /* between the old full-tile size and the too-small trim */
+function groundItemUnlit(it){
+  return it.kind==='food'||it.kind==='weapon'||it.kind==='armor'||it.kind==='off'||it.kind==='ring'||it.kind==='amulet';
+}
 function itemArtName(it){
   if(it.rareLamp!==undefined)return 'sealed-lamp';
   if(it.kind==='core') return it.name==='Crypt Core' ? 'item-core-crypt' : 'item-core-dungeon';
@@ -1141,24 +1165,85 @@ function itemArtName(it){
 }
 
 /* ---- lights ---- */
+/* Only authored light sources and the fire/light elemental families emit.
+ * Copies displaying Shade art do not inherit their source creature's glow. */
+function actorGlowColor(e){
+  if(!e||e===player||e.hp<=0||e.parent||e.shadowClone||isShadeSummon(e))return null;
+  if(e.livingFlame)return '#FF9A48';
+  if(e.base&&e.base.glow)return e.base.glow;
+  if(/^(emberling|cinderling|pyreling)$/.test(e.kind))return '#FF9A48';
+  if(/^(lumenling|gleamling|dawnling)$/.test(e.kind))return '#FFF1B8';
+  return null;
+}
+/* Authored crystal families share their light and material description. Some
+ * saved/preview pieces carry only artName, so p.light alone is not sufficient. */
+var CRYSTAL_LIGHT_COLORS={gold:'#FFE08A',violet:'#AF82FF',amber:'#D8F0A0',fire:'#FF9A48',water:'#80DEF0',air:'#D7EEFF'};
+var CRYSTAL_LIGHT_PROFILES=Object.create(null);
+function crystalLightProfile(name){
+  if(!name)return null;
+  if(Object.prototype.hasOwnProperty.call(CRYSTAL_LIGHT_PROFILES,name))return CRYSTAL_LIGHT_PROFILES[name];
+  var match=/^crystal-(gold|violet|amber|fire|water|air)(-small)?$/.exec(name),color,small,r,s,height;
+  if(match){color=CRYSTAL_LIGHT_COLORS[match[1]];small=!!match[2];r=small?2.4:3.4;s=small?.95:1.2;height=small?.45:1;}
+  else if((match=/^cl-crystal-shards-([1-4])$/.exec(name))){color=['#60D8F0','#A070F0','#60D0F0','#9080F0'][+match[1]-1];r=2.5;s=.95;height=.4;}
+  else if((match=/^geode-([12])$/.exec(name))){color=match[1]==='1'?'#40D0E0':'#9A70FF';r=3.3;s=1.2;height=.65;}
+  else if((match=/^pylon-([12])$/.exec(name))){color=match[1]==='1'?'#B090FF':'#9FE8FF';r=3.6;s=1.25;height=1.1;}
+  else return null;
+  return (CRYSTAL_LIGHT_PROFILES[name]=Object.freeze({color:color,r:r,s:s,height:height,emission:.8}));
+}
+function propCrystalLight(p){return crystalLightProfile(p.artName||p.name);}
+function mapArtworkEmission(art){
+  var name=art&&art.nm||'',spec=typeof PROPS!=='undefined'&&PROPS[name];
+  var crystal=crystalLightProfile(name);if(crystal)return crystal.emission;
+  if(spec&&spec.light)return .72;
+  // These names are the painted luminous cavern/plane pieces, not generic stone.
+  return /^(wf-glowworm-curtain-|cl-glow-moss|cl-crystal-shards-|giant-mushroom-|mushroom-pair-|geode-|pylon-|glowing-pool-|crystal-(gold|violet|amber|fire|water|air))/.test(name)?.72:0;
+}
+function mapEmissionVisible(x,y){
+  x=Math.floor(x);y=Math.floor(y);
+  return inb(x,y)&&((revealAll&&!playerBlind())||!!sceneVisibility()[idxOf(x,y)]);
+}
+function propLightSurface(p){
+  var visible=mapEmissionVisible(p.x,p.y);
+  var crystal=propCrystalLight(p);
+  return {kind:p.flat?'ground':'sprite',x:p.x,y:p.y,admissionX:p.x,admissionY:p.y,
+    emission:visible?(crystal?crystal.emission:p.light?.72:mapBeaconProp(p)?.4:0):0};
+}
+/* Run after the existing world/plane source owners. Their authored sources win
+ * at the same crystal; untagged art receives exactly one live local source. */
+function addMissingCrystalLights(L){
+  (typeof props==='undefined'?[]:props).forEach(function(p){
+    var crystal=propCrystalLight(p);if(!crystal||p.light||p.previewFocal||p.previewDecor||!mapEmissionVisible(p.x,p.y))return;
+    var x=p.x+((p.w||1)-1)/2,y=p.y+((p.h||1)-1)/2,tx=Math.floor(x),ty=Math.floor(y);
+    if(x<camX-crystal.r||x>camX+viewW+crystal.r||y<camY-crystal.r||y>camY+viewH+crystal.r)return;
+    if(p.wall){y=p.y+.8;tx=p.x;ty=p.y+1;}
+    if(L.some(function(l,index){return index>0&&Math.abs(l.x-x)<.01&&Math.abs(l.y-y)<.01;}))return;
+    L.push({x:x,y:y,c:hexRGB(crystal.color),r:crystal.r,s:crystal.s,height:crystal.height,em:true,tx:tx,ty:ty});
+  });
+  return L;
+}
 function drawLights(){
+  // The directional path already casts these sources and keeps luminous art
+  // readable. A second additive overlay would wash out nearby surface detail.
+  if(lightingOn()&&typeof FoteNormalLighting!=='undefined'&&FoteNormalLighting.enabled())return;
   var now=performance.now(),all=revealAll&&!playerBlind();
   ctx.save(); ctx.globalCompositeOperation='lighter';
   function glow(x,y,col,rad,str){
-    if(!inb(x,y) || !(all||vis[idxOf(x,y)])) return;
-    var cx=(x-camX+0.5)*TS, cy=(y-camY+0.5)*TS, fl=1+0.08*Math.sin(now/170+x*3+y*7)+0.05*Math.sin(now/53+x);
-    var g=ctx.createRadialGradient(cx,cy,TS*0.2,cx,cy,TS*rad*fl);
-    g.addColorStop(0, hexA(col, str)); g.addColorStop(1, hexA(col, 0));
-    ctx.fillStyle=g; ctx.fillRect(cx-TS*rad*1.2, cy-TS*rad*1.2, TS*rad*2.4, TS*rad*2.4);
+    if(!inb(x,y) || !(all||sceneVisibility()[idxOf(x,y)])) return;
+    if(x+rad<camX||x-rad>camX+viewW||y+rad<camY||y-rad>camY+viewH)return;
+    var cx=(x-camX+0.5)*TS,cy=(y-camY+0.5)*TS,fl=ANIM.reduce?1:1+.04*Math.sin(now/470+x*3+y*7);
+    ctx.save();ctx.beginPath();
+    for(var gy=Math.max(0,Math.floor(y-rad));gy<=Math.min(MH-1,Math.ceil(y+rad));gy++)for(var gx=Math.max(0,Math.floor(x-rad));gx<=Math.min(MW-1,Math.ceil(x+rad));gx++){
+      if((all||sceneVisibility()[idxOf(gx,gy)])&&lightLOS(x,y,gx,gy))ctx.rect((gx-camX)*TS,(gy-camY)*TS,TS,TS);
+    }
+    ctx.clip();ctx.globalAlpha=str*fl;ctx.imageSmoothingEnabled=true;
+    ctx.drawImage(mapBeaconGlow(col),cx-TS*rad,cy-TS*rad,TS*rad*2,TS*rad*2);
+    ctx.restore();
   }
-  props.forEach(function(p){ if(p.light) glow(p.x,p.y,p.light, p.dim?1.6:2.8, p.dim?0.10:0.20); });
+  props.forEach(function(p){ if(p.light&&!mapBeaconProp(p)) glow(p.x,p.y,p.light,p.dim?1.2:1.8,p.dim?.08:.12); });
   var W=MW, H=MH, M=map, F=fireT;   /* read once a frame (state getters) */
   for(var y=camY;y<=camY+viewH;y++) for(var x=camX;x<=camX+viewW;x++){
     if(x<0||y<0||x>=W||y>=H) continue; var t=M[y*W+x];
     if(F[y*W+x]>0) glow(x,y,'#FF7A30',2.2,0.22);
-    else if(t===FORGE) glow(x,y,'#FF8A3A',3.2,0.24);
-    else if(t===SHRINE) glow(x,y,(GODS[RUN.shrineGod]||{}).color||'#FFFFFF',3,0.14);
-    else if(t===EXIT && floorMeta.exitOpen) glow(x,y,'#9FD8FF',3,0.25);
   }
   if(!lightingOn()) glow(player.x,player.y,'#FFD9A0',3.6,0.07);
   ctx.restore();
@@ -1179,6 +1264,46 @@ function lightLOS(x0,y0,x1,y1){
   }
   return true;
 }
+/* Derived hallway sconces belong to presentation, not gameplay geometry. */
+function lightingHallwayTorchCandidate(x,y,view){
+    if(x<1||y<1||x>=view.width-1||y>=view.height-2||view.at(x,y)!==view.wall||view.at(x,y+1)!==view.floor||view.inRoom(x,y+1))return false;
+    var passage=false;
+    for(var next of [[x-1,y+1],[x+1,y+1],[x,y+2]])if(view.at(next[0],next[1])===view.floor&&!view.inRoom(next[0],next[1]))passage=true;
+    if(!passage)return false;
+    for(var dy=-2;dy<=2;dy++)for(var dx=-2;dx<=2;dx++)if(view.isDoor(view.at(x+dx,y+1+dy)))return false;
+    return true;
+  }
+function lightingHallwayTorches(view){
+    var mask=new Uint8Array(view.width*view.height),candidates=[],lights=(view.propLights||[]).map(function(p){return {x:p.x,y:p.y};});
+    for(var y=0;y<view.height;y++)for(var x=0;x<view.width;x++){
+      if(view.existingLight(x,y))lights.push({x:x,y:y});
+      if(lightingHallwayTorchCandidate(x,y,view))candidates.push({x:x,y:y,priority:view.priority(x,y)});
+    }
+    candidates.sort(function(a,b){return a.priority-b.priority||a.y-b.y||a.x-b.x;});
+    var added=[];
+    function near(a,b,distance){var dx=a.x-b.x,dy=a.y-b.y;return dx*dx+dy*dy<distance*distance;}
+    candidates.forEach(function(p){
+      if(lights.some(function(q){return near(p,q,6);})||added.some(function(q){return near(p,q,8);}))return;
+      mask[p.y*view.width+p.x]=1;added.push(p);
+    });
+    return mask;
+  }
+var HALL_TORCH_CACHE=new WeakMap();
+function dungeonHallwayTorchAt(x,y){
+  if(!floorMeta||bidx()!==0||inDeep()||floorMeta.plane||floorMeta.chaosPreview||floorMeta.chaosCampaign)return false;
+  var cached=HALL_TORCH_CACHE.get(floorMeta);
+  if(!cached||cached.map!==map||cached.width!==MW||cached.height!==MH||cached.seed!==worldSeed||cached.floor!==floorNo){
+    var salt=((worldSeed>>>0)%9973)+floorNo*131+1733;
+    var view={width:MW,height:MH,wall:WALL,floor:FLOOR,at:at,inRoom:function(px,py){return !!roomAt(px,py);},isDoor:isDoorish,
+      priority:function(px,py){return hash2(px,py,salt);},propLights:props.filter(function(p){return !!p.light;}),
+      existingLight:function(px,py){var t=at(px,py);return masonryTorchAt(px,py)||t===FORGE||t===SHRINE||t===STAIRS||t===CHEST||t===EXIT;}};
+    cached={map:map,width:MW,height:MH,seed:worldSeed,floor:floorNo,view:view,mask:lightingHallwayTorches(view)};
+    HALL_TORCH_CACHE.set(floorMeta,cached);
+  }
+  // Derived scenery stays outside saves. A destroyed wall never keeps a
+  // floating flame; opening a door does not reshuffle the hallway fixtures.
+  return !!(cached.mask[y*MW+x]&&lightingHallwayTorchCandidate(x,y,cached.view));
+}
 function masonryTorchAt(x,y){
   if(!isWallLike(at(x,y)) || at(x,y)===SECRET) return false;
   var south=at(x,y+1); if(south===WALL || south===SECRET) return false;
@@ -1191,23 +1316,45 @@ function gatherBaseLights(now, prp){
   var x0=camX-7, x1=camX+viewW+7, y0=camY-7, y1=camY+viewH+7;
   /* the hero's own torch follows the sliding render position, so light glides with each step */
   var pr = 5.5 + (player.aff && player.aff.light ? 1 : 0) + (player.aff && player.aff.fire ? 0.5 : 0);
-  add(prp.x, prp.y, '#FFB066', pr, 1.15*fl(0.3), [player.x, player.y]);
+  // A steady neutral personal light preserves the painted palette. Fire and
+  // elemental sources still carry their own localized colors and animations.
+  var dimensional=typeof FoteNormalLighting!=='undefined'&&FoteNormalLighting.enabled();
+  add(prp.x, prp.y, dimensional?'#F2F3F6':'#FFB066', pr, dimensional?.9675:1.15*fl(0.3), [player.x, player.y]);
+  // Restore the softer, broader native falloff while retaining surface height.
+  if(dimensional)L[0].height=.8;
   var W=MW, M=map, S=seen, F=fireT, all=revealAll&&!blind, yEnd=Math.min(MH-1,y1), xEnd=Math.min(W-1,x1);   /* read once a frame (state getters) */
   for(y=Math.max(0,y0); y<=yEnd; y++) for(x=Math.max(0,x0); x<=xEnd; x++){
     var i=y*W+x, t=M[i];
     if(!(all||S[i])) continue;
     if(wallTorchAt(x,y)) add(x, y+0.75, '#FF9A48', 5, 1.2*fl(x*7+y), [x, y+1]);
     else if(F[i]>0) add(x, y, '#FF7A30', 3.2, 0.9*fl(x+y*5));
-    else if(t===FORGE) add(x, y, '#FF8A3A', 5.5, 1.15*fl(x*3+y));
-    else if(t===SHRINE) add(x, y, (GODS[RUN.shrineGod]||{}).color||'#FFFFFF', 4, 0.5);
-    else if(t===EXIT && floorMeta.exitOpen) add(x, y, '#9FD8FF', 4.5, 0.9);
-    else if(t===STAIRS) add(x, y, '#9FD8FF', 3.2, 0.7);
-    else if(t===CHEST) add(x, y, '#E8B44A', 2.2, 0.45);
+    else if(all||sceneVisibility()[i]){
+      var beacon=mapBeaconTile(x,y,t);
+      if(beacon){add(x,y,beacon,t===FORGE?3.4:t===SHRINE?2.8:2.3,t===FORGE?.85:.62);L[L.length-1].height=t===FORGE?1.15:.6;}
+    }
   }
-  props.forEach(function(pp){ if(pp.light && pp.x>=x0 && pp.x<=x1 && pp.y>=y0 && pp.y<=y1 && (all||S[pp.y*W+pp.x])&&(!blind||vis[pp.y*W+pp.x])) add(pp.x, pp.y, pp.light, pp.dim?2.8:4.8, (pp.dim?0.55:1.0)*fl(pp.x*5+pp.y)); });
-  items.forEach(function(it){ if(it.kind==='mote' && (all||vis[idxOf(it.x,it.y)])) add(it.x, it.y, AFF_COL[it.el]||'#FFFFFF', 2.2, 0.55*fl(it.x+it.y)); });
-  items.forEach(function(it){ if(it.kind==='key' && (all||(blind?vis:seen)[idxOf(it.x,it.y)])) add(it.x, it.y, it.key==='crystal' ? '#A0E6FF' : '#78BEFF', 2.6, 0.6*fl(it.x+it.y*3)); });
-  ents.forEach(function(e){ if(e.base && e.base.glow && (all||vis[idxOf(e.x,e.y)])){ var rp=renderPos(e); add(rp.x, rp.y, e.base.glow, 3, 0.8, [e.x,e.y]); } });
+  props.forEach(function(pp){
+    if(!pp.light||pp.x<x0||pp.x>x1||pp.y<y0||pp.y>y1||!(all||S[pp.y*W+pp.x])||(blind&&!sceneVisibility()[pp.y*W+pp.x]))return;
+    var crystal=propCrystalLight(pp);
+    if(crystal){
+      if(!(all||sceneVisibility()[pp.y*W+pp.x]))return;
+      var cx=pp.x+((pp.w||1)-1)/2,cy=pp.y+((pp.h||1)-1)/2,tx=Math.floor(cx),ty=Math.floor(cy);
+      if(pp.wall){cy=pp.y+.8;tx=pp.x;ty=pp.y+1;}
+      add(cx,cy,crystal.color,crystal.r,crystal.s,[tx,ty]);L[L.length-1].height=crystal.height;
+    }else add(pp.x,pp.y,pp.light,pp.dim?2.8:4.8,(pp.dim?.55:1)*fl(pp.x*5+pp.y));
+  });
+  props.forEach(function(pp){
+    if(pp.light||pp.x<x0||pp.x>x1||pp.y<y0||pp.y>y1||!(all||sceneVisibility()[idxOf(pp.x,pp.y)]))return;
+    var color=mapBeaconProp(pp);if(!color)return;
+    add(pp.x+((pp.w||1)-1)/2,pp.y+((pp.h||1)-1)/2,color,2.4,.6,[pp.x,pp.y]);L[L.length-1].height=.7;
+  });
+  items.forEach(function(it){ if(it.kind==='mote' && (all||sceneVisibility()[idxOf(it.x,it.y)])) add(it.x, it.y, AFF_COL[it.el]||'#FFFFFF', 2.2, 0.55*fl(it.x+it.y)); });
+  items.forEach(function(it){ if(it.kind==='key' && (all||(blind?sceneVisibility():seen)[idxOf(it.x,it.y)])) add(it.x, it.y, it.key==='crystal' ? '#A0E6FF' : '#78BEFF', 2.6, 0.6*fl(it.x+it.y*3)); });
+  ents.forEach(function(e){
+    var color=actorGlowColor(e);if(!color||e.x<x0||e.x>x1||e.y<y0||e.y>y1||!actorVisible(e,false))return;
+    var rp=renderPos(e);add(rp.x,rp.y,color,e.kind==='sparkjelly'?3.2:2.6,e.kind==='sparkjelly'?1.05:.78,[e.x,e.y]);
+    L[L.length-1].height=e.base&&e.base.flying?1.05:.8;
+  });
   /* spells and arrows in flight carry their light along the path */
   fx.forEach(function(f){
     if(f.k!=='p') return; var q=(now-f.t0)/f.dur; if(q<0 || q>1) return;
@@ -1224,7 +1371,7 @@ function drawBossDangerTiles(tiles,due,now){
   var urgent=due<=1,pulse=ANIM.reduce?0.7:0.5+0.5*Math.sin(now/(urgent?110:220));
   ctx.save();ctx.globalCompositeOperation='source-over';ctx.setLineDash([]);
   (tiles||[]).forEach(function(t){
-    if(!(revealAll&&!playerBlind()||vis[idxOf(t[0],t[1])]))return;
+    if(!(revealAll&&!playerBlind()||sceneVisibility()[idxOf(t[0],t[1])]))return;
     var px=(t[0]-camX)*TS,py=(t[1]-camY)*TS;
     ctx.fillStyle='rgba(210,40,30,'+((urgent?0.34:0.2)+0.16*pulse)+')';ctx.fillRect(px+1,py+1,TS-2,TS-2);
     ctx.strokeStyle='rgba(255,120,90,'+(0.55+0.35*pulse)+')';ctx.lineWidth=Math.max(1.5,TS*0.05);ctx.strokeRect(px+2,py+2,TS-4,TS-4);
@@ -1239,7 +1386,7 @@ function drawBossTelegraphs(now){
     var urgent = e.windup.due<=1, pulse = ANIM.reduce ? 0.7 : 0.5+0.5*Math.sin(now/(urgent?110:220));
     ctx.save();
     e.windup.tiles.forEach(function(t){
-      if(!(revealAll&&!playerBlind()||vis[idxOf(t[0],t[1])])) return;
+      if(!(revealAll&&!playerBlind()||sceneVisibility()[idxOf(t[0],t[1])])) return;
       var px=(t[0]-camX)*TS, py=(t[1]-camY)*TS;
       if(e.windup.kind==='charge'){ ctx.fillStyle='rgba(255,210,160,'+(0.5+0.4*pulse)+')'; var cx=px+TS/2, cy=py+TS/2, a=Math.atan2(player.y-e.y+0.0001, player.x-e.x); ctx.beginPath(); ctx.moveTo(cx+Math.cos(a)*TS*0.25, cy+Math.sin(a)*TS*0.25); ctx.lineTo(cx+Math.cos(a+2.4)*TS*0.18, cy+Math.sin(a+2.4)*TS*0.18); ctx.lineTo(cx+Math.cos(a-2.4)*TS*0.18, cy+Math.sin(a-2.4)*TS*0.18); ctx.closePath(); ctx.fill(); }
     });
@@ -1334,16 +1481,18 @@ function drawNaturalFogNotch(px,py){
   ctx.fillStyle=fog;ctx.fillRect(cx-outer,cy-outer,outer*2,outer*2);ctx.restore();
 }
 function drawTerrainPass(){
-  var x, y, W=MW, H=MH, M=map, V=vis, S=seen, all=revealAll&&!playerBlind(), x0=camX, y0=camY, fade=memA(0.40),fogNotches=[];
+  var x, y, W=MW, H=MH, M=map, V=sceneVisibility(), S=seen, all=revealAll&&!playerBlind(), x0=camX, y0=camY, fade=memA(0.40),fogNotches=[];
   for(y=y0;y<=y0+viewH;y++) for(x=x0;x<=x0+viewW;x++){
     if(x<0||y<0||x>=W||y>=H) continue;
     var i=y*W+x, lit=all||V[i], known=all||S[i];
     if(!known){if(spriteOn&&naturalFogNotch(x,y,W,H,S))fogNotches.push([(x-x0)*TS,(y-y0)*TS]);continue;}
     var t=M[i], px=(x-x0)*TS, py=(y-y0)*TS, a=lit?1:fade;
     if(spriteOn){
-      if(isWallLike(t)) blitTile(wallTile(x,y), px, py, a);
+      var wall=isWallLike(t),face=wall?typeof wallFaces==='function'&&wallFaces(x,y):typeof isDoorTile==='function'&&(t===OPEN||isDoorTile(t))&&typeof sideDoor==='function'&&!sideDoor(x,y);
+      var terrainSurface=face?{kind:'wall',x:x,y:y+.5,height:1.2,admissionX:x,admissionY:y}:{kind:'ground',baseZ:wall?1.2:0};
+      if(wall) blitTile(wallTile(x,y), px, py, a,terrainSurface);
       else if(t===CHASM){ ctx.globalAlpha=a; ctx.fillStyle='#050408'; ctx.fillRect(px,py,TS+1,TS+1); }
-      else blitTile(floorTile(x,y), px, py, a);
+      else blitTile(floorTile(x,y), px, py, a,terrainSurface);
     } else {
       var B=biome();
       var deepWater=t===WATER&&floorMeta.fwaDeep&&floorMeta.fwaDeep[i];
@@ -1372,7 +1521,7 @@ function drawTerrainPass(){
 }
 /* fallback water tint where no water tileset exists */
 function drawTerrainFallback(now){
-  var x, y, W=MW, H=MH, M=map, V=vis, S=seen, all=revealAll&&!playerBlind(), fade=memA(0.4);
+  var x, y, W=MW, H=MH, M=map, V=sceneVisibility(), S=seen, all=revealAll&&!playerBlind(), fade=memA(0.4);
   for(y=camY;y<=camY+viewH;y++) for(x=camX;x<=camX+viewW;x++){
     if(x<0||y<0||x>=W||y>=H) continue; var ii=y*W+x; if(!(all||S[ii])) continue;
     var tt=M[ii], ppx=(x-camX)*TS, ppy=(y-camY)*TS, aa=(all||V[ii])?1:fade;
@@ -1389,17 +1538,17 @@ function groundSegments(){
   var list=[
     {name:'terrain', run:drawTerrainPass, still:true},
     {name:'water', run:function(){ if(spriteOn) drawWangLayer('water', WATER); }, still:function(){   /* the glints on lit water move */
-      if(!spriteOn || ANIM.reduce || ptMat()) return true; var M=map, V=vis, all=revealAll; return !groundRangeAny(function(i){ return M[i]===WATER && (all||V[i]); }); }},
+      if(!spriteOn || ANIM.reduce || ptMat()) return true; var M=map, V=sceneVisibility(), all=revealAll; return !groundRangeAny(function(i){ return M[i]===WATER && (all||V[i]); }); }},
     {name:'chasm', run:function(){ if(spriteOn) drawWangLayer('chasm', CHASM); }, still:function(){   /* the Underdark's lava flows */
       if(!spriteOn || !inDeep() || !floorMeta.lava || ANIM.reduce) return true; var M=map, S=seen, all=revealAll; return !groundRangeAny(function(i){ return M[i]===LAVA && (all||S[i]); }); }},
     {name:'fallback', run:drawTerrainFallback, still:function(){
       if(AS.wang_water) return true; var M=map, S=seen, all=revealAll; return !groundRangeAny(function(i){ return M[i]===WATER && (all||S[i]); }); }}
   ];
-  /* moss, grit, drains... (surface.js and the passes after it), the same passes drawSurfaceDeco runs */
+  /* Surface order and cache eligibility belong to the same renderer record. */
   SURFACE_PASSES.forEach(function(p){
     list.push({name:p.name, run:function(){ if(spriteOn && (!p.when || p.when())) p.run(); }, still:function(){
       if(!spriteOn || (p.when && !p.when())) return true;
-      var s=SURFACE_STILL[p.name]; return s===true || (typeof s==='function' && !!s()); }});
+      return p.still===true || (typeof p.still==='function' && !!p.still()); }});
   });
   list.push({name:'void', run:function(now){
     if(spriteOn&&typeof FoteChaosPreviewRenderer!=='undefined'&&FoteChaosPreviewRenderer.active())FoteChaosPreviewRenderer.drawVoid(now);
@@ -1417,8 +1566,8 @@ function setGroundState(c, s){
 /* everything the still segments read, besides the map arrays around the view (compared cell by cell, below) */
 function groundLayerKey(n, m, inherit){
   var k=[n, camX, camY, viewW, viewH, TS, m.a, m.d, ctx.canvas, ctx.canvas.width, ctx.canvas.height, spriteOn, lightingOn(), ANIM.reduce, revealAll, floorNo, worldSeed,
-    map, vis, seen, ground, propGrid, props, props.length, rooms, floorMeta, floorMeta&&floorMeta.plane, floorMeta&&floorMeta.vegSpots, floorMeta&&floorMeta.vegSpots&&floorMeta.vegSpots.length,
-    ATL_LOADS, typeof FoteEnvironmentDeco!=='undefined'&&FoteEnvironmentDeco.ready(),
+    map, sceneVisibility(), seen, ground, propGrid, props, props.length, rooms, floorMeta, floorMeta&&floorMeta.plane, floorMeta&&floorMeta.vegSpots, floorMeta&&floorMeta.vegSpots&&floorMeta.vegSpots.length,
+    ATL_LOADS, typeof FoteNormalLighting!=='undefined'&&FoteNormalLighting.enabled(), typeof FoteNormalAssets!=='undefined'&&FoteNormalAssets.revision(), typeof FoteEnvironmentDeco!=='undefined'&&FoteEnvironmentDeco.ready(),
     typeof FoteEnvironmentProps!=='undefined'&&FoteEnvironmentProps.ready(), typeof FoteEnvironmentVegetation!=='undefined'&&FoteEnvironmentVegetation.ready(),
     typeof FoteChaosPreviewRenderer!=='undefined'&&FoteChaosPreviewRenderer.active(), typeof FoteChaosPreviewRenderer!=='undefined'&&FoteChaosPreviewRenderer.mixed()];
   /* the functions the segments call, so one swapped out (a test's probe, a module's wrapper) redraws the layer */
@@ -1431,7 +1580,7 @@ function groundLayerKey(n, m, inherit){
 }
 /* the map arrays around the view (four tiles out: the passes read neighbourhoods two tiles out of cells one tile out) */
 function groundLayerSnap(out){
-  var W=MW, H=MH, M=map, V=vis, S=seen, G=ground, P=propGrid, x0=Math.max(0,camX-4), x1=Math.min(W-1,camX+viewW+4), y0=Math.max(0,camY-4), y1=Math.min(H-1,camY+viewH+4);
+  var W=MW, H=MH, M=map, V=sceneVisibility(), S=seen, G=ground, P=propGrid, x0=Math.max(0,camX-4), x1=Math.min(W-1,camX+viewW+4), y0=Math.max(0,camY-4), y1=Math.min(H-1,camY+viewH+4);
   var n=(x1-x0+1)*(y1-y0+1)*2, same=!!out && out.length===n, j=0;
   if(!same) out=new Int32Array(n);
   for(var y=y0;y<=y1;y++) for(var x=x0;x<=x1;x++){
@@ -1476,8 +1625,9 @@ function drawGroundLayer(now, m, restX, restY){
     setGroundState(g, inherit);
     g.setTransform(m.a,m.b,m.c,m.d,e[0],e[1]);
     ctx=g; TILE_FRAME={ctx:g, m:g.getTransform()}; G.building=true;
+    var normalLayer=typeof FoteNormalLighting!=='undefined'?FoteNormalLighting.captureLayer(g):null;
     try{ for(var s=0;s<n;s++) segs[s].run(now); }
-    finally{ ctx=main; TILE_FRAME=frame; G.building=false; }
+    finally{ if(normalLayer)L.normalRecords=FoteNormalLighting.finishLayer(normalLayer);ctx=main; TILE_FRAME=frame; G.building=false; }
     /* terrain cells past this frame's budget were drawn with their stand-ins: draw the layer again next frame */
     if(typeof PT_CACHE!=='undefined' && PT_CACHE.built>=PT_BUDGET || typeof DC!=='undefined' && DC && DC.built>=DEEP_BUDGET) G.epoch++;
     /* the state the segments leave behind: what the blit below disturbs, and what they changed */
@@ -1488,6 +1638,7 @@ function drawGroundLayer(now, m, restX, restY){
   main.setTransform(1,0,0,1,0,0); main.globalAlpha=1; main.globalCompositeOperation='source-over'; if('filter' in main) main.filter='none';
   main.shadowColor='rgba(0,0,0,0)'; main.imageSmoothingEnabled=false;
   main.drawImage(L.c, Math.round(m.e-L.e[0]), Math.round(m.f-L.e[1]));
+  if(typeof FoteNormalLighting!=='undefined'&&L.normalRecords)FoteNormalLighting.appendLayer(L.normalRecords,Math.round(m.e-L.e[0]),Math.round(m.f-L.e[1]));
   main.setTransform(m.a,m.b,m.c,m.d,m.e,m.f);
   for(var q2=0;q2<L.set.length;q2++){ var at2=L.set[q2]; if(at2<GROUND_STATE.length) main[GROUND_STATE[at2]]=L.after[at2]; else main.setLineDash(L.after[at2] ? L.after[at2].split(',').map(Number) : []); }
   DEEP_RC=L.deep[0]; DEEP_AT=L.deep[1];
@@ -1513,7 +1664,7 @@ function drawMapMargins(){
   ctx.restore();
 }
 
-/* ---- map beacons: compact floor markers for live, meaningful interactions ---- */
+/* ---- map beacons: soft local illumination for live, meaningful interactions ---- */
 function mapBeaconTile(x,y,t){
   if(t!==STAIRS&&t!==EXIT&&t!==CHEST&&t!==FORGE&&t!==SHRINE)return null;
   // Chaos currents have their own gate artwork and cues instead of the underlying tile.
@@ -1549,36 +1700,33 @@ function mapBeaconProp(p){
   }
   return null;
 }
-/* One small texture per color, independent of tile size. No new particles or
- * light sources, and no per-frame gradient allocation for each marker. */
+/* One small soft texture per color, independent of tile size. The actual light
+ * source uses native LOS; this restrained bloom never paints a ring or particles. */
 var MAP_BEACON_GLOWS=Object.create(null);
 function mapBeaconGlow(color){
   if(MAP_BEACON_GLOWS[color])return MAP_BEACON_GLOWS[color];
   var canvas=document.createElement('canvas');canvas.width=canvas.height=64;
   var ink=canvas.getContext('2d'),glow=ink.createRadialGradient(32,32,0,32,32,32);
-  glow.addColorStop(0,hexA(color,.26));glow.addColorStop(.5,hexA(color,.14));glow.addColorStop(1,hexA(color,0));
+  glow.addColorStop(0,hexA(color,1));glow.addColorStop(.35,hexA(color,.5));glow.addColorStop(.72,hexA(color,.09));glow.addColorStop(1,hexA(color,0));
   ink.fillStyle=glow;ink.fillRect(0,0,64,64);
   MAP_BEACON_GLOWS[color]=canvas;return canvas;
 }
 function drawMapBeacon(x,y,w,h,color,alpha,now,scale){
   scale=scale||1;
-  var cx=(x-camX+w*.5)*TS,cy=(y-camY+h-.18)*TS;
+  var cx=(x-camX+w*.5)*TS,cy=(y-camY+h-.42)*TS;
   var pulse=ANIM.reduce||alpha<1?1:.84+.16*Math.sin(now/720+x*1.3+y*.7);
-  ctx.save();ctx.globalAlpha=alpha*pulse;ctx.imageSmoothingEnabled=true;
-  ctx.drawImage(mapBeaconGlow(color),cx-TS*w*.48*scale,cy-TS*.18*scale,TS*w*.96*scale,TS*.36*scale);
-  ctx.globalAlpha=alpha*(.58+.16*pulse);ctx.strokeStyle=color;ctx.lineWidth=Math.max(1,Math.min(2,TS*.018));
-  ctx.beginPath();ctx.ellipse(cx,cy,TS*w*.38*scale,TS*.14*scale,0,0,Math.PI*2);ctx.stroke();ctx.restore();
+  ctx.save();ctx.globalCompositeOperation='lighter';ctx.globalAlpha=alpha*pulse*.14;ctx.imageSmoothingEnabled=true;
+  ctx.drawImage(mapBeaconGlow(color),cx-TS*w*.58*scale,cy-TS*.52*scale,TS*w*1.16*scale,TS*1.04*scale);ctx.restore();
 }
 function drawMapBeacons(now){
-  var W=MW,H=MH,M=map,S=seen,V=vis,blind=playerBlind(),all=revealAll&&!blind;
+  var W=MW,H=MH,M=map,S=seen,V=sceneVisibility(),blind=playerBlind(),all=revealAll&&!blind;
   var x0=Math.max(0,camX-1),y0=Math.max(0,camY-1),x1=Math.min(W-1,camX+viewW+1),y1=Math.min(H-1,camY+viewH+1);
   // This pass is above the lightmap: memory needs its own steady, dim alpha.
   function admission(x,y){var i=y*W+x;return all||V[i]?1:!blind&&S[i]?.35:0;}
   function paint(x,y,w,h,color,alpha,scale,prop){
-    if(!prop&&scale===1){drawMapBeacon(x,y,w,h,color,alpha,now);return;}
-    // Larger circles extend beyond the anchor tile, but never into unknown cells.
-    var left=Math.floor(Math.min(x,x+w*.5-w*.48*scale)),right=Math.ceil(Math.max(x+w,x+w*.5+w*.48*scale));
-    var top=Math.floor(Math.min(y,y+h-.18-.18*scale)),bottom=Math.ceil(Math.max(y+h,y+h-.18+.18*scale));
+    // The soft pool is clipped before it can reach unknown or Blind-hidden cells.
+    var left=Math.floor(x+w*.5-w*.58*scale),right=Math.ceil(x+w*.5+w*.58*scale);
+    var top=Math.floor(y+h-.42-.52*scale),bottom=Math.ceil(y+h-.42+.52*scale);
     ctx.save();ctx.beginPath();
     for(var yy=Math.max(0,top);yy<Math.min(H,bottom);yy++)for(var xx=Math.max(0,left);xx<Math.min(W,right);xx++){
       if(admission(xx,yy))ctx.rect((xx-camX)*TS,(yy-camY)*TS,TS,TS);
@@ -1603,7 +1751,7 @@ function drawMapBeacons(now){
 function drawScene(){
   if(!map || !ground) return;
   /* the run state is read through getters (js/engine/state.js); a frame reads it once, here (2026-09-28, frame cost) */
-  var x, y, now=performance.now(), W=MW, H=MH, MAP=map, VIS=vis, SEEN=seen, GRD=ground, BLIND=playerBlind(), ALL=revealAll&&!BLIND, FIRE=fireT, fade40=memA(0.4), fade45=memA(0.45);
+  var x, y, now=performance.now(), W=MW, H=MH, MAP=map, VIS=sceneVisibility(), SEEN=seen, GRD=ground, BLIND=playerBlind(), ALL=revealAll&&!BLIND, FIRE=fireT, fade40=memA(0.4), fade45=memA(0.45);
   var prp=renderPos(player), camera=sceneCameraPoint(prp), rest=sceneCameraPoint(player);
   camX=Math.floor(camera.x);camY=Math.floor(camera.y);
   camOX=(camera.x-camX)*TS;camOY=(camera.y-camY)*TS;
@@ -1613,6 +1761,7 @@ function drawScene(){
   var screen=ctx.getTransform(), layered=GROUND_LAYER_ON && screen.b===0 && screen.c===0 && screen.e===0 && screen.f===0 && screen.a===screen.d && !groundWatched(ctx);
   if(!layered){ ctx.fillRect(0,0,viewW*TS,viewH*TS); if(GROUND_LAYER_ON) GROUND_LAYER.stats.direct++; }
   ctx.save(); ctx.translate(-camOX, -camOY); TILE_FRAME={ctx:ctx, m:ctx.getTransform()};
+  if(typeof FoteNormalLighting!=='undefined'&&lightingOn())FoteNormalLighting.begin(ctx);
 
   /* ---- terrain and the ground passes over it (moss, grit, drains: surface.js and after) ---- */
   var segs=groundSegments(), seg=layered ? drawGroundLayer(now, TILE_FRAME.m, (restFX-camX)*TS, (restFY-camY)*TS) : 0;
@@ -1666,7 +1815,7 @@ function drawScene(){
     var isDoor=(ot===DOOR||ot===OPEN||ot===LOCKED||ot===TOLL||ot===ICEDOOR||ot===THORNS||ot===SEALED);
     if(spr){
       var big = ot===FORGE||ot===SHRINE||ot===EXIT;   /* 2026-09-19: the god statues are two tiles tall - a shrine stands on its tile and rises above it */
-      drawObj(spr, opx, opy, {feet:!isDoor && ot!==CHEST && ot!==STAIRS && ot!==19 && ot!==BRIDGE, fit: isDoor?(propAt(x,y)&&propAt(x,y).eventGate?1.4:1.02) : ot===SHRINE?2.1 : ot===FORGE?2.3 : big?1.18 : (ot===STAIRS||ot===19)?0.95 : 0.85, alpha:oa, fill: isDoor&&!(propAt(x,y)&&propAt(x,y).eventGate)});
+      drawObj(spr, opx, opy, {surface:{kind:(ot===STAIRS||ot===19||ot===BRIDGE)?'ground':isDoor?'wall':'sprite',x:x,y:y+(isDoor?.5:0),admissionX:x,admissionY:y,emission:mapEmissionVisible(x,y)&&mapBeaconTile(x,y,ot)?.4:0}, feet:!isDoor && ot!==CHEST && ot!==STAIRS && ot!==19 && ot!==BRIDGE, fit: isDoor?(propAt(x,y)&&propAt(x,y).eventGate?1.4:1.02) : ot===SHRINE?2.1 : ot===FORGE?2.3 : big?1.18 : (ot===STAIRS||ot===19)?0.95 : 0.85, alpha:oa, fill: isDoor&&!(propAt(x,y)&&propAt(x,y).eventGate)});
       if(ot===EXIT && !floorMeta.exitOpen && !floorMeta.caveExit){ ctx.globalAlpha=0.55*oa; ctx.fillStyle='#000'; ctx.fillRect(opx+TS*0.2,opy+TS*0.1,TS*0.6,TS*0.8); ctx.globalAlpha=1; }
       if(ot===SEALED && !(propAt(x,y)&&propAt(x,y).eventGate) && !(floorMeta.crystalDoor && floorMeta.crystalDoor.x===x && floorMeta.crystalDoor.y===y)){ ctx.globalAlpha=0.35*oa; ctx.fillStyle='#6FB7FF'; ctx.fillRect(opx,opy,TS,TS); ctx.globalAlpha=1; }
     } else {
@@ -1720,7 +1869,7 @@ function drawScene(){
     if(p.pillar && !o){ drawPillar(p, ppx, ppy, pa, now); return; }
     if(typeof drawPropSurface==='function' && drawPropSurface(p, ppx, ppy, pa)) return;   /* flat bones and rubble (surface.js) */
     if(typeof propShadow==='function' && !p.flat && !/^(soul-urn|soul-brazier|kobold-campfire)$/.test(p.name)) propShadow(p.x, p.y, ppx, ppy, pa, p.name);   /* contact shadow (surface.js) */
-    if(!drawObj(o, ppx, ppy, {feet:!p.flat, fit: p.flat?0.82 : (p.name==='bookshelf'||p.name==='statue'||p.name==='boss-throne')?1.12 : /^(urn|coffin|sarcophagus|tomb)/.test(p.name)?1.08 : 0.9, alpha:pa, flash:flashOf(p)})){
+    if(!drawObj(o, ppx, ppy, {surface:propLightSurface(p),feet:!p.flat, fit: p.flat?0.82 : (p.name==='bookshelf'||p.name==='statue'||p.name==='boss-throne')?1.12 : /^(urn|coffin|sarcophagus|tomb)/.test(p.name)?1.08 : 0.9, alpha:pa, flash:flashOf(p)})){
       ctx.globalAlpha=pa; ctx.fillStyle=p.b?'#6A5A48':'#4A4038'; ctx.fillRect(ppx+TS*0.2,ppy+TS*0.2,TS*0.6,TS*0.6); ctx.globalAlpha=1;
     }
     if(typeof propFlame==='function') propFlame(p, o, ppx, ppy, pa, now);   /* animated flames (surface.js) */
@@ -1764,7 +1913,8 @@ function drawScene(){
     if(phoneActorClarity())ctx.filter='brightness(1.2) drop-shadow(0px 0px 0.45px rgba(23,18,15,.55))';
     if(it.kind==='heart' || it.kind==='managlobe'){ drawGlobe(it, ipx, ipy+bob, ia, now); ctx.restore(); return; }
     var o=spriteOn ? (objArt('items', itemArtName(it))) : null;
-    if(o) drawObj(o, ipx, ipy+TS*0.08+bob, {fit: ITEM_FIT[it.kind]||0.5, alpha:ia, loot:true});
+    if(o) drawObj(o, ipx, ipy+TS*0.08+bob, {fit: ITEM_FIT[it.kind]||0.5, alpha:ia, loot:true,
+      surface:groundItemUnlit(it)?{kind:'unlit',x:it.x,y:it.y,admissionX:it.x,admissionY:it.y}:undefined});
     else { ctx.globalAlpha=ia; glyph(it.kind==='essence'?'\u2022':it.kind==='mote'?'\u25C6':it.kind==='food'?'%':it.kind==='sigil'?'?':it.kind==='armor'?'[':'/', ipx, ipy, it.kind==='mote'?AFF_COL[it.el]:it.kind==='essence'?'#B98AF0':'#E8B44A'); ctx.globalAlpha=1; }
     ctx.restore();
     if(it.kind==='mote' && !ANIM.reduce){ ctx.save(); ctx.globalCompositeOperation='lighter'; ctx.globalAlpha=0.18+0.08*Math.sin(now/200+it.x); ctx.fillStyle=AFF_COL[it.el]; ctx.beginPath(); ctx.arc(ipx+TS/2,ipy+TS*0.58,TS*0.2,0,7); ctx.fill(); ctx.restore(); }
@@ -1779,7 +1929,7 @@ function drawScene(){
   }
 
   /* ---- entities, back to front ---- */
-  var list=ents.filter(function(e){ return e!==player && actorVisible(e,true); }).sort(function(a,b){ return a.y-b.y; });
+  var list=ents.filter(function(e){ return e!==player && actorVisible(e,true,VIS); }).sort(function(a,b){ return a.y-b.y; });
   function drawPlayer(){
     var poff=entOffset(player);
     atTile(prp.x,prp.y,function(px0,py0){
@@ -1811,7 +1961,7 @@ function drawScene(){
          walked backwards); one that has not moved yet faces the player */
       var flip = typeof e.facingLeft==='boolean' ? e.facingLeft : player.x < e.x;
       if(e.base && e.base.artLeft && !isShadeSummon(e) && !e.livingFlame) flip = !flip;   /* respect the artwork actually displayed */
-      if(!drawCharacter(e, px, py, {flip:flip, flash:flashOf(e), breath:breathOf(e), sliding:motionActive(e,now), outline:e.foe && !!vis[idxOf(e.x,e.y)]})){
+      if(!drawCharacter(e, px, py, {flip:flip, flash:flashOf(e), breath:breathOf(e), sliding:motionActive(e,now), outline:e.foe && !!sceneVisibility()[idxOf(e.x,e.y)]})){
         var bb=breathOf(e)*TS*0.6,blockSize=!spriteOn&&!isShadeSummon(e)&&!e.livingFlame&&e.base.big||1;
         ctx.fillStyle=e.col||'#A98C6C'; roundRect(px+TS*0.14,py+TS*0.1-bb,TS*(blockSize-.28),TS*(blockSize-.28)+bb,TS*0.16); ctx.fill(); glyph(e.ch||'?',px+TS*(blockSize-1)/2,py+TS*(blockSize-1)/2,'#120F0D');
         if(!spriteOn&&e.base.moonbound)drawMoonboundOverlay(e,px,py,{});
@@ -1834,7 +1984,7 @@ function drawScene(){
         ctx.fillRect(barX,barY,barW*clamp(e.hp/e.maxhp,0,1),3);
       }
       var ix=px0+TS*0.02;
-      if(e.merchantRoom!==undefined&&!e.foe&&e.hp>0&&(revealAll||vis[idxOf(e.x,e.y)]))mark('?',px0+TS*.39,py0-TS*.16,'#FFD24A');
+      if(e.merchantRoom!==undefined&&!e.foe&&e.hp>0&&(revealAll||sceneVisibility()[idxOf(e.x,e.y)]))mark('?',px0+TS*.39,py0-TS*.16,'#FFD24A');
       if(e.surprised && e.foe) { mark('!',px0+TS*0.78,py0+TS*0.02,'#FFD24A'); }
       if(e.state==='asleep') { mark('z',px0+TS*0.78,py0+TS*0.08+(ANIM.reduce?0:Math.sin(now/400+e.id)*2),'#CFE0FF'); }
       if(e.keyholder){ if(spriteOn)drawObj(objArt('items','item-key-iron'), px0+TS*0.52, py0-TS*0.34, {fit:0.4, loot:true});else mark('k',px0+TS*.8,py0-TS*.2,'#E8B44A'); }
@@ -1870,6 +2020,7 @@ function drawScene(){
   }
 
   if(lightingOn()) drawLightmap(now, prp);
+  if(typeof FoteNormalLighting!=='undefined')FoteNormalLighting.end();
   drawLights();
   if(typeof FoteChaosCurrentRenderer!=='undefined')FoteChaosCurrentRenderer.drawAll(now);
   objGlintsFlush();
@@ -1917,6 +2068,7 @@ function drawLivingFlame(e,px,py,opts){
   glow.addColorStop(0,charged?'rgba(255,205,85,.30)':'rgba(255,110,25,.13)');glow.addColorStop(1,'rgba(255,70,15,0)');
   ctx.fillStyle=glow;ctx.fillRect(-height*.7,-height*1.1,height*1.4,height*1.4);
   ctx.imageSmoothingEnabled=true;ctx.drawImage(img,-width/2,-height,width,height);
+  if(typeof FoteNormalLighting!=='undefined')FoteNormalLighting.record(ctx,{img:img,sx:0,sy:0,sw:img.naturalWidth,sh:img.naturalHeight},{x:-width/2,y:-height,w:width,h:height},{surface:actorLightSurface(e,0,0)});
   if(opts.flash>0){ctx.globalAlpha*=opts.flash;ctx.drawImage(whiteCut(img,0,0,img.naturalWidth,img.naturalHeight),-width/2,-height,width,height);}
   if(!ANIM.reduce){
     ctx.fillStyle=charged?'#FFF2AE':'#FFBA62';

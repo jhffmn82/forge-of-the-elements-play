@@ -313,7 +313,7 @@ function drawShockCloudTelegraphs(now){
     drawFieldMist(c.cells,'#badfff',now,.16);
     ctx.lineCap='round';ctx.lineJoin='round';
     c.cells.forEach(function(i,n){
-      if(!(revealAll||vis[i])||n%2)return;
+      if(!(revealAll||sceneVisibility()[i])||n%2)return;
       var tick=ANIM.reduce?0:(now||0)+hash2(i,n,821)*620,beat=Math.floor(tick/620),age=(tick%620)/620;
       var x=(i%MW-camX+.28+hash2(i,beat,823)*.44)*TS,y=(Math.floor(i/MW)-camY+.42+hash2(i,beat,827)*.3)*TS;
       var angle=hash2(i,beat,829)*Math.PI*2,dx=Math.cos(angle)*TS*.72,dy=Math.sin(angle)*TS*.4;
@@ -642,10 +642,8 @@ function mawAct(e){
 
 }
 
-/* Named floor-generation stages; ordered by generation-adapter.js. */
-function placeGeneratedCavernEels(seed){eelPlacement();}
 
-/* Named character presentation passes; composed by render-adapter.js. */
+/* Named character presentation passes; composed by presentation/render/renderer.js. */
 
 function drawCavernActor(job){
   var e=job.entity;if(!e||e===player||!e.kind)return;

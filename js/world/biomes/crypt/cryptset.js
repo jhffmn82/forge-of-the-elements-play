@@ -22,6 +22,7 @@ function addSetPiece(x, y, name, w, h, extra){
   if(!p) return null;
   var idx=props.indexOf(p);
   for(var yy=y; yy<y+h; yy++) for(var xx=x; xx<x+w; xx++){ if(inb(xx,yy)) propGrid[idxOf(xx,yy)]=idx; }
+  if(name==='tomb-rune'&&packCryptOn()&&floorMeta)packLight(x,y+h-0.2,'#7CFFA0',2.2,0.3);
   return p;
 }
 
@@ -37,6 +38,11 @@ function drawSetSprite(p, alpha){
     ctx.fillStyle='rgba(8,6,12,0.38)'; ctx.beginPath(); ctx.ellipse(px+dw/2, (p.y-camY+p.h)*TS-TS*0.1, dw*0.48, TS*0.2, 0, 0, 7); ctx.fill();
   }
   ctx.drawImage(o.img, o.sx, o.sy, o.sw, o.sh, px, py, dw, dh);
+  if(typeof FoteNormalLighting!=='undefined'){
+    var surface=p.flat?{kind:'ground',admissionX:p.x,admissionY:p.y}:p.wall?{kind:'wall',x:p.x+(p.w-1)/2,y:p.y+.5,height:dh/TS*1.2,footV:((p.y-camY+1)*TS-py)/dh,admissionX:p.x,admissionY:p.y}:{kind:'sprite',x:p.x+(p.w-1)/2,y:p.y+p.h-1,height:dh/TS,footV:1,admissionX:p.x,admissionY:p.y};
+    surface.emission=mapEmissionVisible(p.x,p.y)?Math.max(propLightSurface(p).emission,mapArtworkEmission(o)):0;
+    FoteNormalLighting.record(ctx,o,{x:px,y:py,w:dw,h:dh},{surface:surface});
+  }
   ctx.restore();
   return true;
 }
@@ -96,18 +102,18 @@ function drawGroundMaterial(kind, cells, alpha, remembered){
   cells.forEach(function(i){var x=i%MW,y=Math.floor(i/MW);for(var dy=-1;dy<=1;dy++)for(var dx=-1;dx<=1;dx++)if(inb(x+dx,y+dy))patches.add(idxOf(x+dx,y+dy));});
   patches.forEach(function(i){
     var x=i%MW,y=Math.floor(i/MW);
-    if(x<camX-1||y<camY-1||x>camX+viewW+1||y>camY+viewH+1||!(revealAll||vis[i]||remembered&&seen[i])||isWallLike(at(x,y)))return;
+    if(x<camX-1||y<camY-1||x>camX+viewW+1||y>camY+viewH+1||!(revealAll||sceneVisibility()[i]||remembered&&seen[i])||isWallLike(at(x,y)))return;
     var opacity=typeof alpha==='function'?alpha(i):alpha;
     if(!(opacity>0))return;
     var signature='';for(var yy=y-2;yy<=y+2;yy++)for(var xx=x-2;xx<=x+2;xx++)signature+=contains(xx,yy)?'1':'0';
     var raster=cachedRaster('field-'+kind+'-'+signature+'@',x,y,function(xx,yy){return oozeRaster(xx,yy,contains,kind);});
-    blitRaster(raster,(x-camX)*TS,(y-camY)*TS,opacity*(revealAll||vis[i]?1:memA(.4)));
+    blitRaster(raster,(x-camX)*TS,(y-camY)*TS,opacity*(revealAll||sceneVisibility()[i]?1:memA(.4)));
   });
 }
 function drawGroundRoots(cells, alpha){
   var art=objArt('props','root-tangle');if(!art)return;
   cells.forEach(function(i){
-    if(!(revealAll||vis[i]))return;var x=i%MW,y=Math.floor(i/MW),flip=hash2(x,y,619)<.5;
+    if(!(revealAll||sceneVisibility()[i]))return;var x=i%MW,y=Math.floor(i/MW),flip=hash2(x,y,619)<.5;
     ctx.save();ctx.translate((x-camX+.5)*TS,(y-camY+.82)*TS);ctx.scale(flip?-1:1,.48);
     drawObj(art,-TS*.5,-TS*.92,{fit:.8,feet:true,alpha:alpha});ctx.restore();
   });
@@ -119,7 +125,7 @@ function drawOoze(now){
     if(!inb(x,y)) continue; var i=idxOf(x,y); if(!(revealAll||seen[i]) || isWallLike(map[i])) continue;
     var near=false; for(var dy=-1;dy<=1 && !near;dy++) for(var dx=-1;dx<=1;dx++) if(isOozeAt(x+dx,y+dy)){ near=true; break; }
     if(!near) continue;
-    var alpha=(revealAll||vis[i])?1:memA(0.4);
+    var alpha=(revealAll||sceneVisibility()[i])?1:memA(0.4);
     blitRaster(cachedRaster('o'+oozeSig(x,y)+'@', x, y, oozeRaster), (x-camX)*TS, (y-camY)*TS, alpha);
     if(isOozeAt(x,y) && alpha===1){
       /* a slow sheen drifting over the surface */
@@ -184,7 +190,7 @@ function drawGrime(){
   for(var y=camY; y<=camY+viewH; y++) for(var x=camX; x<=camX+viewW; x++){
     if(!inb(x,y)) continue; var i=idxOf(x,y); if(!(revealAll||seen[i]) || isWallLike(map[i])) continue;
     var sig='gr2';
-    blitRaster(cachedRaster(sig+'@', x, y, grimeRaster), (x-camX)*TS, (y-camY)*TS, (revealAll||vis[i])?1:memA(0.4));
+    blitRaster(cachedRaster(sig+'@', x, y, grimeRaster), (x-camX)*TS, (y-camY)*TS, (revealAll||sceneVisibility()[i])?1:memA(0.4));
   }
   ctx.globalAlpha=1;
 }
@@ -280,6 +286,12 @@ function stampCryptHall(ox, oy, mode){
     var sp=piece(13,21,'stairs-wide',2,2); if(sp) sp.b=0;
     addProp(P(13,17).x,P(13,17).y,'bones');
   }
+  /* Candles in the upper chapel; cobwebs and plaques in the side chapels. */
+  function detail(x,y,name,extra){var c=P(x,y);if(!inb(c.x,c.y)||propAt(c.x,c.y))return null;return addProp(c.x,c.y,name,Object.assign({keep:true},extra||{}));}
+  [[10,3],[16,3]].forEach(function(q,i){var c=detail(q[0],q[1],'candles-'+(i?4:2));if(c&&mode!=='boss')packLight(c.x,c.y+0.2,'#FFC878',2.2,0.32);});
+  detail(5,7,'wall-cobweb',{wall:true,flat:1,b:0,webLeft:false});detail(22,7,'wall-cobweb',{wall:true,flat:1,b:0,webLeft:true});
+  if(detail(1,7,'wall-plaque',{wall:true,b:1}))packLight(ox+1,oy+7.9,'#7CFFA0',1.8,0.22);
+  if(detail(25,7,'wall-plaque',{wall:true,b:1}))packLight(ox+25,oy+7.9,'#7CFFA0',1.8,0.22);
   return hall;
 }
 /* the boss floor: the approach is built in the west, the hall is stamped against the east edge and its hallway is tunnelled
@@ -363,18 +375,34 @@ function scatterCrumbledTomb(r){
   for(var tries=0; tries<12; tries++){
     var x=r.x+1+ri(0, r.w-w-2), y=r.y+1+ri(0, r.h-h-2), ok=true;
     for(var yy=y; yy<y+h && ok; yy++) for(var xx=x; xx<x+w && ok; xx++) if(!freeCell(xx,yy) || nearDoor(xx,yy) || (xx===r.cx && yy===r.cy)) ok=false;
-    if(ok){ addSetPiece(x, y, kind[0], w, h); return true; }
+    if(ok){
+      addSetPiece(x,y,kind[0],w,h);
+      var t=props[props.length-1];if(!t||!/tomb/.test(t.name))return true;
+      var ring=[];
+      for(var ry=t.y-1;ry<=t.y+t.h;ry++)for(var rx=t.x-1;rx<=t.x+t.w;rx++){
+        if(rx>=t.x&&rx<t.x+t.w&&ry>=t.y&&ry<t.y+t.h)continue;
+        if(freeCell(rx,ry)&&!nearDoor(rx,ry))ring.push({x:rx,y:ry});
+      }
+      ring=shuffled(ring);
+      var nb=1+(rng()<0.5?1:0);
+      for(var i=0;i<nb&&ring.length;i++){var c=ring.pop();addProp(c.x,c.y,'bones');}
+      if(rng()<0.45&&ring.length){
+        var l=ring.pop();floorMeta.ooze=floorMeta.ooze||{};floorMeta.ooze[idxOf(l.x,l.y)]=1;
+        var l2=ring.filter(function(q){return Math.abs(q.x-l.x)+Math.abs(q.y-l.y)===1;})[0];
+        if(l2)floorMeta.ooze[idxOf(l2.x,l2.y)]=1;
+      }
+      return true;
+    }
   }
   return false;
 }
-var _decoratePlainCrypt = decoratePlain;
-decoratePlain = function(r){
-  _decoratePlainCrypt(r);
-  if(!inCrypt() || (floorMeta && floorMeta.plane) || r.hall) return;
+function decorateCryptRoom(r){
   if(rng()<0.45) scatterCrumbledTomb(r);
   if(rng()<0.4){ var e=pick(edgeCells(r)); if(e) blob(e.x, e.y, ri(6,14), function(xx,yy){ if(at(xx,yy)===FLOOR && !gAt(xx,yy) && !propAt(xx,yy) && !isOozeAt(xx,yy)) setG(xx,yy,G_GRASS); }); }   /* mushroom patches creep out from the walls */
   if(r.w*r.h>=36 && rng()<0.3) scatterCrumbledTomb(r);
-};
+  if(rng()<0.6){var e=pick(edgeCells(r));if(e)blob(e.x,e.y,ri(3,8),function(xx,yy){if(at(xx,yy)===FLOOR&&!gAt(xx,yy))setG(xx,yy,G_MOSS);});}
+  packDecorateRoom(r);
+}
 
 /* ---------- Crypt vegetation: glowing purple mushrooms instead of grass (2026-09-17) ----------
    Same ground codes as grass: G_GRASS = a living patch, G_SHORT = trampled. They glow, they don't hide you or block sight,
@@ -415,12 +443,6 @@ function drawMushroomGroundDecal(gv, x, y, px, py, alpha, now){
   return false;
 
 }
-var _setGShroom = setG;
-setG = function(x, y, v){
-  if(v===G_SHORT && inb(x,y) && ground[idxOf(x,y)]===G_GRASS && cryptShrooms() && typeof burst==='function' && (revealAll||vis[idxOf(x,y)])) burst(x, y, 'magic', 10, 0.035);
-  return _setGShroom(x, y, v);
-};
-
 
 function addCryptMushroomLights(L, now, prp){
   if(!cryptShrooms()) return L;
@@ -466,20 +488,9 @@ function drawCryptMoss(){
   for(var y=camY-1; y<=camY+viewH+1; y++) for(var x=camX-1; x<=camX+viewW+1; x++){
     if(!inb(x,y)) continue; var i=idxOf(x,y); if(!(revealAll||seen[i]) || isWallLike(at(x,y))) continue;
     var sig=cryptMossSig(x,y); if(sig.indexOf('1')<0) continue;
-    blitRaster(cachedRaster('cm'+sig+'@', x, y, cryptMossRaster), (x-camX)*TS, (y-camY)*TS, (revealAll||vis[i])?1:memA(0.4));
+    blitRaster(cachedRaster('cm'+sig+'@', x, y, cryptMossRaster), (x-camX)*TS, (y-camY)*TS, (revealAll||sceneVisibility()[i])?1:memA(0.4));
   }
 }
-
-
-/* ---------- Crypt floors: ooze instead of standing water, mushroom patches instead of the blue mushroom prop, more moss ---------- */
-
-
-var _decoratePlainMoss = decoratePlain;
-decoratePlain = function(r){
-  _decoratePlainMoss(r);
-  if(!cryptShrooms() || r.hall) return;
-  if(rng()<0.6){ var e=pick(edgeCells(r)); if(e) blob(e.x, e.y, ri(3,8), function(xx,yy){ if(at(xx,yy)===FLOOR && !gAt(xx,yy)) setG(xx,yy,G_MOSS); }); }
-};
 
 
 /* ---------------------------------------------------------------- shelf fungus and hanging roots (packet 08, 2026-09-20)
@@ -555,5 +566,3 @@ function buildGeneratedCryptOoze(seed){
     blob(r.x+ri(1,Math.max(1,r.w-2)), r.y+ri(1,Math.max(1,r.h-2)), ri(3,7), function(xx,yy){ var j=idxOf(xx,yy); if(at(xx,yy)===FLOOR && !propAt(xx,yy) && !itemAt(xx,yy) && !feats.some(function(f){ return f.x===xx&&f.y===yy; })){ floorMeta.ooze[j]=1; ground[j]=0; } });
   }
 }
-
-function growGeneratedCryptWalls(seed){cryptGrowWallVeg();}

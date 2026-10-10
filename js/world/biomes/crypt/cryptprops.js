@@ -11,69 +11,6 @@
    Gameplay footprints do not change: a piece blocks the cells it covers, as before.
    ===================================================================== */
 
-var CP_PAL = {
-  out:[16,13,22], deep:[36,32,48], faceLo:[46,42,60], face:[64,58,80], top:[122,114,140], topHi:[156,148,174],
-  hi:[196,188,210], cut:[30,27,40], moss:[72,98,48], moss2:[92,118,58], inside:[14,12,20], bone:[206,198,176], boneLo:[150,142,126]
-};
-function cpNoise(x, y, s){ return hash2(x|0, y|0, s); }
-function cpPut(D, W, x, y, c, a){ if(x<0||y<0||x>=W||y*W+x>=D.length/4) return; var p=(y*W+x)*4; D[p]=c[0]; D[p+1]=c[1]; D[p+2]=c[2]; D[p+3]=a===undefined?255:a; }
-function cpShade(c, k){ return [c[0]*k, c[1]*k, c[2]*k]; }
-function cpAdd(c, k){ return [c[0]+k, c[1]+k, c[2]+k*1.08]; }
-
-/* ---------------------------------------------------------------- a stone box in three-quarter view
-   footprint W x H px on the floor; the top (lid) is lifted by `lift` px and the front face shows below it */
-function cpStoneBox(D, CW, x0, y0, W, H, lift, seed, opt){
-  opt=opt||{};
-  var P=CP_PAL;
-  var topY=y0, topH=H-lift, faceY=y0+topH, faceH=lift;
-  /* front face */
-  for(var y=faceY; y<faceY+faceH; y++) for(var x=x0; x<x0+W; x++){
-    var t=(y-faceY)/Math.max(1,faceH-1), g=(cpNoise(x,y,seed+1)-0.5)*10;
-    var c=cpAdd(cpShade(P.face, 1-0.22*t), g);
-    if(x===x0+W-1 || x===x0+W-2) c=cpShade(c,0.82);
-    if(y===faceY) c=cpAdd(c, -14);                                   /* the shadow under the lid overhang */
-    if(opt.moss && y>faceY+faceH-3 && cpNoise(x,y,seed+2)<0.35) c=cpNoise(x,y,seed+3)<0.5?P.moss:P.moss2;
-    cpPut(D, CW, x, y, c);
-  }
-  /* top surface */
-  for(var y2=topY; y2<topY+topH; y2++) for(var x2=x0; x2<x0+W; x2++){
-    var g2=(cpNoise(x2,y2,seed+4)-0.5)*9 + (cpNoise(x2>>2,y2>>2,seed+5)-0.5)*8;
-    var c2=cpAdd(P.top, g2 - (y2-topY)*0.35);
-    var ex=x2-x0, ey=y2-topY;
-    if(ex<=1 || ey<=1) c2=cpAdd(c2, ex===0||ey===0 ? 40 : 18);          /* lit lip */
-    if(ex>=W-2 || ey>=topH-2) c2=cpAdd(c2, -26);
-    c2=cpAdd(c2, -ex*0.25);
-    cpPut(D, CW, x2, y2, c2);
-  }
-  /* recessed lid panel with restrained carving */
-  if(opt.panel){
-    var m=opt.panel, px0=x0+m, py0=topY+m, pw=W-2*m, ph=topH-2*m;
-    for(var y3=py0; y3<py0+ph; y3++) for(var x3=px0; x3<px0+pw; x3++){
-      var ex3=x3-px0, ey3=y3-py0, c3=cpAdd(P.top, (cpNoise(x3,y3,seed+6)-0.5)*7 - 8);
-      if(ex3===0 || ey3===0) c3=P.deep;                                /* the recess edge in shadow (top/left) */
-      else if(ex3===pw-1 || ey3===ph-1) c3=cpAdd(P.topHi, 6);          /* its far edge catches light */
-      cpPut(D, CW, x3, y3, c3);
-    }
-    if(opt.carve==='cross'){
-      var cx=px0+Math.floor(pw/2), cy=py0+Math.floor(ph*0.42), vl=Math.max(3, Math.floor(Math.min(ph,pw*2)*0.34)), hl=Math.max(2, Math.floor(pw*0.28));
-      if(opt.horiz){ for(var k=-vl;k<=vl;k++){ cpPut(D,CW,cx+k,cy,P.cut); cpPut(D,CW,cx+k,cy+1,cpAdd(P.topHi,4)); } for(var k2=-hl;k2<=hl;k2++){ cpPut(D,CW,cx-Math.floor(vl*0.45),cy+k2,P.cut); cpPut(D,CW,cx-Math.floor(vl*0.45)+1,cy+k2,cpAdd(P.topHi,4)); } }
-      else { for(var k3=-vl;k3<=vl;k3++){ cpPut(D,CW,cx,cy+k3,P.cut); cpPut(D,CW,cx+1,cy+k3,cpAdd(P.topHi,4)); } for(var k4=-hl;k4<=hl;k4++){ cpPut(D,CW,cx+k4,cy-Math.floor(vl*0.45),P.cut); cpPut(D,CW,cx+k4,cy-Math.floor(vl*0.45)+1,cpAdd(P.topHi,4)); } }
-    }
-  }
-  /* outline */
-  for(var y4=y0-1; y4<=y0+H; y4++) for(var x4=x0-1; x4<=x0+W; x4++){
-    if(x4>=x0 && x4<x0+W && y4>=y0 && y4<y0+H) continue;
-    cpPut(D, CW, x4, y4, P.out, (x4===x0-1||x4===x0+W)&&(y4===y0-1||y4===y0+H) ? 0 : 255);
-  }
-}
-function cpCrack(D, CW, x, y, len, seed){
-  var cx=x, cy=y;
-  for(var i=0;i<len;i++){ cpPut(D, CW, cx, cy, CP_PAL.cut); cpPut(D, CW, cx+1, cy, cpAdd(CP_PAL.top,-6)); cx+= cpNoise(i,seed,11)<0.5 ? 1 : 0; cy+=1; if(cpNoise(i,seed,12)<0.2) cx-=1; }
-}
-function cpShadow(D, CW, x0, y0, W, H){   /* soft contact shadow to the lower right on the floor */
-  for(var y=y0; y<y0+H+3; y++) for(var x=x0+2; x<x0+W+3; x++){ var p=(y*CW+x)*4; if(p<0 || p>=D.length || D[p+3]) continue; D[p]=8; D[p+1]=6; D[p+2]=14; D[p+3]=70; }
-}
-
 var CP_CACHE = {};
 /* ---------------------------------------------------------------- the stone recipe, second pass
    Broad planes, a thick bevelled lid rim, a visible front face, a recessed motif, a few broad chips and worn

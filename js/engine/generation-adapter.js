@@ -39,7 +39,12 @@ function inspectGeneratedFloor(){
     policy:'structural, arrival, ordinary departure/boss/service routes and plane return enforced through open terrain, doors/chests and one-action cuttable web curtains; optional locked treasure, sealed boss exits and Chaos portal/phase routes observed'};
 }
 function generationTransaction(build){
-  return FoteGeneration.transaction({state:gameState,shared:[EMPTY_OFF],getRandom:function(){return rng;},setRandom:function(value){rng=value;},
+  // Construction reads shrine/discovery history but never edits visited floors.
+  // The stash container is still drafted, so adding the outgoing floor or
+  // moving it to planeStash remains part of the transaction and can roll back.
+  var retained=[EMPTY_OFF];
+  if(RUN)retained=retained.concat(Object.values(RUN.floorStash||{}),RUN.planeStash,RUN.chaosEntryStash);
+  return FoteGeneration.transaction({state:gameState,shared:retained,getRandom:function(){return rng;},setRandom:function(value){rng=value;},
     forkRandom:function(value){if(!value||typeof value.state!=='function')throw new Error('Floor generation requires a replayable random stream.');return mulberry32(value.state());},
     validate:function(candidate){
       FoteGeneration.validateFloor(candidate,function(value){return gameState.dimensions(value);});
@@ -47,65 +52,51 @@ function generationTransaction(build){
       var report=inspectGeneratedFloor();FoteGeneration.validateRequiredRoutes(report.targets);afterGeneratedInstall(function(){LAST_GENERATION_REPORT=report;});
     }},build);
 }
-function generationDomains(){
-  return {context:{width:MW,height:MH,floor:floorNo,seed:worldSeed,turn:turn,arrivalX:player.x,arrivalY:player.y,clock:player.t},heroRef:player,hero:player,
-    terrain:map,props:props,propGrid:propGrid,ground:ground,fields:{fireT:fireT,fireSrc:fireSrc,iceG:iceG,rootG:rootG,holyG:holyG},
-    perception:{seen:seen,vis:vis,raw:DEEP_RAWVIS,blind:BLIND_RAWVIS},schedule:{nextSpawn:nextSpawn,spawnedExtra:spawnedExtra,nextId:nextId},
-    fixtures:{chestKind:chestKind,levers:levers,plates:plates,altars:altars},
-    floor:floorMeta,rooms:rooms,loot:items,actors:ents,feats:feats,run:RUN};
+function generateOrdinaryFloor(seed){
+  // Builders share the transaction's candidate. Their order is part of map
+  // generation; the finished floor is checked once before it becomes live.
+  DEEP_GEN=true;
+  try{
+    var clock=player&&Number.isFinite(player.t)?player.t:0,accepted=false;
+    for(var attempt=0;attempt<8;attempt++){
+      if(generateOnce((seed+attempt*7919)>>>0)){
+        commitGeneratedFloor(clock);
+        accepted=true;
+        break;
+      }
+    }
+    if(!accepted)throw new Error('Floor generation exhausted all 8 layout attempts.');
+    resetGeneratedSurface(seed);
+    placeGeneratedTrinkets(seed);
+    resetGeneratedElementalGround(seed);
+    buildGeneratedPuzzles(seed);
+    clearGeneratedObjectProps(seed);
+    clearGeneratedCryptHall(seed);
+    buildGeneratedCryptOoze(seed);
+    cryptGrowWallVeg();
+    placeGeneratedPortal(seed);
+    finishGeneratedCaverns(seed);
+    eelPlacement();
+    trimGeneratedCavernClusters(seed);
+    clearGeneratedCavernProps(seed);
+    placeGeneratedCryptProps(seed);
+    vegGrow();
+    vegRemember();
+    lightRulesPass();
+    finishGeneratedDeep(seed);
+    openGeneratedCryptPaths(seed);
+  }finally{DEEP_GEN=false;}
+  regionalizeGeneratedDeep(seed);
+  repairGeneratedDeepPortal(seed);
+  resetGeneratedConcealment(seed);
+  repairWallMemorials();
+  balanceGeneratedEnemies();
+  repairStairApproachTraps();
+  repairRareRoomHints();
+  arriveRarePet();
+  // The food producer chooses reachable cells on this completed map.
+  placeGeneratedFood();
 }
-function validateGeneratedMeals(added){
-  var reach=bfsFrom(player.x,player.y);
-  added.loot.forEach(function(it){
-    if(it.kind!=='food'||!inb(it.x,it.y)||!walkable(it.x,it.y)||reach[idxOf(it.x,it.y)]<0)throw new Error('Generated guaranteed meal is not reachable.');
-  });
-}
-var floorGeneration=FoteGeneration.create({
-  // Every retained stage declares its actual mutations, including native
-  // helper writes and the carried hero alias inside the actor graph. An
-  // omitted declaration has no write permission. Destination/clock and the
-  // carried hero reference remain protected throughout construction.
-  ownership:{read:generationDomains,defaultWrites:[],
-    identities:['hero','terrain','props','propGrid','ground','floor','rooms','loot','actors','feats','run'],referenceOnly:['heroRef']},
-  begin:function(){DEEP_GEN=true;},
-  end:function(){DEEP_GEN=false;},
-  clock:function(){return player&&Number.isFinite(player.t)?player.t:0;},
-  attempt:function(seed){return generateOnce(seed);},
-  commit:commitGeneratedFloor,
-  layoutStages:[
-    {name:'surface-cache',run:resetGeneratedSurface,writes:[]},
-    {name:'trinket-plan',run:placeGeneratedTrinkets,writes:['run','loot']},
-    {name:'elemental-ground',run:resetGeneratedElementalGround,writes:['fields','floor']},
-    {name:'puzzle-rooms',run:buildGeneratedPuzzles,writes:['terrain','props','propGrid','ground','fields','floor','rooms','loot','actors','feats','fixtures','schedule','run']},
-    {name:'object-prop-cleanup',run:clearGeneratedObjectProps,writes:['props','propGrid']},
-    {name:'crypt-hall',run:clearGeneratedCryptHall,writes:['feats','loot','terrain','fixtures','ground']},
-    {name:'crypt-ooze',run:buildGeneratedCryptOoze,writes:['terrain','ground','floor']},
-    {name:'crypt-wall-vegetation',run:growGeneratedCryptWalls,writes:['props','propGrid']},
-    {name:'portal-placement',run:placeGeneratedPortal,writes:['terrain','props','floor','rooms']},
-    {name:'ranged-gear-migration',run:migrateGeneratedRangedGear,writes:['hero','actors','schedule','floor']},
-    {name:'cavern-terrain',run:finishGeneratedCaverns,writes:['ground','floor']},
-    {name:'cavern-eels',run:placeGeneratedCavernEels,writes:['floor','actors','schedule']},
-    {name:'cavern-clusters',run:trimGeneratedCavernClusters,writes:['props','propGrid']},
-    {name:'cavern-prop-clearance',run:clearGeneratedCavernProps,writes:['props','propGrid','floor']},
-    {name:'crypt-prop-placement',run:placeGeneratedCryptProps,writes:['props','propGrid','floor','loot']},
-    {name:'floor-vegetation',run:growGeneratedVegetation,writes:['ground','rooms','props','propGrid','floor']},
-    {name:'vegetation-memory',run:rememberGeneratedVegetation,writes:['floor']},
-    {name:'lighting-rules',run:lightGeneratedFloor,writes:['props','propGrid','floor']},
-    {name:'deep-regions',run:finishGeneratedDeep,writes:['terrain','ground','rooms','props','propGrid','floor','feats']},
-    {name:'crypt-paths',run:openGeneratedCryptPaths,writes:['props','propGrid','loot']}
-  ],
-  finishStages:[
-    {name:'deep-monster-regions',run:regionalizeGeneratedDeep,writes:['actors','schedule','floor']},
-    {name:'deep-portal-reachability',run:repairGeneratedDeepPortal,writes:['terrain','props','floor','rooms']},
-    {name:'concealment-reset',run:resetGeneratedConcealment,writes:['hero','actors']},
-    {name:'wall-memorials',run:repairGeneratedMemorials,writes:['props','propGrid','floor']},
-    {name:'biome-balance',run:balanceGeneratedEnemies,writes:['actors']},
-    {name:'stair-approach-traps',run:repairStairApproachTraps,writes:['feats']},
-    {name:'secret-floor-hints',run:function(){if(typeof repairRareRoomHints==='function')repairRareRoomHints();},writes:['ground']},
-    {name:'rare-companion-arrival',run:function(){if(typeof arriveRarePet==='function')arriveRarePet();},writes:['actors','run']},
-    {name:'floor-food',run:placeGeneratedFood,writes:['loot'],appends:{loot:{min:1,max:2}},validate:validateGeneratedMeals}
-  ]
-});
 // Dimension changes never allocate floor arrays. Builders install a new map
 // immediately afterwards, which also invalidates map-identity render caches.
 function setMapDimensions(width,height){
@@ -116,6 +107,6 @@ function resetMapDimensions(){return setMapDimensions(FoteState.defaultDimension
 function generate(seed){
   return generationTransaction(function(){
     if(typeof FoteChaosCampaign!=='undefined'&&FoteChaosCampaign.handles(floorNo))return FoteChaosCampaign.build(floorNo,seed);
-    resetMapDimensions();return floorGeneration.generate(seed);
+    resetMapDimensions();return generateOrdinaryFloor(seed);
   });
 }

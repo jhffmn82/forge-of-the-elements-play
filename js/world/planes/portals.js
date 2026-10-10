@@ -40,11 +40,17 @@ function drawPortalTelegraphs(now){
 }
 
 function addPortalLights(L, now, prp){
-  var p=floorMeta && floorMeta.portalAt;
-  if(p && at(p.x,p.y)===PORTAL && portalOpen()) L.push({x:p.x, y:p.y, c:hexRGB(PLANE_EL_COL[portalElement()]||'#FFFFFF'), r:4.2, s:1.0*(ANIM.reduce?1:1+0.1*Math.sin(now/300)), tx:p.x, ty:p.y});
-  (floorMeta && floorMeta.planeLights || []).forEach(function(l){ if(revealAll||seen[idxOf(l.x,l.y)]) L.push({x:l.x, y:l.y, c:hexRGB(l.col), r:l.r, s:l.s, tx:l.x, ty:l.y}); });
+  var p=floorMeta&&floorMeta.portalAt,blind=typeof playerBlind==='function'&&playerBlind(),all=revealAll&&!blind;
+  function visible(x,y){return !blind&&inb(x,y)&&(all||sceneVisibility()[idxOf(x,y)]);}
+  if(p&&at(p.x,p.y)===PORTAL&&portalOpen()&&visible(p.x,p.y))L.push({x:p.x,y:p.y,c:hexRGB(PLANE_EL_COL[portalElement()]||'#FFFFFF'),r:4.2,s:1.0*(ANIM.reduce?1:1+0.1*Math.sin(now/300)),tx:p.x,ty:p.y});
+  var sources=typeof ptPlaneLightSources==='function'?ptPlaneLightSources():floorMeta&&floorMeta.planeLights||[];
+  sources.forEach(function(l){
+    // Keep sub-tile placement, but visibility and Bresenham LOS require cells.
+    // Remembered pools are scenery, not active lamps through fog or Blind.
+    var tx=Math.floor(l.x),ty=Math.floor(l.y);
+    if(visible(tx,ty))L.push({x:l.x,y:l.y,c:hexRGB(l.col),r:l.r,s:l.s,height:l.height,falloff:l.falloff,tx:tx,ty:ty});
+  });
   return L;
-
 }
 
 /* ---------------------------------------------------------------- placing the portal on its Crypt floor */
@@ -551,7 +557,7 @@ function entryPortalPrompt(){
   return;
 }
 
-/* Named character presentation passes; composed by render-adapter.js. */
+/* Named character presentation passes; composed by presentation/render/renderer.js. */
 
 function prepareMoonboundActor(job){
   var e=job.entity;if(!e||!e.base||!e.base.moonbound||!floorMeta||!floorMeta.plane)return;

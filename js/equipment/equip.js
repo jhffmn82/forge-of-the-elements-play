@@ -420,7 +420,11 @@ function heldTier(it){
    cell size, for the short-forearm rule. swing: this step's turn in a melee play list (heldSwing), or the hand a cast
    gives the wand. at (2026-10-05): floor, the floor line in cell px; fall, how far the hand has dropped to it
    in the death clip (heldFall); carry, the grip whose forearm sets the angle (the first frame of an idle or walk loop) */
-function drawHeld(g, key, pose, rest, dx, dy, sc, drawH, enchant, now, tier, handOv, cell, aim, grip, strike, swing, at){
+function drawHeldArtwork(g,o,x,y,w,h,surface){
+  g.drawImage(o.img,o.sx,o.sy,o.sw,o.sh,x,y,w,h);
+  if(typeof FoteNormalLighting!=='undefined')FoteNormalLighting.record(g,o,{x:x,y:y,w:w,h:h},{surface:surface});
+}
+function drawHeld(g, key, pose, rest, dx, dy, sc, drawH, enchant, now, tier, handOv, cell, aim, grip, strike, swing, at, surface){
   var H=HELD[key], o=objArt('held','held-'+key); if(!H || !o) return;
   /* aim: a bow being shot is held upright with its belly toward the target; the held art has its string on the
      outer side, so it is mirrored (2026-09-27, Justin: the bow was backwards in the new empty-handed shots) */
@@ -456,13 +460,13 @@ function drawHeld(g, key, pose, rest, dx, dy, sc, drawH, enchant, now, tier, han
       var low=(Math.abs(Math.cos(lie))*(o.sh*s-up)+Math.abs(Math.sin(lie))*halfW)*flat;
       g.translate(dx+sx*sc, Math.min(dy+sy*sc, floorY-low));
       if(lie){ g.scale(1, flat); g.rotate(lie); }
-      g.drawImage(o.img, o.sx,o.sy,o.sw,o.sh, -halfW, -up, o.sw*s, o.sh*s);
+      drawHeldArtwork(g,o,-halfW, -up, o.sw*s, o.sh*s,surface);
     } else if(H.float){
       /* 2026-10-05 (Justin): in the hand; no bob, no see-through. 2026-10-06: under a hanging hand, over a raised one
          (the head of this file); raised: how far the forearm is up, 0 hanging to 1 level or higher */
       var oh=o.sh*s, raised=Math.max(0, Math.min(1, 1-Math.sin(fore))), past=cell*GRIP_HAND*sc+(1-raised)*oh/2*GRIP_ORB_IN_HAND;
       g.translate(hx+Math.cos(fore)*past, Math.min(hy+Math.sin(fore)*past-raised*oh/2*GRIP_ORB_ON_HAND, floorY-oh/2));
-      g.drawImage(o.img, o.sx,o.sy,o.sw,o.sh, -o.sw*s/2, -oh/2, o.sw*s, oh);
+      drawHeldArtwork(g,o,-o.sw*s/2, -oh/2, o.sw*s, oh,surface);
     } else {
       g.translate(hx, hy);
       var gside = hk==='r' ? 1 : -1;     /* 2026-10-05: outward by the hand, not by the half of the cell the fist is in */
@@ -489,7 +493,7 @@ function drawHeld(g, key, pose, rest, dx, dy, sc, drawH, enchant, now, tier, han
       g.rotate(tip + Math.PI/2);
       if(mirror) g.scale(-1, 1);
       if(enchant){ g.shadowColor=AFF_COL[enchant]||'#fff'; g.shadowBlur=Math.max(3, drawH*0.04)*dev; }
-      g.drawImage(o.img, o.sx,o.sy,o.sw,o.sh, -o.sw*s/2, -o.sh*s*H.grip-(swing && swing.slide || 0)*sc, o.sw*s, o.sh*s);
+      drawHeldArtwork(g,o,-o.sw*s/2, -o.sh*s*H.grip-(swing && swing.slide || 0)*sc, o.sw*s, o.sh*s,surface);
     }
     g.restore();
     return;
@@ -497,9 +501,9 @@ function drawHeld(g, key, pose, rest, dx, dy, sc, drawH, enchant, now, tier, han
   g.translate(hx, hy);
   var side = hk === 'r' ? 1 : -1;     /* the right hand is on the image's left: lean outward = negative angle */
   if(H.shield){
-    g.drawImage(o.img, o.sx,o.sy,o.sw,o.sh, -o.sw*s/2, -o.sh*s*0.55, o.sw*s, o.sh*s);
+    drawHeldArtwork(g,o,-o.sw*s/2, -o.sh*s*0.55, o.sw*s, o.sh*s,surface);
   } else if(H.float){
-    g.drawImage(o.img, o.sx,o.sy,o.sw,o.sh, -o.sw*s/2, -o.sh*s/2, o.sw*s, o.sh*s);
+    drawHeldArtwork(g,o,-o.sw*s/2, -o.sh*s/2, o.sw*s, o.sh*s,surface);
   } else {
     var ang=-Math.PI/2 + (aim ? 0 : H.tilt*side);
     /* a forearm under 6% of the cell gives no real angle (a misread elbow), so the item keeps its resting lean */
@@ -514,7 +518,7 @@ function drawHeld(g, key, pose, rest, dx, dy, sc, drawH, enchant, now, tier, han
     /* shadowBlur ignores the canvas transform, so it is scaled by it (2026-09-27, equip plan step 10): measured on the doll,
        the glow covered 870 CSS px^2 at DPR 1 and 317 at DPR 3, a phone */
     if(enchant){ g.shadowColor=AFF_COL[enchant]||'#fff'; g.shadowBlur=Math.max(3, drawH*0.04)*dev; }
-    g.drawImage(o.img, o.sx,o.sy,o.sw,o.sh, -o.sw*s/2, -o.sh*s*H.grip, o.sw*s, o.sh*s);
+    drawHeldArtwork(g,o,-o.sw*s/2, -o.sh*s*H.grip, o.sw*s, o.sh*s,surface);
   }
   g.restore();
 }
@@ -585,7 +589,7 @@ function castEquipmentFor(who){
 }
 /* the whole figure: items behind the body, the (tinted) body, items in front.
  * time is no longer read (2026-10-05: the orb is held and does not bob); callers still pass it. */
-function drawCastLayers(e, cs, fr, dx, dy, w, h, g, time){
+function drawCastLayers(e, cs, fr, dx, dy, w, h, g, time, surface){
   g = g || ctx;
   var m=cs.m, cell=m.cell, row=Math.round(fr.sy/cell), col=Math.round(fr.sx/cell), sc=w/cell, now=time===undefined?performance.now():time;
   var who = e || player;
@@ -665,11 +669,12 @@ function drawCastLayers(e, cs, fr, dx, dy, w, h, g, time){
      the idle or the walk whose own grip puts the shield hand behind the body and the weapon hand in front: the carry
      keeps the shield in front there, and it hid the sword for half of every stride on the looks that turn side-on */
   if(items.length>1 && (items[0].strike || (clip==='melee' && fr.step===7 && !fr.off) || (keep && grip.l.z<0 && grip.r.z>=0))) items.reverse();
-  var put=function(it){ drawHeld(g, it.key, pose, rest, dx, dy, sc, drawH, it.ench, now, it.tier, it.hand, cell, it.aim, grip, it.strike, it.swing, it.at); };
+  var put=function(it){ drawHeld(g, it.key, pose, rest, dx, dy, sc, drawH, it.ench, now, it.tier, it.hand, cell, it.aim, grip, it.strike, it.swing, it.at, surface); };
   items.forEach(function(it){ if(it.z<0) put(it); });
   var look=armorLook(arm);
-  if(look){ g.drawImage(tintedFrame(cs,row,col,look,pose), 0,0,cell,cell, dx,dy,w,h); }
-  else g.drawImage(cs.img, fr.sx, fr.sy, cell, cell, dx, dy, w, h);
+  var body=look?tintedFrame(cs,row,col,look,pose):cs.img,bodyX=look?0:fr.sx,bodyY=look?0:fr.sy;
+  g.drawImage(body,bodyX,bodyY,cell,cell,dx,dy,w,h);
+  if(typeof FoteNormalLighting!=='undefined')FoteNormalLighting.record(g,{img:body,sx:bodyX,sy:bodyY,sw:cell,sh:cell},{x:dx,y:dy,w:w,h:h},{surface:surface});
   /* Fingers close over the grip rather than the handle covering the whole fist. 2026-10-05: item by item, straight after
      each is drawn, so a fist never shows through an item drawn over it afterwards (it showed as a dot on the shield); and
      over the orb and the tome too, which are held now */

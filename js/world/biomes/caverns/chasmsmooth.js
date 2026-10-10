@@ -52,7 +52,7 @@ function drawCaveChasms(now){
   for(var y=camY-1; y<=camY+viewH+1; y++) for(var x=camX-1; x<=camX+viewW+1; x++){
     if(!inb(x,y) || !chsNear(x,y) || (isWallLike(at(x,y)) && !chsVoidCell(x,y))) continue;
     var i=idxOf(x,y); if(!(revealAll||seen[i])) continue;
-    var px=(x-camX)*TS, py=(y-camY)*TS, a=(revealAll||vis[i]) ? 1 : memA(0.42);
+    var px=(x-camX)*TS, py=(y-camY)*TS, a=(revealAll||sceneVisibility()[i]) ? 1 : memA(0.42);
     var sig=''; for(var oy=-2;oy<=2;oy++) for(var ox=-2;ox<=2;ox++) sig+=chsVoidCell(x+ox,y+oy)?'1':'0';
     blitRaster(cachedRaster(tag+sig+'#', x, y, chsRaster), px, py, a);
     /* the far depth and the floating debris, over whole chasm cells only */

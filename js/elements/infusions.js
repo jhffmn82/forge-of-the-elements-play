@@ -3,7 +3,6 @@
 
 
 function infusion(kind){ var o=player.off; return offKind()===kind && o.enchant ? o.enchant : null; }
-function affPts(el){ return (player.aff && player.aff[el]) || 0; }
 
 /* ---------------------------------------------------------------- the Forge: the off-hand can be enchanted when it is an orb or tome */
 

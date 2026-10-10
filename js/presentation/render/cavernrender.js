@@ -43,18 +43,26 @@ function caveArtScale(o){
   var scale=/^cl-crystal-shards-[1-4]$/.test(o.nm||'')?.5:/^pylon-[12]$/.test(o.nm||'')?.55:/^(giant-mushroom|mushroom-pair)/.test(o.nm||'')?.65:1;
   return TS/64*scale;
 }
-function drawCaveSprite(o, cx, bottom, alpha, flipX){
+function drawCaveSprite(o, cx, bottom, alpha, flipX, surface, footY){
+  if(footY===undefined)footY=bottom;
+  function recordCave(x,y,w,h){
+    if(typeof FoteNormalLighting==='undefined')return;
+    var base=surface||{kind:'sprite',x:cx/TS+camX-.5,y:footY/TS+camY-1,admissionX:Math.floor(cx/TS)+camX,admissionY:Math.floor(footY/TS-.5)+camY};
+    FoteNormalLighting.record(ctx,o,{x:x,y:y,w:w,h:h},{surface:base.kind==='ground'?base:Object.assign({},base,{height:h/TS,footV:(footY-y)/h})});
+  }
   if(o.nm==='kobold-crate'){
     ctx.save();ctx.globalAlpha=alpha;ctx.imageSmoothingEnabled=true;
     var cs=Math.min(TS*.68/o.sw,TS*.74/o.sh), cw=o.sw*cs,ch=o.sh*cs;
     if(flipX){ctx.translate(cx,0);ctx.scale(-1,1);ctx.translate(-cx,0);}
     ctx.drawImage(o.img,o.sx,o.sy,o.sw,o.sh,cx-cw/2,bottom-ch,cw,ch);
+    recordCave(cx-cw/2,bottom-ch,cw,ch);
     ctx.restore();return;
   }
   var s=caveArtScale(o), left=cx-o.fullW*s/2, top=bottom-o.fullH*s;
   ctx.save(); ctx.globalAlpha=alpha; ctx.imageSmoothingEnabled=true;
   if(flipX){ ctx.translate(cx, 0); ctx.scale(-1, 1); ctx.translate(-cx, 0); }
   ctx.drawImage(o.img, o.sx, o.sy, o.sw, o.sh, left+o.ox*s, top+o.oy*s, o.sw*s/(o.res||1), o.sh*s/(o.res||1));
+  recordCave(left+o.ox*s,top+o.oy*s,o.sw*s/(o.res||1),o.sh*s/(o.res||1));
   ctx.restore();
 }
 
@@ -65,10 +73,10 @@ function drawCaveProp(p, px, py, alpha){
   if(p.flat){
     /* Centre the art's scaled canvas: a half-size crystal must not retain the
        old full-size half-height and drift toward the tile below it. */
-    drawCaveArt(o, X+TS/2, Y+TS/2+o.fullH*caveArtScale(o)/2, alpha, flip);
+    drawCaveArt(o, X+TS/2, Y+TS/2+o.fullH*caveArtScale(o)/2, alpha, flip, {kind:'ground',admissionX:p.x,admissionY:p.y});
     return true;
   }
-  drawCaveArt(o, X+w*TS/2, Y+h*TS-TS*0.02, alpha, flip);
+  drawCaveArt(o, X+w*TS/2, Y+h*TS-TS*0.02, alpha, flip, {kind:'sprite',x:p.x+(w-1)/2,y:p.y+h-1,admissionX:p.x,admissionY:p.y});
   if(typeof flashOf==='function' && p.br){ var fl=flashOf(p); if(fl>0){ ctx.save(); ctx.globalAlpha=fl*0.6; ctx.fillStyle='#FFF'; ctx.fillRect(X+TS*0.25, Y+TS*0.25, TS*0.5, TS*0.5); ctx.restore(); } }
   return true;
 
@@ -144,8 +152,8 @@ function drawCaveDecals(){
     if(d.x<camX-1 || d.x>camX+viewW+1 || d.y<camY-1 || d.y>camY+viewH+1) return;
     var i=idxOf(d.x,d.y); if(!(revealAll||seen[i]) || at(d.x,d.y)!==FLOOR) return;
     var o=caveArt(d.n); if(!o) return;
-    var a=((revealAll||vis[i]) ? 1 : memA(0.42))*(/^dc-lichen/.test(d.n) ? 0.3 : 0.8), px=(d.x-camX)*TS, py=(d.y-camY)*TS;   /* 2026-09-19: lichen at 30%, so it tints the stone instead of sitting on it */
-    drawCaveArt(o, px+TS/2, py+TS/2+o.fullH*TS/128, a, hash2(d.x,d.y,31)<0.5);
+    var a=((revealAll||sceneVisibility()[i]) ? 1 : memA(0.42))*(/^dc-lichen/.test(d.n) ? 0.3 : 0.8), px=(d.x-camX)*TS, py=(d.y-camY)*TS;   /* 2026-09-19: lichen at 30%, so it tints the stone instead of sitting on it */
+    drawCaveArt(o, px+TS/2, py+TS/2+o.fullH*TS/128, a, hash2(d.x,d.y,31)<0.5, {kind:'ground',admissionX:d.x,admissionY:d.y});
   });
 }
 function drawGlowwormCurtain(w,px,py,alpha,now){
@@ -171,7 +179,7 @@ function drawCaveWalls(now){
     if(w.x<camX-1 || w.x>camX+viewW+1 || w.y<camY-2 || w.y>camY+viewH+1) return;
     var i=idxOf(w.x,w.y); if(!(revealAll||seen[i]) || !isWallLike(at(w.x,w.y))) return;
     var o=caveArt(w.n); if(!o) return;
-    var below=idxOf(w.x,w.y+1), a=(revealAll||vis[i]||vis[below]) ? 1 : memA(0.42), px=(w.x-camX)*TS, py=(w.y-camY)*TS, s=TS/64;
+    var below=idxOf(w.x,w.y+1), a=(revealAll||sceneVisibility()[i]||sceneVisibility()[below]) ? 1 : memA(0.42), px=(w.x-camX)*TS, py=(w.y-camY)*TS, s=TS/64;
     if(/^wf-glowworm-curtain/.test(w.n)){drawGlowwormCurtain(w,px,py,a,now);return;}
     ctx.save(); ctx.globalAlpha=a; ctx.imageSmoothingEnabled=true;
     /* wall art attaches at its top: the waterfall's lip sits at the top of the rock and its basin on the floor below */

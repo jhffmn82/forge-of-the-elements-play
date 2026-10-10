@@ -117,16 +117,6 @@ function tierPer(w){
   if((w.hands||1)===2) p=[Math.round(p[0]*1.5), Math.round(p[1]*1.5)];
   return p;
 }
-function allGear(){
-  var out=[];
-  if(!player) return out;
-  (player.sets||[]).forEach(function(s){ if(s) out.push(s); });
-  if(player.ranged && out.indexOf(player.ranged)<0) out.push(player.ranged);
-  if(player.armorItem) out.push(player.armorItem);
-  if(player.off && player.off!==EMPTY_OFF) out.push(player.off);
-  (player.bag||[]).forEach(function(b){ if(b.data && (b.kind==='weapon'||b.kind==='armor'||b.kind==='off')) out.push(b.data); });
-  return out;
-}
 
 /* ---------------------------------------------------------------- requirements */
 function gearReq(it){

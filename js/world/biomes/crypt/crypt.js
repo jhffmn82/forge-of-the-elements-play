@@ -124,7 +124,7 @@ function drawFieldMist(cells, color, now, opacity, remembered){
   var t=ANIM.reduce?0:(now||0)/1000;
   ctx.save();
   cells.forEach(function(i){
-    if(!(revealAll||vis[i]||remembered&&seen[i]))return;var x=i%MW,y=Math.floor(i/MW);
+    if(!(revealAll||sceneVisibility()[i]||remembered&&seen[i]))return;var x=i%MW,y=Math.floor(i/MW);
     for(var k=0;k<2;k++){
       var h=hash2(x,y,k+719),phase=t*.25+h*6.28;
       var cx=(x-camX+.5+Math.sin(phase)*.14)*TS,cy=(y-camY+.55+Math.cos(phase*.8)*.12)*TS,r=TS*(.64+h*.16);
@@ -138,7 +138,7 @@ function drawFieldMist(cells, color, now, opacity, remembered){
 function drawGroundWarning(cells,col,now,opacity){
   var t=(now||0)/1000;ctx.save();
   cells.forEach(function(i){
-    if(!(revealAll||vis[i]))return;
+    if(!(revealAll||sceneVisibility()[i]))return;
     var x=i%MW,y=Math.floor(i/MW),cx=(x-camX+.5)*TS,cy=(y-camY+.5)*TS;
     var pulse=ANIM.reduce?.6:.45+.3*Math.sin(t*8+x+y);
     var g=ctx.createRadialGradient(cx,cy,TS*.05,cx,cy,TS*.75);g.addColorStop(0,col);g.addColorStop(.55,col);g.addColorStop(1,'rgba(0,0,0,0)');
@@ -373,12 +373,12 @@ function turnMortyReturn(context){
    twitches on the turn before it rises. */
 function drawLyingCorpse(c, now, animating){
   var i=idxOf(c.x,c.y); if(!(revealAll || seen[i])) return;
-  if(!spriteOn){drawCorpse({e:c,remains:c},1,(revealAll||vis[i])?1:memA(.45));return;}
+  if(!spriteOn){drawCorpse({e:c,remains:c},1,(revealAll||sceneVisibility()[i])?1:memA(.45));return;}
   /* 2026-09-27 (render plan B9): while its death clip plays the body is that clip alone; then it lies facing the way it fell */
   if(animating.has(c.id)) return;
   var b=MONSTERS[c.kind] || {}, twitch = turn>=c.at-1 && !ANIM.reduce ? Math.sin(now/55)*TS*0.02 : 0;
   ctx.save(); ctx.translate(twitch, 0);
-  try{ drawCorpse({e:{x:c.x,y:c.y,sprite:b.sprite,art:b.art||0.9,flip:!!c.flip},remains:c,dust:true},1,0.92*((revealAll||vis[i]) ? 1 : memA(0.45))); }
+  try{ drawCorpse({e:{x:c.x,y:c.y,sprite:b.sprite,art:b.art||0.9,flip:!!c.flip},remains:c,dust:true},1,0.92*((revealAll||sceneVisibility()[i]) ? 1 : memA(0.45))); }
   finally{ ctx.restore(); }
 }
 
@@ -415,16 +415,4 @@ function populateCryptGuardian(bossRoom){  if(bossRoom){
     var cells=shuffled(interiorCells(bossRoom)).filter(function(p){ return walkable(p.x,p.y) && !occupied(p.x,p.y); });
     for(var q=0;q<2 && cells.length;q++){ var c=cells.pop(); var s=spawnRaw('skeleton', c.x, c.y); s.state='asleep'; s.guard=true; }
   }
-}
-
-/* Named character presentation passes; composed by render-adapter.js. */
-
-function prepareShadeVisibility(){
-  var hidden=[];
-  if(ents&&vis&&player)ents.forEach(function(e){
-    if(!e.base||!e.base.phases||revealAll)return;
-    var i=idxOf(e.x,e.y),rm=roomAt(e.x,e.y);
-    if(vis[i]&&dist(e,player)>2&&(at(e.x,e.y)===WALL||(rm&&rm.dark))){hidden.push(i);vis[i]=0;}
-  });
-  return function(){hidden.forEach(function(i){vis[i]=1;});};
 }

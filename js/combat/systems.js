@@ -511,6 +511,7 @@ function sacrifice(p){
 
 /* ---------------------------------------------------------------- fire */
 function ignite(x,y,src){
+  syllaIgnition(x,y,src);
   if(!inb(x,y)) return;
   var g=gAt(x,y), p=propAt(x,y), t=at(x,y);
   if(t===WATER) return;
@@ -703,13 +704,7 @@ function openChest(x,y){
 
 
 /* ---------------------------------------------------------------- sigils */
-function shuffleSigils(){
-  sigilLook={}; sigilKnown={};
-  var looks=SIGIL_LOOKS.slice(), r=mulberry32((worldSeed^0x1234567)>>>0);
-  for(var i=looks.length-1;i>0;i--){ var j=Math.floor(r()*(i+1)); var t=looks[i]; looks[i]=looks[j]; looks[j]=t; }
-  RUN.sigilLooks={};
-  Object.keys(SIGILS).forEach(function(k,i){ sigilLook[k]=cap(looks[i%looks.length])+' sigil'; RUN.sigilLooks[k]=looks[i%looks.length]; sigilKnown[k]=false; });
-}
+
 function sigilName(use){ return sigilKnown[use]&&SIGILS[use] ? SIGILS[use].name : sigilLook[use]||'Unidentified sigil'; }
 function identifySigil(use){
   if(sigilKnown[use]) return;
