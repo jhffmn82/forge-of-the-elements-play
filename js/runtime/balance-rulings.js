@@ -85,6 +85,7 @@ function drawSanctuarySurface(){
     cells.push(idxOf(x,y));
   }
   if(!cells.length)return;
+  if(!spriteOn){drawGroundMaterial('holy',cells,.9);return;}
   // Holy Ground is light falling onto the existing stone. Both sources share
   // this radiance; each affected tile has two fine shafts behind the creatures.
   var now=performance.now(),t=ANIM.reduce?0:now/1000;

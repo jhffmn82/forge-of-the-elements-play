@@ -21,9 +21,25 @@ var FoteResponsiveHUD=(function(){
     node('studyHistory').innerHTML=lineIcon('<path d="M5 5h14v14H5zM8 9h8m-8 3h8m-8 3h5"/>')+'<span>Combat log</span>';
   }
   const portraitImages=new Map();
+  const blockRaceColors={human:'#F2E8DC',elf:'#7FD08A',dwarf:'#E8B44A',gloomling:'#B58BFF'};
+  function portraitRace(){
+    const race=RACES[player.race];
+    return (race?race.name:'Adventurer')+(player.race==='fae'&&race.courts[player.court]?', '+race.courts[player.court]:'');
+  }
   function paintPortrait(){
     if(!mounted||!player)return;
     const art=node('studyPortraitArt');if(!art)return;
+    if(!spriteOn){
+      if(!art.classList.contains('study-block-portrait')){
+        if(typeof FotePortraitAnimation!=='undefined')FotePortraitAnimation.stop();
+        art.classList.add('study-block-portrait');
+        art.innerHTML='<svg aria-hidden="true" viewBox="0 0 100 100"><text x="50" y="70" text-anchor="middle">@</text></svg>';
+      }
+      art.style.color=(player.race==='fae'?AFF_COL[player.court]:blockRaceColors[player.race])||'#F2E8DC';
+      art.title=portraitRace();
+      return;
+    }
+    art.classList.remove('study-block-portrait');art.style.color='';art.removeAttribute('title');
     if(typeof FotePortraitAnimation!=='undefined'){FotePortraitAnimation.paint(art,player);return;}
     const look=String(player.look||'');
     if(!/^(human|elf|dwarf|gloomling|fae-(air|fire|water|earth))-[fm]$/.test(look))return;
@@ -438,7 +454,7 @@ var FoteResponsiveHUD=(function(){
     if(rankNode.hidden!==!player.god)rankNode.hidden=!player.god;
     if(node('studyPietyBar').hidden!==!player.god)node('studyPietyBar').hidden=!player.god;
     paintPortrait();
-    setHudAttribute(node('studyPortrait'),'aria-label','Character, level '+player.level+(player.god?', '+GODS[player.god].name+', rank '+godRank():''));
+    setHudAttribute(node('studyPortrait'),'aria-label','Character, '+(!spriteOn?portraitRace()+', ':'')+'level '+player.level+(player.god?', '+GODS[player.god].name+', rank '+godRank():''));
     if(player.god){
       if(!controls.piety){
         controls.piety=document.createElement('button');controls.piety.className='chip faithchip study-piety';controls.piety.dataset.studyPanel='Faith';

@@ -451,7 +451,7 @@
      the tap that would otherwise follow (a step, an attack, an equip) is swallowed.
      The hotbar is left alone: travel.js already gives its slots a long press of their own. */
   (function(){
-    var timer=null, sx=0, sy=0, held=null, heldAt=0, closedAt=0;
+    var timer=null, sx=0, sy=0, held=null, closedAt=0;
     function cards(){ return [document.getElementById('tip'), document.getElementById('dtip')]; }
     function dismiss(){
       if(held){ try{ held.dispatchEvent(new MouseEvent('mouseleave', {bubbles:true})); }catch(e){} held=null; }
@@ -469,7 +469,7 @@
       sx=ev.clientX; sy=ev.clientY;
       cancel();
       timer=setTimeout(function(){
-        timer=null;if(orientationBlocked)return;held=t; heldAt=performance.now();
+        timer=null;if(orientationBlocked)return;held=t;
         try{ t.dispatchEvent(new MouseEvent('mousemove', {clientX:sx, clientY:sy, bubbles:true})); }catch(e){}
         if(navigator.vibrate) try{ navigator.vibrate(12); }catch(e){}
       }, 420);
@@ -481,10 +481,15 @@
     ['pointerup','pointercancel','pointerleave'].forEach(function(n){
       document.addEventListener(n, cancel, true);
     });
-    /* the click that ends a long press must not also act on the tile or the item */
+    /* Cancel the browser's compatibility click at touch release. Map travel
+       handles clicks on window capture, before this document click guard. */
+    function inspectClickSuppressed(){return !!held || performance.now()-closedAt<400;}
+    document.addEventListener('touchend',function(ev){
+      if(inspectClickSuppressed())ev.preventDefault();
+    },{capture:true,passive:false});
+    /* Retain the click guard for pointer input that produces no touch event. */
     document.addEventListener('click', function(ev){
-      var now=performance.now();
-      if((held && now-heldAt < 900) || now-closedAt < 400){ ev.stopPropagation(); ev.preventDefault(); }
+      if(inspectClickSuppressed()){ ev.stopPropagation(); ev.preventDefault(); }
     }, true);
     window.addEventListener('blur', dismiss);
   })();

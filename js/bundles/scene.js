@@ -4137,7 +4137,9 @@ globalThis.UNMAKER_ATLAS={
     if(!entry()||!RUN||RUN.over||RUN.victory||player.hp<=0||gameTurns.busy())return Promise.resolve(false);
     var run=RUN,from=floorMeta,hero=player;
     openModal('Entering the Realm of Chaos','The portal is opening…',[]);
-    pending=prepare().then(function(){
+    // Blocks need no Chaos sheets. Keep the same asynchronous travel boundary;
+    // switching to Sprites later prepares the installed floor in its renderer.
+    pending=(spriteOn?prepare():Promise.resolve()).then(function(){
       if(RUN!==run||floorMeta!==from||player!==hero||player.hp<=0||RUN.over||gameTurns.busy())return false;
       var prior=RUN.floorStash&&RUN.floorStash[21];
       if(prior){stashEntry();restoreFloor(21,prior.floorMeta.upAt);sfx('stairs');}
@@ -5767,7 +5769,7 @@ window.FOTE_ENVIRONMENT_VEGETATION_META={"version":1,"cell":128,"res":2,"file":"
   retry:function(look){
     if(look)return sharedBrowserPorts().ensureAssets(look).then(function(){if(browserController)return browserController.retry();});
     return browserController?browserController.retry():Promise.resolve();
-  },error:function(){return browserController&&browserController.error();},refresh:function(){if(browserController)browserController.refresh();},paint:function(host,actor){
+  },stop:function(){if(browserController)browserController.dispose();},error:function(){return browserController&&browserController.error();},refresh:function(){if(browserController)browserController.refresh();},paint:function(host,actor){
     if(!browserController){browserController=createController(sharedBrowserPorts());document.addEventListener('visibilitychange',function(){browserController.refresh();if(!document.hidden)browserController.retry();});root.addEventListener&&root.addEventListener('online',function(){browserController.retry();});}
     browserController.paint(host,actor);
   }};

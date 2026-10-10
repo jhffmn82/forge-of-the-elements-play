@@ -497,7 +497,12 @@ var FoteSporecaller=(function(){
  }
  var greenPlants={};
  function plant(i,scale,alpha,now){
-  var x=i%MW,y=Math.floor(i/MW),v=(x*3+y*7)%5,o=FoteEnvironmentVegetation.clusterArt('mushroom-crypt',v);if(!o)return;
+  var x=i%MW,y=Math.floor(i/MW);
+  if(!spriteOn){
+   var px=(x-camX)*TS,py=(y-camY)*TS;
+   ctx.save();ctx.globalAlpha=alpha;blockGlyph('"',px,py,'#ABD87D');ctx.restore();return;
+  }
+  var v=(x*3+y*7)%5,o=FoteEnvironmentVegetation.clusterArt('mushroom-crypt',v);if(!o)return;
   // Combat growth uses the original full-size Crypt clusters, independently of scenery spreads, tinted at native
   // resolution. No newly generated mushroom silhouettes or finer detail.
   if(!greenPlants[v]||greenPlants[v].source!==o.img){
@@ -762,7 +767,8 @@ var FoteEnemyFields=(function(){
    var i=Number(k),f=tiles[k],x=i%MW,y=Math.floor(i/MW),remaining=f.expiresAt-worldNow();
    if(remaining<=0||x<camX-1||y<camY-1||x>camX+viewW+1||y>camY+viewH+1||!(sceneVisibility()[i]||f.known&&seen[i]))return;
    var px=(x-camX)*TS,py=(y-camY)*TS,alpha=(sceneVisibility()[i]?1:memA(.4))*Math.min(1,remaining/100);
-   drawBaseGroundDecal(G_WEB,x,y,px,py,alpha,now);
+   if(!spriteOn)drawGroundMaterial('web',[i],Math.min(1,remaining/100),true);
+   else drawBaseGroundDecal(G_WEB,x,y,px,py,alpha,now);
   });});
  }
  return Object.freeze({web:web,enter:enter,restore:restore,burn:burn,wash:wash,onDamaged:onDamaged,pulse:pulse,draw:draw});

@@ -3,6 +3,9 @@ var FOTE_VERSION = 'Beta 1.7';
 /* Keep newest first; describe only changes already present in this build. */
 var FOTE_PATCHES = [
   {version:'Beta 1.7', notes:[
+    "Block mode now uses traditional roguelike symbols with clearer creatures, objects, hazards and remembered terrain. Options includes a symbol guide, and releasing a held inspection no longer issues an accidental command.",
+    "Block mode replaces the HUD face with a race-colored @, using court colors for Fae. Switching back to Sprites restores animated portraits. Block startup skips unused scene and portrait artwork.",
+    "Raised the stationary scene target to 60 frames per second while preserving effect timing, and reduced repeated animation and lighting work. Actual frame rate still depends on your device and scene.",
     "Starting a character now waits for the selected hero and dungeon to be drawn before leaving character creation. Artwork Retry remains usable while a floor is loading.",
     "Dimensional lighting is now the default, with directional surface shading, regional ambient light and local illumination from torches, crystals and luminous creatures. Visibility and combat rules are unchanged.",
     "Refactored the game's foundation and reduced repeated work in floor generation, saves, enemy pathfinding and rendering. Artwork loads by scene and terrain caches release unused resources.",

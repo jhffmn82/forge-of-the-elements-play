@@ -373,7 +373,12 @@ function turnMortyReturn(context){
    twitches on the turn before it rises. */
 function drawLyingCorpse(c, now, animating){
   var i=idxOf(c.x,c.y); if(!(revealAll || seen[i])) return;
-  if(!spriteOn){drawCorpse({e:c,remains:c},1,(revealAll||sceneVisibility()[i])?1:memA(.45));return;}
+  if(!spriteOn){
+    var alpha=(revealAll||sceneVisibility()[i])?1:memA(.45),px=(c.x-camX)*TS,py=(c.y-camY)*TS;
+    ctx.save();ctx.globalAlpha=alpha;blockGlyph('%',px,py,'#BEBDB7');
+    if(turn>=c.at-1&&(revealAll||sceneVisibility()[i]))mark('!',px+TS*.78,py+TS*.16,'#FFD24A');
+    ctx.restore();return;
+  }
   /* 2026-09-27 (render plan B9): while its death clip plays the body is that clip alone; then it lies facing the way it fell */
   if(animating.has(c.id)) return;
   var b=MONSTERS[c.kind] || {}, twitch = turn>=c.at-1 && !ANIM.reduce ? Math.sin(now/55)*TS*0.02 : 0;

@@ -97,6 +97,21 @@ function oozeRaster(x, y, fieldAt, material){
  * the Crypt's ooze. Neighbours merge; camera movement never reshuffles texture. */
 function drawGroundMaterial(kind, cells, alpha, remembered){
   if(!cells.length)return;
+  if(!spriteOn){
+    var mark={poison:['#99C56B','~'],ice:['#A7DDFA','~'],roots:['#B4BC7E','"'],holy:['#FFE7A0','_'],web:['#DDD5C4','#']}[kind];
+    if(!mark)return;
+    ctx.save();
+    cells.forEach(function(i){
+      var x=i%MW,y=Math.floor(i/MW);
+      if(x<camX-1||y<camY-1||x>camX+viewW+1||y>camY+viewH+1||!(revealAll||sceneVisibility()[i]||remembered&&seen[i])||isWallLike(at(x,y)))return;
+      var opacity=typeof alpha==='function'?alpha(i):alpha;if(!(opacity>0))return;
+      opacity*=revealAll||sceneVisibility()[i]?1:memA(.4);
+      var px=(x-camX)*TS,py=(y-camY)*TS;
+      ctx.globalAlpha=opacity;ctx.strokeStyle=mark[0];ctx.lineWidth=Math.max(1,TS*.035);ctx.beginPath();
+      [[.09,.3,.09,.09,.3,.09],[.7,.91,.91,.91,.91,.7]].forEach(function(p){ctx.moveTo(px+TS*p[0],py+TS*p[1]);ctx.lineTo(px+TS*p[2],py+TS*p[3]);ctx.lineTo(px+TS*p[4],py+TS*p[5]);});ctx.stroke();
+      blockGlyph(mark[1],px,py,mark[0]);
+    });ctx.restore();return;
+  }
   var occupiedCells=new Set(cells),patches=new Set();
   function contains(x,y){return inb(x,y)&&occupiedCells.has(idxOf(x,y));}
   cells.forEach(function(i){var x=i%MW,y=Math.floor(i/MW);for(var dy=-1;dy<=1;dy++)for(var dx=-1;dx<=1;dx++)if(inb(x+dx,y+dy))patches.add(idxOf(x+dx,y+dy));});
@@ -111,6 +126,7 @@ function drawGroundMaterial(kind, cells, alpha, remembered){
   });
 }
 function drawGroundRoots(cells, alpha){
+  if(!spriteOn)return; // The block material already marks the exact rooted cells.
   var art=objArt('props','root-tangle');if(!art)return;
   cells.forEach(function(i){
     if(!(revealAll||sceneVisibility()[i]))return;var x=i%MW,y=Math.floor(i/MW),flip=hash2(x,y,619)<.5;
@@ -120,6 +136,7 @@ function drawGroundRoots(cells, alpha){
 }
 function drawOoze(now){
   if(!floorMeta || !floorMeta.ooze) return;
+  if(!spriteOn){drawGroundMaterial('poison',Object.keys(floorMeta.ooze).map(Number),1,true);return;}
   var t=ANIM.reduce ? 0 : now/1000;
   for(var y=camY-1; y<=camY+viewH+1; y++) for(var x=camX-1; x<=camX+viewW+1; x++){
     if(!inb(x,y)) continue; var i=idxOf(x,y); if(!(revealAll||seen[i]) || isWallLike(map[i])) continue;

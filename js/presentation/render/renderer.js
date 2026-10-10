@@ -15,20 +15,20 @@ var SURFACE_PASSES=[
   {name:'crypt-moss',run:drawCryptMoss,when:function(){return !inCaverns()&&!ptMat();},still:true},
   // Grime and ooze are floor, under ground decals, traps and props (2026-09-27; they sat in the telegraph pass, over traps).
   {name:'crypt-grime',run:drawGrime,still:true},
-  {name:'crypt-ooze',run:function(){drawOoze(performance.now());},still:function(){return !floorMeta.ooze||ANIM.reduce||!groundRangeAny(function(i,x,y){return isOozeAt(x,y);});}},
+  {name:'crypt-ooze',block:true,run:function(){drawOoze(performance.now());},still:function(){return !floorMeta.ooze||spriteOn&&(ANIM.reduce||!groundRangeAny(function(i,x,y){return isOozeAt(x,y);}));}},
   {name:'pool-bubbles',run:ptPoolBubbles,when:function(){return !inCaverns();},still:function(){var P=ptPoolFx()&&floorMeta.ptPool,V=sceneVisibility(),all=revealAll;return !P||ANIM.reduce||!groundRangeAny(function(i){return P[i]&&(all||V[i]);});}},
   {name:'caverns',run:drawCavernSurface,still:function(){return !inCaverns();}},
   {name:'chasm-edges',run:drawBiomeChasmSurface,still:function(){var S=seen,all=revealAll;return !biomeChasmsOn()||ANIM.reduce||!groundRangeAny(function(i,x,y){return (all||S[i])&&chsVoidCell(x,y)&&at(x,y)!==BRIDGE&&hash2(x,y,701)<0.16;});}},
   {name:'maw-skirts',run:drawMawSkirts,still:true},
   {name:'vegetation-moss',run:drawVegMoss,still:true},
   {name:'vegetation-plants',run:function(){drawVegSpots(performance.now());},still:function(){var P=floorMeta.vegSpots,S=seen,all=revealAll;return !P||!P.length||!P.some(function(p){return p.x>=camX-1&&p.x<=camX+viewW+1&&p.y>=camY-1&&p.y<=camY+viewH+1&&(all||S[idxOf(p.x,p.y)]);});}},
-  {name:'sporecaller-mushrooms',run:function(){FoteSporecaller.ground(performance.now());}},
-  {name:'green-slime-trail',run:function(){FoteGreenSlime.draw(performance.now());}},
-  {name:'enemy-webs',run:function(){FoteEnemyFields.draw(performance.now());}},
+  {name:'sporecaller-mushrooms',block:true,run:function(){FoteSporecaller.ground(performance.now());}},
+  {name:'green-slime-trail',block:true,run:function(){FoteGreenSlime.draw(performance.now());}},
+  {name:'enemy-webs',block:true,run:function(){FoteEnemyFields.draw(performance.now());}},
   {name:'underdark',run:drawUnderdarkSurface,still:true},
   {name:'elemental-plane',run:drawElementPlaneSurface,still:function(){return !inFwa();}},
-  {name:'sanctuary',run:drawSanctuarySurface},
-  {name:'last-cast',run:drawLastCastSurface}
+  {name:'sanctuary',block:true,run:drawSanctuarySurface},
+  {name:'last-cast',block:true,run:drawLastCastSurface}
 ];
 function drawTelegraphs(now){
   if(spriteOn&&typeof FoteChaosPreviewRenderer!=='undefined'&&FoteChaosPreviewRenderer.active())FoteChaosPreviewRenderer.drawPortals(now);

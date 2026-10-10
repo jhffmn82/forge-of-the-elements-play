@@ -327,6 +327,8 @@ function startupSceneAtlasFiles(){
   if(typeof statusIconFiles==='function')statusIconFiles().forEach(function(file){atl(file);});
   var look=typeof playerCastLook==='function'?playerCastLook():player&&player.look;
   if(look){castSheet(look);var spec=AS.cast&&AS.cast[look];if(spec&&spec.doll)atl('cast-'+look+'-doll.webp');}
+  // Character creation and inventory still use art in Blocks. Map-only residents do not.
+  if(!spriteOn)return Object.keys(ATL);
   var residents=(typeof ents!=='undefined'?ents:[]).concat(floorMeta&&floorMeta.buriedGhouls||[],floorMeta&&floorMeta.maw&&floorMeta.maw.ent||[],floorMeta&&floorMeta.pendingLich&&floorMeta.pendingLich.entity||[]);
   residents.forEach(function(actor){
     if(!actor||actor===player||actor.hp<=0&&!(floorMeta&&floorMeta.pendingLich&&actor===floorMeta.pendingLich.entity))return;
@@ -365,9 +367,10 @@ function preloadArt(done){
       await scriptsReady;await awaitFiles(startupSceneAtlasFiles());
       // Environment sources have their own caches. Prepare them in order and
       // request only current terrain, instead of decoding all biomes and Chaos.
-      await FoteEnvironmentProps.ensureAssets();await FoteEnvironmentDeco.ensureAssets();await FoteEnvironmentVegetation.ensureAssets();await FoteEnvironmentTerrain.ensureAssets();
-      if(typeof FoteChaosCampaign!=='undefined'&&floorMeta&&(floorMeta.chaosCampaign||floorMeta.chaosPreview||floorMeta.chaosEntryPreview)){status.textContent='Preparing this part of the Realm of Chaos…';await FoteChaosCampaign.prepare();}
-      if(typeof FotePortraitAnimation!=='undefined'&&typeof FotePortraitAnimation.retry==='function')await FotePortraitAnimation.retry(player.look);
+      await FoteEnvironmentProps.ensureAssets();await FoteEnvironmentDeco.ensureAssets();await FoteEnvironmentVegetation.ensureAssets();
+      if(spriteOn)await FoteEnvironmentTerrain.ensureAssets();
+      if(spriteOn&&typeof FoteChaosCampaign!=='undefined'&&floorMeta&&(floorMeta.chaosCampaign||floorMeta.chaosPreview||floorMeta.chaosEntryPreview)){status.textContent='Preparing this part of the Realm of Chaos…';await FoteChaosCampaign.prepare();}
+      if(spriteOn&&typeof FotePortraitAnimation!=='undefined'&&typeof FotePortraitAnimation.retry==='function')await FotePortraitAnimation.retry(player.look);
       if(document.fonts)await document.fonts.ready;
       var previous=null,stable=false;
       for(var pass=0;pass<6;pass++){

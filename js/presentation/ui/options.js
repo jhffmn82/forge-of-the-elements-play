@@ -39,6 +39,7 @@ function setMapArt(mode){
   spriteOn=mode!=='block';
   try{localStorage.setItem('astra-temple-map-art',spriteOn?'sprite':'block');}catch(e){}
   var button=$('bArt');if(button)button.textContent=spriteOn?'Art: sprites':'Art: blocks';
+  if(typeof FoteResponsiveHUD!=='undefined')FoteResponsiveHUD.renderReadouts();
   if(typeof player!=='undefined'&&player&&typeof map!=='undefined'&&map&&typeof vis!=='undefined'&&vis&&typeof seen!=='undefined'&&seen)draw();
 }
 if($('bArt'))$('bArt').textContent=spriteOn?'Art: sprites':'Art: blocks';
@@ -211,7 +212,7 @@ function settingsHTML(){
   h+='<section class="opt-section"><div class="sec">Map</div>'+row('mapzoom','Map zoom',[['far','Far'],['normal','Normal'],['close','Close'],['closest','Closest']],MAP_ZOOM)+
     row('highContrast','High contrast',[['on','On'],['off','Off']],UI_HIGH_CONTRAST?'on':'off','Brightens characters and ground items. On by default on mobile.')+
     row('light','Lighting',[['on','On'],['off','Off']],(typeof lightingOn==='function'?lightingOn():true)?'on':'off')+
-    row('mapart','Map art',[['sprite','Sprites'],['block','Blocks']],spriteOn?'sprite':'block')+
+    row('mapart','Map art',[['sprite','Sprites'],['block','Blocks']],spriteOn?'sprite':'block',spriteOn?'':'See Reading the map below for block symbols. Controls are the same in both art modes.')+
     row('motion','Ambient motion',[['auto','Auto'],['on','On'],['off','Off']],ANIM.mode,'Sway, flicker and bobbing. Auto follows your device motion preference.')+
     row('speed','Animation speed',[[1,'1&times;'],[1.5,'1.5&times;'],[2,'2&times;'],[3,'3&times;']],ANIM_SPEED)+'</section>';
   h+='<section class="opt-section"><div class="sec">Controls</div>'+appearanceSegments('uiHotbarLayout',phone?'Landscape hotbar':'Hotbar layout',UI_HOTBAR_LAYOUTS,UI_HOTBAR_LAYOUT)+(phone?'<div class="c-info">Portrait uses two rows. Landscape uses your chosen layout.</div>':'')+
@@ -219,7 +220,16 @@ function settingsHTML(){
     appearanceSegments('uiPadSide','Pad position',UI_PAD_SIDES,UI_PAD_SIDE)+appearanceSegments('uiPhonePadSize','Pad size',UI_PHONE_PAD_SIZES,UI_PHONE_PAD_SIZE)+'</section>';
   h+='<section class="opt-section"><div class="sec">Audio</div>'+row('mute','Sound',[[0,'On'],[1,'Off']],AUDIO.muted?1:0)+row('music','Music',[[1,'On'],[0,'Off']],AUDIO.musicOn?1:0)+
     '<label class="optrow"><span>Effects volume</span><input type="range" id="volSfx" min="0" max="100" value="'+Math.round((AUDIO.vol.sfx||0)*100)+'"></label><label class="optrow"><span>Music volume</span><input type="range" id="volMusic" min="0" max="100" value="'+Math.round((AUDIO.vol.music||0)*100)+'"></label></section>'+bindings;
-  h+='<details id="uiMapGuide" class="opt-section-details"><summary>Reading the map</summary><div class="legend"><b>Dim tiles</b><span>remembered, not in sight</span><b>z over a head</b><span>asleep: surprise it</span><b>Key over a head</b><span>it carries a key</span><b>Bones at a door</b><span>a monster zoo behind it</span><b>Uneven stones</b><span>a hidden door nearby ('+(touch?'use Search':'search with '+keyLabel(bindKey('search')))+')</span><b>Tall grass</b><span>blocks sight, burns</span></div></details></div>';
+  h+='<details id="uiMapGuide" class="opt-section-details"><summary>Reading the map</summary>';
+  if(!spriteOn){
+    h+='<p class="c-info">'+(touch?'Hold a creature, item or object to inspect it without acting. Tap again to close the card.':'Hover over a creature, item or object to inspect it without acting.')+' '+(touch?'Tap':'Click')+' known ground to walk, an enemy to attack, or an object to approach and use it.</p>'+
+      '<div class="legend"><b>@</b><span>you, in white</span><b>. / #</b><span>floor / wall</span><b>Bright gold symbols</b><span>usable objects and loot; small gray marks are scenery</span><b>Creature letters</b><span>red: enemy; green: ally or summon; blue: neutral</span><b>z / k above a creature</b><span>asleep / carries a key</span><b>Gray % remains</b><span>can rise again; step onto them to finish them; ! warns revival is near</span><b>Dim explored terrain</b><span>remembered, not in sight</span>'+
+      '<b>+ / &apos;</b><span>closed / open door</span><b>Door badges k / $</b><span>locked / spiked toll door</span><b>Door badges I / # / X</b><span>ice-sealed / thorn-choked / sealed</span><b>&gt; / &lt; / O</b><span>stairs down or open exit / stairs up / portal; a sealed exit is + with an X badge</span><b>( / _</b><span>chest, container or key / shrine or altar</span><b>Orange / gold &amp;</b><span>forge / stone guardian; inspect for its state</span><b>/ / &#92; / ?</b><span>ready lever / used lever / tablet</span><b>Gold @ / ! / {</b><span>captive / event / fountain or drink</span>'+
+      '<b>Cyan / green !</b><span>water / poison barrel</span><b>Red / blue !</b><span>health / mana pickup</span><b>Orange / icy *</b><span>explosive prop / frozen hoard</span><b>&#9671;</b><span>crystal-vault reward; inspect for details</span><b>! on a prop corner</b><span>a discovered trap underneath</span>'+
+      '<b>) / [ / = / &quot;</b><span>weapon / armor or off-hand / ring / amulet</span><b>$ / * / % / ?</b><span>essence / elemental mote / food / sigil</span><b>Blue ~ / &asymp;</b><span>shallow / deep water</span><b>Orange ~ / violet &or;</b><span>lava / chasm</span><b>Grass &quot;</b><span>tall grass blocks sight and burns</span>'+
+      '<b>Green ~ / pale #</b><span>poison ground / enemy web</span><b>Green / olive &quot;</b><span>spore mushrooms / roots</span><b>Cyan ~ / gold _</b><span>ice ground / Holy Ground</span><b>^ trap</b><span>a discovered trap; inspect for its type; unknown traps stay hidden</span><b>Red floor markings</b><span>an enemy attack is coming; inspect its source</span></div>';
+  }else h+='<div class="legend"><b>Dim tiles</b><span>remembered, not in sight</span><b>z over a head</b><span>asleep: surprise it</span><b>Key over a head</b><span>it carries a key</span><b>Bones at a door</b><span>a monster zoo behind it</span><b>Uneven stones</b><span>a hidden door nearby ('+(touch?'use Search':'search with '+keyLabel(bindKey('search')))+')</span><b>Tall grass</b><span>blocks sight, burns</span></div>';
+  h+='</details></div>';
   return h;
 }
 function optionsHTML(){
