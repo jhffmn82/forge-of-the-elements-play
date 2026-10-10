@@ -2,11 +2,9 @@
  * Native control pad, buttons, hotbar surfaces, portrait frame and states
  * are inherited. No additional HUD panels or log backgrounds.
  */
-@font-face {font-family:"Forge Journal";src:url("fonts/journal/IMFePIrm28P.ttf") format("truetype");font-style:normal;font-weight:400;font-display:swap;}
-@font-face {font-family:"Forge Journal";src:url("fonts/journal/IMFePIit28P.ttf") format("truetype");font-style:italic;font-weight:400;font-display:swap;}
 body.fote-journal {
  --polish-brass:#cfab68; --polish-ink:#eee4d5;
- --polish-secondary:#c3b6a2;--journal:"Forge Journal","Palatino Linotype",serif;
+ --polish-secondary:#c3b6a2;
  --journal-might:#efb34f;--journal-agility:#91cf63;
  --journal-vitality:#f1816e;--journal-focus:#71bfee;
  --journal-brass:#e3bb6a;
@@ -34,16 +32,16 @@ body.fote-journal.fote-study.study-minimal[data-ui-theme=ember] #app #studyPiety
 body.fote-journal.fote-study.study-minimal[data-ui-theme=ember] #app :is(#studyLevel,#hud2 .study-favor) {color:#e2e3e1;}
 body.fote-journal.fote-study.study-minimal #app #studyRecentLog {
  text-align:left;
- font-family:var(--journal);font-weight:400;
+ font-family:var(--mono);font-weight:400;
  font-size:calc(max(14px,calc(14px * var(--ui-text-scale,1) * var(--study-interface-scale,1))) + var(--ui-mobile-text-add,0px));line-height:1.28;
  color:var(--polish-ink);--ash:var(--polish-secondary);--dim:#a99a87;
 }
 body.fote-journal.fote-study.study-minimal #app #studyRecentLog b {font-weight:400;}
 body.fote-journal.fote-study.study-minimal #app #bars .bar .l {
- font-family:var(--journal);font-size:1.05em;font-weight:400;
+ font-family:var(--mono);font-size:1.05em;font-weight:400;
 }
 body.fote-journal.fote-study.study-minimal #app #studyHungerText {
- font-family:var(--journal)!important;font-weight:400!important;
+ font-family:var(--mono)!important;font-weight:400!important;
  font-size:calc(var(--joined-readout-font) * var(--ui-text-scale,1) + var(--ui-mobile-text-add,0px) + 1px)!important;
 }
 body.fote-journal.fote-study.study-minimal #app #studyRecentLog .c-info {color:var(--polish-secondary);}
@@ -56,7 +54,7 @@ body.fote-journal.fote-study.study-minimal #app #top #depth #hBiome {
 }
 body.fote-journal.fote-study.study-minimal #app #top #depth .study-position {
  flex-wrap:wrap;column-gap:14px;row-gap:4px;max-width:100%;
- font:400 calc(max(14px,calc(14px * max(1,var(--study-interface-scale,1)) * var(--ui-text-scale,1))) + var(--ui-mobile-text-add,0px))/1.25 var(--journal);
+ font:400 calc(max(14px,calc(14px * max(1,var(--study-interface-scale,1)) * var(--ui-text-scale,1))) + var(--ui-mobile-text-add,0px))/1.25 var(--mono);
  color:var(--polish-ink);
 }
 body.fote-journal.fote-study.study-minimal #app #top #depth .study-position > span {white-space:nowrap;}

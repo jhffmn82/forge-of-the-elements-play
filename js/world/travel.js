@@ -19,7 +19,7 @@ function cursorFor(kind){
   if(!glyph){ CURSOR_URLS[kind]=null; return null; }
   try{
     var c=document.createElement('canvas'); c.width=32; c.height=32; var g=c.getContext('2d');
-    g.font='18px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif';   /* 80% of the first pass, so every icon reads the same size */ g.textAlign='center'; g.textBaseline='middle';
+    g.font='18px "IBM Plex Mono",monospace';   /* 80% of the first pass, so every icon reads the same size */ g.textAlign='center'; g.textBaseline='middle';
     g.shadowColor='rgba(0,0,0,.85)'; g.shadowBlur=3; g.fillText(glyph, 16, 17);
     CURSOR_URLS[kind]='url('+c.toDataURL()+') 16 16, pointer';
   }catch(e){ CURSOR_URLS[kind]=null; }

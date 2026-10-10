@@ -407,7 +407,7 @@ function whenFloorDrawn(fn){if(floorArtPending())floorDrawn.push(FoteTransitions
 function floorArtMessage(hold,error){
   if(floorArt!==hold||hold.map!==map||hold.meta!==floorMeta)return;
   var node=document.getElementById('floorArtStatus');
-  if(!node){node=document.createElement('div');node.id='floorArtStatus';node.setAttribute('role','status');node.style.cssText='position:fixed;z-index:99;bottom:20px;left:50%;transform:translateX(-50%);padding:12px 16px;border:1px solid #79634C;border-radius:8px;background:#17120F;color:#E5D5BD;font:14px sans-serif;text-align:center';document.body.appendChild(node);}
+  if(!node){node=document.createElement('div');node.id='floorArtStatus';node.setAttribute('role','status');node.style.cssText='position:fixed;z-index:99;bottom:20px;left:50%;transform:translateX(-50%);padding:12px 16px;border:1px solid #79634C;border-radius:8px;background:#17120F;color:#E5D5BD;font:14px "IBM Plex Mono",monospace;text-align:center';document.body.appendChild(node);}
   node.style.fontSize='calc(14px + var(--ui-mobile-text-add,0px))';node.replaceChildren();
   var text=document.createElement('span');text.textContent=error?'Some artwork could not load. ':'Preparing floor…';node.appendChild(text);
   if(error){var retry=document.createElement('button');retry.textContent='Retry';retry.style.cssText='margin-left:10px;padding:8px 12px;min-width:44px;min-height:44px';retry.onclick=function(){prepareFloorArt(hold);};node.appendChild(retry);}

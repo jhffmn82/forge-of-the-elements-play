@@ -16,12 +16,12 @@ body.fote-journal:not([data-ui-theme^=vellum]) :is(#mHelp,#titleSettings,#mFaith
 #create #rollCharacter {min-height:44px;max-width:100%;white-space:normal;}
 body.fote-journal #create #creationRollResult {
  margin:12px 0 0;color:var(--journal-brass,#e3bb6a);
- font:400 calc(15px * var(--ui-text-scale,1) + var(--ui-mobile-text-add,0px))/1.4 var(--journal,Georgia,serif);
+ font:400 calc(15px * var(--ui-text-scale,1) + var(--ui-mobile-text-add,0px))/1.4 var(--mono);
 }
 #create #creationRollResult:empty {margin:0;}
 body.fote-journal #create .tag2 {
  max-width:760px;margin-inline:auto;color:#e5ddd0;
- font:400 calc(16px * var(--ui-text-scale,1) + var(--ui-mobile-text-add,0px))/1.4 var(--journal,Georgia,serif);
+ font:400 calc(16px * var(--ui-text-scale,1) + var(--ui-mobile-text-add,0px))/1.4 var(--mono);
 }
 body.fote-journal #create .step {
  color:var(--journal-brass,#e3bb6a);
@@ -34,7 +34,7 @@ body.fote-journal #create .card .choice-name {
 }
 body.fote-journal #create .card :is(.choice-copy,.choice-style,.choice-summary,.choice-trait) {
  color:#e5ddd0;
- font:400 calc(14px * var(--ui-text-scale,1) + var(--ui-mobile-text-add,0px))/1.4 var(--journal,Georgia,serif);
+ font:400 calc(14px * var(--ui-text-scale,1) + var(--ui-mobile-text-add,0px))/1.4 var(--mono);
 }
 body.fote-journal #create .card .choice-style {color:#d3cec2;font-style:italic;}
 body.fote-journal #create .card .choice-trait {color:var(--journal-agility,#91cf63);}
@@ -45,7 +45,7 @@ body.fote-journal #create .card .choice-ability {
 }
 body.fote-journal #create .card[data-cls] .choice-ability {margin:0 0 4px;padding:0;}
 body.fote-journal #create .choice-rule {color:var(--journal-vitality,#f1816e);font-weight:400;}
-body.fote-journal #create .card :is(.choice-refusal,.choice-benefit) {font:400 calc(14px * var(--ui-text-scale,1) + var(--ui-mobile-text-add,0px))/1.4 var(--journal,Georgia,serif);}
+body.fote-journal #create .card :is(.choice-refusal,.choice-benefit) {font:400 calc(14px * var(--ui-text-scale,1) + var(--ui-mobile-text-add,0px))/1.4 var(--mono);}
 body.fote-journal #create .card .choice-refusal {color:var(--journal-vitality,#f1816e);}
 body.fote-journal #create .card .choice-benefit {color:var(--journal-agility,#91cf63);}
 body.fote-journal #create .card:disabled {opacity:.78;cursor:not-allowed;}
@@ -58,10 +58,10 @@ body.fote-journal #create .creation-stats {gap:5px 16px;font-size:calc(13px * va
 body.fote-journal #create .creation-stats > :is(span,b) {min-width:0;overflow-wrap:break-word;}
 body.fote-journal #create .creation-stats > span {color:#d3cec2;}
 body.fote-journal #create .creation-stats > b:not([data-journal-stat]) {
- color:#e5ddd0;font:400 calc(15px * var(--ui-text-scale,1) + var(--ui-mobile-text-add,0px))/1.4 var(--journal,Georgia,serif);
+ color:#e5ddd0;font:400 calc(15px * var(--ui-text-scale,1) + var(--ui-mobile-text-add,0px))/1.4 var(--mono);
 }
 body.fote-journal #create .creation-stats > b[data-journal-stat] {color:#e5ddd0;}
-body.fote-journal #create .create-sound-note {color:#d3cec2;font-family:var(--journal,Georgia,serif);font-size:calc(14px * var(--ui-text-scale,1) + var(--ui-mobile-text-add,0px));}
+body.fote-journal #create .create-sound-note {color:#d3cec2;font-family:var(--mono);font-size:calc(14px * var(--ui-text-scale,1) + var(--ui-mobile-text-add,0px));}
 
 /* Options are labeled controls with legible help, not another set of panels.
    Font and ink changes leave all existing button/slider surfaces intact. */
@@ -71,11 +71,11 @@ body.fote-journal :is(#app #shade #mHelp,#titleSettings) .sec {
 }
 body.fote-journal :is(#app #shade #mHelp,#titleSettings) :is(.c-info,#uiOpacityHint,.legend span) {
  color:var(--journal-menu-copy);
- font:400 calc(15px * var(--ui-text-scale,1) + var(--ui-mobile-text-add,0px))/1.4 var(--journal,Georgia,serif);
+ font:400 calc(15px * var(--ui-text-scale,1) + var(--ui-mobile-text-add,0px))/1.4 var(--mono);
 }
 body.fote-journal :is(#app #shade #mHelp,#titleSettings) .optrow {flex-wrap:wrap;gap:8px 14px;padding-block:8px;}
 body.fote-journal :is(#app #shade #mHelp,#titleSettings) :is(.optrow>span,.binds>span) {
- color:var(--journal-menu-label);font:400 calc(16px * var(--ui-text-scale,1) + var(--ui-mobile-text-add,0px))/1.35 var(--journal,Georgia,serif);
+ color:var(--journal-menu-label);font:400 calc(16px * var(--ui-text-scale,1) + var(--ui-mobile-text-add,0px))/1.35 var(--mono);
 }
 body.fote-journal :is(#app #shade #mHelp,#titleSettings) :is(.seg,select,input[type=range]) {min-width:0;max-width:100%;}
 body.fote-journal :is(#app #shade #mHelp,#titleSettings) .seg {flex-wrap:wrap;}
@@ -95,11 +95,11 @@ body.fote-journal.touch :is(#app #shade #mHelp,#titleSettings) :is(.seg button,.
 /* Faith prose retains each god's authored colors and exact resolved values. */
 body.fote-journal #mFaith :is(.faith>p,.boons) {
  color:var(--journal-menu-copy);
- font:400 calc(16px * var(--ui-text-scale,1) + var(--ui-mobile-text-add,0px))/1.45 var(--journal,Georgia,serif);
+ font:400 calc(16px * var(--ui-text-scale,1) + var(--ui-mobile-text-add,0px))/1.45 var(--mono);
 }
 body.fote-journal #mFaith :is(.action-summary,.action-note,.abrow .d,.c-info) {
  color:var(--journal-menu-copy);
- font:400 calc(15px * var(--ui-text-scale,1) + var(--ui-mobile-text-add,0px))/1.4 var(--journal,Georgia,serif);
+ font:400 calc(15px * var(--ui-text-scale,1) + var(--ui-mobile-text-add,0px))/1.4 var(--mono);
 }
 /* The native Faith owner gives its hints inline 11 / 12px sizes. */
 body.fote-journal #mFaith .c-info {font-size:calc(15px * var(--ui-text-scale,1) + var(--ui-mobile-text-add,0px))!important;}

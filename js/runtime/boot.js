@@ -343,7 +343,7 @@ function startupSceneAtlasFiles(){
 function preloadArt(done){
   var veil=document.createElement('div'); veil.id='loadVeil';
   veil.setAttribute('data-fote-startup','');
-  veil.style.cssText='position:fixed;inset:0;z-index:99;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;background:#0B0A09;color:#A79C93;font:calc(14px + var(--ui-mobile-text-add,0px)) sans-serif';
+  veil.style.cssText='position:fixed;inset:0;z-index:99;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;background:#0B0A09;color:#A79C93;font:calc(14px + var(--ui-mobile-text-add,0px)) "IBM Plex Mono",monospace';
   var title=document.createElement('h1'); title.textContent='Forge of the Elements'; veil.appendChild(title);
   var status=document.createElement('p'); status.setAttribute('role','status'); veil.appendChild(status);
   var retry=document.createElement('button'); retry.textContent='Retry loading'; retry.hidden=true; veil.appendChild(retry);

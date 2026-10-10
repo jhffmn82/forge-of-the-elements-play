@@ -136,6 +136,6 @@ function planePreview(m, scale){
     if(v===PL.ROCK){ var near=false; for(var dy=-1;dy<=1&&!near;dy++) for(var dx=-1;dx<=1;dx++){ var nx=x+dx, ny=y+dy; if(nx>=0&&ny>=0&&nx<m.w&&ny<m.h&&m.grid[ny*m.w+nx]!==PL.ROCK){ near=true; break; } } if(!near) continue; }
     x2.fillStyle=col[v]; x2.fillRect(x*scale, y*scale, scale, scale);
   }
-  x2.fillStyle='#EDE6DA'; x2.font='13px monospace'; x2.fillText(T.name+'  seed '+m.seed, 6, m.h*scale+16);
+  x2.fillStyle='#EDE6DA'; x2.font='13px "IBM Plex Mono",monospace'; x2.fillText(T.name+'  seed '+m.seed, 6, m.h*scale+16);
   return c;
 }

@@ -1267,7 +1267,7 @@ function drawStairsPointer(now){
   var z=Math.max(8, TS*0.28);
   ctx.beginPath(); ctx.moveTo(z,0); ctx.lineTo(-z*0.7,-z*0.7); ctx.lineTo(-z*0.35,0); ctx.lineTo(-z*0.7,z*0.7); ctx.closePath(); ctx.stroke(); ctx.fill();
   ctx.restore();
-  ctx.save(); ctx.font='bold '+Math.max(10,TS*0.26|0)+'px monospace'; ctx.textAlign='center'; ctx.fillStyle='#9FD8FF'; ctx.strokeStyle='rgba(0,0,0,.8)'; ctx.lineWidth=3;
+  ctx.save(); ctx.font='bold '+Math.max(10,TS*0.26|0)+'px "IBM Plex Mono",monospace'; ctx.textAlign='center'; ctx.fillStyle='#9FD8FF'; ctx.strokeStyle='rgba(0,0,0,.8)'; ctx.lineWidth=3;
   var lx=ax-Math.cos(ang)*z*2, ly=ay-Math.sin(ang)*z*2+4;
   ctx.strokeText('>', lx, ly); ctx.fillText('>', lx, ly); ctx.restore();
 }
@@ -1689,7 +1689,7 @@ function drawScene(){
     var ppx=(p.x-camX)*TS, ppy=(p.y-camY)*TS;
     if(spriteOn)drawObj(objArt('structures', p.pressed?'plate-glow':'trap-plate') || objArt('traps','trap-plate'), ppx, ppy, {fit:0.8, alpha:(ALL||VIS[p.y*W+p.x])?1:fade45});
     else {ctx.save();ctx.globalAlpha=(ALL||VIS[p.y*W+p.x])?1:fade45;ctx.fillStyle=p.pressed?'#877444':'#49433D';ctx.fillRect(ppx+TS*.1,ppy+TS*.1,TS*.8,TS*.8);ctx.restore();}
-    ctx.fillStyle = p.pressed ? '#FFE9A0' : '#D8CFC0'; ctx.font='700 '+Math.round(TS*0.42)+'px serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillStyle = p.pressed ? '#FFE9A0' : '#D8CFC0'; ctx.font='700 '+Math.round(TS*0.42)+'px "IBM Plex Mono",monospace'; ctx.textAlign='center'; ctx.textBaseline='middle';
     ctx.fillText({moon:'\u263E', sun:'\u2600', star:'\u2605'}[p.symbol], ppx+TS/2, ppy+TS/2);
   });
   /* only what the camera shows; a standing piece may rise up to three tiles above its footprint */

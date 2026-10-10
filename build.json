@@ -1,9 +1,9 @@
 {
   "version": "Beta 1.6",
-  "built": "2026-10-10T03:43:46.206345+00:00",
-  "epoch": 1791603826,
-  "source": "Approved character head sizes and outfit proportions with aligned hands and sharper selected faces; all mobile controls preserved",
+  "built": "2026-10-10T04:27:19.296Z",
+  "epoch": 1791606439,
+  "source": "Grenze Gotisch headings and IBM Plex Mono throughout the interface, combat logs and overhead text; approved character art retained",
   "candidate": true,
   "releaseState": "playtest",
-  "revision": "beta16-claude-heads-20261010-034346"
+  "revision": "beta16-two-fonts-20261010-042719"
 }

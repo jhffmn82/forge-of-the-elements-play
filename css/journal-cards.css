@@ -4,7 +4,7 @@ body:is(.fote-journal,.polish-preview) :is(#dtip,#hmenu) {
  --journal-card-copy:calc(15px * var(--ui-text-scale,1) + var(--ui-mobile-text-add,0px));
  --journal-card-value:calc(13px * var(--ui-text-scale,1) + var(--ui-mobile-text-add,0px));
  --journal-card-secondary:var(--polish-secondary,var(--ash));
- font-family:var(--journal,"Palatino Linotype",serif);
+ font-family:var(--mono);
  font-size:var(--journal-card-copy);
  line-height:1.35;
 }
@@ -42,7 +42,7 @@ body:is(.fote-journal,.polish-preview) :is(#dtip,#hmenu) :is(.action-facts dd,.r
 body:is(.fote-journal,.polish-preview) :is(#dtip,#hmenu) .row b {text-align:right;}
 body:is(.fote-journal,.polish-preview) #hmenu .hm-btns button,
 body:is(.fote-journal,.polish-preview) #dtip .tc-btns button {
- font-family:var(--journal,"Palatino Linotype",serif);
+ font-family:var(--mono);
  font-size:var(--journal-card-copy);
 }
 /* The touch owner supplies the menu height available beside the hotbar.
