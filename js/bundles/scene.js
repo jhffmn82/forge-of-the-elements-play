@@ -113,7 +113,7 @@
   try{requested=new URLSearchParams(root.location&&root.location.search||'').get('lighting')!=='classic';}catch(ignore){}
   var relief=.72,device=null,lost=false,failed=false,records=[],layers=[],collector=null,imageIds=new WeakMap(),layerSizes=new WeakMap(),nextImage=1;
   var stats={frames:0,composites:0,fallbacks:0,contextLosses:0,errors:[],last:null};
-  var TEXTURE_BUDGET=24*1024*1024,GEOMETRY_BUDGET=6*1024*1024,MAX_TEXTURES=512,STRIDE=22;
+  var TEXTURE_BUDGET=24*1024*1024,GEOMETRY_BUDGET=6*1024*1024,FIELD_SPARE_BUDGET=64*1024,MAX_TEXTURES=512,STRIDE=22;
   var FULL_LAYOUT=[['a_position',2,0],['a_uv',2,2]],SURFACE_LAYOUT=[['a_position',2,0],['a_uv',2,2],['a_world',3,4],['a_admission',2,7],['a_basis',4,9],['a_shape',4,13],['a_bounds',4,17],['a_emission',1,21]];
   var CORNERS=[0,0,1,0,0,1,0,1,1,0,1,1];
   function note(error){var s=String(error&&error.message||error);if(stats.errors[stats.errors.length-1]!==s)stats.errors.push(s);if(stats.errors.length>12)stats.errors.shift();}
@@ -187,7 +187,7 @@
       gl.disable(gl.DEPTH_TEST);gl.disable(gl.CULL_FACE);gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,false);gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL,false);gl.pixelStorei(gl.UNPACK_COLORSPACE_CONVERSION_WEBGL,gl.NONE);gl.pixelStorei(gl.UNPACK_ALIGNMENT,1);
       gl.bindBuffer(gl.ARRAY_BUFFER,d.fullBuffer);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,1,0,0,1,1,1,0,-1,-1,0,1,-1,-1,0,1,1,1,1,0,1,-1,1,1]),gl.STATIC_DRAW);
       d.backgroundVAO=vertexArray(d,d.backgroundLoc,d.fullBuffer,FULL_LAYOUT,4);d.finalVAO=vertexArray(d,d.finalLoc,d.fullBuffer,FULL_LAYOUT,4);d.streamVAO=vertexArray(d,d.surfaceLoc,d.streamBuffer,SURFACE_LAYOUT,STRIDE);
-      canvas.addEventListener('webglcontextlost',function(e){e.preventDefault();lost=true;device=null;stats.contextLosses++;end();});canvas.addEventListener('webglcontextrestored',function(){lost=false;failed=false;device=null;});device=d;return true;
+      canvas.addEventListener('webglcontextlost',function(e){e.preventDefault();clearFieldSpare(d);lost=true;device=null;stats.contextLosses++;end();});canvas.addEventListener('webglcontextrestored',function(){lost=false;failed=false;device=null;});device=d;return true;
     }catch(error){if(d)dispose(d);else if(gl){var release=gl.getExtension('WEBGL_lose_context');if(release)release.loseContext();}failed=true;note(error);return false;}
   }
   function enabled(){return requested&&relief>0&&(typeof lightingOn!=='function'||lightingOn())&&initialize();}
@@ -211,31 +211,76 @@
   // resetting every attribute for every native sprite while preserving order.
   function vertexArray(d,loc,buffer,layout,stride){var g=d.gl,vao=g.createVertexArray();g.bindVertexArray(vao);g.bindBuffer(g.ARRAY_BUFFER,buffer);layout.forEach(function(a){var p=loc[a[0]];if(p<0)return;g.enableVertexAttribArray(p);g.vertexAttribPointer(p,a[1],g.FLOAT,false,stride*4,a[2]*4);});return vao;}
   function fullscreen(d,loc){d.gl.bindVertexArray(loc===d.backgroundLoc?d.backgroundVAO:d.finalVAO);}
-  function resize(d,w,h){if(w===d.width&&h===d.height)return;var g=d.gl;d.canvas.width=d.width=w;d.canvas.height=d.height=h;bindTexture(d,0,d.source);g.texImage2D(g.TEXTURE_2D,0,g.RGBA,w,h,0,g.RGBA,g.UNSIGNED_BYTE,null);bindTexture(d,0,d.irradiance);d.storageScale=d.floatTarget?1:4;g.texImage2D(g.TEXTURE_2D,0,d.floatTarget?g.RGBA16F:g.RGBA8,w,h,0,g.RGBA,d.floatTarget?g.HALF_FLOAT:g.UNSIGNED_BYTE,null);g.bindFramebuffer(g.FRAMEBUFFER,d.framebuffer);g.framebufferTexture2D(g.FRAMEBUFFER,g.COLOR_ATTACHMENT0,g.TEXTURE_2D,d.irradiance,0);if(g.checkFramebufferStatus(g.FRAMEBUFFER)!==g.FRAMEBUFFER_COMPLETE)throw Error('Native irradiance framebuffer unavailable');g.bindFramebuffer(g.FRAMEBUFFER,null);}
+  function resize(d,w,h){if(w===d.width&&h===d.height)return;clearFieldSpare(d);d.fieldView=null;var g=d.gl;d.canvas.width=d.width=w;d.canvas.height=d.height=h;bindTexture(d,0,d.source);g.texImage2D(g.TEXTURE_2D,0,g.RGBA,w,h,0,g.RGBA,g.UNSIGNED_BYTE,null);bindTexture(d,0,d.irradiance);d.storageScale=d.floatTarget?1:4;g.texImage2D(g.TEXTURE_2D,0,d.floatTarget?g.RGBA16F:g.RGBA8,w,h,0,g.RGBA,d.floatTarget?g.HALF_FLOAT:g.UNSIGNED_BYTE,null);g.bindFramebuffer(g.FRAMEBUFFER,d.framebuffer);g.framebufferTexture2D(g.FRAMEBUFFER,g.COLOR_ATTACHMENT0,g.TEXTURE_2D,d.irradiance,0);if(g.checkFramebufferStatus(g.FRAMEBUFFER)!==g.FRAMEBUFFER_COMPLETE)throw Error('Native irradiance framebuffer unavailable');g.bindFramebuffer(g.FRAMEBUFFER,null);}
   function prune(d){while(d.cache.size>MAX_TEXTURES||d.cacheBytes>TEXTURE_BUDGET){var key=d.cache.keys().next().value,e=d.cache.get(key);d.gl.deleteTexture(e.texture);if(e.mask)d.gl.deleteTexture(e.mask);d.cacheBytes-=e.bytes;d.cache.delete(key);d.frameEvictions++;}}
   function trimGeometry(d){
     while(d.geometryCache.size>2||d.geometryBytes>GEOMETRY_BUDGET){var key=d.geometryCache.keys().next().value,old=d.geometryCache.get(key);old.batches.forEach(function(b){d.gl.deleteVertexArray(b.vao);d.gl.deleteBuffer(b.buffer);});d.geometryBytes-=old.bytes;d.geometryCache.delete(key);}
   }
   function dispose(d){
-    var g=d.gl;d.cache.forEach(function(e){g.deleteTexture(e.texture);if(e.mask)g.deleteTexture(e.mask);});d.cache.clear();
+    var g=d.gl;clearFieldSpare(d);d.cache.forEach(function(e){g.deleteTexture(e.texture);if(e.mask)g.deleteTexture(e.mask);});d.cache.clear();
     d.geometryCache.forEach(function(e){e.batches.forEach(function(b){g.deleteVertexArray(b.vao);g.deleteBuffer(b.buffer);});});d.geometryCache.clear();
     ['source','irradiance','native','ambient','weights','lights','white'].forEach(function(k){if(d[k])g.deleteTexture(d[k]);});
     ['background','surface','final'].forEach(function(k){g.deleteProgram(d[k]);});['fullBuffer','streamBuffer'].forEach(function(k){g.deleteBuffer(d[k]);});
     ['backgroundVAO','finalVAO','streamVAO'].forEach(function(k){g.deleteVertexArray(d[k]);});g.deleteFramebuffer(d.framebuffer);
   }
-  function recordTexture(d,r){
+  function recordTexture(d,r,preparing){
     // Verified opaque terrain has no silhouette to upload. Its flat fallback
     // shares one texel; transparent rasters and every mapped normal stay exact.
     var g=d.gl;g.activeTexture(g.TEXTURE0);if(r.erase||!r.normal&&r.art&&r.art.opaque===true){if(!d.white){d.white=texture(g);g.texImage2D(g.TEXTURE_2D,0,g.R8,1,1,0,g.RED,g.UNSIGNED_BYTE,new Uint8Array([255]));}return {key:r.erase?'erase':'opaque',texture:d.white,mask:null,hasNormal:false,shared:true,opaque:!r.erase};}var a=r.art,n=r.normal;if(!a||!a.img)return null;
     if(n&&n.opaque===true){var iw=n.img.naturalWidth||n.img.width,ih=n.img.naturalHeight||n.img.height,key='atlas:'+id(n.img),entry=d.cache.get(key);if(entry){d.cache.delete(key);d.cache.set(key,entry);return entry;}if(iw>d.maxTexture||ih>d.maxTexture||iw*ih*3>TEXTURE_BUDGET)return null;var started=performance.now(),t=texture(g);g.texImage2D(g.TEXTURE_2D,0,g.RGB,g.RGB,g.UNSIGNED_BYTE,n.img);entry={key:key,texture:t,mask:null,bytes:iw*ih*3,atlas:true,width:iw,height:ih,hasNormal:true,mirroredRepeat:n.mirroredRepeat===true};d.cache.set(key,entry);d.cacheBytes+=entry.bytes;prune(d);d.frameUploads++;d.frameUploadMS+=performance.now()-started;return entry;}
     var sx=a.sx||0,sy=a.sy||0,sw=a.sw||a.img.naturalWidth||a.img.width,sh=a.sh||a.img.naturalHeight||a.img.height;if(!(sw>0&&sh>0))return null;
     var w=Math.max(1,Math.ceil(sw)),h=Math.max(1,Math.ceil(sh)),bytes=w*h*(n?7:4);if(w>d.maxTexture||h>d.maxTexture||bytes>TEXTURE_BUDGET)return null;
-    var key=[id(a.img),sx,sy,sw,sh,n?id(n.img):0,n&&n.sx,n&&n.sy,n&&n.sw,n&&n.sh,n&&n.flipX,n&&n.flipY].join(':'),entry=d.cache.get(key);if(entry){d.cache.delete(key);d.cache.set(key,entry);return entry;}
+    var key=[id(a.img),sx,sy,sw,sh,n?id(n.img):0,n&&n.sx,n&&n.sy,n&&n.sw,n&&n.sh,n&&n.flipX,n&&n.flipY].join(':'),entry=d.cache.get(key);if(entry){if(!preparing){d.cache.delete(key);d.cache.set(key,entry);}return entry;}
+    if(preparing&&(d.cacheBytes+bytes>TEXTURE_BUDGET||d.cache.size>=MAX_TEXTURES))return null;
     var started=performance.now(),c=document.createElement('canvas');c.width=w;c.height=h;var x=c.getContext('2d'),t=null,mask=texture(g);
     // Keep source alpha on the GPU. A Canvas readback here stalls cold movement frames.
     x.drawImage(a.img,sx,sy,sw,sh,0,0,w,h);g.texImage2D(g.TEXTURE_2D,0,g.RGBA,g.RGBA,g.UNSIGNED_BYTE,c);
     if(n){x.clearRect(0,0,w,h);var fx=n.flipX===-1?-1:1,fy=n.flipY===-1?-1:1;x.save();x.translate(fx<0?w:0,fy<0?h:0);x.scale(fx,fy);x.drawImage(n.img,n.sx,n.sy,n.sw,n.sh,0,0,w,h);x.restore();t=texture(g);g.texImage2D(g.TEXTURE_2D,0,g.RGB,g.RGB,g.UNSIGNED_BYTE,c);}else{t=mask;mask=null;}
-    entry={key:key,texture:t,mask:mask,bytes:bytes,hasNormal:!!n};d.cache.set(key,entry);d.cacheBytes+=bytes;prune(d);d.frameUploads++;d.frameUploadMS+=performance.now()-started;return entry;
+    entry={key:key,texture:t,mask:mask,bytes:bytes,hasNormal:!!n};d.cache.set(key,entry);d.cacheBytes+=bytes;prune(d);d.frameUploads++;d.frameUploadMS+=performance.now()-started;
+    // Native painters may elect the other alpha crops of their current clip.
+    // Only exact same-row cells qualify; malformed or transformed source crops
+    // keep demand-only imports. The current frame always claims its space first.
+    if(!preparing&&d.prefetch&&!n&&Number.isInteger(a.prefetchFrames)&&a.prefetchFrames>1&&
+      Number.isInteger(sw)&&sw===sh&&Number.isInteger(sx/sw)&&sx>=0&&sx<sw*a.prefetchFrames&&Number.isInteger(sy/sh)&&sy>=0&&
+      sw*a.prefetchFrames<=(a.img.naturalWidth||a.img.width)&&sy+sh<=(a.img.naturalHeight||a.img.height))d.prefetch.push(r);
+    // Only a cold registered idle/run frame elects its seventeen peers. Keep
+    // every existing crop conversion and UV; optional uploads wait until all
+    // current-frame textures have claimed their cache budget.
+    if(!preparing&&d.prefetch&&n&&n.recordId==='human-f-idle-run'&&n.flipX!==-1&&n.flipY!==-1&&
+      sw===128&&sh===128&&n.sw===128&&n.sh===128&&sx===n.sx&&sy===n.sy+2048&&
+      Number.isInteger(n.sx/128)&&n.sx>=0&&n.sx<1152&&(n.sy===0||n.sy===128)&&
+      (n.img.naturalWidth||n.img.width)===1152&&(n.img.naturalHeight||n.img.height)===256&&
+      (a.img.naturalWidth||a.img.width)>=1152&&(a.img.naturalHeight||a.img.height)>=2304)d.prefetch.push(r);
+    return entry;
+  }
+  // Field contents change every frame; their texture storage only changes size
+  // when the view or admitted source count changes.
+  function clearFieldSpare(d){var spare=d.fieldSpare;if(!spare)return;d.gl.deleteTexture(spare.weights);d.gl.deleteTexture(spare.lights);d.fieldSpare=null;}
+  function selectFieldLayout(d,width,height,ww,wh,lcols,lrows){
+    var view=d.fieldView,changed=!view||view[0]!==width||view[1]!==height;
+    if(changed){clearFieldSpare(d);d.fieldView=[width,height];}
+    var sizes=d.fieldSizes,ws=sizes&&sizes.weights,ls=sizes&&sizes.lights;
+    if(!ws||!ls||ws[0]===ww&&ws[1]===wh&&ls[0]===lcols&&ls[1]===lrows)return;
+    // Retain at most one small previous pair, with its exact atlas dimensions.
+    // A returning source count still receives fresh bytes but avoids allocating
+    // storage (and the synchronous allocation-error boundary) a second time.
+    var old={weights:d.weights,lights:d.lights,weightSize:ws,lightSize:ls},spare=d.fieldSpare;
+    var keep=!changed&&ws[0]*ws[1]+ls[0]*ls[1]*16<=FIELD_SPARE_BUDGET;
+    var hit=spare&&spare.weightSize[0]===ww&&spare.weightSize[1]===wh&&spare.lightSize[0]===lcols&&spare.lightSize[1]===lrows;
+    if(hit)d.fieldSpare=null;else clearFieldSpare(d);
+    if(hit){
+      if(keep)d.fieldSpare=old;else{d.gl.deleteTexture(old.weights);d.gl.deleteTexture(old.lights);}
+      d.weights=spare.weights;d.lights=spare.lights;sizes.weights=spare.weightSize;sizes.lights=spare.lightSize;
+    }else if(keep){
+      d.fieldSpare=old;d.weights=texture(d.gl);d.lights=texture(d.gl,true);delete sizes.weights;delete sizes.lights;
+    }
+  }
+  function uploadField(d,name,unit,internal,width,height,format,type,data){
+    var g=d.gl,size=d.fieldSizes&&d.fieldSizes[name];bindTexture(d,unit,d[name]);
+    if(!size||size[0]!==width||size[1]!==height){
+      g.texImage2D(g.TEXTURE_2D,0,internal,width,height,0,format,type,data);
+      if(!d.fieldSizes)d.fieldSizes=Object.create(null);d.fieldSizes[name]=[width,height];d.frameFieldTextureAllocations++;
+    }else g.texSubImage2D(g.TEXTURE_2D,0,0,0,width,height,format,type,data);
   }
   function prepareFields(d,frame){
     var g=d.gl,f=frame.field,N=f.width*f.height,count=frame.lights.length,scale=finite(f.weightScale)?f.weightScale:2,cols=Math.max(1,Math.min(count,Math.floor(d.maxTexture/f.width))),rows=Math.ceil(count/cols),ww=f.width*cols,wh=f.height*rows;
@@ -254,10 +299,11 @@
       for(var j=0;j<3;j++){var native=f.illumination?f.illumination[q+j]:sum[j]+.25;d.nativeData[p+j]=clamp(native,0,1);d.ambientData[p+j]=f.ambient?Math.max(0,f.ambient[q+j]):Math.max(0,native-sum[j]);}
       d.nativeData[p+3]=visible?1:0;d.ambientData[p+3]=1;if(visible)live++;
     }
-    bindTexture(d,2,d.weights);g.texImage2D(g.TEXTURE_2D,0,g.R8,ww,wh,0,g.RED,g.UNSIGNED_BYTE,d.weightBytes);
-    bindTexture(d,3,d.lights);g.texImage2D(g.TEXTURE_2D,0,g.RGBA32F,lcols,lrows,0,g.RGBA,g.FLOAT,d.lightData);
-    bindTexture(d,4,d.ambient);g.texImage2D(g.TEXTURE_2D,0,g.RGBA16F,f.width,f.height,0,g.RGBA,g.FLOAT,d.ambientData);
-    bindTexture(d,5,d.native);g.texImage2D(g.TEXTURE_2D,0,g.RGBA16F,f.width,f.height,0,g.RGBA,g.FLOAT,d.nativeData);
+    selectFieldLayout(d,f.width,f.height,ww,wh,lcols,lrows);
+    uploadField(d,'weights',2,g.R8,ww,wh,g.RED,g.UNSIGNED_BYTE,d.weightBytes);
+    uploadField(d,'lights',3,g.RGBA32F,lcols,lrows,g.RGBA,g.FLOAT,d.lightData);
+    uploadField(d,'ambient',4,g.RGBA16F,f.width,f.height,g.RGBA,g.FLOAT,d.ambientData);
+    uploadField(d,'native',5,g.RGBA16F,f.width,f.height,g.RGBA,g.FLOAT,d.nativeData);
     return {live:live,weightColumns:cols,weightWidth:ww,weightHeight:wh,lightColumns:lcols};
   }
   function transformPoint(m,x,y){return [m[0]*x+m[2]*y+m[4],m[1]*x+m[3]*y+m[5]];}
@@ -296,13 +342,25 @@
   }
   function uniformField(d,l){var g=d.gl,f=d.frame.field;g.uniform2f(l.u_origin,f.originX,f.originY);g.uniform2f(l.u_fieldSize,f.width,f.height);g.uniform1f(l.u_samples,f.samplesPerTile);g.uniform1f(l.u_storageScale,d.storageScale);}
   function preparePass(d,list){
-    var commands=[],mapped=0,fallback=0,hits=0,misses=0,pending=[];
+    var commands=[],mapped=0,fallback=0,hits=0,misses=0,pending=[];d.prefetch=[];
     function stage(set,dx,dy){set.batches.forEach(function(b){var t=b.tex.shared?b.tex:d.cache.get(b.tex.key);if(!t)t=recordTexture(d,b.record);else if(!b.tex.shared){d.cache.delete(b.tex.key);d.cache.set(b.tex.key,t);}if(!t)throw Object.assign(Error('Native surface texture unavailable'),{nativeLightingCapacity:true});b.tex=t;});mapped+=set.mapped;fallback+=set.fallback;commands.push({set:set,dx:dx,dy:dy});}
     function flush(){if(pending.length){stage(makeBatches(d,pending,0,0),0,0);pending=[];}}
     list.forEach(function(r){if(!r.layer){pending.push(r);return;}flush();var c=cachedGeometry(d,r);if(c.hit)hits++;else misses++;stage(c.entry,r.dx,r.dy);});flush();
     // Never evict or upload a texture while surface draws are in flight. If an
     // unusually large visible scene exceeds the bounded cache, keep native light.
     commands.forEach(function(c){c.set.batches.forEach(function(b){if(!b.tex.shared&&d.cache.get(b.tex.key)!==b.tex)throw Object.assign(Error('Native surface texture budget exceeded'),{nativeLightingCapacity:true});});});
+    // Batch optional cold imports behind this pass's single resource check.
+    // recordTexture's preparing path cannot evict any existing texture.
+    var prefetch=d.prefetch;d.prefetch=null;prefetch.forEach(function(r){
+      var count=r.normal?18:r.art.prefetchFrames,cold=[];for(var i=0;i<count;i++){
+        if(d.cache.size>=MAX_TEXTURES||d.cacheBytes+r.art.sw*r.art.sh*(r.normal?7:4)>TEXTURE_BUDGET)break;
+        var sx=r.normal?i%9*128:i*r.art.sw,sy=r.normal?Math.floor(i/9)*128+2048:r.art.sy;if(sx===r.art.sx&&sy===r.art.sy)continue;
+        var uploads=d.frameUploads,t=recordTexture(d,{art:Object.assign({},r.art,{sx:sx,sy:sy}),normal:r.normal?Object.assign({},r.normal,{sx:sx,sy:sy-2048}):null},true);if(t&&d.frameUploads>uploads)cold.push([t.key,t]);
+      }
+      // Unused optional crops are the first eviction candidates. Their first
+      // real draw promotes them through the ordinary cache-hit path.
+      if(cold.length){var cache=new Map(cold);d.cache.forEach(function(t,key){cache.set(key,t);});d.cache=cache;}
+    });
     // Upload moving records once; draw their ranges in the original order,
     // including where cached terrain layers intervene. No alpha sorting.
     var floats=0;commands.forEach(function(c){c.set.batches.forEach(function(b){if(!b.buffer)floats+=b.data.length;});});
@@ -323,19 +381,19 @@
     stats.frames++;var started=performance.now(),list=frame&&frame.records||records;end();if(!ctx||!enabled()||!validFrame(frame)||finite(frame.relief)&&frame.relief<=0){stats.fallbacks++;return false;}
     var d=device,g=d.gl,canvas=ctx.canvas;
     try{
-      d.frameUploads=0;d.frameEvictions=0;d.frameUploadMS=0;d.frameGeometryUploads=0;if(g.isContextLost()||!canvas.width||!canvas.height||canvas.width>d.maxTexture||canvas.height>d.maxTexture){stats.fallbacks++;return false;}
+      d.frameUploads=0;d.frameEvictions=0;d.frameUploadMS=0;d.frameGeometryUploads=0;d.frameFieldTextureAllocations=0;if(g.isContextLost()||!canvas.width||!canvas.height||canvas.width>d.maxTexture||canvas.height>d.maxTexture){stats.fallbacks++;return false;}
       var m=matrix(ctx),det=m[0]*m[3]-m[1]*m[2];if(!finite(det)||Math.abs(det)<1e-8){stats.fallbacks++;return false;}d.frame=frame;d.inverse=new Float32Array([m[3]/det,-m[1]/det,0,-m[2]/det,m[0]/det,0,(m[2]*m[5]-m[3]*m[4])/det,(m[1]*m[4]-m[0]*m[5])/det,1]);
       var resized=canvas.width!==d.width||canvas.height!==d.height;resize(d,canvas.width,canvas.height);var fields=prepareFields(d,frame),normalStart=performance.now(),pass=preparePass(d,list);
       // Check allocations before importing the current Canvas, so this resource
       // boundary does not also wait for the full frame's queued native paint.
-      if(resized||d.frameUploads||stats.composites===0){var error=g.getError();if(error!==g.NO_ERROR)throw Error('Native surface GL resource error '+error);}
+      if(resized||d.frameUploads||d.frameFieldTextureAllocations||stats.composites===0){var error=g.getError();if(error!==g.NO_ERROR)throw Error('Native surface GL resource error '+error);}
       var sourceStart=performance.now();bindTexture(d,0,d.source);g.texSubImage2D(g.TEXTURE_2D,0,0,0,g.RGBA,g.UNSIGNED_BYTE,canvas);var sourceMS=performance.now()-sourceStart;
       var coverage=shade(d,pass,fields),normalMS=performance.now()-normalStart-sourceMS;
       g.useProgram(d.final);g.viewport(0,0,d.width,d.height);fullscreen(d,d.finalLoc);bindTexture(d,0,d.source);bindTexture(d,1,d.irradiance);g.uniform1i(d.finalLoc.u_color,0);g.uniform1i(d.finalLoc.u_irradiance,1);g.uniform1f(d.finalLoc.u_storageScale,d.storageScale);g.drawArrays(g.TRIANGLES,0,6);if(g.isContextLost()){stats.fallbacks++;return false;}
       var copyStart=performance.now();ctx.save();try{ctx.setTransform(1,0,0,1,0,0);ctx.globalAlpha=1;ctx.globalCompositeOperation='copy';if('filter'in ctx)ctx.filter='none';ctx.shadowColor='rgba(0,0,0,0)';ctx.drawImage(d.canvas,0,0);}finally{ctx.restore();}var copyMS=performance.now()-copyStart;
-      stats.composites++;stats.last={nativeLights:frame.lights.length,admittedSamples:fields.live,fieldSamples:frame.field.width*frame.field.height,records:list.reduce(function(n,r){return n+(r.layer?r.layer.length:1);},0),mapped:coverage.mapped,erased:coverage.fallback,normalDrawCalls:coverage.drawCalls,dynamicGeometryUploads:d.frameGeometryUploads,sourceMS:sourceMS,normalMS:normalMS,copyMS:copyMS,textureUploads:d.frameUploads,textureUploadMS:d.frameUploadMS,textureEvictions:d.frameEvictions,layerCacheHit:coverage.cacheHit,layerCacheBytes:d.geometryBytes,cacheTextures:d.cache.size,cacheBytes:d.cacheBytes,width:d.width,height:d.height,ms:performance.now()-started,mode:'native-forward-irradiance',floatIrradiance:d.floatTarget};return true;
-    }catch(error){note(error);if(!error.nativeLightingCapacity){dispose(d);device=null;failed=true;}stats.fallbacks++;return false;}
-    finally{if(device===d)trimGeometry(d);}
+      stats.composites++;stats.last={nativeLights:frame.lights.length,admittedSamples:fields.live,fieldSamples:frame.field.width*frame.field.height,records:list.reduce(function(n,r){return n+(r.layer?r.layer.length:1);},0),mapped:coverage.mapped,erased:coverage.fallback,normalDrawCalls:coverage.drawCalls,dynamicGeometryUploads:d.frameGeometryUploads,fieldTextureAllocations:d.frameFieldTextureAllocations,sourceMS:sourceMS,normalMS:normalMS,copyMS:copyMS,textureUploads:d.frameUploads,textureUploadMS:d.frameUploadMS,textureEvictions:d.frameEvictions,layerCacheHit:coverage.cacheHit,layerCacheBytes:d.geometryBytes,cacheTextures:d.cache.size,cacheBytes:d.cacheBytes,width:d.width,height:d.height,ms:performance.now()-started,mode:'native-forward-irradiance',floatIrradiance:d.floatTarget};return true;
+    }catch(error){note(error);clearFieldSpare(d);if(!error.nativeLightingCapacity){dispose(d);device=null;failed=true;}stats.fallbacks++;return false;}
+    finally{d.prefetch=null;if(device===d)trimGeometry(d);}
   }
   function diagnostics(){return {requested:requested,enabled:requested&&relief>0&&(typeof lightingOn!=='function'||lightingOn())&&!failed&&!lost&&!!device,available:!!device&&!failed&&!lost,lost:lost,failed:failed,relief:relief,frames:stats.frames,composites:stats.composites,fallbacks:stats.fallbacks,contextLosses:stats.contextLosses,last:stats.last&&Object.assign({},stats.last),errors:stats.errors.slice(),coverage:'Native forward irradiance: every admitted source uses its own colored Lambert term and explicit receiver position. Exact registered NiRNE normals; flat native surfaces elsewhere.'};}
   root.FoteNormalLighting=Object.freeze({enabled:enabled,available:available,setEnabled:setEnabled,setRelief:setRelief,begin:begin,end:end,record:record,invalidate:invalidate,captureLayer:captureLayer,finishLayer:finishLayer,appendLayer:appendLayer,render:render,diagnostics:diagnostics,contextForTesting:function(){return initialize()?device.gl:null;}});

@@ -5,6 +5,23 @@
 
 var PARTS = [];
 var FX_LAST = performance.now();
+/* Paint at 60 Hz; retain the effects' authored 30 Hz steps (60 while the
+ * hero slides). Extra paints must not create particles or shorten a shake.
+ * This clock starts only after the renderer's artwork/terrain holds pass. */
+var FX_FRAME={carry:0,steps:0,dt:1000/30,shakeX:0,shakeY:0,shakeAmount:0};
+function beginFxFrame(now){
+  var elapsed=Math.max(0,now-FX_LAST);FX_LAST=now;
+  var step=typeof motionActive==='function'&&typeof player!=='undefined'&&player&&motionActive(player,now)?1000/60:1000/30;
+  if(elapsed>64){
+    // As before, a stalled/background frame advances at most 64 ms. Emit one
+    // batch, with no replay of missed trails, ambient sparks or shake samples.
+    FX_FRAME.steps=1;FX_FRAME.dt=64;FX_FRAME.carry=0;
+  }else{
+    FX_FRAME.carry+=elapsed;FX_FRAME.dt=step;
+    FX_FRAME.steps=Math.floor((FX_FRAME.carry+1e-6)/step);
+    FX_FRAME.carry=Math.max(0,FX_FRAME.carry-FX_FRAME.steps*step);
+  }
+}
 var TRAIL = {
   phys:     {col:['#D8CFC0','#8A7F74'], size:1.6, rate:0.6, life:260, drift:0},
   fire:     {col:['#FFD36A','#FF7A30','#C0391B'], size:3.2, rate:2.2, life:420, drift:-0.012, glow:'#FF7A30'},
@@ -24,26 +41,27 @@ function trailPalette(type,fallback){
 function particle(x,y,o){
   if(ANIM.reduce && !o.force) return;
   if(PARTS.length>900) PARTS.shift();
-  PARTS.push({x:x,y:y,vx:o.vx||0,vy:o.vy||0,life:o.life||400,max:o.life||400,col:o.col||'#FFF',size:o.size||2,grav:o.grav||0,glow:!!o.glow,shrink:o.shrink!==false});
+  PARTS.push({x:x,y:y,vx:o.vx||0,vy:o.vy||0,life:o.life||400,max:o.life||400,col:o.col||'#FFF',size:o.size||2,grav:o.grav||0,glow:!!o.glow,shrink:o.shrink!==false,
+    steps:o.step===undefined?null:FX_FRAME.steps-o.step});
 }
-function burst(tx,ty,type,n,spread){
+function burst(tx,ty,type,n,spread,step){
   var t=trailPalette(type); n=n||14; spread=spread||0.06;
   for(var i=0;i<n;i++){
     var a=Math.random()*Math.PI*2, s=Math.random()*spread;
     particle(tx+0.5, ty+0.5, {vx:Math.cos(a)*s, vy:Math.sin(a)*s + (t.drift||0)*4, life:t.life*(0.6+Math.random()*0.8),
-      col:t.col[Math.floor(Math.random()*t.col.length)], size:t.size*(0.7+Math.random()*0.8), glow:!!t.glow, grav:type==='earth'?0.0006:0});
+      col:t.col[Math.floor(Math.random()*t.col.length)], size:t.size*(0.7+Math.random()*0.8), glow:!!t.glow, grav:type==='earth'?0.0006:0,step:step});
   }
 }
-function emitFire(x,y){
+function emitFire(x,y,step){
   if(Math.random()<0.25) particle(x+0.3+Math.random()*0.4, y+0.75, {vx:(Math.random()-0.5)*0.004, vy:-0.012-Math.random()*0.01, life:500+Math.random()*300,
-    col:Math.random()<0.5?'#FFB040':'#FF6A20', size:1.6+Math.random()*1.6, glow:true});
+    col:Math.random()<0.5?'#FFB040':'#FF6A20', size:1.6+Math.random()*1.6, glow:true,step:step});
 }
 function explosionFx(x,y){
   burst(x,y,'fire',46,0.14); burst(x,y,'earth',18,0.1);
   for(var i=0;i<14;i++){ var a=Math.random()*6.28; particle(x+0.5,y+0.5,{vx:Math.cos(a)*0.03, vy:Math.sin(a)*0.03-0.01, life:900, col:'rgba(60,55,50,0.7)', size:6+Math.random()*6, shrink:false}); }
   SHAKE=Math.max(SHAKE, 10);
 }
-function sparkleFx(x,y,type,n){ burst(x,y,type||'heal',n||18,0.035); }
+function sparkleFx(x,y,type,n,step){ burst(x,y,type||'heal',n||18,0.035,step); }
 var SHAKE=0;
 
 /* projectiles: queued in order with everything else via fxAt */
@@ -180,7 +198,7 @@ function drawArrowInFlight(){
 
 var FLOAT_TEXT_TILE=64;   /* the tile size past which floating text no longer grows (see the text branch of drawFX) */
 function drawFX(){
-  var now=performance.now(), dt=Math.min(64, now-FX_LAST); FX_LAST=now;
+  var now=performance.now(),dt=FX_FRAME.dt;
   var keep=[];
   for(var i=0;i<fx.length;i++){
     var f=fx[i], p=(now-f.t0)/f.dur;
@@ -237,17 +255,18 @@ function drawFX(){
         else if(spriteOn) drawArrowInFlight();
         else { ctx.fillStyle='#D8CFC0'; ctx.fillRect(-1,-TS*0.25,2,TS*0.5); }
         ctx.restore();
-        for(var sp=0; sp<2; sp++)
+        for(var sp=0; sp<2*FX_FRAME.steps; sp++)
           particle(cx+0.5-Math.cos(ang)*0.25, cy+0.5-Math.sin(ang)*0.25,
             {vx:-Math.cos(ang)*0.01, vy:-Math.sin(ang)*0.01, life:150+Math.random()*90,
-             col:'rgba(255,244,210,.65)', size:1.3, glow:true});
+             col:'rgba(255,244,210,.65)', size:1.3, glow:true,step:Math.floor(sp/2)});
       } else if(f.type==='lightning'){
         drawLightningDischarge(f,p,ease);
-        for(var z=0;z<2;z++) particle(cx+0.5,cy+0.5,{vx:(Math.random()-0.5)*0.03,vy:(Math.random()-0.5)*0.03,life:160,col:'#FFE45C',size:1.6,glow:true});
+        for(var z=0;z<2*FX_FRAME.steps;z++) particle(cx+0.5,cy+0.5,{vx:(Math.random()-0.5)*0.03,vy:(Math.random()-0.5)*0.03,life:160,col:'#FFE45C',size:1.6,glow:true,step:Math.floor(z/2)});
       } else {
-        for(var e2=0;e2<t.rate*2;e2++){
+        var count=Math.ceil(t.rate*2);
+        for(var e2=0;e2<count*FX_FRAME.steps;e2++){
           particle(cx+0.5+(Math.random()-0.5)*0.15, cy+0.5+(Math.random()-0.5)*0.15, {vx:(Math.random()-0.5)*0.006, vy:(Math.random()-0.5)*0.006+(t.drift||0),
-            life:t.life*(0.5+Math.random()*0.6), col:t.col[Math.floor(Math.random()*t.col.length)], size:t.size*(0.6+Math.random()*0.7), glow:!!t.glow});
+            life:t.life*(0.5+Math.random()*0.6), col:t.col[Math.floor(Math.random()*t.col.length)], size:t.size*(0.6+Math.random()*0.7), glow:!!t.glow,step:Math.floor(e2/count)});
         }
         var hx=(cx-camX+0.5)*TS, hy=(cy-camY+0.5)*TS;
         ctx.save(); ctx.globalCompositeOperation='lighter';
@@ -288,9 +307,12 @@ function drawFX(){
   /* particles */
   ctx.save();
   for(var j=PARTS.length-1;j>=0;j--){
-    var pt=PARTS[j];
-    pt.life-=dt; if(pt.life<=0){ PARTS.splice(j,1); continue; }
-    pt.vy+=pt.grav*dt; pt.x+=pt.vx*dt*0.06; pt.y+=pt.vy*dt*0.06;
+    var pt=PARTS[j],steps=pt.steps==null?FX_FRAME.steps:pt.steps;pt.steps=null;
+    for(var step=0;step<steps;step++){
+      pt.life-=dt;if(pt.life<=0)break;
+      pt.vy+=pt.grav*dt;pt.x+=pt.vx*dt*0.06;pt.y+=pt.vy*dt*0.06;
+    }
+    if(pt.life<=0){PARTS.splice(j,1);continue;}
     var lf=pt.life/pt.max, sz=pt.size*(pt.shrink?(0.35+0.65*lf):1);
     ctx.globalCompositeOperation = pt.glow ? 'lighter' : 'source-over';
     ctx.globalAlpha=Math.min(1, lf*1.4);
@@ -309,10 +331,17 @@ function ringFx(x,y,col,r,o){ fx.push({k:'ring', x:x, y:y, col:col||'#FFF', r:r|
 /* keep frames coming while particles live */
 function fxTick(t){
   var live = fx.length>0 || PARTS.length>0 || !ANIM.reduce;
-  /* 2026-09-22: 60 fps while the hero slides - a 170 ms step drawn at 30 fps was five positions, a visible
-     stutter (Justin) - and 30 fps the rest of the time, for the phones' sake */
-  var cap = (typeof motionActive==='function' && typeof player!=='undefined' && player && motionActive(player, t||performance.now())) ? 15 : 33;
-  if(live){ if(!t || t-lastFrame>=cap){ lastFrame=t||0; draw(); MOTION_SHOWN=performance.now(); } fxIdleFrames=3; }
+  /* RAF timestamps can arrive slightly before the fractional deadline. Accept
+   * at most .5 ms early, carrying the deadline so this allowance cannot drift
+   * into a faster rate on 90/120/144 Hz displays. Never replay missed frames. */
+  var now=t||performance.now(),interval=1000/60,elapsed=now-lastFrame,tolerance=.5;
+  if(live){
+    if(!lastFrame||elapsed+tolerance>=interval){
+      lastFrame=!lastFrame||elapsed>64?now:lastFrame+Math.floor((elapsed+tolerance)/interval)*interval;
+      draw();MOTION_SHOWN=performance.now();
+    }
+    fxIdleFrames=3;
+  }
   else if(fxIdleFrames>0){ fxIdleFrames--; draw(); }
   requestAnimationFrame(fxTick);
 }

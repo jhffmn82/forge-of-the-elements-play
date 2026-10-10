@@ -498,8 +498,17 @@ function draw(){
   var changed=renderPreviousMap!==map||renderPreviousMeta!==floorMeta;
   if(changed&&spriteOn&&map&&holdFloor())return;
   if(spriteOn&&map&&ground&&holdTerrain(changed))return;
-  var shake=SHAKE>0.5&&!ANIM.reduce;
-  if(shake){ctx.save();ctx.translate((Math.random()-.5)*SHAKE,(Math.random()-.5)*SHAKE);}else SHAKE=0;
+  beginFxFrame(performance.now());
+  var effectSteps=FX_FRAME.steps,shake=SHAKE>0.5&&!ANIM.reduce;
+  if(shake){
+    if(effectSteps||FX_FRAME.shakeAmount!==SHAKE){
+      var amount=SHAKE;
+      for(var sample=0;sample<Math.max(1,effectSteps);sample++){
+        FX_FRAME.shakeX=(Math.random()-.5)*amount;FX_FRAME.shakeY=(Math.random()-.5)*amount;amount*=.86;
+      }
+    }
+    ctx.save();ctx.translate(FX_FRAME.shakeX,FX_FRAME.shakeY);
+  }else{SHAKE=0;FX_FRAME.shakeAmount=0;}
   try{
     withSceneAtlasRequests(sceneArtLoading,drawFramePasses);
     if(spriteOn&&map&&ground){ /* the map's ResizeObserver can call draw() before the first world exists */
@@ -508,5 +517,5 @@ function draw(){
       if(typeof FoteEnvironmentTerrain!=='undefined'&&FoteEnvironmentTerrain.ahead)FoteEnvironmentTerrain.ahead(terrainShown);
       if(!floorArtPending())floorDrawn.splice(0).forEach(function(fn){fn();});
     }
-  }finally{if(shake){ctx.restore();SHAKE*=.86;}}
+  }finally{if(shake){ctx.restore();SHAKE*=Math.pow(.86,effectSteps);FX_FRAME.shakeAmount=SHAKE;}}
 }

@@ -58,7 +58,7 @@ function levelLightScratch(cells,sources){
  if(!s.los||s.los.length!==cells*sources)s.los=new Uint8Array(cells*sources);else s.los.fill(0);
  return s;
 }
-function drawLightmap(now, prp){
+function drawLightmap(now, prp, opaqueScene){
     var t=LEVEL_LIGHT_TUNE;
     if (!lightingOn()) return false;
     var S = 2, W = (viewW + 3) * S, H = (viewH + 3) * S, ox = camX - 1, oy = camY - 1;
@@ -141,29 +141,33 @@ function drawLightmap(now, prp){
        rectangular face, which is the masonry look this biome must not have.
 
        Distance is measured over the SUBCELL grid (S per tile) by a two-pass chamfer from every
-       open subcell, so the front is as irregular as the cave is, and it costs one sweep rather
-       than a search per cell. */
-    var depth = LM.depth;
-    for (ty = 0; ty < H; ty++) for (tx = 0; tx < W; tx++) {
-      var dt = Math.floor(ty / S) * TW + Math.floor(tx / S);
-      depth[ty * W + tx] = (tIn[dt] && !tWall[dt]) ? 0 : 1e4;
-    }
-    var D1 = 1, D2 = 1.41421356;
-    for (ty = 0; ty < H; ty++) for (tx = 0; tx < W; tx++) {
-      var c1 = ty * W + tx, v1 = depth[c1];
-      if (tx > 0) v1 = Math.min(v1, depth[c1 - 1] + D1);
-      if (ty > 0) v1 = Math.min(v1, depth[c1 - W] + D1);
-      if (tx > 0 && ty > 0) v1 = Math.min(v1, depth[c1 - W - 1] + D2);
-      if (tx < W - 1 && ty > 0) v1 = Math.min(v1, depth[c1 - W + 1] + D2);
-      depth[c1] = v1;
-    }
-    for (ty = H - 1; ty >= 0; ty--) for (tx = W - 1; tx >= 0; tx--) {
-      var c2 = ty * W + tx, v2 = depth[c2];
-      if (tx < W - 1) v2 = Math.min(v2, depth[c2 + 1] + D1);
-      if (ty < H - 1) v2 = Math.min(v2, depth[c2 + W] + D1);
-      if (tx < W - 1 && ty < H - 1) v2 = Math.min(v2, depth[c2 + W + 1] + D2);
-      if (tx > 0 && ty < H - 1) v2 = Math.min(v2, depth[c2 + W - 1] + D2);
-      depth[c2] = v2;
+       open subcell, so the front is as irregular as the cave is. Only a material
+       with depth-limited light needs these sweeps; constructed walls never read them. */
+    var depth = LM.depth, depthReady = false;
+    function prepareDepth() {
+      var tx, ty;
+      for (ty = 0; ty < H; ty++) for (tx = 0; tx < W; tx++) {
+        var dt = Math.floor(ty / S) * TW + Math.floor(tx / S);
+        depth[ty * W + tx] = (tIn[dt] && !tWall[dt]) ? 0 : 1e4;
+      }
+      var D1 = 1, D2 = 1.41421356;
+      for (ty = 0; ty < H; ty++) for (tx = 0; tx < W; tx++) {
+        var c1 = ty * W + tx, v1 = depth[c1];
+        if (tx > 0) v1 = Math.min(v1, depth[c1 - 1] + D1);
+        if (ty > 0) v1 = Math.min(v1, depth[c1 - W] + D1);
+        if (tx > 0 && ty > 0) v1 = Math.min(v1, depth[c1 - W - 1] + D2);
+        if (tx < W - 1 && ty > 0) v1 = Math.min(v1, depth[c1 - W + 1] + D2);
+        depth[c1] = v1;
+      }
+      for (ty = H - 1; ty >= 0; ty--) for (tx = W - 1; tx >= 0; tx--) {
+        var c2 = ty * W + tx, v2 = depth[c2];
+        if (tx < W - 1) v2 = Math.min(v2, depth[c2 + 1] + D1);
+        if (ty < H - 1) v2 = Math.min(v2, depth[c2 + W] + D1);
+        if (tx < W - 1 && ty < H - 1) v2 = Math.min(v2, depth[c2 + W + 1] + D2);
+        if (tx > 0 && ty < H - 1) v2 = Math.min(v2, depth[c2 + W - 1] + D2);
+        depth[c2] = v2;
+      }
+      depthReady = true;
     }
     /* Penetration in TILES, PER CELL'S MATERIAL. This is the correction Codex required on
        checkpoint 1: the depth fade was applied to every wall face and every wall top on every
@@ -196,6 +200,7 @@ function drawLightmap(now, prp){
     }
     function reach(cell, wx, wy) {
       if (!profileAt(wx, wy).on) return 1;      /* constructed: the pre-contract path, unchanged */
+      if (!depthReady) prepareDepth();
       var dd = depth[cell];
       if (dd <= 0) return 1;
       var ps = profileAt(wx, wy).penSub;
@@ -307,7 +312,7 @@ function drawLightmap(now, prp){
     /* a soft ceiling, so stacked lights roll off instead of washing the tiles out */
     var ceil = t.n('light_ceiling');
     for (j = 0; j < W * H * 3; j++) { var v = vals[j]; if (v > 1) vals[j] = 1 + (v - 1) * ceil; }
-    var bloomAt = t.n('bloom_threshold'), bloomK = t.n('bloom_gain');
+    var bloomAt = t.n('bloom_threshold'), bloomK = t.n('bloom_gain'), bloomNonzero = false;
     for (j = 0; j < W * H; j++) {
       var q = j * 3, p4 = j * 4;
       D[p4] = Math.min(255, vals[q] * 255);
@@ -319,9 +324,12 @@ function drawLightmap(now, prp){
       B[p4 + 1] = Math.min(255, vals[q + 1] * ex * bloomK);
       B[p4 + 2] = Math.min(255, vals[q + 2] * ex * bloomK);
       B[p4 + 3] = 255;
+      // Test quantized RGB: faint values may become zero in the clamped buffer.
+      bloomNonzero = bloomNonzero || !!(B[p4] | B[p4 + 1] | B[p4 + 2]);
     }
-    LM.x.putImageData(img, 0, 0);
-    LM.bx.putImageData(bl, 0, 0);
+    // Black additive paint still adds alpha unless the destination is opaque.
+    var drawBloom = !opaqueScene || bloomNonzero;
+    if(drawBloom)LM.bx.putImageData(bl, 0, 0);
     var shaded=false;
     if(dimensional){
       // Keep regional ambient independent of admitted direct light and its soft ceiling.
@@ -335,11 +343,11 @@ function drawLightmap(now, prp){
     /* the light is worked out a tile at a time, so a wall casts a square-edged shadow and two
        texels a tile leaves square steps. A blur before it is laid down melts them into gradients. */
     ctx.filter = 'blur(' + Math.max(2, Math.round(TS * t.n('light_blur'))) + 'px)';
-    if(!shaded)ctx.drawImage(LM.c, 0, 0, W, H, -TS, -TS, W * TS / S, H * TS / S);
+    if(!shaded){LM.x.putImageData(img, 0, 0);ctx.drawImage(LM.c, 0, 0, W, H, -TS, -TS, W * TS / S, H * TS / S);}
     ctx.filter = 'none';
     ctx.globalCompositeOperation = 'lighter';
     ctx.globalAlpha = t.n('bloom_alpha');
-    ctx.drawImage(LM.bloom, 0, 0, W, H, -TS, -TS, W * TS / S, H * TS / S);
+    if(drawBloom)ctx.drawImage(LM.bloom, 0, 0, W, H, -TS, -TS, W * TS / S, H * TS / S);
     ctx.restore();
     return true;
   };

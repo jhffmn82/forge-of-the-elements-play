@@ -13,6 +13,12 @@ art from animation caches.
 Character creation stays visible until the chosen hero and floor are drawn;
 artwork Retry remains available while a floor is loading.
 
+The phone rendering update raises the stationary scene target to 60 Hz while
+keeping effect speeds unchanged, batches exact animation imports, and reuses
+lighting textures. It also avoids unused lighting and black-bloom work. Automated
+checks preserve game state and rendered pixels; overall physical-phone speed
+still needs device testing.
+
 Keyboard: WASD or arrows to move, QEZC diagonals, 1-8 hotbar, Tab character sheet,
 `i` equipment, `>` stairs. Mouse and phone touch controls remain available.
 
@@ -25,4 +31,4 @@ the repeatable export and an itch.io ZIP. Automated browser tests cover gameplay
 save compatibility, UI, dimensional compositing, recovery and nested-path play.
 Physical-phone GPU and memory performance still require device testing.
 
-Build: **10/10/2026 19:08:28**. Revision: `foundation17-20261010190828431`.
+Build: **2026-10-10T22:48:12.298Z**. Revision: `foundation17-20261010224812298`.

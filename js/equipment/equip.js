@@ -595,7 +595,7 @@ function drawCastLayers(e, cs, fr, dx, dy, w, h, g, time, surface){
   var who = e || player;
   var pose=poseFor(m,row,col), rest=restPose(m), gear=castEquipmentFor(who);
   var wpn=gear.weapon,off=gear.off,arm=gear.armorItem;
-  var mainKey=heldKeyOf(wpn), offKey=heldKeyOf(off, who), clip=castClipAt(m,row);
+  var mainKey=heldKeyOf(wpn), offKey=heldKeyOf(off, who), clip=castClipAt(m,row), bodyClip=m.clips&&m.clips[clip];
   /* 2026-10-06: an added body row (render.js CLIP_ROW) is drawn by the rules of the row it stands in for; add is its own name */
   var add=m.clips && m.clips[clip] && m.clips[clip].old ? clip : null;
   if(add) clip=m.clips[add].old;
@@ -674,7 +674,7 @@ function drawCastLayers(e, cs, fr, dx, dy, w, h, g, time, surface){
   var look=armorLook(arm);
   var body=look?tintedFrame(cs,row,col,look,pose):cs.img,bodyX=look?0:fr.sx,bodyY=look?0:fr.sy;
   g.drawImage(body,bodyX,bodyY,cell,cell,dx,dy,w,h);
-  if(typeof FoteNormalLighting!=='undefined')FoteNormalLighting.record(g,{img:body,sx:bodyX,sy:bodyY,sw:cell,sh:cell},{x:dx,y:dy,w:w,h:h},{surface:surface});
+  if(typeof FoteNormalLighting!=='undefined')FoteNormalLighting.record(g,{img:body,sx:bodyX,sy:bodyY,sw:cell,sh:cell,prefetchFrames:body===cs.img&&AS.cast&&m===AS.cast[cs.look]&&bodyClip&&bodyClip.row*cell===bodyY?bodyClip.frames:undefined},{x:dx,y:dy,w:w,h:h},{surface:surface});
   /* Fingers close over the grip rather than the handle covering the whole fist. 2026-10-05: item by item, straight after
      each is drawn, so a fist never shows through an item drawn over it afterwards (it showed as a dot on the shield); and
      over the orb and the tome too, which are held now */

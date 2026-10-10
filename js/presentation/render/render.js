@@ -1116,7 +1116,7 @@ function drawCharacterSprite(e, px, py, opts){
       ctx.globalAlpha=actorAlpha;
     }
     ctx.drawImage(ms.img, f2.sx, f2.sy, c2, c2, dx2, dy2, w2, h2);
-    if(typeof FoteNormalLighting!=='undefined')FoteNormalLighting.record(ctx,{img:ms.img,sx:f2.sx,sy:f2.sy,sw:c2,sh:c2},{x:dx2,y:dy2,w:w2,h:h2},{surface:actorLightSurface(e,px+TS/2,py+TS*.97)});
+    if(typeof FoteNormalLighting!=='undefined'){var prefetchFrames;for(var clipName in mm.clips){var clipMeta=mm.clips[clipName];if(clipMeta.row*c2===f2.sy){prefetchFrames=clipMeta.frames;break;}}FoteNormalLighting.record(ctx,{img:ms.img,sx:f2.sx,sy:f2.sy,sw:c2,sh:c2,prefetchFrames:prefetchFrames},{x:dx2,y:dy2,w:w2,h:h2},{surface:actorLightSurface(e,px+TS/2,py+TS*.97)});}
     if(opts.flash>0){ ctx.globalAlpha*=opts.flash; ctx.drawImage(whiteCut(ms.img,f2.sx,f2.sy,c2,c2), dx2,dy2,w2,h2); }
     ctx.restore();
     return true;
@@ -1795,7 +1795,7 @@ function drawScene(){
   function paintTileObject(x,y,scoped){
     if(!scoped&&typeof FoteChaosPreviewRenderer!=='undefined'&&FoteChaosPreviewRenderer.mixed())return FoteChaosPreviewRenderer.withCell(x,y,function(){return paintTileObject(x,y,true);});
     if(x<0||y<0||x>=W||y>=H) return; var oi=y*W+x; if(!(ALL||SEEN[oi])) return;
-    var ot=MAP[oi]; if(ot===FLOOR||ot===WALL||ot===WATER||ot===CHASM||ot===SECRET||!spriteOn&&ot===LAVA) return;
+    var ot=MAP[oi];
     // Multi-tile preview gateways are painted once by the ordinary set renderer.
     if(spriteOn&&ot===PORTAL&&floorMeta&&floorMeta.chaosPreview){var gateway=propAt(x,y);if(gateway&&gateway.previewPortal)return;}
     var oa=(ALL||VIS[oi])?1:fade45, opx=(x-camX)*TS, opy=(y-camY)*TS, spr=spriteOn?tileSprite(x,y,ot):null;
@@ -1826,9 +1826,11 @@ function drawScene(){
   }
   for(y=camY;y<=camY+viewH;y++) for(x=camX;x<=camX+viewW;x++){
     if(x<0||y<0||x>=W||y>=H || !(ALL||SEEN[y*W+x]))continue;
+    var objectTile=MAP[y*W+x];
+    if(objectTile===FLOOR||objectTile===WALL||objectTile===WATER||objectTile===CHASM||objectTile===SECRET||!spriteOn&&objectTile===LAVA)continue;
     // A bridge is a walking surface, not an upright obstacle. Interpolated
     // actors approaching from the north must still stand above its deck.
-    if(MAP[y*W+x]===BRIDGE){paintTileObject(x,y);continue;}
+    if(objectTile===BRIDGE){paintTileObject(x,y);continue;}
     (function(tx,ty){standing(ty+1,function(){paintTileObject(tx,ty);});})(x,y);
   }
   /* pressure plates */
@@ -1907,7 +1909,7 @@ function drawScene(){
       kg.addColorStop(0.55, 'rgba('+kc+','+(0.18*kp*ia)+')');
       kg.addColorStop(1, 'rgba('+kc+',0)');
       ctx.fillStyle=kg; ctx.beginPath(); ctx.arc(ipx+TS/2, ipy+TS*0.58, TS*0.62, 0, 7); ctx.fill();
-      if(!ANIM.reduce && Math.random()<0.10) sparkleFx(it.x, it.y, 'ice', 1);
+      if(!ANIM.reduce)for(var spark=0;spark<FX_FRAME.steps;spark++)if(Math.random()<0.10)sparkleFx(it.x,it.y,'ice',1,spark);
     }
     ctx.save();
     if(phoneActorClarity())ctx.filter='brightness(1.2) drop-shadow(0px 0px 0.45px rgba(23,18,15,.55))';
@@ -1925,7 +1927,7 @@ function drawScene(){
     var fpx2=(x-camX)*TS, fpy2=(y-camY)*TS;
     /* 2026-09-20: Justin - the burning-ground flames read as too big; 70% of what they were */
     drawBurningFlame(fpx2+TS*.5,fpy2+TS*.92,TS*.61,now,x*5+y*7,.62);
-    if(typeof emitFire==='function') emitFire(x,y);
+    if(typeof emitFire==='function')for(var ember=0;ember<FX_FRAME.steps;ember++)emitFire(x,y,ember);
   }
 
   /* ---- entities, back to front ---- */
@@ -2019,7 +2021,9 @@ function drawScene(){
     if(spriteOn)drawGrassTile(x, y, (x-camX)*TS, (y-camY)*TS, (ALL||VIS[fgi])?1:fade40, 'front', now);
   }
 
-  if(lightingOn()) drawLightmap(now, prp);
+  // The retained ground layer covers every backing pixel with opaque black.
+  // Direct and shaking frames conservatively retain bloom's alpha contribution.
+  if(lightingOn()) drawLightmap(now, prp, layered);
   if(typeof FoteNormalLighting!=='undefined')FoteNormalLighting.end();
   drawLights();
   if(typeof FoteChaosCurrentRenderer!=='undefined')FoteChaosCurrentRenderer.drawAll(now);
