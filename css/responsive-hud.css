@@ -1209,6 +1209,8 @@ body.fote-study.study-minimal.study-touch.study-small-touch.study-hotbar-vertica
 /* Phone targeting retains the HUD while native canvas input owns covered tiles. */
 body.fote-study.study-phone-targeting #app :is(#hotbar,#studyActionBar,#studyHud,#statusbar,#studyRecentLog,#studySearch,#dpad),
 body.fote-study.study-phone-targeting #app :is(#hotbar,#studyActionBar,#studyHud,#statusbar,#studyRecentLog,#studySearch,#dpad) *{pointer-events:none!important;}
+/* The selected slot confirms auto-targeting; other slots pass taps to the map. */
+body.fote-study.study-phone-targeting #app #hotbar .slot.aim-confirm:not(:disabled):not(.oncd){pointer-events:auto!important;}
 body.fote-study.study-phone-targeting.study-overlay-pad #app #map #dpad.unavailable,
 body.fote-study.study-phone-targeting.study-overlay-pad #app #map #dpad.unavailable button{opacity:1;}
 body.fote-study.study-phone-targeting #app #studyCancelAim:not([hidden]){display:flex;position:fixed!important;inset:auto auto calc(var(--minimal-inset) + env(safe-area-inset-bottom,0px)) calc(var(--minimal-inset) + env(safe-area-inset-left,0px))!important;pointer-events:auto!important;z-index:80;}

@@ -502,7 +502,7 @@ function renderHotbarSlots(){
       replacement.innerHTML=(s?'<span class="ico"></span>':'')+'<span class="k">'+(i+1)+'</span><span class="n"></span>'+(s?'<span class="c"></span>':'');
       if(b)b.replaceWith(replacement);else bar.appendChild(replacement);b=replacement;
       (function(button,index){
-        button.onclick=function(){sfx('ui-click');pressSlotIndex(index);};
+        button.onclick=function(){bar.dataset.aimSlot=String(index);sfx('ui-click');pressSlotIndex(index);};
         button._hotbarContext=function(ev){ev.preventDefault();var slot=player.hotbar[index];if(slot&&slot.type!=='ability'&&slot.type!=='prayer'){player.hotbar[index]=null;abilityBar();}};
         button.oncontextmenu=button._hotbarContext;
         if(s)dragSource(button,'hot:'+index);
@@ -517,13 +517,13 @@ function renderHotbarSlots(){
         armed=!!(aiming&&player.abilities[aiming.i]===s.key);
         line=A.favor?A.favor+' Favor':costOf(A)+' mana';
       }else if(s.type==='prayer'){
-        name=PRAYERS[s.key].name;icon=prayerIcon(s.key);disabled=!canPray(s.key);line=prayerCost(s.key);
+        name=PRAYERS[s.key].name;icon=prayerIcon(s.key);disabled=!canPray(s.key);line=prayerCost(s.key);armed=!!(aiming&&aiming.prayer===s.key);
         var color=GODS[player.god]?GODS[player.god].color:'#8A6FB0';setHudStyle(b,'--gc',color);
       }else if(s.type==='amulet'){
         var a=player.amulet;name=a?gearName(a):'Amulet';icon=a&&a.icon||'';group='items';
         disabled=!a||(a.charges||0)<=0;armed=!!(aiming&&aiming.amulet);
       }else if(s.type==='ranged'){
-        var rw=player.ranged;name=rw?(typeof gearName==='function'?gearName(rw):rw.name):'no bow';icon=rw&&rw.icon||'';line='shoot';disabled=!rw;
+        var rw=player.ranged;name=rw?(typeof gearName==='function'?gearName(rw):rw.name):'no bow';icon=rw&&rw.icon||'';line='shoot';disabled=!rw;armed=typeof BOWAIM!=='undefined'&&!!BOWAIM;
       }else{
         var it=s.ref;name=it.name+(it.n>1?' ×'+it.n:'');icon=iconNameForBag(it);line=it.kind;
       }
@@ -542,6 +542,8 @@ function renderHotbarSlots(){
     }
   }
   while(bar.children.length>8)bar.lastElementChild.remove();
+  var confirm=bar.querySelector('.slot.armed[data-i="'+bar.dataset.aimSlot+'"]')||bar.querySelector('.slot.armed');
+  Array.from(bar.children).forEach(function(button){setHudClass(button,'aim-confirm',button===confirm);});
 }
 
 function hotbarDrop(idx, tag){
