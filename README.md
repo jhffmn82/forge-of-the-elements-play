@@ -54,6 +54,10 @@ with consistent shapes and colors. Elemental creatures show their tier; Search a
 the map guide use the same marks. Portrait inspection cards fit above the hotbar
 and surrounding controls, with scrolling for longer cards.
 
+Recent combat messages start fading after three seconds without a new message,
+then fade out over three seconds. New messages restore the log immediately and
+restart the timer. Full combat history remains available from the menu.
+
 Keyboard: WASD or arrows to move, QEZC diagonals, 1-8 hotbar, Tab character sheet,
 `i` equipment, `>` stairs. Mouse and phone touch controls remain available.
 
@@ -66,4 +70,4 @@ the repeatable export and an itch.io ZIP. Automated browser tests cover gameplay
 save compatibility, UI, dimensional compositing, recovery and nested-path play.
 Physical-phone GPU and memory performance still require device testing.
 
-Build: **2026-10-11T13:35:13.631Z**. Revision: `foundation17-20261011133513631`.
+Build: **2026-10-11T15:47:48.320Z**. Revision: `foundation17-20261011154748320`.

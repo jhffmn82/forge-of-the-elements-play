@@ -1587,20 +1587,19 @@ SOFTWARE.
     var later=options.setTimer||function(fn,ms){return setTimeout(fn,ms);};
     var cancel=options.clearTimer||function(id){clearTimeout(id);};
     var recent=null,enabled=false,history=false,entries=[],sequence=0,batch=0,pending=false,inTurn=false,turnEnded=false,lastReceipt=null;
-    var timer=null,closeTimer=null,ordinaryAge=14000,warningAge=18000,fadeAge=3000;
+    var timer=null,closeTimer=null,idleAge=3000,fadeAge=3000;
     function clearTimer(){if(timer!==null){cancel(timer);timer=null;}}
     function clearClose(){if(closeTimer!==null){cancel(closeTimer);closeTimer=null;}}
     function trim(){
-      var time=now();entries=entries.filter(function(e){return e.expiresAt>time||inTurn&&e.batch===batch;});
-      // The turn window and reading timer bound this view. A busy turn must
-      // retain every result rather than silently discard its first attacks.
+      var time=now();entries=entries.filter(function(e){return e.expiresAt>time;});
+      // All displayed results share the last message's reading window.
     }
     function state(){
-      var time=now(),live=entries.filter(function(e){return e.expiresAt>time||inTurn&&e.batch===batch;});
+      var time=now(),live=entries.filter(function(e){return e.expiresAt>time;});
       // Mobile shows one command's complete results; history and desktop keep their existing windows.
       if(doc&&doc.body&&doc.body.classList.contains('study-touch'))live=live.filter(function(e){return e.batch===batch;});
       return {enabled:enabled,history:history,visible:enabled&&!history&&live.length>0,
-        entries:live.map(function(e){return {id:e.id,html:e.html,cls:e.cls,warning:e.warning,expiresAt:e.expiresAt,fading:!(inTurn&&e.batch===batch)&&time>=e.expiresAt-fadeAge};})};
+        entries:live.map(function(e){return {id:e.id,html:e.html,cls:e.cls,warning:e.warning,expiresAt:e.expiresAt,fading:time>=e.expiresAt-fadeAge};})};
     }
     function mount(target){
       if(!doc)return null;
@@ -1618,22 +1617,23 @@ SOFTWARE.
       children.forEach(function(child){if(wanted.indexOf(child.dataset.entry)<0)recent.removeChild(child);});
       view.entries.forEach(function(entry){
         var child=Array.from(recent.children).find(function(n){return n.dataset.entry===String(entry.id);});
-        if(!child){child=doc.createElement('div');child.dataset.entry=String(entry.id);child.className='study-recent-line '+entry.cls;child.innerHTML=entry.html;child.style.transition='opacity '+fadeAge+'ms ease';recent.appendChild(child);}
+        if(!child){child=doc.createElement('div');child.dataset.entry=String(entry.id);child.className='study-recent-line '+entry.cls;child.innerHTML=entry.html;recent.appendChild(child);}
         else if(child.innerHTML!==entry.html)child.innerHTML=entry.html;
-        child.dataset.priority=entry.warning?'warning':'normal';child.style.opacity=entry.fading?'0':'1';
+        child.dataset.priority=entry.warning?'warning':'normal';
+        child.style.transition=entry.fading?'opacity '+fadeAge+'ms ease':'none';child.style.opacity=entry.fading?'0':'1';
       });
       recent.scrollTop=recent.scrollHeight;
     }
     function refresh(){
       clearTimer();trim();render();
       var time=now(),next=Infinity;
-      entries.forEach(function(e){if(!(inTurn&&e.batch===batch))next=Math.min(next,time<e.expiresAt-fadeAge?e.expiresAt-fadeAge:e.expiresAt);});
+      entries.forEach(function(e){next=Math.min(next,time<e.expiresAt-fadeAge?e.expiresAt-fadeAge:e.expiresAt);});
       if(Number.isFinite(next))timer=later(function(){timer=null;refresh();},Math.max(1,next-time));
     }
     function beginBatch(){
       clearClose();batch++;pending=true;turnEnded=false;lastReceipt=null;
       // Keep this command and the preceding two, including quiet turns.
-      // Warnings receive more reading time, but never outlive this turn window.
+      // Quiet commands never restart the message inactivity timer.
       entries=entries.filter(function(e){return e.batch>=batch-2&&e.expiresAt>now();});refresh();
     }
     function settle(){
@@ -1646,11 +1646,11 @@ SOFTWARE.
     function beginTurn(){if(!pending||turnEnded)beginBatch();clearClose();inTurn=true;refresh();}
     function finishTurn(){
       inTurn=false;turnEnded=true;
-      entries.forEach(function(e){if(e.batch===batch)e.expiresAt=now()+(e.warning?warningAge:ordinaryAge);});
       refresh();settle();
     }
     function onEntry(html,cls,meta){
       meta=meta||{};if(meta.transient===false){lastReceipt=null;return;}
+      trim();
       if(!pending&&!inTurn)beginBatch();
       var warning=meta.priority==='warning'||cls==='c-danger'||cls==='c-warning';
       // Callers supply resolved, command-scoped receipts. Never infer a source,
@@ -1663,12 +1663,13 @@ SOFTWARE.
         var counted=[];line.parts.forEach(function(part){var item=counted.find(function(it){return it.html===part;});if(item)item.count++;else counted.push({html:part,count:1});});
         line.html=(receipt.prefix||'')+counted.map(function(item){return item.html+(item.count>1?' ×'+item.count:'');}).join(receipt.join||'; ')+(receipt.suffix||'');
       }else{
-        line={id:++sequence,batch:batch,html:String(html),cls:cls||'c-info',warning:warning,expiresAt:now()+(warning?warningAge:ordinaryAge)};
+        line={id:++sequence,batch:batch,html:String(html),cls:cls||'c-info',warning:warning,expiresAt:now()+idleAge+fadeAge};
         if(receipt){line.receipt=receipt;line.parts=[receipt.item];}
         entries.push(line);
       }
       lastReceipt=receipt?line:null;
-      entries.forEach(function(e){if(e.batch===batch)e.expiresAt=now()+(e.warning?warningAge:ordinaryAge);});
+      var expiresAt=now()+idleAge+fadeAge;
+      entries.forEach(function(e){e.expiresAt=expiresAt;});
       refresh();if(!inTurn)settle();
     }
     function historyChanged(){if(options.onHistoryChange)options.onHistoryChange(history);}
