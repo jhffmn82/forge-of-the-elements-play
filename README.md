@@ -36,6 +36,10 @@ Search lists nearby enemies, discovered traps, doors, chests, crates, barrels an
 ground items within two tiles, nearest first. Results are names in the normal log,
 with matching map symbols in Blocks. Pick up and Search have separate touch targets.
 
+Enemy HP and attack damage now come directly from fixed species definitions,
+including the previous biome bonuses, so bestiary numbers match normal enemies.
+Existing saves preserve wounds, summoned creatures and named guardian HP.
+
 Keyboard: WASD or arrows to move, QEZC diagonals, 1-8 hotbar, Tab character sheet,
 `i` equipment, `>` stairs. Mouse and phone touch controls remain available.
 
@@ -48,4 +52,4 @@ the repeatable export and an itch.io ZIP. Automated browser tests cover gameplay
 save compatibility, UI, dimensional compositing, recovery and nested-path play.
 Physical-phone GPU and memory performance still require device testing.
 
-Build: **2026-10-11T01:38:58.932Z**. Revision: `foundation17-20261011013858932`.
+Build: **2026-10-11T02:19:02.811Z**. Revision: `foundation17-20261011021902811`.

@@ -125,7 +125,7 @@ function slimeSplit(e){
   var s=e.ally?spawnRaw(e.kind,c.x,c.y,{base:Object.assign({},e.base),ally:true}):spawn(e.kind==='caveslime'?'caveslime':'slime',c.x,c.y);
   s.hp=s.maxhp=half; s.split=true; s.state='hunt'; s.name=e.kind==='caveslime'?'Basalt Slimelet':'Slimelet'; s.small=true; s.noLoot=true;
   if(e.ally){
-    s.foe=false;s.ally=true;s.state='ally';s.name=e.name;s.col=e.col;s.dmg=(e.dmg||e.base.dmg).slice();s.noXp=true;s.slimeDescendant=true;s.beta11Balanced=e.beta11Balanced;
+    s.foe=false;s.ally=true;s.state='ally';s.name=e.name;s.col=e.col;s.dmg=(e.dmg||e.base.dmg).slice();s.noXp=true;s.slimeDescendant=true;
     ['shade','shadeOwnerId','shadeSourceKind','shadeRootId','shadeLife','life','noReward'].forEach(function(key){if(e[key]!==undefined)s[key]=e[key];});
     // Basalt offspring retain their smaller legacy HP pool when Murk derives it.
     if(Number.isFinite(e.murkBaseHp))s.murkBaseHp=e.murkBaseHp*s.maxhp/e.maxhp;
@@ -180,7 +180,7 @@ function raiseShade(e){
   if(shades.length>=2){ shades.sort(function(a,b){ return a.hp-b.hp; }); ents=ents.filter(function(o){ return o!==shades[0]; }); }
   var s=spawnRaw(e.kind,e.x,e.y,{base:Object.assign({},e.base),ally:true});
   s.foe=false; s.ally=true; s.shade=true; s.state='ally'; s.name='Shade of '+e.base.name; s.col='#8A6FB0';
-  s.shadeOwnerId=player.id;s.shadeSourceKind=e.kind;s.shadeRootId=s.id;s.noXp=true;s.noLoot=true;s.beta11Balanced=true;
+  s.shadeOwnerId=player.id;s.shadeSourceKind=e.kind;s.shadeRootId=s.id;s.noXp=true;s.noLoot=true;
   s.maxhp=s.hp=Math.max(1,Math.round(e.maxhp/2)); s.dmg=[Math.max(1,Math.round(e.dmg[0]/2)), Math.max(1,Math.round(e.dmg[1]/2))]; murkSummonHp(s);
   log('Shade summoned.','c-good'); sparkleFx(e.x,e.y,'dark',20);
 }

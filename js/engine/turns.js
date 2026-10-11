@@ -116,7 +116,6 @@ var gameTurns=(function(){
   function alive(){return player&&player.hp>0;}
   function* scheduleFlow(from,to){
     if(!(to>from))return;
-    ents.forEach(betaEnemyBalance);
     var next=(Math.floor(from/100)+1)*100,steps=0,previous=currentClock;
     try{
       yield turnPlayerAnimationWait();

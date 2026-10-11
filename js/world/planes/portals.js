@@ -349,7 +349,33 @@ function planeCreatureBehavior(e){
    drawn. They used to be hidden by clearing their tile's visibility, which also unlit the tile and left a black square. */
 
 
-/* Saved actors retain their old base records; apply only the requested tuning. */
+/* Pre-1.7 saves stored the unbalanced species plus bonuses on each actor.
+ * Rebase once, preserving wounds and deliberate encounter HP/damage overrides.
+ * New spawns already use the same complete species stats as the bestiary. */
+function migrateEnemyBaseStats(actor){
+  var actors=actor?[actor]:ents.concat(floorMeta.buriedGhouls||[],floorMeta.pendingLich?[floorMeta.pendingLich.entity]:[],floorMeta.maw&&floorMeta.maw.ent?[floorMeta.maw.ent]:[]);
+  actors.forEach(function(e){
+    if(!e||!e.base||e.baseStatsVersion===1||!e.foe||e.ally)return;
+    var current=MONSTERS[e.kind],base=e.base;
+    if(!current||base.object||base.chaosAI||e.unmakerPhase||e.parent)return;
+    var nextHp=e.kind==='skeleton'&&base.hp!==current.hp?base.hp:current.hp;
+    var fraction=e.hp/Math.max(1,e.maxhp);
+    // Guardians and offspring own their HP pools. Ordinary actors use the
+    // species directly: a saved creature may have fallen across biome borders.
+    var customHealth=e.small||e.sentinelRoom||e.name==='Vault Guardian'||e.name==='Stone Sentinel';
+    if(Number.isFinite(e.maxhp)&&e.maxhp>0){
+      if(!customHealth)e.maxhp=sHP(nextHp);
+      e.hp=e.hp>0?Math.max(1,Math.min(e.maxhp,Math.round(e.maxhp*fraction))):0;
+    }
+    e.dmg=current.dmg.map(sDMG);
+    e.base=Object.assign({},base,{hp:nextHp,dmg:current.dmg.slice()});
+    if(current.abilityDamageScale)e.base.abilityDamageScale=current.abilityDamageScale;
+    e.baseStatsVersion=1;
+    ['floorOneDamageAdjusted','beta11Balanced','underdark25Adjusted','cavernHp15Adjusted','underdarkDamage3Adjusted','elementalBiomeTuningVersion'].forEach(function(key){delete e[key];});
+  });
+}
+
+/* Saved actors retain their old base records; refresh the remaining traits. */
 function refreshEncounterTuning(){
   var chaosCombat=floorMeta&&floorMeta.chaosPreview&&floorMeta.chaosCombat;
   if(chaosCombat&&chaosCombat.damageVersion!==2){
@@ -403,27 +429,11 @@ function refreshEncounterTuning(){
       if(e.slimeDescendant||e.small||e.slimeOffspring||e.greenOffspring||e.noLoot){e.noXp=true;e.slimeDescendant=true;}
       if((e.kind==='slime'||e.kind==='greenslime')&&(e.small||e.slimeOffspring||e.greenOffspring)){
         e.name=slimeBase.name;e.base=Object.assign({},slimeBase);e.maxhp=Math.max(e.hp,sHP(slimeBase.hp));
-        e.dmg=slimeBase.dmg.map(function(n){return sDMG(n);});e.beta11Balanced=false;
+        e.dmg=slimeBase.dmg.map(function(n){return sDMG(n);});
         delete e.small;delete e.slimeOffspring;delete e.greenOffspring;
       }
       delete e.split;delete e.greenSplit;
       if(e.base.sprite!==appearanceSprite)FoteContent.appearanceChanged(floorMeta);
-    }
-    if(typeof applyEarlyFloorEnemyTuning==='function')applyEarlyFloorEnemyTuning(e);
-    if(typeof isUnderdarkEnemy==='function'&&isUnderdarkEnemy(e)){
-      // Regular Underdark base HP rose in 1.5. Saved actor stats retain their
-      // biome/elite scaling and wounds; update that base before pending tuning.
-      // Bosses, Spiderlings and player pets keep their separately owned health.
-      if(!e.boss&&!e.caveBoss&&!e.deepBoss&&!e.base.boss&&!e.base.object&&['drowblade','drowpriestess','thoughteater','webspitter','drider','fireimp','emberspider'].indexOf(e.kind)>=0){
-        var underdarkBase=MONSTERS[e.kind];
-        if(underdarkBase&&Number.isFinite(e.base.hp)&&e.base.hp>0&&Number.isFinite(e.maxhp)&&e.maxhp>0&&e.base.hp!==underdarkBase.hp){
-          var underdarkHealth=e.hp/e.maxhp;
-          e.maxhp=Math.max(1,Math.round(e.maxhp*underdarkBase.hp/e.base.hp));
-          e.hp=Math.max(1,Math.min(e.maxhp,Math.round(e.maxhp*underdarkHealth)));
-          e.base=Object.assign({},e.base,{hp:underdarkBase.hp});
-        }
-      }
-      betaEnemyBalance(e);
     }
     if(['bat','slime','caveslime','shade','stalker','gloommoth','dawnsentinel','halowisp','prismscarab','radiantwarden','chaos-rift-skitter','chaos-lens-bearer','chaos-lash-dancer','chaos-razor-dancer'].indexOf(e.kind)>=0){
       var tuned=MONSTERS[e.kind];if(tuned){e.base=Object.assign({},e.base);['eva','el','rootSpit','attackType','chillTouch'].forEach(function(key){if(tuned[key]!==undefined)e.base[key]=tuned[key];});}

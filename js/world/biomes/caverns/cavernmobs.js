@@ -16,34 +16,34 @@
 (function(){
   var M=MONSTERS;
   /* band = absolute floors. Stats are fixed; later biomes use distinct stronger creatures. */
-  M.stormbeetle   = {name:'Storm Beetle', sprite:'m-storm-beetle', col:'#3A4A7A', ch:'b', hp:110, dmg:[9,13], acc:64, eva:8, armor:5, speed:100, range:1, xp:40,
+  M.stormbeetle   = {name:'Storm Beetle', sprite:'m-storm-beetle', col:'#3A4A7A', ch:'b', hp:126, dmg:[9,13], acc:64, eva:8, armor:5, speed:100, range:1, xp:40,
                      band:[11,15], w:22, arcs:true, grounded:true, living:true, art:0.95, artLeft:true, sfx:'slime'};
-  M.sparkjelly    = {name:'Spark Jelly', sprite:'m-spark-jelly', col:'#8FD8FF', ch:'j', hp:53, dmg:[4,6], acc:66, eva:28, armor:0, speed:100, range:1, xp:36,
+  M.sparkjelly    = {name:'Spark Jelly', sprite:'m-spark-jelly', col:'#8FD8FF', ch:'j', hp:61, dmg:[4,6], acc:66, eva:28, armor:0, speed:100, range:1, xp:36,
                      band:[12,15], w:12, flying:true, erratic:true, stingChain:true, el:'air', glow:'#7FD0FF', living:true, art:0.85, sfx:'bat'};
-  M.shockeel      = {name:'Shock Eel', sprite:'m-shock-eel', col:'#3F7A6A', ch:'e', hp:61, dmg:[6,9], acc:66, eva:18, armor:1, speed:100, range:1, xp:40,
+  M.shockeel      = {name:'Shock Eel', sprite:'m-shock-eel', col:'#3F7A6A', ch:'e', hp:70, dmg:[6,9], acc:66, eva:18, armor:1, speed:100, range:1, xp:40,
                      band:[11,14], w:0, aquatic:true, el:'air', living:true, art:0.95, artLeft:true, sfx:'slime'};   /* w:0 - placed in water by eelPlacement() */
-  M.myconid       = {name:'Myconid', sprite:'m-myconid', col:'#7FA8A0', ch:'f', hp:61, dmg:[6,9], acc:60, eva:10, armor:1, speed:100, range:1, xp:38,
+  M.myconid       = {name:'Myconid', sprite:'m-myconid', col:'#7FA8A0', ch:'f', hp:70, dmg:[6,9], acc:60, eva:10, armor:1, speed:100, range:1, xp:38,
                      band:[11,15], w:16, spores:true, sporeproof:true, el:'earth', living:true, spellcaster:true, art:0.95, artLeft:true, sfx:'shaman'};
-  M.shroomling    = {name:'Shroomling', sprite:'m-myconid', col:'#9FC0B0', ch:'f', hp:18, dmg:[4,6], acc:58, eva:12, armor:0, speed:100, range:1, xp:6,
+  M.shroomling    = {name:'Shroomling', sprite:'m-myconid', col:'#9FC0B0', ch:'f', hp:21, dmg:[4,6], acc:58, eva:12, armor:0, speed:100, range:1, xp:6,
                      band:[0,0], w:0, sporeproof:true, living:true, tiny:true, art:0.5, artLeft:true, sfx:'slime'};
   /* 2026-09-28 (Justin): the Deep Maw's brood. A Myconid in every way but its name and its colours (the Maw's own
      earth-brown and bruised pink); only the Maw calls it up, see mawCallTender */
-  M.wormtender    = Object.assign({}, M.myconid, {name:'Worm Tender', hp:55, sprite:'m-worm-tender', col:'#A8705A', band:[0,0], w:0,
+  M.wormtender    = Object.assign({}, M.myconid, {name:'Worm Tender', hp:63, sprite:'m-worm-tender', col:'#A8705A', band:[0,0], w:0,
                      hint:'Summoned by the Deep Maw. Spore clouds poison and slow creatures inside.'});
-  M.crystalcrawler= {name:'Crystal Crawler', sprite:'m-crystal-crawler', col:'#8A6AD0', ch:'c', hp:55, dmg:[6,9], acc:68, eva:20, armor:3, speed:130, range:1, xp:38,
+  M.crystalcrawler= {name:'Crystal Crawler', sprite:'m-crystal-crawler', col:'#8A6AD0', ch:'c', hp:63, dmg:[6,9], acc:68, eva:20, armor:3, speed:130, range:1, xp:38,
                      band:[13,15], w:9, shatters:true, el:'earth', art:0.95, artLeft:true, sfx:'spider'};   /* the Caverns' one fast creature */
-  M.rootbound    = {name:'Root-bound', sprite:'m-rootbound', col:'#879567', ch:'r', hp:77, dmg:[8,12], acc:66, eva:8, armor:3, speed:100, range:1, xp:42,
+  M.rootbound    = {name:'Root-bound', sprite:'m-rootbound', col:'#879567', ch:'r', hp:89, dmg:[8,12], acc:66, eva:8, armor:3, speed:100, range:1, xp:42,
                      band:[11,15], w:8, living:true, spellcaster:true, caveSpell:'root', castCooldown:500, art:.95, sfx:'shaman',
                      hint:'Casts Earth Root, then closes in to strike while the spell recovers.'};
   /* Old save aliases only. Dungeon vermin remain unchanged on floors 1-5. */
   M.caverat       = Object.assign({}, M.rat, {name:'Cave Rat',hp:42,dmg:[6,9],acc:66,eva:24,speed:135,xp:30,art:.85,band:[11,13],w:0});
   M.cavebat       = Object.assign({}, M.bat, {name:'Grotto Bat',hp:33,dmg:[4,6],acc:66,eva:28,speed:130,xp:28,art:.85,band:[11,12], w:0});
   /* Basalt keeps its craggy crystal-backed art; the Dungeon Rock Slime has a separate new sheet. */
-  M.caveslime     = Object.assign({}, M.slime, {name:'Basalt Slime',sprite:'m-slime',artLeft:false,hp:79,dmg:[7,10],acc:62,armor:5,xp:38,art:1,band:[11,15], w:10,
+  M.caveslime     = Object.assign({}, M.slime, {name:'Basalt Slime',sprite:'m-slime',artLeft:false,hp:91,dmg:[7,10],acc:62,armor:5,xp:38,art:1,band:[11,15], w:10,
                      hint:'Splits when wounded. Spits roots.'});
   delete M.caverat.biome; delete M.cavebat.biome; delete M.caveslime.biome;
   /* The Deep Maw: tuned by hand for floor 15, so no floor curve (fixed, like the plane elites) */
-  M.deepmaw       = {name:'The Deep Maw', sprite:'m-deep-maw', col:'#B07A4A', ch:'W', hp:720, dmg:[24,34], acc:70, eva:0, armor:4, speed:100, range:1, xp:600,
+  M.deepmaw       = {name:'The Deep Maw', sprite:'m-deep-maw', col:'#B07A4A', ch:'W', hp:828, dmg:[24,34], acc:70, eva:0, armor:4, speed:100, range:1, xp:600,
                      band:[15,15], w:0, boss:true, elite:true, big:2, fixed:true, heavy:true, living:true, art:2.0, bigScale:1.5, artLeft:true, sfx:'maw',
                      hint:'Each eruption summons a Worm Tender by a burrow mound. Maximum 1 Tender alive.'};
   M.mawlimb       = {name:'The Deep Maw', sprite:'m-deep-maw', col:'#B07A4A', ch:'W', hp:9999, dmg:[0,0], acc:0, eva:0, armor:4, speed:100, range:0, xp:0,
@@ -67,7 +67,7 @@
 var CAVE_ELEMENT_TIERS = [{"old":"emberling","kind":"cinderling","name":"Cinderling","sprite":"m-cinderling","file":"mob-m-cinderling.webp"},{"old":"tideling","kind":"rippleling","name":"Rippleling","sprite":"m-rippleling","file":"mob-m-rippleling.webp"},{"old":"galeling","kind":"gustling","name":"Gustling","sprite":"m-gustling","file":"mob-m-gustling.webp"},{"old":"stoneling","kind":"mossling","name":"Mossling","sprite":"m-mossling","file":"mob-m-mossling.webp"},{"old":"wisp","kind":"duskling","name":"Duskling","sprite":"m-duskling","file":"mob-m-duskling.webp"},{"old":"lumenling","kind":"gleamling","name":"Gleamling","sprite":"m-gleamling","file":"mob-m-gleamling.webp"}];
 CAVE_ELEMENT_TIERS.forEach(function(r){
   var old=MONSTERS[r.old];
-  MONSTERS[r.kind]=Object.assign({},old,{name:r.name,sprite:r.sprite,hp:r.old==='stoneling'?77:53,dmg:[7,10],acc:old.acc+5,armor:(old.armor||0)+2,xp:55,art:.95,elementTier:2,band:[0,0],w:0});
+  MONSTERS[r.kind]=Object.assign({},old,{name:r.name,sprite:r.sprite,hp:old.el==='earth'?122:old.el==='air'?92:102,dmg:[6,9],acc:old.acc+5,armor:(old.armor||0)+2,xp:55,art:.95,elementTier:2,band:[0,0],w:0});
   DROPS[r.kind]=DROPS[r.old];
 });
 /* Late-biome members of the same six elemental families. */
@@ -75,7 +75,7 @@ var ELEMENTAL_ROOM_KINDS={fire:['emberling','cinderling','pyreling'],water:['tid
 Object.keys(ELEMENTAL_ROOM_KINDS).forEach(function(element){
   var kinds=ELEMENTAL_ROOM_KINDS[element],old=MONSTERS[kinds[0]],second=MONSTERS[kinds[1]],third=kinds[2];
   old.elementTier=1;
-  MONSTERS[third]=Object.assign({},second,{name:element==='water'?'Tideling':third[0].toUpperCase()+third.slice(1),sprite:'m-'+(element==='water'?'tideling-tier3':third),hp:element==='earth'?112:78,dmg:[10,14],acc:old.acc+8,armor:(old.armor||0)+3,xp:85,art:1.05,elementTier:3,band:[0,0],w:0});
+  MONSTERS[third]=Object.assign({},second,{name:element==='water'?'Tideling':third[0].toUpperCase()+third.slice(1),sprite:'m-'+(element==='water'?'tideling-tier3':third),hp:element==='earth'?224:element==='air'?168:186,dmg:[15,19],acc:old.acc+8,armor:(old.armor||0)+3,xp:85,art:1.05,elementTier:3,band:[0,0],w:0});
   DROPS[third]=DROPS[kinds[0]];
   var effect={fire:'Burning',water:'Chill',air:'Stun',earth:'Poison',light:'Blind',shadow:'Fear'}[element];
   kinds.forEach(function(kind){MONSTERS[kind].elementalProcChance=.30;MONSTERS[kind].hint='30% chance to inflict '+effect+' on a landed attack.';});
@@ -84,15 +84,6 @@ Object.keys(ELEMENTAL_ROOM_KINDS).forEach(function(element){
 /* special rooms and fallbacks ask for Dungeon kinds by name; in the Caverns they get Caverns ones */
 var CAVE_SWAP = {rat:'rootbound', bat:'rootbound', caverat:'rootbound', cavebat:'rootbound', slime:'caveslime', goblin:'stormbeetle', archer:'sparkjelly', brute:'stormbeetle', shaman:'myconid'};
 CAVE_ELEMENT_TIERS.forEach(function(r){CAVE_SWAP[r.old]=r.kind;});
-
-/* Keep wounded health proportional and make old saves and repeated visits safe. */
-function applyCavernEnemyTuning(e){
-  if(!e||!e.foe||e.ally||!e.base||e.base.object||e.hp<=0||e.cavernHp15Adjusted||floorNo<11||floorNo>15||floorMeta.plane||floorMeta.chaosPreview)return;
-  var kinds=['stormbeetle','sparkjelly','shockeel','myconid','sporecaller','shroomling','wormtender','crystalcrawler','rootbound','caveslime','deepmaw'].concat(CAVE_ELEMENT_TIERS.map(function(r){return r.kind;}));
-  if(kinds.indexOf(e.kind)<0||!Number.isFinite(e.maxhp)||e.maxhp<=0)return;
-  var fraction=e.hp/e.maxhp;e.maxhp=Math.max(1,Math.round(e.maxhp*1.15));e.hp=Math.max(1,Math.min(e.maxhp,Math.round(e.maxhp*fraction)));e.cavernHp15Adjusted=true;
-}
-
 
 /* Older saves stored Dungeon copies and the retired Caverns vermin. Preserve
    damage taken, status and timing when refreshing hostile Caverns residents. */
@@ -114,7 +105,6 @@ function refreshCavernResidents(){
     if(!e.small){e.maxhp=sHP(b.hp);e.hp=Math.max(1,Math.ceil(e.maxhp*ratio));e.name=b.name;}
     if(e.base.sprite!==appearanceSprite)FoteContent.appearanceChanged(floorMeta);
   });
-  residents.forEach(applyCavernEnemyTuning);
 }
 
 /* ---------------------------------------------------------------- helpers */
@@ -189,7 +179,7 @@ function sproutShroomlings(e,cells,count,clock){
   while(sprouts.length<limit&&cells.length){
     var c=cells.length===1?cells[0]:pick(cells);
     cells=cells.filter(function(o){return o.x!==c.x||o.y!==c.y;});
-    var s=spawn('shroomling',c.x,c.y);s.state='hunt';s.noLoot=true;s.owner=e.id;s.t=clock===undefined?e.t:clock;applyCavernEnemyTuning(s);
+    var s=spawn('shroomling',c.x,c.y);s.state='hunt';s.noLoot=true;s.owner=e.id;s.t=clock===undefined?e.t:clock;
     sparkleFx(c.x,c.y,'poison',16);sprouts.push(s);
   }
   return sprouts;
@@ -500,7 +490,6 @@ function spawnDeepMaw(arena){
   var e=spawn('deepmaw', sx, sy);
   ents=ents.filter(function(o){ return o!==e; });                 /* it starts underground: out of the world */
   e.state='hunt'; e.elite=true; e.big=true; e.st={};
-  applyCavernEnemyTuning(e);
   floorMeta.bossId=e.id;
   floorMeta.maw={phase:'dormant', arena:arena, mounds:mounds, ent:e, limbs:[], n:0, at:0, cells:[], rubble:[]};
   return e;
@@ -597,7 +586,7 @@ function mawCallTender(M){
     var spots=mawRing(M.mounds[(o+k)%M.mounds.length]).filter(free);
     if(!spots.length) continue;
     var i=spots[Math.floor(rng()*spots.length)], t=spawnRaw('wormtender', i%MW, (i/MW)|0);
-    t.state='hunt'; t.noLoot=true;applyCavernEnemyTuning(t); (M.tenders||(M.tenders=[])).push(t.id);
+    t.state='hunt'; t.noLoot=true; (M.tenders||(M.tenders=[])).push(t.id);
     burst(t.x, t.y, 'earth', 20, 0.06);
     log('<b>Worm Tender summoned!</b>','c-you');
     return;

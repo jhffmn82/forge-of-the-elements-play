@@ -190,7 +190,7 @@ function arriveFallenEnemies(){
     FoteTransitions.resumeClocks({ents:[e],turn:fall.turn,clock:fall.clock},turn,player.t);
     e.x=spot.x;e.y=spot.y;e.t=player.t+100;e._lx=undefined;e._ly=undefined;
     ents.push(e);
-    betaEnemyBalance(e);
+    migrateEnemyBaseStats(e);
   });
   if(remaining.length)RUN.fallenEnemies[floorNo]=remaining;else delete RUN.fallenEnemies[floorNo];
 }

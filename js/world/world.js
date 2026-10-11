@@ -1506,11 +1506,9 @@ function spawnRaw(kind,x,y,options){
   var b=options.base||MONSTERS[kind];
   /* Creature stats come from the content table; depth selects the roster. */
   var e={id:nextId++, kind:kind, name:b.name, ch:b.ch, col:b.col, x:x, y:y,
-         hp:sHP(b.hp), maxhp:sHP(b.hp), base:b, t:(typeof player!=='undefined' && player && player.t) ? player.t : 0, state:'asleep', st:{}, foe:true,
+         hp:sHP(b.hp), maxhp:sHP(b.hp), base:b, baseStatsVersion:1, t:(typeof player!=='undefined' && player && player.t) ? player.t : 0, state:'asleep', st:{}, foe:true,
          dmg:[sDMG(b.dmg[0]), sDMG(b.dmg[1])], castCd:ri(1,3)};
   if(options.ally){e.foe=false;e.ally=true;}
-  /* Health tuning waits until callers finish assigning ally/elite roles. */
-  if(typeof applyEarlyFloorEnemyTuning==='function')applyEarlyFloorEnemyTuning(e,true);
   FoteContent.appearanceChanged(floorMeta);
   if(b.ghoul&&!e.ally&&typeof FoteGhoul!=='undefined')return FoteGhoul.bury(e);
   ents.push(e); return e;

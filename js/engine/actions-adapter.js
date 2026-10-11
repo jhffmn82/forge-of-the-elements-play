@@ -136,8 +136,8 @@ function finishAttackReactions(event){
     if(b.chillTouch&&event.primaryDamage>0&&dist(att,def)<=1){addChill(def);floatText(def.x,def.y,'chilled','ice');}
     if(b.bleeds&&(b.bleedDamage===undefined||dist(att,def)<=1)&&rng()<b.bleeds)inflictBleed(def,att,b.bleedTurns,b.bleedDamage);
     if(b.fearTouch)inflictFear(def,att,b.fearTouch);
-    if(b.fangs&&dist(att,def)<=1&&rng()<b.fangs){if(applyStatus(def,'poison',DRIDER.poison[0],underdarkEnemyStat(att,sDMG(DRIDER.poison[1]))).applied){floatText(def.x,def.y,'poisoned','poison');if(def===player)log('You: Poisoned.','c-you');}}
-    if(b.emberBite&&rng()<b.emberBite&&!(def.st&&def.st.burn)){if(applyStatus(def,'burn',3,underdarkEnemyStat(att,sDMG(2+Math.floor(floorNo/5)))).applied&&def===player)log('You: Burning.','c-you');}}
+    if(b.fangs&&dist(att,def)<=1&&rng()<b.fangs){if(applyStatus(def,'poison',DRIDER.poison[0],enemyAbilityStat(att,sDMG(DRIDER.poison[1]))).applied){floatText(def.x,def.y,'poisoned','poison');if(def===player)log('You: Poisoned.','c-you');}}
+    if(b.emberBite&&rng()<b.emberBite&&!(def.st&&def.st.burn)){if(applyStatus(def,'burn',3,enemyAbilityStat(att,sDMG(2+Math.floor(floorNo/5)))).applied&&def===player)log('You: Burning.','c-you');}}
   if(event.dark&&landed)player.syllaDark=0;
   if(!landed)return;
   if(att.broodling&&def!==player&&def.hp>0)broodBite(def);
@@ -369,7 +369,7 @@ function resolveWeaponDamage(event,strike){
     el = att.base.el;
     var add = applyDamage(def,base*.5,elemToType(el),att,{attackRolled:true,tags:['proc','elemental-attack'],actionId:event.actionId});
     if((att.base.elementTier?phys>0||add>0:add>0)&&def.hp>0&&rng() < (att.base.elementalProcChance===undefined?.22:att.base.elementalProcChance)){
-      if(el==='fire'&&applyStatus(def,'burn',3,underdarkEnemyStat(att,sDMG(2))).applied)note=' Burning';
+      if(el==='fire'&&applyStatus(def,'burn',3,enemyAbilityStat(att,sDMG(2))).applied)note=' Burning';
       else if(el==='water'){var chilled=addChill(def);if(chilled.applied)note=chilled.key==='frozen'?' Frozen':' Chilled';}
       else if(el==='earth'&&att.base.elementTier){if(applyStatus(def,'poison',3,sDMG(1+att.base.elementTier)).applied)note=' Poisoned';}
       else if(el==='earth'&&applyStatus(def,'root',2).applied)note=' Rooted';

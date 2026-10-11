@@ -674,7 +674,7 @@
       '<label id="journalGroupLabel" hidden>Location<select id="journalGroup"><option value="">All locations</option></select></label></div>'+
       '<p id="journalCount" class="journal-count" role="status" aria-live="polite"></p><div id="journalEntries"></div></div>',
       [{label:'Close journal',fn:closeModal}],'journal-modal');
-    var section=$('journalSection'),search=$('journalSearch'),group=$('journalGroup'),entries=[],thumbnailObserver=null,thumbnailHosts=[];
+    var section=$('journalSection'),search=$('journalSearch'),group=$('journalGroup'),entries=[],thumbnailObserver=null,thumbnailHosts=[],renderedSection=null,renderedQuery='';
     function clearThumbnails(){
       if(thumbnailObserver){thumbnailObserver.disconnect();thumbnailObserver=null;}
       thumbnailHosts.forEach(function(host){cancelStaticArtPaint(host,'journal');});thumbnailHosts=[];
@@ -709,7 +709,17 @@
       $('journalGroupLabel').hidden=selected!=='bestiary'||!locations.length;
       render();
     }
+    function rememberCategories(){
+      if(!renderedSection||renderedQuery)return;
+      $('journalEntries').querySelectorAll('.journal-category').forEach(function(category){
+        var key=renderedSection+'/'+category.dataset.journalCategory;
+        if(category.open)expandedCategories.add(key);else expandedCategories.delete(key);
+      });
+    }
     function render(){
+      // Native toggle events are queued; save the current state before replacing
+      // the nodes when a player immediately changes sections.
+      rememberCategories();renderedSection=selected;renderedQuery=search.value.trim();
       clearThumbnails();
       if(selected==='runs'){
         var history=FoteRunHistoryUI.historyContent();

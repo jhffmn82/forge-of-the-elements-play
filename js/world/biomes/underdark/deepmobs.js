@@ -15,8 +15,8 @@
      spawnMatron(arena)    defined here; safe to call more than once (only the first call spawns her).
    Without any of it (the world branch not merged) everything falls back: a mixed roster everywhere, and the
    Matron in the boss room (or the largest room) with no circles, channelling where she stands.
-   Base stats are fixed by roster. betaEnemyBalance applies the existing biome tuning, then the native
-   Underdark's 25% HP/damage increase once; fixed ability damage uses underdarkEnemyStat at its owner.
+   Base stats include the full species balance. Ability damage reads the species' innate scale;
+   placing a creature on another floor does not change its health or attack damage.
    ===================================================================== */
 
 function deepMobsOn(){ return typeof bidx==='function' && bidx()===3 && !(floorMeta && floorMeta.plane); }
@@ -26,24 +26,24 @@ function deepMobsOn(){ return typeof bidx==='function' && bidx()===3 && !(floorM
   var M=MONSTERS;
   /* region: 0 temple, 1 Underdark, 2 volcanic. deepAI names the special turn (DEEP_AI below). bleeds: chance a
      landed hit opens a Bleed. darksight: sees through a globe of darkness. */
-  M.drowblade    = {name:'Drow Blade', sprite:'m-drow-blade', col:'#6A3A5A', ch:'d', hp:108, dmg:[10,14], acc:70, eva:24, armor:3, speed:100, range:1, xp:48,
+  M.drowblade    = {name:'Drow Blade', sprite:'m-drow-blade', col:'#6A3A5A', ch:'d', hp:163, dmg:[19,24], abilityDamageScale:1.25, acc:70, eva:24, armor:3, speed:100, range:1, xp:48,
                     band:[16,20], w:24, region:0, deepAI:'blade', bleeds:0.50, darksight:true, spawnInvisible:true, living:true, art:0.95, artLeft:true, sfx:'drow'};
-  M.drowpriestess= {name:'Drow Priestess', sprite:'m-drow-priestess', col:'#9A2A4A', ch:'p', hp:84, dmg:[12,17], acc:68, eva:18, armor:1, speed:100, range:1, xp:56,
+  M.drowpriestess= {name:'Drow Priestess', sprite:'m-drow-priestess', col:'#9A2A4A', ch:'p', hp:126, dmg:[22,28], abilityDamageScale:1.25, acc:68, eva:18, armor:1, speed:100, range:1, xp:56,
                     band:[16,20], w:12, region:0, deepAI:'priestess', darksight:true, living:true, spellcaster:true, art:0.95, artLeft:true, sfx:'shaman'};
-  M.thoughteater = {name:'Thought Eater', sprite:'m-thought-eater', col:'#C89AD0', ch:'t', hp:66, dmg:[8,11], acc:72, eva:28, armor:0, speed:100, range:1, xp:50,
+  M.thoughteater = {name:'Thought Eater', sprite:'m-thought-eater', col:'#C89AD0', ch:'t', hp:99, dmg:[17,21], abilityDamageScale:1.25, acc:72, eva:28, armor:0, speed:100, range:1, xp:50,
                     band:[17,20], w:10, region:0, deepAI:'eater', el:'shadow', flying:true, hover:true, living:true, spellcaster:true, art:0.8, artLeft:true, sfx:'imp'};
-  M.webspitter   = {name:'Web Spitter', sprite:'m-web-spitter', col:'#4A3A5A', ch:'w', hp:84, dmg:[8,11], acc:68, eva:20, armor:2, speed:100, range:1, xp:40,
+  M.webspitter   = {name:'Web Spitter', sprite:'m-web-spitter', col:'#4A3A5A', ch:'w', hp:126, dmg:[17,21], abilityDamageScale:1.25, acc:68, eva:20, armor:2, speed:100, range:1, xp:40,
                     band:[16,20], w:18, region:1, deepAI:'spitter', bleeds:0.35, living:true, spider:true, art:0.85, artLeft:true, sfx:'spider'};
-  M.spiderling   = {name:'Spiderling', sprite:'m-spiderling', col:'#5A3A4A', ch:'s', hp:15, dmg:[3,4], acc:64, eva:26, armor:0, speed:100, range:1, xp:8,
+  M.spiderling   = {name:'Spiderling', sprite:'m-spiderling', col:'#5A3A4A', ch:'s', hp:23, dmg:[11,12], abilityDamageScale:1.25, acc:64, eva:26, armor:0, speed:100, range:1, xp:8,
                     band:[16,20], w:16, pack:[3,5], region:1, bleeds:0.30, living:true, spider:true, tiny:true, art:0.5, artLeft:true, sfx:'spider'};
-  M.drider       = {name:'Drider', sprite:'m-drider', col:'#3A2A3A', ch:'D', hp:216, dmg:[13,18], acc:70, eva:14, armor:4, speed:100, range:6, xp:120,
+  M.drider       = {name:'Drider', sprite:'m-drider', col:'#3A2A3A', ch:'D', hp:324, dmg:[23,29], abilityDamageScale:1.25, acc:70, eva:14, armor:4, speed:100, range:6, xp:120,
                     band:[17,20], w:6, region:1, deepAI:'drider', elite:true, heavy:true, el:'earth', fangs:0.35, darksight:true, living:true, spider:true, art:1.4, artLeft:true, sfx:'brute'};
-  M.fireimp      = {name:'Fire Imp', sprite:'m-fire-imp', col:'#E2522B', ch:'i', hp:72, dmg:[12,17], acc:70, eva:30, armor:0, speed:100, range:1, xp:42,
+  M.fireimp      = {name:'Fire Imp', sprite:'m-fire-imp', col:'#E2522B', ch:'i', hp:108, dmg:[22,28], abilityDamageScale:1.25, acc:70, eva:30, armor:0, speed:100, range:1, xp:42,
                     band:[16,20], w:18, region:2, deepAI:'imp', el:'fire', flying:true, hover:true, living:true, spellcaster:true, art:0.75, artLeft:true, sfx:'imp'};
-  M.emberspider  = {name:'Ember Spider', sprite:'m-ember-spider', col:'#B8482A', ch:'e', hp:108, dmg:[10,13], acc:68, eva:18, armor:3, speed:100, range:1, xp:46,
+  M.emberspider  = {name:'Ember Spider', sprite:'m-ember-spider', col:'#B8482A', ch:'e', hp:163, dmg:[19,23], abilityDamageScale:1.25, acc:68, eva:18, armor:3, speed:100, range:1, xp:46,
                     band:[16,20], w:20, region:2, el:'fire', emberBite:0.30, living:true, spider:true, art:0.9, artLeft:true, sfx:'spider'};
   /* the Matron of the Web: tuned by hand for floor 20, so no floor curve (fixed, like the other bosses) */
-  M.matron       = {name:'The Matron of the Web', sprite:'m-matron', col:'#8A1A3A', ch:'M', hp:380, dmg:[15,21], acc:74, eva:12, armor:5, speed:100, range:1, xp:900,
+  M.matron       = {name:'The Matron of the Web', sprite:'m-matron', col:'#8A1A3A', ch:'M', hp:570, dmg:[26,33], abilityDamageScale:1.25, acc:74, eva:12, armor:5, speed:100, range:1, xp:900,
                     band:[20,20], w:0, boss:true, elite:true, fixed:true, heavy:true, bleeds:0.5, darksight:true, living:true, spider:true, spellcaster:true, art:2.1, artLeft:true, sfx:'matron'};
   DROPS.drowblade     = {chance:0.25, table:{essence:10, gear:5, sigil:1}};
   DROPS.drowpriestess = {chance:0.35, table:{essence:8, sigil:3, gear:3, food:1}};
@@ -75,6 +75,12 @@ var MATRON  = {phase:[0.66, 0.33], ritTurns:3, ritBreak:0.08, ritEvery:[8,6,5], 
 /* Fixed offspring are shared by their native spawn and scene readiness. */
 function deepHatchKind(prop){return prop&&prop.hatch&&!prop.hatched?'spiderling':null;}
 function deepSummonKinds(actor){return actor.kind==='drowpriestess'?[PRIEST.callKind]:actor.kind==='matron'?[MATRON.driderKind,MATRON.spiderKind]:[];}
+
+/* Native special-ability damage is part of the species definition. */
+function enemyAbilityStat(e,value){
+  var scale=e&&e.foe&&!e.ally&&e.base&&e.base.abilityDamageScale||1;
+  return scale===1?value:Math.max(value>0?1:0,Math.round(value*scale));
+}
 
 /* ---------------------------------------------------------------- helpers */
 function deepVis(x,y){ return !!(revealAll || (vis && vis[idxOf(x,y)])); }
@@ -154,7 +160,7 @@ function deepRegionalize(){
 function inflictBleed(t, src, turns, damage){
   if(!t || t.hp<=0 || (t!==player && !(t.base && t.base.living))) return;
   var fresh=!(t.st && t.st.bleed);
-  var result=applyStatus(t, 'bleed', turns||BLEED.turns, damage===undefined?underdarkEnemyStat(src,sDMG(BLEED.base + floorNo*BLEED.per)):sDMG(damage));
+  var result=applyStatus(t, 'bleed', turns||BLEED.turns, damage===undefined?enemyAbilityStat(src,sDMG(BLEED.base + floorNo*BLEED.per)):sDMG(damage));
   if(result.applied&&fresh){ floatText(t.x, t.y, 'bleeding', 'blood'); if(t===player) log('<b>Bleeding.</b> Heal to stop it.','c-you'); }
 }
 function inflictFear(t,src,turns){
@@ -322,7 +328,7 @@ var DEEP_AI = {
           floatText(player.x,player.y,'-'+n+' mp','magic');
           log('Thought Eater: −'+n+' Mana'+(h>0 ? '; +'+h+' HP' : '')+'.','c-you');
           /* 2026-09-23 (Justin): the sap hurts too - half the mana taken lands as magic damage (past armour, Spell Ward may turn it) */
-          if(n>0) deepHurt(player, underdarkEnemyStat(e,Math.round(n*0.5)), 'magic', e, 'Thought Eater → you');
+          if(n>0) deepHurt(player, enemyAbilityStat(e,Math.round(n*0.5)), 'magic', e, 'Thought Eater → you');
         } else {
           applyStatus(player,'stun',1); floatText(player.x,player.y,'dazed','magic');
           log('Thought Eater: you Stunned (1 turn).','c-you');
@@ -356,7 +362,7 @@ var DEEP_AI = {
       recordHostileAttack(e,player,['attack','spell','ranged']);
       if(rng()<hostileHitChance(hitChance(accOf(e)+6, evaOf(player)),true)){
         var fd=deepHurt(player, roll(e.dmg[0], e.dmg[1]), 'fire', e, 'Fire Imp → you');
-        if(player.hp>0 && rng()<IMP.burn){ var burn=applyStatus(player,'burn',3,underdarkEnemyStat(e,sDMG(2))); if(burn.applied&&!burn.previous)log('Burning.','c-you'); }
+        if(player.hp>0 && rng()<IMP.burn){ var burn=applyStatus(player,'burn',3,enemyAbilityStat(e,sDMG(2))); if(burn.applied&&!burn.previous)log('Burning.','c-you'); }
         ignite(player.x, player.y, null);
       } else {
         log('Fire Imp misses; ground ignited.','c-miss');
@@ -516,7 +522,7 @@ function matronFinish(e, M){
   var R=M.rit; matronEndRitual(M);
   SHAKE=10; ringFx(e.x, e.y, '#D0203A', 6); sfx('explosion',{from:e});
   if(R.kind==='tithe'){
-    var raw=Math.min(underdarkEnemyStat(e,roll(MATRON.tithe[0], MATRON.tithe[1])), Math.round(player.maxhp*MATRON.titheCap));   /* never a one-shot */
+    var raw=Math.min(enemyAbilityStat(e,roll(MATRON.tithe[0], MATRON.tithe[1])), Math.round(player.maxhp*MATRON.titheCap));   /* never a one-shot */
     boltFx(player.x, player.y, e.x, e.y, 'blood'); burst(player.x, player.y, 'blood', 40, 0.08);
     var d=deepHurt(player, raw, 'dark', e, 'Blood Tithe → you');
     if(player.hp>0) inflictBleed(player, e, 3);
@@ -535,9 +541,9 @@ function matronVenomTick(){
   ents.slice().forEach(function(t){
     if(t!==player && !t.ally) return;
     if(V.cells.indexOf(idxOf(t.x,t.y))<0) return;
-    var raw=underdarkEnemyStat(e,roll(MATRON.venom[0], MATRON.venom[1])); if(t===player) raw=Math.min(raw, Math.round(player.maxhp*MATRON.venomCap));
+    var raw=enemyAbilityStat(e,roll(MATRON.venom[0], MATRON.venom[1])); if(t===player) raw=Math.min(raw, Math.round(player.maxhp*MATRON.venomCap));
     deepHurt(t, raw, 'poison', e, t===player ? 'Venom Rain → you' : null);
-    if(t.hp>0) applyStatus(t, 'poison', 3, underdarkEnemyStat(e,sDMG(3)));
+    if(t.hp>0) applyStatus(t, 'poison', 3, enemyAbilityStat(e,sDMG(3)));
   });
 }
 function matronAct(e){

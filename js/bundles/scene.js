@@ -2516,9 +2516,8 @@
     if(row.poisonTrail&&typeof FoteGreenSlime!=='undefined')MONSTERS[kind].hint=FoteGreenSlime.trailDescription({kind:kind,base:MONSTERS[kind]});
     DROPS[kind]={chance:.22,table:{essence:12,gear:3,food:2}};
   });});
-  // Weaver offspring reuse the native Spiderling, outside the ordinary Chaos
-  // roster. Only the local AI/region and its recolored atlas differ.
-  MONSTERS['chaos-spiderling']=Object.assign({},MONSTERS.spiderling,{sprite:'m-chaos-spiderling',chaosAI:true,chaosBiome:'violet-warrens',band:[99,99],w:0});
+  // Weaver offspring retain their own Chaos stats and recolored atlas.
+  MONSTERS['chaos-spiderling']=Object.assign({},MONSTERS.spiderling,{hp:15,dmg:[3,4],abilityDamageScale:1,sprite:'m-chaos-spiderling',chaosAI:true,chaosBiome:'violet-warrens',band:[99,99],w:0});
   DROPS['chaos-spiderling']=DROPS.spiderling;
   if(typeof STATUS_INFO!=='undefined'){
     STATUS_INFO.chaoslens={name:'Lens Shield',icon:'ic-arcane-ward',d:'Absorbs damage for up to 4 turns.'};
@@ -2542,7 +2541,7 @@
     var previous=rng,e;
     try{rng=mulberry32(((floorMeta.chaosPreview?floorMeta.chaosPreview.seed:worldSeed)^x*73856093^y*19349663^nextId)>>>0);e=spawnRaw(kind,x,y);}finally{rng=previous;}
     e.state=options.state||'asleep';e.castCd=options.castCd===undefined?1:options.castCd;e.chaosRegionId=region;
-    e.chaosCooldown=now()+100;e.chaosNextElement='fire';e.chaosBorn=0;e.beta11Balanced=true;
+    e.chaosCooldown=now()+100;e.chaosNextElement='fire';e.chaosBorn=0;
     if(options.offspring){e.noLoot=true;e.chaosOwnerId=options.ownerId;}
     return e;
   }
@@ -3538,7 +3537,7 @@ globalThis.UNMAKER_ATLAS={
     friends.sort(function(a,b){return a===player?-1:b===player?1:a.id-b.id;});
     friends.forEach(function(e,index){e.x=spots[index].x;e.y=spots[index].y;e._lx=undefined;e._ly=undefined;});
     var e=spawnRaw(forms[0].kind,d.bossStart.x,d.bossStart.y);
-    e.state='hunt';e.beta11Balanced=true;e.noReward=true;e.lastSeen={x:player.x,y:player.y};e.unmakerPhase=1;
+    e.state='hunt';e.noReward=true;e.lastSeen={x:player.x,y:player.y};e.unmakerPhase=1;
     floorMeta.unmakerEncounter={version:1,status:'active',bossId:e.id,phase:1,warning:null,majorReadyAt:clock()+300,
       rushReadyAt:clock(),summonReadyAt:clock(),summoned:0,summonIds:[],majorCycle:0,elementIndex:0,basicCycle:0};
     floorMeta.boss=true;floorMeta.bossRewarded=false;RUN.bossDead=false;floorMeta.exitOpen=false;
@@ -3589,7 +3588,7 @@ globalThis.UNMAKER_ATLAS={
       // pattern without damaging anyone; the new pylons receive a full warning.
       if(s.phase===2&&s.warning&&s.warning.kind==='beam')s.warning=null;
       ensurePylons(s);
-      e.dmg=form.dmg.map(function(d){return sDMG(d);});e.windup=s.warning;e.state='hunt';e.beta11Balanced=true;
+      e.dmg=form.dmg.map(function(d){return sDMG(d);});e.windup=s.warning;e.state='hunt';
       // Saves from the one-cell preview may leave an edge against a pillar.
       // Repair only an invalid footprint; transformations keep their anchor.
       if(!bodyFits(e,e.x,e.y)){

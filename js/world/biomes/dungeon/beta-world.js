@@ -56,75 +56,10 @@ function effectFootprint(A,x,y,visibility){
 
 function drawLastCastSurface(){var f=floorMeta.lastCastTiles;if(!f||f.until<performance.now())return;ctx.save();ctx.fillStyle='rgba(255,200,100,.18)';ctx.strokeStyle='rgba(255,220,145,.8)';f.tiles.forEach(function(p){if(sceneVisibility()[idxOf(p[0],p[1])]){var x=(p[0]-camX)*TS,y=(p[1]-camY)*TS;ctx.fillRect(x,y,TS,TS);ctx.strokeRect(x+2,y+2,TS-4,TS-4);}});ctx.restore();
 }
-/* Preserve content HP; the saved marker keeps floor-one damage tuning idempotent. */
-function applyEarlyFloorEnemyTuning(e,deferHealth){
- if(floorMeta.plane||!e.foe||e.ally||!['rat','goblin'].includes(e.kind))return;
- var base=e.base||{};
- if(floorNo===1&&!e.floorOneDamageAdjusted){e.dmg=(e.dmg||base.dmg).map(function(v){return Math.max(1,v-2);});e.floorOneDamageAdjusted=true;}
-}
-function betaEnemyBalance(e){
- applyEarlyFloorEnemyTuning(e);
- if(!e.foe||e.ally)return;
- if(floorMeta.plane){applyElementalingBiomeTuning(e);return;}
- if(!e.beta11Balanced){
-  e.beta11Balanced=true;
-  var b=Math.floor((floorNo-1)/5),extra=e.kind==='greenslime'?0:([1,2,0,3,0][b]||0);e.dmg=(e.dmg||e.base.dmg).map(function(v){return v+extra;});
-  if(b===3){var max=e.maxhp;e.maxhp=Math.round(max*1.2);e.hp=e.hp>0?Math.max(1,e.hp+e.maxhp-max):0;}
- }
-  applyUnderdarkEnemyTuning(e);
-  if(typeof applyCavernEnemyTuning==='function')applyCavernEnemyTuning(e);
-  applyElementalingBiomeTuning(e);
-  applyUnderdarkEnemyDamageBonus(e);
-}
-/* Slightly tougher than a strong ordinary resident, after the same biome
- * tuning. Their existing half-strength elemental damage counts toward the
- * damage target, rather than accidentally granting another 50% increase. */
-function applyElementalingBiomeTuning(e){
- if(!e||!e.base||!e.base.elementTier||!e.foe||e.ally||e.elementalBiomeTuningVersion===1||!Number.isFinite(e.maxhp)||e.maxhp<=0)return;
- var biome=Math.floor((floorNo-1)/5),plane=floorMeta.plane;
- var reference=plane?{fire:'flamedancer',water:'drownedone',air:'windwisp',earth:'burrower',light:'halowisp',shadow:'umbralhound'}[plane]:biome===0&&floorNo<=2?'goblin':['brute','gravebeetle','rootbound','drowblade'][biome];
- var normal=MONSTERS[reference];if(!normal)return;
- var hpFactor=!plane&&biome===3?1.2*1.25:!plane&&biome===2?1.15:1;
- var damageFactor=!plane&&biome===3?1.25:1,extra=plane?0:([1,2,0,3][biome]||0);
- var fraction=e.hp/e.maxhp,shape=e.base.el==='earth'?1.2:e.base.el==='air'?.9:1;
- e.maxhp=Math.max(1,Math.round(sHP(normal.hp)*hpFactor*1.15*shape));
- if(e.hp>0)e.hp=Math.max(1,Math.min(e.maxhp,Math.round(e.maxhp*fraction)));
- e.dmg=normal.dmg.map(function(value){return Math.max(1,Math.round((sDMG(value)+extra)*damageFactor*1.1/1.5));});
- e.elementalBiomeTuningVersion=1;
-}
-
-/* Native hostiles only: the saved marker belongs to actor stats, while fixed
- * ability and status damage use the same integer scaling at their owner. */
-function isUnderdarkEnemy(e){
- return !!(e&&e.foe&&!e.ally&&typeof DEEP_KINDS!=='undefined'&&(e.kind==='matron'||DEEP_KINDS.indexOf(e.kind)>=0)&&
-  floorNo>=16&&floorNo<=20&&!(floorMeta&&(floorMeta.plane||floorMeta.chaosPreview)));
-}
-function underdarkEnemyStat(e,value){return isUnderdarkEnemy(e)?Math.max(value>0?1:0,Math.round(value*1.25)):value;}
-function applyUnderdarkEnemyTuning(e){
- if(!isUnderdarkEnemy(e)||e.underdark25Adjusted||!Number.isFinite(e.maxhp)||e.maxhp<=0)return;
- var max=e.maxhp,fraction=e.hp/max;e.maxhp=underdarkEnemyStat(e,max);
- if(e.hp>0)e.hp=Math.max(1,Math.min(e.maxhp,Math.round(e.maxhp*fraction)));
- e.dmg=(e.dmg||e.base.dmg).map(function(value){return underdarkEnemyStat(e,value);});
- e.underdark25Adjusted=true;
-}
-/* All hostiles encountered here, including visitors and elementalings. Apply
- * after base/biome replacement, without changing fixed abilities or status ticks. */
-function applyUnderdarkEnemyDamageBonus(e){
- if(!e||!e.foe||e.ally||!e.base||e.base.object||e.underdarkDamage3Adjusted||
-  floorNo<16||floorNo>20||floorMeta.plane||floorMeta.chaosPreview||!Number.isFinite(e.maxhp)||e.maxhp<=0)return;
- var damage=e.dmg||e.base.dmg;
- if(!Array.isArray(damage)||damage.length!==2||!damage.every(Number.isFinite))return;
- e.dmg=damage.map(function(value){return value+3;});e.underdarkDamage3Adjusted=true;
-}
-
-
-function restorePuzzleState(){repairCryptPuzzleGuardians();repairCrystalVaultClaims();ents.forEach(betaEnemyBalance);(floorMeta.puzzles||[]).forEach(function(room){if(['sentinels','sentries'].includes(room.puzzle.kind))addPuzzleSwitch(room);if(room.puzzle.kind==='barricade'&&!room.burning&&!room.puzzle.solved)setT(room.puzzle.door.x,room.puzzle.door.y,SEALED);});}
+function restorePuzzleState(){repairCryptPuzzleGuardians();repairCrystalVaultClaims();(floorMeta.puzzles||[]).forEach(function(room){if(['sentinels','sentries'].includes(room.puzzle.kind))addPuzzleSwitch(room);if(room.puzzle.kind==='barricade'&&!room.burning&&!room.puzzle.solved)setT(room.puzzle.door.x,room.puzzle.door.y,SEALED);});}
 PUZZLE_KINDS.barricade.note='';
 PUZZLE_KINDS.spikes.note='Spikes cover the floor. Stone skin would shrug them off; floating would carry you over.';
 ['sentinels','sentries','darktraps','library'].forEach(function(k){PUZZLE_KINDS[k].note='';});
-
-/* Named floor-generation stages; ordered by generation-adapter.js. */
-function balanceGeneratedEnemies(){ents.forEach(betaEnemyBalance);return;}
 
 
 function activatePuzzleSwitch(p){

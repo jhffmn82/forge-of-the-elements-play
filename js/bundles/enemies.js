@@ -587,9 +587,7 @@ var FoteGreenSlime=(function(){
   var hp=Math.floor(e.hp/2);e.hp-=hp;
   var child=spawnRaw(e.kind,cell.x,cell.y,{base:Object.assign({},e.base),ally:!!e.ally});
   child.hp=hp;child.maxhp=e.maxhp;child.noLoot=true;child.noXp=true;child.slimeDescendant=true;child.state='hunt';
-  child.name=e.name;child.base=Object.assign({},e.base);child.dmg=(e.dmg||e.base.dmg).slice();child.beta11Balanced=e.beta11Balanced;
-  // The copied damage already includes any applied Underdark bonus.
-  if(e.underdarkDamage3Adjusted)child.underdarkDamage3Adjusted=true;
+  child.name=e.name;child.base=Object.assign({},e.base);child.dmg=(e.dmg||e.base.dmg).slice();
   if(e.ally){
    child.foe=false;child.ally=true;child.state='ally';child.col=e.col;
    ['shade','shadeOwnerId','shadeSourceKind','shadeRootId','shadeLife','life','murkBaseHp','noReward'].forEach(function(key){if(e[key]!==undefined)child[key]=e[key];});
@@ -681,7 +679,7 @@ var FoteGreenSlime=(function(){
 /* Buried Crypt ambushers are floor records, not targetable or blocking actors. */
 var FoteGhoul=(function(){
  'use strict';
- MONSTERS.ghoul={name:'Buried Ghoul',sprite:'m-ghoul',col:'#988398',ch:'g',hp:77,dmg:[8,12],acc:60,eva:12,armor:0,speed:130,range:1,xp:26,
+ MONSTERS.ghoul={name:'Buried Ghoul',sprite:'m-ghoul',col:'#988398',ch:'g',hp:77,dmg:[10,14],acc:60,eva:12,armor:0,speed:130,range:1,xp:26,
   band:[6,9],biome:[1],w:10,undead:true,ghoul:true,bleeds:1,bleedTurns:3,bleedDamage:2,art:.85,artLeft:true,sfx:'zombie',
   hint:'Emerges behind you and pursues quickly. Hits cause Bleed: 2 HP per turn for 3 turns. Healing stops it.'};
  MONSTERS.shambler.w=Math.max(0,MONSTERS.shambler.w-6);MONSTERS.gravebeetle.w=Math.max(0,MONSTERS.gravebeetle.w-4);
@@ -702,7 +700,7 @@ var FoteGhoul=(function(){
   if(!cells.length)return false;
   var e=candidates[0],cell=cells[0];floorMeta.buriedGhouls=buried.filter(function(o){return o!==e;});
   e.x=cell.x;e.y=cell.y;e.ghoulBuried=false;e.state='hunt';e.lastSeen={x:player.x,y:player.y};e.t=player.t;
-  e.facingLeft=player.x<e.x;e._lx=undefined;ents.push(e);betaEnemyBalance(e);setClip(e,'emerge');
+  e.facingLeft=player.x<e.x;e._lx=undefined;ents.push(e);setClip(e,'emerge');
   // Called AFTER the enemy schedule. Even a very slow player action cannot
   // give this newly surfaced ghoul an attack before the player's next input.
   if(typeof stopTravel==='function')stopTravel();

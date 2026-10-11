@@ -139,7 +139,7 @@ function spawnSpecies(kind,x,y,options,preview){
   });
   return result;
 }
-function deepSpawnRaw(kind,x,y){var e=spawn(kind,x,y,{skipDeep:true});betaEnemyBalance(e);return e;}
+function deepSpawnRaw(kind,x,y){return spawn(kind,x,y,{skipDeep:true});}
 
 /* Geometry selects its biome implementation explicitly. */
 function roomAt(x,y){var grid=floorMeta&&floorMeta.caveRoom;return grid&&grid.length===MW*MH?findCaveRoom(x,y):findRectangularRoom(x,y);}

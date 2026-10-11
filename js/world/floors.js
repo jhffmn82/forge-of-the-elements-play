@@ -85,6 +85,7 @@ function presentRestoredFloor(at){
   repairStairApproachTraps();
   if(floorMeta && floorMeta.shrineGod) RUN.shrineGod=floorMeta.shrineGod;
   if(typeof repairCoreProgress==='function')repairCoreProgress();
+  migrateEnemyBaseStats();
   if(typeof refreshCavernResidents==='function')refreshCavernResidents();
   if(typeof refreshEncounterTuning==='function')refreshEncounterTuning();
   if(typeof SURF_CACHE!=='undefined') SURF_CACHE.key=null;

@@ -90,7 +90,6 @@ function generateOrdinaryFloor(seed){
   repairGeneratedDeepPortal(seed);
   resetGeneratedConcealment(seed);
   repairWallMemorials();
-  balanceGeneratedEnemies();
   repairStairApproachTraps();
   repairRareRoomHints();
   arriveRarePet();
