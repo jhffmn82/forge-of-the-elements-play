@@ -122,7 +122,7 @@ function transmutationTargets(){
 }
 function transmutationFits(slot,item,kind){
   if(equipmentForbidden(slot,item)||!meetsReq(item))return false;
-  if(slot==='main')return kind==='weapon'&&!isRangedWeapon(item)&&!(item.hands===2&&player.off&&player.off!==EMPTY_OFF&&(player.off.block||player.off.weapon||player.off.cursed));
+  if(slot==='main')return kind==='weapon'&&!isRangedWeapon(item)&&!(item.hands===2&&player.off&&player.off!==EMPTY_OFF);
   if(slot==='ranged')return kind==='weapon'&&isRangedWeapon(item);
   if(slot==='off')return !player.twoHanded&&!isRangedWeapon(item)&&(kind==='off'||kind==='weapon'&&item.hands!==2&&item.light);
   return slot==='armor'?kind==='armor':slot==='amulet'?kind==='amulet':slot.indexOf('ring')===0&&kind==='ring';

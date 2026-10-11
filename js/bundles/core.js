@@ -276,7 +276,7 @@ SOFTWARE.
     function present(it){return it&&it!==policy.empty&&!it.unarmed;}
     if(present(current)&&curseBinds(current))return {error:'cursed',item:current};
     if(present(current))displaced.push({item:current,kind:slot==='main'||slot==='ranged'?'weapon':slot.indexOf('ring')===0?'ring':slot});
-    var stowOff=slot==='main'&&item.hands===2&&present(actor.off)&&(actor.off.block||actor.off.weapon);
+    var stowOff=slot==='main'&&item.hands===2&&present(actor.off);
     if(slot==='main'&&item.hands===2&&present(actor.off)&&curseBinds(actor.off))return {error:'cursed',item:actor.off};
     if(stowOff)displaced.push({item:actor.off,kind:'off'});
     if(actor.bag.length-1+displaced.length>policy.capacity)return {error:'full'};

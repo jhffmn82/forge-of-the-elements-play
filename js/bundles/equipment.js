@@ -115,6 +115,8 @@ function migrateRangedSlot(){
   if(!player)return;var sets=player.sets||[],active=player.activeSet||0,main=sets[active]||sets[0]||FISTS;
   if(player.ranged===undefined)player.ranged=null;
   if(isRangedWeapon(main))main=sets.find(function(item){return item&&!isRangedWeapon(item);})||FISTS;
+  // Older two-handed equips hid focuses in the offhand slot instead of stowing them.
+  var hiddenOff=main.hands===2?player.off:null;if(hiddenOff)player.off=EMPTY_OFF;
   var retained=new Set([main,player.ranged,player.off,player.armorItem,player.amulet].concat(player.rings||[]));
   (player.bag||[]).forEach(function(b){if(b.data)retained.add(b.data);});
   function preserve(item,kind){if(!item||item===EMPTY_OFF||item.unarmed||retained.has(item))return;retained.add(item);
@@ -122,6 +124,7 @@ function migrateRangedSlot(){
     kind=FoteInventory.bagKind(kind,item);player.bag.push({kind:kind,data:item,name:gearName(item),icon:gearBagIcon(kind),n:1,uid:'g'+nextId++});}
   sets.forEach(function(item){preserve(item,'weapon');});
   (player.offSets||[]).forEach(function(item){preserve(item,'off');});
+  preserve(hiddenOff,'off');
   player.sets=[main,null];player.activeSet=0;delete player.offSets;
   player.bag.forEach(function(entry){entry.kind=FoteInventory.bagKind(entry.kind,entry.data);});
 }

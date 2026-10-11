@@ -40,6 +40,10 @@ Enemy HP and attack damage now come directly from fixed species definitions,
 including the previous biome bonuses, so bestiary numbers match normal enemies.
 Existing saves preserve wounds, summoned creatures and named guardian HP.
 
+Equipping a two-handed weapon now returns every offhand item, including tomes,
+orb focuses and holy symbols, to the bag. Loading an older affected save recovers
+its hidden offhand item without losing or duplicating it.
+
 Keyboard: WASD or arrows to move, QEZC diagonals, 1-8 hotbar, Tab character sheet,
 `i` equipment, `>` stairs. Mouse and phone touch controls remain available.
 
@@ -52,4 +56,4 @@ the repeatable export and an itch.io ZIP. Automated browser tests cover gameplay
 save compatibility, UI, dimensional compositing, recovery and nested-path play.
 Physical-phone GPU and memory performance still require device testing.
 
-Build: **2026-10-11T02:19:02.811Z**. Revision: `foundation17-20261011021902811`.
+Build: **2026-10-11T11:47:16.145Z**. Revision: `foundation17-20261011114716145`.
