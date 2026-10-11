@@ -794,7 +794,9 @@ function drawSunDaisProp(p, px, py, alpha){
   if(p.name==='sun-dais' && ptMat()){
     var img=ptDaisRaster(), X=Math.round((p.x-camX)*TS), Y=Math.round((p.y-camY)*TS), W=Math.round(TS*2);
     ctx.save(); ctx.globalAlpha=alpha; ctx.imageSmoothingEnabled=false;
-    ctx.drawImage(img, 0, 0, img.width, img.height, X, Y, W, W); ctx.restore();
+    ctx.drawImage(img, 0, 0, img.width, img.height, X, Y, W, W);
+    if(typeof FoteNormalLighting!=='undefined')FoteNormalLighting.record(ctx,{img:img,sx:0,sy:0,sw:img.width,sh:img.height},{x:X,y:Y,w:W,h:W},{surface:Object.assign({},propLightSurface(p),{kind:'ground',shadow:false})});
+    ctx.restore();
     return true;
   }
   return false;
@@ -994,7 +996,7 @@ var PT_PIECES = {};
 function ptPieceCanvas(p){
   /* 2026-09-19: the plane goes in the key. Without it the first plane visited in a session painted every later
      one's crystals - the shards are drawn from ptMat().crystal, and a cached canvas kept the old palette. */
-  var key=(floorMeta&&floorMeta.plane||'-')+':'+p.name+':'+p.seed+':'+(p.size||1)+':'+p.w+'x'+p.h+':'+(p.wallDir?p.wallDir.join(''):'');
+  var unified=spriteGroundShadows(),key=(floorMeta&&floorMeta.plane||'-')+':'+p.name+':'+p.seed+':'+(p.size||1)+':'+p.w+'x'+p.h+':'+(p.wallDir?p.wallDir.join(''):'')+(unified?':projected':'');
   if(PT_PIECES[key]) return PT_PIECES[key];
   var M=ptMat()||PT_MAT.light, W=p.w*32, H=(p.h+1.4)*32, c=document.createElement('canvas'); c.width=W*4; c.height=H*4;
   var g=c.getContext('2d'), rnd=mulberry32(p.seed||1), base=H-4;g.scale(4,4);
@@ -1004,7 +1006,7 @@ function ptPieceCanvas(p){
     var shards=[]; for(var i=0;i<13;i++){ var t=rnd(); shards.push({x:8+t*(W-16), back:rnd(), h:0, w:0}); }
     shards.forEach(function(s){ var mid=1-Math.abs(s.x-W/2)/(W/2); s.h=(22+mid*48)*(0.55+0.45*s.back)+rnd()*14; s.w=3+mid*6+rnd()*3; s.y=base-6-s.back*16-rnd()*7; s.lean=(rnd()-0.5)*18; s.cyan=rnd()<0.3; s.sink=2+rnd()*4; });
     shards.sort(function(a,b){ return a.y-b.y; });
-    shards.forEach(function(s){ ptShard(g, s.x, s.y+s.sink, s.w, s.h+s.sink, s.lean, s.cyan, M); ptBury(g, s.x, s.y, s.w, rnd); });
+    shards.forEach(function(s){ ptShard(g, s.x, s.y+s.sink, s.w, s.h+s.sink, s.lean, s.cyan, M); ptBury(g, s.x, s.y, s.w, rnd, unified); });
     (function(){ var r2=mulberry32((p.seed||1)^77); ptRockBaseFront(g, W, base, r2); ptCrystalMound(g, W, base, r2, M, 1, true); })();
     g.fillStyle=M.crystalGold; for(var k=0;k<7;k++){ g.fillRect(Math.round(10+rnd()*(W-20)), Math.round(base-8-rnd()*12), 2, 1); }
   } else {
@@ -1015,7 +1017,7 @@ function ptPieceCanvas(p){
     for(var k2=0;k2<n;k2++){
       var off=(k2-(n-1)/2)*5*sz + (rnd()-0.5)*4, by=base-2-rnd()*6, sw=(2.5+rnd()*2.5)*Math.max(0.6,sz), sh=(12+rnd()*30)*sz*(k2===Math.floor(n/2)?1.3:1), sink=2+rnd()*4;
       ptShard(g, W/2+off, by+sink, sw, sh+sink, (rnd()-0.5)*16, rnd()<0.3, M);
-      ptBury(g, W/2+off, by, sw, rnd);
+      ptBury(g, W/2+off, by, sw, rnd, unified);
     }
     g.fillStyle=M.crystalGold; g.fillRect(Math.round(W/2-3*sz), base-3, Math.max(2,Math.round(6*sz)), 1);
   }
@@ -1039,10 +1041,10 @@ function ptCrystalMound(g, W, base, rnd, M, sz, front){
     g.restore();
   }
 }
-function ptBury(g, cx, by, w, rnd){
+function ptBury(g, cx, by, w, rnd, unified){
   /* a tight shadow right where the crystal meets the stone, then chips heaped over the join */
-  g.save(); g.globalCompositeOperation='multiply'; g.fillStyle='rgba(120,112,130,0.5)';
-  g.beginPath(); g.ellipse(cx+w*0.4, by+0.5, w*1.5, 2.1, 0, 0, 7); g.fill(); g.restore();
+  if(!unified){g.save(); g.globalCompositeOperation='multiply'; g.fillStyle='rgba(120,112,130,0.5)';
+    g.beginPath(); g.ellipse(cx+w*0.4, by+0.5, w*1.5, 2.1, 0, 0, 7); g.fill(); g.restore();}
   var n=2+Math.floor(rnd()*3);
   for(var i=0;i<n;i++){
     var ox=cx+(rnd()-0.5)*w*2.6, oy=by-1+rnd()*3, rw=1.5+rnd()*w*0.9, rh=1.2+rnd()*2.4;
@@ -1089,7 +1091,9 @@ function drawRuneStoneProp(p, px, py, alpha){
     var cells=p.w||1, W=Math.round(cells*TS*0.98), H=Math.round(W*(o.sh/o.sw));
     var X=Math.round((p.x-camX)*TS + (cells*TS-W)/2), Y=Math.round((p.y-camY+(p.h||1))*TS)-H;
     ctx.save(); ctx.globalAlpha=alpha; ctx.imageSmoothingEnabled=false;
-    ctx.drawImage(o.img, o.sx, o.sy, o.sw, o.sh, X, Y, W, H); ctx.restore();
+    ctx.drawImage(o.img, o.sx, o.sy, o.sw, o.sh, X, Y, W, H);
+    if(typeof FoteNormalLighting!=='undefined')FoteNormalLighting.record(ctx,o,{x:X,y:Y,w:W,h:H},{surface:Object.assign({},propLightSurface(p),{kind:'sprite',height:H/TS,footV:1,shadow:p.noShadow?false:undefined})});
+    ctx.restore();
     return true;
   }
   return false;
@@ -1104,7 +1108,9 @@ function drawNaturalOutcropProp(p, px, py, alpha){
     var X=Math.round((p.x-camX)*TS+(p.w*TS-W)/2), Y=Math.round((p.y-camY+p.h)*TS)-H;
     if(p.name==='pt-cluster' && p.wallDir) X+=Math.round(p.wallDir[0]*TS*0.4);   /* only sideways: the root stays on its cell's floor line */
 
-    ctx.save(); ctx.globalAlpha=alpha; ctx.imageSmoothingEnabled=false; ctx.drawImage(img, X, Y, W, H); ctx.restore();
+    ctx.save(); ctx.globalAlpha=alpha; ctx.imageSmoothingEnabled=false; ctx.drawImage(img, X, Y, W, H);
+    if(typeof FoteNormalLighting!=='undefined')FoteNormalLighting.record(ctx,{img:img,sx:0,sy:0,sw:img.width,sh:img.height},{x:X,y:Y,w:W,h:H},{surface:Object.assign({},propLightSurface(p),{kind:'sprite',x:p.x+(p.w-1)/2,y:p.y+p.h-1,height:H/TS,footV:1,shadow:p.noShadow?false:undefined})});
+    ctx.restore();
     if(!ANIM.reduce) ptSparkle(p, X, Y, W, H, alpha);
     return true;
   }

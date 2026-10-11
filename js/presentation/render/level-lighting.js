@@ -58,6 +58,24 @@ function levelLightScratch(cells,sources){
  if(!s.los||s.los.length!==cells*sources)s.los=new Uint8Array(cells*sources);else s.los.fill(0);
  return s;
 }
+function levelDaylightParts(L,sx,sy,exponent,parts){
+ var dx=L.x-sx,dy=L.y-sy,d=Math.hypot(dx,dy);
+ // Stable world-space variation suggests a broken opening without moving noise.
+ var grain=typeof ptVal==='function'?ptVal(sx*1.1,sy*.9,53):.5;
+ var across=(dx-dy*.28+.15*(grain-.5))/(.48*(.91+.18*grain));
+ var beam=Math.hypot(across,dy)/L.beamRadius;
+ var edge=Math.max(0,Math.min(1,(beam-.22)/.78));
+ parts[0]=(1-edge*edge*(3-2*edge))*(.94+.06*grain)*L.s;
+ parts[1]=.14*Math.pow(Math.max(0,1-d/L.r),exponent)*L.s;
+ return parts;
+}
+function levelDaylightSpillScale(total){
+ // Only overlapping diffuse daylight shares a soft ceiling; beam cores and
+ // nearby torch/player light retain their own shape and strength.
+ if(total<=.14)return 1;
+ var excess=total-.14;
+ return (.14+.04*excess/(.04+excess))/total;
+}
 function drawLightmap(now, prp, opaqueScene){
     var t=LEVEL_LIGHT_TUNE;
     if (!lightingOn()) return false;
@@ -131,7 +149,7 @@ function drawLightmap(now, prp, opaqueScene){
       if (!s) { s = lightLOS(L.tx, L.ty, x, y) ? 2 : 1; losSeen[m] = s; }
       return s === 2;
     }
-    var scratch = [0, 0, 0];
+    var scratch = [0, 0, 0],daylightParts=[0,0],daylightSamples=[];
     var tx, ty, k, j;
 
     /* ---- how far into the rock each subcell sits -------------------------------------------
@@ -231,17 +249,31 @@ function drawLightmap(now, prp, opaqueScene){
         var face = wall && !tWall[ct + TW];
         if (!wall || face) {
           var sx = fx0, sy = face ? y + 1 : fy0, stx = x, sty = face ? y + 1 : y, st = face ? ct + TW : ct;
+          daylightSamples.length=0;var daylightSpill=0;
           for (k = 0; k < lights.length; k++) {
-            var L = lights[k], ddx = L.x - sx, ddy = L.y - sy, d = Math.sqrt(ddx * ddx + ddy * ddy);
+            var L = lights[k], ddx = L.x - sx, ddy = L.y - sy;
+            var d = Math.sqrt(ddx * ddx + ddy * ddy);
             if (d >= L.r) continue;
             if (face && L.y < y + 0.5) continue;
             if (k === 0 ? !tVis[st] : !lightSees(k, L, stx, sty, st)) continue;
             var fq = 1 - d / L.r;
             if (falloff === undefined) falloff = t.n('light_falloff');
             var exponent = typeof L.falloff==='number' && isFinite(L.falloff) && L.falloff>0 ? L.falloff : falloff;
+            if(L.daylight){
+              levelDaylightParts(L,sx,sy,exponent,daylightParts);
+              daylightSamples.push(k,daylightParts[0],daylightParts[1]);
+              daylightSpill+=daylightParts[1];continue;
+            }
             fq = Math.pow(fq, exponent) * L.s;
             rr += L.c[0] * fq; gg += L.c[1] * fq; bb += L.c[2] * fq;
             if(weights)weights[k*lightCells+cell]=Math.min(255,Math.round(fq*(face?reach(cell,x,y)*.9:1)*127.5));
+          }
+          var spillScale=levelDaylightSpillScale(daylightSpill);
+          for(var ds=0;ds<daylightSamples.length;ds+=3){
+            k=daylightSamples[ds];var sun=lights[k];
+            var sunlight=daylightSamples[ds+1]+daylightSamples[ds+2]*spillScale;
+            rr+=sun.c[0]*sunlight;gg+=sun.c[1]*sunlight;bb+=sun.c[2]*sunlight;
+            if(weights)weights[k*lightCells+cell]=Math.min(255,Math.round(sunlight*(face?reach(cell,x,y)*.9:1)*127.5));
           }
           if (face) {
             /* the lit lip fades with depth instead of filling the tile */
@@ -320,9 +352,13 @@ function drawLightmap(now, prp, opaqueScene){
       D[p4 + 2] = Math.min(255, vals[q + 2] * 255);
       D[p4 + 3] = 255;
       var ex = Math.max(0, Math.max(vals[q], vals[q + 1], vals[q + 2]) - bloomAt);
-      B[p4] = Math.min(255, vals[q] * ex * bloomK);
-      B[p4 + 1] = Math.min(255, vals[q + 1] * ex * bloomK);
-      B[p4 + 2] = Math.min(255, vals[q + 2] * ex * bloomK);
+      // Dimensional light already lights the material. Keep its additive haze
+      // faint, so bloom cannot bleach the capped surfaces back to white.
+      var bloom = ex * bloomK;
+      if(dimensional)bloom=Math.min(bloom,20/Math.max(.001,vals[q],vals[q+1],vals[q+2]));
+      B[p4] = Math.min(255, vals[q] * bloom);
+      B[p4 + 1] = Math.min(255, vals[q + 1] * bloom);
+      B[p4 + 2] = Math.min(255, vals[q + 2] * bloom);
       B[p4 + 3] = 255;
       // Test quantized RGB: faint values may become zero in the clamped buffer.
       bloomNonzero = bloomNonzero || !!(B[p4] | B[p4 + 1] | B[p4 + 2]);

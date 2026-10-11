@@ -73,10 +73,10 @@ function drawCaveProp(p, px, py, alpha){
   if(p.flat){
     /* Centre the art's scaled canvas: a half-size crystal must not retain the
        old full-size half-height and drift toward the tile below it. */
-    drawCaveArt(o, X+TS/2, Y+TS/2+o.fullH*caveArtScale(o)/2, alpha, flip, {kind:'ground',admissionX:p.x,admissionY:p.y});
+    drawCaveArt(o, X+TS/2, Y+TS/2+o.fullH*caveArtScale(o)/2, alpha, flip, propLightSurface(p));
     return true;
   }
-  drawCaveArt(o, X+w*TS/2, Y+h*TS-TS*0.02, alpha, flip, {kind:'sprite',x:p.x+(w-1)/2,y:p.y+h-1,admissionX:p.x,admissionY:p.y});
+  drawCaveArt(o, X+w*TS/2, Y+h*TS-TS*0.02, alpha, flip, Object.assign({},propLightSurface(p),{kind:'sprite',x:p.x+(w-1)/2,y:p.y+h-1}));
   if(typeof flashOf==='function' && p.br){ var fl=flashOf(p); if(fl>0){ ctx.save(); ctx.globalAlpha=fl*0.6; ctx.fillStyle='#FFF'; ctx.fillRect(X+TS*0.25, Y+TS*0.25, TS*0.5, TS*0.5); ctx.restore(); } }
   return true;
 

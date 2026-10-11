@@ -547,11 +547,12 @@ function elementalPlaneBehavior(e){
 function fwaRGB(c, a){ return 'rgba('+(c[0]|0)+','+(c[1]|0)+','+(c[2]|0)+','+(a===undefined?1:a)+')'; }
 var FWA_RUNE = {};
 function fwaRuneCanvas(el){
-  if(FWA_RUNE[el]) return FWA_RUNE[el];
+  var unified=spriteGroundShadows(),key=el+(unified?':projected':'');
+  if(FWA_RUNE[key]) return FWA_RUNE[key];
   var M=PT_MAT[el], S=128, c=document.createElement('canvas'); c.width=S; c.height=S;
   var g=c.getContext('2d'), base=S-6, w=S*0.34;
   /* a squared monolith in the plane's rock: a lit left plane, a shaded right plane, a dark cap and a glowing rune */
-  g.fillStyle='rgba(10,8,14,0.3)'; g.beginPath(); g.ellipse(S/2, base+2, w*1.5, 7, 0, 0, 7); g.fill();
+  if(!unified){g.fillStyle='rgba(10,8,14,0.3)'; g.beginPath(); g.ellipse(S/2, base+2, w*1.5, 7, 0, 0, 7); g.fill();}
   function face(pts, col){ g.beginPath(); g.moveTo(pts[0],pts[1]); for(var i=2;i<pts.length;i+=2) g.lineTo(pts[i],pts[i+1]); g.closePath(); g.fillStyle=col; g.fill(); }
   var top=S*0.16, lx=S/2-w, rx=S/2+w;
   face([lx,base, lx+5,top+10, S/2,top, rx-5,top+12, rx,base], fwaRGB(M.faceLo));
@@ -582,14 +583,16 @@ function fwaRuneCanvas(el){
   }
   g.restore();
   g.strokeStyle=fwaRGB(M.vein, 0.5); g.lineWidth=1;
-  FWA_RUNE[el]=c; return c;
+  FWA_RUNE[key]=c; return c;
 }
 
 function drawElementPlaneProp(p, px, py, alpha){
   if(inFwa() && p && /^rune-stone-(fire|water|air)$/.test(p.name) && !(typeof packArt==='function' && packArt(p.name))){
     var img=fwaRuneCanvas(floorMeta.plane), cells=p.w||1, W=Math.round(cells*TS*0.95), H=W;
     var X=Math.round((p.x-camX)*TS + (cells*TS-W)/2), Y=Math.round((p.y-camY+(p.h||1))*TS)-H;
-    ctx.save(); ctx.globalAlpha=alpha; ctx.imageSmoothingEnabled=false; ctx.drawImage(img, 0, 0, 128, 128, X, Y, W, H); ctx.restore();
+    ctx.save(); ctx.globalAlpha=alpha; ctx.imageSmoothingEnabled=false; ctx.drawImage(img, 0, 0, 128, 128, X, Y, W, H);
+    if(typeof FoteNormalLighting!=='undefined')FoteNormalLighting.record(ctx,{img:img,sx:0,sy:0,sw:128,sh:128},{x:X,y:Y,w:W,h:H},{surface:Object.assign({},propLightSurface(p),{kind:'sprite',height:H/TS,footV:1,shadow:p.noShadow?false:undefined})});
+    ctx.restore();
     return true;
   }
   if(inFwa() && p && p.name==='updraft-vent' && !(typeof packArt==='function' && packArt('updraft-vent'))){

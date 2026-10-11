@@ -225,11 +225,11 @@ function sceneryClusterSource(family,variant){
   var single=(family==='crate'||family==='pot'||family==='barrel')&&objArt('props',family);
   return {art:single||sceneryClusterArt(family,variant),single:!!single};
 }
-function drawSceneryCluster(family,variant,px,py,alpha,flip,shear){
+function drawSceneryCluster(family,variant,px,py,alpha,flip,shear,surface){
   // Crates, pots and barrels use one readable object at each existing placement.
   // Saved group data still owns collision, breaking, loot and seeded layout.
   var source=sceneryClusterSource(family,variant);
-  if(source.single)return drawObjectSprite(source.art,px,py,{feet:true,fit:family==='barrel'?.9:.78,alpha:alpha,flip:flip});
+  if(source.single)return drawObjectSprite(source.art,px,py,{feet:true,fit:family==='barrel'?.9:.78,alpha:alpha,flip:flip,surface:surface});
   var o=source.art;if(!o)return false;
   var baked=family.indexOf('mushroom-')===0&&typeof vegBaked==='function'?vegBaked(o):null;
   ctx.save();ctx.globalAlpha=alpha;ctx.imageSmoothingEnabled=true;
@@ -237,7 +237,7 @@ function drawSceneryCluster(family,variant,px,py,alpha,flip,shear){
   ctx.translate(px+TS*.5,py+TS);ctx.scale(shrink,shrink);if(shear)ctx.transform(1,0,-shear,1,0,0);if(flip)ctx.scale(-1,1);
   if(baked)ctx.drawImage(baked,0,0,128,128,-TS*.5,-TS,TS,TS);
   else ctx.drawImage(o.img,o.sx,o.sy,128,128,-TS*.5,-TS,TS,TS);
-  if(typeof FoteNormalLighting!=='undefined')FoteNormalLighting.record(ctx,{img:baked||o.img,sx:baked?0:o.sx,sy:baked?0:o.sy,sw:128,sh:128},{x:-TS*.5,y:-TS,w:TS,h:TS},{normal:false});
+  if(typeof FoteNormalLighting!=='undefined')FoteNormalLighting.record(ctx,{img:baked||o.img,sx:baked?0:o.sx,sy:baked?0:o.sy,sw:128,sh:128},{x:-TS*.5,y:-TS,w:TS,h:TS},{normal:false,surface:surface});
   ctx.restore();return true;
 }
 PROPS['urn-group']={b:1,br:1,loot:.4,sfx:'pot-break'};

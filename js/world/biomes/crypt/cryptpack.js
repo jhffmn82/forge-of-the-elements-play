@@ -158,11 +158,16 @@ function packDraw(p, name, alpha){
   if(flip){ ctx.translate(dx+dw/2, 0); ctx.scale(-1, 1); ctx.translate(-(dx+dw/2), 0); }
   ctx.drawImage(o.img, o.sx, o.sy, o.sw, o.sh, dx, dy, dw, dh);
   var emission=typeof crystalLightProfile==='function'&&crystalLightProfile(name);
-  if(emission&&typeof FoteNormalLighting!=='undefined'){
+  if(typeof FoteNormalLighting!=='undefined'){
+    // Walkable crystal/stone formations still stand above the floor. Keep
+    // their gameplay flags; only these authored solids gain shadow height.
+    var raised=emission?emission.height:/^(stalagmite-|rune-stone-|mossy-boulder$|lava-fountain$|signature-(water|air)$)/.test(name)?dh/TS:0;
+    var lightSurface=propLightSurface(p),source=propLightSource(p);
     FoteNormalLighting.record(ctx,o,{x:dx,y:dy,w:dw,h:dh},{surface:{
-      kind:flat?'ground':p.wall?'wall':'sprite',x:p.x+(w-1)/2,y:p.wall?p.y+.5:p.y+h-1,
-      height:dh/TS,footV:1,admissionX:Math.floor(p.x),admissionY:Math.floor(p.y),
-      emission:mapEmissionVisible(p.x,p.y)?emission.emission:0}});
+      kind:p.wall?'wall':flat?'ground':'sprite',x:p.x+(w-1)/2,y:p.wall?p.y+.5:p.y+h-1,
+      height:dh/TS,footV:1,shadowKey:p.name==='pt-part'?undefined:p,shadow:p.noShadow||flat&&!raised?false:undefined,shadowHeight:flat&&raised?raised:undefined,
+      admissionX:lightSurface.admissionX,admissionY:lightSurface.admissionY,
+      emission:source?Math.max(lightSurface.emission,emission?emission.emission:0):0}});
   }
   ctx.restore();
   if(typeof objFxDraw==='function') objFxDraw(o, dx, dy, dw, dh, alpha, flip);

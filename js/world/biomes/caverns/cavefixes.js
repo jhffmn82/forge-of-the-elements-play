@@ -68,7 +68,7 @@ function drawGlowingPoolProp(p, px, py, alpha){
       var w=p.w||2, h=p.h||2, X=(p.x-camX)*TS, Y=(p.y-camY)*TS, s=TS/64, artH=o.sh*s/(o.res||1);
       /* the art's solid box centred in the footprint (the standing-piece wrapper above adds the canvas padding) */
       var bottom = Y + h*TS/2 + artH/2;
-      drawCaveArt(o, X+w*TS/2, bottom, alpha, false);
+      drawCaveArt(o, X+w*TS/2, bottom, alpha, false, Object.assign({},propLightSurface(p),{kind:'ground',shadow:false}));
       return true;
     }
   }

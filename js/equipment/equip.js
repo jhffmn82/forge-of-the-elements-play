@@ -422,7 +422,7 @@ function heldTier(it){
    in the death clip (heldFall); carry, the grip whose forearm sets the angle (the first frame of an idle or walk loop) */
 function drawHeldArtwork(g,o,x,y,w,h,surface){
   g.drawImage(o.img,o.sx,o.sy,o.sw,o.sh,x,y,w,h);
-  if(typeof FoteNormalLighting!=='undefined')FoteNormalLighting.record(g,o,{x:x,y:y,w:w,h:h},{surface:surface});
+  if(typeof FoteNormalLighting!=='undefined')FoteNormalLighting.record(g,o,{x:x,y:y,w:w,h:h},{surface:surface?Object.assign({},surface,{shadowBody:false}):surface});
 }
 function drawHeld(g, key, pose, rest, dx, dy, sc, drawH, enchant, now, tier, handOv, cell, aim, grip, strike, swing, at, surface){
   var H=HELD[key], o=objArt('held','held-'+key); if(!H || !o) return;

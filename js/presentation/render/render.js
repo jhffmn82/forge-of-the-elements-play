@@ -207,6 +207,26 @@ function placementRect(x,y,w,h){
   var left=Math.round(x),top=Math.round(y);
   return {x:left,y:top,w:Math.max(1,Math.round(x+w)-left),h:Math.max(1,Math.round(y+h)-top)};
 }
+var FORGE_GLOW_MASKS=new WeakMap();
+function forgeGlowMask(art){
+  if(!art||art.nm!=='forge-lit')return null;
+  var masks=FORGE_GLOW_MASKS.get(art.img),key=[art.sx,art.sy,art.sw,art.sh].join(':');
+  if(!masks){masks=new Map();FORGE_GLOW_MASKS.set(art.img,masks);}
+  if(masks.has(key))return masks.get(key);
+  // One read of the immutable artwork isolates the hot bowl. The pedestal and
+  // elemental ornaments keep their normal shading; no per-frame pixel work.
+  var c=document.createElement('canvas');c.width=art.sw;c.height=art.sh;
+  var g=c.getContext('2d');g.drawImage(art.img,art.sx,art.sy,art.sw,art.sh,0,0,c.width,c.height);
+  var pixels=g.getImageData(0,0,c.width,c.height),d=pixels.data;
+  for(var y=0;y<c.height;y++)for(var x=0;x<c.width;x++){
+    var i=(y*c.width+x)*4,r=d[i],green=d[i+1],b=d[i+2];
+    var bowl=y>=c.height*.42&&y<c.height*.59&&x>=c.width*.13&&x<c.width*.9;
+    d[i+3]=bowl&&r>135&&green>90&&r>b*1.65?d[i+3]:0;
+    d[i]=d[i+1]=d[i+2]=255;
+  }
+  g.putImageData(pixels,0,0);
+  var mask={img:c,sx:0,sy:0,sw:c.width,sh:c.height};masks.set(key,mask);return mask;
+}
 function drawObjectSprite(o, px, py, opt){
   if(!o) return false;
   opt=opt||{};
@@ -242,6 +262,9 @@ function drawObjectSprite(o, px, py, opt){
     surface=Object.assign({height:h/TS*.8,footV:1,emission:mapArtworkEmission(o)},surface);
     if(!mapEmissionVisible(surface.admissionX===undefined?camX+px/TS:surface.admissionX,surface.admissionY===undefined?camY+py/TS:surface.admissionY))surface.emission=0;
     FoteNormalLighting.record(ctx,o,{x:dx,y:dy,w:w,h:h},{surface:surface});
+    if(o.nm==='forge-lit'&&mapEmissionVisible(surface.admissionX===undefined?surface.x:surface.admissionX,surface.admissionY===undefined?surface.y:surface.admissionY)){
+      FoteNormalLighting.record(ctx,forgeGlowMask(o),{x:dx,y:dy,w:w,h:h},{normal:false,surface:Object.assign({},surface,{emission:.95,shadow:false})});
+    }
   }
   if(opt.flash>0){ ctx.globalAlpha*=opt.flash; ctx.drawImage(whiteCut(o.img,o.sx,o.sy,o.sw,o.sh), dx,dy,w,h); }
   ctx.restore();
@@ -1023,13 +1046,22 @@ function clipFrame(sheet, e, sliding){
   }
   return {sx:0, sy:(m.static_row||0)*cell};
 }
-function drawActorContactShadow(e,px,py){
+function actorShadowFootprint(e){
+  if(e===player)return {x:.5,y:.9,rx:.28,ry:.1};
   // Large sprites stand across their full footprint. Tall one-cell art keeps
   // its existing shadow; proxy cells and special summons never enlarge it.
-  var n=!e.parent&&!isShadeSummon(e)&&!e.livingFlame&&e.base.big||1;
-  var scale=n>1?n*(e.base.bigScale||1):(e.base.art||0.9);
+  var base=e.base||{},n=!e.parent&&!isShadeSummon(e)&&!e.livingFlame&&base.big||1;
+  var scale=n>1?n*(base.bigScale||1):(base.art||0.9);
+  return {x:n/2,y:.9*n,rx:.26*scale,ry:.09*n};
+}
+function spriteGroundShadows(){
+  return !!(spriteOn&&typeof FoteProjectedShadows!=='undefined'&&FoteProjectedShadows.enabled()&&typeof FoteNormalLighting!=='undefined'&&FoteNormalLighting.enabled());
+}
+function drawActorContactShadow(e,px,py,unified){
+  if(unified)return;
+  var foot=actorShadowFootprint(e);
   ctx.globalAlpha=0.35;ctx.fillStyle='#000';ctx.beginPath();
-  ctx.ellipse(px+TS*n/2,py+TS*0.9*n,TS*0.26*scale,TS*0.09*n,0,0,7);ctx.fill();ctx.globalAlpha=1;
+  ctx.ellipse(px+TS*foot.x,py+TS*foot.y,TS*foot.rx,TS*foot.ry,0,0,7);ctx.fill();ctx.globalAlpha=1;
 }
 /* Optional contrast uses authored sprites and retains the existing visibility policy. */
 function phoneActorClarity(){
@@ -1043,8 +1075,10 @@ function actorLightSurface(e, footX, footY){
     var visible=sceneVisibility();
     findVisible:for(var y=e.y;y<e.y+n;y++)for(var x=e.x;x<e.x+n;x++)if(inb(x,y)&&visible[idxOf(x,y)]){ax=x;ay=y;break findVisible;}
   }
-  return {kind:'actor',x:rp.x,y:rp.y,admissionX:ax,admissionY:ay,
-    footY:m.b*footX+m.d*footY+m.f,zPerPixel:.8/(TS*scale),selfLight:e===player?.48:1,emission:actorGlowColor(e)?.82:0};
+  var contact=actorShadowFootprint(e),groundY=e===player||e.shadowClone?1:.97*(!e.parent&&!isShadeSummon(e)&&!e.livingFlame&&e.base&&e.base.big||1);
+  return {kind:'actor',x:rp.x,y:rp.y,admissionX:ax,admissionY:ay,shadowKey:e,shadowBody:true,
+    shadowContact:{x:rp.x+contact.x,y:rp.y+groundY,rx:contact.rx,ry:contact.ry},
+    footX:m.a*footX+m.c*footY+m.e,footY:m.b*footX+m.d*footY+m.f,zPerPixel:.8/(TS*scale),selfLight:e===player?.48:1,emission:actorGlowColor(e)?.82:0};
 }
 function drawCharacterSprite(e, px, py, opts){
   if(!spriteOn)return false;
@@ -1184,6 +1218,10 @@ function crystalLightProfile(name){
   if(Object.prototype.hasOwnProperty.call(CRYSTAL_LIGHT_PROFILES,name))return CRYSTAL_LIGHT_PROFILES[name];
   var match=/^crystal-(gold|violet|amber|fire|water|air)(-small)?$/.exec(name),color,small,r,s,height;
   if(match){color=CRYSTAL_LIGHT_COLORS[match[1]];small=!!match[2];r=small?2.4:3.4;s=small?.95:1.2;height=small?.45:1;}
+  // The gold spire and rune monument are luminous light-plane art, including
+  // copies used as Crypt scenery. Ordinary stone formations stay unlit.
+  else if(name==='stalagmite-light'){color=CRYSTAL_LIGHT_COLORS.gold;r=3;s=.78;height=.85;}
+  else if(name==='rune-stone-light'){color=CRYSTAL_LIGHT_COLORS.gold;r=2.8;s=.7;height=.65;}
   else if((match=/^cl-crystal-shards-([1-4])$/.exec(name))){color=['#60D8F0','#A070F0','#60D0F0','#9080F0'][+match[1]-1];r=2.5;s=.95;height=.4;}
   else if((match=/^geode-([12])$/.exec(name))){color=match[1]==='1'?'#40D0E0':'#9A70FF';r=3.3;s=1.2;height=.65;}
   else if((match=/^pylon-([12])$/.exec(name))){color=match[1]==='1'?'#B090FF':'#9FE8FF';r=3.6;s=1.25;height=1.1;}
@@ -1191,9 +1229,12 @@ function crystalLightProfile(name){
   return (CRYSTAL_LIGHT_PROFILES[name]=Object.freeze({color:color,r:r,s:s,height:height,emission:.8}));
 }
 function propCrystalLight(p){return crystalLightProfile(p.artName||p.name);}
+var GLOW_MUSHROOM_LIGHT_PROFILE=Object.freeze({color:'#D8F0A0',r:3.4,s:.8,height:.45,emission:.72});
+function propLightProfile(p){return propCrystalLight(p)||((p.artName||p.name)==='glow-mushrooms'?GLOW_MUSHROOM_LIGHT_PROFILE:null);}
 function mapArtworkEmission(art){
   var name=art&&art.nm||'',spec=typeof PROPS!=='undefined'&&PROPS[name];
   var crystal=crystalLightProfile(name);if(crystal)return crystal.emission;
+  if(name==='glow-mushrooms')return GLOW_MUSHROOM_LIGHT_PROFILE.emission;
   if(spec&&spec.light)return .72;
   // These names are the painted luminous cavern/plane pieces, not generic stone.
   return /^(wf-glowworm-curtain-|cl-glow-moss|cl-crystal-shards-|giant-mushroom-|mushroom-pair-|geode-|pylon-|glowing-pool-|crystal-(gold|violet|amber|fire|water|air))/.test(name)?.72:0;
@@ -1202,44 +1243,61 @@ function mapEmissionVisible(x,y){
   x=Math.floor(x);y=Math.floor(y);
   return inb(x,y)&&((revealAll&&!playerBlind())||!!sceneVisibility()[idxOf(x,y)]);
 }
+/* A large lamp belongs to its whole live footprint. Its light stays centered
+ * on the artwork; LOS begins at the nearest visible occupied cell. */
+function propLightSource(p){
+  if(playerBlind())return null;
+  var w=p.w||1,h=p.h||1,x=p.x+(w-1)/2,y=p.y+(h-1)/2,anchor=null,best=Infinity;
+  for(var ty=Math.floor(p.y);ty<Math.ceil(p.y+h);ty++)for(var tx=Math.floor(p.x);tx<Math.ceil(p.x+w);tx++){
+    if(!mapEmissionVisible(tx,ty))continue;
+    var distance=(tx-x)*(tx-x)+(ty-y)*(ty-y);
+    if(distance<best){best=distance;anchor={x:x,y:y,tx:tx,ty:ty,admissionX:tx,admissionY:ty};}
+  }
+  if(anchor&&p.wall){anchor.y=p.y+.8;anchor.ty=Math.floor(p.y)+1;}
+  return anchor;
+}
 function propLightSurface(p){
-  var visible=mapEmissionVisible(p.x,p.y);
-  var crystal=propCrystalLight(p);
-  return {kind:p.flat?'ground':'sprite',x:p.x,y:p.y,admissionX:p.x,admissionY:p.y,
-    emission:visible?(crystal?crystal.emission:p.light?.72:mapBeaconProp(p)?.4:0):0};
+  var source=propLightSource(p),visible=!!source;
+  var crystal=propCrystalLight(p),profile=propLightProfile(p);
+  return {kind:p.flat?'ground':'sprite',x:p.x,y:p.y,admissionX:source?source.admissionX:p.x,admissionY:source?source.admissionY:p.y,shadowKey:p,
+    shadow:p.noShadow||p.flat&&!crystal?false:undefined,shadowHeight:p.flat&&crystal?crystal.height:undefined,
+    emission:visible?(profile?profile.emission:p.light?.72:mapBeaconProp(p)?.4:0):0};
 }
 /* Run after the existing world/plane source owners. Their authored sources win
- * at the same crystal; untagged art receives exactly one live local source. */
-function addMissingCrystalLights(L){
+ * at the same luminous prop; untagged art receives one live local source. */
+function addMissingPropLights(L){
   (typeof props==='undefined'?[]:props).forEach(function(p){
-    var crystal=propCrystalLight(p);if(!crystal||p.light||p.previewFocal||p.previewDecor||!mapEmissionVisible(p.x,p.y))return;
-    var x=p.x+((p.w||1)-1)/2,y=p.y+((p.h||1)-1)/2,tx=Math.floor(x),ty=Math.floor(y);
-    if(x<camX-crystal.r||x>camX+viewW+crystal.r||y<camY-crystal.r||y>camY+viewH+crystal.r)return;
-    if(p.wall){y=p.y+.8;tx=p.x;ty=p.y+1;}
+    var profile=propLightProfile(p);if(!profile||p.light||p.previewFocal||p.previewDecor)return;
+    var source=propLightSource(p);if(!source)return;
+    var x=source.x,y=source.y,tx=source.tx,ty=source.ty;
+    if(x<camX-profile.r||x>camX+viewW+profile.r||y<camY-profile.r||y>camY+viewH+profile.r)return;
     if(L.some(function(l,index){return index>0&&Math.abs(l.x-x)<.01&&Math.abs(l.y-y)<.01;}))return;
-    L.push({x:x,y:y,c:hexRGB(crystal.color),r:crystal.r,s:crystal.s,height:crystal.height,em:true,tx:tx,ty:ty});
+    L.push({x:x,y:y,c:hexRGB(profile.color),r:profile.r,s:profile.s,height:profile.height,em:true,tx:tx,ty:ty});
   });
   return L;
 }
 function drawLights(){
-  // The directional path already casts these sources and keeps luminous art
-  // readable. A second additive overlay would wash out nearby surface detail.
-  if(lightingOn()&&typeof FoteNormalLighting!=='undefined'&&FoteNormalLighting.enabled())return;
+  // Retain the authored breathing halo in both renderers. The source light
+  // illuminates surfaces; this visible glow follows its original radius pulse.
   var now=performance.now(),all=revealAll&&!playerBlind();
-  ctx.save(); ctx.globalCompositeOperation='lighter';
+  // Screen keeps the halo from clipping already lit stone or flame artwork.
+  ctx.save(); ctx.globalCompositeOperation='screen';
   function glow(x,y,col,rad,str){
     if(!inb(x,y) || !(all||sceneVisibility()[idxOf(x,y)])) return;
-    if(x+rad<camX||x-rad>camX+viewW||y+rad<camY||y-rad>camY+viewH)return;
-    var cx=(x-camX+0.5)*TS,cy=(y-camY+0.5)*TS,fl=ANIM.reduce?1:1+.04*Math.sin(now/470+x*3+y*7);
+    var fl=ANIM.reduce?1:1+.08*Math.sin(now/170+x*3+y*7)+.05*Math.sin(now/53+x),reach=rad*fl;
+    if(x+reach<camX||x-reach>camX+viewW||y+reach<camY||y-reach>camY+viewH)return;
+    var cx=(x-camX+0.5)*TS,cy=(y-camY+0.5)*TS;
     ctx.save();ctx.beginPath();
-    for(var gy=Math.max(0,Math.floor(y-rad));gy<=Math.min(MH-1,Math.ceil(y+rad));gy++)for(var gx=Math.max(0,Math.floor(x-rad));gx<=Math.min(MW-1,Math.ceil(x+rad));gx++){
+    for(var gy=Math.max(0,Math.floor(y-reach));gy<=Math.min(MH-1,Math.ceil(y+reach));gy++)for(var gx=Math.max(0,Math.floor(x-reach));gx<=Math.min(MW-1,Math.ceil(x+reach));gx++){
       if((all||sceneVisibility()[idxOf(gx,gy)])&&lightLOS(x,y,gx,gy))ctx.rect((gx-camX)*TS,(gy-camY)*TS,TS,TS);
     }
-    ctx.clip();ctx.globalAlpha=str*fl;ctx.imageSmoothingEnabled=true;
-    ctx.drawImage(mapBeaconGlow(col),cx-TS*rad,cy-TS*rad,TS*rad*2,TS*rad*2);
+    ctx.clip();
+    var gradient=ctx.createRadialGradient(cx,cy,TS*.2,cx,cy,TS*reach);
+    gradient.addColorStop(0,hexA(col,str));gradient.addColorStop(1,hexA(col,0));
+    ctx.fillStyle=gradient;ctx.fillRect(cx-TS*rad*1.2,cy-TS*rad*1.2,TS*rad*2.4,TS*rad*2.4);
     ctx.restore();
   }
-  props.forEach(function(p){ if(p.light&&!mapBeaconProp(p)) glow(p.x,p.y,p.light,p.dim?1.2:1.8,p.dim?.08:.12); });
+  props.forEach(function(p){ if(p.light&&!mapBeaconProp(p)) glow(p.x,p.y,p.light,p.dim?1.2:1.8,p.dim?.10:.20); });
   var W=MW, H=MH, M=map, F=fireT;   /* read once a frame (state getters) */
   for(var y=camY;y<=camY+viewH;y++) for(var x=camX;x<=camX+viewW;x++){
     if(x<0||y<0||x>=W||y>=H) continue; var t=M[y*W+x];
@@ -1264,7 +1322,10 @@ function lightLOS(x0,y0,x1,y1){
   }
   return true;
 }
-/* Derived hallway sconces belong to presentation, not gameplay geometry. */
+/* Derived Dungeon sconces belong to presentation, not gameplay geometry. */
+function lightingRoomTorchCandidate(x,y,view){
+    return x>0&&y>0&&x<view.width-1&&y<view.height-1&&view.at(x,y)===view.wall&&view.wallFaces(x,y);
+  }
 function lightingHallwayTorchCandidate(x,y,view){
     if(x<1||y<1||x>=view.width-1||y>=view.height-2||view.at(x,y)!==view.wall||view.at(x,y+1)!==view.floor||view.inRoom(x,y+1))return false;
     var passage=false;
@@ -1273,8 +1334,25 @@ function lightingHallwayTorchCandidate(x,y,view){
     for(var dy=-2;dy<=2;dy++)for(var dx=-2;dx<=2;dx++)if(view.isDoor(view.at(x+dx,y+1+dy)))return false;
     return true;
   }
-function lightingHallwayTorches(view){
+function lightingDungeonTorches(view){
     var mask=new Uint8Array(view.width*view.height),candidates=[],lights=(view.propLights||[]).map(function(p){return {x:p.x,y:p.y};});
+    (view.rooms||[]).forEach(function(room){
+      // Purpose-built dark rooms retain their darkness mechanic.
+      if(room.cave||room.dark||!(room.w>0&&room.h>0))return;
+      var best=null,center=room.x+(room.w-1)/2;
+      // Corridors can remove the nominal north edge. Follow up to two open
+      // corridor rows to its actual wall, without crossing a door or room.
+      for(var depth=1;depth<=3&&!best;depth++)for(var x=room.x;x<room.x+room.w;x++){
+        var y=room.y-depth;
+        if(view.inRoom(x,room.y)!==room||!lightingRoomTorchCandidate(x,y,view))continue;
+        var clear=true;
+        for(var py=y+1;py<room.y;py++)if(view.inRoom(x,py)||(view.at(x,py)!==view.floor&&view.at(x,py)!==view.water)){clear=false;break;}
+        if(!clear)continue;
+        if(view.existingTorch(x,y)){best={x:x,y:y};break;}
+        if(!best||Math.abs(x-center)<Math.abs(best.x-center))best={x:x,y:y};
+      }
+      if(best){mask[best.y*view.width+best.x]=2;lights.push(best);}
+    });
     for(var y=0;y<view.height;y++)for(var x=0;x<view.width;x++){
       if(view.existingLight(x,y))lights.push({x:x,y:y});
       if(lightingHallwayTorchCandidate(x,y,view))candidates.push({x:x,y:y,priority:view.priority(x,y)});
@@ -1283,26 +1361,54 @@ function lightingHallwayTorches(view){
     var added=[];
     function near(a,b,distance){var dx=a.x-b.x,dy=a.y-b.y;return dx*dx+dy*dy<distance*distance;}
     candidates.forEach(function(p){
-      if(lights.some(function(q){return near(p,q,6);})||added.some(function(q){return near(p,q,8);}))return;
+      if(lights.some(function(q){return near(p,q,4);})||added.some(function(q){return near(p,q,6);}))return;
       mask[p.y*view.width+p.x]=1;added.push(p);
     });
     return mask;
   }
-var HALL_TORCH_CACHE=new WeakMap();
-function dungeonHallwayTorchAt(x,y){
-  if(!floorMeta||bidx()!==0||inDeep()||floorMeta.plane||floorMeta.chaosPreview||floorMeta.chaosCampaign)return false;
-  var cached=HALL_TORCH_CACHE.get(floorMeta);
+function lightingDungeonDaylight(view){
+  var patches=[];
+  (view.rooms||[]).forEach(function(room){
+    if(room.cave||room.dark||!(room.w>0&&room.h>0))return;
+    var grass=[],selected=[];
+    for(var y=room.y;y<room.y+room.h;y++)for(var x=room.x;x<room.x+room.w;x++){
+      if(view.inRoom(x,y)===room&&view.at(x,y)===view.floor&&view.grassAt(x,y))grass.push({x:x,y:y,priority:view.priority(x,y)});
+    }
+    grass.sort(function(a,b){return a.priority-b.priority||a.y-b.y||a.x-b.x;});
+    var limit=Math.min(3,Math.ceil(grass.length/12));
+    for(var p of grass){
+      if(selected.length>=limit)break;
+      if(selected.some(function(q){return Math.hypot(p.x-q.x,p.y-q.y)<4;}))continue;
+      selected.push(p);
+      var beamRadius=2.8+p.priority*.4;
+      patches.push({x:p.x,y:p.y,tx:p.x,ty:p.y,room:room,r:beamRadius*2,beamRadius:beamRadius,s:1,
+        c:[246/255,251/255,1],height:5.5,falloff:1.6,daylight:true,em:false});
+    }
+  });
+  return patches;
+}
+var DUNGEON_LIGHT_CACHE=new WeakMap();
+function dungeonLighting(){
+  if(!floorMeta||bidx()!==0||inDeep()||floorMeta.plane||floorMeta.chaosPreview||floorMeta.chaosCampaign)return null;
+  var cached=DUNGEON_LIGHT_CACHE.get(floorMeta);
   if(!cached||cached.map!==map||cached.width!==MW||cached.height!==MH||cached.seed!==worldSeed||cached.floor!==floorNo){
     var salt=((worldSeed>>>0)%9973)+floorNo*131+1733;
-    var view={width:MW,height:MH,wall:WALL,floor:FLOOR,at:at,inRoom:function(px,py){return !!roomAt(px,py);},isDoor:isDoorish,
+    var view={width:MW,height:MH,wall:WALL,floor:FLOOR,water:WATER,at:at,rooms:rooms,inRoom:roomAt,wallFaces:wallFaces,isDoor:isDoorish,existingTorch:masonryTorchAt,
+      // Original growth keeps roof openings fixed when grass burns or regrows.
+      grassAt:function(px,py){var i=py*MW+px,original=floorMeta.vegOrig;return original?original[i]==='G'||original[i]==='s':ground[i]===G_GRASS||ground[i]===G_SHORT;},
       priority:function(px,py){return hash2(px,py,salt);},propLights:props.filter(function(p){return !!p.light;}),
       existingLight:function(px,py){var t=at(px,py);return masonryTorchAt(px,py)||t===FORGE||t===SHRINE||t===STAIRS||t===CHEST||t===EXIT;}};
-    cached={map:map,width:MW,height:MH,seed:worldSeed,floor:floorNo,view:view,mask:lightingHallwayTorches(view)};
-    HALL_TORCH_CACHE.set(floorMeta,cached);
+    cached={map:map,width:MW,height:MH,seed:worldSeed,floor:floorNo,view:view,mask:lightingDungeonTorches(view),daylight:lightingDungeonDaylight(view)};
+    DUNGEON_LIGHT_CACHE.set(floorMeta,cached);
   }
+  return cached;
+}
+function dungeonTorchAt(x,y){
+  var cached=dungeonLighting();if(!cached)return false;
   // Derived scenery stays outside saves. A destroyed wall never keeps a
-  // floating flame; opening a door does not reshuffle the hallway fixtures.
-  return !!(cached.mask[y*MW+x]&&lightingHallwayTorchCandidate(x,y,cached.view));
+  // floating flame; opening a door does not reshuffle the fixtures.
+  var kind=cached.mask[y*MW+x];
+  return !!(kind&&(kind===2?lightingRoomTorchCandidate(x,y,cached.view):lightingHallwayTorchCandidate(x,y,cached.view)));
 }
 function masonryTorchAt(x,y){
   if(!isWallLike(at(x,y)) || at(x,y)===SECRET) return false;
@@ -1316,37 +1422,45 @@ function gatherBaseLights(now, prp){
   var x0=camX-7, x1=camX+viewW+7, y0=camY-7, y1=camY+viewH+7;
   /* the hero's own torch follows the sliding render position, so light glides with each step */
   var pr = 5.5 + (player.aff && player.aff.light ? 1 : 0) + (player.aff && player.aff.fire ? 0.5 : 0);
-  // A steady neutral personal light preserves the painted palette. Fire and
-  // elemental sources still carry their own localized colors and animations.
+  // A dimmer, broader neutral personal light preserves the painted palette.
+  // Its gentler falloff softens the hotspot while local sources keep their color.
   var dimensional=typeof FoteNormalLighting!=='undefined'&&FoteNormalLighting.enabled();
-  add(prp.x, prp.y, dimensional?'#F2F3F6':'#FFB066', pr, dimensional?.9675:1.15*fl(0.3), [player.x, player.y]);
-  // Restore the softer, broader native falloff while retaining surface height.
-  if(dimensional)L[0].height=.8;
+  add(prp.x, prp.y, dimensional?'#F2F3F6':'#FFB066', pr+(dimensional?1:0), dimensional?.72:1.15*fl(0.3), [player.x, player.y]);
+  // Personal-light tuning leaves the shared falloff and receiver height intact.
+  if(dimensional){L[0].height=.8;L[0].falloff=1.35;}
+  var dungeon=dungeonLighting();
+  if(dungeon)dungeon.daylight.forEach(function(patch){
+    if(patch.room.dark||lightBlocks(patch.tx,patch.ty)||patch.x+patch.r<camX-1||patch.x-patch.r>camX+viewW+1||patch.y+patch.r<camY-1||patch.y-patch.r>camY+viewH+1)return;
+    // Receiver FOV admits the patch, so its center need not enter sight first.
+    L.push(patch);
+  });
   var W=MW, M=map, S=seen, F=fireT, all=revealAll&&!blind, yEnd=Math.min(MH-1,y1), xEnd=Math.min(W-1,x1);   /* read once a frame (state getters) */
   for(y=Math.max(0,y0); y<=yEnd; y++) for(x=Math.max(0,x0); x<=xEnd; x++){
     var i=y*W+x, t=M[i];
     if(!(all||S[i])) continue;
-    if(wallTorchAt(x,y)) add(x, y+0.75, '#FF9A48', 5, 1.2*fl(x*7+y), [x, y+1]);
+    if(wallTorchAt(x,y)){add(x, y+0.75, '#FF9A48', 5, 1.2*fl(x*7+y), [x, y+1]);L[L.length-1].torch=true;}
     else if(F[i]>0) add(x, y, '#FF7A30', 3.2, 0.9*fl(x+y*5));
     else if(all||sceneVisibility()[i]){
       var beacon=mapBeaconTile(x,y,t);
-      if(beacon){add(x,y,beacon,t===FORGE?3.4:t===SHRINE?2.8:2.3,t===FORGE?.85:.62);L[L.length-1].height=t===FORGE?1.15:.6;}
+      if(beacon){add(x,y,beacon,t===FORGE?4.6:t===SHRINE?2.8:2.3,t===FORGE?1.2:.62);L[L.length-1].height=t===FORGE?1.15:.6;}
     }
   }
   props.forEach(function(pp){
-    if(!pp.light||pp.x<x0||pp.x>x1||pp.y<y0||pp.y>y1||!(all||S[pp.y*W+pp.x])||(blind&&!sceneVisibility()[pp.y*W+pp.x]))return;
+    if(!pp.light||pp.x+(pp.w||1)-1<x0||pp.x>x1||pp.y+(pp.h||1)-1<y0||pp.y>y1)return;
+    var source=propLightSource(pp);if(!source)return;
     var crystal=propCrystalLight(pp);
     if(crystal){
-      if(!(all||sceneVisibility()[pp.y*W+pp.x]))return;
-      var cx=pp.x+((pp.w||1)-1)/2,cy=pp.y+((pp.h||1)-1)/2,tx=Math.floor(cx),ty=Math.floor(cy);
-      if(pp.wall){cy=pp.y+.8;tx=pp.x;ty=pp.y+1;}
-      add(cx,cy,crystal.color,crystal.r,crystal.s,[tx,ty]);L[L.length-1].height=crystal.height;
-    }else add(pp.x,pp.y,pp.light,pp.dim?2.8:4.8,(pp.dim?.55:1)*fl(pp.x*5+pp.y));
+      add(source.x,source.y,crystal.color,crystal.r,crystal.s,[source.tx,source.ty]);L[L.length-1].height=crystal.height;
+    }else{
+      add(source.x,source.y,pp.light,pp.dim?2.8:4.8,(pp.dim?.55:1)*fl(pp.x*5+pp.y),[source.tx,source.ty]);
+      if((pp.artName||pp.name)==='torch-stand')L[L.length-1].torch=true;
+    }
   });
   props.forEach(function(pp){
-    if(pp.light||pp.x<x0||pp.x>x1||pp.y<y0||pp.y>y1||!(all||sceneVisibility()[idxOf(pp.x,pp.y)]))return;
+    if(pp.light||pp.x+(pp.w||1)-1<x0||pp.x>x1||pp.y+(pp.h||1)-1<y0||pp.y>y1)return;
     var color=mapBeaconProp(pp);if(!color)return;
-    add(pp.x+((pp.w||1)-1)/2,pp.y+((pp.h||1)-1)/2,color,2.4,.6,[pp.x,pp.y]);L[L.length-1].height=.7;
+    var source=propLightSource(pp);if(!source)return;
+    add(source.x,source.y,color,2.4,.6,[source.tx,source.ty]);L[L.length-1].height=.7;
   });
   items.forEach(function(it){ if(it.kind==='mote' && (all||sceneVisibility()[idxOf(it.x,it.y)])) add(it.x, it.y, AFF_COL[it.el]||'#FFFFFF', 2.2, 0.55*fl(it.x+it.y)); });
   items.forEach(function(it){ if(it.kind==='key' && (all||(blind?sceneVisibility():seen)[idxOf(it.x,it.y)])) add(it.x, it.y, it.key==='crystal' ? '#A0E6FF' : '#78BEFF', 2.6, 0.6*fl(it.x+it.y*3)); });
@@ -1723,7 +1837,7 @@ function mapBeaconTile(x,y,t){
     var kind=chestKind[idxOf(x,y)];
     if(kind!=='mimic'&&(kind==='chest-gold'||enhancedChestAt(x,y)))return '#E8B44A';
   }
-  if(t===FORGE)return '#FF8A3A';
+  if(t===FORGE)return '#FFC45C';
   if(t===SHRINE)return (GODS[RUN.shrineGod]||{}).color||'#E6D9BC';
   return null;
 }
@@ -1810,7 +1924,8 @@ function drawScene(){
   var screen=ctx.getTransform(), layered=GROUND_LAYER_ON && screen.b===0 && screen.c===0 && screen.e===0 && screen.f===0 && screen.a===screen.d && !groundWatched(ctx);
   if(!layered){ ctx.fillRect(0,0,viewW*TS,viewH*TS); if(GROUND_LAYER_ON) GROUND_LAYER.stats.direct++; }
   ctx.save(); ctx.translate(-camOX, -camOY); TILE_FRAME={ctx:ctx, m:ctx.getTransform()};
-  if(typeof FoteNormalLighting!=='undefined'&&lightingOn())FoteNormalLighting.begin(ctx);
+  var normalFrame=typeof FoteNormalLighting!=='undefined'&&lightingOn()&&FoteNormalLighting.begin(ctx);
+  var actorGrounding=!!(normalFrame&&spriteOn&&typeof FoteProjectedShadows!=='undefined'&&FoteProjectedShadows.enabled());
 
   /* ---- terrain and the ground passes over it (moss, grit, drains: surface.js and after) ---- */
   var segs=groundSegments(), seg=layered ? drawGroundLayer(now, TILE_FRAME.m, (restFX-camX)*TS, (restFY-camY)*TS) : 0;
@@ -1861,7 +1976,7 @@ function drawScene(){
     var isDoor=(ot===DOOR||ot===OPEN||ot===LOCKED||ot===TOLL||ot===ICEDOOR||ot===THORNS||ot===SEALED);
     if(spr){
       var big = ot===FORGE||ot===SHRINE||ot===EXIT;   /* 2026-09-19: the god statues are two tiles tall - a shrine stands on its tile and rises above it */
-      drawObj(spr, opx, opy, {surface:{kind:(ot===STAIRS||ot===19||ot===BRIDGE)?'ground':isDoor?'wall':'sprite',x:x,y:y+(isDoor?.5:0),admissionX:x,admissionY:y,emission:mapEmissionVisible(x,y)&&mapBeaconTile(x,y,ot)?.4:0}, feet:!isDoor && ot!==CHEST && ot!==STAIRS && ot!==19 && ot!==BRIDGE, fit: isDoor?(propAt(x,y)&&propAt(x,y).eventGate?1.4:1.02) : ot===SHRINE?2.1 : ot===FORGE?2.3 : big?1.18 : (ot===STAIRS||ot===19)?0.95 : 0.85, alpha:oa, fill: isDoor&&!(propAt(x,y)&&propAt(x,y).eventGate)});
+      drawObj(spr, opx, opy, {surface:{kind:(ot===STAIRS||ot===19||ot===BRIDGE)?'ground':isDoor?'wall':'sprite',x:x,y:y+(isDoor?.5:0),admissionX:x,admissionY:y,emission:ot!==FORGE&&mapEmissionVisible(x,y)&&mapBeaconTile(x,y,ot)?.4:0}, feet:!isDoor && ot!==CHEST && ot!==STAIRS && ot!==19 && ot!==BRIDGE, fit: isDoor?(propAt(x,y)&&propAt(x,y).eventGate?1.4:1.02) : ot===SHRINE?2.1 : ot===FORGE?2.3 : big?1.18 : (ot===STAIRS||ot===19)?0.95 : 0.85, alpha:oa, fill: isDoor&&!(propAt(x,y)&&propAt(x,y).eventGate)});
       if(ot===EXIT && !floorMeta.exitOpen && !floorMeta.caveExit){ ctx.globalAlpha=0.55*oa; ctx.fillStyle='#000'; ctx.fillRect(opx+TS*0.2,opy+TS*0.1,TS*0.6,TS*0.8); ctx.globalAlpha=1; }
       if(ot===SEALED && !(propAt(x,y)&&propAt(x,y).eventGate) && !(floorMeta.crystalDoor && floorMeta.crystalDoor.x===x && floorMeta.crystalDoor.y===y)){ ctx.globalAlpha=0.35*oa; ctx.fillStyle='#6FB7FF'; ctx.fillRect(opx,opy,TS,TS); ctx.globalAlpha=1; }
     } else {
@@ -1936,6 +2051,7 @@ function drawScene(){
   // The walkable spore pool and other flat scenery must not cover combat tiles.
   if(typeof FoteChaosEnemyArt!=='undefined')FoteChaosEnemyArt.drawHazards(now);
 
+
   /* items: after the flat props, so a pickup dropped on rubble, bones or moss lies on top of them rather than
      under them (2026-09-22, Justin: a mana globe under a rock); standing props and creatures are deferred and
      still cover it */
@@ -1989,7 +2105,7 @@ function drawScene(){
     var poff=entOffset(player);
     atTile(prp.x,prp.y,function(px0,py0){
       var px=px0+poff[0]+shakeOf(player), py=py0+poff[1]-prp.hop*TS*0.10;
-      ctx.globalAlpha=0.35; ctx.fillStyle='#000'; ctx.beginPath(); ctx.ellipse(px0+TS/2,py0+TS*0.9,TS*0.28,TS*0.1,0,0,7); ctx.fill(); ctx.globalAlpha=1;
+      drawActorContactShadow(player,px0,py0,actorGrounding);
       var fade = player.hidden>0 ? 0.5 : 1;
       var flip = heroFlip(player);
       if(!drawCharacter(player, px, py, {alpha:fade, flip:flip, flash:flashOf(player), sliding:motionActive(player,now)})){
@@ -2000,9 +2116,11 @@ function drawScene(){
       }
       if(player.st&&player.st.burn)drawBurningFlame(px+TS*.5,py+TS*.88,TS*.56,now,0,.44);
       var shp = typeof playerShield==='function' ? playerShield() : 0;
-      if(shp>0){ var pulseS=ANIM.reduce?0.5:0.5+0.5*Math.sin(now/400); ctx.save(); ctx.globalAlpha=0.18+0.12*pulseS+Math.min(0.2, shp/player.maxhp*0.4);
-        var gS=ctx.createRadialGradient(px0+TS/2,py0+TS*0.55,TS*0.2,px0+TS/2,py0+TS*0.55,TS*0.62); gS.addColorStop(0,'rgba(150,215,255,0)'); gS.addColorStop(0.8,'rgba(150,215,255,0.35)'); gS.addColorStop(1,'rgba(200,235,255,0.9)');
-        ctx.fillStyle=gS; ctx.beginPath(); ctx.ellipse(px0+TS/2,py0+TS*0.55,TS*0.5,TS*0.62,0,0,7); ctx.fill(); ctx.restore(); }
+      if(shp>0){ var pulseS=ANIM.reduce?0.5:0.5+0.5*Math.sin(now/400); ctx.save(); ctx.globalAlpha=0.14+0.06*pulseS+Math.min(0.12, shp/player.maxhp*0.24);
+        // Match the gradient to the oval so its thin rim fades out before the edge.
+        ctx.translate(px0+TS/2,py0+TS*0.55); ctx.scale(0.8,1);
+        var gS=ctx.createRadialGradient(0,0,TS*0.35,0,0,TS*0.62); gS.addColorStop(0,'rgba(150,215,255,0)'); gS.addColorStop(0.48,'rgba(150,215,255,0.1)'); gS.addColorStop(0.76,'rgba(160,220,250,0.55)'); gS.addColorStop(1,'rgba(160,220,250,0)');
+        ctx.fillStyle=gS; ctx.beginPath(); ctx.arc(0,0,TS*0.62,0,7); ctx.fill(); ctx.restore(); }
       if(player.stillness>0){ ctx.save(); ctx.globalAlpha=0.5; ctx.strokeStyle='#9FD8FF'; ctx.setLineDash([3,3]); ctx.beginPath(); ctx.ellipse(px0+TS/2,py0+TS*0.9,TS*0.36,TS*0.12,0,0,7); ctx.stroke(); ctx.restore(); }
       if(player.levitate>0){ ctx.globalAlpha=0.35; ctx.strokeStyle='#E8D27A'; ctx.beginPath(); ctx.ellipse(px0+TS/2,py0+TS*0.92,TS*0.3,TS*0.09,0,0,7); ctx.stroke(); ctx.globalAlpha=1; }
     });
@@ -2014,7 +2132,7 @@ function drawScene(){
     atTile(rp.x,rp.y,function(px0,py0){
       // Only displayed bats get chest-height flight; summons can retain a bat's base data.
       var px=px0+off[0]+shakeOf(e), py=py0+off[1]-rp.hop*TS*0.14 - (e.base.flying ? TS*(e.base.sprite==='m-bat'&&!isShadeSummon(e)&&!e.livingFlame?0.50:0.12) + (ANIM.reduce?0:Math.sin(now/180+e.id)*TS*0.04) : 0);
-      drawActorContactShadow(e,px0,py0);
+      drawActorContactShadow(e,px0,py0,actorGrounding);
       /* 2026-09-28: a creature faces the way it last stepped or struck (it used to face the player whatever it did, so a wanderer
          walked backwards); one that has not moved yet faces the player */
       var flip = typeof e.facingLeft==='boolean' ? e.facingLeft : player.x < e.x;

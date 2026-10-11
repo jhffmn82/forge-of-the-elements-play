@@ -49,7 +49,7 @@ function gatherLights(now,position){
     var local=[];addPortalLights(local,now,position);
     local.forEach(function(light){if(revealAll||inb(light.tx,light.ty)&&sceneVisibility()[idxOf(light.tx,light.ty)])lights.push(light);});
   }
-  addNaturalTerrainLights(lights,now,position);addMissingCrystalLights(lights,now,position);shadeCavernLights(lights,now,position);
+  addNaturalTerrainLights(lights,now,position);addMissingPropLights(lights,now,position);shadeCavernLights(lights,now,position);
   addStormwardLight(lights,now,position);addUnderdarkLights(lights,now,position);
   return lights;
 }
@@ -121,7 +121,7 @@ function caveArt(name){var art=packedCaveArt(name);if(typeof FoteChaosPreviewRen
 function drawObj(art,x,y,options){var drawn=drawObjectSprite(art,x,y,options);if(drawn)drawObjectAnimation(art,x,y,options);return drawn;}
 function drawCaveArt(art,center,bottom,alpha,flip,surface){
   var adjusted=bottom,opacity=alpha;
-  var emission=mapArtworkEmission(art),base=surface||{kind:'sprite',x:center/TS+camX-.5,y:bottom/TS+camY-1,admissionX:Math.floor(center/TS)+camX,admissionY:Math.floor(bottom/TS-.5)+camY};
+  var emission=surface&&surface.emission!==undefined?surface.emission:mapArtworkEmission(art),base=surface||{kind:'sprite',x:center/TS+camX-.5,y:bottom/TS+camY-1,admissionX:Math.floor(center/TS)+camX,admissionY:Math.floor(bottom/TS-.5)+camY};
   if(emission)surface=Object.assign({},base,{emission:mapEmissionVisible(base.admissionX,base.admissionY)?emission:0});
   if(art&&art.nm&&art.nm!=='kobold-crate'&&CAVE_STANDING.test(art.nm))adjusted+=caveBottomPad(art)*caveArtScale(art);
   if(art&&art.nm&&/^cl-cave-pearls/.test(art.nm))opacity*=.3;
@@ -172,7 +172,7 @@ function drawDeco(piece,x,y,alpha,options){
     return drawSurfaceDecal(piece,x,y,alpha,options);
   }finally{DEEP_AT=keep;}
 }
-function wallTorchAt(x,y){if(typeof FoteChaosPreviewRenderer!=='undefined'&&typeof FoteChaosPreviewRenderer.terrainMaterial==='function'&&FoteChaosPreviewRenderer.terrainMaterial(x,y))return false;return (masonryTorchAt(x,y)||dungeonHallwayTorchAt(x,y))&&(!inDeep()||!floorMeta.deepRegion||(deepCellReg(x,y)!==1&&!deepIsRaster(x,y)));}
+function wallTorchAt(x,y){if(typeof FoteChaosPreviewRenderer!=='undefined'&&typeof FoteChaosPreviewRenderer.terrainMaterial==='function'&&FoteChaosPreviewRenderer.terrainMaterial(x,y))return false;return (masonryTorchAt(x,y)||dungeonTorchAt(x,y))&&(!inDeep()||!floorMeta.deepRegion||(deepCellReg(x,y)!==1&&!deepIsRaster(x,y)));}
 function drawWangLayer(key,tile){
   DEEP_RC=false;DEEP_AT=-1;
   var suppressed=key==='water'&&ptMat()||key==='chasm'&&(inCaverns()||biomeChasmsOn());

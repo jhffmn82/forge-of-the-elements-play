@@ -34,12 +34,13 @@ function drawSetSprite(p, alpha){
   var fit=p.wall ? 0.9 : 0.98, sc=Math.min((p.w*TS*fit)/o.sw, (p.h*TS*(p.w===1&&p.h===1?1.15:1.02))/o.sh);
   var dw=o.sw*sc, dh=o.sh*sc, px=(p.x-camX)*TS+(p.w*TS-dw)/2, py=p.wall ? (p.y-camY)*TS+(TS-dh)/2 : (p.y-camY+p.h)*TS-dh-TS*0.02;
   ctx.save(); ctx.globalAlpha=alpha; ctx.imageSmoothingEnabled=false;
-  if(!p.wall && !p.flat && !p.noShadow && !/^(soul-urn|soul-brazier|kobold-campfire)$/.test(p.name)){   /* flat art and explicitly shadowless set pieces omit the contact oval */
+  if(!spriteGroundShadows() && !p.wall && !p.flat && !p.noShadow && !/^(soul-urn|soul-brazier|kobold-campfire)$/.test(p.name)){   /* Classic rendering retains the original contact oval. */
     ctx.fillStyle='rgba(8,6,12,0.38)'; ctx.beginPath(); ctx.ellipse(px+dw/2, (p.y-camY+p.h)*TS-TS*0.1, dw*0.48, TS*0.2, 0, 0, 7); ctx.fill();
   }
   ctx.drawImage(o.img, o.sx, o.sy, o.sw, o.sh, px, py, dw, dh);
   if(typeof FoteNormalLighting!=='undefined'){
     var surface=p.flat?{kind:'ground',admissionX:p.x,admissionY:p.y}:p.wall?{kind:'wall',x:p.x+(p.w-1)/2,y:p.y+.5,height:dh/TS*1.2,footV:((p.y-camY+1)*TS-py)/dh,admissionX:p.x,admissionY:p.y}:{kind:'sprite',x:p.x+(p.w-1)/2,y:p.y+p.h-1,height:dh/TS,footV:1,admissionX:p.x,admissionY:p.y};
+    surface.shadowKey=p;surface.shadow=p.noShadow?false:undefined;
     surface.emission=mapEmissionVisible(p.x,p.y)?Math.max(propLightSurface(p).emission,mapArtworkEmission(o)):0;
     FoteNormalLighting.record(ctx,o,{x:px,y:py,w:dw,h:dh},{surface:surface});
   }
@@ -461,14 +462,36 @@ function drawMushroomGroundDecal(gv, x, y, px, py, alpha, now){
 
 }
 
+var CRYPT_OOZE_LIGHT_CACHE=new WeakMap();
+function cryptOozeLightPoints(ooze){
+  var cells=Object.keys(ooze).filter(function(i){return ooze[i];}),signature=MW+':'+cells.join(','),cached=CRYPT_OOZE_LIGHT_CACHE.get(ooze);
+  if(cached&&cached.signature===signature)return cached.points;
+  var points=[];
+  cells.map(function(i){return {x:i%MW,y:Math.floor(i/MW)};}).sort(function(a,b){return hash2(a.x,a.y,718)-hash2(b.x,b.y,718);}).forEach(function(p){
+    // A few low emitters follow the pool, rather than summing a bright lamp on
+    // every ooze cell. Fixed spacing bounds overlap even on the largest pools.
+    if(!points.some(function(q){var dx=p.x-q.x,dy=p.y-q.y;return dx*dx+dy*dy<6.25;}))points.push(p);
+  });
+  CRYPT_OOZE_LIGHT_CACHE.set(ooze,{signature:signature,points:points});
+  return points;
+}
+function addCryptOozeLights(L){
+  if(!floorMeta||!floorMeta.ooze)return L;
+  cryptOozeLightPoints(floorMeta.ooze).forEach(function(p){
+    if(!mapEmissionVisible(p.x,p.y)||p.x<camX-4||p.x>camX+viewW+4||p.y<camY-4||p.y>camY+viewH+4)return;
+    L.push({x:p.x,y:p.y,c:hexRGB('#80C65A'),r:3.2,s:.28,falloff:1.4,height:.45,tx:p.x,ty:p.y});
+  });
+  return L;
+}
 function addCryptMushroomLights(L, now, prp){
   if(!cryptShrooms()) return L;
+  var time=ANIM.reduce?0:now;
   var x0=Math.max(0,camX-4), x1=Math.min(MW-1,camX+viewW+4), y0=Math.max(0,camY-4), y1=Math.min(MH-1,camY+viewH+4);
   for(var y=y0;y<=y1;y++) for(var x=x0;x<=x1;x++){
     var i=idxOf(x,y); if(ground[i]!==G_GRASS || !(revealAll||seen[i]) || hash2(x,y,77)>0.4) continue;
-    L.push({x:x, y:y, c:hexRGB('#B070FF'), r:2.4, s:0.5*(0.8+0.2*Math.sin(now/600 + x*1.3 + y)), tx:x, ty:y});
+    L.push({x:x, y:y, c:hexRGB('#B070FF'), r:2.4, s:0.5*(0.8+0.2*Math.sin(time/600 + x*1.3 + y)), tx:x, ty:y});
   }
-  return L;
+  return addCryptOozeLights(L);
 
 }
 
@@ -546,7 +569,7 @@ function drawCryptWallPlantProp(p, px, py, alpha){
     var o=vegArt(p.name);
     if(o){
       var sw=vegSway(p.x, p.y, performance.now(), 0)*0.35;
-      vegDraw(o, px+TS*(0.5+0.12*(hash2(p.x,p.y,311)-0.5)), py+TS*0.92, 0.9, sw, alpha, hash2(p.x,p.y,312)<0.5);
+      vegDraw(o, px+TS*(0.5+0.12*(hash2(p.x,p.y,311)-0.5)), py+TS*0.92, /^crypt-shelf-fungus-/.test(p.name)?1:.9, sw, alpha, hash2(p.x,p.y,312)<0.5);
       return true;
     }
   }

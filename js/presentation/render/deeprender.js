@@ -456,7 +456,7 @@ function addUnderdarkLights(L, now, prp){
   /* the scenery's fires burn a little lower down here: the Underdark is meant to be dark */
   for(var i=1;i<L.length;i++){ L[i].s*=0.75; }
   (floorMeta.lavaLights||[]).forEach(function(l){
-    if(l.x<camX-7 || l.x>camX+viewW+7 || l.y<camY-7 || l.y>camY+viewH+7 || !(revealAll||seen[idxOf(l.x,l.y)])) return;
+    if(l.x<camX-7 || l.x>camX+viewW+7 || l.y<camY-7 || l.y>camY+viewH+7 || playerBlind() || !mapEmissionVisible(l.x,l.y)) return;
     var fl=ANIM.reduce ? 1 : 1+0.12*Math.sin(now/650+l.ph)+0.05*Math.sin(now/170+l.ph*3);
     L.push({x:l.x, y:l.y, c:hexRGB('#FF6A20'), r:5.2, s:1.15*fl, tx:l.x, ty:l.y});
   });
@@ -517,6 +517,12 @@ function deepDrawPiece(p, alpha){
   }
   if(flip){ ctx.translate(dx+dw/2, 0); ctx.scale(-1,1); ctx.translate(-(dx+dw/2), 0); }
   ctx.drawImage(o.img, o.sx, o.sy, o.sw, o.sh, Math.round(dx), Math.round(dy), Math.round(dw), Math.round(dh));
+  if(typeof FoteNormalLighting!=='undefined'){
+    var flat=!!p.flat||!p.b,surface=Object.assign({},propLightSurface(p),{
+      kind:p.wall?'wall':flat?'ground':'sprite',x:p.x+(w-1)/2,y:p.wall?p.y+.5:p.y+h-1,
+      height:Math.round(dh)/TS,footV:1,shadow:p.noShadow||flat?false:undefined});
+    FoteNormalLighting.record(ctx,o,{x:Math.round(dx),y:Math.round(dy),w:Math.round(dw),h:Math.round(dh)},{surface:surface});
+  }
   ctx.restore();
   if(typeof flashOf==='function' && p.br){ var fl=flashOf(p); if(fl>0){ ctx.save(); ctx.globalAlpha=fl*0.6; ctx.fillStyle='#FFF'; ctx.fillRect(X+TS*0.2, Y+TS*0.2, TS*0.6, TS*0.6); ctx.restore(); } }
   if(typeof objFxDraw==='function') objFxDraw(o, Math.round(dx), Math.round(dy), Math.round(dw), Math.round(dh), alpha, flip);
@@ -538,6 +544,7 @@ function drawUnderdarkDoor(x,y,t,px,py,alpha){
       var s=TS/64, bottom=py+TS+deepBottomPad(o)*s*0.5, dw=o.sw*s/(o.res||1), dh=o.sh*s/(o.res||1), dx=px+(TS-o.fullW*s)/2+o.ox*s, dy=bottom-o.fullH*s+o.oy*s;
       ctx.save(); ctx.globalAlpha=alpha; ctx.imageSmoothingEnabled=true;
       ctx.drawImage(o.img, o.sx, o.sy, o.sw, o.sh, Math.round(dx), Math.round(dy), Math.round(dw), Math.round(dh));
+      if(typeof FoteNormalLighting!=='undefined')FoteNormalLighting.record(ctx,o,{x:Math.round(dx),y:Math.round(dy),w:Math.round(dw),h:Math.round(dh)},{surface:{kind:'ground',x:x,y:y,admissionX:x,admissionY:y,shadow:false}});
       ctx.restore();
       if(typeof objFxDraw==='function') objFxDraw(o, Math.round(dx), Math.round(dy), Math.round(dw), Math.round(dh), alpha, false);
       return true;
