@@ -462,6 +462,7 @@
 
     document.addEventListener('pointerdown', function(ev){
       if(orientationBlocked||!document.body.classList.contains('touch')) return;
+      if(ev.target.closest&&ev.target.closest('#tip'))return;        /* a tall map card can be scrolled */
       if(held){ dismiss(); closedAt=performance.now(); return; }       /* a tap after a long press only closes it */
       var t=ev.target;
       if(!t || (t.closest && t.closest('#hotbar'))) return;           /* travel.js owns the hotbar's long press */
@@ -688,6 +689,8 @@
     'body.touch #tip .nm{font-size:calc(18px + var(--ui-mobile-text-add,0px))!important}',
     'body.touch #tip .row{font-size:calc(14.5px + var(--ui-mobile-text-add,0px))!important}',
     'body.touch #tip .odds{font-size:calc(15px + var(--ui-mobile-text-add,0px))!important}',
+    /* Portrait map cards use the free board between the HUD and controls. */
+    '@media (orientation:portrait){ body.touch #tip{position:fixed;left:var(--maptip-x,8px)!important;top:var(--maptip-y,8px)!important;bottom:auto!important;right:auto!important;width:var(--maptip-w,calc(100vw - 16px));max-width:none!important;max-height:var(--maptip-h,50dvh);box-sizing:border-box;overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y;pointer-events:auto;z-index:60} }',
     'body.touch .sheet{font-size:calc(15px + var(--ui-mobile-text-add,0px))}',
     /* Exit: a browser will not let a page (or an installed web app) close itself, so on a phone or tablet the
        button could only fail. Home / swipe away closes it there. */
@@ -748,8 +751,48 @@
     var cv=document.getElementById('cv'); if(!cv || cv._touchHover) return !!cv;
     cv._touchHover=true;
     cv.addEventListener('mousemove', function(ev){ if(touch() && ev.isTrusted) ev.stopImmediatePropagation(); }, true);
+    cv.addEventListener('mousemove', function(ev){
+      if(touch()&&!ev.isTrusted){mapTipPoint={x:ev.clientX,y:ev.clientY};placeMapTip();var tip=document.getElementById('tip');if(tip)tip.scrollTop=0;}
+    });
     return true;
   }
+  var mapTipPoint=null;
+  function placeMapTip(){
+    var tip=document.getElementById('tip');
+    if(!touch()||innerWidth>innerHeight||!tip||tip.style.display==='none')return;
+    var board=document.getElementById('map').getBoundingClientRect(),gap=8;
+    var left=Math.max(gap,board.left+gap),right=Math.min(innerWidth-gap,board.right-gap);
+    var top=Math.max(gap,board.top+gap),bottom=Math.min(innerHeight-gap,board.bottom-gap);
+    var obstacles=[],spans=[[left,right]];
+    function collect(ids,above){
+      ids.forEach(function(id){
+        var el=document.getElementById(id);if(!el||!el.getClientRects().length)return;
+        var r=el.getBoundingClientRect();
+        if(!r.width||!r.height||r.right<=left||r.left>=right)return;
+        obstacles.push({rect:r,above:above});
+        if(r.left-gap-left>=220)spans.push([left,r.left-gap]);
+        if(right-r.right-gap>=220)spans.push([r.right+gap,right]);
+      });
+    }
+    collect(['top','studyHud','studyActionBar','statusbar'],true);
+    collect(['hotbar','dpad','studySearch','studyPickup'],false);
+    /* A short phone may have more readable space beside the action rail than
+       below it. Prefer a card that fits, then the largest scrollable area. */
+    var best=null;
+    spans.forEach(function(span){
+      var width=Math.min(340,span[1]-span[0]),x=span[0]+(span[1]-span[0]-width)/2,t=top,b=bottom;
+      obstacles.forEach(function(o){var r=o.rect;if(r.right<=x||r.left>=x+width)return;if(o.above)t=Math.max(t,r.bottom+gap);else b=Math.min(b,r.top-gap);});
+      var height=Math.max(0,b-t);
+      tip.style.setProperty('--maptip-w',width+'px');tip.style.setProperty('--maptip-h',height+'px');
+      var fits=tip.scrollHeight<=tip.clientHeight,score=fits?width:width*height;
+      if(!best||fits&&!best.fits||fits===best.fits&&score>best.score)best={x:x,width:width,top:t,bottom:b,height:height,fits:fits,score:score};
+    });
+    tip.style.setProperty('--maptip-x',best.x+'px');tip.style.setProperty('--maptip-w',best.width+'px');
+    tip.style.setProperty('--maptip-h',best.height+'px');
+    var y=mapTipPoint&&mapTipPoint.y<(best.top+best.bottom)/2?best.bottom-tip.offsetHeight:best.top;
+    tip.style.setProperty('--maptip-y',Math.max(best.top,y)+'px');
+  }
+  window.addEventListener('resize',function(){setTimeout(placeMapTip,80);});
   hookMapHover();
 
   /* the top bar's height, for the full-screen sheets and the cards */

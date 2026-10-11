@@ -344,7 +344,7 @@ var SPIKES_SRC = {name:'Spikes', base:{pierce:99}};
 
 function drawTrap(f,px,py,alpha,now){
   if(!spriteOn){
-    var color={dart:'#A69B87',fire:'#F58B42',gas:'#91BC61',frost:'#9FD8FF',spark:'#FFE080',teleport:'#B58CFF',web:'#D8D5C6',alarm:'#E8B44A',pit:'#94887C',spikes:'#B9B3AA'}[f.kind]||'#B9B3AA';
+    var color=blockTrapMark(f).color;
     ctx.save();ctx.globalAlpha=alpha;ctx.strokeStyle=color;ctx.lineWidth=Math.max(1,TS*.04);ctx.beginPath();
     [[.12,.32,.12,.12,.32,.12],[.68,.88,.88,.88,.88,.68]].forEach(function(p){ctx.moveTo(px+TS*p[0],py+TS*p[1]);ctx.lineTo(px+TS*p[2],py+TS*p[3]);ctx.lineTo(px+TS*p[4],py+TS*p[5]);});ctx.stroke();
     blockGlyph('^',px,py,color);ctx.restore();return;

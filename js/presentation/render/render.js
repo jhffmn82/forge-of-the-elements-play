@@ -1605,39 +1605,123 @@ function blockGlyph(ch,px,py,color){
   ctx.strokeStyle='#151217';ctx.lineWidth=Math.max(2,TS*.08);
   ctx.strokeText(ch,px+TS*.5,py+TS*.5);ctx.fillStyle=color||'#F5E9D6';ctx.fillText(ch,px+TS*.5,py+TS*.5);ctx.restore();
 }
-function drawBlockObject(t,px,py){
+function blockObjectMark(t){
   var door=t===DOOR||t===LOCKED||t===TOLL||t===ICEDOOR||t===THORNS||t===SEALED;
   var color=t===PORTAL||t===STAIRS||t===UPSTAIRS||t===EXIT?'#8EE7F1':t===FORGE?'#FFAA66':t===SHRINE?'#EEE1AE':t===BRIDGE||t===RUBBLE?'#77736E':t===ICEDOOR?'#9FD8FF':t===THORNS?'#91C475':t===LOCKED||t===SEALED?'#B9C5DF':'#F1CF7E';
   var symbol=door?'+':t===PORTAL?'O':t===FORGE?'&':t===SHRINE?'_':t===CHEST?'(':t===BRIDGE?'=':t===UPSTAIRS?'<':t===STAIRS||t===EXIT&&floorMeta.exitOpen?'>':t===EXIT?'+':t===OPEN?"'":':';
-  blockGlyph(symbol,px,py,color);
   var badge=t===LOCKED?'k':t===TOLL?'$':t===ICEDOOR?'I':t===THORNS?'#':t===SEALED||t===EXIT&&!floorMeta.exitOpen?'X':null;
-  if(badge){ctx.save();mark(badge,px+TS*.75,py+TS*.18,color);ctx.restore();}
+  return {ch:symbol,color:color,badge:badge};
 }
-function drawBlockProp(p,px,py){
-  if(p.eventGate)return; // Its terrain door already communicates the gate state.
+function drawBlockObject(t,px,py){
+  var m=blockObjectMark(t);blockGlyph(m.ch,px,py,m.color);
+  if(m.badge){ctx.save();mark(m.badge,px+TS*.75,py+TS*.18,m.color);ctx.restore();}
+}
+// Map painting, Search and the guide share these identities. Appearance never
+// depends on a hidden item's type, a creature's disguise or undiscovered loot.
+function blockPropMark(p){
+  if(p.eventGate)return null; // Its terrain door already communicates the gate state.
   var lever=leverDetails(p),used=!!(p.used||p.opened||lever&&lever.used);
   var event=p.eventRoom!==undefined&&rooms.find(function(r){return r.id===p.eventRoom;});
   if(event&&event.uncommonEvent)used=used||!!event.uncommonEvent.used;
-  var symbol=p.previewPortal?'O':p.crystalVault?'◇':p.hoard||p.name==='ice-block'?'*':p.fluid?'!':p.name==='final-forge'?'&':lever?used?'\\':'/':p.name==='elemental-lock'?'+':p.prisoner?'@':p.eventRoom!==undefined?'!':p.altar||p.cleansingShrine||p.offeringBowl?'_':p.tablet?'?':p.drink?'{':p.ex?'*':p.br||p.breakReward?'(':p.bush||p.name==='vines'||p.curtain?'"':p.name==='updraft-vent'?'↑':p.sentry||p.sentinel||p.guardianStatue?'&':p.merchantId!==undefined?'$':null;
-  var color=p.previewPortal?'#8EE7F1':p.name==='final-forge'?'#FFAA66':p.crystalVault||p.hoard||p.name==='ice-block'||p.fluid==='water'?'#A0E6FF':p.fluid==='poison'?'#A9D077':p.element?AFF_COL[p.element]:p.ex?'#FFA071':symbol?'#F1CF7E':'#686A70';
+  var name=p.name||'',family=name==='stack-group'||name==='urn-group'?sceneryClusterAppearance(p).family:name;
+  var ch,color,badge=null,scenery=false;
+  if(p.previewPortal){ch='O';color='#8EE7F1';}
+  else if(p.crystalVault){ch='◇';color='#A0E6FF';}
+  else if(p.hoard||name==='ice-block'){ch='*';color='#A0E6FF';}
+  else if(p.fluid){ch='!';color=p.fluid==='water'?'#79DFFF':'#B3E56F';badge=p.fluid==='water'?'W':'P';}
+  else if(p.ex){ch='*';color='#FF965C';badge='!';}
+  else if(name==='final-forge'){ch='&';color='#FFAA66';}
+  else if(lever){ch=used?'\\':'/';color='#F1CF7E';}
+  else if(name==='elemental-lock'){ch='+';color=blockReadableColor(AFF_COL[p.element]);}
+  else if(p.prisoner){ch='@';color='#F1CF7E';}
+  else if(p.eventRoom!==undefined){ch='!';color='#EDABF5';}
+  else if(p.altar||p.cleansingShrine||p.offeringBowl){ch='_';color='#EEE1AE';}
+  else if(p.tablet){ch='?';color='#C9B9ED';}
+  else if(p.drink){ch='{';color='#79DFFF';}
+  else if(p.sentry||p.sentinel||p.guardianStatue){ch='&';color='#BBC5D4';}
+  else if(p.merchantId!==undefined){ch='$';color='#F1CF7E';}
+  else if(p.breakReward){ch='/';color='#DAE7EE';}
+  else if(p.bush||name==='bush'){ch='♣';color='#8BDB68';}
+  else if(p.curtain||p.web){ch='#';color='#D8D5C6';scenery=!p.br;}
+  else if(p.hatch&&!p.hatched){ch='0';color='#E4D8B9';}
+  else if(/(^|-)crate(-|$)/.test(family)){ch='□';color='#E8B36D';}
+  else if(/(^|-)barrel(-|$)/.test(family)){ch='o';color='#CC9874';}
+  else if(/(^|-)pot(-|$)/.test(family)){ch='u';color='#EEA18D';}
+  else if(/(^|-)urn(-|$)/.test(family)&&p.br){ch='u';color='#C7AEED';}
+  else if(/(^|-)cart(-|$)/.test(name)){ch='=';color='#D5AF87';}
+  else if(name==='updraft-vent'){ch='↑';color='#CDEDF5';}
+  else if(p.br){ch='(';color='#F1CF7E';}
+  else {
+    scenery=true;
+    if(/mushroom/.test(name)){ch='♠';color='#8BAF9B';}
+    else if(/vines|fern|root|moss|flowers/.test(name)){ch='"';color='#8AAB73';}
+    else if(/crystal|geode|pylon/.test(name)){ch='◇';color='#9EA6C4';}
+    else if(/bones|bone-pile|lost-miner/.test(name)){ch='x';color='#ABA697';}
+    else if(/bookshelf/.test(name)){ch='≡';color='#B89B7A';}
+    else if(/brazier|torch|candle|candelabra|campfire/.test(name)){ch='i';color=p.light?'#DBAE70':'#90867A';}
+    else if(/cage|portcullis|weapon-rack/.test(name)){ch='≠';color='#929BAA';}
+    else if(/sarc|coffin|grave-slab/.test(name)){ch='▬';color='#A79BB4';}
+    else {ch=p.b?'#':':';color=p.b?'#96949E':'#827D82';}
+  }
+  return {ch:ch,color:color,badge:badge,used:used,scenery:scenery};
+}
+function blockItemMark(it){
+  if(it.crystal)return null;
+  var kinds={heart:['!','#F69A9A'],managlobe:['!','#8ECFFF'],essence:['$','#C7A1FF'],
+    food:['%','#EAB98A'],sigil:['?','#EDABF5'],weapon:[')','#DAE7EE'],armor:['[','#A6C8F5'],
+    off:['[','#91DBBE'],key:['(','#79DFFF'],ring:['=','#F1CF7E'],amulet:['"','#C7AEED']};
+  var m=it.kind==='mote'?['*',blockReadableColor(AFF_COL[it.el])]:kinds[it.kind]||[';','#F1CF7E'];
+  return {ch:m[0],color:m[1]};
+}
+function blockReadableColor(color){
+  if(!/^#[0-9a-f]{6}$/i.test(color||''))return '#DAE7EE';
+  var rgb=[1,3,5].map(function(i){return parseInt(color.slice(i,i+2),16);});
+  function luminance(){return rgb.reduce(function(sum,c,i){c/=255;return sum+[.2126,.7152,.0722][i]*(c<=.04045?c/12.92:Math.pow((c+.055)/1.055,2.4));},0);}
+  // Keep native species/element hues, but lift dark colors above the keyline.
+  while(luminance()<.28)rgb=rgb.map(function(c){return Math.min(255,Math.round(c+(255-c)*.12));});
+  return '#'+rgb.map(function(c){return c.toString(16).padStart(2,'0');}).join('').toUpperCase();
+}
+function blockActorMark(e){
+  var ch=e===player?'@':e.ch||'?',color=e.col||e.base&&e.base.col,summoned=isShadeSummon(e)||e.livingFlame;
+  // Native aliases/limbs retain one identity; distinct species do not.
+  if(isShadeSummon(e)){ch=e.swarm?'s':'S';color=AFF_COL.shadow;}
+  else if(e.livingFlame){ch='f';color=AFF_COL.fire;}
+  else {
+    if(e.kind==='pebbleslime')color='#B8C8B8';
+    if(e.kind==='caveslime')color='#A995CA';
+    if(e.kind==='chaos-spiderling')color='#C59BF0';
+    if(e.kind==='sporecaller')ch='F';
+    if(e.kind==='chaos-bile-spitter')ch='b';
+  }
+  return {ch:ch,color:e===player?'#FFFFFF':blockReadableColor(color),badge:!summoned&&e.base&&e.base.elementTier?String(e.base.elementTier):null,
+    allegiance:e===player?'#FFFFFF':e.ally?'#8CE69B':e.foe?'#FF918A':'#96D7F1'};
+}
+function blockTrapMark(f){
+  return {ch:'^',color:{dart:'#A69B87',fire:'#F58B42',gas:'#91BC61',frost:'#9FD8FF',spark:'#FFE080',teleport:'#B58CFF',web:'#D8D5C6',alarm:'#E8B44A',pit:'#94887C',spikes:'#B9B3AA'}[f.kind]||'#B9B3AA'};
+}
+function drawBlockProp(p,px,py){
+  var m=blockPropMark(p);if(!m)return;
   var w=p.w||1,h=p.h||1;
   ctx.save();
-  if(used)ctx.globalAlpha*=.4;
-  if(symbol)blockGlyph(symbol,px+TS*(w-1)/2,py+TS*(h-1)/2,color);
+  if(m.used)ctx.globalAlpha*=.4;
+  if(!m.scenery)blockGlyph(m.ch,px+TS*(w-1)/2,py+TS*(h-1)/2,m.color);
   else {
-    // Scenery has no bright badge. Blocking footprints remain visible as quiet # cells.
-    ctx.globalAlpha*=.55;
-    for(var row=0;row<h;row++)for(var col=0;col<w;col++)glyph(p.b?'#':':',px+TS*col,py+TS*row,color);
+    // Quiet scenery still shows every occupied cell of its blocking footprint.
+    ctx.globalAlpha*=.7;
+    for(var row=0;row<h;row++)for(var col=0;col<w;col++)glyph(m.ch,px+TS*col,py+TS*row,m.color);
   }
-  if(p.fluid)mark(p.fluid==='water'?'W':'P',px+TS*.75,py+TS*.18,color);
+  if(m.badge)mark(m.badge,px+TS*.75,py+TS*.18,m.color);
   ctx.restore();
 }
 function drawBlockActor(e,px,py,size){
-  var color=e===player?'#FFFFFF':e.ally?'#8CE69B':e.foe?'#FF918A':'#96D7F1';
-  ctx.save();ctx.fillStyle='#111216';ctx.strokeStyle=color;ctx.lineWidth=Math.max(1,TS*.04);
+  var m=blockActorMark(e);
+  ctx.save();ctx.fillStyle='#111216';ctx.strokeStyle=m.allegiance;ctx.lineWidth=Math.max(1,TS*.04);
   ctx.fillRect(px+TS*.12,py+TS*.1,TS*(size-.24),TS*(size-.2));
   if(size>1)ctx.strokeRect(px+TS*.12,py+TS*.1,TS*(size-.24),TS*(size-.2));
-  blockGlyph(e===player?'@':e.ch||'?',px+TS*(size-1)/2,py+TS*(size-1)/2,color);ctx.restore();
+  else if(e!==player){ctx.beginPath();ctx.moveTo(px+TS*.2,py+TS*.88);ctx.lineTo(px+TS*.8,py+TS*.88);ctx.stroke();}
+  blockGlyph(m.ch,px+TS*(size-1)/2,py+TS*(size-1)/2,m.color);
+  if(m.badge)mark(m.badge,px+TS*.8,py+TS*.7,m.color);
+  ctx.restore();
 }
 function drawTerrainPass(){
   var x, y, W=MW, H=MH, M=map, V=sceneVisibility(), S=seen, all=revealAll&&!playerBlind(), x0=camX, y0=camY, fade=memA(0.40),fogNotches=[];
@@ -2076,16 +2160,18 @@ function drawScene(){
     if(phoneActorClarity())ctx.filter='brightness(1.2) drop-shadow(0px 0px 0.45px rgba(23,18,15,.55))';
     if(it.kind==='heart' || it.kind==='managlobe'){
       if(spriteOn)drawGlobe(it,ipx,ipy+bob,ia,now);
-      else {ctx.globalAlpha=ia;blockGlyph('!',ipx,ipy,it.kind==='heart'?'#F69A9A':'#8ECFFF');}
+      else {ctx.globalAlpha=ia;var globeMark=blockItemMark(it);blockGlyph(globeMark.ch,ipx,ipy,globeMark.color);}
       ctx.restore();return;
     }
     var o=spriteOn ? (objArt('items', itemArtName(it))) : null;
     if(o) drawObj(o, ipx, ipy+TS*0.08+bob, {fit: ITEM_FIT[it.kind]||0.5, alpha:ia, loot:true,
       surface:groundItemUnlit(it)?{kind:'unlit',x:it.x,y:it.y,admissionX:it.x,admissionY:it.y}:undefined});
     else { ctx.globalAlpha=ia;
-      var itemGlyph=spriteOn?(it.kind==='essence'?'\u2022':it.kind==='mote'?'\u25C6':it.kind==='food'?'%':it.kind==='sigil'?'?':it.kind==='armor'?'[':'/'):
-        it.kind==='essence'?'$':it.kind==='mote'?'*':it.kind==='food'?'%':it.kind==='sigil'?'?':it.kind==='armor'||it.kind==='off'?'[':it.kind==='key'?'(':it.kind==='ring'?'=':it.kind==='amulet'?'"':')';
-      (spriteOn?glyph:blockGlyph)(itemGlyph,ipx,ipy,it.kind==='mote'?AFF_COL[it.el]:it.kind==='essence'?'#B98AF0':spriteOn?'#E8B44A':'#F1CF7E');ctx.globalAlpha=1;
+      if(spriteOn){
+        var itemGlyph=it.kind==='essence'?'\u2022':it.kind==='mote'?'\u25C6':it.kind==='food'?'%':it.kind==='sigil'?'?':it.kind==='armor'?'[':'/';
+        glyph(itemGlyph,ipx,ipy,it.kind==='mote'?AFF_COL[it.el]:it.kind==='essence'?'#B98AF0':'#E8B44A');
+      }else {var itemMark=blockItemMark(it);blockGlyph(itemMark.ch,ipx,ipy,itemMark.color);}
+      ctx.globalAlpha=1;
     }
     ctx.restore();
     if(it.kind==='mote' && !ANIM.reduce){ ctx.save(); ctx.globalCompositeOperation='lighter'; ctx.globalAlpha=0.18+0.08*Math.sin(now/200+it.x); ctx.fillStyle=AFF_COL[it.el]; ctx.beginPath(); ctx.arc(ipx+TS/2,ipy+TS*0.58,TS*0.2,0,7); ctx.fill(); ctx.restore(); }

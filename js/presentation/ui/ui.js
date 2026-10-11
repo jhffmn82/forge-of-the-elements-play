@@ -681,7 +681,7 @@ function inspectTargetHTML(mx,my){
       var sentry=p.sentry||guardianRoom&&guardianRoom.puzzle.kind==='sentries';
       return '<div class="nm">'+(sentry?'Stone Sentry':'Stone Sentinel')+'</div><div class="hint">'+(quiet?'Dormant guardian.':sentry?'Fires at visible targets. Pillars block its bolts; concealment, Shadow mastery or the lever lets you pass.':'Awakens on entry. Stoneskin or Earth mastery lets you pass; the lever disables it.')+'</div>';
     }
-    var pn=({'urn-group':'urns','stack-group':p.kinds && p.kinds.indexOf('pot')>=0 && p.kinds.indexOf('crate')<0 ? 'pots' : 'crates and barrels','urn-shattered':'broken urn','urn-tall':'urn','urn-squat':'urn','urn-ornate':'urn','barrel-explosive':'powder barrel','altar-spikes':'sacrifice altar','drow-altar-blood':'sacrifice altar'})[p.name] || p.name.replace(/-/g,' ');
+    var pn=p.name==='stack-group'?sceneryClusterAppearance(p).family+'s':({'urn-group':'urns','urn-shattered':'broken urn','urn-tall':'urn','urn-squat':'urn','urn-ornate':'urn','barrel-explosive':'powder barrel','altar-spikes':'sacrifice altar','drow-altar-blood':'sacrifice altar'})[p.name] || p.name.replace(/-/g,' ');
     var hint = p.breakReward ? 'A blade is embedded in the moss-covered stone.' : p.merchantId!==undefined ? 'Browse the merchant stock. Purchases cost essence.' : p.ritual&&p.prisoner ? 'Captive: '+p.captiveHp+'/'+p.captiveMaxhp+' HP. The ritual drains 2 HP per round. Free them or interrupt the priestess.' : p.ex ? 'Explodes when broken or burned.' : p.br ? 'Breakable. Might hold something.' : p.tablet ? 'A broken tablet. Read it.' :
       p.altar ? 'Offer blood for rewards.' : p.prisoner ? 'Someone is locked inside. Let them out and hope they are grateful.' : p.name==='elemental-lock' ? (p.opened?'Its seal has dissolved.':'Wants '+(p.moteCost||1)+' '+p.element+' mote'+((p.moteCost||1)===1?'':'s')+'.') : p.drink ? 'Drink from it.' :
       p.bush ? 'Cut it down. Sometimes a heart is tucked underneath.' : '';
@@ -729,19 +729,8 @@ function inspectTileHTML(mx,my){
 function searchInspectionEscape(value){return String(value).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function searchInspectionSymbol(kind,target){
   if(spriteOn)return '';
-  var symbol='';
-  // Keep these text marks aligned with render.js block mappings and drawTrap.
-  if(kind==='enemy')symbol=target.ch||'?';
-  else if(kind==='prop')symbol=target.crystalVault?'◇':target.hoard?'*':target.fluid?'!':target.ex?'*':target.br||target.breakReward?'(':target.b?'#':':';
-  else if(kind==='trap')symbol='^';
-  else if(kind==='item'){
-    if(target.crystal)return '';
-    symbol=target.kind==='heart'||target.kind==='managlobe'?'!':target.kind==='essence'?'$':target.kind==='mote'?'*':target.kind==='food'?'%':target.kind==='sigil'?'?':target.kind==='armor'||target.kind==='off'?'[':target.kind==='key'?'(':target.kind==='ring'?'=':target.kind==='amulet'?'"':')';
-  }else if(kind==='tile'){
-    var door=target===DOOR||target===LOCKED||target===TOLL||target===ICEDOOR||target===THORNS||target===SEALED;
-    symbol=door?'+':target===PORTAL?'O':target===FORGE?'&':target===SHRINE?'_':target===CHEST?'(':target===BRIDGE?'=':target===UPSTAIRS?'<':target===STAIRS||target===EXIT&&floorMeta.exitOpen?'>':target===EXIT?'+':target===OPEN?"'":':';
-  }
-  return symbol?'<span class="search-inspect-symbol" aria-hidden="true">'+searchInspectionEscape(symbol)+'</span> ':'';
+  var m=kind==='enemy'?blockActorMark(target):kind==='prop'?blockPropMark(target):kind==='trap'?blockTrapMark(target):kind==='item'?blockItemMark(target):kind==='tile'?blockObjectMark(target):null;
+  return m?'<span class="search-inspect-symbol" style="color:'+m.color+'" aria-hidden="true">'+searchInspectionEscape(m.ch)+(m.badge?'<sup>'+searchInspectionEscape(m.badge)+'</sup>':'')+'</span> ':'';
 }
 function logSearchInspection(radius){
   if(!player)return 0;
