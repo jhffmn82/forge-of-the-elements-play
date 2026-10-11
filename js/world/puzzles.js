@@ -446,6 +446,7 @@ function repairCrystalVaultClaims(){
 }
 
 /* ---------------------------------------------------------------- Search */
+var SEARCH_RADIUS=2;
 function searchAround(resting, quiet){
   if(!resting)searchSweepFx(quiet);
   if(gameTurns.busy())return false;
@@ -459,23 +460,25 @@ function searchAround(resting, quiet){
   var nearTell=false;
   for(var ty=-1;ty<=1;ty++) for(var tx=-1;tx<=1;tx++) if(gAt(player.x+tx,player.y+ty)===G_TELL) nearTell=true;
   var found=0;
-  for(var dy=-2;dy<=2;dy++) for(var dx=-2;dx<=2;dx++){
+  for(var dy=-SEARCH_RADIUS;dy<=SEARCH_RADIUS;dy++) for(var dx=-SEARCH_RADIUS;dx<=SEARCH_RADIUS;dx++){
     var x=player.x+dx, y=player.y+dy; if(!inb(x,y)) continue;
     if(at(x,y)===SECRET){
       var tellHere=nearTell && [[0,1],[1,0],[-1,0],[0,-1],[1,1],[-1,-1],[1,-1],[-1,1]].some(function(d){ return gAt(x+d[0],y+d[1])===G_TELL; });
       if(tellHere || rng()<ch){ setT(x,y,DOOR); found++; log('You find a <b>hidden door</b>!','c-kill'); sfx('door-secret'); sparkleFx(x,y,'light',14); }
     }
   }
-  feats.forEach(function(f){ if(!f.found && Math.max(Math.abs(f.x-player.x),Math.abs(f.y-player.y))<=2 && rng()<ch){ f.found=true; found++; log('You find '+(/^[AEIOU]/.test(trapName(f.kind))?'an':'a')+' <b>'+trapName(f.kind)+' trap</b>.','c-info'); sfx('trap-spot'); if(typeof trapSpotFx==='function') trapSpotFx(f); } });
+  feats.forEach(function(f){ if(!f.found && Math.max(Math.abs(f.x-player.x),Math.abs(f.y-player.y))<=SEARCH_RADIUS && rng()<ch){ f.found=true; found++; log('You find '+(/^[AEIOU]/.test(trapName(f.kind))?'an':'a')+' <b>'+trapName(f.kind)+' trap</b>.','c-info'); sfx('trap-spot'); if(typeof trapSpotFx==='function') trapSpotFx(f); } });
   if(found) computeFOV();
-  else if(!quiet) log('You search carefully'+(prev?' again':'')+' and find nothing.','c-info',{transient:false});
+  var inspected=resting?0:logSearchInspection(SEARCH_RADIUS);
+  if(!found&&!quiet&&!inspected)log('You search carefully'+(prev?' again':'')+' and find nothing new.','c-info',{transient:false});
   endTurn();
   searchDoorFx(secretCount);
 }
 window.addEventListener('keydown', function(ev){
-  var tgt=ev.target && ev.target.tagName; if(tgt==='INPUT'||tgt==='SELECT') return;
+  var tgt=ev.target && ev.target.tagName;
+  if(tgt==='INPUT'||tgt==='SELECT'||tgt==='TEXTAREA'||ev.target.closest&&ev.target.closest('[data-game-ui]'))return;
   if(ev.key!=='f' && ev.key!=='F') return;
-  if(modalOpen || openSheet || !player || player.hp<=0 || (RUN && (RUN.over||RUN.victory))) return;
+  if(uiOpen() || !player || player.hp<=0 || (RUN && (RUN.over||RUN.victory))) return;
   ev.preventDefault(); ev.stopImmediatePropagation();
   if(aiming) cancelAim();
   searchAround(false); updateUI();

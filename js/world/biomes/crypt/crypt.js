@@ -244,7 +244,7 @@ function turnCryptCorpses(context){
   if(!floorMeta || !floorMeta.corpses || !floorMeta.corpses.length) return;
   floorMeta.corpses = floorMeta.corpses.filter(function(c){
     var i=idxOf(c.x,c.y);
-    if(fireT[i]>0 || (holyG && holyG[i])){ if(vis[i]) log('Corpse destroyed.','c-good'); return false; }
+    if(fireT[i]>0 || (holyG && holyG[i])){ if(vis[i]) log('Corpse destroyed.','c-good'); if(typeof FoteJournalEvents!=='undefined')FoteJournalEvents.record('enemies',c.kind); return false; }
     if(turn<c.at) return true;
     var spot = occupied(c.x,c.y) ? nearFree(c.x,c.y,2) : {x:c.x,y:c.y};
     if(!spot) return true;
@@ -404,6 +404,7 @@ function moveCorpse(dx,dy){
     var hit=cs.filter(function(c){ return c.x===nx && c.y===ny; })[0];
     if(hit && !occupied(nx,ny)){
       floorMeta.corpses=cs.filter(function(c){ return c!==hit; });
+      if(typeof FoteJournalEvents!=='undefined')FoteJournalEvents.record('enemies',hit.kind);
       setClip(player,'melee'); lungeFx(player,nx,ny); sfx('skeleton-death');
       log('Corpse destroyed.','c-good'); endTurn(); return true;
     }

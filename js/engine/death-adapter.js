@@ -164,6 +164,7 @@ function kill(e,by,cause){
     if(event.revive)e.revived=true;
     if(prepareCreatureDeath(event)===false){gameDamage.emit('actorDeferredDeath',event);return;}
     commitCreatureDeath(event);rewardCreatureDeath(event);finishCreatureDeath(event);
+    if(typeof FoteJournalEvents!=='undefined')FoteJournalEvents.defeated(e);
     gameDamage.emit('actorKilled',event);
   }finally{resolvingDeaths.delete(e);}
 }

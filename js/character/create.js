@@ -308,7 +308,7 @@ function createRunCharacter(choice){
   var alt=item(WEAPONS,kit.alt);if(isRangedWeapon(alt))p.ranged=alt;
   return {actor:p,bagWeapon:alt&&!p.ranged?alt:null};
 }
-function newRun(seed,choice){
+function newRun(seed,choice,options){
   choice=choice||LAST_CHOICE||CHOICE;
   if(choice.cls==='cleric' && choice.god==='grom' && choice.race==='dwarf')return false;
   if(typeof resetRunSfx==='function')resetRunSfx();
@@ -334,4 +334,5 @@ function newRun(seed,choice){
   if(typeof FoteCombatLog!=='undefined')FoteCombatLog.reset();
   log('<b>'+player.name+'</b>, '+player.who+', enters the Dungeon.','c-kill');
   floorIntro();resize();updateUI();
+  if(typeof FoteJournalEvents!=='undefined')FoteJournalEvents.start(options);
 }

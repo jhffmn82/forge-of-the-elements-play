@@ -26,6 +26,16 @@ becomes a race-colored `@`, with elemental court colors for Fae; switching to
 Sprites restores animated portraits. Cold Blocks startup skips unused scene and
 portrait artwork. Native movement, combat, visibility and saved runs are retained.
 
+The Journal now keeps achievements, discoveries, highest depth and previous runs
+across all runs and save slots in this browser. Its encyclopedia and illustrated
+bestiary reveal discoveries as you play. Categories collapse for easier browsing;
+run reports include earned achievements. The set includes class and race victories,
+boss kills, elemental progress, god ranks and full completion.
+
+Search lists nearby enemies, discovered traps, doors, chests, crates, barrels and
+ground items within two tiles, nearest first. Results are names in the normal log,
+with matching map symbols in Blocks. Pick up and Search have separate touch targets.
+
 Keyboard: WASD or arrows to move, QEZC diagonals, 1-8 hotbar, Tab character sheet,
 `i` equipment, `>` stairs. Mouse and phone touch controls remain available.
 
@@ -38,4 +48,4 @@ the repeatable export and an itch.io ZIP. Automated browser tests cover gameplay
 save compatibility, UI, dimensional compositing, recovery and nested-path play.
 Physical-phone GPU and memory performance still require device testing.
 
-Build: **2026-10-10T23:53:03.259Z**. Revision: `foundation17-20261010235303259`.
+Build: **2026-10-11T01:38:58.932Z**. Revision: `foundation17-20261011013858932`.

@@ -60,6 +60,7 @@ function grantGlimmerLight(){
   }
   player.glimmerLight=true;
   player.aff.light=(player.aff.light||0)+1;
+  if(typeof FoteJournalEvents!=='undefined')FoteJournalEvents.progress();
   if(!player.primary) player.primary='light';
   log('<b>Saint Glimmer</b> kindles a point of <b>Light</b> in you.','c-kill');
 }

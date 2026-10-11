@@ -234,7 +234,7 @@ function settingsHTML(){
 }
 function optionsHTML(){
   var h=settingsHTML(),dead=RUN&&RUN.over;
-  return '<div class="sec">Save game</div>'+(dead ? '<p class="c-info" style="font-size:calc(11.5px + var(--ui-mobile-text-add,0px))">The dead cannot be saved.</p>' : slotRows('save'))+
+  return '<div class="sec">Across your runs</div><p><button id="oJournal">Journal &amp; achievements</button></p><div class="sec">Save game</div>'+(dead ? '<p class="c-info" style="font-size:calc(11.5px + var(--ui-mobile-text-add,0px))">The dead cannot be saved.</p>' : slotRows('save'))+
     '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px"><button id="oExport"'+(dead?' disabled':'')+'>Export to file</button><button id="oImport">Import from file</button><button id="oTitle">Quit to title</button><button id="oExit">Exit game</button></div>'+h;
 }
 function refreshOptions(settingsRoot){
@@ -297,6 +297,7 @@ function wireSettings(root){
 }
 function wireOptions(root){
   wireSettings(root);
+  var journal=root.querySelector('#oJournal');if(journal)journal.onclick=function(){openJournal();};
   root.querySelectorAll('[data-save]').forEach(function(b){b.onclick=function(){if(saveTo(b.getAttribute('data-save')))refreshSheet();};});
   var ex=$('oExport');if(ex)ex.onclick=exportSave;
   var im=$('oImport');if(im)im.onclick=importSave;

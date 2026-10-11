@@ -46,7 +46,7 @@
     if(source)return source+' ('+label+' damage)';
     return label.charAt(0).toUpperCase()+label.slice(1)+' damage';
   }
-  function report(record){
+  function report(record,achievements){
     var r=normalize(record);if(!r)return '';
     function line(value){return String(value||'').replace(/[\r\n\t]+/g,' ');}
     function cap(value){value=line(value);return value?value.charAt(0).toUpperCase()+value.slice(1):'Not recorded';}
@@ -65,6 +65,12 @@
     else if(!r.gear.length)rows.push('  None');
     else r.gear.forEach(function(g){rows.push('  '+line(g.slot)+': '+line(g.name));});
     if(r.finishedAt)rows.push('Finished: '+line(r.finishedAt));
+    if(Array.isArray(achievements)){
+      var earned=achievements.filter(function(a){return a.unlocked;});
+      rows.push('','Current browser-wide achievements (across all runs): '+earned.length+' / '+achievements.length);
+      if(!earned.length)rows.push('  None earned yet.');
+      earned.forEach(function(a){rows.push('  '+line(a.title)+' — '+line(a.description));});
+    }
     return rows.join('\n');
   }
   function decode(raw){
@@ -128,14 +134,16 @@
         return item&&item.name&&item!==root.EMPTY_OFF?{slot:pair[1],name:typeof gearName==='function'?gearName(item):item.name}:null;
       }).filter(Boolean),
       cause:!won&&RUN.lastDamage&&RUN.lastDamage.lethal?RUN.lastDamage.cause:'',
-      won:!!won,finishedAt:new Date().toISOString(),buildVersion:typeof FOTE_VERSION==='undefined'?'':FOTE_VERSION,sandbox:!!RUN.sandbox};
+      won:!!won,finishedAt:new Date().toISOString(),buildVersion:typeof FOTE_VERSION==='undefined'?'':FOTE_VERSION,sandbox:!!RUN.sandbox||typeof FoteJournalEvents!=='undefined'&&!FoteJournalEvents.active()};
     var result=FoteRunHistory.score(record);record.score=result.total;record.scoreVersion=result.version;record.scoreParts=result.parts;return record;
   }
   function finish(won){
     if(!RUN||!player)return null;
     var record=RUN.finishedRecord||snapshot(won);
-    if(RUN.sandbox){RUN.finishedRecord=record;return record;}
-    var result=store.add(record);RUN.finishedRecord=result.record;RUN.historySaved=result.saved;return result.record;
+    if(record.sandbox){RUN.finishedRecord=record;return record;}
+    var result=store.add(record);RUN.finishedRecord=result.record;RUN.historySaved=result.saved;
+    if(typeof FoteJournalEvents!=='undefined')FoteJournalEvents.finish(result.record);
+    return result.record;
   }
   function summary(won){return RUN.finishedRecord||snapshot(won);}
   function breakdown(record){
@@ -153,8 +161,12 @@
   }
   function build(record){return escaped(record.who||[cap(record.race),cap(record.cls)].filter(Boolean).join(' '));}
   function openReport(record,origin){
-    var returnToHistory=origin==='history-title'||origin==='history-end';
-    function back(){if(returnToHistory)openHistory(origin==='history-end'?'end':'title');else{var button=document.getElementById('bReportEnd');if(button)button.focus();}}
+    var returnToHistory=origin==='journal'||origin==='history-title'||origin==='history-end',journalClose=origin==='journal'?modalOnClose:null;
+    function back(){
+      if(origin==='journal'){if(journalClose)journalClose();root.openJournal('runs');}
+      else if(returnToHistory)openHistory(origin==='history-end'?'end':'title');
+      else{var button=document.getElementById('bReportEnd');if(button)button.focus();}
+    }
     openModal('Run report','<p class="run-note">Copy this report to share your build and how the run ended.</p><textarea id="runReportText" class="run-report-text" readonly aria-label="Run report"></textarea><p id="runReportNotice" class="run-note" role="status" aria-live="polite"></p>',[
       {label:'Copy report',cls:'primary',fn:function(){
         var field=document.getElementById('runReportText'),notice=document.getElementById('runReportNotice');
@@ -170,11 +182,11 @@
       }},
       {label:returnToHistory?'Back to Previous Runs':'Back to summary',fn:closeModal}
     ],'run-history-modal');
-    document.getElementById('runReportText').value=FoteRunHistory.report(record);
+    document.getElementById('runReportText').value=FoteRunHistory.report(record,FoteJournal.achievements());
     modalOnClose=back;
   }
-  function openHistory(origin){
-    var rows=store.read(),html='<p class="run-note">Victories lead the list. Runs scored under older rules come after current ones. Finished runs are kept in this browser; sandbox runs are left out.</p>';
+  function historyContent(){
+    var rows=store.read(),html='';
     if(!rows.length)html+='<div class="run-empty"><b>Your story starts here.</b><p>Finish a run to earn a place in these records.</p></div>';
     else {
       var previousGroup=null,rank=0;
@@ -184,9 +196,17 @@
         html+='<li class="run-entry'+(r.won?' winner':'')+'"><div class="run-entry-heading"><span class="run-rank">'+(++rank)+'</span><div><span class="run-outcome">'+(r.won?'Victory':'Fallen')+'</span><strong>'+escaped(r.name)+'</strong><span class="run-build">'+build(r)+'</span></div><b class="run-points">'+(r.scoreUnavailable?'Unknown':number(r.score))+'<small>'+(current?(r.earningsEstimated?'estimated score':'score'):'earlier score')+'</small></b></div><p>Level '+r.level+' · deepest floor '+r.depth+' · '+number(r.kills)+' kills · '+number(r.turns)+' turns</p><p>'+escaped(r.faith||'No patron')+(r.faithRank?' · rank '+r.faithRank:'')+(when?' · '+escaped(when):'')+'</p>'+breakdown(r)+'<button class="run-report-button" data-run-report="'+index+'">Run report</button></li>';
       });html+='</ol>';
     }
-    openModal('Previous Runs',html,[{label:origin==='end'?'Back to summary':'Back to title',fn:closeModal}],'run-history-modal');
-    document.querySelectorAll('[data-run-report]').forEach(function(button){button.onclick=function(){openReport(rows[Number(button.getAttribute('data-run-report'))],origin==='end'?'history-end':'history-title');};});
-    modalOnClose=function(){var button=document.getElementById(origin==='end'?'bHistoryEnd':'tHistory');if(button)button.focus();};
+    return {html:html,rows:rows};
+  }
+  function bindHistory(container,rows){
+    container.querySelectorAll('[data-run-report]').forEach(function(button){button.onclick=function(){openReport(rows[Number(button.getAttribute('data-run-report'))],'journal');};});
+  }
+  function openHistory(origin){
+    if(typeof root.openJournal==='function'){root.openJournal('runs');return;}
+    var content=historyContent();
+    openModal('Previous Runs',content.html,[{label:origin==='end'?'Back to summary':'Back to title',fn:closeModal}],'run-history-modal');
+    document.getElementById('mBody').querySelectorAll('[data-run-report]').forEach(function(button){button.onclick=function(){openReport(content.rows[Number(button.getAttribute('data-run-report'))],origin==='end'?'history-end':'history-title');};});
+    modalOnClose=function(){var button=document.getElementById(origin==='end'?'bJournalEnd':'tJournal');if(button)button.focus();};
   }
   var style=document.createElement('style');style.textContent=[
     '#over.end-screen{position:fixed;inset:0;z-index:80;padding:max(12px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) max(12px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left));overflow:auto;background:radial-gradient(ellipse at 50% 22%,rgba(83,60,28,.65),rgba(10,8,7,.96) 65%);box-sizing:border-box}',
@@ -208,7 +228,7 @@
     '@media(max-height:560px){#over.end-screen .box{padding:14px 20px}.end-score{font-size:calc(42px + var(--ui-mobile-text-add,0px));margin:8px 0}.end-stats{margin:10px 0}.end-story{margin:8px 0}}'
   ].join('\n');document.head.appendChild(style);
   root.finishRunHistory=finish;root.runEndRecord=summary;root.openRunHistory=openHistory;
-  root.FoteRunHistoryUI=Object.freeze({escape:escaped,number:number,build:build,breakdown:breakdown,openReport:openReport});
+  root.FoteRunHistoryUI=Object.freeze({escape:escaped,number:number,build:build,breakdown:breakdown,openReport:openReport,historyContent:historyContent,bindHistory:bindHistory});
   if(typeof FoteLifecycle!=='undefined')FoteLifecycle.whenReady(function(){
     gameDamage.on('damageApplied',function(event){if(RUN&&event.target===player&&event.damage>0)RUN.lastDamage={cause:FoteRunHistory.damageCause(event),lethal:player.hp<=0};});
   });

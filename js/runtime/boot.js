@@ -310,7 +310,7 @@ function startGame(){
 
   /* The world behind the title is a preview. Only an explicit Begin or
      successful Continue offers the first-play guide. */
-  newRun(Date.now()%1000000, CHOICE);
+  newRun(Date.now()%1000000, CHOICE, {preview:true});
   setMotion(ANIM.mode);
   requestAnimationFrame(resize);
   requestAnimationFrame(fxTick);

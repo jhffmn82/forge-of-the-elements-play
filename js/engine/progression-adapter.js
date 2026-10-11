@@ -44,6 +44,7 @@ function joinGod(id,startPiety){
   player.god=id;player.piety=startPiety||0;player.favor=Math.min(100,Math.round((startPiety||0)/2));player.amusement=50;
   player.lastRank=godRank();if(id!=='sylla')player.syllaDark=0;
   syncGlimmerLight({deferStats:true});derive(player);player.hotbar=null;updateUI();
+  if(typeof FoteJournalEvents!=='undefined')FoteJournalEvents.progress();
   if(typeof FoteGettingStarted!=='undefined')FoteGettingStarted.offer('gods');
 }
 function pietyRewardContext(){
@@ -72,6 +73,7 @@ function gainPiety(amount,why,options){
     }
   }
   var lightChanged=syncGlimmerLight({deferStats:true});
+  if((godRank()>before||lightChanged)&&typeof FoteJournalEvents!=='undefined')FoteJournalEvents.progress();
   if((godRank()>before||lightChanged)&&!(options&&options.deferStats)){
     derive(player);
     if(typeof afterGeneratedInstall==='function')afterGeneratedInstall(function(){updateUI();});else updateUI();
@@ -121,6 +123,7 @@ function gainXP(amount,options){
     sfx('level-up');sparkleFx(player.x,player.y,'light',40);ringFx(player.x,player.y,'#E8B44A',2.5);
   }
   if(player.level>previousLevel&&typeof FoteGettingStarted!=='undefined')FoteGettingStarted.offer('character');
+  if(player.level>previousLevel&&typeof FoteJournalEvents!=='undefined')FoteJournalEvents.progress();
 }
 function castRaiseDead(x,y,ability,options){
   if(!walkable(x,y)||occupied(x,y)){log('The dead need an empty patch of floor.','c-info');return false;}

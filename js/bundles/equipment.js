@@ -23,7 +23,9 @@ function addBag(icon,name,extra,onFailure){
   // Multi-item pickup reports a shared refusal once after trying every item.
   if(player.bag.length>=BAG_MAX){(onFailure||inventoryFailure)({error:'full'});return null;}
   if(isGear)tierNormalize(fixNegativePlus(extra.data));
-  var entry={icon:icon,name:name,n:1,uid:uid||'g'+nextId++,kind:kind,data:extra.data};player.bag.push(entry);return entry;
+  var entry={icon:icon,name:name,n:1,uid:uid||'g'+nextId++,kind:kind,data:extra.data};player.bag.push(entry);
+  if(isGear&&typeof FoteJournalEvents!=='undefined')FoteJournalEvents.gear(entry.data,entry.kind);
+  return entry;
 }
 function normalizeLoadedInventory(){
   player.bag.forEach(function(entry){
@@ -96,6 +98,7 @@ function takeOffAmulet(){return removeEquipment('amulet',true);}
 function unequipRanged(){return removeEquipment('ranged',false);}
 function breakCurse(item,options){
   var change=FoteInventory.cleanse(item);if(!change)return false;Object.assign(item,change);
+  if(typeof FoteJournalEvents!=='undefined')FoteJournalEvents.gear(item);
   tierNormalize(item);
   if(!(options&&options.deferRefresh)){derive(player);refreshBagNames();}
   log('The curse on your <b>'+gearName(item)+'</b> breaks.','c-kill');sfx('puzzle-solved');return true;
@@ -154,6 +157,7 @@ function enchantItem(slot,element){
   if(item.enchant===element){log('Your '+gearName(item)+' already carries '+element+'. A second mote would change nothing.','c-info');sfx('ui-error');return false;}
   var before=Object.assign({},player.motes);player.motes=FoteInventory.consumeMaterials(player.motes,{[element]:1});
   item.enchant=element;
+  if(typeof FoteJournalEvents!=='undefined')FoteJournalEvents.record('enchantments',target.kind+'/'+element);
   if(player.god==='anvil')gainPiety(20,undefined,{deferStats:true});
   if(item.cursed)breakCurse(item,{deferRefresh:true});
   secondHeat(before);
@@ -173,6 +177,7 @@ function craftSigil(key){
   var before=Object.assign({},player.motes);player.motes=FoteInventory.consumeMaterials(player.motes,plan.need);
   if(plan.cost)spendEssence(plan.cost,{deferStats:true});
   sigilKnown[key]=true;
+  if(typeof FoteJournalEvents!=='undefined')FoteJournalEvents.record('sigils',key);
   player.bag.forEach(function(b){if(b.kind==='sigil'&&b.data.use===key)b.name=recipe.name;});
   addBag('✦',recipe.name,{kind:'sigil',data:{use:key},uid:'sigil:'+key});secondHeat(before);
   log('You carve a <b>'+recipe.name+'</b>: '+recipe.desc,'c-kill');sfx('forge-craft');sparkleFx(player.x,player.y,'fire',24);
@@ -187,6 +192,7 @@ function upgradeItem(item){
   if(cursed)Object.assign(item,FoteInventory.cleanse(item));else {item.plus=(item.plus||0)+1;item.unid=false;}
   tierNormalize(item);
   if(item.kind==='ring')RUN.ringKnown[item.ring]=true;
+  if(typeof FoteJournalEvents!=='undefined')FoteJournalEvents.gear(item);
   if(player.god==='anvil')gainPiety(10,undefined,{deferStats:true});
   var receipt=cursed?'The Forge burns the curse out of your <b>'+gearName(item)+'</b>.':'The Forge hammers your <b>'+gearName(item)+'</b> stronger.';
   log(receipt,'c-kill');sfx('forge-enchant');sparkleFx(player.x,player.y,'fire',30);finishForge(receipt);return true;
@@ -213,6 +219,7 @@ function fuseMote(el){
   player.aff[el]=(player.aff[el]||0)+1;
   var before=player.abilities.slice();
   derive(player); player.iceArmor=player.iceArmorMax;
+  if(typeof FoteJournalEvents!=='undefined')FoteJournalEvents.progress();
   log('The mote takes root in you. <b>'+cap(el)+' '+player.aff[el]+'</b>: '+t1Text(el, player.aff[el])+'.','c-kill');
   sfx('forge-fuse'); sparkleFx(player.x,player.y,TRAIL_EL(el),50); ringFx(player.x,player.y,AFF_COL[el],3);
   player.abilities.forEach(function(k){ if(before.indexOf(k)<0){ log('Learned <b>'+ABILITIES[k].name+'</b>.','c-kill'); sfx('new-ability'); } });
@@ -307,6 +314,7 @@ function randomGear(){
 function spendAmulet(item){
   amuletSync(item);item.charges=Math.max(0,item.charges-1);amuletSync(item);
   var first=item.unid&&!RUN.amuletKnown[item.amulet];RUN.amuletKnown[item.amulet]=true;
+  if(typeof FoteJournalEvents!=='undefined')FoteJournalEvents.gear(item);
   item.uses=(item.uses||0)+1;useCount(item,'amulet');refreshBagNames();
   if(first)log('It is an <b>'+AMULETS[item.amulet].name+'</b>!','c-kill');
   var level=item.level||1;

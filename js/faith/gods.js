@@ -376,8 +376,14 @@ function stackDiscipline(){
   derive(player);log("Warrior's Discipline: "+player.st.discipline.n+' stacks.','c-good');
 }
 function trollBloodRules(){var rule=FoteDamage.trollBlood(godRank(),divineStrength());rule.duration=fullDivineDuration(rule.duration);return rule;}
-function startPrayerCd(id){startDivineCd(prayerCdKey(id),DIVINE_COOLDOWNS.prayers[prayerId(id)]);}
-function startInvokeCd(key){startDivineCd(key,DIVINE_COOLDOWNS.invokes[key]);}
+function startPrayerCd(id){
+  startDivineCd(prayerCdKey(id),DIVINE_COOLDOWNS.prayers[prayerId(id)]);
+  if(typeof FoteJournalEvents!=='undefined')FoteJournalEvents.record('godAbilities','pray:'+prayerId(id));
+}
+function startInvokeCd(key){
+  startDivineCd(key,DIVINE_COOLDOWNS.invokes[key]);
+  if(typeof FoteJournalEvents!=='undefined')FoteJournalEvents.record('godAbilities','invoke:'+key);
+}
 function prayerRefused(id){var n=cdLeft(prayerCdKey(id)),health=prayerHealthCost(id),P=PRAYERS[prayerId(id)];if(n<=0)log(health&&player.hp<health+1?P.name+': needs '+(health+1)+' HP; costs '+health+'.':P.name+': unavailable.','c-info');sfx('ui-error');}
 function usePrayer(id){
   if(gameTurns.busy())return false;

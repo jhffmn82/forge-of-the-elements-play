@@ -66,7 +66,7 @@ function enterPlaneCandidate(el){
   RUN.planeStash=RUN.floorStash[floorNo];delete RUN.floorStash[floorNo];
   RUN.planeFrom=from;RUN.planesVisited=(RUN.planesVisited||[]).concat([el]);
   buildPlaneFloor(el,(worldSeed^0x7A11E5^floorNo*131)>>>0);
-  afterGeneratedInstall(function(){sfx('stairs');SHAKE=6;log('You step through the portal into <b>'+PLANE_TITLE[el]+'</b>.','c-kill');log(PLANE_HAZARD_TEXT[el],'c-info');writeSlot('auto','plane');});
+  afterGeneratedInstall(function(){sfx('stairs');SHAKE=6;log('You step through the portal into <b>'+PLANE_TITLE[el]+'</b>.','c-kill');log(PLANE_HAZARD_TEXT[el],'c-info');if(typeof FoteJournalEvents!=='undefined')FoteJournalEvents.location();writeSlot('auto','plane');});
 }
 function leavePlane(){
   var saved=RUN.planeStash;if(!saved){log('The portal flickers but nothing happens.','c-info');return;}

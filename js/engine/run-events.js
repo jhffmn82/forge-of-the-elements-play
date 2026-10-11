@@ -32,6 +32,7 @@ function floorEntryNote(note){
   return note;
 }
 function floorIntro(){
+  if(typeof FoteJournalEvents!=='undefined')FoteJournalEvents.location();
   var entryReceipt={},notices=new Set();
   function feature(html){log(html+'.','c-kill',{receipt:{scope:entryReceipt,key:'features',item:html,join:' · ',suffix:'.'}});}
   feature('<b>'+biomeName()+' · Floor '+floorNo+'</b>');
@@ -50,8 +51,12 @@ function floorIntro(){
  }
 }
 function bossDefeated(e){
- if(typeof FoteUnmakerEncounter!=='undefined'&&FoteUnmakerEncounter.onDefeated(e))return;
+ if(typeof FoteUnmakerEncounter!=='undefined'&&FoteUnmakerEncounter.onDefeated(e)){
+   if(typeof FoteJournalEvents!=='undefined')FoteJournalEvents.record('bosses','25');
+   return;
+ }
  if(floorMeta.bossRewarded)return;floorMeta.bossRewarded=true;
+ if(typeof FoteJournalEvents!=='undefined'&&[5,10,15,20].indexOf(floorNo)>=0)FoteJournalEvents.record('bosses',String(floorNo));
  if(RUN.cores===undefined)RUN.cores=0;var capBefore=affinityCap();
 
   RUN.bossDead=true; floorMeta.exitOpen=false;
@@ -121,7 +126,8 @@ function renderEndActions(won){
   var actions=box.querySelector('.end-actions');if(!actions){actions=document.createElement('div');actions.className='end-actions';box.appendChild(actions);}
   if($('bAgain'))actions.appendChild($('bAgain'));
   var old=$('bSaveWin'); if(old) old.remove();
-  var history=$('bHistoryEnd');if(!history){history=document.createElement('button');history.id='bHistoryEnd';history.textContent='Previous Runs';actions.appendChild(history);}history.onclick=function(){openRunHistory('end');};
+  var history=$('bHistoryEnd');if(history)history.remove();
+  var journal=$('bJournalEnd');if(!journal){journal=document.createElement('button');journal.id='bJournalEnd';journal.textContent='Journal';actions.appendChild(journal);}journal.onclick=function(){openJournal();};
   var report=$('bReportEnd');if(!report){report=document.createElement('button');report.id='bReportEnd';report.textContent='Run report';actions.appendChild(report);}report.onclick=function(){FoteRunHistoryUI.openReport(runEndRecord(won),'end');};
   var tb=$('bTitleEnd'); if(!tb){ tb=document.createElement('button'); tb.id='bTitleEnd'; tb.textContent='Title screen';actions.appendChild(tb); }
   tb.onclick=function(){ $('over').style.display='none'; openTitle(); };

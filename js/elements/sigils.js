@@ -141,6 +141,7 @@ function transmutationReady(target,context){
   return !target.slot||remaining<BAG_MAX||keys.every(function(key){return transmutationFits(target.slot,transmutedGear(target.it,target.kind,key),target.kind);});
 }
 function putTransmutedGear(target,item,keepWorn){
+  if(typeof FoteJournalEvents!=='undefined')FoteJournalEvents.gear(item,target.kind);
   if(!target.slot){target.entry.data=item;target.entry.kind=target.kind;target.entry.icon=gearBagIcon(target.kind);return;}
   var slot=target.slot,value=keepWorn?item:slot==='main'?FISTS:slot==='off'?EMPTY_OFF:null;
   if(keepWorn&&slot==='off'&&target.kind==='weapon')offHandWeapon(value);
@@ -213,7 +214,12 @@ function turnPrepareCinder(context){
 
 
 /* ---------------------------------------------------------------- 2026-09-17: Water, Smoke and Rot helpers */
-function identifySigilQuiet(k){ if(!SIGILS[k] || sigilKnown[k]) return; sigilKnown[k]=true; player.bag.forEach(function(b){ if(b.kind==='sigil' && b.data.use===k) b.name=SIGILS[k].name; }); }
+function identifySigilQuiet(k){
+  if(!SIGILS[k] || sigilKnown[k]) return;
+  sigilKnown[k]=true;
+  if(typeof FoteJournalEvents!=='undefined')FoteJournalEvents.record('sigils',k);
+  player.bag.forEach(function(b){ if(b.kind==='sigil' && b.data.use===k) b.name=SIGILS[k].name; });
+}
 function douseAround(r){
   var n=0; for(var dy=-r;dy<=r;dy++) for(var dx=-r;dx<=r;dx++){ var x=player.x+dx, y=player.y+dy; if(inb(x,y) && fireT[idxOf(x,y)]){ fireT[idxOf(x,y)]=0; n++; } }
   if(n) log('Flames extinguished.','c-info');

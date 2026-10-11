@@ -709,6 +709,7 @@ function sigilName(use){ return sigilKnown[use]&&SIGILS[use] ? SIGILS[use].name 
 function identifySigil(use){
   if(sigilKnown[use]) return;
   sigilKnown[use]=true;
+  if(typeof FoteJournalEvents!=='undefined')FoteJournalEvents.record('sigils',use);
   player.bag.forEach(function(b){ if(b.kind==='sigil' && b.data.use===use) b.name=SIGILS[use].name; });
   log('Identified <b>'+SIGILS[use].name+'</b>.','c-kill'); sfx('identify');
 }

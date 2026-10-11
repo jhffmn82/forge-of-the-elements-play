@@ -301,9 +301,10 @@ function hudResourceCard(kind){
   if(kind==='points')return '<div class="nm">Attribute points</div>'+row('Unspent',number(player.points))+'<div class="hint">Open Character to spend them.</div>';
   if(kind==='inventory')return '<div class="nm">Inventory</div>'+row('Bag',(player.bag||[]).length+' / '+BAG_MAX)+'<div class="hint">Open equipment, items and motes.</div>';
   if(kind==='faith')return '<div class="nm">Faith</div>'+(player.god?row(escape(GODS[player.god].name),'Rank '+godRank()):'<div class="hint">No god followed.</div>')+'<div class="hint">Open divine abilities and offerings.</div>';
-  if(kind==='menu')return '<div class="nm">Menu</div><div class="hint">Character, Inventory, Faith, Options and combat log.</div>';
+  if(kind==='menu')return '<div class="nm">Menu</div><div class="hint">Character, Inventory, Faith, Options, combat log and Journal.</div>';
   if(kind==='options')return '<div class="nm">Options</div><div class="hint">Controls, display and audio.</div>';
   if(kind==='history')return '<div class="nm">Combat log</div><div class="hint">Read the full log.</div>';
+  if(kind==='journal')return '<div class="nm">Journal</div><div class="hint">Achievements, encyclopedia, bestiary and previous runs.</div>';
   if(kind==='history-close')return '<div class="nm">Close log</div><div class="hint">Return to the dungeon.</div>';
   if(kind==='sound')return '<div class="nm">Sound</div>'+row('Audio',AUDIO.muted?'Off':'On')+'<div class="hint">'+(AUDIO.muted?'Unmute':'Mute')+' game audio.</div>';
   if(kind==='map')return '<div class="nm">Map</div><div class="hint">'+(typeof AUTOMAP_ON!=='undefined'&&AUTOMAP_ON?'Hide the map overlay.':'Show the explored dungeon.')+'</div>';
@@ -312,7 +313,7 @@ function hudResourceCard(kind){
     return '<div class="nm">'+(exploring?'Stop exploring':complete?'Next floor':'Explore')+'</div><div class="hint">'+(exploring?'Stop travelling.':complete?'Walk to the stairs and descend.':'Walk through unexplored areas.')+'</div>';
   }
   if(kind.indexOf('move:')===0)return '<div class="nm">Move '+escape(kind.slice(5))+'</div><div class="hint">Move one tile.</div>';
-  if(kind==='search')return '<div class="nm">Wait and search</div><div class="hint">Spend a turn searching nearby.</div>';
+  if(kind==='search')return '<div class="nm">Wait and search</div><div class="hint">Spend a turn searching within 2 tiles. List nearby creatures, items, traps and doors in the combat log.</div>';
   if(kind==='pickup')return '<div class="nm">Pick up</div><div class="hint">Collect items underfoot. Uses one turn.</div>';
   if(kind==='hp')return '<div class="nm">Health</div>'+row('HP',number(player.hp)+' / '+number(player.maxhp))+(playerShield()>0?row('Shield',number(playerShield()))+'<div class="hint">'+escape(shieldParts().join(', '))+'. Shields absorb damage before HP.</div>':'');
   if(kind==='mp')return '<div class="nm">Mana</div>'+row('Mana',number(Math.floor(player.mp))+' / '+number(player.maxmp));
@@ -610,12 +611,10 @@ function inspectHTML(mx,my){
   }
   return h;
 }
-function inspectTargetHTML(mx,my){
-  if(!inb(mx,my) || !(revealAll||seen[idxOf(mx,my)])) return '';
-  if(playerBlind()&&!vis[idxOf(mx,my)])return '';
-  var e=ents.find(function(o){return entityOccupies(o,mx,my)&&o!==player&&!actorConcealed(o);});
-  if(e && e.parent) e=e.parent;   /* a big elite's other cells report the creature itself, not its proxy */
-  if(e && (revealAll||vis[idxOf(mx,my)])){
+/* Map hover and the Search list share read-only names and content builders.
+ * Selection owns visibility; these helpers never reveal or identify anything. */
+function inspectActorHTML(e){
+    if(!e)return '';
     var tinyHint=e.base&&e.base.tiny?'<div class="hint">Tiny: does not block ranged targeting.</div>':'';
     if(e.merchantRoom!==undefined)return '<div class="nm">'+e.name+'</div><div class="hint">A traveling Myconid trader. Offers rare sigils, elemental motes and Masterwork equipment for essence.</div><div class="hint">Click or approach to browse the stock.</div>';
     if(e.hungrySpiderRoom!==undefined&&!e.foe&&!e.ally)return '<div class="nm">'+e.name+'</div><div class="hint">Hungry... everything dead.</div><div class="hint">It watches you without attacking.</div>';
@@ -635,9 +634,9 @@ function inspectTargetHTML(mx,my){
       (st?'<div style="margin-top:4px">'+st+'</div>':'')+
       (physicalHint?'<div class="hint">'+physicalHint+'</div>':'')+
       '<div class="odds">You hit <em>'+ch+'%</em> for '+lo+'-'+hi+'. It hits you <em>'+back+'%</em>.</div>';
-  }
-  var it=items.filter(function(i){ return i.x===mx && i.y===my; })[0];
-  if(it){
+}
+function inspectItemHTML(it){
+    if(!it)return '';
     if(it.crystal){
       var type={weapon:'Weapon',armor:'Armor',off:'Off-hand equipment',ring:'Ring',amulet:'Amulet',sigil:'Sigil',essence:'Essence',mote:'Elemental mote',food:'Food',key:'Key'}[it.kind]||'Treasure';
       return '<div class="nm">'+type+'</div><div class="hint">Choose one treasure; the others shatter.</div>';
@@ -647,7 +646,15 @@ function inspectTargetHTML(mx,my){
     if(it.kind==='off') return bagCard({kind:'off',data:it.it});
     /* 1.3.2 ruling 4 (Justin 2026-09-28): a mote says what it is for; a player who dies before floor 3 never met a Forge */
     return '<div class="nm">'+cap(itemLabel(it))+'</div><div class="hint">'+(it.kind==='sigil'&&!sigilKnown[it.use]?'Unidentified sigil.':it.kind==='mote'?'Infuse it after picking up a boss core, or at an Elemental Forge, for permanent affinity. Forges on the third or fourth floor of each biome also enchant gear and craft sigils.':'')+'</div>';
-  }
+}
+function inspectTargetHTML(mx,my){
+  if(!inb(mx,my) || !(revealAll||seen[idxOf(mx,my)])) return '';
+  if(playerBlind()&&!vis[idxOf(mx,my)])return '';
+  var e=ents.find(function(o){return entityOccupies(o,mx,my)&&o!==player&&!actorConcealed(o);});
+  if(e && e.parent) e=e.parent;   /* a big elite's other cells report the creature itself, not its proxy */
+  if(e && (revealAll||vis[idxOf(mx,my)]))return inspectActorHTML(e);
+  var it=items.filter(function(i){ return i.x===mx && i.y===my; })[0];
+  if(it)return inspectItemHTML(it);
   var p=propAt(mx,my);
   var restorationForge=typeof FoteUnmakerEncounter!=='undefined'&&FoteUnmakerEncounter.forgeInfo(mx,my);
   if(restorationForge)return '<div class="nm">'+restorationForge.name+'</div><div class="hint">'+restorationForge.hint+'</div>';
@@ -683,10 +690,14 @@ function inspectTargetHTML(mx,my){
     return '<div class="nm">'+cap(pn)+'</div><div class="hint">'+hint+'</div>';
   }
   var tr=feats.filter(function(f){ return f.x===mx && f.y===my && (f.found||revealAll); })[0];
-  if(tr) return '<div class="nm">'+trapName(tr.kind)+' trap</div><div class="hint">Walk around it.</div>';
+  if(tr)return inspectTrapHTML(tr);
   var poisonTrail=typeof FoteGreenSlime!=='undefined'&&FoteGreenSlime.trailAt(mx,my);
   if(poisonTrail)return '<div class="nm">'+poisonTrail.name+'</div><div class="hint">'+poisonTrail.damage+' poison damage per turn. '+poisonTrail.turns+' turns left.'+
     (poisonTrail.side==='ally'?' Harms foes only.':poisonTrail.side==='foe'?' Harms you and your allies.':'')+' Levitation avoids it.</div>';
+  return inspectTileHTML(mx,my);
+}
+function inspectTrapHTML(tr){return '<div class="nm">'+trapName(tr.kind)+' trap</div><div class="hint">Walk around it.</div>';}
+function inspectTileHTML(mx,my){
   var t=at(mx,my);
   /* Map cards belong to things you can inspect or use, not terrain. */
   if([2,3,4,5,7,9,10,11,12,13,14,18,19,20].indexOf(t)<0) return '';
@@ -715,6 +726,78 @@ function inspectTargetHTML(mx,my){
     '<div class="row"><span>'+(vis[idxOf(mx,my)]?'In sight':'From memory')+'</span><b>'+mx+','+my+'</b></div>';
 }
 
+function searchInspectionEscape(value){return String(value).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function searchInspectionSymbol(kind,target){
+  if(spriteOn)return '';
+  var symbol='';
+  // Keep these text marks aligned with render.js block mappings and drawTrap.
+  if(kind==='enemy')symbol=target.ch||'?';
+  else if(kind==='prop')symbol=target.crystalVault?'◇':target.hoard?'*':target.fluid?'!':target.ex?'*':target.br||target.breakReward?'(':target.b?'#':':';
+  else if(kind==='trap')symbol='^';
+  else if(kind==='item'){
+    if(target.crystal)return '';
+    symbol=target.kind==='heart'||target.kind==='managlobe'?'!':target.kind==='essence'?'$':target.kind==='mote'?'*':target.kind==='food'?'%':target.kind==='sigil'?'?':target.kind==='armor'||target.kind==='off'?'[':target.kind==='key'?'(':target.kind==='ring'?'=':target.kind==='amulet'?'"':')';
+  }else if(kind==='tile'){
+    var door=target===DOOR||target===LOCKED||target===TOLL||target===ICEDOOR||target===THORNS||target===SEALED;
+    symbol=door?'+':target===PORTAL?'O':target===FORGE?'&':target===SHRINE?'_':target===CHEST?'(':target===BRIDGE?'=':target===UPSTAIRS?'<':target===STAIRS||target===EXIT&&floorMeta.exitOpen?'>':target===EXIT?'+':target===OPEN?"'":':';
+  }
+  return symbol?'<span class="search-inspect-symbol" aria-hidden="true">'+searchInspectionEscape(symbol)+'</span> ':'';
+}
+function logSearchInspection(radius){
+  if(!player)return 0;
+  radius=Number.isFinite(radius)?Math.max(0,Math.floor(radius)):2;
+  var entries=[],actors=new Map(),blind=playerBlind();
+  function visible(x,y){return inb(x,y)&&!!(revealAll||vis[idxOf(x,y)])&&(!blind||!!vis[idxOf(x,y)]);}
+  function distance(x,y){return Math.max(Math.abs(x-player.x),Math.abs(y-player.y));}
+  function add(kind,target,x,y,html){
+    if(!html)return;
+    var card=document.createElement('div');card.innerHTML=html;
+    var heading=card.querySelector('.nm');if(!heading)return;
+    entries.push({kind:kind,target:target,x:x,y:y,distance:distance(x,y),order:entries.length,name:heading.textContent});
+  }
+  // A creature can occupy several squares or have proxy actors. Select its
+  // nearest visible square, then report the real actor once.
+  ents.forEach(function(e){
+    var actor=e.parent||e;
+    if(actor===player||actor.hp<=0||actorConcealed(actor)||actorConcealed(e))return;
+    if(!actors.has(actor))actors.set(actor,[]);actors.get(actor).push(e);
+  });
+  actors.forEach(function(parts,actor){
+    var nearest=null;
+    for(var y=player.y-radius;y<=player.y+radius;y++)for(var x=player.x-radius;x<=player.x+radius;x++){
+      if(!visible(x,y)||!parts.some(function(part){return entityOccupies(part,x,y);}))continue;
+      if(!nearest||distance(x,y)<nearest.distance)nearest={x:x,y:y,distance:distance(x,y)};
+    }
+    if(!nearest)return;
+    add('enemy',actor,nearest.x,nearest.y,'<div class="nm">'+searchInspectionEscape(actor.name)+'</div>');
+  });
+  items.forEach(function(it){if(distance(it.x,it.y)<=radius&&visible(it.x,it.y))add('item',it,it.x,it.y,inspectItemHTML(it));});
+  feats.forEach(function(tr){if((tr.found||revealAll)&&distance(tr.x,tr.y)<=radius&&visible(tr.x,tr.y))add('trap',tr,tr.x,tr.y,inspectTrapHTML(tr));});
+  props.forEach(function(p){
+    var name=p.name==='stack-group'?sceneryClusterAppearance(p).family:p.name;
+    if(!/(^|-)(crate|barrel)(-|$)/.test(name))return;
+    var nearest=null;
+    for(var y=Math.max(p.y,player.y-radius);y<Math.min(p.y+(p.h||1),player.y+radius+1);y++){
+      for(var x=Math.max(p.x,player.x-radius);x<Math.min(p.x+(p.w||1),player.x+radius+1);x++){
+        if(visible(x,y)&&(!nearest||distance(x,y)<nearest.distance))nearest={x:x,y:y,distance:distance(x,y)};
+      }
+    }
+    if(nearest)add('prop',p,nearest.x,nearest.y,'<div class="nm">'+searchInspectionEscape(cap(name==='barrel-explosive'?'powder barrel':name.replace(/-/g,' ')))+'</div>');
+  });
+  for(var y=player.y-radius;y<=player.y+radius;y++)for(var x=player.x-radius;x<=player.x+radius;x++){
+    if(visible(x,y))add('tile',at(x,y),x,y,inspectTileHTML(x,y));
+  }
+  entries.sort(function(a,b){return a.distance-b.distance||a.order-b.order;});
+  if(!entries.length)return 0;
+  var html='<div class="search-inspection"><div>You inspect your surroundings and see:</div>';
+  entries.forEach(function(entry){
+    html+='<div class="search-inspect-entry" data-search-kind="'+entry.kind+'" data-search-x="'+entry.x+'" data-search-y="'+entry.y+'" data-search-distance="'+entry.distance+'">'+searchInspectionSymbol(entry.kind,entry.target)+'<span class="search-inspect-name">'+searchInspectionEscape(entry.name)+'</span></div>';
+  });
+  html+='</div>';
+  log(html,'c-info');
+  return entries.length;
+}
+
 /* ---------------------------------------------------------------- keys */
 window.addEventListener('keydown', function(ev){
   if(typeof FoteResponsiveHUD!=='undefined'&&FoteResponsiveHUD.hasOverlay())return;
@@ -724,11 +807,11 @@ window.addEventListener('keydown', function(ev){
   if(modalOpen){
     if(ev.key==='Escape'){closeModal();ev.preventDefault();}
     else if(ev.key==='Tab'){
-      var modal=$('modal'),focusable=Array.from(modal.querySelectorAll('button,input,select,textarea,a[href],[tabindex]')).filter(function(el){return !el.disabled&&el.tabIndex>=0&&el.getClientRects().length;});
+      var modal=$('modal'),focusable=Array.from(modal.querySelectorAll('button,input,select,textarea,a[href],summary,[tabindex]')).filter(function(el){return !el.disabled&&el.tabIndex>=0&&el.getClientRects().length;});
       var first=focusable[0],last=focusable[focusable.length-1],outside=!modal.contains(document.activeElement);
       if(ev.shiftKey&&(document.activeElement===first||outside)){if(last)last.focus();ev.preventDefault();}
       else if(!ev.shiftKey&&(document.activeElement===last||outside)){if(first)first.focus();ev.preventDefault();}
-    }else if(!editing&&tgt!=='BUTTON'&&tgt!=='A'){
+    }else if(!editing&&tgt!=='BUTTON'&&tgt!=='A'&&tgt!=='SUMMARY'){
       if(ev.key==='Enter'){var pri=document.querySelector('#mFoot .primary');if(pri)pri.click();}
       ev.preventDefault();
     }

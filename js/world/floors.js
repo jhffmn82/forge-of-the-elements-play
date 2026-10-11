@@ -98,6 +98,7 @@ function presentRestoredFloor(at){
   if(typeof repairBossCore==='function')repairBossCore();
   arriveFallenEnemies();
   computeFOV(); resize(); updateUI(); draw();
+  if(typeof FoteJournalEvents!=='undefined')FoteJournalEvents.location();
 }
 
 

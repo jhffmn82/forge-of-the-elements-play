@@ -40,6 +40,8 @@ function saveApply(data){
       function(){if(typeof FoteChaosCampaign!=='undefined')FoteChaosCampaign.restore();if(typeof FoteUnmakerPreview!=='undefined')FoteUnmakerPreview.repairGates();if(typeof FoteUnmakerEncounter!=='undefined')FoteUnmakerEncounter.restore();},repairStairApproachTraps],
     recompute:function(){derive(player);}
   });
+  restoreRunIdentity(data);
+  if(typeof FoteJournalEvents!=='undefined')FoteJournalEvents.start();
   if(typeof resetRunSfx==='function')resetRunSfx();
   gameTurns.cancel();PACING.pending=null;stopTravel();fxClock=0;
   if(typeof SANDBOX!=='undefined')SANDBOX.normalTitle=false;
@@ -115,6 +117,17 @@ function saveMigrateSigils(){
 }
 
 /* every run has an id, so death can find and delete that run's saves (roguelike: the dead stay dead) */
+function restoreRunIdentity(data){
+  if(!RUN||RUN.id)return;
+  var id=data&&data.summary&&data.summary.runId;
+  if(typeof id==='string'&&id.length>0&&id.length<=160&&['__proto__','constructor','prototype'].indexOf(id)<0){RUN.id=id;return;}
+  // Legacy files without IDs must describe the same run on every import.
+  // Current depth/turns and save time can differ between its save slots.
+  var seed=Number.isInteger(RUN.seed)?RUN.seed:worldSeed;
+  var source=JSON.stringify([seed,player.name,player.race,player.cls,player.look]),hash=2166136261;
+  for(var i=0;i<source.length;i++)hash=Math.imul(hash^source.charCodeAt(i),16777619);
+  RUN.id='legacy-run-'+(seed>>>0).toString(36)+'-'+(hash>>>0).toString(36);
+}
 function runId(){ if(RUN && !RUN.id) RUN.id='run-'+Date.now().toString(36)+'-'+Math.floor(Math.random()*1e6).toString(36); return RUN ? RUN.id : null; }
 function saveBelongsToRun(d){
   if(!d || !d.summary) return false;
@@ -304,14 +317,14 @@ function renderTitleMenu(){
     '<button id="tNew"'+(!last?' class="title-primary"':'')+'>New Game</button><div class="title-secondary">'+
     '<button id="tLoad">Load Game</button>'+
     '<button id="tSettings">Settings</button>'+
-    '<button id="tHistory">Previous Runs</button>'+
+    '<button id="tJournal">Journal</button>'+
     '<button id="tAbout">About</button></div>'+
     '<button id="tUpdate">Version &middot; '+(typeof FOTE_VERSION==='string'?FOTE_VERSION:'Beta 1.1')+'<span id="versionStatus" class="sub" role="status"></span></button></div>';
   if($('tContinue')) $('tContinue').onclick=function(){ audioInit(); loadFrom(last); };
   $('tNew').onclick=function(){ audioInit(); sfx('ui-click'); closeTitle(); openCreate(); };
   $('tLoad').onclick=function(){ audioInit(); sfx('ui-click'); renderLoadPanel(); };
   $('tSettings').onclick=function(){audioInit();openTitleSettings();};
-  $('tHistory').onclick=function(){audioInit();openRunHistory('title');};
+  $('tJournal').onclick=function(){audioInit();openJournal();};
   $('tAbout').onclick=function(){ audioInit(); sfx('ui-click'); renderAbout(); };
   $('tUpdate').onclick=function(){ audioInit(); sfx('ui-click'); if(typeof showVersion==='function') showVersion(); };
   if(typeof startTitleVersionChecks==='function')startTitleVersionChecks();

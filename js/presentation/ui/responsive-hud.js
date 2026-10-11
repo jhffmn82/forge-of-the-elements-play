@@ -19,6 +19,7 @@ var FoteResponsiveHUD=(function(){
     bindHudResourceCard(map,'map');
     node('studyOptions').innerHTML=lineIcon('<path d="M4 6h3m4 0h9M4 12h9m4 0h3M4 18h3m4 0h9"/><circle cx="9" cy="6" r="2"/><circle cx="15" cy="12" r="2"/><circle cx="9" cy="18" r="2"/>')+'<span>Options</span>';
     node('studyHistory').innerHTML=lineIcon('<path d="M5 5h14v14H5zM8 9h8m-8 3h8m-8 3h5"/>')+'<span>Combat log</span>';
+    node('studyJournal').innerHTML=lineIcon('<path d="M12 5v15M3 4h5a4 4 0 0 1 4 2 4 4 0 0 1 4-2h5v15h-5a4 4 0 0 0-4 2 4 4 0 0 0-4-2H3z"/>')+'<span>Journal</span>';
   }
   const portraitImages=new Map();
   const blockRaceColors={human:'#F2E8DC',elf:'#7FD08A',dwarf:'#E8B44A',gloomling:'#B58BFF'};
@@ -175,6 +176,7 @@ var FoteResponsiveHUD=(function(){
       setMenu(!menuOpen,true);
     };
     node('studyHistory').onclick=()=>{setMenu(false);FoteCombatLog.showHistory();node('studyLogClose').focus();};
+    node('studyJournal').onclick=()=>{setMenu(false,true);openJournal();};
     node('studyLogClose').onclick=()=>{FoteCombatLog.hideHistory();node('studyMenuToggle').focus();};
     node('studyPortrait').onclick=()=>showSheet('Char');
     node('studyStatPoints').onclick=()=>{showSheet('Char');node('studyChar').focus();};
@@ -281,10 +283,10 @@ var FoteResponsiveHUD=(function(){
     frame=requestAnimationFrame(()=>{frame=0;classify();if(typeof player!=='undefined'&&player){abilityBar();drawTerrainNow();}});
   }
   function syncTouchControls(){
-    syncPickup();
     const phone=document.body.classList.contains('study-minimal')&&document.body.classList.contains('study-small-touch')&&document.body.classList.contains('study-touch')&&Math.min(innerWidth,innerHeight)<600;
     const search=node('studySearch');
     if(search){search.hidden=!phone||UI_TOUCH_PAD||uiOpen()||!player||player.hp<=0;}
+    syncPickup();
     const cancel=node('studyCancelAim');
     const showCancel=document.body.classList.contains('study-minimal')&&document.body.classList.contains('study-small-touch')&&document.body.classList.contains('study-touch')&&Math.min(innerWidth,innerHeight)<600&&(!!aiming||(typeof BOWAIM!=='undefined'&&!!BOWAIM))&&!uiOpen();
     if(cancel){cancel.hidden=!showCancel;cancel.tabIndex=showCancel?0:-1;}
@@ -314,9 +316,13 @@ var FoteResponsiveHUD=(function(){
     if(shown){
       const pad=node('dpad').getBoundingClientRect(),bar=node('hotbar').getBoundingClientRect();
       const left=document.body.classList.contains('study-control-pad-left');
-      const x=pad.width?(left?pad.right+8:pad.left-button.offsetWidth-8):8;
+      const search=node('studySearch'),searchBounds=search&&!search.hidden?search.getBoundingClientRect():null;
+      const besideSearch=searchBounds&&searchBounds.width&&searchBounds.height;
+      // Without the pad, stack Pick up above Search in the same control column.
+      const x=besideSearch?searchBounds.left+(searchBounds.width-button.offsetWidth)/2:pad.width?(left?pad.right+8:pad.left-button.offsetWidth-8):8;
+      const y=besideSearch?searchBounds.top-button.offsetHeight-8:pad.height?pad.bottom-button.offsetHeight:bar.top-button.offsetHeight-8;
       button.style.left=Math.max(8,Math.min(innerWidth-button.offsetWidth-8,x))+'px';
-      button.style.top=Math.max(8,Math.min(innerHeight-button.offsetHeight-8,pad.height?pad.bottom-button.offsetHeight:bar.top-button.offsetHeight-8))+'px';
+      button.style.top=Math.max(8,Math.min(innerHeight-button.offsetHeight-8,y))+'px';
     }
     // Observe readiness, never queue a pickup action.
     if(shown&&busy&&!pickupFrame)pickupFrame=requestAnimationFrame(()=>{pickupFrame=0;syncPickup();});
@@ -396,6 +402,7 @@ var FoteResponsiveHUD=(function(){
       button.innerHTML=lineIcon(path)+'<span>'+label+'</span>';nav.insertBefore(button,node('studyOptions'));
     }
     const history=document.createElement('button');history.id='studyHistory';history.type='button';history.textContent='Log history';nav.append(history);
+    const journal=document.createElement('button');journal.id='studyJournal';journal.type='button';journal.className='study-menu-panel';journal.textContent='Journal';nav.append(journal);bindHudResourceCard(journal,'journal');
     for(const [id,kind]of [['studyPortrait','character'],['studyInventoryIcon','inventory']])bindHudResourceCard(node(id),kind);
     node('close').setAttribute('aria-label','Close panel');
     const explore=document.createElement('button');explore.id='studyExplore';explore.type='button';explore.textContent='Explore';

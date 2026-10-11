@@ -553,9 +553,9 @@ $('bMotion').onclick=function(){
 };
 $('bArt').onclick=function(){ setMapArt(spriteOn?'block':'sprite');log(spriteOn?'Sprites on.':'Block art on.','c-info'); };
 
-$('preset').onchange=function(){ player.build=$('preset').value; newRun(worldSeed); };
-$('numScale').onchange=function(){ NUM=parseFloat(this.value); newRun(worldSeed); };
-$('lethal').onchange=function(){ LETH=parseFloat(this.value); newRun(worldSeed); };
+$('preset').onchange=function(){ player.build=$('preset').value; newRun(worldSeed,undefined,{preview:true}); };
+$('numScale').onchange=function(){ NUM=parseFloat(this.value); newRun(worldSeed,undefined,{preview:true}); };
+$('lethal').onchange=function(){ LETH=parseFloat(this.value); newRun(worldSeed,undefined,{preview:true}); };
 
 window.addEventListener('resize', resize);
 if(window.ResizeObserver) new ResizeObserver(resize).observe($('map'));

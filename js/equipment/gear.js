@@ -110,6 +110,7 @@ function identifyGear(it, quiet){
   it.unid=false;
   if(it.kind==='ring') RUN.ringKnown[it.ring]=true;
   if(it.kind==='amulet') RUN.amuletKnown[it.amulet]=true;
+  if(typeof FoteJournalEvents!=='undefined')FoteJournalEvents.gear(it);
   refreshBagNames();
   if(!quiet){ log('You now know your <b>'+gearName(it)+'</b>'+(it.cursed?': <span class="c-you">it is cursed</span>':'')+'.','c-kill'); sfx('identify'); }
   return true;
@@ -139,6 +140,7 @@ function onPutOn(it){
   if(it.kind==='amulet'&&it.unid)return;
   if(it.cursed){ identifyGear(it, true); log('The <b>'+gearName(it)+'</b> tightens around you. <span class="c-you">It is cursed!</span>','c-you'); sfx('wrath'); }
   else if(it.kind==='ring' && it.unid && !RUN.ringKnown[it.ring]){ RUN.ringKnown[it.ring]=true; refreshBagNames(); log('You recognize it: a <b>'+RINGS[it.ring].name+'</b>. How strong it is, time will tell.','c-info'); }
+  if(typeof FoteJournalEvents!=='undefined')FoteJournalEvents.gear(it);
 }
 function cursedBlock(it, what){
   if(FoteInventory.curseBinds(it)){ log('Your <b>'+gearName(it)+'</b> is cursed. It will not '+(what||'come off')+'.','c-you'); sfx('ui-error'); return true; }

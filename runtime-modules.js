@@ -115,6 +115,7 @@ var FOTE_RUNTIME = {
     "js/engine/run-events.js",
     "js/presentation/render/renderer.js",
     "js/bundles/scene.js",
-    "js/presentation/ui/responsive-hud.js"
+    "js/presentation/ui/responsive-hud.js",
+    "js/bundles/journal.js"
   ]
 };

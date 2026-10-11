@@ -28,7 +28,7 @@ function searchSweepFx(quiet){
   if(typeof ringFx==='function') ringFx(x, y, '#E8D9A8', 2.6);
   if(typeof burst==='function') burst(x, y, 'magic', 8, 0.02);
   /* a glint on each ring of tiles, the near ones first, so the sweep reads as moving outward */
-  for(var d=1; d<=2; d++){
+  for(var d=1; d<=SEARCH_RADIUS; d++){
     (function(ring){
       FoteTransitions.deferScene(gameState,function(){
         if(!player || player.hp<=0) return;
@@ -50,7 +50,7 @@ function searchSweepFx(quiet){
 function searchDoorFx(secretsBefore){
   var secretsAfter=map.reduce(function(n,tile){return n+(tile===SECRET?1:0);},0);
   if(secretsAfter>=secretsBefore)return;
-  for(var dy=-2;dy<=2;dy++)for(var dx=-2;dx<=2;dx++){
+  for(var dy=-SEARCH_RADIUS;dy<=SEARCH_RADIUS;dy++)for(var dx=-SEARCH_RADIUS;dx<=SEARCH_RADIUS;dx++){
     var tx=player.x+dx,ty=player.y+dy;
     if(inb(tx,ty)&&at(tx,ty)===DOOR){ringFx(tx,ty,'#FFE08A',1.4);break;}
   }
