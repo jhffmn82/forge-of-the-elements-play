@@ -1,11 +1,11 @@
 <meta charset="utf-8">
 <link rel="stylesheet" href="css/interface.css">
-<link id="responsiveHudStyles" rel="stylesheet" href="css/responsive-hud.css?v=1791788859">
-<link id="forgeSkin" rel="stylesheet" href="css/forge-skin.css?v=1791788859">
+<link id="responsiveHudStyles" rel="stylesheet" href="css/responsive-hud.css?v=1791812434">
+<link id="forgeSkin" rel="stylesheet" href="css/forge-skin.css?v=1791812434">
 <link rel="stylesheet" href="css/title-screen.css">
-<link rel="stylesheet" href="css/journal.css?v=1791788859">
-<link rel="stylesheet" href="css/journal-menus.css?v=1791788859">
-<link rel="stylesheet" href="css/journal-cards.css?v=1791788859">
+<link rel="stylesheet" href="css/journal.css?v=1791812434">
+<link rel="stylesheet" href="css/journal-menus.css?v=1791812434">
+<link rel="stylesheet" href="css/journal-cards.css?v=1791812434">
 <title>Forge of the Elements</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="mobile-web-app-capable" content="yes">
@@ -18,8 +18,8 @@
 <link rel="apple-touch-icon" sizes="167x167" href="art/icons/apple-touch-icon-167.png">
 <link rel="apple-touch-icon" sizes="152x152" href="art/icons/apple-touch-icon-152.png">
 <meta name="theme-color" content="#0F0D0C">
-<meta name="fote-build" content="2026-10-12T07:07:39.016Z">
-<link rel="manifest" href="manifest.json?v=1791788859">
+<meta name="fote-build" content="2026-10-12T13:40:34.356Z">
+<link rel="manifest" href="manifest.json?v=1791812434">
 <link rel="icon" type="image/png" sizes="192x192" href="art/icons/icon-192.png">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Grenze+Gotisch:wght@500;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
 <style>
@@ -54,13 +54,14 @@
   /* ---------- map ---------- */
   #map{flex:1 1 auto;min-height:40vh;position:relative;background:#0B0A09;overflow:hidden}
   #cv{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);image-rendering:pixelated}
-  #tip{position:absolute;z-index:4;display:none;max-width:230px;pointer-events:none;
+  #tip{position:absolute;z-index:4;display:none;max-width:min(270px,calc(100% - 16px));pointer-events:none;font-size:calc(14px + var(--ui-mobile-text-add,0px));line-height:1.4;overflow-wrap:anywhere;
     background:rgba(16,13,11,.97);border:1px solid var(--edge);border-radius:5px;padding:7px 9px;box-shadow:0 6px 20px rgba(0,0,0,.5)}
-  #tip .nm{font-family:var(--display);font-size:calc(14px + var(--ui-mobile-text-add,0px));color:var(--gold);line-height:1.2}
-  #tip .row{display:flex;justify-content:space-between;gap:14px;font-size:calc(11px + var(--ui-mobile-text-add,0px));color:var(--ash)}
-  #tip .row b{color:var(--ink);font-variant-numeric:tabular-nums}
-  #tip .odds{margin-top:4px;font-size:calc(11.5px + var(--ui-mobile-text-add,0px));color:var(--ink)}
+  #tip .nm{font-family:var(--display);font-size:calc(16px + var(--ui-mobile-text-add,0px));color:var(--gold);line-height:1.25}
+  #tip .row{display:flex;flex-wrap:wrap;justify-content:space-between;gap:0 14px;font-size:calc(13px + var(--ui-mobile-text-add,0px));color:var(--ash)}
+  #tip .row b{color:var(--ink);font-variant-numeric:tabular-nums;max-width:100%;text-align:right}
+  #tip .odds,#tip .tipstat{margin-top:4px;font-size:calc(13px + var(--ui-mobile-text-add,0px));color:var(--ink)}
   #tip .odds em{font-style:normal;color:var(--gold);font-weight:600}
+  body.touch #tip{max-height:calc(100dvh - 16px);overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y;pointer-events:auto;z-index:60}
 
   /* ---------- overlay sheet ---------- */
   #shade{position:absolute;left:0;right:0;top:0;bottom:0;z-index:8;display:none;align-items:center;justify-content:center;
@@ -390,5 +391,5 @@
   </div>
 </div>
 <!-- Keep the preview module list current even after older local servers cached it. -->
-<script src="runtime-modules.js?v=1791788859"></script>
-<script src="js/engine/bootstrap.js?v=1791788859"></script>
+<script src="runtime-modules.js?v=1791812434"></script>
+<script src="js/engine/bootstrap.js?v=1791812434"></script>

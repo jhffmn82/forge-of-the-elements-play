@@ -40,6 +40,14 @@ art instead of flashing block stand-ins; failed optional normal maps no longer
 block play. Rendering changes reduce repeated shadow work and large filtered
 composites, with measured desktop gains and physical-phone testing still needed.
 
+The latest biome refinements smooth natural terrain and explored fog boundaries,
+texture Chaos cliff undersides, raise cavern formations, and improve creature
+shadow anchors. Underdark lighting is darker and more localized; red plants,
+mineral veins and temple grout cast restrained colored glow. Creature inspection
+text is larger and tall cards scroll on touch screens. Caverns Rock Slimes use
+the original Rock Slime artwork and healing/splitting behavior with stronger
+Caverns stats, including migration of existing creatures in saved games.
+
 The export preserves script order and boundaries while packing loose modules
 into one download, reducing the browser package from 999 files to 891.
 
@@ -55,6 +63,6 @@ the repeatable export and an itch.io ZIP. Automated browser tests cover gameplay
 save compatibility, UI, dimensional compositing, recovery and nested-path play.
 Physical-phone GPU and memory performance still require device testing.
 
-Build: **2026-10-12T07:07:39.016Z**. Revision: `foundation17-20261012070739016`.
+Build: **2026-10-12T13:40:34.356Z**. Revision: `foundation17-20261012134034356`.
 
-Source integration: `ae022a1ba4fb64865bf50784244c4fc891d4a236`.
+Source integration: `1990bedf1dc67c0d153da6ebc58db573517d4f87`.

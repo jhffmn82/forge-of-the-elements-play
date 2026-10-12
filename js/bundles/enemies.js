@@ -562,7 +562,7 @@ var FoteGreenSlime=(function(){
  DROPS.greenslime={chance:.12,table:{essence:1}};
  if(MONSTERS.pebbleslime)MONSTERS.pebbleslime.w=0;
  function sourceBody(e){return !!(e&&e.base&&!e.swarm&&!e.shadowClone);}
- function splittingSlime(e){return sourceBody(e)&&(e.base.greenSlime||e.kind==='slime');}
+ function splittingSlime(e){return sourceBody(e)&&(e.base.greenSlime||e.kind==='slime'||e.base.rockSlime);}
  function trailKind(e){
   if(!sourceBody(e))return null;
   if(e.base.greenSlime)return 'slime';

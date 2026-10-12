@@ -2649,6 +2649,8 @@
   // Share the actual cave master with the ground. Painted fracture detail
   // remains native 128px per tile instead of turning each cliff into a curtain.
   var cliffTextures=Object.create(null);
+  var cliffPalettes={rot:[[48,44,29],[162,140,98]],violet:[[44,32,66],[165,129,183]],
+    cinder:[[47,35,36],[175,117,88]],prism:[[22,39,65],[116,153,180]]};
   function paintCliffTexture(g,theme,x,y,w,h){
     var textures=root.FoteEnvironmentTerrain&&root.FoteEnvironmentTerrain.workerTextures(),source=textures&&textures['cave-rock'];
     if(!source)return;
@@ -2656,7 +2658,7 @@
     if(!entry||entry.source!==source.red){
       var c=document.createElement('canvas');c.width=source.width;c.height=source.height;
       var cg=c.getContext('2d'),im=cg.createImageData(c.width,c.height),a=im.data;
-      var lo=theme==='rot'?[48,44,29]:[44,32,66],hi=theme==='rot'?[162,140,98]:[165,129,183];
+      var palette=cliffPalettes[theme],lo=palette[0],hi=palette[1];
       for(var i=0;i<source.red.length;i++){
         var value=source.red[i]/255;
         for(var ch=0;ch<3;ch++)a[i*4+ch]=Math.round(lo[ch]+(hi[ch]-lo[ch])*value);
@@ -2666,7 +2668,15 @@
     }
     var pattern=g.createPattern(entry.canvas,'repeat');
     pattern.setTransform(new DOMMatrix().scale(.25));
-    g.globalAlpha=.74;g.fillStyle=pattern;g.fillRect(x,y,w,h);g.globalAlpha=1;
+    g.globalAlpha=.82;g.fillStyle=pattern;g.fillRect(x,y,w,h);g.globalAlpha=1;
+    // Painted rock catches light at its rim and recedes into shadow below.
+    // These gradients are baked with scenery, not blurred or redrawn per frame.
+    var depth=g.createLinearGradient(0,y,0,y+h);
+    depth.addColorStop(0,'rgba(235,217,187,.12)');depth.addColorStop(.24,'rgba(0,0,0,0)');depth.addColorStop(1,'rgba(8,11,19,.62)');
+    g.fillStyle=depth;g.fillRect(x,y,w,h);
+    var relief=g.createLinearGradient(x,0,x+w,0);
+    relief.addColorStop(0,'rgba(233,220,199,.12)');relief.addColorStop(.34,'rgba(0,0,0,0)');relief.addColorStop(1,'rgba(9,12,21,.28)');
+    g.fillStyle=relief;g.fillRect(x,y,w,h);
     // Small irregular bedding cracks follow the rock rather than a tile grid.
     g.strokeStyle=theme==='rot'?'rgba(34,31,20,.28)':'rgba(31,22,47,.28)';g.lineWidth=.45;
     for(var n=0;n<5;n++){
@@ -2674,6 +2684,10 @@
       g.beginPath();g.moveTo(x+dx,cy);g.lineTo(x+dx+w*.17,cy-h*.024);
       g.lineTo(x+dx+w*.36,cy+h*.017);g.stroke();
     }
+  }
+  function paintedCliff(g,theme,points,fill,x,y,w,h){
+    g.save();g.beginPath();points.forEach(function(p,i){if(i)g.lineTo(p[0],p[1]);else g.moveTo(p[0],p[1]);});g.closePath();g.clip();
+    g.fillStyle=fill;g.fillRect(x,y,w,h);paintCliffTexture(g,theme,x,y,w,h);g.restore();
   }
   var sceneryView=null;
   function sceneryCanvas(){
@@ -2808,9 +2822,9 @@
       if(!land(x,y+1)){
         var dep=R*(1.6+noise(x,y,seed)*1.6),tip=px+R*(.25+noise(x,y,seed+1)*.5),rock=g.createLinearGradient(px,py,px,py+dep);
         rock.addColorStop(0,'#B6765C');rock.addColorStop(.35,'#89534B');rock.addColorStop(1,'#4B4048');
-        polygon(g,[[px-1,py-2],[px+R+1,py-2],[px+R*.91,py+dep*.42],[px+R*.69,py+dep*.55],[tip,py+dep],[px+R*.1,py+dep*.63]],rock);
-        polygon(g,[[px+R*.1,py+4],[px+R*.36,py+2],[tip,py+dep],[px+R*.1,py+dep*.63]],'rgba(227,143,103,.18)');
-        g.strokeStyle='rgba(47,34,38,.6)';g.lineWidth=1.4;g.beginPath();g.moveTo(px+R*.7,py+6);g.lineTo(px+R*.54,py+dep*.36);g.lineTo(px+R*.68,py+dep*.48);g.stroke();
+        paintedCliff(g,'cinder',[[px-1,py-2],[px+R+1,py-2],[px+R*.94,py+dep*.23],[px+R*.82,py+dep*.31],
+          [px+R*.88,py+dep*.43],[px+R*.69,py+dep*.55],[tip+R*.08,py+dep*.83],[tip,py+dep],
+          [tip-R*.09,py+dep*.91],[px+R*.1,py+dep*.63],[px+R*.14,py+dep*.38]],rock,px-1,py-2,R+2,dep+3);
         g.fillStyle='#514A49';g.fillRect(px,py-2,R,9);g.fillStyle='#B3A08B';g.fillRect(px,py-2,R,3);g.fillStyle='#312D30';g.fillRect(px+R-1,py+1,1,6);
         if(noise(x,y,seed+5)>.58){g.fillStyle='#83756A';g.fillRect(px+R*.33,py+4,R*.34,12);g.fillStyle='#D0AB73';g.fillRect(px+R*.37,py+6,2,2);}
       }
@@ -3045,9 +3059,9 @@
       if(!land(xx,yy+1)){
         var dep=R*(1.65+noise(xx,yy,seed)*2.2),tip=px+R*(.2+noise(xx,yy,seed+1)*.6),ledge=g.createLinearGradient(0,py,0,py+dep);
         ledge.addColorStop(0,'#6B94B9');ledge.addColorStop(.25,'#3D648D');ledge.addColorStop(1,'#162F59');
-        polygon(g,[[px-1,py-1],[px+R+1,py-1],[px+R*.9,py+dep*.52],[tip,py+dep],[px+R*.06,py+dep*.64]],ledge);
-        polygon(g,[[px,py],[px+R*.32,py+2],[tip,py+dep],[px+R*.06,py+dep*.64]],'rgba(117,147,177,.16)');
-        polygon(g,[[px+R*.64,py+1],[px+R,py],[px+R*.9,py+dep*.52],[tip,py+dep]],'rgba(10,24,55,.36)');
+        paintedCliff(g,'prism',[[px-1,py-1],[px+R+1,py-1],[px+R*.93,py+dep*.29],[px+R*.82,py+dep*.36],
+          [px+R*.9,py+dep*.52],[tip+R*.1,py+dep*.82],[tip,py+dep],[tip-R*.08,py+dep*.88],
+          [px+R*.06,py+dep*.64],[px+R*.12,py+dep*.38]],ledge,px-1,py-1,R+2,dep+2);
         g.strokeStyle='rgba(175,184,182,.7)';g.lineWidth=2;g.beginPath();g.moveTo(px,py+1);g.lineTo(px+R,py+1);g.stroke();
         if(noise(xx,yy,seed+9)>.68){g.strokeStyle='rgba(98,178,197,.35)';g.lineWidth=1;g.beginPath();g.moveTo(px+R*.4,py+4);g.lineTo(px+R*.48,py+dep*.4);g.lineTo(px+R*.35,py+dep*.65);g.stroke();}
       }
@@ -3068,9 +3082,16 @@
   }
   function drawVoid(now){
     var d=data();if(!d||!d.landMask)return;if(!cache||cache.data!==d||cache.map!==map||!sceneryContains(cache.view)){sceneryView={x:camX-4,y:camY-4,w:viewW+9,h:viewH+9};cache=build(d);}
-    var clip=new Path2D(),any=false;
+    var clip=new Path2D(),any=false,voidEdges=[];
     // Cached floor ornaments must not paint over a temporary live wall.
-    for(var y=camY;y<=camY+viewH;y++)for(var x=camX;x<=camX+viewW;x++)if(inb(x,y)&&!isWallLike(at(x,y))&&(revealAll||seen[idxOf(x,y)])){clip.rect((x-camX)*TS,(y-camY)*TS,TS+.1,TS+.1);any=true;}
+    for(var y=camY;y<=camY+viewH;y++)for(var x=camX;x<=camX+viewW;x++){
+      if(!inb(x,y)||!revealAll&&!seen[idxOf(x,y)]||isWallLike(at(x,y)))continue;
+      var px=(x-camX)*TS,py=(y-camY)*TS;
+      clip.rect(px,py,TS,TS);any=true;
+      // Terrain owns the land's fog. Fade cached sky and hanging rock only
+      // inside discovered void, using the same bounded stamp cache as rock.
+      if(!revealAll&&!d.landMask[idxOf(x,y)]){var edge=cavernFogEdgeMask(x,y,MW,MH,seen);if(edge)voidEdges.push([px,py,edge]);}
+    }
     if(!any)return;
     ctx.save();ctx.clip(clip);ctx.globalAlpha=1;ctx.imageSmoothingEnabled=true;
     ctx.drawImage(cache.canvas,(camX-cache.view.x)*128,(camY-cache.view.y)*128,(viewW+1)*128,(viewH+1)*128,0,0,(viewW+1)*TS,(viewH+1)*TS);
@@ -3081,18 +3102,17 @@
         if(!rot(region)&&!cinder(region))return;
         var b=mixedBounds(region);ctx.save();ctx.beginPath();ctx.rect((b.x-camX)*TS,(b.y-camY)*TS,(b.right-b.x)*TS,(b.bottom-b.y)*TS);ctx.clip();
         if(rot(region))drawRotSpores(region,now);else drawCinderEmbers(region,now);ctx.restore();
-      });ctx.restore();return;
+      });
     }
-    if(rot(d)){drawRotSpores(d,now);ctx.restore();return;}
-    if(cinder(d)){drawCinderEmbers(d,now);ctx.restore();return;}
-    if(violet(d)){ctx.restore();return;}
-    for(var n=0;n<20;n++){
+    else if(rot(d))drawRotSpores(d,now);
+    else if(cinder(d))drawCinderEmbers(d,now);
+    else if(!violet(d))for(var n=0;n<20;n++){
       var wx=noise(n,41,d.seed)*MW,wy=noise(n,42,d.seed)*MH,ix=Math.floor(wx),iy=Math.floor(wy);
       if(!inb(ix,iy)||d.landMask[idxOf(ix,iy)]||wx<camX||wx>camX+viewW||wy<camY||wy>camY+viewH)continue;
       var alpha=.17+.16*Math.sin(phase+n*2.3),px=(wx-camX)*TS,py=(wy-camY)*TS;
       ctx.globalAlpha=alpha;ctx.strokeStyle='#B3E5F0';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(px-2,py);ctx.lineTo(px+2,py);ctx.moveTo(px,py-2);ctx.lineTo(px,py+2);ctx.stroke();
     }
-    ctx.restore();
+    drawCavernFogEdges(voidEdges);ctx.restore();
   }
   function pairColor(p,d){if(rot(d))return '#D7EC88';if(cinder(d))return '#FFBC70';if(violet(d))return '#C7DFFF';var pairs=[];d.portals.forEach(function(q){if(pairs.indexOf(q.pairId)<0)pairs.push(q.pairId);});return pairs.indexOf(p.pairId)%2?'#E5BA68':'#78D5F1';}
   function portalVisibility(p){
@@ -5191,6 +5211,7 @@ globalThis.UNMAKER_ATLAS={
  var wanted=new Set(),assetsMap=null,assetsMeta=null;
  var S=128,builds=0,frameBuilt=0,frameDeadline=0,peakBuildMs=0,frameMs=0,peakFrameMs=0,fireGround=new Map(),rockTops=new Map(),masonryReflections=new Map();
  var elementalPlanes=['light','shadow','earth','fire','water','air'];
+ var accentCells=new Map(),accentRevision=0,accentFrameCache=null;
  function phone(){return document.body.classList.contains('touch');}
  function wrap(v,n){return ((v%n)+n)%n;}
  function canvas(w,h,id){var c=document.createElement('canvas');c.width=w;c.height=h;c.src='environment-terrain:'+id;return c;}
@@ -5390,6 +5411,105 @@ globalThis.UNMAKER_ATLAS={
   }
   return result;
  }
+ // Only authored mineral colors and the temple's red grout emit. Neutral
+ // stone, decoration, pools and unexplored cells never become light sources.
+ function accentProfile(palette,temple){
+  if(temple)return {temple:true,color:[1,.19,.045]};
+  if(!palette||!palette.vein)return null;
+  var mean=(palette.vein[0]+palette.vein[1]+palette.vein[2])/3;
+  var axis=palette.vein.map(function(c){return c-mean;}),length=Math.hypot.apply(Math,axis);
+  if(length<1)return null;axis=axis.map(function(c){return c/length;});
+  function projection(c){return c[0]*axis[0]+c[1]*axis[1]+c[2]*axis[2];}
+  var colors=['floor','floorLav','mineralCool','pearl','band','top','topHi','topLo','face','lip'].map(function(k){return palette[k];}).filter(Boolean);
+  var edge=Math.max.apply(null,colors.map(projection)),peak=Math.max.apply(null,palette.vein);
+  return {axis:axis,edge:edge,span:Math.max(12,projection(palette.vein)-edge),color:palette.vein.map(function(c){return c/peak;})};
+ }
+ // Sixteen RGB samples cost 192 bytes per cached terrain cell. This reads the
+ // CPU pixels already produced by the terrain worker/page, never the screen.
+ function accentPixels(o){
+  if(!o.accent)return null;
+  var result=new Float32Array(48),S=o.S,n=o.n,stride=o.accentStride||S,sx=o.accentX||0,sy=o.accentY||0,any=false;
+  for(var y=0;y<S;y++)for(var x=0;x<S;x++){
+   var sourceCell=Math.floor(y*n/S)*n+Math.floor(x*n/S);
+   if(o.mask&&o.mask[sourceCell]||o.pool&&o.pool[sourceCell])continue;
+   var profile=o.accent[o.regions?o.regions[sourceCell]:0];if(!profile)continue;
+   var p=((y+sy)*stride+x+sx)*4,r=o.dst[p],g=o.dst[p+1],b=o.dst[p+2],strength;
+   if(profile.temple)strength=r>g*1.25&&r>b*1.5?Math.max(0,(r-Math.max(g,b)-12)/90):0;
+   else strength=(r*profile.axis[0]+g*profile.axis[1]+b*profile.axis[2]-profile.edge)/profile.span;
+   if(strength<=.08)continue;strength=Math.min(1,strength)/(S*S/16);
+   var cell=(Math.floor(y*4/S)*4+Math.floor(x*4/S))*3;
+   for(var ch=0;ch<3;ch++)result[cell+ch]+=profile.color[ch]*strength;
+   any=true;
+  }
+  return any?result:null;
+ }
+ function keepAccent(x,y,field){
+  var key=x+','+y,changed=!accentCells.has(key)||accentCells.get(key)!==field;
+  accentCells.delete(key);accentCells.set(key,field);if(changed)accentRevision++;
+  var limit=cap();if(accentCells.size>limit)for(var it=accentCells.keys(),next=it.next();!next.done&&accentCells.size>limit;next=it.next()){
+   var at=next.value.split(','),cx=Number(at[0]),cy=Number(at[1]);
+   if(cx>=camX-1&&cx<=camX+viewW+1&&cy>=camY-1&&cy<=camY+viewH+1)continue;
+   accentCells.delete(next.value);
+  }
+ }
+ function accentCell(x,y){
+  var key=x+','+y;if(accentCells.has(key))return accentCells.get(key);
+  // A cached ground layer can bypass enhance(). Recover from its resident
+  // terrain owner after camera movement; no raster rebuild or pixel readback.
+  for(var it=high.values(),next=it.next();!next.done;next=it.next()){
+   var cell=next.value;if(cell.cellX===x&&cell.cellY===y&&cell.environmentAccent!==undefined){keepAccent(x,y,cell.environmentAccent);return cell.environmentAccent;}
+  }
+  if(theme(x,y)!=='temple'){keepAccent(x,y,null);return null;}
+  var entry=images.get('temple-floor');if(!entry)return null;
+  var spec=entry.spec,px=wrap(x+surfOff(0),spec.columns)*S,py=wrap(y+surfOff(1),spec.rows)*S;
+  var field=accentPixels({S:S,n:S,dst:bytes(entry),accentStride:spec.width,accentX:px,accentY:py,accent:[accentProfile(null,true)]});
+  keepAccent(x,y,field);return field;
+ }
+ function accentFrame(ox,oy,W,H,S,visible,all){
+  if(typeof spriteOn!=='undefined'&&!spriteOn)return null;
+  var count=W*H,entry=accentFrameCache;
+  if(!entry||entry.W!==W||entry.H!==H){
+   entry=accentFrameCache={W:W,H:H,admitted:new Uint8Array(count),pending:new Uint8Array(count),raw:new Float32Array(count*3),horizontal:new Float32Array(count*3),field:new Float32Array(count*3)};
+  }
+  var admitted=entry.pending,changed=entry.map!==map||entry.meta!==floorMeta||entry.ox!==ox||entry.oy!==oy||entry.revision!==accentRevision;
+  admitted.fill(0);
+  for(var y=0;y<H;y+=S)for(var x=0;x<W;x+=S){
+   var wx=ox+x/S,wy=oy+y/S;
+   if(!inb(wx,wy)||!(all||visible[idxOf(wx,wy)])||isWallLike(at(wx,wy)))continue;
+   var room=roomAt(wx,wy);if(room&&room.dark)continue;
+   for(var sy=0;sy<S&&y+sy<H;sy++)for(var sx=0;sx<S&&x+sx<W;sx++){
+    var i=(y+sy)*W+x+sx;admitted[i]=1;if(!changed&&entry.admitted[i]!==1)changed=true;
+   }
+  }
+  if(!changed){for(var k=0;k<count;k++)if(admitted[k]!==entry.admitted[k]){changed=true;break;}}
+  if(!changed)return entry.field;
+  var raw=entry.raw,horizontal=entry.horizontal,out=entry.field;raw.fill(0);horizontal.fill(0);out.fill(0);
+  for(var y=0;y<H;y++)for(var x=0;x<W;x++){
+   var i=y*W+x;if(!admitted[i])continue;
+   var field=accentCell(ox+Math.floor(x/S),oy+Math.floor(y/S));if(!field)continue;
+   var gx0=Math.floor(x%S*4/S),gy0=Math.floor(y%S*4/S),gx1=Math.ceil((x%S+1)*4/S),gy1=Math.ceil((y%S+1)*4/S),area=(gx1-gx0)*(gy1-gy0);
+   // Average every covered accent bin, so a thin line cannot fall between
+   // light-field sample centers and disappear as the camera moves.
+   for(var gy=gy0;gy<gy1;gy++)for(var gx=gx0;gx<gx1;gx++)for(var ch=0;ch<3;ch++)raw[i*3+ch]+=field[(gy*4+gx)*3+ch]/area;
+  }
+  // A half-tile spill in the existing tiny light field, cached until the
+  // camera, admitted cells or terrain change. Walls/unknown cells stop it.
+  for(var yy=0;yy<H;yy++)for(var xx=0;xx<W;xx++){
+   var i=yy*W+xx;if(!admitted[i])continue;
+   for(var dx=-1;dx<=1;dx++){var nx=xx+dx;if(nx<0||nx>=W)continue;var j=yy*W+nx;if(!admitted[j])continue;
+    for(var ch=0;ch<3;ch++)horizontal[i*3+ch]+=raw[j*3+ch]*(dx===0?.6:.2);
+   }
+  }
+  for(var yy=0;yy<H;yy++)for(var xx=0;xx<W;xx++){
+   var i=yy*W+xx;if(!admitted[i])continue;
+   for(var dy=-1;dy<=1;dy++){var ny=yy+dy;if(ny<0||ny>=H)continue;var j=ny*W+xx;if(!admitted[j])continue;
+    for(var ch=0;ch<3;ch++)out[i*3+ch]+=horizontal[j*3+ch]*(dy===0?.6:.2);
+   }
+   var peak=Math.max(out[i*3],out[i*3+1],out[i*3+2]),gain=peak>0?Math.min(18,.24/peak):0;
+   for(var ch=0;ch<3;ch++)out[i*3+ch]*=gain;
+  }
+  entry.map=map;entry.meta=floorMeta;entry.ox=ox;entry.oy=oy;entry.revision=accentRevision;entry.admitted.set(admitted);return out;
+ }
  /* One 128px cell from its input raster (2026-09-28). Pure: it reads only its arguments and wrap/mirror, so a Web
   * Worker can run this same text. Per pixel the arithmetic is the original's, in the original order. What depends
   * only on the row or the column (texture wraps and mirrors), or only on the input pixel an output pixel is nearest
@@ -5550,14 +5670,15 @@ globalThis.UNMAKER_ATLAS={
    plane:plane,naturalWalls:info.naturalWalls,naturalFloor:info.naturalFloor,minerals:plane&&mask?planeMinerals(source,mask,plane):null,material:material,
    offsets:mode==='deep'?[surfOff(0),surfOff(1),surfOff(2),surfOff(3),surfOff(4)]:null,cavern:info.naturalMaterial||(typeof PT_MAT!=='undefined'?PT_MAT.cavern:null),
    firePixels:fire?fire.environmentTerrain.pixels:null,fireAxis:fire?axis(fire.width):null,fireWidth:fire?fire.width:0,
-   deepStyle:typeof DEEP_STYLE!=='undefined'?DEEP_STYLE:null,deepRock:typeof DEEP_ROCK!=='undefined'?DEEP_ROCK:null,dst:null};
+   deepStyle:typeof DEEP_STYLE!=='undefined'?DEEP_STYLE:null,deepRock:typeof DEEP_ROCK!=='undefined'?DEEP_ROCK:null,
+   accent:mode==='plane'?[accentProfile(cellMaterial,false)]:mode==='deep'?[accentProfile(null,true),null,accentProfile(PT_MAT.fire,false)]:null,dst:null};
  }
  // This page's masters for kernelInputs: the red channel of the detail and rock masters, whole pixels of the rest.
  var pageTextures={get:function(key){var e=get(key);return e&&{red:/-detail$|^cave-rock$/.test(key)?red(e):null,width:e.img.naturalWidth,height:e.img.naturalHeight,pixels:e.pixels,spec:e.spec};},fire:function(x,y){return fireGroundCell(x,y);}};
  function enhance(base,x,y,mode,cache,key){
   if(!base)return base;
   if(base.environmentTerrain&&base.environmentTerrain.nativeDetail)return base;
-  if(high.has(base)){var cached=high.get(base);high.delete(base);high.set(base,cached);return cached;}
+  if(high.has(base)){var cached=high.get(base);high.delete(base);high.set(base,cached);if(cached.environmentAccent!==undefined)keepAccent(x,y,cached.environmentAccent);return cached;}
   // 2026-09-28: no per-frame budget. A cell is drawn at its final 128px detail the first time it is drawn, never as
   // its input raster first (the owner: no low-resolution art on screen). Floor entries build the view behind the
   // entry hold and the cells around the view are built ahead in idle time, so frames rarely build at all.
@@ -5566,6 +5687,7 @@ globalThis.UNMAKER_ATLAS={
   var o=kernelInputs(source,info,n,x,y,mode,pageTextures);if(!o)return base;
   var out=canvas(S,S,mode+'-'+x+'-'+y),g=out.getContext('2d'),image=g.createImageData(S,S);
   o.dst=image.data;enhanceKernel(o);g.putImageData(image,0,0);
+  if((mode==='plane'||mode==='deep')&&n>1){out.environmentAccent=accentPixels(o);keepAccent(x,y,out.environmentAccent);}
   // Wall crystals belong above the finished rock. Cache the native painter's
   // result once; these canvas-path cells already stay out of terrain workers.
   if(info.crystal){g.save();g.scale(S/PT_R,S/PT_R);ptCrystal(g,x,y,ptSalt(),info.terrainMaterial||ptMat(x,y));g.restore();}
@@ -5579,16 +5701,17 @@ globalThis.UNMAKER_ATLAS={
  }
  // A worker's cell x,y: the pixels enhance() would have made, on the same kind of canvas. (Not drawn as an
  // ImageBitmap: scaled, a bitmap is filtered differently from a canvas with the same pixels.)
- function install(pixels,x,y,mode,cache,key){
+ function install(pixels,x,y,mode,cache,key,accent){
   var started=performance.now(),out=canvas(S,S,mode+'-'+x+'-'+y);
   out.getContext('2d').putImageData(new ImageData(pixels,S,S),0,0);
+  if(mode!=='rock'){out.environmentAccent=accent||null;keepAccent(x,y,out.environmentAccent);}
   // A rock top keeps its one-pixel base as the cache key, as naturalRockTop does.
   if(mode==='rock')return keep(out,rockTopBase(x,y),x,y,null,null,started);
   return keep(out,null,x,y,cache,key,started);
  }
  // The source of everything a worker needs from this file, as text (the same functions this page runs).
  function kernelSource(){
-  return ['var S='+S+',axes={},elementalPlanes='+JSON.stringify(elementalPlanes)+';',wrap,axis,mirror,planeMinerals,enhanceKernel,kernelInputs,rockTopInfo].map(String).join('\n');
+  return ['var S='+S+',axes={},elementalPlanes='+JSON.stringify(elementalPlanes)+';',wrap,axis,mirror,planeMinerals,accentProfile,accentPixels,enhanceKernel,kernelInputs,rockTopInfo].map(String).join('\n');
  }
  // Masters a worker reads for plane cells: the detail and rock masters' red channels.
  function workerTextures(){
@@ -5609,7 +5732,7 @@ globalThis.UNMAKER_ATLAS={
  }
  function beginFrame(){
   if(cacheMap!==map||cacheMeta!==floorMeta){
-   forget();fireGround.clear();rockTops.clear();
+   forget();fireGround.clear();rockTops.clear();accentCells.clear();accentFrameCache=null;accentRevision++;
    if(typeof FoteTerrainWorkers!=='undefined'&&!inCaverns()&&!inDeep()&&!ptMat()&&!(typeof FoteChaosPreviewRenderer!=='undefined'&&FoteChaosPreviewRenderer.mixed()))FoteTerrainWorkers.release();
    // The native renderers keep one cache per terrain family. Drop our auxiliary
    // CPU fields when that family's map is no longer active, and its key with them:
@@ -5706,12 +5829,12 @@ globalThis.UNMAKER_ATLAS={
   masonry:masonrySample,deepTop:deepTop,floorSample:function(x,y){return masonrySample('floor',x,y);},
   lavaFlow:function(){var entry=get('lava-flow');return entry&&entry.img;},
   rockSurface:function(){var entry=get('cave-rock');return entry&&entry.img;},
-  surface:function(name,x,y){var entry=get(theme(x,y)+'-'+name);return entry&&entry.img;},metadata:function(){return manifest;},enhance:enhance,
+  surface:function(name,x,y){var entry=get(theme(x,y)+'-'+name);return entry&&entry.img;},metadata:function(){return manifest;},enhance:enhance,accentFrame:accentFrame,
   diagnostics:function(){
    // Image/canvas bytes are RGBA equivalents, not browser or GPU memory usage.
    var imageBytes=0,pixelBytes=0,shadedBytes=0;images.forEach(function(e){imageBytes+=e.img.naturalWidth*e.img.naturalHeight*4;pixelBytes+=(e.pixels?e.pixels.byteLength:0)+(e.red?e.red.byteLength:0);if(e.shaded)shadedBytes+=e.shaded.width*e.shaded.height*4;});
    return {ready:!!manifest,loaded:images.size,materials:Array.from(images.keys()),imageBytes:imageBytes,pixelBytes:pixelBytes,shadedBytes:shadedBytes,pending:loading.size,cachedCells:high.size,cellBytes:high.size*S*S*4,masonryReflectionCells:masonryReflections.size,builds:builds,peakBuildMs:peakBuildMs,peakFrameMs:peakFrameMs,pixelsPerCell:S,lastBake:lastBake&&Object.assign({},lastBake),bakes:bakes.map(function(b){return Object.assign({},b);})};},
-  reset:function(){forget();fireGround.clear();rockTops.clear();masonryReflections.clear();aheadQueue=[];aheadKey='';},beginFrame:beginFrame,bakeView:bakeView,bakeViewNow:bakeViewNow,ahead:ahead,
+  reset:function(){forget();fireGround.clear();rockTops.clear();masonryReflections.clear();accentCells.clear();accentFrameCache=null;accentRevision++;aheadQueue=[];aheadKey='';},beginFrame:beginFrame,bakeView:bakeView,bakeViewNow:bakeViewNow,ahead:ahead,
   cacheCanvases:function(){return Array.from(high.values());},discardCell:function(cell){if(!high.has(cell))return false;drop(cell);return true;},install:install,kernelSource:kernelSource,workerTextures:workerTextures,
   workerDeepTextures:workerDeepTextures,rockTopReady:rockTopReady});
 })(globalThis);
@@ -5760,14 +5883,14 @@ globalThis.UNMAKER_ATLAS={
     if(m.type==='cells'){
      var sent=[];
      for(var i=0;i<m.list.length;i+=3){
-      var x=m.list[i],y=m.list[i+1],kind=m.list[i+2],t0=performance.now(),out=null,none=false,info=null,n=0,mode=kind===0?'plane':'deep';
+      var x=m.list[i],y=m.list[i+1],kind=m.list[i+2],t0=performance.now(),out=null,accent=null,none=false,info=null,n=0,mode=kind===0?'plane':'deep';
       if(kind===2){info=rockTopInfo(deepCellReg(x,y));n=1;}
       else{var c=kind===0?ptCellRaster(x,y):deepCellRaster(x,y);if(!c)none=true;else{info=c.environmentTerrain;n=c.width;}}
       // a cave cell that reaches a built region draws its masonry masters, which only the page holds
       if(info&&kind===1&&builtRegion(info.regions))info=null;
-      if(info){var o=kernelInputs(info.pixels,info,n,x,y,mode,textures);if(o){o.dst=new Uint8ClampedArray(S*S*4);enhanceKernel(o);out=o.dst;}}
+      if(info){var o=kernelInputs(info.pixels,info,n,x,y,mode,textures);if(o){o.dst=new Uint8ClampedArray(S*S*4);enhanceKernel(o);out=o.dst;if(kind!==2)accent=accentPixels(o);}}
       if(SLOW>1){var until=performance.now()+(performance.now()-t0)*(SLOW-1);while(performance.now()<until){}}
-      sent.push(deliver(m.keys[i/3],out,none,performance.now()-t0));
+      sent.push(deliver(m.keys[i/3],out,none,performance.now()-t0,accent));
      }
      Promise.all(sent).then(function(){self.postMessage({type:'batch'});});
     }
@@ -5787,9 +5910,9 @@ globalThis.UNMAKER_ATLAS={
   }
   // A cell goes back as its pixels (transferred, not copied); the page puts them on a canvas like enhance() does.
   // (An ImageBitmap costs the page less, but kept GPU copies alive: 250 MB more on a phone.)
-  function deliver(key,out,none,ms){
+  function deliver(key,out,none,ms,accent){
    if(!out)self.postMessage({type:'cell',key:key,none:none,ms:ms});
-   else self.postMessage({type:'cell',key:key,pixels:out,ms:ms},[out.buffer]);
+   else self.postMessage({type:'cell',key:key,pixels:out,accent:accent,ms:ms},accent?[out.buffer,accent.buffer]:[out.buffer]);
    return null;
   }
   function builtRegion(regions){for(var i=0;i<regions.length;i++)if(DEEP_STYLE[regions[i]]==='rect')return true;return false;}
@@ -5933,7 +6056,7 @@ globalThis.UNMAKER_ATLAS={
     // page while the same expensive raster was already being computed.
     if(now){
      existing.q.urgent=true;
-     if(existing.ready){var index=ready.indexOf(existing.ready);if(index>=0)ready.splice(index,1);place(existing.q,existing.ready.image);}
+     if(existing.ready){var index=ready.indexOf(existing.ready);if(index>=0)ready.splice(index,1);place(existing.q,existing.ready.image,existing.ready.accent);}
      else keys.add(key);
     }
     taken.add(c[0]+','+c[1]);return;
@@ -5989,7 +6112,7 @@ globalThis.UNMAKER_ATLAS={
   stats.workerMs+=m.ms||0;
   if(image&&q){
    // a held view's cells go in at once; the ring ahead goes in in idle time, or just before a frame that needs it
-   if(q.urgent)place(q,image);else{ready.push({q:q,image:image});schedule();}
+   if(q.urgent)place(q,image,m.accent);else{ready.push({q:q,image:image,accent:m.accent});schedule();}
   }
   else{
    if(!image&&m.none&&q&&live(q)&&q.kind===0&&!(q.slot in q.cells))q.cells[q.slot]=null;
@@ -5998,9 +6121,9 @@ globalThis.UNMAKER_ATLAS={
   settle();
  }
  function live(q){return q.cells===cacheNow()&&q.map===map&&FoteEnvironmentTerrain===ET;}
- function place(q,image){
+ function place(q,image,accent){
   if(live(q)&&(q.kind===2?!ET.rockTopReady(q.x,q.y):!(q.slot in q.cells))){
-   ET.install(image,q.x,q.y,KINDS[q.kind],q.kind===2?null:q.cells,q.slot);stats.installed++;
+   ET.install(image,q.x,q.y,KINDS[q.kind],q.kind===2?null:q.cells,q.slot,accent);stats.installed++;
   }
  }
  var ready=[],scheduled=false;
@@ -6009,7 +6132,7 @@ globalThis.UNMAKER_ATLAS={
   var run=function(deadline){
    scheduled=false;var t0=performance.now(),budget=phone()?6:4;
    if(deadline&&typeof deadline.timeRemaining==='function'&&!deadline.didTimeout)budget=Math.max(2,Math.min(budget,deadline.timeRemaining()));
-   while(ready.length&&performance.now()-t0<budget){var r=ready.shift();place(r.q,r.image);}
+   while(ready.length&&performance.now()-t0<budget){var r=ready.shift();place(r.q,r.image,r.accent);}
    if(ready.length)schedule();
   };
   if(typeof requestIdleCallback==='function')requestIdleCallback(run,{timeout:100});else setTimeout(run,16);
@@ -6017,7 +6140,7 @@ globalThis.UNMAKER_ATLAS={
  // Before a frame: the finished cells it may draw (the tile window and a cell around it) go in now.
  function flush(x0,y0,x1,y1){
   if(!ready.length)return;
-  ready=ready.filter(function(r){var q=r.q;if(q.x>=x0&&q.x<=x1&&q.y>=y0&&q.y<=y1){place(q,r.image);return false;}return true;});
+  ready=ready.filter(function(r){var q=r.q;if(q.x>=x0&&q.x<=x1&&q.y>=y0&&q.y<=y1){place(q,r.image,r.accent);return false;}return true;});
  }
  // A waiting request is done when none of its cells is still queued or in flight.
  function settle(){
@@ -6262,7 +6385,7 @@ window.FOTE_ENVIRONMENT_VEGETATION_META={"version":1,"cell":128,"res":2,"file":"
   }
   // The only definitions (2026-09-27): the old map-veg.webp and prop-clusters.webp are archived.
   root.vegArt=art;
-  root.vegDraw=function(o,cx,base,scale,shear,alpha,flip){
+  root.vegDraw=function(o,cx,base,scale,shear,alpha,flip,emission){
     if(!o)return;
     if(/mushroom|shroom|fungus/.test(o.nm||'')&&!/^crypt-shelf-fungus-/.test(o.nm||''))scale*=.5;
     var s=TS/64*scale/o.res,w=o.sw*s,h=o.sh*s,b=vegBaked(o);
@@ -6270,7 +6393,7 @@ window.FOTE_ENVIRONMENT_VEGETATION_META={"version":1,"cell":128,"res":2,"file":"
     ctx.translate(cx,base);ctx.transform(1,0,-shear,1,0,0);if(flip)ctx.scale(-1,1);
     if(b)ctx.drawImage(b,0,0,o.sw,o.sh,-w/2,-h,w,h);
     else ctx.drawImage(o.img,o.sx,o.sy,o.sw,o.sh,-w/2,-h,w,h);
-    if(root.FoteNormalLighting)root.FoteNormalLighting.record(ctx,b?{img:b,sx:0,sy:0,sw:o.sw,sh:o.sh}:o,{x:-w/2,y:-h,w:w,h:h},{normal:false,surface:{kind:'sprite',shadowShape:'silhouette',shadow:/-grass-(front|back)-|shroom-squashed-/.test(o.nm||'')?false:undefined,x:cx/TS+camX-.5,y:base/TS+camY-1,height:h/TS,footV:1,admissionX:Math.floor(cx/TS)+camX,admissionY:Math.floor(base/TS-.5)+camY}});
+    if(root.FoteNormalLighting)root.FoteNormalLighting.record(ctx,b?{img:b,sx:0,sy:0,sw:o.sw,sh:o.sh}:o,{x:-w/2,y:-h,w:w,h:h},{normal:false,surface:{kind:'sprite',shadowShape:'silhouette',shadow:/-grass-(front|back)-|shroom-squashed-/.test(o.nm||'')?false:undefined,x:cx/TS+camX-.5,y:base/TS+camY-1,height:h/TS,footV:1,admissionX:Math.floor(cx/TS)+camX,admissionY:Math.floor(base/TS-.5)+camY,emission:emission||0}});
     ctx.restore();
   };
   root.sceneryClusterArt=function(family,variant){
