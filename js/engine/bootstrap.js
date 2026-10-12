@@ -31,17 +31,33 @@
     script.onload=()=>{cleanup();resolve();};script.onerror=()=>{cleanup();reject(new Error('Could not load '+path));};
     document.head.appendChild(script);
   });}
+  /* A packed module is the same script delivered inside one file (the public
+   * package has a file-count limit). It still runs as its own classic script
+   * in the manifest's order: an inline element executes as it is inserted,
+   * shares the global scope exactly as a file does, and keeps its own name for
+   * errors and the debugger. A failure stops installation like a failed file. */
+  function run(path,source){
+    let failure=null;
+    const onError=event=>{if(!failure)failure=event.error||new Error(event.message||'Could not initialize '+path);};
+    const script=document.createElement('script');
+    script.text=source+'\n//# sourceURL='+new URL(path,document.baseURI).href;
+    root.addEventListener('error',onError);
+    try{document.head.appendChild(script);}finally{root.removeEventListener('error',onError);}
+    if(failure)throw failure;
+  }
   root.FoteReady=(async()=>{
     if(!root.FOTE_RUNTIME||!Array.isArray(FOTE_RUNTIME.modules))throw new Error('Runtime manifest is missing.');
     const paths=FOTE_RUNTIME.modules.filter(path=>FOTE_RUNTIME.development||!FOTE_RUNTIME.developmentOnly.includes(path));
-    let urls=null;
+    const pack=!FOTE_RUNTIME.development&&typeof FOTE_RUNTIME.pack==='string'?FOTE_RUNTIME.pack:null;
+    const packed=new Set(pack&&Array.isArray(FOTE_RUNTIME.packed)?FOTE_RUNTIME.packed:[]);
+    let urls=null,sources=null;
     if(!FOTE_RUNTIME.development){
       paths.push('js/public-mode.js');
       urls=paths.map(moduleURL);
       // Warm the exact script URLs in parallel, while load() below retains the
       // existing execution order and stops initialization at the first failure.
       // Development keeps its per-request cache busting and normal load path.
-      for(const url of urls){
+      for(const url of (pack?[moduleURL(pack)]:[]).concat(urls.filter((url,i)=>!packed.has(paths[i])))){
         const hint=document.createElement('link');hint.rel='preload';hint.as='script';hint.href=url;
         document.head.appendChild(hint);
       }
@@ -56,13 +72,28 @@
     try{arrivals=new PerformanceObserver(arrived);arrivals.observe({type:'resource'});}catch(e){}
     const watch=setInterval(()=>{if(!stalled&&Date.now()-lastArrival>=60000)stalled=reloadPanel('Loading has stalled. Keep waiting, or reload to try again.');},1000);
     try{
+      if(pack){
+        const slowPack=setTimeout(()=>{progress.textContent='Loading game… (slow connection, still loading)';},10000);
+        try{await load(pack);}finally{clearTimeout(slowPack);arrived();}
+        sources=root.FOTE_SCRIPT_PACK;
+        if(!sources||typeof sources!=='object')throw new Error('Could not load '+pack);
+      }
       for(let i=0;i<paths.length;i++){
-        const percent=Math.round(i/paths.length*100)+'%';
-        const slow=setTimeout(()=>{progress.textContent='Loading game… '+percent+' (slow connection, still loading)';},10000);
-        try{await load(paths[i],urls&&urls[i]);}
-        finally{clearTimeout(slow);arrived();}
+        if(packed.has(paths[i])){
+          // No pause between packed modules. A file being fetched holds the
+          // window's load event back; nothing does between two inline scripts,
+          // and a module may register for that event as it installs.
+          if(typeof sources[paths[i]]!=='string')throw new Error('Could not load '+paths[i]);
+          run(paths[i],sources[paths[i]]);
+        }else{
+          const percent=Math.round(i/paths.length*100)+'%';
+          const slow=setTimeout(()=>{progress.textContent='Loading game… '+percent+' (slow connection, still loading)';},10000);
+          try{await load(paths[i],urls&&urls[i]);}
+          finally{clearTimeout(slow);arrived();}
+        }
         progress.textContent='Loading game… '+Math.round((i+1)/paths.length*100)+'%';
       }
+      if(pack)root.FOTE_SCRIPT_PACK=null;   // every module is installed: release the text
     }finally{clearInterval(watch);if(arrivals)arrivals.disconnect();}
     veil.remove();
     await startGame();
