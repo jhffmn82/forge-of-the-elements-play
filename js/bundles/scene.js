@@ -35,6 +35,8 @@
   // The native terrain owner darkens this exact face atlas into a same-size
   // canvas (source-atop). Its crop, geometry and alpha remain unchanged.
   if(src==='environment-terrain:shaded-dungeon-face'&&image.width===768&&image.height===128)return 'environment-terrain-dungeon-face.png';
+  // The terrain owner re-lays the floor's courses into a same-size canvas; its normal map is re-laid to match below.
+  if(src==='environment-terrain:relaid-dungeon-floor'&&image.width===1792&&image.height===896)return 'environment-terrain-dungeon-floor.png';
   if(src.indexOf('environment-')===0)return src.replace(/\.webp$/,'.png');
   src=src.split(/[?#]/)[0].replace(/\\/g,'/');return src.slice(src.lastIndexOf('/')+1).replace(/\.webp$/,'.png');
  }
@@ -68,11 +70,13 @@
   var record=found.record,img=typeof atl==='function'?atl(directory+record.normal):null;
   if(!img){pending++;return null;}
   if((img.naturalWidth||img.width)!==record.width||(img.naturalHeight||img.height)!==record.height){invalid++;return null;}
+  var relaid=art.img.src==='environment-terrain:relaid-dungeon-floor';
+  if(relaid){img=typeof FoteEnvironmentTerrain!=='undefined'&&FoteEnvironmentTerrain.relaid?FoteEnvironmentTerrain.relaid(img,'dungeon-floor'):null;if(!img){invalid++;return null;}}
   hits++;
   // The shader must mirror UVs AND normal vector components by these intrinsic
   // signs, then apply the draw's own transform. Alpha comes from the color art.
   return {img:img,sx:found.sx,sy:found.sy,sw:found.sw,sh:found.sh,flipX:found.flipX,flipY:found.flipY,kind:record.kind,
-   recordId:record.id,sourceFile:record.source,normalFile:directory+record.normal,convention:convention,alpha:'source-color',opaque:record.opaque===true,mirroredRepeat:record.mirroredRepeat===true};
+   recordId:record.id,sourceFile:record.source,normalFile:directory+record.normal,convention:convention,alpha:'source-color',opaque:record.opaque===true,mirroredRepeat:record.mirroredRepeat===true&&!relaid};
  }
  function selected(ids){return !ids?records:records.filter(function(r){return ids.indexOf(r.id)>=0;});}
  // Source election runs before painting. Only normals whose color atlases are
@@ -1034,7 +1038,10 @@
         var u=CORNERS[corner],v=CORNERS[corner+1],rx=b.x+u*b.w,ry=b.y+v*b.h,px=m[0]*rx+m[2]*ry+m[4],py=m[1]*rx+m[3]*ry+m[5],gx=px+dx,gy=py+dy;
         var wx=(inv[0]*gx+inv[3]*gy+inv[6])/frame.tileSize+frame.cameraX-.5,wy=(inv[1]*gx+inv[4]*gy+inv[7])/frame.tileSize+frame.cameraY-.5,z=finite(s.baseZ)?s.baseZ:0;
         if(kind==='wall'){if(finite(s.y))wy=s.y;z+=(finite(s.height)?s.height:0)*((finite(s.footV)?s.footV:1)-v);}
-        else if(kind==='sprite'||kind==='actor'){if(finite(s.x))wx=s.x;if(finite(s.y))wy=s.y;if(finite(s.footY)&&finite(s.zPerPixel))z+=(s.footY-py)*s.zPerPixel;else z+=(finite(s.height)?s.height:0)*((finite(s.footV)?s.footV:1)-v);}
+        else if(kind==='sprite'||kind==='actor'){if(finite(s.x))wx=s.x;if(finite(s.y))wy=s.y;if(finite(s.footY)&&finite(s.zPerPixel))z+=(s.footY-py)*s.zPerPixel;else z+=(finite(s.height)?s.height:0)*((finite(s.footV)?s.footV:1)-v);
+          // A statue that holds its own flame is lit by it from foot to crown: lighting never lifts the card above
+          // that flame, or everything over it reads as lit from beneath and goes dark along a hard line.
+          if(finite(s.ownLight)&&s.ownLight>0)z=Math.min(z,s.ownLight);}
         var ax=finite(s.admissionX)?s.admissionX:wx,ay=finite(s.admissionY)?s.admissionY:wy;if(tex.atlas){u=(n.sx+(fx<0?1-u:u)*n.sw)/tex.width;v=(n.sy+(fy<0?1-v:v)*n.sh)/tex.height;}
         current.points.push(px,py,u,v,wx,wy,z,ax,ay,b0,b1,b2,b3,r.alpha,r.erase?1:0,normalKind,finite(s.selfLight)?clamp(s.selfLight,0,1):1,bounds[0],bounds[1],bounds[2],bounds[3],finite(s.emission)?clamp(s.emission,0,1):0);
       }if(n)mapped++;else fallback++;
@@ -1442,6 +1449,10 @@
     walls([[41,2],[42,2],[43,2],[44,2],[45,2],[46,2],[38,3],[39,3],[48,3],[49,3],
       [36,4],[37,4],[51,4],[35,5],[52,5],[53,7],[54,8],[54,9],
       [41,6],[42,6],[42,7],[42,8],[41,8],[36,13],[37,14],[50,14],[49,15]]);
+    /* 2026-10-12 (Justin, on the trailer take): "that set piece, the poison pool should just be removed, we have it
+       over an actual poison pool". The pool below (pool(44,9,3,2,1)) is painted as water since 60a625a, and the old
+       picture sat on top of it as a second pool. The piece keeps its place, its name and its glow; drawSetSprite
+       (cryptset.js) leaves its picture out. */
     focal(44,9,'rot-pool','Glowing spore pool',3,2,true);
     prop(39,5,'giant-mushroom-3',{b:1,flat:0,previewLabel:'Amber shelfcap'});
     prop(48,5,'cl-small-mushrooms-3',{previewLabel:'Shelfcap cluster'});
@@ -2457,7 +2468,7 @@
       vein:[108,150,44],veinHot:[208,233,104],veinDark:[65,85,33],
       inlay:[158,132,82],inlayJoint:[91,72,46],polish:[190,168,115],
       pool:[33,103,76],poolEdge:[87,180,114],poolShallow:[148,210,91],poolRim:[214,238,140],
-      poolShelf:[129,111,73],poolShelfDry:[158,135,86],poolWet:[84,87,51],poolLight:'#82EACB',
+      poolShelf:[129,111,73],poolShelfDry:[158,135,86],poolWet:[84,87,51],poolLight:'#82EACB',poolFx:['rgba(60,140,92,0.5)','rgba(150,226,164,0.8)','rgba(226,250,212,0.9)','#BFEFC8','rgba(170,232,176,0.3)'],
       moss:[[75,122,39],[112,151,59],[44,76,28],[145,170,81]],
       rockHi:'#F3DFB4',rockMid:'#C7AF7B',rockLo:'#947D53',rockEdge:'#5B482D',
       fill:'#E0D2A8',motif:'none',jag:.65,organicRock:true,faceCrystals:false,sourceLightsOnly:true
@@ -2475,8 +2486,8 @@
       face:[177,144,198],faceLo:[89,65,120],faceH:.8,lip:[239,226,247],void:[97,76,129],voidEdge:[124,98,148],
       vein:[181,144,213],veinHot:[241,222,254],veinDark:[89,64,119],
       inlay:[184,163,206],inlayJoint:[105,86,128],polish:[219,200,232],
-      pool:[69,69,133],poolEdge:[136,144,207],poolShallow:[152,142,209],poolRim:[235,220,251],
-      poolShelf:[139,120,164],poolShelfDry:[168,145,190],poolWet:[106,86,143],poolLight:'#D6C6FF',
+      pool:[96,54,138],poolEdge:[160,122,212],poolShallow:[176,138,218],poolRim:[240,222,252],
+      poolShelf:[139,120,164],poolShelfDry:[168,145,190],poolWet:[106,86,143],poolLight:'#D6C6FF',poolFx:['rgba(112,92,190,0.5)','rgba(202,186,255,0.85)','rgba(240,232,255,0.95)','#D6C6FF','rgba(214,198,255,0.3)'],
       crystal:['#F6E8FF','#D7B2EF','#A679CE','#A8C8F2'],crystalGold:'#D7D4EA',crystalLight:'#E2BCFF',
       moss:[[105,74,137],[162,117,182],[68,53,96],[203,162,218]],
       rockHi:'#E7D9F2',rockMid:'#BCA0D0',rockLo:'#8B6BAA',rockEdge:'#4D386B',
@@ -2761,6 +2772,41 @@
       ctx.globalAlpha=.16+.1*Math.sin(t*.4+n);ellipse(ctx,(wx-camX)*TS+Math.sin(t*.15+n)*TS*.05,(wy-camY)*TS-Math.sin(t*.2+n)*TS*.12,Math.max(.65,TS*.019),Math.max(.65,TS*.023),n%3?'#C4E9A9':'#F3D98F');
     }
   }
+  /* 2026-10-12 (Justin): the Rot Hollows breathe. Low, slow fumes lie over the island's pools and
+     its open ground: one soft puff, cached, drawn a dozen times a frame at most. Each drifts and
+     swells on the shared clock (still under reduced motion), only where the ground is in sight.
+     Painted with the ground, under the creatures, so the light falls on it like anything else. */
+  var rotPuff=null;
+  function rotFumePuff(){
+    if(rotPuff)return rotPuff;
+    var c=document.createElement('canvas');c.width=128;c.height=80;var g=c.getContext('2d'),glow=g.createRadialGradient(64,40,2,64,40,62);
+    glow.addColorStop(0,'rgba(186,216,92,.9)');glow.addColorStop(.45,'rgba(150,196,84,.42)');glow.addColorStop(1,'rgba(126,176,78,0)');
+    g.setTransform(1,0,0,.62,0,15);g.fillStyle=glow;g.fillRect(0,-30,128,140);rotPuff=c;return c;
+  }
+  function drawRotFumes(d,now){
+    var t=ANIM.reduce?0:(now||0)/1000,puff=rotFumePuff(),seed=d.seed||0,b=d.bounds||{x:0,y:0,w:MW,h:MH},visible=sceneVisibility(),spots=[];
+    var all=revealAll&&!playerBlind(),clip=new Path2D(),any=false;
+    function groundVisible(x,y){return inb(x,y)&&(all||visible[idxOf(x,y)])&&d.landMask[idxOf(x,y)]&&!isWallLike(at(x,y))&&themeAt(x,y)==='rot-hollows';}
+    // A puff reaches beyond its source cell. Keep its whole footprint on visible
+    // Rot ground; the inherited canvas transform includes the camera's sub-tile offset.
+    for(var cy=Math.max(0,camY-2);cy<=Math.min(MH-1,camY+viewH+2);cy++)for(var cx=Math.max(0,camX-2);cx<=Math.min(MW-1,camX+viewW+2);cx++){
+      if(groundVisible(cx,cy)){clip.rect((cx-camX)*TS,(cy-camY)*TS,TS,TS);any=true;}
+    }
+    if(!any)return;
+    (d.cosmeticPools||[]).forEach(function(pool){spots.push([pool.x+pool.w*.5,pool.y+pool.h*.5,1.25],[pool.x+pool.w*.2,pool.y+pool.h*.85,.85]);});
+    for(var n=0;n<12;n++)spots.push([b.x+noise(n,61,seed)*b.w,b.y+noise(n,62,seed)*b.h,.8]);
+    ctx.save();ctx.clip(clip);ctx.imageSmoothingEnabled=true;
+    spots.forEach(function(spot,k){
+      var ix=Math.floor(spot[0]),iy=Math.floor(spot[1]);
+      if(!groundVisible(ix,iy))return;
+      var x=spot[0]+Math.sin(t*.07+k*1.9)*.45,y=spot[1]+Math.cos(t*.05+k*1.3)*.28;
+      if(x<camX-2||x>camX+viewW+2||y<camY-2||y>camY+viewH+2)return;
+      var w=TS*(2.1+.5*Math.sin(t*.11+k))*spot[2],h=w*.62;
+      ctx.globalAlpha=(.2+.08*Math.sin(t*.13+k*2.1))*spot[2];
+      ctx.drawImage(puff,(x-camX)*TS-w/2,(y-camY)*TS-h/2,w,h);
+    });
+    ctx.restore();
+  }
   function drawRotPortals(d,now){
     var time=ANIM.reduce?0:(now||0)/1000;
     d.portals.forEach(function(p){
@@ -2841,11 +2887,7 @@
     });
     var floorClip=new Path2D();for(var fi=0;fi<mask.length;fi++)if(mask[fi]&&!isWallLike(map[fi]))floorClip.rect(fi%MW*R,Math.floor(fi/MW)*R,R,R);
     g.save();g.clip(floorClip);
-    (d.cosmeticPools||[]).forEach(function(pool){
-      var x=(pool.x+pool.w*.5)*R,y=(pool.y+pool.h*.5)*R,rx=pool.w*R*.46,ry=pool.h*R*.42;
-      ellipse(g,x,y+2,rx+3,ry+3,'rgba(49,39,34,.65)');ellipse(g,x,y,rx,ry,'#727B78');ellipse(g,x,y,rx-3,ry-3,'#385A60');ellipse(g,x-3,y-2,rx*.8,ry*.67,'#4B7780');
-      g.strokeStyle='rgba(206,183,138,.5)';g.lineWidth=1.4;g.beginPath();g.ellipse(x,y,rx,ry,0,Math.PI*.05,Math.PI*.95);g.stroke();
-    });
+    // The decorative pools are painted by the terrain as water (planeterrain.js ptPoolMask), not here.
     g.restore();builds++;return {data:d,map:map,canvas:c,view:sceneryView};
   }
   function drawCinderEmbers(d,now){
@@ -2935,11 +2977,7 @@
     });
     var floorClip=new Path2D();for(var fi=0;fi<mask.length;fi++)if(mask[fi]&&!isWallLike(map[fi]))floorClip.rect(fi%MW*R,Math.floor(fi/MW)*R,R,R);
     g.save();g.clip(floorClip);
-    (d.cosmeticPools||[]).forEach(function(pool){
-      var x=(pool.x+pool.w*.5)*R,y=(pool.y+pool.h*.5)*R,rx=pool.w*R*.43,ry=pool.h*R*.38;
-      ellipse(g,x,y+1,rx+2,ry+2,'rgba(187,174,214,.55)');ellipse(g,x,y,rx,ry,'rgba(121,162,191,.68)');ellipse(g,x-2,y-2,rx*.75,ry*.62,'rgba(186,222,232,.38)');
-      g.strokeStyle='rgba(233,222,251,.65)';g.lineWidth=.9;g.beginPath();g.ellipse(x,y,rx,ry,0,Math.PI*.06,Math.PI*.86);g.stroke();
-    });
+    // The decorative pools are painted by the terrain as water (planeterrain.js ptPoolMask), not here.
     g.restore();builds++;return {data:d,map:map,canvas:c,view:sceneryView};
   }
   var VIOLET_LIGHTS={
@@ -3144,7 +3182,7 @@
     var d=rawData();if(!d)return;if(composite(d)){regionData(d).forEach(function(region){drawThemePortals(region,now);});return;}drawThemePortals(d,now);
   }
   function drawThemePortals(d,now){
-    if(rot(d)){drawRotPortals(d,now);return;}if(cinder(d)){drawCinderPortals(d,now);return;}if(violet(d)){drawVioletPortals(d,now);return;}var time=ANIM.reduce?0:(now||0)/1000;
+    if(rot(d)){drawRotFumes(d,now);drawRotPortals(d,now);return;}if(cinder(d)){drawCinderPortals(d,now);return;}if(violet(d)){drawVioletPortals(d,now);return;}var time=ANIM.reduce?0:(now||0)/1000;
     d.portals.forEach(function(p){
       var w=p.w||1,h=p.h||1,state=portalVisibility(p),motionTime=state.visible?time:0;
       if(!state.known||p.x+w<camX||p.x>camX+viewW+1||p.y+h<camY||p.y>camY+viewH+1)return;
@@ -5057,7 +5095,15 @@ globalThis.UNMAKER_ATLAS={
     e.base=Object.assign({},MONSTERS.shadowclone,{acc:s.acc,eva:s.eva,armor:s.armor,speed:s.speed,statusImmunities:s.immunities.slice()});
     Object.assign(e,copy(s.appearance));s.pools.forEach(function(pool){e[pool.key]=pool.amount;});
     if(typeof murkSummonHp==='function')murkSummonHp(e);
-    RUN.shadowClone=e;sparkleFx(x,y,'dark',24);return e;
+    RUN.shadowClone=e;sparkleFx(x,y,'dark',10);
+    /* 2026-10-12: the echo wells up out of the shadow its caster left: dusk lifting off the floor about it, then a soft bloom on the body.
+       It follows the dissolve at the cast's release (elements.js umbralPassageCastFx: a 240 ms wind-up, then 600 ms). Looks only. */
+    if(typeof riseFx==='function'&&typeof flareFx==='function'){
+      var born=performance.now()+840;
+      riseFx(x,y,TRAIL.dark.col[1],{n:9,height:1.3,spread:0.42,dur:780,at:born});
+      flareFx(x,y,TRAIL.dark.glow,{size:0.9,dur:400,at:born+100});
+    }
+    return e;
   }
   function damage(e,target,amount,type,extra){
     return applyDamage(target,amount,type,e,Object.assign({tags:['proc','shadow-clone']},extra||{}));
@@ -5268,7 +5314,7 @@ globalThis.UNMAKER_ATLAS={
     return deadline(Promise.resolve().then(function(){if(typeof img.decode==='function')return img.decode();}),10000,label+' decode',cancel).catch(function(error){throw Error(label+' could not decode: '+String(error&&error.message||error));});
    }).then(function(){
     if(loading.get(key)!==promise)throw Error(label+' attempt was replaced.');
-    var entry={img:img,spec:spec,pixels:null,shaded:null};
+    var entry={img:img,spec:spec,pixels:null,shaded:null,relaid:MASONRY_RELAY[key]?relay(img,key):null};
     if(spec.dim){
      // Shade once in source space: translucent per-tile rectangles leave
      // bright hairlines where a camera/zoom puts their edges between pixels.
@@ -5283,6 +5329,7 @@ globalThis.UNMAKER_ATLAS={
     // Natural faces/tops use rock colors and volcanic floors use the fire
     // raster. Only constructed stone and cave floors sample RGBA masters.
     else if(/^temple-(floor|face|top)$|^underdark-floor$/.test(key))bytes(entry);
+    if(key==='temple-floor')emberGrout(entry);
     if(wanted.has(key)){images.set(key,entry);redraw();}failures.delete(key);return entry;
    });
   }).catch(function(error){clean();if(loading.get(key)===promise)failures.set(key,{error:error,retryAt:performance.now()+5000});throw error;
@@ -5318,12 +5365,12 @@ globalThis.UNMAKER_ATLAS={
  function sample(name,x,y,t){
   var entry=get((t||theme(x,y))+'-'+name);if(!entry)return null;
   var spec=entry.spec,w=entry.img.naturalWidth/spec.columns,h=entry.img.naturalHeight/spec.rows;
-  var image=entry.shaded||entry.img,sx=wrap(x,spec.columns),sy=wrap(y,spec.rows);
+  var image=entry.relaid||entry.shaded||entry.img,sx=wrap(x,spec.columns),sy=wrap(y,spec.rows);
   // Reflect whole masonry repeats at their joins, rather than connecting two
   // unrelated cropped stones. Keep the original master and cache only visible
   // reflected cells: a doubled atlas would cost 44 MB of additional decoded art.
    var opaque=name==='floor'&&/^environment-terrain-(dungeon|crypt)-floor\.(?:png|webp)$/.test(spec.file);
-   if(opaque){
+   if(opaque&&!entry.relaid){   // a re-laid floor repeats plainly
    var rx=wrap(x,spec.columns*2),ry=wrap(y,spec.rows*2),flipX=rx>=spec.columns,flipY=ry>=spec.rows;
    sx=flipX?spec.columns*2-1-rx:rx;sy=flipY?spec.rows*2-1-ry:ry;
    if(flipX||flipY){
@@ -5355,6 +5402,78 @@ globalThis.UNMAKER_ATLAS={
   var rock=naturalRockTop(x,y);if(rock)return {img:rock,sx:0,sy:0,sw:rock.width,sh:rock.height,deepDim:wallFaces(x,y)?.5:1-DEEP_TOP_DIM};
   var top=masonrySample('top',x,y);if(top){top.deepDim=wallFaces(x,y)?.5:1-DEEP_TOP_DIM;return top;}
   return null;
+ }
+ /* 2026-10-12 (Justin): the temple floor's grout is the Underdark's own light, and should read as
+  * cooling lava: dark crust, broken by stretches that still glow. Its painted colour is a near-black
+  * red; it is regraded once, in a copy of the pixels the page, the workers and the blit all read. The
+  * master file is untouched. Only pixels that are plainly grout change (red, with almost no green or
+  * blue): slab stone and the warm highlights on its edges keep their painted colour. Heat is how red
+  * the paint is, times a slow noise that repeats with the master (no seam where the floor repeats):
+  * crust, then ember red, then the hot core. Crust is dark enough that the accent glow ignores it, so
+  * the light on the floor breaks where the lava does. */
+ function emberGrout(entry){
+  var data=bytes(entry),w=entry.img.naturalWidth,h=entry.img.naturalHeight,changed=false;
+  function lattice(ix,iy,n,salt){
+   ix=(ix%n+n)%n;iy=(iy%n+n)%n;var v=Math.imul(ix*374761393+iy*668265263+salt*1442695041|0,1274126177);
+   v^=v>>>15;v=Math.imul(v,-2048144777);v^=v>>>13;return (v>>>0)/4294967295;
+  }
+  function noise(x,y,n,salt){
+   var gx=x/w*n,gy=y/h*n,ix=Math.floor(gx),iy=Math.floor(gy),fx=gx-ix,fy=gy-iy;fx=fx*fx*(3-2*fx);fy=fy*fy*(3-2*fy);
+   var a=lattice(ix,iy,n,salt),b=lattice(ix+1,iy,n,salt),c=lattice(ix,iy+1,n,salt),d=lattice(ix+1,iy+1,n,salt);
+   return a+(b-a)*fx+(c-a)*fy+(a-b-c+d)*fx*fy;
+  }
+  for(var p=0,i=0;p<data.length;p+=4,i++){
+   var r=data[p],g=data[p+1],b=data[p+2];
+   if(r<12||g>r*.5||b>r*.4)continue;
+   var x=i%w,y=(i-x)/w,paint=Math.min(1,(r-Math.max(g,b))/60);
+   // long hot stretches with ragged ends, about half the grout
+   var zone=(noise(x,y,10,7)*.72+noise(x,y,44,11)*.28-.43)/.2;zone=zone<0?0:zone>1?1:zone;zone=zone*zone*(3-2*zone);
+   var heat=paint*(.1+.9*zone),k;
+   if(heat<.3){k=heat/.3;data[p]=30+30*k;data[p+1]=13;data[p+2]=11-k;}                             // crust
+   else if(heat<.62){k=(heat-.3)/.32;data[p]=60+82*k;data[p+1]=13+9*k;data[p+2]=10+2*k;}          // ember red
+   else{k=(heat-.62)/.38;data[p]=142+78*k;data[p+1]=22+42*k;data[p+2]=12+10*k;}                    // hot core
+   changed=true;
+  }
+  if(!changed)return;
+  var copy=canvas(w,h,'ember-'+entry.spec.file);
+  copy.getContext('2d').putImageData(new ImageData(data,w,h),0,0);entry.shaded=copy;
+ }
+ /* 2026-10-12 (Justin: 'this piece in the floor', 'limit the parallel lines'). The dungeon and crypt floor
+  * masters are a half painting mirrored left to right, and the floor mirrored them again at every repeat:
+  * stones doubled across each axis, a 28 px sliver in one course, and joints stacked in line for rows.
+  * Their stones lie in straight courses with a full line of grout between, so a course can slide along its
+  * neighbours. Each course is drawn at its own offset (its joints staggered against the courses above and
+  * below, around the wrap too) and the sliver is dropped with one of its joints, that course stretched
+  * 1.6% to close the gap. The result repeats plainly, with no mirror. The same table re-lays the floor's
+  * normal map. Each row is [first row, last row + 1 (past the height: the course wraps), offset, and the
+  * dropped run if there is one]. Measured from the art by relay_floor.py in the review's probes;
+  * tests/masonry-relay.mjs checks the table against the pixels. */
+ var MASONRY_RELAY={
+  'dungeon-floor':{width:1792,height:896,courses:[[52,168,0],[168,278,1216,1777.5,1805.5],[278,392,392],[392,503,1224],[503,612,616],[612,724,552],[724,840,568],[840,948,1784]]},
+  'crypt-floor':{width:2048,height:1024,courses:[[2,124,0],[124,256,1672],[256,381,1800,2031,2064],[381,512,688],[512,639,1640],[639,764,1240],[764,891,648],[891,1026,664]]}
+ };
+ var relaidImages=new WeakMap();
+ function relay(image,key){
+  var table=MASONRY_RELAY[key],W=table&&table.width,H=table&&table.height;
+  if(!table||(image.naturalWidth||image.width)!==W||(image.naturalHeight||image.height)!==H)return null;
+  var cached=relaidImages.get(image);if(cached)return cached;
+  var out=canvas(W,H,'relaid-'+key),g=out.getContext('2d');
+  table.courses.forEach(function(c){
+   var rows=c[1]<=H?[[c[0],c[1]]]:[[c[0],H],[0,c[1]-H]],cut=c.length>3;
+   // the run that is kept: all of the ring, or from the end of the dropped stone round to its start
+   var start=cut?c[4]%W:0,length=cut?W-(c[4]-c[3]):W,scale=W/length;
+   g.imageSmoothingEnabled=cut;g.imageSmoothingQuality='high';
+   rows.forEach(function(r){
+    var h=r[1]-r[0];
+    // the kept run may pass the image's right edge; either part may pass the output's
+    [[start,Math.min(W,start+length)],[0,Math.max(0,start+length-W)]].forEach(function(piece,index){
+     var w=piece[1]-piece[0];if(w<=0)return;
+     var x=c[2]+(index?(W-start)*scale:0),dw=w*scale;
+     g.drawImage(image,piece[0],r[0],w,h,x%W,r[0],dw,h);g.drawImage(image,piece[0],r[0],w,h,x%W-W,r[0],dw,h);
+    });
+   });
+  });
+  relaidImages.set(image,out);return out;
  }
  function bytes(entry){
   if(!entry.pixels){var c=canvas(entry.img.naturalWidth,entry.img.naturalHeight,'read-'+entry.spec.file),g=c.getContext('2d',{willReadFrequently:true});g.drawImage(entry.img,0,0);entry.pixels=g.getImageData(0,0,c.width,c.height).data;}
@@ -5414,7 +5533,9 @@ globalThis.UNMAKER_ATLAS={
  // Only authored mineral colors and the temple's red grout emit. Neutral
  // stone, decoration, pools and unexplored cells never become light sources.
  function accentProfile(palette,temple){
-  if(temple)return {temple:true,color:[1,.19,.045]};
+  // A vein's glow is levelled to its ceiling wherever it shows. Grout is not: its light follows its heat (a fixed gain),
+  // so cooled stretches stay dark.
+  if(temple)return {temple:true,color:[1,.19,.045],ceiling:.27,gain:9};
   if(!palette||!palette.vein)return null;
   var mean=(palette.vein[0]+palette.vein[1]+palette.vein[2])/3;
   var axis=palette.vein.map(function(c){return c-mean;}),length=Math.hypot.apply(Math,axis);
@@ -5434,7 +5555,8 @@ globalThis.UNMAKER_ATLAS={
    if(o.mask&&o.mask[sourceCell]||o.pool&&o.pool[sourceCell])continue;
    var profile=o.accent[o.regions?o.regions[sourceCell]:0];if(!profile)continue;
    var p=((y+sy)*stride+x+sx)*4,r=o.dst[p],g=o.dst[p+1],b=o.dst[p+2],strength;
-   if(profile.temple)strength=r>g*1.25&&r>b*1.5?Math.max(0,(r-Math.max(g,b)-12)/90):0;
+   // Only grout that is still bright gives light: ember red below about 128 is cooling, and dark to the floor around it.
+   if(profile.temple)strength=r>g*1.25&&r>b*1.5?Math.max(0,(r-120)/90):0;
    else strength=(r*profile.axis[0]+g*profile.axis[1]+b*profile.axis[2]-profile.edge)/profile.span;
    if(strength<=.08)continue;strength=Math.min(1,strength)/(S*S/16);
    var cell=(Math.floor(y*4/S)*4+Math.floor(x*4/S))*3;
@@ -5462,14 +5584,15 @@ globalThis.UNMAKER_ATLAS={
   if(theme(x,y)!=='temple'){keepAccent(x,y,null);return null;}
   var entry=images.get('temple-floor');if(!entry)return null;
   var spec=entry.spec,px=wrap(x+surfOff(0),spec.columns)*S,py=wrap(y+surfOff(1),spec.rows)*S;
-  var field=accentPixels({S:S,n:S,dst:bytes(entry),accentStride:spec.width,accentX:px,accentY:py,accent:[accentProfile(null,true)]});
+  var profile=accentProfile(null,true),field=accentPixels({S:S,n:S,dst:bytes(entry),accentStride:spec.width,accentX:px,accentY:py,accent:[profile]});
+  if(field){field.ceiling=profile.ceiling;field.gain=profile.gain;}
   keepAccent(x,y,field);return field;
  }
  function accentFrame(ox,oy,W,H,S,visible,all){
   if(typeof spriteOn!=='undefined'&&!spriteOn)return null;
   var count=W*H,entry=accentFrameCache;
   if(!entry||entry.W!==W||entry.H!==H){
-   entry=accentFrameCache={W:W,H:H,admitted:new Uint8Array(count),pending:new Uint8Array(count),raw:new Float32Array(count*3),horizontal:new Float32Array(count*3),field:new Float32Array(count*3)};
+   entry=accentFrameCache={W:W,H:H,admitted:new Uint8Array(count),pending:new Uint8Array(count),ceiling:new Float32Array(count),gain:new Float32Array(count),raw:new Float32Array(count*3),horizontal:new Float32Array(count*3),field:new Float32Array(count*3)};
   }
   var admitted=entry.pending,changed=entry.map!==map||entry.meta!==floorMeta||entry.ox!==ox||entry.oy!==oy||entry.revision!==accentRevision;
   admitted.fill(0);
@@ -5483,10 +5606,11 @@ globalThis.UNMAKER_ATLAS={
   }
   if(!changed){for(var k=0;k<count;k++)if(admitted[k]!==entry.admitted[k]){changed=true;break;}}
   if(!changed)return entry.field;
-  var raw=entry.raw,horizontal=entry.horizontal,out=entry.field;raw.fill(0);horizontal.fill(0);out.fill(0);
+  var raw=entry.raw,horizontal=entry.horizontal,out=entry.field,ceiling=entry.ceiling,gains=entry.gain;raw.fill(0);horizontal.fill(0);out.fill(0);ceiling.fill(.24);gains.fill(18);
   for(var y=0;y<H;y++)for(var x=0;x<W;x++){
    var i=y*W+x;if(!admitted[i])continue;
    var field=accentCell(ox+Math.floor(x/S),oy+Math.floor(y/S));if(!field)continue;
+   if(field.ceiling){ceiling[i]=field.ceiling;gains[i]=field.gain;}
    var gx0=Math.floor(x%S*4/S),gy0=Math.floor(y%S*4/S),gx1=Math.ceil((x%S+1)*4/S),gy1=Math.ceil((y%S+1)*4/S),area=(gx1-gx0)*(gy1-gy0);
    // Average every covered accent bin, so a thin line cannot fall between
    // light-field sample centers and disappear as the camera moves.
@@ -5505,7 +5629,7 @@ globalThis.UNMAKER_ATLAS={
    for(var dy=-1;dy<=1;dy++){var ny=yy+dy;if(ny<0||ny>=H)continue;var j=ny*W+xx;if(!admitted[j])continue;
     for(var ch=0;ch<3;ch++)out[i*3+ch]+=horizontal[j*3+ch]*(dy===0?.6:.2);
    }
-   var peak=Math.max(out[i*3],out[i*3+1],out[i*3+2]),gain=peak>0?Math.min(18,.24/peak):0;
+   var peak=Math.max(out[i*3],out[i*3+1],out[i*3+2]),gain=peak>0?Math.min(gains[i],ceiling[i]/peak):0;
    for(var ch=0;ch<3;ch++)out[i*3+ch]*=gain;
   }
   entry.map=map;entry.meta=floorMeta;entry.ox=ox;entry.oy=oy;entry.revision=accentRevision;entry.admitted.set(admitted);return out;
@@ -5836,7 +5960,7 @@ globalThis.UNMAKER_ATLAS={
    return {ready:!!manifest,loaded:images.size,materials:Array.from(images.keys()),imageBytes:imageBytes,pixelBytes:pixelBytes,shadedBytes:shadedBytes,pending:loading.size,cachedCells:high.size,cellBytes:high.size*S*S*4,masonryReflectionCells:masonryReflections.size,builds:builds,peakBuildMs:peakBuildMs,peakFrameMs:peakFrameMs,pixelsPerCell:S,lastBake:lastBake&&Object.assign({},lastBake),bakes:bakes.map(function(b){return Object.assign({},b);})};},
   reset:function(){forget();fireGround.clear();rockTops.clear();masonryReflections.clear();accentCells.clear();accentFrameCache=null;accentRevision++;aheadQueue=[];aheadKey='';},beginFrame:beginFrame,bakeView:bakeView,bakeViewNow:bakeViewNow,ahead:ahead,
   cacheCanvases:function(){return Array.from(high.values());},discardCell:function(cell){if(!high.has(cell))return false;drop(cell);return true;},install:install,kernelSource:kernelSource,workerTextures:workerTextures,
-  workerDeepTextures:workerDeepTextures,rockTopReady:rockTopReady});
+  workerDeepTextures:workerDeepTextures,rockTopReady:rockTopReady,relaid:relay,relayTable:function(key){return MASONRY_RELAY[key]||null;}});
 })(globalThis);
 
 ;
@@ -5944,6 +6068,8 @@ globalThis.UNMAKER_ATLAS={
    'function inCaverns(){return CAVERNS;}',
    'function roomAt(){return null;}',
    'function ptDist(){return null;}',
+   // the page sends its pool mask whole, decorative pools included
+   'function ptPoolMask(){return floorMeta&&floorMeta.ptPool;}',
    'function deepTex(){return null;}',
    'function deepCache(){return DC;}',
    'function ptCrystal(){throw Error("crystal cells are drawn on the page");}',
@@ -6012,7 +6138,7 @@ globalThis.UNMAKER_ATLAS={
   }
   s=sentFloor={cells:cells,meta:floorMeta,mapRef:map,map:new Uint8Array(map),ground:ground?new Uint8Array(ground):null};
   post({type:'floor',map:s.map,W:MW,H:MH,ground:s.ground,dist:deep?null:ptDist(),floorNo:floorNo,worldSeed:worldSeed,caverns:inCaverns(),
-   meta:{plane:meta.plane,ptPool:meta.ptPool,centerAt:meta.centerAt,ptSuns:meta.ptSuns,deepRegion:meta.deepRegion,chaosPreview:cp?{biome:cp.biome,mossMask:cp.mossMask}:undefined},
+   meta:{plane:meta.plane,ptPool:typeof ptPoolMask==='function'?ptPoolMask():meta.ptPool,centerAt:meta.centerAt,ptSuns:meta.ptSuns,deepRegion:meta.deepRegion,chaosPreview:cp?{biome:cp.biome,mossMask:cp.mossMask}:undefined},
    mats:sendMats,matIndex:matIndex,matAll:matAll,rot:rot,deep:deepData});
   return s;
  }
@@ -6330,6 +6456,13 @@ window.FOTE_ENVIRONMENT_DECO_META={"version":1,"file":"environment-deco.webp","c
     'bone-pile':{scale:.5,anchor:.5},pot:{scale:1,anchor:.5}};
   function fit(p){
     if(!p)return null;
+    // 2026-10-12: Upheaval's rock (js/elements/elements.js) fills its tile and overlaps its neighbours, so a row
+    // reads as one ridge that blocks sight. It heaves up out of the floor from its base when it is raised: born is the
+    // moment the cast lets go for that rock, kept off the save, so a loaded ridge simply stands.
+    if(p.upheaval){
+      var age=p.born&&typeof performance!=='undefined'?performance.now()-p.born:1e9,rise=age<0?0:age<420?1-Math.pow(1-age/420,3):1;
+      return {scale:1.38*(.04+.96*rise),anchor:.96};
+    }
     // Wall shelves keep the size authored by drawCryptWallPlantProp. They are
     // attached to masonry, not the small floor mushrooms covered below.
     if(p.cryptWallVeg&&/^crypt-shelf-fungus-/.test(p.name||''))return null;
@@ -6351,7 +6484,32 @@ window.FOTE_ENVIRONMENT_DECO_META={"version":1,"file":"environment-deco.webp","c
     // The Crypt's packed bones keep their own art, at the same half size.
     return name==='bones'&&packCryptOn()?{scale:FIT.bones.scale,anchor:FIT.bones.anchor}:FIT[name];
   }
-  root.FoteEnvironmentProps=Object.freeze({ensureAssets:ensureAssets,ready:function(){return !!metadata;},
+  /* Bare rock from a mossy one, made once per picture. A pixel is moss by its hue (yellow-green to green) and how much colour it
+     carries, fading in at the edges of a patch so there is no cut. Moss keeps its own light and dark and takes the rock's
+     colour at that depth of shade (three measured tones of this boulder's stone: shadow, body, lit face), a little darker,
+     since moss is brighter than the stone under it. Alpha, outline and every stone pixel are untouched. */
+  var BARE_ROCK=new Map(),ROCK_TONES=[[.0863,.0902,.1059,.0902],[.2745,.2314,.2314,.2427],[.649,.5137,.4039,.5406]];
+  function bareRock(art){
+    if(!art||!art.img||typeof document==='undefined')return null;
+    var key=art.sx+','+art.sy+','+art.sw+','+art.sh,made=BARE_ROCK.get(art.img);if(made&&made.key===key)return made.paint;
+    try{
+      var c=document.createElement('canvas');c.width=art.sw;c.height=art.sh;var g=c.getContext('2d',{willReadFrequently:true});
+      g.drawImage(art.img,art.sx,art.sy,art.sw,art.sh,0,0,art.sw,art.sh);
+      var image=g.getImageData(0,0,art.sw,art.sh),d=image.data;
+      for(var i=0;i<d.length;i+=4){
+        if(!d[i+3])continue;
+        var r=d[i]/255,gr=d[i+1]/255,b=d[i+2]/255,mx=Math.max(r,gr,b),mn=Math.min(r,gr,b),span=mx-mn;if(span<1e-6)continue;
+        var hue=mx===r?(gr-b)/span:mx===gr?2+(b-r)/span:4+(r-gr)/span;hue=((hue*60)%360+360)%360;
+        var moss=Math.max(0,Math.min(1,(hue-42)/14))*Math.max(0,Math.min(1,(175-hue)/20))*Math.max(0,Math.min(1,(span/mx-.16)/.14));if(moss<=0)continue;
+        var light=(.299*r+.587*gr+.114*b)*.8,lo=ROCK_TONES[0],mid=ROCK_TONES[1],hi=ROCK_TONES[2],a=light<mid[3]?lo:mid,z=light<mid[3]?mid:hi;
+        var t=Math.max(0,Math.min(1,(light-a[3])/(z[3]-a[3]))),gain=light>hi[3]?light/hi[3]:light<lo[3]?light/lo[3]:1;
+        for(var ch=0;ch<3;ch++)d[i+ch]=Math.round(d[i+ch]*(1-moss)+Math.min(1,(a[ch]+(z[ch]-a[ch])*t)*gain)*255*moss);
+      }
+      g.putImageData(image,0,0);made={key:key,paint:{img:c,sx:0,sy:0}};
+    }catch(error){made={key:key,paint:null};}   // a picture that cannot be read back keeps its moss
+    BARE_ROCK.set(art.img,made);return made.paint;
+  }
+  root.FoteEnvironmentProps=Object.freeze({bareRock:bareRock,ensureAssets:ensureAssets,ready:function(){return !!metadata;},
     source:function(group,name){var entry=metadata&&metadata.groups[group]&&metadata.groups[group][name];return entry?{file:entry.file}:null;},
     metadataReady:function(){return !!metadata;},subscribeMetadata:subscribeMetadata,art:art,fit:fit,error:function(){return failure;}});
 })(globalThis);

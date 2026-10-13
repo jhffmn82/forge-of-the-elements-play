@@ -1207,6 +1207,13 @@ body.fote-study.study-minimal.study-touch.study-small-touch.study-hotbar-vertica
 body.fote-study.study-minimal.study-touch.study-small-touch.study-hotbar-vertical.study-short:not(.study-portrait):not(.study-tablet) #app #hotbar{top:calc(var(--minimal-inset) + var(--minimal-action-size) + 4px + env(safe-area-inset-top,0px));}
 /* Search stays opposite the mirrored rail so it cannot cover an ability slot. */
 body.fote-study.study-minimal.study-touch.study-small-touch.study-hotbar-vertical.study-pad-right:not(.study-portrait):not(.study-tablet) #app #studySearch:not([hidden]){left:auto;right:calc(var(--minimal-inset) + env(safe-area-inset-right,0px));}
+/* 2026-10-12 (launch audit): the phone rail is two slots wide, so a pad on the rail's side stands clear of both columns and all four directions take a tap. */
+body.fote-study.study-minimal.study-touch.study-small-touch.study-hotbar-vertical.study-overlay-pad:not(.study-portrait):not(.study-tablet):not(.study-pad-right):not(.study-control-pad-left) #app #map #dpad{right:calc(var(--minimal-inset) + 2 * var(--phone-rail-slot) + var(--minimal-hotbar-gap) + 12px + env(safe-area-inset-right,0px));}
+body.fote-study.study-minimal.study-touch.study-small-touch.study-hotbar-vertical.study-overlay-pad.study-pad-right.study-control-pad-left:not(.study-portrait):not(.study-tablet) #app #map #dpad{left:calc(var(--minimal-inset) + 2 * var(--phone-rail-slot) + var(--minimal-hotbar-gap) + 12px + env(safe-area-inset-left,0px));}
+/* 2026-10-12 (launch audit): a landscape phone is too short for seven stacked menu rows, so they sit two abreast in a wider panel at their full height, and Journal stays on screen. */
+body.fote-study.study-minimal.study-touch.study-small-touch:not(.study-portrait):not(.study-tablet) #app #top{width:max(304px,calc(360px * var(--study-interface-scale,1)));max-width:calc(100vw - 2 * var(--minimal-inset) - env(safe-area-inset-left,0px) - env(safe-area-inset-right,0px));}
+body.fote-study.study-minimal.study-touch.study-small-touch:not(.study-portrait):not(.study-tablet) #app #studyNav{grid-template-columns:repeat(2,minmax(0,1fr));column-gap:4px;}
+body.fote-study.study-minimal.study-touch.study-small-touch:not(.study-portrait):not(.study-tablet) #app #studyHistory{grid-column:auto;}
 }
 
 /* Phone targeting retains the HUD while native canvas input owns covered tiles. */

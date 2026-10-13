@@ -816,7 +816,7 @@
   document.addEventListener('click', function(ev){
     if(!ev.target || ev.target.id!=='bAmHot') return;
     var i=player.hotbar.indexOf(null);
-    if(i<0){ log('The hotbar is full. Hold a potion or item slot to remove it first.','c-info'); return; }
+    if(i<0){ log('The hotbar is full. Hold an item slot to remove it first.','c-info'); return; }
     player.hotbar[i]={type:'amulet'}; sfx('ui-click'); abilityBar(); if(typeof refreshSheet==='function') refreshSheet();
   });
 

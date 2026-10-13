@@ -48,6 +48,15 @@ text is larger and tall cards scroll on touch screens. Caverns Rock Slimes use
 the original Rock Slime artwork and healing/splitting behavior with stronger
 Caverns stats, including migration of existing creatures in saved games.
 
+Launch polish adds new opening footage, stronger spell effects and standing
+auras, regional shadow colors, re-laid masonry floors, cooling-lava grout and
+natural Chaos pools. Major casts have time to play their effects; infusing an
+element has a visible power-up sequence. Upheaval raises a temporary rock ridge,
+and Shades can pass through it. Approved fixes cover teleport destinations,
+Umbral Passage, sigils, Double Strike targeting, achievement notices, save
+overwrite confirmation and short-screen controls. Existing saved runs remain
+supported. The separate promotional trailer is uploaded by the game creator.
+
 The export preserves script order and boundaries while packing loose modules
 into one download, reducing the browser package from 999 files to 891.
 
@@ -63,6 +72,6 @@ the repeatable export and an itch.io ZIP. Automated browser tests cover gameplay
 save compatibility, UI, dimensional compositing, recovery and nested-path play.
 Physical-phone GPU and memory performance still require device testing.
 
-Build: **2026-10-12T13:40:34.356Z**. Revision: `foundation17-20261012134034356`.
+Build: **2026-10-13T03:30:07.174Z**. Revision: `foundation17-20261013033007174`.
 
-Source integration: `1990bedf1dc67c0d153da6ebc58db573517d4f87`.
+Source integration: 0e8b3a2d8b9e1afbd61f8a3a4586b5ae4222aa16.

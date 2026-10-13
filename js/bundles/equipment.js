@@ -224,7 +224,8 @@ function fuseMote(el){
   derive(player); player.iceArmor=player.iceArmorMax;
   if(typeof FoteJournalEvents!=='undefined')FoteJournalEvents.progress();
   log('The mote takes root in you. <b>'+cap(el)+' '+player.aff[el]+'</b>: '+t1Text(el, player.aff[el])+'.','c-kill');
-  sfx('forge-fuse'); sparkleFx(player.x,player.y,TRAIL_EL(el),50); ringFx(player.x,player.y,AFF_COL[el],3);
+  sfx('forge-fuse'); sparkleFx(player.x,player.y,TRAIL_EL(el),50);
+  if(typeof infuseFx==='function') infuseFx(el); else ringFx(player.x,player.y,AFF_COL[el],3);   /* 2026-10-12: the power-up plays on the map once the forge's panel closes (fx.js) */
   player.abilities.forEach(function(k){ if(before.indexOf(k)<0){ log('Learned <b>'+ABILITIES[k].name+'</b>.','c-kill'); sfx('new-ability'); } });
   player.hotbar=null; updateUI(); renderForge();
   forgeSay('The <b>'+cap(el)+'</b> mote takes root in you: affinity <b>'+player.aff[el]+'</b>.');return true;
@@ -459,7 +460,8 @@ function bagCard(entry){
   if(entry.kind==='armor')return armorCard(entry.data);
   if(entry.kind==='off')return offhandCard(entry.data);
   if(entry.kind==='ring'||entry.kind==='amulet')return trinketCard(entry.data);
-  if(entry.kind==='sigil'){var known=sigilKnown[entry.data.use];return '<div class="nm">'+entry.name+'</div>'+(known?actionDetailsHTML(sigilDetails(entry.data.use)):'<div class="hint">Unidentified sigil.</div>');}
+  /* 2026-10-12 (launch audit): a known sigil the wearer's god will refuse says so on its card, in the words of the refusal itself */
+  if(entry.kind==='sigil'){var known=sigilKnown[entry.data.use],barred=known?sigilForbidden(entry.data.use):'';return '<div class="nm">'+entry.name+'</div>'+(known?actionDetailsHTML(sigilDetails(entry.data.use)):'<div class="hint">Unidentified sigil.</div>')+(barred?'<div class="hint" style="color:#D0605A">'+barred+'</div>':'');}
   if(entry.kind==='food'){var f=FOODS[entry.data.food];return '<div class="nm">'+f.name+'</div><div class="hint">'+(f.desc?f.desc+' ':'')+'Restores '+f.nutrition+' hunger'+(f.heal?', heals '+Math.round(f.heal*100)+'% max HP':'')+'.</div>';}
   return '<div class="nm">'+entry.name+'</div>';
 }

@@ -155,16 +155,17 @@
   [5,10,20].forEach(function(level,index,tiers){achievement('level-'+level,LEVEL_TITLES[index],'Reach character level '+level+' in any run.','maxLevel',level,null,index?'level-'+tiers[index-1]:null);});
   var DEATH_TITLES=['A Short Career in Heroics','Frequent Dier Miles','Death Knows Your Order'];
   [10,50,100].forEach(function(total,index,tiers){achievement('deaths-'+total,DEATH_TITLES[index],'Die in '+total+' different runs. Each run counts once.','deaths',total,null,index?'deaths-'+tiers[index-1]:null);});
+  /* 2026-10-12 (launch audit): each name as it reads after "Defeat", and the last boss by the name its three forms share. */
   var BOSSES=[
     {floor:5,name:'Grukk the Warchief',title:'A Change of Chieftain'},
     {floor:10,name:'Morty the Mostly-Dead',title:'Mostly Is No Longer Enough'},
-    {floor:15,name:'The Deep Maw',title:'A Bite More Than It Could Chew'},
-    {floor:20,name:'The Matron of the Web',title:'Your Web Has Been Cancelled'},
-    {floor:25,name:'The Unmaker, Heart of Discord',title:'Unmaking an Unmaker'}
+    {floor:15,name:'the Deep Maw',title:'A Bite More Than It Could Chew'},
+    {floor:20,name:'the Matron of the Web',title:'Your Web Has Been Cancelled'},
+    {floor:25,name:'the Unmaker',title:'Unmaking an Unmaker'}
   ];
-  BOSSES.forEach(function(boss,index){achievement('biome-'+(index+1),boss.title,'Defeat '+boss.name+' on floor '+boss.floor+(boss.floor===25?', completing all three forms of the encounter.':'.'),'bosses',1,String(boss.floor),index?'biome-'+index:null);});
+  BOSSES.forEach(function(boss,index){achievement('biome-'+(index+1),boss.title,'Defeat '+boss.name+' on floor '+boss.floor+(boss.floor===25?' by beating all three of its forms.':'.'),'bosses',1,String(boss.floor),index?'biome-'+index:null);});
   var VICTORY_TITLES=['Forged and Found',"The Forge's Regular",'Here We Forge Again'];
-  [1,3,10].forEach(function(total,index,tiers){achievement('victories-'+total,VICTORY_TITLES[index],'Win '+total+' different '+(total===1?'run':'runs')+'. Each run counts once.','victories',total,null,index?'victories-'+tiers[index-1]:null);});
+  [1,3,10].forEach(function(total,index,tiers){achievement('victories-'+total,VICTORY_TITLES[index],(total===1?'Win a run.':'Win '+total+' different runs. Each run counts once.'),'victories',total,null,index?'victories-'+tiers[index-1]:null);});
   var CLASS_TITLES={fighter:'Percussive Maintenance',cleric:'Divine Intervention, Delivered',mage:'A Degree in Destruction',scoundrel:'Crime Pays Dividends',tourist:'Five Stars, Would Survive Again'};
   ['fighter','cleric','mage','scoundrel','tourist'].forEach(function(cls){
     var label=cls.charAt(0).toUpperCase()+cls.slice(1);
@@ -195,8 +196,11 @@
     'shadow/fire':'Smoke and Vanish','shadow/water':'Cold Shoulder, Colder Dagger','shadow/air':'Boo, with Thunder','shadow/earth':'Poisoned Pleasantries'
   };
   function label(id){return id.charAt(0).toUpperCase()+id.slice(1);}
+  /* 2026-10-12 (launch audit): rank 6 needs a sixth point in one element. Only a Fae in its court's element and a
+     Gloomling in Shadow have the room, and only Saint Glimmer's rank 5 gift adds a sixth point of Light. */
+  var SIXTH={fire:'a Fae of the Ember Court',water:'a Fae of the Tide Court',air:'a Fae of the Gale Court',earth:'a Fae of the Stone Court',light:'a rank 5 follower of Saint Glimmer',shadow:'a Gloomling'};
   ELEMENTS.forEach(function(element){
-    [1,3,6].forEach(function(rank,index,tiers){achievement('path-'+element+'-'+rank,PATH_TITLES[element][index],'Reach affinity '+rank+' in the '+label(element)+' path in any run.','paths',rank,element,index?'path-'+element+'-'+tiers[index-1]:null);});
+    [1,3,6].forEach(function(rank,index,tiers){achievement('path-'+element+'-'+rank,PATH_TITLES[element][index],'Reach affinity '+rank+' in the '+label(element)+' path'+(rank===6?'. Only '+SIXTH[element]+' can.':' in any run.'),'paths',rank,element,index?'path-'+element+'-'+tiers[index-1]:null);});
     ELEMENTS.forEach(function(secondary){
       if(secondary===element||secondary===OPPOSITE[element])return;
       var requirement=label(element)+' 3 / '+label(secondary)+' 2';
@@ -254,6 +258,23 @@
 (function(root){
   'use strict';
   var activeRun=null;
+  /* 2026-10-12 (launch audit, Justin's ruling): an achievement earned in play is named once in the log and
+     listed on the end screen. known is what this browser already held when the run began, or what a loaded
+     save proved, so a load or a reload repeats nothing. fresh holds the titles earned since, for the end screen.
+     Both live here and not in the run, so a save never depends on what the browser has seen before. */
+  var known=null,fresh=[];
+  function held(){var ids={};root.FoteJournal.achievements().forEach(function(a){if(a.unlocked)ids[a.id]=true;});return ids;}
+  function announce(changed){
+    // The journal answers true only when something changed; only then is the list worth reading again.
+    if(!changed||!known)return;
+    var run=activeRun;
+    root.FoteJournal.achievements().forEach(function(a){
+      if(!a.unlocked||known[a.id])return;
+      known[a.id]=true;fresh.push(a.title);
+      // Said once the command has had its own say (the mote taking root, the floor's name), never between its lines.
+      Promise.resolve().then(function(){if(run===activeRun)log('Achievement: <b>'+a.title+'</b>.','c-kill');});
+    });
+  }
   function active(){
     return !!(root.FoteJournal&&typeof RUN!=='undefined'&&RUN&&RUN===activeRun&&player&&!RUN.sandbox&&
       !(typeof SANDBOX!=='undefined'&&SANDBOX.building));
@@ -261,23 +282,23 @@
   function record(category,key,value){
     // Generation can grant devotion before its route checks. Publish only
     // after that candidate is installed; rollback discards this callback.
-    afterGeneratedInstall(function(){if(active())root.FoteJournal.record(category,key,value===undefined?true:value);});
+    afterGeneratedInstall(function(){if(active())announce(root.FoteJournal.record(category,key,value===undefined?true:value));});
   }
   function progress(){
     afterGeneratedInstall(function(){
       if(!active())return;
       var journal=root.FoteJournal;
-      journal.record('maxLevel',null,player.level);
-      Object.keys(player.aff||{}).forEach(function(element){if(player.aff[element]>0)journal.record('paths',element,player.aff[element]);});
-      combosHeld().forEach(function(key){journal.record('combos',key);});
-      if(player.god)journal.record('godRanks',player.god,godRank());
+      announce(journal.record('maxLevel',null,player.level));
+      Object.keys(player.aff||{}).forEach(function(element){if(player.aff[element]>0)announce(journal.record('paths',element,player.aff[element]));});
+      combosHeld().forEach(function(key){announce(journal.record('combos',key));});
+      if(player.god)announce(journal.record('godRanks',player.god,godRank()));
     });
   }
   function location(){
     afterGeneratedInstall(function(){
       if(!active())return;
-      root.FoteJournal.record('highestDepth',null,floorNo);
-      if(floorMeta&&floorMeta.plane)root.FoteJournal.record('planes',floorMeta.plane);
+      announce(root.FoteJournal.record('highestDepth',null,floorNo));
+      if(floorMeta&&floorMeta.plane)announce(root.FoteJournal.record('planes',floorMeta.plane));
     });
   }
   function gear(item,hint){
@@ -324,14 +345,20 @@
   }
   function start(options){
     activeRun=options&&options.preview?null:RUN;
+    known=null;fresh=[];
+    // A run that has not taken a turn holds only what it was created with (a Fae's court element), and that is news.
+    if(active()&&!turn)known=held();
     observeRun();
     if(active()&&RUN.victory)root.FoteJournal.finishRun(RUN.finishedRecord||runEndRecord(true));
+    // What a played save proves is not news: the save is read first and the list is taken after it, in the same queue.
+    afterGeneratedInstall(function(){if(active()&&!known)known=held();});
   }
   function finish(historyRecord){
     if(!active())return;
-    observeRun();root.FoteJournal.finishRun(historyRecord);root.FoteJournal.flush();
+    observeRun();announce(root.FoteJournal.finishRun(historyRecord));root.FoteJournal.flush();
   }
-  root.FoteJournalEvents=Object.freeze({active:active,start:start,record:record,progress:progress,location:location,gear:gear,defeated:defeated,observeRun:observeRun,finish:finish});
+  function earned(){return fresh.slice();}
+  root.FoteJournalEvents=Object.freeze({active:active,start:start,record:record,progress:progress,location:location,gear:gear,defeated:defeated,observeRun:observeRun,finish:finish,earned:earned});
 })(globalThis);
 
 ;
@@ -365,7 +392,7 @@
     };
     var result=Object.keys(basics).map(function(key){
       var row=basics[key];
-      return entry(row[0],'Attributes',para(row[1])+list(PASSIVES[key].map(function(p){return row[0]+' '+p.at+' — '+p.name+': '+p.d;})));
+      return entry(row[0],'Attributes',para(row[1])+list(PASSIVES[key].map(function(p){return row[0]+' '+p.at+', '+p.name+': '+p.d;})));
     });
     var details=[
       ['HP','Health remaining. Reaching zero ends the run. Before bonuses, maximum HP is 10 + Vitality × (1 + level ÷ 5), rounded. Shields absorb eligible damage before HP.'],
@@ -396,7 +423,7 @@
       ['Hunger','Falls as world time passes. Food restores it, up to the maximum. Starvation stops normal HP regeneration and eventually harms you.'],
       ['Affinity and affinity cap','Affinity measures your investment in an element. You can hold at most two elements, never opposites. A secondary element cannot exceed the primary. Boss cores raise the total affinity cap.'],
       ['Piety, rank and Favor','Piety is lasting progress with the current god; rank unlocks rewards. Favor is the separate resource spent on prayers and is capped at 100. Rank thresholds: '+PIETY_RANKS.map(function(n,i){return (i+1)+' at '+n;}).join('; ')+'.'],
-      ['Amusement','Wobbles’ separate measure of interest in your actions, from 0 to 100. It can influence his interventions and the powers that spend Amusement. It is separate from Piety and Favor.'],
+      ['Amusement','Wobbles’ separate measure of interest in your actions, from 0 to 100. It can influence his interventions. It is separate from Piety and Favor.'],
       ['Essence','Currency used for equipment upgrades, sigil crafting, purchases and other services. It belongs to the current run.'],
       ['Depth','The deepest main-dungeon floor reached. Visiting a side plane does not create an extra numbered dungeon floor.']
     ];
@@ -489,7 +516,7 @@
       case 'glacialtomb':details.push(['Imprisonment','10 turns; 6 for elites; 2 for bosses. Damage hits adjacent enemies.']);break;
       case 'stormform':
         scaling='Doubles movement and action speed. Duration starts at 6 turns and increases with beneficial-effect duration bonuses; no Air affinity or Spell power multiplier.';break;
-      case 'upheaval':details.push(['Wall','Up to 7 tiles wide for 20 turns. Target range stays at 7 tiles.'],['Root','2 turns; 1 against bosses. Can affect your summons.']);break;
+      case 'upheaval':details.push(['Ridge','Up to 7 tiles wide for 20 turns. Target range stays at 7 tiles.'],['Root','2 turns; 1 against bosses. Can affect your summons.']);break;
       case 'dawn':details.push(['Blind','3 turns.'],['Reveal','All enemies for 20 turns.']);break;
       case 'umbral':
         scaling='The shadow copies your weapons and combat stats when cast. No separate affinity or Spell power multiplier.';
@@ -521,7 +548,7 @@
         if(rank===1){var first=FIRST_PATH[el];name=first.name;html=para(first.text)+facts([['Scaling',first.scaling]]);}
         else if(ability&&ABILITIES[ability]){name=ABILITIES[ability].name;html=pathSpellText(ability,data);}
         else{var passive=pathPassiveText(el,rank);name=passive.name;html=passive.html;}
-        result.push(entry(label+' — '+name,group,html));
+        result.push(entry(label+' · '+name,group,html));
       }
     });return result;
   }
@@ -605,7 +632,7 @@
       var monster=MONSTERS[key],location=enemyLocation(key,monster),traits=[];
       [['boss','Boss'],['elite','Elite'],['undead','Undead'],['flying','Flying'],['spellcaster','Spellcaster'],['heavy','Heavy'],['tiny','Tiny']].forEach(function(pair){if(monster[pair[0]])traits.push(pair[1]);});
       if(monster.el)traits.push(title(monster.el)+' element');
-      var html=para(enemyLore({kind:key,base:monster}))+para(monster.hint)+facts([
+      var html=para(enemyLore({kind:key,base:monster}))+para(monster.hint!==enemyLore({kind:key,base:monster})?monster.hint:'')+facts([
         ['Base HP',monster.hp],['Base attack damage',monster.dmg&&monster.dmg.join('–')],['Accuracy',monster.acc],['Evasion',monster.eva],['Armor',monster.armor||0],['Speed',monster.speed],['Attack range',units(Number.isFinite(monster.range)?monster.range:1,'tile')],['XP',monster.xp],['Traits',traits.join(', ')||null],['Status immunities',monster.statusImmunities&&monster.statusImmunities.map(title).join(', ')]
       ]);
       var result=entry(monster.name,location.name,html);
