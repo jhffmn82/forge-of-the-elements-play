@@ -57,6 +57,11 @@ Umbral Passage, sigils, Double Strike targeting, achievement notices, save
 overwrite confirmation and short-screen controls. Existing saved runs remain
 supported. The separate promotional trailer is uploaded by the game creator.
 
+The lighting follow-up corrects dark bands across lamp-lit character heads and
+aligns spell/bow target marks around whole creatures, including multipart bosses.
+Earth has natural mineral ribbons instead of closed polygon veins. Opaque natural
+terrain shares lighting batches to reduce mask uploads and draw calls.
+
 The export preserves script order and boundaries while packing loose modules
 into one download, reducing the browser package from 999 files to 891.
 
@@ -72,6 +77,6 @@ the repeatable export and an itch.io ZIP. Automated browser tests cover gameplay
 save compatibility, UI, dimensional compositing, recovery and nested-path play.
 Physical-phone GPU and memory performance still require device testing.
 
-Build: **2026-10-13T03:30:07.174Z**. Revision: `foundation17-20261013033007174`.
+Build: **2026-10-13T05:41:48.648Z**. Revision: `foundation17-20261013054148648`.
 
-Source integration: 0e8b3a2d8b9e1afbd61f8a3a4586b5ae4222aa16.
+Source integration: e9c62016b3220abfa2a5b57e05689ead789de1ec.
