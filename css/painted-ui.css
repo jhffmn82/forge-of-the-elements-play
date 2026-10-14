@@ -1,0 +1,511 @@
+/* The menu material is drawn at the same detail scale as the environment art.
+   Only these non-interactive paint layers own decoration; existing screen
+   dimensions, scrolling, text scale and hit targets still own the interface. */
+
+/* Nine-slice keeps the painted corners intact in either phone orientation.
+   The center stretches quietly; none of the text is baked into the artwork. */
+html body[data-ui-theme] :is(#title .panel,#modal .mbox,#app #shade .sheet){
+ isolation:isolate;
+ background:transparent!important;
+ border:0!important;
+ border-radius:0!important;
+ box-shadow:none!important;
+}
+html body[data-ui-theme] :is(#modal .mbox,#app #shade .sheet){position:relative;}
+html body[data-ui-theme] :is(#title .panel,#modal .mbox,#app #shade .sheet)::before{
+ content:""!important;
+ display:block!important;
+ position:absolute!important;
+ inset:0!important;
+ z-index:-1;
+ pointer-events:none;
+ width:auto;
+ height:auto;
+ border-image-slice:230 210 230 210 fill;
+ border-image-repeat:stretch;
+ background:none!important;
+ border-radius:0;
+ opacity:var(--ui-background-opacity,1);
+}
+
+/* Keep headers on the same illustrated sheet, instead of a second rectangle.
+   Selected tabs and keyboard focus continue to use the current theme tokens. */
+html body[data-ui-theme] :is(#title .panel,#modal .mbox,#app #shade .sheet)>:is(header,footer){
+ background:none!important;
+ border:0!important;
+ box-shadow:none!important;
+}
+/* The elemental crest belongs to the Forge. The modal class is reset by every
+   openModal call, so confirmations, core infusion and other dialogs keep
+   their own headings. Its title remains selectable, accessible live text. */
+html body[data-ui-theme] #modal .forge-modal>header{position:relative;display:flex;justify-content:center;padding:10px 16px 0;flex:none;}
+html body[data-ui-theme] #modal .forge-modal #mTitle{position:relative;isolation:isolate;box-sizing:border-box;display:flex;align-items:center;justify-content:center;width:min(560px,100%);height:126px;margin:0;padding:14px 12% 8px;text-align:center;white-space:nowrap;font:400 var(--text-32)/1.15 var(--display);}
+html body[data-ui-theme] #modal .forge-modal #mTitle::before{content:"";position:absolute;inset:0;pointer-events:none;z-index:-1;}
+html body[data-ui-theme] #modal .forge-modal #mX{position:absolute;top:12px;right:16px;min-height:44px;}
+@media(max-width:600px) and (orientation:portrait){
+ html body[data-ui-theme] #modal .forge-modal>header{padding:44px 12px 0;}
+ html body[data-ui-theme] #modal .forge-modal #mTitle{height:80px;padding:6px 11% 2px;font-size:var(--text-20);}
+ html body[data-ui-theme] #modal .forge-modal #mX{top:2px;right:12px;}
+}
+@media(max-height:560px) and (orientation:landscape){
+ html body[data-ui-theme] #modal .forge-modal>header{padding-top:4px;}
+ html body[data-ui-theme] #modal .forge-modal #mTitle{width:min(320px,calc(100% - 112px));height:72px;padding:8px 24px 4px;font-size:var(--fs-word);}
+ html body[data-ui-theme] #modal .forge-modal #mX{top:18px;}
+}
+
+/* The house style from the title and creation screens, carried into every
+   menu: his drawn windows and plates, grey lettering at rest and silver or
+   white for whatever is chosen (never gold or blue), Grenze Gotisch for words
+   that act or name, Spectral for reading, and the four sizes at the end of
+   this file. The in-play HUD keeps its own look and the HUD colour option. */
+html body[data-ui-theme] :is(#title .panel,#modal .mbox,#app #shade .sheet)::before{border-image-slice:220 fill!important;}
+html body[data-ui-theme] :is(#title .panel,#modal .mbox,#app #shade .sheet){
+ --ui-ink:var(--house-ink);--ui-ash:var(--house-ash);--ui-dim:var(--house-dim);--gold:var(--house-accent);--ui-panel-2:#15130f;--ui-edge:#5a554d;--edge:transparent;--ui-raised:#2a2d31;--ui-log-tint:#0000004d;--ink:var(--ui-ink);--ash:var(--ui-ash);--dim:var(--ui-dim);
+ --mono:"Spectral","Spectral",Georgia,serif;
+ --menu-head:var(--fs-head);
+ --menu-word:var(--fs-word);
+ --menu-body:var(--fs-body);
+ --menu-small:var(--fs-small);
+ --text-10:var(--menu-small);--text-12:var(--menu-small);--text-14:var(--menu-body);--text-16:var(--menu-body);--text-18:var(--menu-body);
+ --text-20:var(--menu-word);--text-24:var(--menu-word);--text-26:var(--menu-word);--text-32:var(--menu-head);--text-40:var(--menu-head);
+ color:var(--ui-ink);font-family:var(--mono);
+}
+@media(max-width:700px),(max-height:560px){
+ html body[data-ui-theme] :is(#title .panel,#modal .mbox,#app #shade .sheet){--menu-head:var(--fs-word);--menu-word:var(--fs-body);--menu-body:var(--fs-body);--menu-small:var(--fs-small);}
+}
+/* Window titles. */
+html body[data-ui-theme] :is(#mTitle,#sheetTitle,#title .panel>h2){font:700 var(--menu-head)/1.15 var(--display)!important;color:var(--ui-ink)!important;letter-spacing:0!important;text-transform:none!important;text-shadow:0 2px 0 #000;}
+/* Section headings and tabs are blackletter words; the open tab is gold. */
+html body[data-ui-theme] :is(#title .panel,#modal .mbox,#app #shade .sheet) :is(h3,h4,legend,.sec>h3,.sec-title){font:700 var(--menu-word)/1.2 var(--display)!important;color:var(--ui-dim)!important;letter-spacing:0!important;text-transform:none!important;border:0!important;}
+html body[data-ui-theme] :is(#modal .mbox,#app #shade .sheet) :is(nav,[role=tablist],.tabs,.ftabs,#studySheetTabs) button{font:700 var(--menu-word)/1.2 var(--display)!important;color:var(--ui-dim)!important;letter-spacing:0!important;text-transform:none!important;background:none!important;border:0!important;box-shadow:none!important;text-decoration:none!important;}
+html body[data-ui-theme] :is(#modal .mbox,#app #shade .sheet) :is(nav,[role=tablist],.tabs,.ftabs,#studySheetTabs) button:is(.on,[aria-pressed=true],[aria-selected=true],[aria-current]){color:var(--gold)!important;}
+/* Actions sit on the forged plate, like the title menu. */
+html body[data-ui-theme] :is(#mX,#app #shade .sheet #close,#mFoot button,#title .panel .panelfoot button){position:relative;isolation:isolate;min-height:44px;padding:5px 18px 9px!important;border:0!important;border-radius:0!important;background:none!important;box-shadow:none!important;font:700 var(--menu-word)/1.15 var(--display)!important;color:var(--ui-ink)!important;letter-spacing:0!important;text-transform:none!important;text-shadow:none!important;white-space:nowrap;}
+html body[data-ui-theme] :is(#mX,#app #shade .sheet #close,#mFoot button,#title .panel .panelfoot button)::before{content:""!important;display:block!important;position:absolute;inset:0;z-index:-1;pointer-events:none;border:14px solid transparent;filter:grayscale(1) brightness(.62) contrast(.85);}
+html body[data-ui-theme] :is(#mX,#app #shade .sheet #close,#mFoot button,#title .panel .panelfoot button):is(:hover,:focus-visible)::before{filter:grayscale(1) brightness(1);}
+html body[data-ui-theme] :is(#mFoot .primary,#mFoot button:hover,#mX:hover,#close:hover,#title .panel .panelfoot button:hover){color:var(--gold)!important;}
+/* No outlines or underlines anywhere in a menu: focus and choice show as gold. */
+html body[data-ui-theme] :is(#title .panel,#modal .mbox,#app #shade .sheet) :is(button,a,input,select,summary,[tabindex]):focus-visible{outline:none!important;box-shadow:none!important;color:var(--gold)!important;}
+html body[data-ui-theme] :is(#title .panel,#modal .mbox,#app #shade .sheet) :is(button,a){text-decoration:none!important;}
+html body[data-ui-theme] :is(#title .panel,#modal .mbox,#app #shade .sheet) :is(p,li,td,th,dd,dt,label,.c-info,small){font-family:var(--mono);}
+html body[data-ui-theme] #app #shade .sheet #close{margin:8px 8px 0 0!important;}
+html body[data-ui-theme] :is(#title .panel,#modal .mbox,#app #shade .sheet) :is(nav,[role=tablist],.tabs,.journal-tabs){background:none!important;border:0!important;box-shadow:none!important;}
+html body[data-ui-theme] :is(#title .panel,#modal .mbox,#app #shade .sheet) :is(input[type=text],input[type=search],input:not([type]),select){background:#0006!important;border:0!important;border-radius:0!important;box-shadow:none!important;color:var(--ui-ink)!important;font-family:var(--mono)!important;}
+html body[data-ui-theme] :is(#title .panel,#modal .mbox,#app #shade .sheet) *{text-transform:none!important;letter-spacing:0!important;}
+/* The control tour places its card beside the control it points at. */
+html body[data-ui-theme] #modal.tutorial-control-tour .mbox{position:fixed!important;}
+/* Scrolling text stops inside the slate's metal edge instead of running under it. */
+html body[data-ui-theme] #app #shade .sheet .bodyw{margin:0 10px 24px 14px!important;padding-right:6px!important;box-sizing:border-box;}
+html body[data-ui-theme] #modal .mbox .mbody{margin:0 10px 6px 14px;box-sizing:border-box;}
+/* The tutorial coach is a small card: its title is a word, its buttons are small plates. */
+html body[data-ui-theme] #modal.tutorial-coach #mTitle{font-size:var(--menu-word)!important;}
+html body[data-ui-theme] #modal.tutorial-coach .mbody{font-size:var(--menu-body)!important;line-height:1.35!important;padding:4px 6px!important;}
+html body[data-ui-theme] #modal.tutorial-coach :is(#mX,#mFoot button){font-size:var(--fs-body)!important;min-height:38px!important;padding:3px 12px 7px!important;}
+html body[data-ui-theme] #modal.tutorial-coach #mFoot{padding:4px 14px 18px!important;gap:8px!important;flex-wrap:wrap!important;justify-content:flex-end!important;}
+html body[data-ui-theme] #modal.tutorial-coach #mFoot>.tutorial-preference{flex:1 0 100%!important;font-size:var(--menu-small)!important;}
+html body[data-ui-theme] #modal.tutorial-coach header{padding:16px 14px 0 18px!important;}
+html body[data-ui-theme] #modal.tutorial-coach .mbox{width:min(420px,calc(100vw - 16px))!important;max-height:calc(100dvh - 16px)!important;}
+html body[data-ui-theme] #modal.tutorial-control-tour:not(.tutorial-keys) .mbox{width:min(320px,calc(100vw - 16px))!important;}
+/* A window without a button row (the Journal) stops its scroll above the frame. */
+html body[data-ui-theme] #modal .mbox:is(.journal-modal,:has(#mFoot:empty)) .mbody{margin-bottom:26px!important;}
+html body[data-ui-theme] #modal .journal-achievement.journal-undiscovered h3{font:400 var(--menu-body)/1.3 var(--mono)!important;color:var(--ui-dim)!important;}
+/* The in-game menu (the list behind the menu button) is a menu too: forged
+   slate, blackletter words, gold for the open panel or keyboard focus. */
+html body.study-menu-open[data-ui-theme] #app #top#top{background:none!important;border:0!important;box-shadow:none!important;isolation:isolate;padding:22px 20px 20px!important;
+ --ui-ink:var(--house-ink);--ui-ash:var(--house-ash);--ui-dim:var(--house-dim);--gold:var(--house-accent);--mono:"Spectral","Spectral",Georgia,serif;}
+html body.study-menu-open[data-ui-theme] #app #top#top::before{content:""!important;display:block!important;position:absolute;inset:0;z-index:-1;pointer-events:none;border:26px solid transparent;}
+html body.study-menu-open[data-ui-theme] #app #top#top #brand{font-family:"Spectral","Spectral",Georgia,serif!important;color:var(--ui-ash)!important;}
+html body.study-menu-open[data-ui-theme] #app #top#top #brand :is(b,strong,h1,h2,#hBiome,.study-biome){font:700 var(--fs-word)/1.2 var(--display)!important;color:var(--gold)!important;letter-spacing:0!important;}
+html body.study-menu-open[data-ui-theme] #app #top#top #studyNav button{font:700 var(--fs-word)/1.2 var(--display)!important;color:var(--ui-ink)!important;letter-spacing:0!important;text-transform:none!important;background:none!important;border:0!important;box-shadow:none!important;outline:none!important;text-shadow:none!important;}
+html body.study-menu-open[data-ui-theme] #app #top#top #studyNav button::before{display:none!important;}
+html body.study-menu-open[data-ui-theme] #app #top#top #studyNav button:is(:hover,:focus-visible,.on,[aria-pressed=true]){color:var(--gold)!important;}
+html body.study-menu-open[data-ui-theme] #app #top#top #studyNav button svg{color:var(--ui-dim);}
+html body.study-menu-open[data-ui-theme] #app #top#top #studyNav button:is(:hover,:focus-visible) svg{color:var(--gold);}
+html body.study-menu-open[data-ui-theme] #app #top#top #studyNav button span:not(:first-of-type){font:400 var(--fs-body)/1.2 "Spectral",Georgia,serif!important;color:var(--ui-dim)!important;}
+
+/* Buttons keep the drawn forged plate; only its face is dark slate (10-14:
+   "go back to the drawn buttons but just color the background"). */
+html body[data-ui-theme] :is(#mSave .save-actions button,#mSave button[data-save],#mSave .slots button,#title .panel .slots button){position:relative;isolation:isolate;min-height:40px;padding:4px 16px 8px!important;border:0!important;background:none!important;box-shadow:none!important;font:700 var(--menu-word)/1.15 var(--display)!important;color:var(--ui-ink)!important;}
+html body[data-ui-theme] :is(#title .menu button,#create #cBack,#create #rollCharacter,#create #begin,#create .creation-appearance .card,#create .creation-tutorial,#mX,#app #shade .sheet #close,#mFoot button,#title .panel .panelfoot button,#mSave .save-actions button,#mSave button[data-save],#mSave .slots button,#title .panel .slots button)::before{
+ content:""!important;display:block!important;position:absolute!important;inset:0!important;z-index:-1!important;pointer-events:none;
+ border:16px solid transparent!important;border-radius:0!important;
+ background:none!important;box-shadow:none!important;filter:none!important;}
+html body[data-ui-theme] :is(#create .creation-appearance .card.on,#create .creation-tutorial:has(#cTutorial:checked))::before{border-image-source:url(../art/ui/button-raised-subdued-clean-v1.png)!important;filter:brightness(1.35)!important;}
+/* Masculine and Feminine are a small choice under the race names, not a second row of names. */
+html body[data-ui-theme] #create .creation-appearance .card{min-height:44px!important;padding:3px 14px 6px!important;}
+html body[data-ui-theme] #create .creation-appearance .card::before{inset:4px 0!important;}
+/* The title plaques use the steel-recoloured forge plaque (forge-title-plaque-v2). */
+html body[data-ui-theme] #title .title-card{isolation:isolate;}
+html body[data-ui-theme] #title .title-card h1{z-index:1;}
+/* Save and leave is a short list, so it opens as a small window. */
+html body[data-ui-theme] #app #shade .sheet:has(#mSave.on){position:fixed!important;width:min(560px,calc(100vw - 24px))!important;max-width:min(560px,calc(100vw - 24px))!important;height:auto!important;max-height:calc(100dvh - 24px)!important;left:50%!important;top:50%!important;right:auto!important;bottom:auto!important;transform:translate(-50%,-50%)!important;margin:0!important;}
+html body[data-ui-theme] #app #shade .sheet:has(#mSave.on) .bodyw{height:auto!important;flex:0 1 auto!important;}
+
+/* Finished choices interlock as steel chevrons (his art, cut into a first and a middle piece). */
+html body[data-ui-theme] #create .creation-steps{gap:0!important;}
+html body[data-ui-theme] #create .creation-steps :is(button,.creation-step-now){position:relative;isolation:isolate;padding:4px 30px 8px 34px!important;min-height:46px!important;max-height:none!important;margin-left:-14px;}
+html body[data-ui-theme] #create .creation-steps :is(button,.creation-step-now)::before{content:""!important;display:block!important;position:absolute!important;inset:0!important;z-index:-1;pointer-events:none;border:solid transparent;border-width:10px 24px 10px 24px;filter:none!important;}
+html body[data-ui-theme] #create .creation-steps>:first-child{margin-left:0;padding-left:22px!important;}
+html body[data-ui-theme] #create .creation-steps>:first-child::before{border-left-width:14px!important;}
+html body[data-ui-theme] #create .creation-steps button:is(:hover,:focus-visible)::before{filter:brightness(1.3)!important;}
+html body[data-ui-theme] #create .creation-steps .creation-step-now::before{filter:brightness(1.25)!important;}
+/* The Forge window wears the six-gem steel frame. */
+html body[data-ui-theme] #modal .forge-modal::before{border-image-slice:170 fill!important;border-width:34px!important;border-image-width:34px!important;filter:none!important;}
+@media(max-width:700px){
+ html body[data-ui-theme] #create .wrap .creation-steps :is(button,.creation-step-now){padding:3px 14px 6px 22px!important;margin-left:-12px;min-height:40px!important;}
+ html body[data-ui-theme] #create .wrap .creation-steps{justify-content:safe center!important;max-width:100%;}
+ html body[data-ui-theme] #create .wrap .creation-steps>:first-child{margin-left:0;padding-left:14px!important;}
+ html body[data-ui-theme] #create .wrap .creation-steps :is(button,.creation-step-now)::before{border-width:8px 18px!important;border-image-width:8px 18px!important;}
+}
+@media(max-width:400px){html body[data-ui-theme] #create .wrap .creation-steps :is(button,.creation-step-now){padding:3px 10px 6px 18px!important;margin-left:-11px;}html body[data-ui-theme] #create .wrap .creation-steps>:first-child{padding-left:10px!important;}html body[data-ui-theme] #create#create#create .wrap .creation-steps :is(.creation-step-value,.creation-step-now){font-size:var(--fs-body)!important;}}
+@media(max-width:900px){html body[data-ui-theme] #create .wrap .creation-steps button>span{position:absolute;left:16px;top:16px;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;font-size:1px!important;}html body[data-ui-theme] #create .wrap .creation-steps{justify-content:safe center!important;max-width:100%;}}
+html body[data-ui-theme] #create#create .creation-steps::before{display:none!important;}
+/* The end screen (victory and death) joins the house style: steel slate
+   window, Spectral body, blackletter title and score, no boxes, rounded
+   steel plates for its actions. */
+html body[data-ui-theme] #over.end-screen{background:#05070acc!important;}
+html body[data-ui-theme] #over.end-screen .box{position:relative;isolation:isolate;background:none!important;border:0!important;border-radius:0!important;box-shadow:none!important;padding:34px 40px 30px!important;
+ --ui-ink:var(--house-ink);--ui-ash:var(--house-ash);--ui-dim:var(--house-dim);--gold:var(--house-accent);--ink:var(--house-ink);--ash:var(--house-ash);--dim:var(--house-dim);--mono:"Spectral",Georgia,serif;font-family:"Spectral",Georgia,serif;color:var(--house-ink);}
+html body[data-ui-theme] #over.end-screen .box::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;border:26px solid transparent;}
+html body[data-ui-theme] #over.end-screen .box *{font-family:"Spectral",Georgia,serif;letter-spacing:0!important;text-transform:none!important;}
+html body[data-ui-theme] #over.end-screen :is(h2,.end-name,.end-score){font-family:var(--display)!important;font-weight:700;}
+html body[data-ui-theme] #over.end-screen h2{color:var(--house-ink)!important;text-shadow:0 2px 0 #000;}
+html body[data-ui-theme] #over.end-screen .end-score{color:var(--house-accent)!important;}
+html body[data-ui-theme] #over.end-screen .end-stats span{border:0!important;background:#0006!important;border-radius:0!important;box-shadow:none!important;font-size:var(--text-14);color:var(--house-dim);}
+html body[data-ui-theme] #over.end-screen .end-stats b{font-family:var(--display)!important;font-size:var(--fs-word);color:var(--house-ink);}
+html body[data-ui-theme] #over.end-screen .end-actions button,html body[data-ui-theme] #over.end-screen #bAgain{position:relative;isolation:isolate;min-height:44px;padding:5px 18px 9px!important;border:0!important;border-radius:0!important;background:none!important;box-shadow:none!important;font:700 var(--fs-word)/1.15 var(--display)!important;color:var(--house-ink)!important;}
+html body[data-ui-theme] #over.end-screen .end-actions button::before,html body[data-ui-theme] #over.end-screen #bAgain::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;border:16px solid transparent;}
+html body[data-ui-theme] #over.end-screen .end-actions button:is(:hover,:focus-visible)::before{border-image-source:url(../art/ui/button-raised-subdued-clean-v1.png);}
+html body[data-ui-theme] #over.end-screen .end-actions button:is(:hover,:focus-visible){color:var(--house-accent)!important;outline:none!important;}
+html body[data-ui-theme] #over.end-screen :is(.end-achievements b,.end-achievements strong,a){color:var(--house-accent);}
+/* The Forge window: drawn at its own proportions so the side gems and anvil never stretch. */
+html body[data-ui-theme] #modal#modal .mbox.forge-modal::before{border:0!important;border-image:none!important;}
+html body[data-ui-theme] #modal .forge-modal{padding:30px 26px 22px!important;}
+/* The Forge frame already carries the anvil and gems, so its heading is plain
+   lettering under the anvil, and the contents sit inside the frame's rails. */
+html body[data-ui-theme] #modal#modal .mbox.forge-modal{padding:calc(6% + 14px) 9% 7% 9%!important;}
+html body[data-ui-theme] #modal#modal .forge-modal #mTitle::before{display:none!important;}
+html body[data-ui-theme] #modal#modal .forge-modal #mTitle{height:auto!important;padding:0 0 6px!important;width:auto!important;font-size:var(--menu-head)!important;color:var(--house-ink)!important;}
+html body[data-ui-theme] #modal#modal .forge-modal>header{padding:0!important;}
+html body[data-ui-theme] #modal#modal .forge-modal>header{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:12px!important;}
+html body[data-ui-theme] #modal#modal .forge-modal #mTitle{flex:1 1 auto!important;min-width:0!important;justify-content:flex-start!important;text-align:left!important;white-space:normal!important;}
+html body[data-ui-theme] #modal#modal .forge-modal #mX{position:relative!important;top:auto!important;right:auto!important;flex:none!important;}
+html body[data-ui-theme] #modal#modal .mbox.forge-modal>header{margin:12px 0 4px!important;width:auto!important;}html body[data-ui-theme] #modal#modal .mbox.forge-modal>*{margin-left:0!important;margin-right:0!important;}html body[data-ui-theme] #modal#modal .mbox.forge-modal{padding-left:11%!important;padding-right:11%!important;}
+@media(max-width:700px) and (orientation:portrait){html body[data-ui-theme] #modal#modal .mbox.forge-modal{padding-top:58px!important;padding-bottom:56px!important;}html body[data-ui-theme] #modal#modal .forge-modal #mX{font-size:calc(var(--menu-word) * .85)!important;padding:3px 10px 7px!important;}html body[data-ui-theme] #modal#modal .forge-modal #mX::after{content:none!important;}}
+@media(max-height:700px){html body[data-ui-theme] #modal#modal .mbox.forge-modal{padding-top:40px!important;padding-bottom:38px!important;}html body[data-ui-theme] #modal#modal .mbox.forge-modal>header{margin:4px 0 2px!important;}html body[data-ui-theme] #modal#modal .forge-modal #mTitle{font-size:var(--menu-word)!important;}}@media(max-height:500px) and (orientation:landscape){html body[data-ui-theme] #modal#modal .mbox.forge-modal{padding:42px 11% 26px!important;}}html body[data-ui-theme] #modal#modal .forge-modal #mX{width:auto!important;max-width:none!important;white-space:nowrap!important;}
+/* No blue (10-14): buttons and choices are grey at rest; the selected or
+   hovered one is bright silver with a faint silver glow. */
+html body[data-ui-theme] :is(#title .menu button,#create #cBack,#create #rollCharacter,#create #begin,#create .creation-appearance .card b,#create .creation-tutorial,#create .cards .card .choice-name,#create .creation-step-value,#mX,#app #shade .sheet #close,#mFoot button,#title .panel .panelfoot button,#mSave button,#over.end-screen .end-actions button){color:var(--house-btn)!important;text-shadow:none!important;}
+html body[data-ui-theme] :is(#title .menu button:is(:hover,:focus,#tNew),#create :is(#cBack,#rollCharacter,#begin,.creation-tutorial):is(:hover,:focus-visible),#create .creation-tutorial:has(#cTutorial:checked),#create .creation-appearance .card.on b,#create .cards .card:is(.on,:hover,:focus-visible) .choice-name,#create .creation-steps button:is(:hover,:focus-visible) .creation-step-value,#create .creation-step-now,#mX:hover,#app #shade .sheet #close:hover,#mFoot :is(.primary,button:hover),#title .panel .panelfoot button:hover,#mSave button:hover,#over.end-screen .end-actions button:is(:hover,:focus-visible)){color:var(--house-accent)!important;text-shadow:0 0 8px #dfe8f366!important;}
+/* The strip shows only the choices: "Fae", "Gale Court", not "Race Fae". The
+   label stays for screen readers through the button's aria-label. */
+html body[data-ui-theme] #create .wrap .creation-steps button>span{position:absolute!important;left:50%;top:50%;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;font-size:1px!important;}
+html body[data-ui-theme] #create .wrap .creation-steps{justify-content:safe center!important;max-width:100%;justify-self:center;}
+/* Title menu: steel-faced plates, so the buttons sit quietly on the scene. */
+html body[data-ui-theme] #title#title .menu button{color:#e4e8ec!important;text-shadow:0 1px 0 #000,0 2px 2px #0008!important;}
+html body[data-ui-theme] #title#title .menu button:is(:hover,:focus,#tNew){color:#ffffff!important;text-shadow:0 1px 0 #000,0 0 10px #ffffffaa!important;}
+/* Confirm sits right under the choice strip, centred over the hero stage. */
+/* Two button ranks (10-14): actions get the steel-faced plate; small toggles
+   (Masculine/Feminine, Show tutorial) keep the dark face. */
+html body[data-ui-theme] :is(#create #cBack,#create #rollCharacter,#create #begin,#mX,#app #shade .sheet #close,#mFoot button,#title .panel .panelfoot button,#mSave button,#over.end-screen .end-actions button){color:#e4e8ec!important;text-shadow:0 1px 0 #000,0 2px 2px #0008!important;}
+html body[data-ui-theme] :is(#create #begin,#create#mFoot .primary){color:#ffffff!important;}
+/* Chevrons keep a minimum width; the live one (the confirm) is brighter. */
+html body[data-ui-theme] #create .wrap .creation-steps :is(button,.creation-step-now){min-width:110px;justify-content:center;}
+@media(max-width:700px){html body[data-ui-theme] #create .wrap .creation-steps :is(button,.creation-step-now){min-width:76px;}}
+html body[data-ui-theme] #create#create .creation-steps #cConfirm{cursor:pointer;color:#ffffff!important;background:none!important;border:0!important;box-shadow:none!important;min-height:46px!important;font:inherit;}
+html body[data-ui-theme] #create#create .creation-steps #cConfirm .creation-step-value{color:#ffffff!important;text-shadow:0 0 8px #ffffff55!important;}
+html body[data-ui-theme] #create#create .creation-steps #cConfirm::before{filter:brightness(1.45)!important;}
+html body[data-ui-theme] #create#create .creation-steps #cConfirm:is(:hover,:focus-visible)::before{filter:brightness(1.8)!important;}
+/* Intro screen (10-14): the title menu uses the same steel edge and dark slate
+   face as the chevrons, with white lettering. */
+html body[data-ui-theme] #title#title#title .menu button::before{filter:brightness(.82)!important;}
+html body[data-ui-theme] #title#title#title .menu button:is(:hover,:focus)::before{filter:none!important;}
+html body[data-ui-theme] #title#title#title .menu button{color:#e4e8ec!important;}
+html body[data-ui-theme] #title#title#title .menu button:is(:hover,:focus,#tNew){color:#ffffff!important;}
+/* Intro buttons carry rails as thick as the title plaque's. */
+html body[data-ui-theme] #title#title#title .menu{gap:10px!important;width:clamp(260px,26vw,330px)!important;}
+html body[data-ui-theme] #title#title#title .menu button{min-height:60px!important;padding:12px 30px 16px!important;}
+html body[data-ui-theme] #title#title#title .menu #tNew{min-height:66px!important;}
+html body[data-ui-theme] #title#title#title .menu button::before{border-width:28px!important;border-image-width:28px!important;}
+@media(max-height:560px){
+ html body[data-ui-theme] #title#title#title .menu{gap:3px!important;}
+ html body[data-ui-theme] #title#title#title .menu button{min-height:44px!important;padding:5px 20px 9px!important;}
+ html body[data-ui-theme] #title#title#title .menu #tNew{min-height:48px!important;}
+ html body[data-ui-theme] #title#title#title .menu button::before{border-width:20px!important;border-image-width:20px!important;}
+}
+@media(max-height:500px){html body[data-ui-theme] #title#title#title .menu{gap:2px!important;}html body[data-ui-theme] #title#title#title .menu button{min-height:40px!important;padding:3px 18px 7px!important;}html body[data-ui-theme] #title#title#title .menu #tNew{min-height:42px!important;}html body[data-ui-theme] #title#title#title .menu button::before{border-width:16px!important;border-image-width:16px!important;}}
+html body[data-ui-theme] #create#create .creation-steps button[aria-current=step]::before{filter:brightness(1.45)!important;}html body[data-ui-theme] #create#create .creation-steps button[aria-current=step] .creation-step-value{color:#fff!important;}
+@media(max-width:700px){html body[data-ui-theme] #create#create .creation-steps #cConfirm{min-height:40px!important;}}
+@media(max-width:400px){html body[data-ui-theme] #create .wrap .creation-steps :is(button,.creation-step-now){min-width:0!important;}}
+/* Two button ranks from his art (10-14): the edged forged plate for prominent
+   actions, the subdued angled plate for everything else. Both are 9-sliced so
+   the corners never stretch. */
+html body[data-ui-theme] :is(#title#title#title .menu button,#create #cBack,#create #rollCharacter,#create #begin,#over.end-screen .end-actions button:first-child)::before{border-image:url(../art/ui/button-raised-prominent-clean-v1.png) 130 150 130 150 fill / 12px 16px 12px 16px / 0 stretch!important;border-width:12px 16px!important;border-style:solid!important;border-color:transparent!important;filter:none!important;background:none!important;}
+html body[data-ui-theme] :is(#title#title#title .menu button,#create #cBack,#create #rollCharacter,#create #begin,#over.end-screen .end-actions button:first-child):is(:hover,:focus,:focus-visible)::before{filter:brightness(1.3)!important;}
+html body[data-ui-theme] :is(#mX,#app #shade .sheet #close,#mFoot button,#title .panel .panelfoot button,#mSave button,#mSave .slots button,#title .panel .slots button,#over.end-screen .end-actions button:not(:first-child),#create .creation-appearance .card,#create .creation-tutorial)::before{border-image:url(../art/ui/button-raised-subdued-clean-v1.png) 100 110 100 110 fill / 10px 12px 10px 12px / 0 stretch!important;border-width:10px 12px!important;border-style:solid!important;border-color:transparent!important;filter:none!important;background:none!important;}
+html body[data-ui-theme] :is(#mX,#app #shade .sheet #close,#mFoot button,#title .panel .panelfoot button,#mSave button,#title .panel .slots button,#over.end-screen .end-actions button,#create .creation-appearance .card,#create .creation-tutorial):is(:hover,:focus-visible,.on)::before{filter:brightness(1.35)!important;}
+html body[data-ui-theme] #create .creation-tutorial:has(#cTutorial:checked)::before{filter:brightness(1.35)!important;}
+/* Lettering is centred on the box; the plates' faces are centred too. */
+html body[data-ui-theme] :is(#title .menu button,#create #cBack,#create #rollCharacter,#create #begin,#mX,#app #shade .sheet #close,#mFoot button,#title .panel .panelfoot button,#mSave button,#over.end-screen .end-actions button,#create .creation-appearance .card,#create .creation-tutorial,#create .creation-steps :is(button,.creation-step-now)){display:inline-flex!important;align-items:center!important;justify-content:center!important;line-height:1!important;padding-top:0!important;padding-bottom:3px!important;}
+html body[data-ui-theme] #title .menu button{display:flex!important;}
+/* Information panels and menu windows wear the lighter six-gem window (10-14),
+   drawn at the window's own size; contents sit inside its rails. */
+html body[data-ui-theme] #create#create .creation-record::before{border:0!important;border-image:none!important;background:url(../art/ui/window-six-gems-light-v1.png) center/100% 100% no-repeat!important;filter:none!important;}
+html body[data-ui-theme] #create#create .creation-record{padding:44px 15% 40px!important;}
+html body[data-ui-theme] :is(#title .panel,#modal .mbox:not(.forge-modal):not(.journal-modal),#modal#modal .mbox.forge-modal)::before{border:0!important;border-image:none!important;background:url(../art/ui/window-six-gems-light-v1.png) center/100% 100% no-repeat!important;filter:none!important;}
+html body[data-ui-theme] #modal#modal .mbox.forge-modal::before{background-image:url(../art/ui/window-six-gems-light-v1.png)!important;}
+/* One set everywhere (10-14: "a cohesive set around the title screen"):
+   every window wears the six-gem window; contents clear its rails and gems. */
+html body[data-ui-theme] :is(#title .panel,#modal .mbox,#app #shade .sheet,#over.end-screen .box)::before{border:0!important;border-image:none!important;background:url(../art/ui/window-six-gems-light-v1.png) center/100% 100% no-repeat!important;filter:none!important;opacity:1!important;}
+html body[data-ui-theme] :is(#title .panel,#modal .mbox:not(.forge-modal),#over.end-screen .box){padding:max(40px,6.5%) max(48px,10%) max(36px,5.5%)!important;box-sizing:border-box;}
+html body[data-ui-theme] #app #shade .sheet{padding:max(40px,5%) max(56px,7%) max(34px,4%)!important;box-sizing:border-box;}
+html body[data-ui-theme] #app #shade .sheet .bodyw{margin:0!important;}
+html body[data-ui-theme] #modal .mbox .mbody{margin:0!important;}
+@media(max-width:700px){
+ html body[data-ui-theme] :is(#title .panel,#modal .mbox:not(.forge-modal),#over.end-screen .box,#app #shade .sheet){padding:44px 36px 36px!important;}
+}
+/* Buttons at rest: grey lettering. Selected, hovered, focused or primary: white. */
+html body[data-ui-theme] :is(#title#title#title .menu button,#create #cBack,#create #rollCharacter,#create .creation-appearance .card b,#create .creation-tutorial,#create .cards .card .choice-name,#create .creation-steps button .creation-step-value,#mX,#app #shade .sheet #close,#mFoot button,#title .panel .panelfoot button,#mSave button,#over.end-screen .end-actions button){color:#9aa1a9!important;}
+html body[data-ui-theme] :is(#title#title#title .menu button:is(:hover,:focus,#tNew),#create :is(#cBack,#rollCharacter,.creation-tutorial):is(:hover,:focus-visible),#create .creation-tutorial:has(#cTutorial:checked),#create .creation-appearance .card.on b,#create .cards .card:is(.on,:hover,:focus-visible) .choice-name,#create .creation-steps button:is(:hover,:focus-visible,[aria-current=step]) .creation-step-value,#create#create .creation-steps #cConfirm .creation-step-value,#create #begin,#mX:hover,#app #shade .sheet #close:hover,#mFoot :is(.primary,button:hover),#title .panel .panelfoot button:hover,#mSave button:hover,#over.end-screen .end-actions button:is(:hover,:focus-visible)){color:#ffffff!important;}
+html body[data-ui-theme] #app#app #shade .sheet{padding:max(48px,5.5%) max(72px,8.5%) max(40px,4.5%)!important;}
+html body[data-ui-theme] #create#create .creation-record{padding:max(56px,8%) 15% max(44px,6%)!important;}
+@media(max-width:700px){html body[data-ui-theme] #app#app #shade .sheet{padding:46px 40px 38px!important;}html body[data-ui-theme] #create#create .creation-record{padding:44px 40px 38px!important;}}
+html body[data-ui-theme] #app#app#app #shade .sheet{padding-top:max(60px,6.5%)!important;padding-bottom:max(54px,5.5%)!important;}html body[data-ui-theme] #create#create#create .creation-record{padding-top:max(70px,11%)!important;}@media(max-width:700px){html body[data-ui-theme] #create#create#create .creation-record{padding-top:48px!important;}html body[data-ui-theme] #app#app#app #shade .sheet{padding-top:50px!important;}}
+/* Title menu: New Game across the top, the other four in two rows of two. */
+html body[data-ui-theme] #title#title#title .menu{display:grid!important;grid-template-columns:1fr 1fr!important;width:clamp(320px,34vw,440px)!important;}
+html body[data-ui-theme] #title#title#title .menu #tNew,html body[data-ui-theme] #title#title#title .menu #tContinue{grid-column:1/-1;}
+html body[data-ui-theme] #title#title#title .menu button:not(#tNew):not(#tContinue){padding-left:14px!important;padding-right:14px!important;font-size:var(--fs-word)!important;}
+/* The hero's statistics lead the panel. */
+html body[data-ui-theme] #create#create .wrap .hero-who{order:-1!important;margin:0 0 10px!important;padding-top:0!important;}
+/* On wide screens the choice strip sits level with the top of the panel. */
+@media(min-width:701px) and (min-height:561px){html body[data-ui-theme] #create#create .creation-steps{grid-row:3!important;align-self:start!important;z-index:3;position:relative;}}
+/* Lighter windows (Load, Settings, About, popups, the character sheet) use his
+   plain forged window, 9-sliced so its corner caps never stretch. The six-gem
+   window stays on character creation, the Forge and the end screen. */
+html body[data-ui-theme] :is(#title#title .panel,#modal#modal .mbox:not(.forge-modal),#app#app #shade .sheet)::before{background:none!important;border:26px solid transparent!important;border-image:url(../art/ui/window-plain-v1.png) 150 fill / 34px / 0 stretch!important;border-width:34px!important;}
+html body[data-ui-theme] :is(#title .panel,#modal .mbox:not(.forge-modal)){padding:34px 34px 30px!important;}
+html body[data-ui-theme] #app#app#app #shade .sheet{padding:34px 36px 30px!important;}
+/* Scrollbars in the house style: a thin steel thumb on no track, kept inside the rails. */
+html body[data-ui-theme] :is(#create .creation-record-body,#modal .mbody,#app #shade .bodyw,#title .panel,#over.end-screen .box){scrollbar-width:thin!important;scrollbar-color:#6f757d transparent!important;scrollbar-gutter:stable!important;}
+html body[data-ui-theme] :is(#create .creation-record-body,#modal .mbody,#app #shade .bodyw,#title .panel,#over.end-screen .box)::-webkit-scrollbar{width:6px!important;background:transparent!important;}
+html body[data-ui-theme] :is(#create .creation-record-body,#modal .mbody,#app #shade .bodyw,#title .panel,#over.end-screen .box)::-webkit-scrollbar-track{background:transparent!important;border:0!important;}
+html body[data-ui-theme] :is(#create .creation-record-body,#modal .mbody,#app #shade .bodyw,#title .panel,#over.end-screen .box)::-webkit-scrollbar-thumb{background:#6f757d!important;border:0!important;border-radius:3px!important;min-height:40px;}
+html body[data-ui-theme] :is(#create .creation-record-body,#modal .mbody,#app #shade .bodyw,#title .panel,#over.end-screen .box)::-webkit-scrollbar-button{display:none!important;height:0!important;}
+html body[data-ui-theme] #create#create .creation-record-body{padding-right:6px!important;}
+@media(max-width:700px){html body[data-ui-theme] #create#create#create .creation-record{padding-left:48px!important;padding-right:42px!important;}}
+/* Raised steel plates are lighter, so lettering carries a dark edge to stay crisp. */
+html body[data-ui-theme] :is(#title .menu button,#create #cBack,#create #rollCharacter,#create #begin,#mX,#app #shade .sheet #close,#mFoot button,#title .panel .panelfoot button,#mSave button,#over.end-screen .end-actions button,#create .creation-appearance .card b,#create .creation-tutorial){text-shadow:0 1px 0 #000,0 -1px 0 #0008,1px 0 0 #0008,-1px 0 0 #0008,0 2px 3px #000!important;}
+/* Title menu on the raised plates too; light plates need near-white lettering. */
+html body[data-ui-theme] #title#title#title#title .menu button::before{border:12px 16px solid transparent!important;border-width:12px 16px!important;border-image:url(../art/ui/button-raised-prominent-clean-v1.png) 130 150 130 150 fill / 12px 16px 12px 16px / 0 stretch!important;filter:brightness(.85)!important;}
+html body[data-ui-theme] #title#title#title#title .menu button:is(:hover,:focus)::before{filter:brightness(1.15)!important;}
+html body[data-ui-theme] :is(#title#title#title#title .menu button,#create#create :is(#cBack,#rollCharacter,.creation-tutorial,.creation-appearance .card b),#mX,#app #shade .sheet #close,#mFoot button,#title .panel .panelfoot button,#mSave button,#over.end-screen .end-actions button){color:#d9dde2!important;}
+html body[data-ui-theme] :is(#title#title#title#title .menu button:is(:hover,:focus,#tNew),#create#create :is(#cBack,#rollCharacter,.creation-tutorial):is(:hover,:focus-visible),#create#create .creation-appearance .card.on b,#create#create .creation-tutorial:has(#cTutorial:checked),#create #begin,#mFoot .primary){color:#ffffff!important;}
+/* Tutorial cards with no control to point at sit in the middle of the screen;
+   cards that point at a control (status bars, hotbar, map) keep their place. */
+html body[data-ui-theme] #modal.tutorial-coach:not(.tutorial-control-tour),html body[data-ui-theme] #modal.tutorial-coach.tutorial-keys{align-items:center!important;justify-content:center!important;}
+html body[data-ui-theme] #modal#modal.tutorial-coach.tutorial-keys .mbox{position:fixed!important;left:50%!important;top:50%!important;transform:translate(-50%,-50%)!important;max-height:calc(100dvh - 24px)!important;}
+/* Reading sizes in menus and sheets: nothing below 14px, body text 16px. */
+html body[data-ui-theme] :is(#title .panel,#modal .mbox,#app #shade .sheet){--menu-small:var(--fs-small);--text-10:var(--menu-small);--text-12:var(--menu-body);--text-14:var(--menu-body);}
+html body[data-ui-theme] #app #shade .sheet .bodyw{font-size:var(--menu-body)!important;}
+html body[data-ui-theme] #modal.tutorial-control-tour .mbox:not([style*="left: "]):not([style*="left:"]){left:50%!important;top:50%!important;transform:translate(-50%,-50%)!important;}
+/* End screen on the same three sizes as every menu: title, words, body (min 14px). */
+html body[data-ui-theme] #over.end-screen .box{--menu-head:var(--fs-head);--menu-word:var(--fs-word);--menu-body:var(--fs-body);--menu-small:var(--fs-small);width:min(640px,calc(100vw - 24px))!important;padding:56px 64px 48px!important;overflow:auto;}
+html body[data-ui-theme] #over.end-screen h2{font-size:var(--menu-head)!important;margin:0 0 8px!important;}
+html body[data-ui-theme] #over.end-screen .end-name{font-size:var(--menu-word)!important;}
+html body[data-ui-theme] #over.end-screen :is(.end-story,p,.end-affinities,.end-achievements,details,summary){font-size:var(--menu-body)!important;line-height:1.4!important;}
+html body[data-ui-theme] #over.end-screen .end-name+*{font-size:var(--menu-small)!important;}
+html body[data-ui-theme] #over.end-screen .end-score{font-size:calc(48px * var(--ui-text-scale,1))!important;margin:6px 0 0!important;}
+html body[data-ui-theme] #over.end-screen .end-stats span{font-size:var(--menu-small)!important;gap:4px!important;padding:8px 4px!important;}
+html body[data-ui-theme] #over.end-screen .end-stats b{font-size:var(--menu-word)!important;}
+html body[data-ui-theme] #over.end-screen .end-actions{display:flex!important;flex-wrap:wrap!important;justify-content:center!important;gap:8px!important;}
+html body[data-ui-theme] #over.end-screen .end-actions button{font-size:var(--fs-body)!important;min-height:40px!important;}
+@media(max-width:700px){html body[data-ui-theme] #over.end-screen .box{padding:50px 44px 42px!important;}}
+/* End screen: the same size tokens as the menus (no 10px labels), and no outer scrollbar. */
+html body[data-ui-theme] #over.end-screen{overflow:hidden!important;}
+html body[data-ui-theme] #over.end-screen .box{max-height:calc(100dvh - 24px)!important;overflow-y:auto!important;scrollbar-width:none!important;
+ --text-10:var(--menu-small);--text-12:var(--menu-small);--text-14:var(--menu-body);--text-16:var(--menu-body);--text-18:var(--menu-body);--text-20:var(--menu-word);--text-24:var(--menu-word);--text-26:var(--menu-word);}
+html body[data-ui-theme] #over.end-screen .box::-webkit-scrollbar{display:none!important;}
+html body[data-ui-theme] #over.end-screen .end-stats small{font-size:var(--menu-small)!important;text-transform:none!important;color:var(--house-dim)!important;}
+html body[data-ui-theme] #over.end-screen .end-stats span{gap:2px!important;padding:6px 4px!important;}
+html body[data-ui-theme] #over.end-screen :is(.end-story,.end-affinities,.end-achievements,details,summary,p){font-size:var(--menu-body)!important;}
+@media(max-width:700px){html body[data-ui-theme] #over.end-screen .box{padding:72px 44px 48px!important;}}
+/* Title menu: one lettering size for all five buttons. */
+html body[data-ui-theme] #title#title#title#title .menu button{font-size:var(--fs-word)!important;}
+@media(max-height:500px){html body[data-ui-theme] #title#title#title#title .menu button{font-size:var(--fs-body)!important;}}
+/* End screen title clears the anvil and rails. */
+html body[data-ui-theme] #over.end-screen .box{padding-top:88px!important;}
+html body[data-ui-theme] #over.end-screen h2{font-size:var(--fs-head)!important;}
+@media(max-width:700px){html body[data-ui-theme] #over.end-screen .box{padding-top:92px!important;}html body[data-ui-theme] #over.end-screen h2{font-size:var(--fs-word)!important;}}
+/* Hard type pass (10-14): four sizes in every window. Heading 26, word 21,
+   body 16, small 14; nothing readable below 14 (13 on phones). */
+html body[data-ui-theme] #title#title#title#title .menu button:not(#tNew):not(#tContinue){font-size:var(--fs-word)!important;}
+@media(max-height:500px){html body[data-ui-theme] #title#title#title#title .menu button:not(#tNew):not(#tContinue){font-size:var(--fs-body)!important;}}
+html body[data-ui-theme] #title #tUpdate,html body[data-ui-theme] #title #tUpdate *{font-size:var(--fs-small)!important;}
+html body[data-ui-theme] #modal .mbox :is(.journal-undiscovered h3,.journal-entry h4,.journal-entry summary,.journal-locked h4,.journal-achievement h3,.journal-entry .journal-enemy-heading){font:600 var(--menu-body)/1.3 var(--mono)!important;}
+html body[data-ui-theme] #modal .mbox .journal-group{font:700 var(--menu-word)/1.2 var(--display)!important;}
+
+/* THE type scale (10-14): four sizes for every front screen and window.
+   Heading, word (buttons, names, labels), body (reading), small (captions).
+   Every size rule in these screens points here; change a size here only. */
+body{--fs-head:calc(28px * var(--ui-text-scale,1));--fs-word:calc(21px * var(--ui-text-scale,1));--fs-body:calc(16px * var(--ui-text-scale,1));--fs-small:calc(14px * var(--ui-text-scale,1));}
+@media(max-width:700px),(max-height:500px){body{--fs-head:calc(24px * var(--ui-text-scale,1));--fs-word:calc(19px * var(--ui-text-scale,1));--fs-body:calc(15px * var(--ui-text-scale,1));--fs-small:calc(14px * var(--ui-text-scale,1));}}
+html body[data-ui-theme][data-ui-theme] :is(#title,#create,#title .panel,#modal .mbox,#app #shade .sheet,#over.end-screen .box):is(*,#title,#create){
+ --menu-head:var(--fs-head);--menu-word:var(--fs-word);--menu-body:var(--fs-body);--menu-small:var(--fs-small);
+ --create-head:var(--fs-head);--create-word:var(--fs-word);--create-body:var(--fs-body);
+ --text-10:var(--fs-small);--text-12:var(--fs-body);--text-14:var(--fs-body);--text-16:var(--fs-body);--text-18:var(--fs-body);--text-20:var(--fs-word);--text-24:var(--fs-word);--text-26:var(--fs-word);--text-32:var(--fs-head);--text-40:var(--fs-head);
+ --forge-ui-body-size:var(--fs-body);}
+html body[data-ui-theme][data-ui-theme] #create .creation-appearance .card b{font-size:var(--fs-body)!important;}
+html body[data-ui-theme][data-ui-theme] #create .wrap .creation-steps :is(.creation-step-value,.creation-step-now){font-size:var(--fs-body)!important;}
+html body[data-ui-theme][data-ui-theme] #modal#modal .forge-modal #mX{font-size:var(--fs-word)!important;}
+html body[data-ui-theme] #create .wrap[data-current-step=god] .hero-who{display:none!important;}
+html body[data-ui-theme][data-ui-theme] #modal#modal .forge-modal #mTitle{font-size:var(--fs-head)!important;}
+/* Raised steel chevrons (10-14): finished choices are subdued, the live
+   Confirm chevron is prominent. Point and notch are kept out of the stretch. */
+html body[data-ui-theme] #create#create#create .creation-steps :is(button,.creation-step-now)::before{border-style:solid!important;border-color:transparent!important;border-width:8px 22px 8px 22px!important;border-image:url(../art/ui/chevron-raised-subdued-repeat-v1.png) 60 200 60 200 fill / 8px 22px 8px 22px / 0 stretch!important;filter:none!important;}
+html body[data-ui-theme] #create#create#create .creation-steps>:first-child::before{border-width:8px 22px 8px 12px!important;border-image:url(../art/ui/chevron-raised-subdued-start-v1.png) 60 200 60 110 fill / 8px 22px 8px 12px / 0 stretch!important;}
+html body[data-ui-theme] #create#create#create .creation-steps :is(#cConfirm,button[aria-current=step])::before{border-image-source:url(../art/ui/chevron-raised-prominent-repeat-v1.png)!important;}
+html body[data-ui-theme] #create#create#create .creation-steps>:is(#cConfirm,button[aria-current=step]):first-child::before{border-image-source:url(../art/ui/chevron-raised-prominent-start-v1.png)!important;}
+html body[data-ui-theme] #create#create#create .creation-steps :is(button,.creation-step-now):is(:hover,:focus-visible)::before{filter:brightness(1.25)!important;}
+html body[data-ui-theme] #create#create#create .creation-steps :is(button,.creation-step-now){margin-left:-16px;padding-left:30px!important;padding-right:28px!important;}
+html body[data-ui-theme] #create#create#create .creation-steps>:first-child{margin-left:0;padding-left:20px!important;}
+/* Show tutorial is a prominent button like the other three corners. */
+html body[data-ui-theme] #create#create#create .creation-tutorial::before{border-image:url(../art/ui/button-raised-prominent-clean-v1.png) 130 150 130 150 fill / 12px 16px 12px 16px / 0 stretch!important;border-width:12px 16px!important;}
+@media(max-width:700px){html body[data-ui-theme] #create#create#create .creation-steps :is(button,.creation-step-now){margin-left:-13px;padding-left:22px!important;padding-right:18px!important;}html body[data-ui-theme] #create#create#create .creation-steps :is(button,.creation-step-now)::before{border-width:7px 17px!important;border-image-width:7px 17px!important;}html body[data-ui-theme] #create#create#create .creation-steps>:first-child{padding-left:14px!important;margin-left:0;}}
+html body[data-ui-theme] #create#create .creation-record.more-details::after{bottom:max(38px,5.5%)!important;left:15%!important;right:15%!important;font-size:var(--fs-small)!important;color:var(--house-dim)!important;}@media(max-width:700px){html body[data-ui-theme] #create#create .creation-record.more-details::after{bottom:34px!important;left:44px!important;right:44px!important;}}
+html body[data-ui-theme] #create#create .creation-record .creation-record-body{margin-bottom:24px!important;}html body[data-ui-theme] #create#create .creation-record.more-details::after{background:linear-gradient(transparent,#2a2d31 40%);padding-top:6px;}
+html body[data-ui-theme][data-ui-theme] #create .wrap .creation-steps :is(.creation-step-value,.creation-step-now){font-size:var(--fs-word)!important;}@media(max-width:400px){html body[data-ui-theme][data-ui-theme] #create .wrap .creation-steps :is(.creation-step-value,.creation-step-now){font-size:var(--fs-body)!important;}}
+html body[data-ui-theme][data-ui-theme] #create .creation-nav :is(#begin,.creation-tutorial){min-height:48px!important;height:48px!important;box-sizing:border-box!important;padding-top:0!important;padding-bottom:3px!important;}@media(max-height:720px),(max-width:700px){html body[data-ui-theme][data-ui-theme] #create .creation-nav :is(#begin,.creation-tutorial){min-height:44px!important;height:44px!important;}}
+/* Close is a drawn X on a small square plate (10-14), everywhere. */
+html body[data-ui-theme][data-ui-theme] :is(#mX,#app #shade .sheet #close,#modal#modal .forge-modal #mX){font-size:0!important;width:44px!important;min-width:44px!important;height:44px!important;min-height:44px!important;padding:0!important;display:inline-grid!important;place-items:center!important;}
+html body[data-ui-theme][data-ui-theme] :is(#mX,#app #shade .sheet #close)::after{content:"×"!important;display:block!important;font:700 30px/1 var(--mono)!important;color:#e4e8ec!important;text-shadow:0 1px 0 #000,0 2px 3px #000!important;margin-top:-3px;}
+html body[data-ui-theme][data-ui-theme] :is(#mX,#app #shade .sheet #close):is(:hover,:focus-visible)::after{color:#fff!important;}
+/* Sheet tabs are buttons: subdued plates, word size; the open tab is white on a brighter plate. */
+html body[data-ui-theme][data-ui-theme] #app #shade .sheet #studySheetTabs{gap:6px!important;flex-wrap:wrap!important;}
+html body[data-ui-theme][data-ui-theme] #app #shade .sheet #studySheetTabs button{position:relative!important;isolation:isolate;min-height:40px!important;padding:2px 16px 5px!important;font:700 var(--fs-word)/1 var(--display)!important;color:#9aa1a9!important;display:inline-flex!important;align-items:center;justify-content:center;}
+html body[data-ui-theme][data-ui-theme] #app #shade .sheet #studySheetTabs button::before{content:""!important;display:block!important;position:absolute;inset:0;z-index:-1;pointer-events:none;border:10px 12px solid transparent;border-style:solid;border-color:transparent;border-width:10px 12px;border-image:url(../art/ui/button-raised-subdued-clean-v1.png) 100 110 100 110 fill / 10px 12px 10px 12px / 0 stretch;}
+html body[data-ui-theme][data-ui-theme] #app #shade .sheet #studySheetTabs button:is(.on,[aria-pressed=true],[aria-selected=true]){color:#fff!important;}
+html body[data-ui-theme][data-ui-theme] #app #shade .sheet #studySheetTabs button:is(.on,[aria-pressed=true],[aria-selected=true],:hover)::before{filter:brightness(1.4);}
+@media(max-width:700px){html body[data-ui-theme][data-ui-theme] #app #shade .sheet #studySheetTabs button{padding:2px 12px 5px!important;}}
+/* Tiny phones at large text: strip words drop to small. */
+@media(max-width:400px){html body[data-ui-theme][data-ui-theme][data-ui-theme] #create .wrap .creation-steps :is(.creation-step-value,.creation-step-now){font-size:var(--fs-small)!important;}}
+/* Wide screens give the details panel more room. */
+@media(min-width:1000px) and (min-height:561px){html body[data-ui-theme] #create#create .wrap{grid-template-columns:minmax(0,1fr) minmax(380px,46%)!important;}}
+html body[data-ui-theme][data-ui-theme][data-ui-theme] #app #shade .sheet #studySheetTabs button::before{position:absolute!important;inset:0!important;width:auto!important;height:auto!important;margin:0!important;transform:none!important;background:none!important;border-radius:0!important;}
+html body[data-ui-theme][data-ui-theme][data-ui-theme] :is(#mX,#app #shade .sheet #close)::after{margin:0 0 3px 0!important;line-height:1!important;font-size:28px!important;}
+/* The in-game menu wears the plain window like the other light windows, with word-size items. */
+html body.study-menu-open[data-ui-theme] #app #top#top#top::before{border:26px solid transparent!important;border-image:url(../art/ui/window-plain-v1.png) 150 fill / 26px / 0 stretch!important;filter:none!important;}
+html body.study-menu-open[data-ui-theme] #app #top#top#top{padding:30px 28px 26px!important;}
+html body.study-menu-open[data-ui-theme] #app #top#top#top #studyNav button{font-size:var(--fs-word)!important;}
+html body.study-menu-open[data-ui-theme] #app #top#top#top #brand,html body.study-menu-open[data-ui-theme] #app #top#top#top #brand *{font-size:var(--fs-body)!important;}
+html body.study-menu-open[data-ui-theme] #app #top#top#top #brand :is(#hBiome,.study-biome,b,strong){font-size:var(--fs-word)!important;}
+/* Affinity highlight (approved 10-14): bold highlight text takes the hero's
+   primary element; white when there is none. */
+body{--aff-hi:#ffffff;}
+body[data-affinity=fire]{--aff-hi:#f08a52;}body[data-affinity=water]{--aff-hi:#7cc0ea;}body[data-affinity=air]{--aff-hi:#efd98a;}
+body[data-affinity=earth]{--aff-hi:#9cc074;}body[data-affinity=light]{--aff-hi:#fbefc4;}body[data-affinity=shadow]{--aff-hi:#a98ad6;}
+html body[data-ui-theme][data-ui-theme] :is(#create .pick-words .choice-name,#create .build-fact .choice-name,#create .creation-ability .choice-name,#create .cards .card.on .choice-name,#create .creation-steps #cConfirm .creation-step-value,#create .creation-steps button[aria-current=step] .creation-step-value,#mTitle,#sheetTitle,#app #shade .sheet :is(h3,.sec,.opt-section-details>summary),#app #shade .sheet #studySheetTabs button.on,#create .hero-stats b,#over.end-screen :is(h2,.end-score)){color:var(--aff-hi)!important;-webkit-text-fill-color:var(--aff-hi)!important;}
+/* ===== Integration fixes (2026-10-14 review; each one reproduced by a second reader) ===== */
+/* End screen on phones: the story scrolls inside the frame, while the frame, title and buttons stay put. */
+html body[data-ui-theme] #over#over.end-screen .box{display:flex!important;flex-direction:column!important;overflow:hidden!important;}
+html body[data-ui-theme] #over#over.end-screen #overP{flex:1 1 auto;min-height:0;overflow-y:auto;scrollbar-width:thin;scrollbar-color:#6f757d transparent;}
+html body[data-ui-theme] #over#over.end-screen :is(#overT,.end-actions){flex:none;}
+html body[data-ui-theme] #over#over.end-screen .end-actions{position:static!important;margin:16px 0 0!important;padding:0!important;background:none!important;border:0!important;}
+@media(max-width:700px){html body[data-ui-theme] #over#over.end-screen .box{padding:84px 40px 64px!important;}}
+@media(max-height:560px) and (orientation:landscape){html body[data-ui-theme] #over#over.end-screen .box{padding:52px 64px 36px!important;}}
+/* Title windows (Load, Settings, About): the frame is the panel's own border, so it never scrolls away and text stops at the rail. */
+html body[data-ui-theme] #title#title#title .panel{border:34px solid transparent!important;border-image:url(../art/ui/window-plain-v1.png) 150 fill / 34px / 0 stretch!important;padding:0 4px 0 0!important;}
+html body[data-ui-theme] #title#title#title .panel::before{display:none!important;}
+@media(max-width:700px){html body[data-ui-theme] #title#title#title .panel{padding:10px 2px 2px!important;}}
+/* The choice strip fits beside the details panel at tablet and small desktop widths. */
+@media(min-width:701px) and (max-width:1100px){html body[data-ui-theme] #create#create#create .wrap .creation-steps:has(>:nth-child(3)) :is(button,.creation-step-now){min-width:0!important;padding-left:24px!important;padding-right:20px!important;}html body[data-ui-theme] #create#create#create .wrap .creation-steps:has(>:nth-child(3))>:first-child{padding-left:16px!important;}}
+@media(min-width:701px) and (max-width:900px){html body[data-ui-theme] #create#create#create .wrap .creation-steps:has(>:nth-child(4)){gap:0 16px!important;}html body[data-ui-theme][data-ui-theme][data-ui-theme] #create#create .wrap .creation-steps:has(>:nth-child(4)) :is(.creation-step-value,.creation-step-now){font-size:var(--fs-body)!important;}}
+/* Phone landscape creation: the details panel gives its frame less padding, so a tap shows what it did. */
+@media(max-height:500px) and (orientation:landscape){html body[data-ui-theme] #create#create#create .creation-record{padding-top:34px!important;padding-bottom:26px!important;padding-left:12%!important;padding-right:12%!important;}html body[data-ui-theme] #create#create .creation-record.more-details::after{bottom:24px!important;}}
+/* Inventory: slot labels sit under the slot, at the small size. */
+html body[data-ui-theme] #app#app #shade .sheet .gslot .lab{font-size:var(--fs-small)!important;line-height:1.15!important;}
+html body[data-ui-theme] #app#app #shade .sheet .gearwrap .gslot .lab{bottom:auto!important;top:calc(100% + 3px)!important;}
+/* Phone portrait Inventory: the bag's fourth column fits inside the frame. */
+@media(max-width:700px) and (orientation:portrait){html body[data-ui-theme] #app#app #shade .sheet .tgear .tg-cells{grid-template-columns:repeat(4,minmax(0,1fr))!important;}html body[data-ui-theme] #app#app #shade .sheet .tgear .tg-cells .cell{height:auto!important;min-height:0!important;aspect-ratio:1/1!important;}}
+/* No outline boxes in windows (2026-10-14: filled cells, rarity borders kept): mote pills, Forge mote boxes and meters get a filled face. */
+html body[data-ui-theme] :is(#modal .mbox,#app #shade .sheet) :is(.pouch .mote,.mslot,.meter,.enchcard){background-color:#0000004d;}
+html body[data-ui-theme] #modal #forgeBody .enchcard:hover:not(.off){border-color:var(--house-accent)!important;}
+/* Character sheet: ability and passive names take the affinity highlight, as in creation (no amber or green accent). */
+html body[data-ui-theme] #app #shade .sheet #mChar :is(.arow,.prow) .n{color:var(--aff-hi)!important;}
+/* The in-game menu's small state words (Sound On / Off) are on the type scale. */
+html body.study-menu-open[data-ui-theme] #app #top#top #studyNav button small{font:400 var(--fs-small)/1.2 "Spectral",Georgia,serif!important;color:var(--ui-dim)!important;}
+/* Keyboard focus: drawn plates brighten on their own, with no block or ring behind them. */
+html body[data-ui-theme][data-ui-theme] :is(#mX,#app #shade .sheet #close,#mFoot button,#title .panel .panelfoot button,#mSave button,#title .panel .slots button,#app #shade .sheet #studySheetTabs button):focus-visible{background:none!important;box-shadow:none!important;}
+/* The HUD colour's dropdown list is steel, not the HUD's own colour. */
+html body[data-ui-theme] :is(#modal .mbox,#app #shade .sheet) option{background:#16181b!important;color:var(--house-ink)!important;}
+/* Touch: sliders are a full-height target, centred on their label. */
+body.touch[data-ui-theme] :is(#app #shade #mHelp,#titleSettings) .optrow:has(>input[type=range]){align-items:center;}
+body.touch[data-ui-theme] :is(#app #shade #mHelp,#titleSettings) input[type=range]{height:44px;}
+/* Key bindings: keys at their default are grey, keys the player changed are silver. */
+html body[data-ui-theme] :is(#modal,#app #shade .sheet) .binds button:not(.custom):not(.wait){color:var(--house-dim)!important;}
+/* Title Settings matches the in-game Options: the same width, so the same two columns on wide screens. On a short phone the X
+   closes it, so the Back plate gives its room to the options. */
+html body[data-ui-theme] #modal#modal .mbox.title-settings{width:min(1200px,calc(100vw - 24px))!important;max-width:min(1200px,calc(100vw - 24px))!important;}
+@media(max-height:500px){html body[data-ui-theme] #modal#modal .mbox.title-settings #mFoot{display:none!important;}}
+/* A saved game (as in 1.6): Continue is the main action and New Game joins the other buttons. */
+html body[data-ui-theme] #title#title#title#title#title .menu #tContinue{color:#fff!important;text-shadow:0 0 8px #dfe8f366!important;min-height:66px!important;}
+html body[data-ui-theme] #title#title#title#title#title .menu:has(#tContinue) #tNew{min-height:60px!important;}
+html body[data-ui-theme] #title#title#title#title#title .menu:has(#tContinue) #tNew:not(:hover):not(:focus){color:#d9dde2!important;text-shadow:0 1px 0 #000,0 -1px 0 #0008,1px 0 0 #0008,-1px 0 0 #0008,0 2px 3px #000!important;}
+@media(max-height:500px){html body[data-ui-theme] #title#title#title#title#title .menu #tContinue{min-height:42px!important;}html body[data-ui-theme] #title#title#title#title#title .menu:has(#tContinue) #tNew{min-height:40px!important;}}
+/* Hover cards and the map hint join the house style (Justin, 2026-10-14: yes). Rarity, damage and warning colours stay. */
+html body[data-ui-theme] #dtip#dtip{background:#141619f2!important;border:0!important;border-radius:0!important;box-shadow:0 6px 18px #000b!important;color:var(--house-ink)!important;font-family:"Spectral",Georgia,serif!important;--ink:var(--house-ink);--ash:var(--house-ash);--dim:var(--house-dim);--gold:var(--house-accent);--mono:"Spectral",Georgia,serif;--journal-card-copy:var(--fs-small);--journal-card-value:var(--fs-small);}
+html body[data-ui-theme] #dtip#dtip .nm{font:700 var(--fs-word)/1.15 "Grenze Gotisch",serif!important;color:var(--aff-hi)!important;}
+html body[data-ui-theme] #automapTag{color:var(--house-ash)!important;background:#0b0c0ecc!important;border:0!important;border-radius:0!important;font:400 var(--fs-small)/1.3 "Spectral",Georgia,serif!important;letter-spacing:0!important;text-transform:none!important;}
+html body[data-ui-theme] #automapLandmarks button:is(:hover,:focus-visible){outline:none!important;background:#2a2d31!important;}
+/* The combat log history opens from the menu like the other windows (Justin, 2026-10-14: restyle it, leave the HUD). */
+html body.study-log-history[data-ui-theme] #app#app #log{border:34px solid transparent!important;border-image:url(../art/ui/window-plain-v1.png) 150 fill / 34px / 0 stretch!important;border-radius:0!important;background:none!important;padding:2px 8px!important;font:400 var(--fs-body)/1.4 "Spectral",Georgia,serif!important;scrollbar-width:thin;scrollbar-color:#6f757d transparent;}
+html body.study-log-history[data-ui-theme] #app#app #log>*{font:inherit!important;}
+html body.study-log-history[data-ui-theme] #app#app #studyLogClose{border-radius:0!important;}
+/* Real actions inside windows sit on the subdued plate (Justin's rule: buttons are his drawn plates); toggles and keys stay words. */
+html body[data-ui-theme] :is(#app #shade #mHelp #resetUITheme,#app #shade #mHelp #bindReset,#app #shade #mHelp #howToPlay,#titleSettings #resetUITheme,#titleSettings #bindReset,#titleSettings #howToPlay,#app #shade #mHelp :is(#oJournal,#oExport,#oImport,#oTitle,#oExit,button[data-save]),#modal #forgeBody :is(button[data-fuse],button[data-up],button[data-craft],button[data-recycle],button[data-recycle-all]),#modal #mBody .run-report-button,#app #shade #mFaith button.prayer,#app #studyLogClose,#app .tutorial-inline>button,#modal .tutorial-inline>button){position:relative;isolation:isolate;display:inline-flex!important;align-items:center!important;justify-content:center!important;min-height:44px!important;padding:0 16px 3px!important;border:0!important;background:none!important;box-shadow:none!important;font:700 var(--fs-word)/1 var(--display)!important;color:#d9dde2!important;text-shadow:0 1px 0 #000,0 -1px 0 #0008,1px 0 0 #0008,-1px 0 0 #0008,0 2px 3px #000!important;}
+html body[data-ui-theme] :is(#app #shade #mHelp #resetUITheme,#app #shade #mHelp #bindReset,#app #shade #mHelp #howToPlay,#titleSettings #resetUITheme,#titleSettings #bindReset,#titleSettings #howToPlay,#app #shade #mHelp :is(#oJournal,#oExport,#oImport,#oTitle,#oExit,button[data-save]),#modal #forgeBody :is(button[data-fuse],button[data-up],button[data-craft],button[data-recycle],button[data-recycle-all]),#modal #mBody .run-report-button,#app #shade #mFaith button.prayer,#app #studyLogClose,#app .tutorial-inline>button,#modal .tutorial-inline>button)::before{content:""!important;display:block!important;position:absolute!important;inset:0!important;z-index:-1!important;pointer-events:none;border-style:solid!important;border-color:transparent!important;border-width:10px 12px!important;border-image:url(../art/ui/button-raised-subdued-clean-v1.png) 100 110 100 110 fill / 10px 12px 10px 12px / 0 stretch!important;filter:none!important;background:none!important;}
+html body[data-ui-theme] :is(#app #shade #mHelp #resetUITheme,#app #shade #mHelp #bindReset,#app #shade #mHelp #howToPlay,#titleSettings #resetUITheme,#titleSettings #bindReset,#titleSettings #howToPlay,#app #shade #mHelp :is(#oJournal,#oExport,#oImport,#oTitle,#oExit,button[data-save]),#modal #forgeBody :is(button[data-fuse],button[data-up],button[data-craft],button[data-recycle],button[data-recycle-all]),#modal #mBody .run-report-button,#app #shade #mFaith button.prayer,#app #studyLogClose,#app .tutorial-inline>button,#modal .tutorial-inline>button):is(:hover,:focus-visible){color:#fff!important;}
+html body[data-ui-theme] :is(#app #shade #mHelp #resetUITheme,#app #shade #mHelp #bindReset,#app #shade #mHelp #howToPlay,#titleSettings #resetUITheme,#titleSettings #bindReset,#titleSettings #howToPlay,#app #shade #mHelp :is(#oJournal,#oExport,#oImport,#oTitle,#oExit,button[data-save]),#modal #forgeBody :is(button[data-fuse],button[data-up],button[data-craft],button[data-recycle],button[data-recycle-all]),#modal #mBody .run-report-button,#app #shade #mFaith button.prayer,#app #studyLogClose,#app .tutorial-inline>button,#modal .tutorial-inline>button):is(:hover,:focus-visible)::before{filter:brightness(1.35)!important;}
+html body[data-ui-theme] :is(#app #shade #mHelp #resetUITheme,#app #shade #mHelp #bindReset,#app #shade #mHelp #howToPlay,#titleSettings #resetUITheme,#titleSettings #bindReset,#titleSettings #howToPlay,#app #shade #mHelp :is(#oJournal,#oExport,#oImport,#oTitle,#oExit,button[data-save]),#modal #forgeBody :is(button[data-fuse],button[data-up],button[data-craft],button[data-recycle],button[data-recycle-all]),#modal #mBody .run-report-button,#app #shade #mFaith button.prayer,#app #studyLogClose,#app .tutorial-inline>button,#modal .tutorial-inline>button):disabled{color:#838c97!important;}
+html body[data-ui-theme] :is(#app #shade #mHelp #resetUITheme,#app #shade #mHelp #bindReset,#app #shade #mHelp #howToPlay,#titleSettings #resetUITheme,#titleSettings #bindReset,#titleSettings #howToPlay,#app #shade #mHelp :is(#oJournal,#oExport,#oImport,#oTitle,#oExit,button[data-save]),#modal #forgeBody :is(button[data-fuse],button[data-up],button[data-craft],button[data-recycle],button[data-recycle-all]),#modal #mBody .run-report-button,#app #shade #mFaith button.prayer,#app #studyLogClose,#app .tutorial-inline>button,#modal .tutorial-inline>button):disabled::before{filter:brightness(.8)!important;}
+html body[data-ui-theme] :is(#app #shade #mHelp #resetUITheme,#app #shade #mHelp #bindReset,#titleSettings #resetUITheme,#titleSettings #bindReset,#modal #forgeBody button[data-recycle]){font-size:var(--fs-body)!important;}
+/* Justin, 2026-10-14 first look. Title buttons: the lettering fills the plate (heading size; word size on a short screen). */
+html body[data-ui-theme] #title#title#title#title#title .menu button{font-size:var(--fs-head)!important;}
+@media(max-height:500px){html body[data-ui-theme] #title#title#title#title#title .menu button{font-size:var(--fs-word)!important;}}
+/* Creation on landscape, laptop and PC: the details panel runs from the choice strip to the bottom row, Enter the Dungeon
+   sits to its left, and large screens are no longer held to the old 1080 x 820 box. */
+@media(min-width:701px){html body[data-ui-theme] #create#create#create .creation-record{grid-row:2/6!important;align-self:stretch!important;height:auto!important;max-height:none!important;}html body[data-ui-theme] #create#create#create .creation-nav{grid-column:1!important;}}
+@media(min-width:1300px) and (min-height:861px){html body[data-ui-theme] #create#create#create .wrap{max-width:1400px!important;max-height:1000px!important;}}
+/* Gods keep their own colour (Justin, 2026-10-14): the god's name and the Faith sections take the god's colour, not the hero's affinity. */
+html body[data-ui-theme][data-ui-theme] #app #shade .sheet #mFaith#mFaith .faith :is(.godhead h3,.sec){color:var(--god-col,var(--aff-hi))!important;-webkit-text-fill-color:var(--god-col,var(--aff-hi))!important;}
+/* Confirm calls for the click (Justin, 2026-10-14): the choice strip is a full-size row, the live Confirm chevron is at
+   least as wide as the Masculine / Feminine plates and glows slowly (steady for players who ask for reduced motion). */
+html body[data-ui-theme][data-ui-theme][data-ui-theme] #create#create#create#create .creation-steps :is(button,.creation-step-now){min-height:48px!important;}
+@media(max-width:700px){html body[data-ui-theme][data-ui-theme][data-ui-theme] #create#create#create#create .creation-steps:not(:has(>:nth-child(4))) :is(.creation-step-value,.creation-step-now){font-size:var(--fs-word)!important;}}
+html body[data-ui-theme][data-ui-theme][data-ui-theme] #create#create#create#create .creation-steps :is(#cConfirm,button[aria-current=step]){min-width:124px!important;}
+html body[data-ui-theme][data-ui-theme][data-ui-theme] #create#create#create#create .creation-steps :is(#cConfirm,button[aria-current=step]) .creation-step-value{color:#fff!important;-webkit-text-fill-color:#fff!important;}
+@keyframes forgeConfirmGlow{0%,100%{filter:brightness(1.3) drop-shadow(0 0 0 #ffffff00);}50%{filter:brightness(1.75) drop-shadow(0 0 8px #ffffffb3);}}
+html body[data-ui-theme][data-ui-theme][data-ui-theme] #create#create#create#create .creation-steps :is(#cConfirm,button[aria-current=step])::before{filter:brightness(1.55) drop-shadow(0 0 6px #ffffff99)!important;}
+@media(prefers-reduced-motion:no-preference){html body[data-ui-theme][data-ui-theme][data-ui-theme] #create#create#create#create .creation-steps :is(#cConfirm,button[aria-current=step])::before{animation:forgeConfirmGlow 1.8s ease-in-out infinite!important;}}
+/* Masculine and Feminine are a small choice: the drawn plate is 34px tall inside the 44px tap area. */
+html body[data-ui-theme][data-ui-theme][data-ui-theme] #create#create#create .creation-appearance .card{min-height:44px!important;height:44px!important;padding-top:0!important;padding-bottom:2px!important;}html body[data-ui-theme][data-ui-theme][data-ui-theme] #create#create#create .creation-appearance .card::before{top:5px!important;bottom:5px!important;}
+/* The same slow glow on the next step to take (Justin, 2026-10-14): Enter the Dungeon when the hero is ready, and the
+   title's main action (New Game, or Continue when a save exists). Steady when the player asks for reduced motion. */
+html body[data-ui-theme][data-ui-theme][data-ui-theme] :is(#create#create#create#create #begin,#title#title#title#title#title .menu #tNew,#title#title#title#title#title .menu #tContinue)::before{filter:brightness(1.4) drop-shadow(0 0 6px #ffffff99)!important;}
+html body[data-ui-theme][data-ui-theme][data-ui-theme] #title#title#title#title#title .menu:has(#tContinue) #tNew::before{filter:none!important;animation:none!important;}
+@media(prefers-reduced-motion:no-preference){html body[data-ui-theme][data-ui-theme][data-ui-theme] :is(#create#create#create#create #begin,#title#title#title#title#title .menu #tNew,#title#title#title#title#title .menu #tContinue)::before{animation:forgeConfirmGlow 1.8s ease-in-out infinite!important;}html body[data-ui-theme][data-ui-theme][data-ui-theme] #title#title#title#title#title .menu:has(#tContinue) #tNew::before{animation:none!important;}}
+/* Close history is the combat log window's own close: the drawn x on a 44px plate in the window's top-right corner, clear of the
+   floor title (Justin, 2026-10-14: the plate sat on "Dungeon - Floor 1"). Its words stay as its accessible name. The window
+   opens over the status block like every other window, instead of under the HP bars. */
+html body.study-log-history[data-ui-theme] #app#app #log{z-index:80!important;}
+html body.study-log-history[data-ui-theme] #app#app#app#app#app #studyLogClose{left:calc(var(--minimal-inset) + min(520px,100% - 2 * var(--minimal-inset)) - 44px - 16px)!important;top:calc(var(--minimal-inset) + 52px + 14px)!important;width:44px!important;min-width:44px!important;height:44px!important;min-height:44px!important;padding:0!important;font-size:0!important;z-index:81!important;}
+html body.study-log-history[data-ui-theme] #app#app#app#app#app #studyLogClose::after{content:"×"!important;display:block!important;font:700 28px/1 var(--mono)!important;color:#e4e8ec!important;text-shadow:0 1px 0 #000,0 2px 3px #000!important;margin:0 0 3px 0!important;}
+/* Spending attribute points: each + is a small drawn plate that glows while points wait (Justin, 2026-10-14: "the increasing
+   attributes thing is terrible now, we need something better for that even if it's just the old buttons back"). */
+html body[data-ui-theme] #app#app#app #shade .sheet button.plus{position:relative;isolation:isolate;display:inline-flex!important;align-items:center!important;justify-content:center!important;width:36px!important;min-width:36px!important;height:32px!important;min-height:32px!important;margin-left:8px!important;padding:0 0 3px!important;border:0!important;background:none!important;box-shadow:none!important;font:700 var(--fs-word)/1 var(--display)!important;color:#fff!important;-webkit-text-fill-color:#fff!important;text-shadow:0 1px 0 #000,0 2px 3px #000!important;cursor:pointer;vertical-align:middle;}
+html body[data-ui-theme] #app#app#app #shade .sheet button.plus::before{content:""!important;display:block!important;position:absolute!important;inset:0!important;z-index:-1!important;pointer-events:none;border-style:solid!important;border-color:transparent!important;border-width:8px 10px!important;border-image:url(../art/ui/button-raised-prominent-clean-v1.png) 130 150 130 150 fill / 8px 10px 8px 10px / 0 stretch!important;filter:brightness(1.4) drop-shadow(0 0 5px #ffffff88)!important;}
+@media(prefers-reduced-motion:no-preference){html body[data-ui-theme] #app#app#app #shade .sheet button.plus::before{animation:forgeConfirmGlow 1.8s ease-in-out infinite!important;}}
+html body[data-ui-theme] #app#app#app #shade .sheet button.plus:is(:hover,:focus-visible)::before{animation:none!important;filter:brightness(1.85) drop-shadow(0 0 8px #ffffffb3)!important;}
+/* Close: a drawn x set exactly on the plate's centre (Justin, 2026-10-14: "the x's still aren't centered on the close menus";
+   measured at 4x, the font glyph sat 2 to 3px low and half a pixel right on every close plate). */
+html body[data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme] :is(#mX,#app#app #shade .sheet #close,#app#app#app#app#app #studyLogClose)::after{content:""!important;display:block!important;position:absolute!important;left:50%!important;top:50%!important;width:12px!important;height:12px!important;margin:-6.8px 0 0 -6.6px!important;padding:0!important;font-size:0!important;line-height:0!important;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M1.5 1.5L10.5 10.5M10.5 1.5L1.5 10.5' stroke='%23e4e8ec' stroke-width='2.2' stroke-linecap='square'/%3E%3C/svg%3E") center/12px 12px no-repeat!important;filter:drop-shadow(0 1px 0 #000) drop-shadow(0 2px 2px #0009)!important;text-shadow:none!important;}
+html body[data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme] :is(#mX,#app#app #shade .sheet #close,#app#app#app#app#app #studyLogClose):is(:hover,:focus-visible)::after{filter:brightness(1.3) drop-shadow(0 1px 0 #000) drop-shadow(0 2px 2px #0009)!important;}

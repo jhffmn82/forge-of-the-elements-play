@@ -5050,7 +5050,7 @@ globalThis.UNMAKER_ATLAS={
     var resist={},contexts={},arm=bodyArmor(p);
     types.forEach(function(type){
       resist[type]=resistMult(p,type);
-      contexts[type]={player:true,armorResistance:arm.enchant&&elemToType(arm.enchant)===type?enchantValues('armor',arm.enchant).resistance:0,
+      contexts[type]={player:true,armorResistance:(arm.enchant&&elemToType(arm.enchant)===type?enchantValues('armor',arm.enchant).resistance:0)+(type!=='magic'?chainResist(arm):0),
         tomeResistance:infusion('tome')==='earth'?enchantValues('tome','earth').resistance:0,godResistance:hasGod('grumbok')?.04*rank:0,
         water:aff('water'),vitality:p.stats.vit,bulwark:!!perks.bulwark,lightVulnerable:p.race==='gloomling',
         courtOpposite:p.race==='fae'&&p.court?elemToType(OPPOSITE[p.court]):null,warding:ringVal('warding'),

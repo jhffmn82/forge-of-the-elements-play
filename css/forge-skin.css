@@ -1,210 +1,35 @@
 /* Forge materials. Paint only: the approved layout owns all sizes and spacing.
    Paper is packed at 128x128 and tiled at its native pixel scale. */
 :root{color-scheme:only dark;}
-body[data-ui-theme^=vellum]{color-scheme:only light;}
-body[data-ui-theme] :is(#title,#create){color-scheme:only dark;}
+/* Shared Forge palette. Front screens adopt these roles first; game surfaces
+   can use the same tokens without maintaining another set of color values. */
+:root{
+ --forge-ui-bg:#0b1420;--forge-ui-panel:#121e2e;--forge-ui-raised:#21384b;--forge-ui-edge:#668397;
+ --forge-ui-ink:#f0f6fa;--forge-ui-ash:#c8d9e4;--forge-ui-dim:#a4becd;
+ --forge-ui-accent:#f4f7fb;--forge-ui-focus:#f4f7fb;--forge-ui-rule:#ffb299;--forge-ui-divider:#ffffff1f;
+ --forge-ui-lantern:var(--house-accent);
+ /* "Forgewater": text colours taken from the steel frames and the water gem. No gold, amber or orange. */
+ --house-ink:#e2e6eb;--house-ash:#b4bbc4;--house-dim:#838c97;--house-accent:#f4f7fb;--house-btn:#dfe3e8;--house-warn:#d8705f;--house-good:#8fbd78;--forge-ui-selection:#1c242bea;
+ --forge-ui-controls:"Spectral",Georgia,serif;
+ --forge-ui-frame-tone:grayscale(1);
+ --forge-ui-body-base:18px;
+}
+body[data-ui-theme] :is(#title){color-scheme:only dark;}
 /* Keep HUD stacking inside the game, below title and character creation. */
 body[data-ui-theme] #app{position:relative;isolation:isolate;}
-body[data-ui-theme=forge]{
- --ui-bg:#131617;--ui-panel:#25292a;--ui-panel-2:#33393a;--ui-log:#1c2224;
- --ui-edge:#596162;--ui-raised:#41494a;--ui-ink:#eeeae0;--ui-ash:#bec3c0;--ui-dim:#939e9b;
- --gold:#d6b779;--ui-radius:5px;--ui-button-radius:5px;
- --ui-surface:linear-gradient(color-mix(in srgb,#2b3031 var(--ui-background-percent,100%),transparent),color-mix(in srgb,#212729 var(--ui-background-percent,100%),transparent));
- --ui-header-face:linear-gradient(color-mix(in srgb,#373e40 var(--ui-background-percent,100%),transparent),color-mix(in srgb,#2a3032 var(--ui-background-percent,100%),transparent));
- --ui-button-face:linear-gradient(color-mix(in srgb,#485153 var(--ui-background-percent,100%),transparent),color-mix(in srgb,#30393b var(--ui-background-percent,100%),transparent));
- --ui-button-shadow:inset 0 1px #b1baba3d,inset 1px 0 #b1baba1c,inset 0 -3px #090d0fa6,inset -1px 0 #090d0f99;
- --ui-frame-shadow:inset 0 0 0 1px #969f9f33,inset 0 0 0 3px #080d0f70,0 5px 16px #0008;
- --forge-paper:url('textures/forge-paper.webp');
-}
 /* A separate paint layer lets transparency fade the material, never the text. */
-body[data-ui-theme=forge] #app{position:relative;isolation:isolate;background:transparent!important;border-top-color:#606869;}
-body[data-ui-theme=forge] #app::before{
- content:'';position:absolute;inset:0;z-index:-1;pointer-events:none;
- background:linear-gradient(#171d2077,#171d2077),var(--forge-paper) 0 0/128px 128px repeat;
- filter:grayscale(.9);
- image-rendering:pixelated;
- opacity:var(--ui-background-opacity,1);
-}
-body[data-ui-theme=forge] #app #top,
-body[data-ui-theme=forge] #app #shade .sheet,
-body[data-ui-theme=forge] #modal .mbox{
- isolation:isolate;position:relative;border-color:var(--ui-edge);
-}
-body[data-ui-theme=forge] #app #top::before,
-body[data-ui-theme=forge] #app #shade .sheet::before,
-body[data-ui-theme=forge] #modal .mbox::before{
- content:'';position:absolute;inset:0;z-index:-1;pointer-events:none;border-radius:inherit;
- background:var(--forge-paper) 0 0/128px 128px repeat;image-rendering:pixelated;
- filter:grayscale(.9);opacity:calc(.28 * var(--ui-background-opacity,1));
-}
-body.fote-study[data-ui-theme=forge] #app :is(#studyLeft,#studyRight,#studyHud,#hotbar){background:transparent;border-color:var(--ui-edge);}
-body.fote-study[data-ui-theme=forge] #app #log{
- background:color-mix(in srgb,#131d24 calc(var(--ui-background-opacity,1) * 66%),transparent);
- color:#d0d0c5;text-shadow:0 1px #090e11;
- box-shadow:inset 0 1px #9aa5a159,inset 0 -1px #9aa5a159;
- --blood:#d57f6b;--moss:#9eb779;--dim:#aaa38e;
-}
-body.fote-study[data-ui-theme=forge] #app #top{background:var(--ui-header-face);box-shadow:inset 0 1px #acb5b229,inset 0 -2px #080d1066;}
-body.fote-study[data-ui-theme=forge] #app #top #depth{color:var(--ui-ash);text-shadow:0 1px #070a06;}
-body.fote-study[data-ui-theme=forge] #app #top #depth b{color:var(--ui-ink);}
 /* Raised controls carry a matte surface and the sprite art's dark edges. */
-body.fote-study[data-ui-theme=forge] #app :is(#studyNav button,#studyExplore,#dpad button),
-body[data-ui-theme=forge] #app #shade .sheet button,
-body[data-ui-theme=forge] #modal button{
- position:relative;isolation:isolate;background:var(--ui-button-face);color:var(--ui-ink)!important;
- border-color:#657173 #363e40 #14191b #525e60;box-shadow:var(--ui-button-shadow);text-shadow:0 1px #0c1215;
-}
-body.fote-study[data-ui-theme=forge] #app :is(#studyNav button,#studyExplore,#dpad button)::before,
-body[data-ui-theme=forge] #app #shade .sheet button::before,
-body[data-ui-theme=forge] #modal button::before{
- content:'';position:absolute;inset:1px;z-index:-1;pointer-events:none;border-radius:inherit;
- background:var(--forge-paper) 14px 8px/128px 128px repeat;image-rendering:pixelated;filter:grayscale(.9);opacity:calc(.32 * var(--ui-background-opacity,1));
-}
-body.fote-study[data-ui-theme=forge] #app #studyNav button,
-body.fote-study[data-ui-theme=forge] #app #studyExplore{border-radius:5px!important;}
-body.fote-study[data-ui-theme=forge] #app #studyNav button.on,
-body.fote-study[data-ui-theme=forge] #app :is(#studyNav button,#studyExplore,#dpad button):active,
-body[data-ui-theme=forge] #app #shade .sheet button:active{
- background:var(--ui-surface);border-color:#172124 #59696c #6c7b7c #243035;
- box-shadow:inset 0 2px 4px #000b,inset 0 -1px #b1bcbc4d;transform:none;
-}
-body.fote-study[data-ui-theme=forge] #app #studyNav button.on{color:#ecd49d!important;box-shadow:inset 0 2px 4px #000a,inset 0 -2px #ae9564;}
-body.fote-study[data-ui-theme=forge] #app :is(#studyNav,#studySheetTabs) .study-points{border-color:#8f805b;background:#3b3a26;color:#f2d99f;}
-@media(hover:hover){
- body.fote-study[data-ui-theme=forge] #app :is(#studyNav button,#studyExplore,#dpad button):hover,
- body[data-ui-theme=forge] #app #shade .sheet button:hover{border-top-color:#829291;color:#fff2d5!important;}
-}
 /* Inset tracks keep their game colors and stay fully opaque at every setting. */
-body.fote-study[data-ui-theme=forge] #app #bars .bar,
-body.fote-study[data-ui-theme=forge] #app #studyHunger .study-hunger-track,
-body.fote-study[data-ui-theme=forge] #app #hud2 .faithchip .meter{
- background:#171d1f;border-color:#505c5c;box-shadow:inset 0 0 0 1px #63706c,inset 0 2px 3px #000a;
-}
-body.fote-study[data-ui-theme=forge] #app #bars .bar>i,
-body.fote-study[data-ui-theme=forge] #app #studyHungerFill,
-body.fote-study[data-ui-theme=forge] #app #hud2 .faithchip .meter>i{box-shadow:inset 0 1px #fff3,inset 0 -2px #0005;}
-body.fote-study[data-ui-theme=forge] #app #studyHungerFill,
-body.fote-study[data-ui-theme=forge] #app #hud2 .faithchip .meter>i{position:relative;}
-body.fote-study[data-ui-theme=forge] #app #bars .bar>i::after,
-body.fote-study[data-ui-theme=forge] #app #studyHungerFill::after,
-body.fote-study[data-ui-theme=forge] #app #hud2 .faithchip .meter>i::after{
- content:'';position:absolute;inset:0;pointer-events:none;
- background:var(--forge-paper) 0 0/128px 128px repeat;image-rendering:pixelated;opacity:.12;
-}
-body.fote-study[data-ui-theme=forge] #app #bars .bar :is(span,.l),
-body.fote-study[data-ui-theme=forge] #app #studyHungerText,
-body.fote-study[data-ui-theme=forge] #app #hud2 .faithchip .rk{color:var(--ui-bar-ink);text-shadow:var(--ui-bar-shadow);}
-body.fote-study[data-ui-theme=forge] #app #hud2 button b{color:var(--ui-ink);}
-body.fote-study[data-ui-theme=forge] #app #hud2 button.chip.study-motes{
- background:var(--ui-panel-2-tint);border-color:#566363;box-shadow:inset 0 1px 2px #090e1077,inset 0 -1px #9baaa724;
-}
 /* The spell art and its elemental halo sit in dark iron sockets. */
-body.fote-study[data-ui-theme=forge] #app #hotbar .slot:not(.empty){
- background:color-mix(in srgb,#141a13 var(--ui-background-percent,100%),transparent);
- box-shadow:inset 0 0 0 1px #65624c,inset 0 0 0 2px #11190f,inset 0 0 12px -2px var(--c,transparent),inset 0 2px #b1a87929,inset 0 -3px #030702a6;
-}
-body.fote-study[data-ui-theme=forge] #app #hotbar .slot.armed,
-body.fote-study[data-ui-theme=forge] #app #hotbar .slot.over,
-body.fote-study[data-ui-theme=forge] #app #hotbar .slot:not(:disabled):active{box-shadow:inset 0 0 0 1px #c5ad70,inset 0 2px 4px #000b,inset 0 0 14px -2px var(--c,transparent);}
-body.fote-study[data-ui-theme=forge] #app #hotbar .slot .k{color:#e1d5b7;background:#191e15e6;border-color:#5c624a;}
-body.fote-study[data-ui-theme=forge] #statusbar .sico{box-shadow:inset 0 0 0 1px #cbc19826,inset 0 -2px #0009;border-radius:3px;}
-body[data-ui-theme=forge] #app #shade .sheet{background:var(--ui-surface);border-radius:5px;box-shadow:var(--ui-frame-shadow);}
-body[data-ui-theme=forge] #app #shade .sheet header{background:var(--ui-header-face);border-color:#575e46;box-shadow:inset 0 1px #aaa07a33;}
-body[data-ui-theme=forge] #app #shade .sheet :is(.sec,.tg-sec){color:#d6c698;border-bottom-color:#49513b;text-shadow:0 1px #10150e;}
-body[data-ui-theme=forge] #app #shade :is(.gslot,.cell){background:var(--ui-log-tint);box-shadow:inset 0 1px 3px #0009,inset 0 -1px #98927224;}
-body[data-ui-theme=forge] #app #shade .optrow select{border-color:#5b634a;border-radius:4px;box-shadow:inset 0 1px 3px #0007;}
-body[data-ui-theme=forge] #dtip{background:#1d2319;border-color:#726f52;box-shadow:inset 0 0 0 1px #a89c6930,0 4px 14px #000b;}
 
 /* Three parchment washes share one native 128-pixel grain. */
-body[data-ui-theme^=vellum]{
- --paper-base:#e4d9bc;--paper-button:#d6c8a6;--paper-header:#cdbf9c;--paper-log:#8c7858;--paper-line:#887754;
- --forge-paper:url('textures/forge-paper.webp');
- --ui-bg:#191b17;--ui-panel:var(--paper-base);--ui-panel-2:var(--paper-button);--ui-log:#c4b18b;--ui-raised:var(--paper-button);--ui-edge:var(--paper-line);
- --ui-ink:#302a20;--ui-ash:#48402f;--ui-dim:#61533c;--gold:#715020;--moss:#416025;--blood:#962d23;--ember:#924517;
- --ui-radius:5px;--ui-button-radius:5px;
- --ui-surface:linear-gradient(color-mix(in srgb,var(--paper-base) var(--ui-background-percent,100%),transparent),color-mix(in srgb,var(--paper-base) var(--ui-background-percent,100%),transparent));
- --ui-header-face:linear-gradient(color-mix(in srgb,var(--paper-header) var(--ui-background-percent,100%),transparent),color-mix(in srgb,var(--paper-button) var(--ui-background-percent,100%),transparent));
- --ui-button-face:linear-gradient(color-mix(in srgb,var(--paper-base) var(--ui-background-percent,100%),transparent),color-mix(in srgb,var(--paper-button) var(--ui-background-percent,100%),transparent));
- --ui-frame-shadow:inset 0 0 0 1px #574c2d4d,0 5px 16px #0008;
- --ui-button-shadow:inset 0 1px #fffae180,inset 1px 0 #fffae140,inset 0 -2px #514a3447;
-}
-body[data-ui-theme=vellum-sand]{--paper-base:#d6be8e;--paper-button:#c4a978;--paper-header:#bca475;--paper-log:#776a4f;--paper-line:#80704b;}
-body[data-ui-theme=vellum-ash]{--paper-base:#d2d2c8;--paper-button:#bfc2b6;--paper-header:#b0b7a9;--paper-log:#637165;--paper-line:#6c7869;--ui-ink:#273026;--ui-ash:#3e483a;--ui-dim:#56614f;--gold:#62542b;}
-body[data-ui-theme^=vellum] #app{position:relative;isolation:isolate;background:transparent!important;border-top-color:var(--paper-line);}
-body[data-ui-theme^=vellum] #app::before,
-body[data-ui-theme^=vellum] #app #shade .sheet::before,
-body[data-ui-theme^=vellum] #modal .mbox::before{
- content:'';position:absolute;inset:0;z-index:-1;pointer-events:none;border-radius:inherit;
- background:var(--paper-base) var(--forge-paper) 0 0/128px 128px repeat;
- background-blend-mode:soft-light;image-rendering:pixelated;opacity:var(--ui-background-opacity,1);
-}
-body.fote-study[data-ui-theme^=vellum] #app :is(#studyLeft,#studyRight,#studyHud,#hotbar){background:transparent;}
-body.fote-study[data-ui-theme^=vellum] #app #log{
- background:color-mix(in srgb,var(--paper-log) calc(var(--ui-background-opacity,1) * 42%),transparent);
- color:var(--ui-ink);text-shadow:none;
- box-shadow:inset 0 1px color-mix(in srgb,var(--paper-line) 72%,transparent),inset 0 -1px color-mix(in srgb,var(--paper-line) 72%,transparent);
- --ash:var(--ui-ash);--dim:var(--ui-dim);--moss:#34551e;--blood:#962d23;--gold:#624313;--ember:#8b3719;
-}
-body.fote-study[data-ui-theme^=vellum] #app #top{background:var(--ui-header-face);border-color:var(--paper-line);box-shadow:inset 0 1px #fffae18c,inset 0 -1px #514a3447;}
-body.fote-study[data-ui-theme^=vellum] #app #top #depth,
-body.fote-study[data-ui-theme^=vellum] #app #top #depth b{color:var(--ui-ink);text-shadow:none;}
-body.fote-study[data-ui-theme^=vellum] #app :is(#studyNav button,#studyExplore,#dpad button),
-body[data-ui-theme^=vellum] #app #shade .sheet button,
-body[data-ui-theme^=vellum] #modal button{
- position:relative;isolation:isolate;background:var(--ui-button-face);border-color:var(--paper-line);
- color:var(--ui-ink)!important;box-shadow:var(--ui-button-shadow);text-shadow:none;
-}
-body.fote-study[data-ui-theme^=vellum] #app :is(#studyNav button,#studyExplore,#dpad button)::before,
-body[data-ui-theme^=vellum] #app #shade .sheet button::before,
-body[data-ui-theme^=vellum] #modal button::before{
- content:'';position:absolute;inset:1px;z-index:-1;pointer-events:none;border-radius:inherit;
- background:var(--forge-paper) 0 0/128px 128px repeat;image-rendering:pixelated;opacity:calc(.14 * var(--ui-background-opacity,1));
-}
-body.fote-study[data-ui-theme^=vellum] #app #studyNav button.on,
-body.fote-study[data-ui-theme^=vellum] #app :is(#studyNav button,#studyExplore,#dpad button):active{
- background:var(--ui-header-face);box-shadow:inset 0 2px 3px #44392066,inset 0 -2px var(--paper-line);transform:none;
-}
-body.fote-study[data-ui-theme^=vellum] #app #hud2 button b{color:var(--ui-ink);}
-body.fote-study[data-ui-theme^=vellum] #app #hud2 button.chip.study-motes{background:color-mix(in srgb,var(--paper-log) calc(var(--ui-background-opacity,1) * 20%),transparent);border-color:var(--paper-line);box-shadow:inset 0 1px 2px #514a3429;}
-body.fote-study[data-ui-theme^=vellum] #app #hud2 .study-motes .dot{box-shadow:0 0 0 1px #65583980;}
-body.fote-study[data-ui-theme^=vellum] #app #bars .bar,
-body.fote-study[data-ui-theme^=vellum] #app #studyHunger .study-hunger-track,
-body.fote-study[data-ui-theme^=vellum] #app #hud2 .faithchip .meter{background:#605c4b;border-color:var(--paper-line);box-shadow:inset 0 0 0 1px #958462;}
-body.fote-study[data-ui-theme^=vellum] #app #bars .bar :is(span,.l),
-body.fote-study[data-ui-theme^=vellum] #app #studyHungerText,
-body.fote-study[data-ui-theme^=vellum] #app #hud2 .faithchip .rk{color:var(--ui-bar-ink);text-shadow:var(--ui-bar-shadow);}
-body.fote-study[data-ui-theme^=vellum] #app #hotbar{--gold:#ebc575;--ink:#f5ebd3;--dim:#c1baa7;}
-body.fote-study[data-ui-theme^=vellum] #app #statusbar .n{color:#fff1d8;}
-body[data-ui-theme^=vellum] #app #shade .sheet,
-body[data-ui-theme^=vellum] #modal .mbox{position:relative;isolation:isolate;background:transparent;border-color:var(--paper-line);box-shadow:var(--ui-frame-shadow);}
-body[data-ui-theme^=vellum] #app #shade .sheet header{background:var(--ui-header-face);border-color:var(--paper-line);}
-body[data-ui-theme^=vellum] #app #shade .sheet :is(h2,.sec,.tg-sec){color:var(--ui-ink);border-color:var(--paper-line);text-shadow:none;}
-body[data-ui-theme^=vellum] #app #shade :is(.gslot,.cell){background:color-mix(in srgb,var(--paper-log) calc(var(--ui-background-opacity,1) * 17%),transparent);box-shadow:inset 0 1px 3px #66583726;border-color:color-mix(in srgb,var(--paper-line) 55%,transparent);}
-body[data-ui-theme^=vellum] #app #shade .slotrow{background:color-mix(in srgb,var(--paper-log) calc(var(--ui-background-opacity,1) * 14%),transparent);}
-body[data-ui-theme^=vellum] #app #shade :is(.mote,.tag){text-shadow:none;}
 /* Keys, mote counts and empty-pouch hints share the paper palette; their
    icon artwork keeps its elemental colors. Fade only the chip background. */
-body[data-ui-theme^=vellum] #app #shade .pouch .mote{color:var(--ui-ink);background:var(--ui-panel-2-tint);border-color:var(--paper-line);}
 /* Very translucent paper uses solid pale ink against the dark map underneath. */
-body[data-ui-theme^=vellum].ui-paper-faded{--ui-ink:#f0e9d7;--ui-ash:#d6ceb9;--ui-dim:#bdb49b;--gold:#e3c28b;--moss:#a6bc7f;--blood:#e79c87;--ember:#ecae81;}
-body.fote-study[data-ui-theme^=vellum].ui-paper-faded #app #log{--moss:#a6bc7f;--blood:#e79c87;--gold:#e3c28b;--ember:#ecae81;text-shadow:0 1px #18170f;}
-body[data-ui-theme^=vellum] #dtip{background:#e0d3b0;color:#302a20;--ink:#302a20;--ash:#48402f;--dim:#61533c;--gold:#715020;border-color:var(--paper-line);box-shadow:0 4px 14px #0008;}
 /* Scrollbars use the same paper and ink palette as their panel. */
-body[data-ui-theme^=vellum],
-body[data-ui-theme^=vellum] #app :is(#log,.bodyw,.sheet){scrollbar-color:var(--paper-line) var(--paper-button);}
-body[data-ui-theme^=vellum] #app ::-webkit-scrollbar-track{background:var(--paper-button);border-color:var(--paper-line);}
-body[data-ui-theme^=vellum] #app ::-webkit-scrollbar-thumb{background:var(--paper-line);border-color:var(--paper-button);}
-body[data-ui-theme^=vellum] #app ::-webkit-scrollbar-thumb:hover{background:var(--ui-ash);}
-body[data-ui-theme^=vellum] #app ::-webkit-scrollbar-corner{background:var(--paper-button);}
-body[data-ui-theme=forge],
-body[data-ui-theme=forge] #app :is(#log,.bodyw,.sheet){scrollbar-color:#717f80 #242c30;}
-body[data-ui-theme=forge] #app ::-webkit-scrollbar-track{background:#242c30;border-color:#4c5b5e;}
-body[data-ui-theme=forge] #app ::-webkit-scrollbar-thumb{background:#717f80;border-color:#242c30;}
-body[data-ui-theme=forge] #app ::-webkit-scrollbar-corner{background:#242c30;}
 
 /* Inset frames separate the board, controls and log without taking map space. */
 body[data-ui-theme]{--ui-frame-line:var(--ui-edge);--ui-frame-inner:#11191bc7;}
-body[data-ui-theme^=vellum]{--ui-frame-line:var(--paper-line);--ui-frame-inner:#51493680;}
 body.fote-study[data-ui-theme] #app :is(#hotbar,#dpad){position:relative;}
 body.fote-study[data-ui-theme] #app :is(#map,#hotbar)::after{
  content:'';position:absolute;inset:0;z-index:40;pointer-events:none;border-radius:inherit;
@@ -223,7 +48,7 @@ body.fote-study[data-ui-theme] #app #hud2 .faithchip .meter::after{
 
 /* The original character screen is the default visual language. Keep its
    near-black warm panels, fine edges and gold headings, without a paper wash. */
-body[data-ui-theme=ember],body[data-ui-theme] :is(#title,#create){
+body[data-ui-theme=ember]{
  --ui-bg:#0f0d0c;--ui-panel:#1b1715;--ui-panel-2:#221d1a;--ui-log:#151210;
  --ui-edge:#3d3229;--ui-raised:#2d251f;--ui-ink:#f2e8dc;--ui-ash:#b8aca0;--ui-dim:#928477;
  --gold:#e8b44a;--ember:#e2622b;--ui-radius:6px;--ui-button-radius:5px;
@@ -292,45 +117,42 @@ body[data-ui-theme=ember] #app ::-webkit-scrollbar-corner{background:#211b16;}
    values and combat text retain their compact, readable monospaced font. */
 body.fote-study[data-ui-theme] #app #top #depth,
 body.fote-study[data-ui-theme] #app #top #studyNav button{
- font-family:var(--display);font-weight:600;font-size:calc(calc(17px * var(--ui-text-scale,1)) + var(--ui-mobile-text-add,0px));line-height:1.1;
+ font-family:var(--display);font-weight:600;font-size:var(--text-16);line-height:1.1;
 }
 body.fote-study[data-ui-theme] #app #top #depth .study-position{font-family:inherit;}
 @media(min-height:600px){
  body.fote-study[data-ui-theme] #app #top #depth,
- body.fote-study[data-ui-theme] #app #top #studyNav button{font-size:calc(calc(20px * var(--ui-text-scale,1)) + var(--ui-mobile-text-add,0px));}
+ body.fote-study[data-ui-theme] #app #top #studyNav button{font-size:var(--text-20);}
 }
 @media(max-width:740px){
  body.fote-study[data-ui-theme] #app #top #depth,
- body.fote-study[data-ui-theme] #app #top #studyNav button{font-size:calc(calc(15px * var(--ui-text-scale,1)) + var(--ui-mobile-text-add,0px));}
+ body.fote-study[data-ui-theme] #app #top #studyNav button{font-size:var(--text-16);}
 }
 
 /* Front screens retain the original art, element and god colors. Their fine
    frames and controls match Ember even when an optional HUD skin is selected. */
-body[data-ui-theme] :is(#title,#create){
+body[data-ui-theme] :is(#title){
  --bg:var(--ui-bg);--panel:var(--ui-panel);--panel-2:var(--ui-panel-2);--edge:var(--ui-edge);
  --ink:var(--ui-ink);--ash:var(--ui-ash);--dim:var(--ui-dim);
  --ui-background-percent:100%;--ui-background-opacity:1;
  --ui-button-face:linear-gradient(#2d251f,#221d1a);
  scrollbar-color:#756346 #211b16;
 }
-body[data-ui-theme] :is(#title,#create) button{
+body[data-ui-theme] #title .panel button{
  border-radius:5px;border-color:var(--ui-edge);background:var(--ui-button-face);
  color:var(--ui-ink);box-shadow:var(--ui-button-shadow);text-shadow:none;
 }
-body[data-ui-theme] :is(#title,#create) button:focus-visible{outline:2px solid var(--gold);outline-offset:2px;}
+body[data-ui-theme] #title .panel button:focus-visible{outline:2px solid var(--gold);outline-offset:2px;}
 body[data-ui-theme] #title{background-position:left top;}
-body[data-ui-theme] #title .menu button{color:#f2d9a0;border-color:#53412e;background:linear-gradient(#241d17f2,#171310f2);box-shadow:inset 0 1px #d9bb8d1c,inset 0 -2px #09070699,0 3px 10px #0005;}
-body[data-ui-theme] #title .menu button:focus-visible{outline-offset:-3px;}
 body[data-ui-theme] #title .panel{background:#1b1715f5;border-color:#53412e;box-shadow:var(--ui-frame-shadow);}
 body[data-ui-theme] #create .card{background:#171310;box-shadow:inset 0 1px #dac49b0d,inset 0 -1px #0006;}
 body[data-ui-theme] #create .card.on{border-color:var(--ember);background:#241a12;box-shadow:inset 0 0 0 1px #e2622b40,inset 0 -2px #e2622b80;}
-body[data-ui-theme] #create .summary{background:#1b1715;border-color:var(--ui-edge);box-shadow:inset 0 1px #dac49b0d;}
 body[data-ui-theme] #create input{background:#100e0c;color:var(--ink);border-color:#53412e;border-radius:5px;box-shadow:inset 0 1px 3px #0006;}
-body[data-ui-theme] #create :is(.go,#cBack,#rollCharacter){font-family:var(--display);font-size:calc(20px + var(--ui-mobile-text-add,0px));color:var(--gold);}
+body[data-ui-theme] #create :is(.go,#cBack,#rollCharacter){font-family:var(--display);font-size:var(--text-20);color:var(--gold);}
 body[data-ui-theme] #create .go{border-color:#966231;background:linear-gradient(#3d2c1c,#261c14);}
 @media(hover:hover){
  body.fote-study[data-ui-theme=ember] #app :is(#studyNav button,#studyExplore,#dpad button):hover,
- body[data-ui-theme] :is(#title,#create) button:hover{border-color:#896438;color:#ffe1a0;}
+ body[data-ui-theme] #title .panel button:hover{border-color:#896438;color:#ffe1a0;}
 }
 
 /* Options uses the same selected state in title Settings and the in-game sheet.
@@ -361,7 +183,7 @@ body.fote-study.study-minimal[data-ui-theme] #app :is(#studyMenuToggle,#studyExp
  background:var(--ui-log-tint);border:1px solid var(--ui-edge);box-shadow:none;color:var(--ui-ink);text-shadow:none;
 }
 body.fote-study.study-minimal[data-ui-theme] #app #top{background:var(--ui-header-face);border-color:var(--ui-edge);box-shadow:0 4px 16px #0006;}
-body.fote-study.study-minimal[data-ui-theme] #app #top #studyNav button{font:calc(calc(13px * var(--ui-text-scale,1)) + var(--ui-mobile-text-add,0px)) var(--mono);border-radius:5px!important;text-align:left;}
+body.fote-study.study-minimal[data-ui-theme] #app #top #studyNav button{font:var(--text-14) var(--mono);border-radius:5px!important;text-align:left;}
 body.fote-study.study-minimal[data-ui-theme] #app #studyPortraitStats{background:var(--ui-panel);color:var(--ui-ink);border:1px solid var(--ui-edge);text-shadow:none;}
 body.fote-study.study-minimal[data-ui-theme] #app #studyPortrait{background:var(--ui-log-tint);border-color:var(--ui-edge);}
 body.fote-study.study-minimal[data-ui-theme] #app #bMap.on{color:var(--gold);border-color:var(--gold);}
@@ -391,3 +213,753 @@ body.ui-color-fallback[data-ui-theme] #modal .seg button.on,
 body.ui-color-fallback[data-ui-theme] #modal #forgeBody :is(.moterow,.ftabs) button.on{background:var(--ui-panel-2-tint);}
 body[data-ui-theme] .opt-how-to{display:flex;align-items:center;flex-wrap:wrap;gap:8px 14px;margin-bottom:16px;}
 body[data-ui-theme] .opt-how-to button,body[data-ui-theme] #resetUITheme{min-height:44px;}
+/* Flat menus. Paint only, menus only: a modal is one flat surface in the theme's own
+   colours, its controls are words, its lists are rows. The in-play HUD is not touched. */
+body[data-ui-theme] #modal .mbox{background:var(--ui-panel)!important;border:0!important;border-radius:0!important;box-shadow:none!important;}
+body[data-ui-theme] #modal .mbox::before,body[data-ui-theme] #modal button::before{display:none!important;}
+body[data-ui-theme] #modal :is(header,footer){background:none!important;border:0!important;box-shadow:none!important;}
+body[data-ui-theme] #modal button{background:none!important;border:0!important;border-radius:0!important;box-shadow:none!important;text-shadow:none!important;color:var(--ui-ash)!important;}
+body[data-ui-theme] #modal button:disabled{color:var(--ui-dim)!important;}
+@media(hover:hover){body[data-ui-theme] #modal button:hover:not(:disabled){color:var(--ui-ink)!important;}}
+body[data-ui-theme] #modal button:is(.on,.btn-primary,[aria-selected=true],[aria-pressed=true]){color:var(--gold)!important;box-shadow:inset 0 -2px var(--gold)!important;}
+body[data-ui-theme] #modal .mbody :is(article,details,.tutorial-inline){background:none!important;border:0!important;border-bottom:1px solid var(--ui-edge)!important;border-radius:0!important;box-shadow:none!important;}
+body[data-ui-theme] #modal :is(input:not([type=checkbox],[type=radio],[type=range]),select,textarea){background:none!important;border:0!important;border-bottom:1px solid var(--ui-edge)!important;border-radius:0!important;box-shadow:none!important;}
+body[data-ui-theme] #modal :is(input,select,textarea):focus-visible{outline:0;border-bottom-color:var(--gold)!important;}
+body[data-ui-theme] #modal option{background:var(--ui-panel);color:var(--ui-ink);}
+body[data-ui-theme] #modal,body[data-ui-theme] #modal *{scrollbar-width:auto!important;scrollbar-color:auto!important;}
+/* A 14px grab area that with a 10px bar on a track the colour of the menu, so only the bar shows. */
+body[data-ui-theme] #modal ::-webkit-scrollbar{width:14px;height:14px;}
+body[data-ui-theme] #modal ::-webkit-scrollbar-thumb{background:var(--gold) content-box;border:solid transparent;border-width:0 2px;border-radius:0;min-height:44px;}
+body[data-ui-theme] #modal ::-webkit-scrollbar-thumb:is(:hover,:active){border-width:0;}
+body[data-ui-theme] #modal ::-webkit-scrollbar-track,body[data-ui-theme] #modal ::-webkit-scrollbar-corner{background:var(--ui-panel);border:0;box-shadow:none;}
+body[data-ui-theme] #modal ::-webkit-scrollbar-button{display:none;}
+/* Title sub-panels retain their shared menu styling. The front menu owns its paint. */
+body[data-ui-theme] #title .panel button:not(#tUpdate){background:none!important;border:0!important;border-radius:0!important;box-shadow:none!important;text-shadow:none!important;padding-left:0;padding-right:0;color:var(--ui-ink);}
+body[data-ui-theme] #title .panel button:not(#tUpdate):is(:hover:not(:disabled),:focus-visible){color:var(--gold);text-decoration:underline 2px;text-underline-offset:.3em;outline:none;}
+body[data-ui-theme] #title .panel{background:var(--ui-panel);border:0;border-radius:12px;box-shadow:none;}
+body[data-ui-theme] #title .slotrow{background:none;border:0;border-bottom:1px solid var(--ui-edge);border-radius:0;}
+body[data-ui-theme]:not([data-ui-theme=ember],[data-ui-theme^=vellum]) #title,
+body[data-ui-theme]:not([data-ui-theme=ember],[data-ui-theme^=vellum]) #title .title-film{background-color:var(--ui-bg);}
+body[data-ui-theme] #modal .binds button{color:var(--gold)!important;}
+body[data-ui-theme] #modal .binds button.wait{color:var(--ui-ink)!important;}
+/* Character creation follows the theme the same way: flat word buttons in every theme, and
+   outside Ember and Vellum the page, cards and summary take the theme's own colours. */
+body[data-ui-theme] #create button:not(.card){background:none!important;border:0!important;border-radius:0!important;box-shadow:none!important;text-shadow:none!important;}
+body[data-ui-theme] #create button:not(.card):is(:hover:not(:disabled),:focus-visible){color:var(--gold);text-decoration:underline 2px;text-underline-offset:.3em;outline:none;}
+body[data-ui-theme]:not([data-ui-theme=ember],[data-ui-theme^=vellum]) #create{background:var(--ui-bg);--ink:var(--ui-ink);--ash:var(--ui-ash);--dim:var(--ui-dim);--edge:var(--ui-edge);}
+body[data-ui-theme]:not([data-ui-theme=ember],[data-ui-theme^=vellum]) #create h1{background:none;color:var(--gold);-webkit-text-fill-color:currentColor;}
+body[data-ui-theme]:not([data-ui-theme=ember],[data-ui-theme^=vellum]) #create .card{background:var(--ui-panel);border-color:transparent;box-shadow:none;}
+body[data-ui-theme]:not([data-ui-theme=ember],[data-ui-theme^=vellum]) #create .card:hover{border-color:var(--ui-edge);}
+body[data-ui-theme]:not([data-ui-theme=ember],[data-ui-theme^=vellum]) #create .card.on{background:var(--ui-panel-2);border-color:var(--gold);box-shadow:inset 0 -2px var(--gold);}
+body[data-ui-theme]:not([data-ui-theme=ember],[data-ui-theme^=vellum]) #create input{background:none;border:0;border-bottom:1px solid var(--ui-edge);border-radius:0;box-shadow:none;color:var(--ui-ink);}
+body[data-ui-theme]:not([data-ui-theme=ember],[data-ui-theme^=vellum]) #create input:focus-visible{outline:0;border-bottom-color:var(--gold);}
+body[data-ui-theme] #create{scrollbar-width:auto;scrollbar-color:auto;}
+body[data-ui-theme] #create::-webkit-scrollbar{width:14px;}
+body[data-ui-theme] #create::-webkit-scrollbar-thumb{background:var(--gold) content-box;border:solid transparent;border-width:0 2px;border-radius:0;min-height:44px;}
+body[data-ui-theme] #create::-webkit-scrollbar-track{background:var(--ui-bg);border:0;}
+/* Creation text sizes: word buttons need more size than boxed ones did. */
+body[data-ui-theme] #create :is(.go,#cBack,#rollCharacter){font-size:var(--text-26);}
+body[data-ui-theme].fote-journal #create .step{font-size:var(--text-20);margin:22px 0 8px;}
+body[data-ui-theme].fote-journal #create .card .choice-name{font-size:var(--text-26);}
+body[data-ui-theme].fote-journal #create .card :is(.choice-copy,.choice-style,.choice-summary,.choice-trait,.choice-refusal,.choice-benefit){font-size:var(--text-16);}
+/* The summary: one text size for the sheet, a readable name field, and the two actions as
+   words that line up with the text above them. */
+body[data-ui-theme] #create .go{padding-left:0;padding-right:0;font-size:var(--text-32);}
+body[data-ui-theme] #create #reroll{font-size:var(--text-16);color:var(--ui-ash);white-space:nowrap;}
+body[data-ui-theme] #create #cname{font-size:var(--text-20);padding-left:0;}
+body[data-ui-theme] :is(#create,#modal,#title) input[type=checkbox]{accent-color:var(--gold);}
+/* The in-game sheet (Character, Inventory, Faith, Options) takes the same flat paint as the menus. */
+body[data-ui-theme] #app #shade .sheet{background:var(--ui-panel)!important;border:0!important;border-radius:0!important;box-shadow:none!important;}
+body[data-ui-theme] #app #shade .sheet::before,body[data-ui-theme] #app #shade .sheet button::before{display:none!important;}
+body[data-ui-theme] #app #shade .sheet header{background:none!important;border:0!important;box-shadow:none!important;}
+body[data-ui-theme] #app #shade .sheet button{background:none!important;border:0!important;border-radius:0!important;box-shadow:none!important;text-shadow:none!important;color:var(--ui-ash)!important;}
+body[data-ui-theme] #app #shade .sheet button:disabled{color:var(--ui-dim)!important;}
+@media(hover:hover){body[data-ui-theme] #app #shade .sheet button:hover:not(:disabled){color:var(--ui-ink)!important;}}
+body[data-ui-theme] #app #shade .sheet button:is(.on,.btn-primary,[aria-selected=true],[aria-pressed=true]){color:var(--gold)!important;box-shadow:inset 0 -2px var(--gold)!important;}
+body[data-ui-theme] #app #shade .sheet .binds button{color:var(--gold)!important;}
+body[data-ui-theme] #app #shade .sheet .slotrow{background:none;border:0;border-bottom:1px solid var(--ui-edge);border-radius:0;}
+body[data-ui-theme] #app #shade .sheet :is(input:not([type=checkbox],[type=radio],[type=range]),select,textarea){background:none!important;border:0!important;border-bottom:1px solid var(--ui-edge)!important;border-radius:0!important;box-shadow:none!important;}
+body[data-ui-theme] #app #shade .sheet option{background:var(--ui-panel);color:var(--ui-ink);}
+body[data-ui-theme] #app #shade .sheet input[type=checkbox]{accent-color:var(--gold);}
+body[data-ui-theme] #app #shade,body[data-ui-theme] #app #shade *{scrollbar-width:auto!important;scrollbar-color:auto!important;}
+body[data-ui-theme] #app #shade ::-webkit-scrollbar{width:14px;height:14px;}
+body[data-ui-theme] #app #shade ::-webkit-scrollbar-thumb{background:var(--gold) content-box;border:solid transparent;border-width:0 2px;border-radius:0;min-height:44px;}
+body[data-ui-theme] #app #shade ::-webkit-scrollbar-track,body[data-ui-theme] #app #shade ::-webkit-scrollbar-corner{background:var(--ui-panel);border:0;box-shadow:none;}
+body[data-ui-theme] #app #shade ::-webkit-scrollbar-button{display:none;}
+/* The in-game menu list (Character, Inventory, ... Journal): flat rows on a flat panel. */
+body[data-ui-theme] #app #top #studyNav{background:var(--ui-panel)!important;border:0!important;box-shadow:none!important;}
+body[data-ui-theme] #app #top #studyNav::before,body[data-ui-theme] #app #top #studyNav button::before{display:none!important;}
+body[data-ui-theme] #app #top #studyNav button{background:none!important;border:0!important;border-radius:0!important;box-shadow:none!important;text-shadow:none!important;color:var(--ui-ash)!important;}
+@media(hover:hover){body[data-ui-theme] #app #top #studyNav button:hover{color:var(--ui-ink)!important;}}
+body[data-ui-theme] #app #top #studyNav button:is(.on,:focus-visible,:active){color:var(--gold)!important;outline:0;}
+/* Square the selected underline: older theme rules pin a 5px radius with !important. */
+html body[data-ui-theme][data-ui-theme] :is(#app #shade .sheet,#modal,#app #top #studyNav) button{border-radius:0!important;}
+/* Outside Ember and Vellum the sheets' brass headings and warm cream copy were mixed for brown.
+   Point them at the theme: headings take its accent, copy and labels its ink and ash. */
+body.fote-journal[data-ui-theme]:not([data-ui-theme=ember],[data-ui-theme^=vellum]){--polish-brass:var(--gold);--journal-brass:var(--gold);--polish-ink:var(--ui-ink);--polish-secondary:var(--ui-ash);}
+body.fote-journal[data-ui-theme]:not([data-ui-theme^=vellum]) :is(#mHelp,#titleSettings,#mFaith){--journal-menu-copy:var(--ui-ink);--journal-menu-label:var(--ui-ash);--journal-menu-heading:var(--gold);}
+body.fote-journal[data-ui-theme]:not([data-ui-theme=ember],[data-ui-theme^=vellum]) #app #shade :is(#mChar,#mEquip){--journal-sheet-ink:var(--ui-ink);--journal-sheet-copy:var(--ui-ink);--journal-sheet-label:var(--ui-ash);}
+/* Options text by role: a row's label and its control share one size, a hint is a step
+   smaller and muted, a section heading a step larger. */
+body[data-ui-theme] :is(#app #shade #mHelp,#titleSettings) :is(.optrow>span,.optrow button,.seg button,select,.binds>span,.binds button,.opt-how-to button,summary,.legend b,.legend span,output){font-size:var(--text-16)!important;}
+body[data-ui-theme] :is(#app #shade #mHelp,#titleSettings) :is(.optrow>span,.binds>span){color:var(--ui-ink)!important;}
+body[data-ui-theme] :is(#app #shade #mHelp,#titleSettings) .c-info{font-size:var(--text-14)!important;color:var(--ui-ash)!important;}
+body[data-ui-theme] :is(#app #shade #mHelp,#titleSettings) .sec{font-size:var(--text-20)!important;}
+@media(max-width:720px){body[data-ui-theme] :is(#app #shade #mHelp,#titleSettings) :is(.binds>span,.binds button){font-size:var(--text-14)!important;}}
+body[data-ui-theme] :is(#modal,#app #shade .sheet) :is(header,footer) button{font-size:var(--text-16)!important;}
+body[data-ui-theme] #modal header h2{font-size:var(--text-26);}
+/* A finger scrolls the page, not the bar: keep it slim on touch. */
+body.touch[data-ui-theme] :is(#create,#modal *,#app #shade *)::-webkit-scrollbar{width:6px;height:6px;}
+/* Category headings in the sheets and menus (Offense, Defense, Bag, Interface ...): the display
+   face at a heading size, written as they are, like the creation labels. A hint inside a heading
+   stays small body text. */
+html body[data-ui-theme] :is(#app #shade .sheet,#modal) :is(.sec,.tg-sec){font:700 var(--text-20)/1.2 var(--display)!important;letter-spacing:.01em!important;text-transform:none!important;color:var(--gold)!important;}
+html body[data-ui-theme] :is(#app #shade .sheet,#modal) :is(.sec,.tg-sec) span{font:400 var(--text-12)/1.3 var(--mono)!important;letter-spacing:0!important;text-transform:none!important;}
+/* Faith copy at the same size as the other sheets' body text. */
+html body[data-ui-theme].fote-journal #mFaith :is(.faith>p,.boons,.action-summary,.action-note,.abrow .d,.c-info){font-size:var(--text-14)!important;}
+/* Header buttons never wrap; on touch the close control is the bare cross (below). */
+body[data-ui-theme] :is(#modal,#app #shade .sheet) :is(header,footer) button{white-space:nowrap;}
+/* The open in-game menu is one flat panel: no gradient, edge, drop shadow or inset block behind
+   the rows, and the status line and the rows share the one surface. */
+body[data-ui-theme].study-menu-open #app #top{background:var(--ui-panel)!important;border:0!important;box-shadow:none!important;border-radius:0!important;}
+body[data-ui-theme].study-menu-open #app #top::before{display:none!important;}
+body[data-ui-theme].study-menu-open #app #top #studyNav{background:none!important;}
+body[data-ui-theme].study-menu-open #app #top>*{border-color:transparent!important;box-shadow:none!important;}
+/* The hero's name heads the character sheet: one step above the category headings beside it. */
+html body[data-ui-theme] #app #shade .sheet h2.head{font:700 var(--text-26)/1.15 var(--display)!important;color:var(--gold)!important;margin:0 0 2px;}
+/* ---- The journal, and only the journal: a book of records, not a dashboard. Same content and
+   controls; the tiles of big numbers, equal-width tab buttons, boxed cards and status eyebrows give
+   way to a title page line, lettered tabs and ledger rows marked with a lantern diamond. ---- */
+html body[data-ui-theme] #modal .journal-modal{width:min(1080px,calc(100vw - 24px))!important;height:min(92dvh,920px);max-height:none!important;}
+html body[data-ui-theme] #modal .journal-modal header{padding:22px 36px 4px!important;}
+html body[data-ui-theme] #modal .journal-modal header h2{font:700 var(--text-40)/1 var(--display)!important;color:var(--gold);}
+html body[data-ui-theme] #modal .journal-modal #mFoot{display:none!important;}
+html body[data-ui-theme] #modal .journal-modal .mbody{padding:0 36px 28px!important;}
+html body[data-ui-theme] #modal .journal-modal .journal-totals{display:flex!important;flex-wrap:wrap;gap:2px 30px;border:0!important;padding:0 0 12px!important;font-size:var(--text-14)!important;color:var(--ui-ash)!important;}
+html body[data-ui-theme] #modal .journal-modal .journal-totals span{display:inline-flex;align-items:baseline;gap:8px;}
+html body[data-ui-theme] #modal .journal-modal .journal-totals b{display:inline!important;margin:0!important;font:400 var(--text-14) var(--mono)!important;color:var(--ui-ink)!important;}
+html body[data-ui-theme] #modal .journal-modal .journal-tabs{display:flex!important;flex-wrap:wrap;gap:0 34px;border-bottom:1px solid var(--ui-edge);margin:0 0 18px;position:sticky;top:0;background:var(--ui-panel);z-index:2;}
+html body[data-ui-theme] #modal .journal-modal .journal-tabs button{flex:0 0 auto;font:700 var(--text-20)/1.2 var(--display)!important;padding:10px 0 11px!important;min-height:44px;color:var(--ui-ash)!important;box-shadow:none!important;}
+html body[data-ui-theme] #modal .journal-modal .journal-tabs button[aria-selected=true]{color:var(--gold)!important;box-shadow:inset 0 -3px var(--gold)!important;}
+html body[data-ui-theme] #modal .journal-modal .journal-controls{gap:8px 28px;align-items:flex-end;margin:0 0 2px;}
+html body[data-ui-theme] #modal .journal-modal .journal-controls label{font-size:var(--text-12)!important;color:var(--ui-dim)!important;max-width:380px;}
+html body[data-ui-theme] #modal .journal-modal .journal-controls :is(input,select){font-size:var(--text-14)!important;min-height:38px;padding-left:0!important;}
+html body[data-ui-theme] #modal .journal-modal .journal-count{margin:8px 0 6px;font-size:var(--text-12)!important;color:var(--ui-dim)!important;}
+/* achievements: ledger rows */
+html body[data-ui-theme] #modal .journal-modal .journal-achievements{gap:0 48px!important;}
+html body[data-ui-theme] #modal .journal-modal .journal-achievement{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:16px;align-items:baseline;padding:13px 0 14px!important;min-height:0!important;background:none!important;border:0!important;border-bottom:1px solid color-mix(in srgb,var(--ui-edge) 55%,transparent)!important;border-radius:0!important;}
+html body[data-ui-theme] #modal .journal-modal .journal-achievement-top{display:contents;}
+html body[data-ui-theme] #modal .journal-modal .journal-achievement .journal-state{display:none;}
+html body[data-ui-theme] #modal .journal-modal .journal-achievement-top span:last-child{grid-column:2;grid-row:1;font:400 var(--text-14) var(--mono);color:var(--ui-dim);font-variant-numeric:tabular-nums;}
+html body[data-ui-theme] #modal .journal-modal .journal-achievement.earned .journal-achievement-top span:last-child{color:var(--gold);}
+html body[data-ui-theme] #modal .journal-modal .journal-achievement h3{grid-column:1;grid-row:1;margin:0!important;font:700 var(--text-20)/1.2 var(--display)!important;color:var(--ui-ash)!important;}
+html body[data-ui-theme] #modal .journal-modal .journal-achievement.earned h3{color:var(--ui-ink)!important;}
+html body[data-ui-theme] #modal .journal-modal .journal-achievement h3::before{content:"\25C7";display:inline-block;width:1.25em;font:400 .7em/1 var(--mono);color:var(--ui-dim);vertical-align:.15em;}
+html body[data-ui-theme] #modal .journal-modal .journal-achievement.earned h3::before{content:"\25C6";color:var(--gold);}
+html body[data-ui-theme] #modal .journal-modal .journal-achievement p{grid-column:1/-1;margin:3px 0 0 1.75em!important;font-size:var(--text-14)!important;line-height:1.45!important;color:var(--ui-ash)!important;}
+html body[data-ui-theme] #modal .journal-modal .journal-achievement progress{grid-column:1/-1;width:auto!important;margin:9px 0 0 1.75em;height:2px!important;appearance:none;-webkit-appearance:none;border:0;background:var(--ui-edge);}
+html body[data-ui-theme] #modal .journal-modal .journal-achievement progress::-webkit-progress-bar{background:color-mix(in srgb,var(--ui-edge) 60%,transparent);}
+html body[data-ui-theme] #modal .journal-modal .journal-achievement progress::-webkit-progress-value{background:var(--gold);}
+html body[data-ui-theme] #modal .journal-modal .journal-achievement.earned progress{display:none;}
+html body[data-ui-theme] #modal .journal-modal .journal-undiscovered{display:block!important;padding:9px 0 10px!important;}
+html body[data-ui-theme] #modal .journal-modal .journal-undiscovered h3{font-size:var(--text-16)!important;color:var(--ui-dim)!important;letter-spacing:.08em;}
+/* previous runs: the same ledger */
+html body[data-ui-theme] #modal .journal-modal .run-group{font:700 var(--text-20)/1.2 var(--display)!important;color:var(--gold)!important;margin:18px 0 0;}
+html body[data-ui-theme] #modal .journal-modal .run-history{gap:0!important;margin-top:4px!important;}
+html body[data-ui-theme] #modal .journal-modal .run-entry{background:none!important;border:0!important;border-bottom:1px solid color-mix(in srgb,var(--ui-edge) 55%,transparent)!important;border-radius:0!important;padding:16px 0!important;}
+html body[data-ui-theme] #modal .journal-modal .run-entry-heading{align-items:baseline!important;}
+html body[data-ui-theme] #modal .journal-modal .run-rank{font-size:var(--text-14);color:var(--ui-dim)!important;}
+html body[data-ui-theme] #modal .journal-modal .run-outcome{display:inline!important;text-transform:none!important;letter-spacing:0!important;font-size:var(--text-12)!important;color:var(--ui-dim)!important;float:right;margin-left:14px;}
+html body[data-ui-theme] #modal .journal-modal .winner .run-outcome{color:var(--gold)!important;}
+html body[data-ui-theme] #modal .journal-modal .run-entry strong{font-size:var(--text-26)!important;line-height:1.1;color:var(--ui-ink)!important;}
+html body[data-ui-theme] #modal .journal-modal .run-entry.winner strong::before{content:"\25C6";display:inline-block;width:1.2em;font:400 .6em/1 var(--mono);color:var(--gold);vertical-align:.2em;}
+html body[data-ui-theme] #modal .journal-modal .run-build{font-size:var(--text-14);color:var(--ui-ash);}
+html body[data-ui-theme] #modal .journal-modal .run-points{font:700 var(--text-32)/1 var(--display)!important;color:var(--gold)!important;}
+html body[data-ui-theme] #modal .journal-modal .run-points small{font:400 var(--text-12) var(--mono)!important;color:var(--ui-dim)!important;margin-top:4px;}
+html body[data-ui-theme] #modal .journal-modal .run-entry p{font-size:var(--text-14)!important;color:var(--ui-ash)!important;margin:8px 0 0!important;}
+html body[data-ui-theme] #modal .journal-modal .run-breakdown summary{font-size:var(--text-14);color:var(--ui-ash);}
+html body[data-ui-theme] #modal .journal-modal .run-report-button{padding-left:0!important;color:var(--gold)!important;font-size:var(--text-14)!important;}
+/* encyclopedia and bestiary: open rows, no frames */
+html body[data-ui-theme] #modal .journal-modal :is(.journal-entry,.journal-category,.journal-group,details){background:none!important;border-left:0!important;border-right:0!important;border-top:0!important;border-radius:0!important;box-shadow:none!important;}
+html body[data-ui-theme] #modal .journal-modal .journal-detail{font-size:var(--text-14);}
+@media(max-width:760px){
+ html body[data-ui-theme] #modal .journal-modal{width:100vw!important;height:100dvh;}
+ html body[data-ui-theme] #modal .journal-modal header{padding:14px 16px 2px!important;}
+ html body[data-ui-theme] #modal .journal-modal header h2{font-size:var(--text-32)!important;}
+ html body[data-ui-theme] #modal .journal-modal .mbody{padding:0 16px 18px!important;}
+ html body[data-ui-theme] #modal .journal-modal .journal-tabs{gap:0 22px;}
+ html body[data-ui-theme] #modal .journal-modal .journal-tabs button{font-size:var(--text-16)!important;}
+ html body[data-ui-theme] #modal .journal-modal .journal-achievements{grid-template-columns:minmax(0,1fr)!important;}
+}
+@media(max-height:560px){
+ html body[data-ui-theme] #modal .journal-modal{height:100dvh;}
+ html body[data-ui-theme] #modal .journal-modal header{padding:8px 20px 0!important;}
+ html body[data-ui-theme] #modal .journal-modal header h2{font-size:var(--text-26)!important;}
+ html body[data-ui-theme] #modal .journal-modal .mbody{padding:0 20px 12px!important;}
+ html body[data-ui-theme] #modal .journal-modal .journal-totals{padding-bottom:4px!important;}
+}
+/* On touch the modal's close control is the bare cross; the header button size above must not
+   bring its words back. */
+html body.fote-study.study-touch[data-ui-theme] #modal #mX{font-size:0!important;}
+/* Keyboard focus in the menus: a thin ring in the theme's accent, not the fixed ember orange. */
+body[data-ui-theme] :is(#modal,#app #shade .sheet) button:focus-visible{outline:1px solid var(--gold)!important;outline-offset:3px!important;}
+/* The tutorial's key bindings card: wide enough for the table, keys in the accent. */
+body[data-ui-theme] #modal.tutorial-coach.tutorial-keys .mbox{width:min(460px,calc(100vw - 16px))!important;}
+body[data-ui-theme] #modal.tutorial-coach .guide-key-table{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:4px 18px;margin:8px 0 10px;}
+body[data-ui-theme] #modal.tutorial-coach .guide-key-table span{color:var(--ui-ash);}
+body[data-ui-theme] #modal.tutorial-coach .guide-key-table b{color:var(--gold);font-weight:400;}
+/* The sheet's close control on touch is the bare cross, as the menu windows' is; and its tabs are
+   the same size as the text they lead to. */
+html body.fote-study.study-touch[data-ui-theme] #app #shade #close{font-size:0!important;}
+html body[data-ui-theme] #app #shade .sheet header :is(#studySheetTabs,nav) button,
+html body[data-ui-theme] #app #shade .sheet #studySheetTabs button{font-size:var(--text-16)!important;}
+/* ---- Options as a game's options list, not a web settings form. A setting is its name and, right
+   beside it, its choices as plain words; the chosen one is gold with the lantern diamond the
+   journal uses. No boxed segment groups, no rule under every row, no value pushed to the far edge. ---- */
+html body[data-ui-theme] :is(#app #shade #mHelp,#titleSettings) .optrow{display:grid!important;grid-template-columns:200px minmax(0,1fr);align-items:baseline;gap:2px 20px;padding:6px 0!important;border:0!important;}
+html body[data-ui-theme] :is(#app #shade #mHelp,#titleSettings) .optrow>:first-child{min-width:0;}
+html body[data-ui-theme] :is(#app #shade #mHelp,#titleSettings) .optrow>button:only-child,html body[data-ui-theme] :is(#app #shade #mHelp,#titleSettings) .optrow>p:only-child{grid-column:1/-1;justify-self:start;}
+html body[data-ui-theme] :is(#app #shade #mHelp,#titleSettings) .optrow button:not(.seg button){padding-left:0!important;}
+html body[data-ui-theme] :is(#app #shade #mHelp,#titleSettings) .seg{display:flex!important;flex-wrap:wrap;gap:0 22px;justify-self:start;padding:0!important;border:0!important;border-radius:0!important;background:none!important;box-shadow:none!important;}
+html body[data-ui-theme] :is(#app #shade #mHelp,#titleSettings) .seg button{min-width:0!important;padding:3px 0!important;border:0!important;background:none!important;box-shadow:none!important;color:var(--ui-dim)!important;}
+html body[data-ui-theme] :is(#app #shade #mHelp,#titleSettings) .seg button::before{content:"\25C6";display:inline-block;width:1.15em;font-size:.62em;vertical-align:.18em;color:transparent;}
+html body[data-ui-theme] :is(#app #shade #mHelp,#titleSettings) .seg button.on{color:var(--gold)!important;box-shadow:none!important;}
+html body[data-ui-theme] :is(#app #shade #mHelp,#titleSettings) .seg button.on::before{color:var(--gold);}
+@media(hover:hover){html body[data-ui-theme] :is(#app #shade #mHelp,#titleSettings) .seg button:hover:not(.on){color:var(--ui-ink)!important;}}
+html body[data-ui-theme] :is(#app #shade #mHelp,#titleSettings) select{justify-self:start;width:auto!important;min-width:0;padding:3px 22px 3px 0!important;border:0!important;color:var(--gold)!important;}
+html body[data-ui-theme] :is(#app #shade #mHelp,#titleSettings) input[type=range]{justify-self:start;width:min(280px,100%);height:14px;margin:0;appearance:none;-webkit-appearance:none;background:none;accent-color:var(--gold);}
+html body[data-ui-theme] :is(#app #shade #mHelp,#titleSettings) input[type=range]::-webkit-slider-runnable-track{height:2px;background:var(--ui-edge);}
+html body[data-ui-theme] :is(#app #shade #mHelp,#titleSettings) input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;height:11px;margin-top:-5px;background:var(--gold);transform:rotate(45deg);border:0;border-radius:0;}
+html body[data-ui-theme] :is(#app #shade #mHelp,#titleSettings) .c-info{margin:-2px 0 8px 220px!important;color:var(--ui-dim)!important;}
+html body[data-ui-theme] :is(#app #shade #mHelp,#titleSettings) .opt-section{margin-bottom:10px;}
+html body[data-ui-theme] :is(#app #shade #mHelp,#titleSettings) .sec{border-bottom:0!important;margin-bottom:2px!important;}
+@media(max-width:620px){
+ html body[data-ui-theme] :is(#app #shade #mHelp,#titleSettings) .optrow{grid-template-columns:minmax(0,1fr);gap:0;padding:8px 0 4px!important;}
+ html body[data-ui-theme] :is(#app #shade #mHelp,#titleSettings) .c-info{margin-left:0!important;}
+ html body[data-ui-theme] :is(#app #shade #mHelp,#titleSettings) .seg{gap:0 20px;}
+}
+/* ---- Three habits of the first flat pass that read as a stock interface, replaced everywhere:
+   the gold underline under whatever is selected, the thin outlined rectangle (focus rings, picked
+   cards), and tall padding above and below text. Selected is now gold with the lantern diamond in
+   front; focus is a solid tinted block; rows and tabs sit closer. ---- */
+html body[data-ui-theme] :is(#modal,#app #shade .sheet,#app #top #studyNav,#title .panel) button:is(.on,.btn-primary,[aria-selected=true],[aria-pressed=true]){box-shadow:none!important;text-decoration:none!important;}
+html body[data-ui-theme] #title .panel button:is(:hover,:focus-visible){text-decoration:none!important;}
+/* the diamond: every tab and choice reserves its space, only the chosen one shows it */
+html body[data-ui-theme] :is(#modal .journal-tabs button,#modal .seg button,#app #shade .sheet .seg button,#app #shade .sheet header button[data-p],#modal #forgeBody :is(.moterow,.ftabs) button)::before{content:"\25C6"!important;display:inline-block!important;position:static!important;inset:auto!important;width:1.3em;height:auto;font:400 .58em/1 var(--mono);vertical-align:.22em;color:transparent;background:none!important;opacity:1!important;filter:none!important;}
+html body[data-ui-theme] :is(#modal .journal-tabs button[aria-selected=true],#modal .seg button.on,#app #shade .sheet .seg button.on,#app #shade .sheet header button[data-p].on,#modal #forgeBody :is(.moterow,.ftabs) button.on)::before{color:var(--gold);}
+/* focus: a filled block, never an outline */
+html body[data-ui-theme] :is(#modal,#app #shade .sheet,#app #top #studyNav,#title .panel,#loadVeil,#floorArtStatus) :is(button,select,input):focus-visible{outline:0!important;}
+html body[data-ui-theme] :is(#modal,#app #shade .sheet,#app #top #studyNav,#title .panel) button:not(.card):focus-visible{background:var(--ui-raised)!important;box-shadow:0 0 0 4px var(--ui-raised)!important;color:var(--ui-ink)!important;}
+/* a picked creation tile: a lighter fill and the diamond by its name, no outline */
+html body[data-ui-theme] #create .card{border:0!important;}
+html body[data-ui-theme] #create .card.on{background:var(--ui-raised)!important;box-shadow:none!important;}
+html body[data-ui-theme] #create .card:focus-visible{background:var(--ui-panel-2)!important;}
+html body[data-ui-theme] #create .card.on :is(.choice-name,b:first-child)::before{content:"\25C6";display:inline-block;width:1.3em;font:400 .58em/1 var(--mono);vertical-align:.22em;color:var(--gold);}
+/* closer vertical rhythm */
+html body[data-ui-theme] #app #shade .sheet header button[data-p]{padding-top:3px!important;padding-bottom:3px!important;}
+html body[data-ui-theme] #modal .journal-modal .journal-tabs button{padding:4px 0 6px!important;min-height:0;}
+html body[data-ui-theme] #modal .journal-modal .journal-tabs{gap:0 28px;margin-bottom:12px;}
+html body[data-ui-theme] #modal .journal-modal .journal-achievement{padding:8px 0 9px!important;}
+html body[data-ui-theme] #modal .journal-modal .run-entry{padding:10px 0!important;}
+html body[data-ui-theme] :is(#app #shade #mHelp,#titleSettings) .optrow{padding:2px 0!important;}
+html body[data-ui-theme] :is(#app #shade #mHelp,#titleSettings) .seg button{padding:1px 0!important;min-height:0!important;}
+html body[data-ui-theme] :is(#app #shade #mHelp,#titleSettings) .opt-section{margin-bottom:14px;}
+html body[data-ui-theme] #app #top #studyNav button{padding-top:5px!important;padding-bottom:5px!important;min-height:0!important;}
+/* touch keeps a finger-sized target without the tall look: the height comes from line spacing */
+body.touch[data-ui-theme] :is(#modal .journal-modal .journal-tabs button,#app #shade .sheet header button[data-p],#app #top #studyNav button){min-height:40px!important;}
+body.touch[data-ui-theme] :is(#app #shade #mHelp,#titleSettings) .seg button{min-height:40px!important;}
+/* Options fills its panel the way a game's options screen does: the groups of settings sit side
+   by side in as many columns as fit, so a wide screen is used and little or nothing scrolls. The
+   key bindings run across the full width in as many label and key pairs as fit. */
+html body[data-ui-theme] :is(#app #shade #mHelp,#titleSettings) .optgrid{display:grid!important;grid-template-columns:repeat(auto-fit,minmax(min(100%,440px),1fr))!important;gap:4px 44px!important;align-items:start;}
+html body[data-ui-theme] :is(#app #shade #mHelp,#titleSettings) .opt-section-details{grid-column:1/-1;}
+html body[data-ui-theme] :is(#app #shade #mHelp,#titleSettings) .binds{grid-template-columns:repeat(auto-fill,minmax(150px,1fr) 84px)!important;gap:2px 14px!important;}
+html body[data-ui-theme] :is(#app #shade #mHelp,#titleSettings) .binds button{justify-self:start;padding-left:0!important;}
+@media(max-width:720px){html body[data-ui-theme] :is(#app #shade #mHelp,#titleSettings) .binds{grid-template-columns:minmax(0,1fr) auto minmax(0,1fr) auto!important;}}
+/* Save / Exit is a short list; it does not stretch across a wide panel. */
+html body[data-ui-theme] #app #shade #mSave{max-width:620px;}
+html body[data-ui-theme] :is(#app #shade #mHelp,#titleSettings) .opt-section-details>summary{font:700 var(--text-20)/1.2 var(--display)!important;color:var(--gold)!important;margin-top:6px;cursor:pointer;}
+html body[data-ui-theme] :is(#app #shade #mHelp,#titleSettings) .opt-section-details>.c-info{margin-left:0!important;}
+/* No ruled line under a heading: the display lettering and the gap above it are the break. */
+html body[data-ui-theme] :is(#app #shade .sheet,#modal) :is(.sec,.tg-sec,.step,h3,h4){border:0!important;box-shadow:none!important;}
+html body[data-ui-theme] :is(#app #shade .sheet,#modal) :is(.sec,.tg-sec){padding-bottom:0!important;margin-top:14px!important;margin-bottom:4px!important;}
+html body[data-ui-theme] :is(#app #shade .sheet,#modal) :is(.sec,.tg-sec):first-child{margin-top:0!important;}
+html body[data-ui-theme] #modal .journal-modal .journal-tabs{border-bottom:0!important;}
+html body[data-ui-theme].study-menu-open #app #top :is(#depth,#brand,#studyNav){border:0!important;}
+/* The same two tells inside the character sheet: boxed attribute cells and a rule under each
+   ability and trait row. Plain pairs and plain rows. */
+html body[data-ui-theme] #app #shade .sheet :is(.stat,.arow,.abrow,.prow,.mote.keychip,.keychip){border:0!important;box-shadow:none!important;border-radius:0!important;}
+html body[data-ui-theme] #app #shade .sheet .stat{background:none!important;padding-left:0!important;padding-right:0!important;}
+/* A list row without a number in front has no bullet either; its text starts at the edge. */
+html body[data-ui-theme] #app #shade .sheet .prow:has(>.k:empty){grid-template-columns:minmax(0,1fr)!important;display:block!important;}
+html body[data-ui-theme] #app #shade .sheet .prow>.k:empty{display:none!important;}
+/* ==== TRIAL (2026-10-13): no marker glyphs and no ruled lines at all. Delete this block to bring
+   the diamonds and the row rules back. ==== */
+/* markers: selected and earned are shown by colour alone */
+html body[data-ui-theme] :is(#modal .journal-tabs button,#modal .seg button,#app #shade .sheet .seg button,#app #shade .sheet header button[data-p],#modal #forgeBody :is(.moterow,.ftabs) button)::before{content:none!important;display:none!important;}
+html body[data-ui-theme] #modal .journal-modal :is(.journal-achievement h3,.run-entry strong)::before{content:none!important;display:none!important;}
+html body[data-ui-theme] #modal .journal-modal .journal-achievement :is(p,progress){margin-left:0!important;}
+html body[data-ui-theme] #create .card.on :is(.choice-name,b:first-child)::before{content:none!important;display:none!important;}
+/* rules: list rows, fields and details are separated by space */
+html body[data-ui-theme] #modal .journal-modal :is(.journal-achievement,.run-entry,.journal-entry,.journal-category,.journal-group,details,.run-breakdown,.run-breakdown summary){border:0!important;}
+html body[data-ui-theme] :is(#modal,#app #shade .sheet,#title) :is(.slotrow,details,summary,.optrow,.kv,.legend,hr,.frow){border:0!important;}
+html body[data-ui-theme] :is(#modal,#app #shade .sheet) :is(input:not([type=checkbox],[type=radio],[type=range]),select,textarea){border:0!important;}
+html body[data-ui-theme] :is(#modal,#app #shade .sheet) input:not([type=checkbox],[type=radio],[type=range]){background:var(--ui-panel-2)!important;padding-left:8px!important;}
+/* ==== end trial ==== */
+/* The sheet's tabs carry no underline in any state or layout; the open tab is gold. */
+html body[data-ui-theme] #app #shade .sheet :is(header button,#studySheetTabs button),
+html body[data-ui-theme] #app #shade .sheet :is(header button,#studySheetTabs button):is(.on,[aria-pressed=true],[aria-selected=true]){border:0!important;box-shadow:none!important;text-decoration:none!important;background-image:none!important;}
+html body[data-ui-theme] #app #shade .sheet :is(header button,#studySheetTabs button)::after{display:none!important;}
+html body.fote-study.study-touch[data-ui-theme] #app #shade #close::after{display:inline!important;}
+html body[data-ui-theme] #app #shade .sheet :is(header,#studySheetTabs){border:0!important;box-shadow:none!important;}
+/* Options breathes a little: the first tightening went too far. */
+html body[data-ui-theme] :is(#app #shade #mHelp,#titleSettings) .optrow{padding:7px 0!important;}
+html body[data-ui-theme] :is(#app #shade #mHelp,#titleSettings) .seg button{padding:2px 0!important;}
+html body[data-ui-theme] :is(#app #shade #mHelp,#titleSettings) .opt-section{margin-bottom:26px;}
+html body[data-ui-theme] :is(#app #shade #mHelp,#titleSettings) .c-info{margin-top:0!important;margin-bottom:10px!important;}
+html body[data-ui-theme] :is(#app #shade #mHelp,#titleSettings) .sec{margin-bottom:8px!important;}
+/* Title and creation share surface, text and interaction colors. */
+html body[data-ui-theme] :is(#title,#create){
+ --display:"Grenze Gotisch","Spectral",Georgia,serif;--mono:"Spectral","Spectral",Georgia,serif;
+ --forge-ui-ink:var(--house-ink);--forge-ui-ash:var(--house-ash);--forge-ui-dim:var(--house-dim);--forge-ui-rule:var(--house-warn);--forge-ui-accent:var(--house-accent);--forge-ui-focus:var(--house-accent);
+ --ui-bg:var(--forge-ui-bg);--ui-panel:var(--forge-ui-panel);--ui-raised:var(--forge-ui-raised);--ui-edge:var(--forge-ui-edge);
+ --ui-ink:var(--forge-ui-ink);--ui-ash:var(--forge-ui-ash);--ui-dim:var(--forge-ui-dim);--gold:var(--forge-ui-accent);
+ --ink:var(--ui-ink);--ash:var(--ui-ash);--dim:var(--ui-dim);--edge:var(--ui-edge);
+ --text-18:calc(18px * var(--ui-text-scale,1) + var(--ui-mobile-text-add,0px));--text-24:calc(24px * var(--ui-text-scale,1) + var(--ui-mobile-text-add,0px));
+ --forge-ui-body-size:calc(var(--forge-ui-body-base) * var(--ui-text-scale,1));
+}
+/* Character creation: one stage, focused choices, and an equipped preview. */
+html body[data-ui-theme] #create{overflow:hidden!important;background:var(--ui-bg)!important;}
+html body[data-ui-theme] #create .wrap{position:absolute;inset:0;width:100%;height:100dvh;max-width:1080px;max-height:820px;min-height:0;margin:auto;box-sizing:border-box;display:grid;grid-template-columns:minmax(0,1fr) 420px;grid-template-rows:104px 84px minmax(0,1fr) 96px 60px;padding:24px 24px!important;gap:16px 24px;isolation:isolate;background:linear-gradient(#08060440,transparent 35%,#080604b8),url(../art/title/creation-hall.jpg) center/cover no-repeat;box-shadow:inset 0 0 70px #0009;}
+html body[data-ui-theme] #create button{border-radius:0!important;text-decoration:none!important;text-shadow:none;}
+html body[data-ui-theme] #create :is(button,input,[tabindex]):focus-visible{outline:none!important;}
+html body[data-ui-theme] #create #creationHeading:focus{outline:none;}
+html body[data-ui-theme] #create [hidden]{display:none!important;}
+html body[data-ui-theme] #create .creation-actions{grid-column:1/-1;grid-row:1;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;min-width:0;}
+html body[data-ui-theme] #create .creation-title{position:relative;isolation:isolate;text-align:center;grid-column:2;grid-row:1;padding:24px 96px 18px;}
+html body[data-ui-theme] #create .creation-title>span{display:none;}
+html body[data-ui-theme] #create h1{font:700 var(--fs-head)/1.1 var(--display)!important;color:var(--ui-ink);margin:0!important;padding-bottom:4px;text-shadow:0 2px 0 #000;}
+html body[data-ui-theme] #create :is(#cBack,#rollCharacter){position:relative;isolation:isolate;font:700 var(--fs-word)/1.15 var(--display)!important;color:var(--ui-ink)!important;padding:10px 20px 14px!important;min-height:48px;}
+html body[data-ui-theme] #create #cBack{grid-column:1;grid-row:1;justify-self:start;}
+html body[data-ui-theme] #create #rollCharacter{grid-column:3;grid-row:1;justify-self:end;}
+html body[data-ui-theme] #create #creationRollResult{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;pointer-events:none;margin:0!important;}
+html body[data-ui-theme] #create .creation-steps{grid-column:1/-1;grid-row:2;display:flex;flex-wrap:wrap;align-items:center;align-content:center;justify-content:center;gap:8px 12px;padding:2px 0;min-width:0;}
+html body[data-ui-theme] #create .creation-steps:empty{visibility:hidden;}
+html body[data-ui-theme] #create .creation-steps button{position:relative;isolation:isolate;flex:none;max-width:100%;min-width:0;display:flex;flex-direction:row;align-items:center;justify-content:center;gap:10px;padding:7px 22px 11px!important;min-height:48px;max-height:48px;box-sizing:border-box;color:var(--ui-ash)!important;background:none!important;border:0!important;box-shadow:none!important;white-space:nowrap;}
+html body[data-ui-theme] #create .creation-steps button>span{font:400 var(--text-14)/1.2 var(--mono);color:var(--ui-dim);}
+html body[data-ui-theme] #create .creation-step-value{font:700 var(--fs-word)/1.15 var(--display);color:var(--ui-ink);}
+html body[data-ui-theme] #create .creation-steps button.on::before,#create .creation-steps button:hover::before{filter:var(--forge-ui-frame-tone) brightness(1);}
+html body[data-ui-theme] #create .creation-steps button.on>span{color:var(--forge-ui-focus);}
+html body[data-ui-theme] #create .creation-layout{display:contents;}
+html body[data-ui-theme] #create .creation-scene{grid-column:1;grid-row:3;position:relative;isolation:isolate;min-height:0;min-width:0;display:flex;align-items:center;justify-content:center;}
+html body[data-ui-theme] #create .creation-step{box-sizing:border-box;width:100%;height:100%;min-height:0;margin:0;padding:8px 0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+html body[data-ui-theme] #create .creation-step>.step{font:400 var(--fs-head)/1.2 var(--display);color:var(--ui-ink);text-align:center;text-transform:none;letter-spacing:0;margin:0 0 16px;padding:0;}
+html body[data-ui-theme] #create #creationAppearanceLabel{display:none;}
+html body[data-ui-theme] #create .cards{display:flex;align-items:flex-end;justify-content:center;gap:8px;}
+html body[data-ui-theme] #create .cards .card{display:flex;flex-direction:column;justify-content:flex-end;align-items:center;min-width:0;gap:6px;padding:5px 2px!important;text-align:center;background:none!important;border:0!important;box-shadow:none!important;}
+html body[data-ui-theme] #create .cards .card>span{display:none;}
+html body[data-ui-theme] #create .cards .card:focus-visible .choice-name{color:var(--forge-ui-focus)!important;}
+html body[data-ui-theme] #create .cards .card .choice-name{font:700 var(--fs-word)/1.2 var(--display)!important;color:var(--ui-ink)!important;text-shadow:0 1px 0 #000,0 0 6px #000;}
+html body[data-ui-theme] #create .cards .card.on .choice-name{color:var(--forge-ui-focus)!important;}
+html body[data-ui-theme] #create .creation-lineup{--cast-scale:var(--creation-cast-scale,1);width:100%;max-width:720px;gap:12px;padding:12px 0 0;}
+html body[data-ui-theme] #create .creation-lineup .card{flex:var(--choice-weight,1);order:var(--carousel-order,0);transform:none;--depth:1;}
+html body[data-ui-theme] #create [data-race=elf]{--choice-weight:.8;}
+html body[data-ui-theme] #create [data-race=dwarf]{--choice-weight:1.1;}
+html body[data-ui-theme] #create [data-race=fae]{--choice-weight:.9;}
+html body[data-ui-theme] #create [data-race=gloomling]{--choice-weight:1.45;}
+html body[data-ui-theme] #create :is([data-cls=cleric],[data-cls=mage]){--choice-weight:.9;}
+html body[data-ui-theme] #create [data-cls=scoundrel]{--choice-weight:1.3;}
+html body[data-ui-theme] #create .creation-lineup .port{position:relative;display:flex;align-items:flex-end;justify-content:center;width:100%;height:140px;padding:0;}
+html body[data-ui-theme] #create .creation-lineup .port::before{content:"";position:absolute;bottom:3px;left:50%;width:40px;height:8px;transform:translateX(-50%);border-radius:50%;background:#0009;filter:blur(3px);}
+html body[data-ui-theme] #create .creation-lineup .port canvas{position:relative;width:calc(var(--cast-width)*var(--cast-scale)*var(--depth))!important;height:calc(var(--cast-height)*var(--cast-scale)*var(--depth))!important;max-width:100%;object-fit:contain;filter:brightness(.78) saturate(.86);}
+html body[data-ui-theme] #create .creation-lineup .card.on canvas{filter:none;}
+html body[data-ui-theme] #create .cards.creation-appearance{gap:24px;margin:12px 0 0;}
+html body[data-ui-theme] #create .cards.creation-appearance .card{min-height:40px;padding:5px 12px!important;border-bottom:1px solid #8f713d70!important;}
+html body[data-ui-theme] #create .cards.creation-appearance b{font:400 var(--text-16)/1.2 var(--mono)!important;color:var(--ui-ash)!important;}
+html body[data-ui-theme] #create .cards.creation-appearance .on b{color:var(--forge-ui-focus)!important;}
+html body[data-ui-theme] #create [data-step=court] .choice-name{white-space:normal;max-width:100%;min-height:2.4em;}
+html body[data-ui-theme] #create .hero-stage{display:flex;justify-content:center;align-items:center;}
+html body[data-ui-theme] #create .hero-stage .big{display:flex;align-items:flex-end;justify-content:center;height:174px;width:180px;background:radial-gradient(ellipse 30% 5% at 50% 96%,#0009,transparent 100%);}
+html body[data-ui-theme] #create .hero-stage canvas{max-width:100%;max-height:100%;object-fit:contain;}
+html body[data-ui-theme] #create .creation-record{grid-column:2;grid-row:3/5;position:relative;isolation:isolate;min-height:0;min-width:0;max-height:100%;height:100%;box-sizing:border-box;align-self:start;display:flex;flex-direction:column;gap:18px;padding:30px 30px;background:none;box-shadow:none;}
+html body[data-ui-theme] #create .creation-record::before{content:"";display:block!important;position:absolute;inset:0;z-index:-1;pointer-events:none;border:26px solid transparent;background:none;mask-image:none;filter:var(--forge-ui-frame-tone);}
+html body[data-ui-theme] #create .creation-record.more-details::after{content:"More below ↓";position:absolute;bottom:12px;left:26px;right:26px;text-align:center;pointer-events:none;color:var(--gold);font:400 var(--text-14)/1.2 var(--mono);}
+html body[data-ui-theme] #create .creation-name-controls{display:flex;flex-direction:column;align-items:center;flex:none;gap:2px;}
+html body[data-ui-theme] #create [data-step=preview]>.step{display:none;}
+html body[data-ui-theme] #create [data-step=preview] .creation-name-controls{width:90%;max-width:220px;margin-top:8px;}
+html body[data-ui-theme] #create .creation-ability{display:grid;grid-template-columns:32px minmax(0,1fr);align-items:start;gap:10px;margin:0 0 10px;}
+html body[data-ui-theme] #create .creation-ability-icon{padding-top:2px;}
+html body[data-ui-theme] #create .creation-ability-icon canvas{width:32px!important;height:32px!important;}
+html body[data-ui-theme] #create .creation-ability .pick-words{gap:2px;}
+html body[data-ui-theme] #create .creation-ability .pick-words .choice-name{text-align:left;font-size:var(--fs-body);}
+html body[data-ui-theme] #create .creation-ability-kind{display:inline-block;margin-left:6px;color:var(--ui-ash);font:400 var(--text-12)/1.3 var(--mono);}
+html body[data-ui-theme] #create .wrap[data-review=false] :is(.creation-name-controls,.hero-who){display:none;}
+html body[data-ui-theme] #create #cname{flex:none!important;width:100%;box-sizing:border-box;min-height:40px;text-align:center;padding:2px 4px!important;border:0!important;border-bottom:1px solid transparent!important;background:none!important;box-shadow:none!important;color:var(--ui-ink)!important;font:400 var(--text-26)/1.2 var(--display)!important;}
+html body[data-ui-theme] #create #cname:focus-visible{outline:none!important;border-bottom-color:var(--gold)!important;}
+html body[data-ui-theme] #create #reroll{font:400 var(--text-16)/1.2 var(--mono)!important;color:var(--ui-ash)!important;padding:3px!important;min-height:32px;}
+html body[data-ui-theme] #create .hero-who{display:grid;gap:12px;margin-bottom:14px;}
+html body[data-ui-theme] #create .who{display:none;}
+html body[data-ui-theme] #create .who-context{display:block;color:var(--ui-ash);}
+html body[data-ui-theme] #create .hero-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;padding:12px 0;border-block:1px solid var(--forge-ui-divider);text-align:center;}
+html body[data-ui-theme] #create .hero-stats span{display:flex;flex-direction:column;align-items:center;gap:6px;font:400 var(--text-16)/1.2 var(--mono);color:var(--ui-ash);}
+html body[data-ui-theme] #create .hero-stats b{font:400 var(--text-26)/1.1 var(--display);}
+html body[data-ui-theme] #create .creation-record-body{flex:0 1 auto;overflow-y:auto;overscroll-behavior:contain;min-height:0;scrollbar-width:thin;scrollbar-color:var(--gold) #242824;scrollbar-gutter:stable both-edges;padding:0 2px 12px;}
+html body[data-ui-theme] #create .build-fact{margin:0;}
+html body[data-ui-theme] #create .build-fact+.build-fact{margin-top:16px;padding-top:12px;border-top:1px solid var(--forge-ui-divider);}
+html body[data-ui-theme] #create .build-fact>h2{font:700 var(--text-18)/1.3 var(--display);text-transform:none;letter-spacing:0;color:var(--ui-dim);margin:0 0 12px;text-align:center;}
+html body[data-ui-theme] #create .pick-words{display:grid;gap:8px;}
+html body[data-ui-theme] #create .pick-words .choice-name{font:700 var(--text-24)/1.2 var(--display);color:var(--gold)!important;text-align:center;}
+html body[data-ui-theme] #create .pick-words span{font:400 var(--fs-body)/1.35 var(--mono);color:var(--ui-ash);}
+html body[data-ui-theme] #create .pick-words .choice-summary{color:var(--ui-ink);}
+html body[data-ui-theme] #create .pick-words :is(.choice-style,.choice-ability){color:var(--gold);}
+html body[data-ui-theme] #create .pick-words .choice-style{text-align:center;}
+html body[data-ui-theme] #create .pick-words .choice-trait{color:var(--ui-ink);}
+html body[data-ui-theme] #create .pick-words .choice-benefit{color:var(--house-good);}
+html body[data-ui-theme] #create .pick-words .choice-rule{color:var(--forge-ui-rule);font-weight:400;}
+/* Keep the full build in one scroll region; spend its height on the mechanics. */
+html body[data-ui-theme] #create .wrap[data-review=true] .build-fact+.build-fact{margin-top:14px;padding-top:12px;}
+html body[data-ui-theme] #create .wrap[data-review=true] .build-fact>h2{text-align:left;margin-bottom:8px;}
+html body[data-ui-theme] #create .wrap[data-review=true] .pick-words{gap:4px;}
+html body[data-ui-theme] #create .wrap[data-review=true] .pick-words .choice-name{text-align:left;}
+html body[data-ui-theme] #create .creation-ability:last-child{margin-bottom:0;}
+html body[data-ui-theme] #create .creation-class-tray{grid-column:1;grid-row:4;min-width:0;display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 0;background:none;border:0;}
+html body[data-ui-theme] #create .creation-class-tray>.step{display:none;}
+html body[data-ui-theme] #create .creation-class-tray .cards{width:100%;gap:6px;}
+html body[data-ui-theme] #create .creation-class-tray .card{flex:var(--choice-weight,1);}
+html body[data-ui-theme] #create .port.class-symbol{display:flex;align-items:center;justify-content:center;height:64px;width:100%;}
+html body[data-ui-theme] #create .port.class-symbol canvas{width:64px!important;height:64px!important;max-width:100%;filter:none;opacity:1;}
+html body[data-ui-theme] #create .wrap:not([data-current-step=cls]) .creation-class-tray{display:none;}
+html body[data-ui-theme] #create .creation-nav{grid-column:1/-1;grid-row:5;display:flex;justify-content:space-between;align-items:center;gap:18px;padding-bottom:env(safe-area-inset-bottom,0px);}
+html body[data-ui-theme] #create .creation-tutorial{display:flex;align-items:center;gap:8px;font:400 var(--text-16)/1.3 var(--mono);color:var(--ui-ash);white-space:nowrap;}
+html body[data-ui-theme] #create #cTutorial{appearance:none;display:grid;place-content:center;width:20px;height:20px;border:1px solid var(--ui-edge)!important;background:var(--ui-panel);box-shadow:inset 0 0 0 2px var(--ui-bg);cursor:pointer;}
+html body[data-ui-theme] #create #cTutorial:checked::before{content:"✓";color:var(--gold);font-size:16px;}
+html body[data-ui-theme] #create #begin{position:relative;isolation:isolate;font:700 var(--text-26)/1.15 var(--display)!important;color:var(--forge-ui-focus)!important;min-height:56px;padding:8px 28px 16px!important;margin:0!important;border:0!important;background:none!important;box-shadow:none!important;white-space:nowrap;}
+html body[data-ui-theme] #create #begin::before{content:"";position:absolute;inset:3px 0;pointer-events:none;z-index:-1;background:none;border:16px solid transparent;filter:var(--forge-ui-frame-tone);}
+html body[data-ui-theme] #create [data-step=god]{justify-content:center;padding:0;}
+html body[data-ui-theme] #create [data-step=god]>.step{margin-bottom:6px;}
+html body[data-ui-theme] #create .god-guidance{font:400 var(--text-16)/1.4 var(--mono);color:var(--ui-ash);text-align:center;margin:0 0 12px;}
+html body[data-ui-theme] #create .god-pick{width:100%;min-height:0;}
+html body[data-ui-theme] #create .creation-carousel{--shrine-size:172px;--shrine-recede:32px;display:grid;grid-template-columns:44px minmax(0,1fr) 44px;align-items:center;width:100%;max-width:740px;margin-inline:auto;gap:6px;}
+html body[data-ui-theme] #create .creation-carousel [data-position="-1"]{--carousel-order:0;--depth:.76;}
+html body[data-ui-theme] #create .creation-carousel [data-position="0"]{--carousel-order:1;--depth:1;}
+html body[data-ui-theme] #create .creation-carousel [data-position="1"]{--carousel-order:2;--depth:.76;}
+html body[data-ui-theme] #create .creation-carousel [data-position="-1"] .port,html body[data-ui-theme] #create .creation-carousel [data-position="1"] .port{box-sizing:border-box;padding-bottom:var(--shrine-recede);}
+html body[data-ui-theme] #create .creation-carousel [data-position]:not([data-position="0"]) canvas{opacity:.42;filter:saturate(.6) brightness(.75);}
+html body[data-ui-theme] #create .creation-carousel [data-position]:not([data-position="0"]) .choice-name{opacity:.58;}
+html body[data-ui-theme] #create .creation-carousel [data-position="0"] canvas{opacity:1;filter:none;}
+html body[data-ui-theme] #create .creation-carousel canvas{transform-origin:top left;}
+html body[data-ui-theme] #create .carousel-departing{position:absolute;pointer-events:none;transform-origin:top left;z-index:-1;filter:saturate(.6) brightness(.75);}
+html body[data-ui-theme] #create .carousel-arrow{display:grid;place-items:center;min-width:44px;min-height:64px;padding:0!important;border:0!important;background:none!important;color:var(--gold)!important;font:400 48px/1 "Spectral",Georgia,serif!important;box-shadow:none!important;}
+html body[data-ui-theme] #create .carousel-position{text-align:center;grid-column:1/-1;min-height:20px;margin:6px 0 0;font:400 var(--text-14)/1.3 var(--mono);color:var(--ui-ash);}
+html body[data-ui-theme] #create .god-pick .creation-lineup{align-items:flex-start;}
+html body[data-ui-theme] #create .god-pick .card{min-height:224px;gap:5px;}
+html body[data-ui-theme] #create .god-pick .port{height:180px;}
+html body[data-ui-theme] #create .god-pick .port::before{display:none;}
+html body[data-ui-theme] #create .god-pick .port canvas{width:min(100%,calc(var(--shrine-size)*var(--depth)))!important;height:auto!important;aspect-ratio:1;max-height:100%;object-fit:contain;}
+html body[data-ui-theme] #create .god-pick .choice-name{font-size:var(--text-16)!important;white-space:normal;max-width:100%;min-height:2.4em;}
+html body[data-ui-theme] #create .god-pick .card:disabled canvas{filter:grayscale(1) brightness(.6);}
+html body[data-ui-theme] #create .god-unavailable{font:400 var(--text-12)/1.2 var(--mono);color:#edb4a2;}
+html body[data-ui-theme] #create .god-refusals{color:#edb4a2!important;}
+@media(hover:hover){html body[data-ui-theme] #create .cards .card:not(:disabled):hover canvas{filter:brightness(1.1);}}
+/* One painted material, sliced instead of stretched around live text. */
+html body[data-ui-theme] #create :where(.creation-title,.creation-steps button,#cBack,#rollCharacter)::before{content:"";display:block!important;position:absolute;inset:0;z-index:-1;pointer-events:none;border:16px solid transparent;background:none;filter:var(--forge-ui-frame-tone);}
+/* The six-gem heading bar keeps its own proportions, centred on the heading row. */
+html body[data-ui-theme] #create .creation-actions .creation-title::before{inset:auto 0!important;top:50%!important;aspect-ratio:2.5/1;transform:translateY(-49.4%);border:0;border-image:none;background:url(../art/ui/forge-heading-bar-v1.png) center/100% 100% no-repeat;filter:none;}
+html body[data-ui-theme] #create .creation-steps button::before{filter:var(--forge-ui-frame-tone) brightness(.62) contrast(.85);border-width:14px;border-image-width:14px;}
+@media(max-width:760px) and (orientation:landscape){
+ html body[data-ui-theme] #create .creation-title{display:none;}
+ html body[data-ui-theme] #create .creation-actions{grid-template-columns:1fr 1fr;}
+ html body[data-ui-theme] #create #rollCharacter{grid-column:2;}
+}
+@media(min-width:701px) and (max-width:1100px) and (min-height:721px){
+ html body[data-ui-theme] #create .creation-actions{grid-template-columns:1fr 1fr;grid-template-rows:40px minmax(0,1fr);gap:4px;}
+ html body[data-ui-theme] #create .creation-title{grid-column:1/-1;grid-row:2;justify-self:center;padding:14px 84px 12px;}
+ html body[data-ui-theme] #create h1{font-size:var(--fs-head)!important;}
+ html body[data-ui-theme] #create :is(#cBack,#rollCharacter){min-height:44px;padding:6px 16px 10px!important;font-size:var(--fs-word)!important;}
+ html body[data-ui-theme] #create #rollCharacter{grid-column:2;}
+ html body[data-ui-theme] #create .creation-steps button{padding:5px 16px 9px!important;gap:8px;}
+ html body[data-ui-theme] #create .creation-step-value{font-size:var(--forge-ui-body-size);line-height:1.1;}
+}
+@media(min-width:701px) and (min-height:561px){
+ html body[data-ui-theme] #create .wrap{max-width:1180px;grid-template-columns:minmax(0,1fr) minmax(300px,42.4%);grid-template-rows:96px 80px minmax(0,1fr) 96px 60px;gap:12px 24px;}
+ html body[data-ui-theme] #create .creation-record{padding:24px 28px 36px;gap:14px;}
+ html body[data-ui-theme] #create .creation-step{display:grid;grid-template-rows:40px 174px 58px;align-content:center;justify-items:center;justify-content:stretch;gap:8px;padding:0;}
+ html body[data-ui-theme] #create .creation-step>.step{grid-row:1;margin:0;align-self:center;}
+ html body[data-ui-theme] #create .creation-step>.creation-lineup{grid-row:2;align-self:end;padding:0;}
+ html body[data-ui-theme] #create .creation-step>.creation-appearance{grid-row:3;align-self:start;margin:0;}
+ html body[data-ui-theme] #create .creation-step>.hero-stage{grid-row:2;align-self:end;}
+ html body[data-ui-theme] #create .creation-step>.creation-name-controls{grid-row:3;margin:0;}
+ html body[data-ui-theme] #create [data-step=cls]>.step{visibility:hidden;}
+ html body[data-ui-theme] #create [data-step=god]{grid-template-rows:40px minmax(0,1fr);}
+ html body[data-ui-theme] #create .god-guidance{display:none;}
+ html body[data-ui-theme] #create .god-pick{grid-row:2;}
+ html body[data-ui-theme] #create .creation-class-tray{align-self:start;padding-top:0;}
+ html body[data-ui-theme] #create .creation-record-body:focus-visible{outline:none;}
+ html body[data-ui-theme] #create .creation-actions{gap:12px;}
+ html body[data-ui-theme] #create :is(#cBack,#rollCharacter){white-space:nowrap;}
+}
+@media(max-width:700px) and (orientation:portrait){
+ html body[data-ui-theme] #create .wrap{--tray-height:0px;max-height:none;grid-template-columns:minmax(0,1fr);grid-template-rows:102px 134px 146px 82px minmax(0,1fr) 48px;padding:6px 10px!important;gap:6px;background-size:auto,auto 470px;background-position:center,center top;background-color:var(--ui-bg);}
+ html body[data-ui-theme] #create .wrap[data-current-step=cls]{--tray-height:82px;}
+ html body[data-ui-theme] #create .creation-actions{grid-template-columns:1fr 1fr;}
+ html body[data-ui-theme] #create .creation-title{grid-column:1/-1;grid-row:2;padding:10px 8px;}
+ html body[data-ui-theme] #create .creation-title>span{display:none;}
+ html body[data-ui-theme] #create h1{font-size:var(--fs-head)!important;margin:0!important;}
+ html body[data-ui-theme] #create #rollCharacter{grid-column:2;}
+ html body[data-ui-theme] #create :is(#cBack,#rollCharacter){font-size:var(--text-14)!important;min-height:40px;padding:6px 14px 10px!important;}
+ html body[data-ui-theme] #create .creation-steps{gap:6px;padding:0;}
+ html body[data-ui-theme] #create .creation-steps button{min-height:44px;padding:5px 14px 9px!important;}
+ html body[data-ui-theme] #create .creation-steps button:only-child{width:auto;}
+ html body[data-ui-theme] #create .creation-steps button>span{font-size:var(--text-12);}
+ html body[data-ui-theme] #create .creation-step-value{font-size:var(--text-18);}
+ html body[data-ui-theme] #create .creation-step{padding:0;}
+ html body[data-ui-theme] #create .creation-scene{grid-row:3/5;}
+ html body[data-ui-theme] #create .creation-step{display:grid;grid-template-rows:30px 134px 58px;gap:3px;align-content:start;justify-items:center;justify-content:stretch;}
+ html body[data-ui-theme] #create .creation-step>.step{grid-row:1;font-size:var(--text-20);margin:0;align-self:center;}
+ html body[data-ui-theme] #create .creation-step>.creation-lineup{grid-row:2;align-self:end;}
+ html body[data-ui-theme] #create .creation-step>.creation-appearance{grid-row:3;align-self:start;}
+ html body[data-ui-theme] #create .creation-step>.hero-stage{grid-row:2;align-self:end;}
+ html body[data-ui-theme] #create .creation-step>.creation-name-controls{grid-row:3;margin:0;}
+ html body[data-ui-theme] #create .creation-class-tray{align-self:end;z-index:1;}
+ html body[data-ui-theme] #create .creation-record-body:focus-visible{outline:none;}
+ html body[data-ui-theme] #create [data-step=cls]>.step{display:none;}
+ html body[data-ui-theme] #create .creation-lineup{padding:0;gap:2px;}
+ html body[data-ui-theme] #create .creation-lineup .port{height:110px;}
+ html body[data-ui-theme] #create .cards .card{padding:3px 0!important;gap:4px;}
+ html body[data-ui-theme] #create .cards .card .choice-name{font-size:var(--text-14)!important;}
+ html body[data-ui-theme] #create .cards.creation-appearance{gap:24px;margin:4px 0 0;}
+ html body[data-ui-theme] #create .cards.creation-appearance .card{min-height:36px;}
+ html body[data-ui-theme] #create .hero-stage .big{height:140px;width:150px;}
+ html body[data-ui-theme] #create .creation-record{grid-column:1;grid-row:5;padding:18px 18px 30px;gap:12px;align-self:start;width:100%;}
+ html body[data-ui-theme] #create .creation-record.more-details::after{bottom:8px;left:18px;right:18px;}
+ html body[data-ui-theme] #create .creation-record::before{border-width:14px;border-image-width:14px;}
+ html body[data-ui-theme] #create :where(.creation-title,.creation-steps button,#cBack,#rollCharacter)::before{border-width:12px;border-image-width:12px;}
+ html body[data-ui-theme] #create .build-fact>h2{font-size:var(--text-12);margin-bottom:8px;}
+ html body[data-ui-theme] #create .pick-words{gap:8px;}
+ html body[data-ui-theme] #create .pick-words .choice-name{font-size:var(--text-20);}
+ html body[data-ui-theme] #create .pick-words span{line-height:1.45;}
+ html body[data-ui-theme] #create .creation-class-tray{grid-column:1;grid-row:4;padding:0;gap:0;}
+ html body[data-ui-theme] #create .creation-class-tray .cards{gap:0;}
+ html body[data-ui-theme] #create .creation-class-tray .choice-name{white-space:nowrap;letter-spacing:-.025em;}
+ html body[data-ui-theme] #create .port.class-symbol{height:44px;}
+ html body[data-ui-theme] #create .port.class-symbol canvas{width:44px!important;height:44px!important;}
+ html body[data-ui-theme] #create .creation-nav{grid-column:1;grid-row:6;gap:4px;}
+ html body[data-ui-theme] #create #begin{font-size:var(--text-18)!important;padding-inline:14px!important;}
+ html body[data-ui-theme] #create .creation-tutorial{font-size:var(--text-12);}
+ html body[data-ui-theme] #create .god-guidance{display:none;}
+ html body[data-ui-theme] #create [data-step=god]{display:grid;grid-template-rows:auto minmax(0,1fr);}
+ html body[data-ui-theme] #create .god-pick{height:100%;}
+ html body[data-ui-theme] #create .creation-carousel{--shrine-size:112px;--shrine-recede:20px;height:100%;grid-template-columns:32px minmax(0,1fr) 32px;grid-template-rows:minmax(0,1fr) auto;gap:2px;}
+ html body[data-ui-theme] #create .carousel-arrow{min-width:32px;min-height:48px;font-size:36px!important;}
+ html body[data-ui-theme] #create .god-pick .creation-lineup{height:100%;min-height:0;align-items:stretch;}
+ html body[data-ui-theme] #create .god-pick .card{min-height:0;}
+ html body[data-ui-theme] #create .god-pick .port{flex:1;min-height:44px;height:auto;max-height:126px;}
+ html body[data-ui-theme] #create .god-pick .choice-name{flex:none;}
+ html body[data-ui-theme] #create .carousel-position{font-size:var(--text-12);min-height:18px;margin:2px 0;}
+ html body[data-ui-theme] #create #cname{font-size:var(--text-24)!important;min-height:30px;}
+ html body[data-ui-theme] #create #reroll{font-size:var(--text-12)!important;min-height:26px;}
+ html body[data-ui-theme] #create .who{display:none;}
+ html body[data-ui-theme] #create .hero-stats{padding:6px 0;margin:0;}
+ html body[data-ui-theme] #create .hero-stats span{font-size:var(--text-12);}
+ html body[data-ui-theme] #create .hero-stats b{font-size:var(--text-20);}
+}
+
+/* One floorline for every choice: captions sit below the art, rather than
+   moving its feet upward when a court or shrine name wraps to two lines. */
+html body[data-ui-theme] #create .creation-scene{--creation-cast-scale:1;--creation-heading-row:40px;--creation-body-row:174px;--creation-caption-row:58px;--creation-stage-gap:8px;--appearance-drop:24px;}
+html body[data-ui-theme] #create .creation-scene .creation-step{display:grid;grid-template-rows:var(--creation-heading-row) var(--creation-body-row) var(--creation-caption-row);gap:var(--creation-stage-gap);align-content:center;justify-content:stretch;justify-items:center;padding:0;}
+html body[data-ui-theme] #create .creation-scene .creation-step>.step{display:block;visibility:visible;grid-row:1;align-self:center;margin:0;}
+html body[data-ui-theme] #create .creation-scene .creation-step>.creation-lineup{grid-row:2;align-self:stretch;height:100%;padding:0;}
+html body[data-ui-theme] #create .creation-scene .creation-step>.creation-lineup .card{position:relative;height:100%;padding:0!important;gap:0;}
+html body[data-ui-theme] #create .creation-scene .creation-step>.creation-lineup .port{box-sizing:border-box;height:100%;padding-bottom:calc(4px - 4px * var(--cast-scale));}
+html body[data-ui-theme] #create .creation-scene .creation-step>.creation-lineup .choice-name{position:absolute;top:calc(100% + 4px);left:0;right:0;min-height:0;margin:0;}
+html body[data-ui-theme] #create .creation-scene .creation-step>.hero-stage{grid-row:2;align-self:end;}
+html body[data-ui-theme] #create .creation-scene .creation-step>.creation-name-controls{grid-row:3;margin:0;}
+html body[data-ui-theme] #create .creation-scene .creation-step>.creation-appearance{grid-row:3;align-self:start;gap:14px;margin:var(--appearance-drop) 0 0;}
+html body[data-ui-theme] #create .creation-scene .creation-appearance .card{position:relative;isolation:isolate;box-sizing:border-box;min-height:44px;height:44px;justify-content:center;padding:6px 16px!important;border:0!important;}
+html body[data-ui-theme] #create .creation-scene .creation-appearance .card::before{content:"";position:absolute;inset:3px 0;pointer-events:none;z-index:-1;border:12px solid transparent;filter:var(--forge-ui-frame-tone);}
+html body[data-ui-theme] #create .creation-scene .creation-appearance .card.on::before{filter:var(--forge-ui-frame-tone) brightness(1.25);}
+html body[data-ui-theme] #create .creation-scene .creation-appearance b{font-size:var(--text-14)!important;}
+html body[data-ui-theme] #create .creation-scene .god-pick{grid-row:2;align-self:stretch;height:100%;}
+html body[data-ui-theme] #create .creation-scene .creation-carousel{height:100%;grid-template-rows:100% auto;}
+html body[data-ui-theme] #create .creation-scene .god-pick .creation-lineup{height:100%;padding:0;align-items:stretch;}
+html body[data-ui-theme] #create .creation-scene .god-pick .card{position:relative;box-sizing:border-box;min-height:0;height:100%;padding:0!important;gap:0;}
+html body[data-ui-theme] #create .creation-scene .god-pick .port{flex:none;height:100%;min-height:0;max-height:none;}
+html body[data-ui-theme] #create .creation-scene .god-pick .port canvas{aspect-ratio:auto;}
+html body[data-ui-theme] #create .creation-scene .god-pick .choice-name{position:absolute;top:calc(100% + 4px);left:0;right:0;min-height:0;margin:0;}
+html body[data-ui-theme] #create .creation-scene .god-unavailable{display:none;}
+html body[data-ui-theme] #create .creation-scene .carousel-position{margin:56px 0 0;}
+@media(max-width:700px) and (orientation:portrait){
+ html body[data-ui-theme] #create .creation-scene{--creation-cast-scale:.73;--creation-heading-row:30px;--creation-body-row:134px;--creation-caption-row:58px;--creation-stage-gap:3px;}
+ html body[data-ui-theme] #create .creation-scene .creation-step{align-content:start;}
+ html body[data-ui-theme] #create .creation-scene .carousel-position{margin-top:50px;}
+}
+@media(max-width:700px) and (max-height:720px) and (orientation:portrait){
+ html body[data-ui-theme] #create .creation-scene{--creation-cast-scale:.63;--creation-heading-row:26px;--creation-body-row:108px;--creation-caption-row:54px;--appearance-drop:22px;}
+ html body[data-ui-theme] #create .creation-scene .creation-step>.creation-lineup .choice-name{top:calc(100% + 3px);}
+}
+@media(max-height:720px) and (orientation:landscape){
+ html body[data-ui-theme] #create .creation-scene{--creation-cast-scale:.68;--creation-heading-row:26px;--creation-body-row:112px;--creation-caption-row:58px;--creation-stage-gap:4px;}
+ html body[data-ui-theme] #create .creation-scene .creation-step{align-content:start;}
+ html body[data-ui-theme] #create .creation-scene .carousel-position{margin-top:50px;}
+}
+@media(max-width:700px) and (max-height:720px) and (orientation:portrait){
+ html body[data-ui-theme] #create .wrap{grid-template-rows:40px 122px 128px 66px minmax(0,1fr) 46px;}
+ html body[data-ui-theme] #create .creation-title{display:none;}
+ html body[data-ui-theme] #create .creation-steps{gap:6px;}
+ html body[data-ui-theme] #create .creation-steps button{min-height:44px;}
+ html body[data-ui-theme] #create .creation-step{grid-template-rows:26px 108px 54px;}
+ html body[data-ui-theme] #create .creation-lineup .port{height:92px;}
+ html body[data-ui-theme] #create .creation-step>.step{font-size:var(--text-18);margin-bottom:4px;}
+ html body[data-ui-theme] #create .cards.creation-appearance{margin:0;}
+ html body[data-ui-theme] #create .hero-stage .big{width:108px;height:108px;}
+ html body[data-ui-theme] #create .creation-record{padding:16px 20px 30px;}
+}
+@media(max-height:720px) and (orientation:landscape){
+ html body[data-ui-theme] #create .wrap{grid-template-columns:minmax(0,1fr) 43%;grid-template-rows:40px 50px minmax(0,1fr) 62px 44px;padding:4px 10px!important;gap:4px 12px;}
+ html body[data-ui-theme] #create .creation-scene{grid-row:3/5;}
+ html body[data-ui-theme] #create .creation-step{display:grid;grid-template-rows:26px 112px 58px;gap:4px;align-content:start;justify-items:center;justify-content:stretch;}
+ html body[data-ui-theme] #create .creation-step>.step{grid-row:1;align-self:center;}
+ html body[data-ui-theme] #create .creation-step>.creation-lineup{grid-row:2;align-self:end;}
+ html body[data-ui-theme] #create .creation-step>.creation-appearance{grid-row:3;align-self:start;}
+ html body[data-ui-theme] #create .creation-step>.hero-stage{grid-row:2;align-self:end;}
+ html body[data-ui-theme] #create .creation-step>.creation-name-controls{grid-row:3;margin:0;}
+ html body[data-ui-theme] #create [data-step=god]{grid-template-rows:26px minmax(0,1fr);}
+ html body[data-ui-theme] #create .god-pick{grid-row:2;}
+ html body[data-ui-theme] #create .creation-class-tray{align-self:end;z-index:1;}
+ html body[data-ui-theme] #create .creation-title>span{display:none;}
+ html body[data-ui-theme] #create h1{font-size:var(--fs-head)!important;margin:0!important;}
+ html body[data-ui-theme] #create .creation-title{padding:7px 26px;}
+ html body[data-ui-theme] #create :is(#cBack,#rollCharacter){font-size:var(--text-14)!important;min-height:36px;padding:5px 14px 9px!important;}
+ html body[data-ui-theme] #create :where(.creation-title,.creation-steps button,#cBack,#rollCharacter)::before{border-width:10px;border-image-width:10px;}
+ html body[data-ui-theme] #create .creation-steps{gap:10px;padding:0;}
+ html body[data-ui-theme] #create .creation-steps button{min-height:44px;padding:5px 14px 9px!important;gap:8px;}
+ html body[data-ui-theme] #create .creation-steps button>span{font-size:var(--text-12);}
+ html body[data-ui-theme] #create .creation-step-value{font-size:var(--text-16);}
+ html body[data-ui-theme] #create .creation-step{padding:0;}
+ html body[data-ui-theme] #create .creation-step>.step{font-size:var(--text-18);margin-bottom:4px;}
+ html body[data-ui-theme] #create [data-step=cls]>.step{display:none;}
+ html body[data-ui-theme] #create .creation-lineup{padding:0;gap:2px;}
+ html body[data-ui-theme] #create .creation-lineup .port{height:96px;}
+ html body[data-ui-theme] #create .cards .card{padding:2px 0!important;gap:3px;}
+ html body[data-ui-theme] #create .cards .card .choice-name{font-size:var(--text-14)!important;}
+ html body[data-ui-theme] #create .cards.creation-appearance{margin:0;}
+ html body[data-ui-theme] #create .cards.creation-appearance .card{min-height:32px;}
+ html body[data-ui-theme] #create .hero-stage .big{height:112px;width:112px;}
+ html body[data-ui-theme] #create .creation-record{padding:14px 20px 28px;gap:6px;}
+ html body[data-ui-theme] #create .creation-steps{gap:8px;}
+ html body[data-ui-theme] #create .creation-record-body:focus-visible{outline:none;}
+ html body[data-ui-theme] #create .creation-record::before{border-width:12px;border-image-width:12px;}
+ html body[data-ui-theme] #create .creation-record.more-details::after{bottom:6px;left:22px;right:22px;}
+ html body[data-ui-theme] #create .build-fact>h2{font-size:var(--text-12);margin-bottom:6px;}
+ html body[data-ui-theme] #create .pick-words{gap:8px;}
+ html body[data-ui-theme] #create .pick-words span{line-height:1.45;}
+ html body[data-ui-theme] #create .pick-words .choice-name{font-size:var(--text-20);}
+ html body[data-ui-theme] #create .creation-class-tray{padding:0;}
+ html body[data-ui-theme] #create .creation-class-tray .choice-name{white-space:nowrap;}
+ html body[data-ui-theme] #create .port.class-symbol{height:40px;}
+ html body[data-ui-theme] #create .port.class-symbol canvas{width:40px!important;height:40px!important;}
+ html body[data-ui-theme] #create #begin{font-size:var(--text-18)!important;min-height:40px;padding:2px 16px 6px!important;}
+ html body[data-ui-theme] #create .god-guidance{display:none;}
+ html body[data-ui-theme] #create .creation-carousel{--shrine-size:108px;--shrine-recede:18px;grid-template-columns:32px minmax(0,1fr) 32px;gap:2px;}
+ html body[data-ui-theme] #create .carousel-arrow{min-width:32px;min-height:44px;font-size:34px!important;}
+ html body[data-ui-theme] #create .carousel-position{font-size:var(--text-12);min-height:16px;margin:2px 0;}
+ html body[data-ui-theme] #create .god-pick .card{min-height:154px;}
+ html body[data-ui-theme] #create .god-pick .port{height:104px;}
+ html body[data-ui-theme] #create .god-unavailable{font-size:var(--text-12);}
+ html body[data-ui-theme] #create #cname{font-size:var(--text-24)!important;min-height:30px;}
+ html body[data-ui-theme] #create #reroll{font-size:var(--text-12)!important;min-height:26px;}
+ html body[data-ui-theme] #create .who{display:none;}
+ html body[data-ui-theme] #create .hero-stats{padding:6px 0;margin:0;}
+ html body[data-ui-theme] #create .hero-stats span{font-size:var(--text-12);}
+ html body[data-ui-theme] #create .hero-stats b{font-size:var(--text-20);}
+}
+/* Creation uses the title's language: the dungeon fills the window, the
+   current step is the gold plate closing the row of finished choices, and the
+   hero's statistics hold the foot of the panel on every step. */
+html body[data-ui-theme] #create{background:linear-gradient(#08060440,transparent 35%,#080604b8),url(../art/title/creation-hall.jpg) center/cover no-repeat!important;}
+html body[data-ui-theme] #create .wrap{background:none;box-shadow:none;}
+html body[data-ui-theme] #create .creation-scene .creation-step>.step{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;}
+html body[data-ui-theme] #create .creation-scene{--creation-heading-row:0px;}
+html body[data-ui-theme] #create .creation-step-now{position:relative;isolation:isolate;display:flex;align-items:center;min-height:48px;box-sizing:border-box;padding:7px 22px 11px;font:700 var(--fs-word)/1.15 var(--display);color:var(--forge-ui-focus);white-space:nowrap;}
+html body[data-ui-theme] #create .creation-step-now::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;border:14px solid transparent;filter:var(--forge-ui-frame-tone) brightness(1);}
+html body[data-ui-theme] #create .wrap[data-review=false] .hero-who{display:grid;order:2;margin:auto 0 0;padding-top:12px;}
+html body[data-ui-theme] #create .wrap[data-review=false] .hero-who .who{display:none;}
+html body[data-ui-theme] #create .wrap[data-review=false] .creation-record-body{flex:1 1 auto;display:flex;flex-direction:column;}
+html body[data-ui-theme] #create .creation-tutorial{position:relative;isolation:isolate;min-height:44px;box-sizing:border-box;padding:5px 18px 10px;font:700 var(--fs-word)/1.15 var(--display);color:var(--ui-dim);cursor:pointer;}
+html body[data-ui-theme] #create .creation-tutorial::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;border:14px solid transparent;filter:var(--forge-ui-frame-tone) brightness(.62) contrast(.85);}
+html body[data-ui-theme] #create .creation-tutorial:has(#cTutorial:checked){color:var(--forge-ui-focus);}
+html body[data-ui-theme] #create .creation-tutorial:has(#cTutorial:checked)::before{filter:var(--forge-ui-frame-tone) brightness(1);}
+html body[data-ui-theme] #create #cTutorial{position:absolute;opacity:0;width:1px;height:1px;}
+@media(min-width:701px) and (min-height:561px){
+ html body[data-ui-theme] #create .wrap{max-height:none;grid-template-rows:96px 56px minmax(0,1fr) 112px 60px;}
+ html body[data-ui-theme] #create .creation-scene{grid-row:3/5;}
+ /* Every step stands on one floor line, just above the class tray's row. */
+ html body[data-ui-theme] #create .creation-scene .creation-step{align-content:end;padding-bottom:124px;box-sizing:border-box;}
+ html body[data-ui-theme] #create .creation-class-tray{position:relative;z-index:2;}
+ html body[data-ui-theme] #create .wrap[data-current-step=cls] .creation-class-tray{align-self:start;padding-top:0;}
+ html body[data-ui-theme] #create .creation-lineup{max-width:none;}
+}/* The finished choices sit on one forged strip; the step being chosen is gold
+   text at its end. Each choice stays its own button. */
+html body[data-ui-theme] #create .creation-steps{position:relative;isolation:isolate;justify-self:center;align-self:center;flex-wrap:nowrap;gap:0 26px!important;padding:2px 28px 4px!important;min-height:48px;box-sizing:border-box;}
+html body[data-ui-theme] #create .creation-steps::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;border:14px solid transparent;filter:var(--forge-ui-frame-tone) brightness(.62) contrast(.85);}
+html body[data-ui-theme] #create .creation-steps :is(.creation-step-value,.creation-step-now,button>span){text-shadow:0 1px 0 #000,0 0 6px #000,0 0 12px #000c;}
+/* On a phone the strip keeps one row: the choices drop their small labels. */
+@media(max-width:700px){html body[data-ui-theme] #create .creation-steps{gap:0 14px!important;padding:2px 16px 4px!important;max-width:100%;}html body[data-ui-theme] #create .wrap .creation-steps button>span{position:absolute;left:16px;top:16px;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;font-size:1px!important;}}
+html body[data-ui-theme] #create .creation-steps button,html body[data-ui-theme] #create .creation-steps button:only-child{min-height:44px!important;max-height:44px;padding:3px 2px 7px!important;width:auto;}
+html body[data-ui-theme] #create .creation-steps button::before,html body[data-ui-theme] #create .creation-step-now::before{display:none!important;}
+html body[data-ui-theme] #create .creation-steps button:is(:hover,.on) .creation-step-value{color:var(--forge-ui-focus);}
+html body[data-ui-theme] #create .creation-step-now{min-height:44px;padding:3px 2px 7px;}
+/* Three sizes on this screen: the heading, every blackletter word, and body text. */
+html body[data-ui-theme] #create{--create-head:var(--fs-head);--create-word:var(--fs-word);--create-body:var(--fs-body);}
+@media(max-width:1100px){html body[data-ui-theme] #create{--create-head:var(--fs-head);}}
+@media(max-width:700px),(max-height:720px){html body[data-ui-theme] #create{--create-head:var(--fs-head);--create-word:var(--fs-word);--create-body:var(--fs-body);}}
+@media(max-width:400px){html body[data-ui-theme] #create{--create-word:var(--fs-word);--create-body:var(--fs-small);}}
+html body[data-ui-theme] #create :is(#cBack,#rollCharacter,[data-step=race] .creation-lineup .choice-name){white-space:nowrap;}
+html body[data-ui-theme] #create .creation-scene .creation-step>.creation-appearance{margin-top:calc(var(--appearance-drop,24px) + 4px)!important;}
+@media(max-width:700px),(max-height:720px){html body[data-ui-theme] #create .creation-scene .creation-step>.creation-appearance{margin-top:calc(var(--appearance-drop,24px) + 12px)!important;}}
+html body[data-ui-theme] #create h1{font-size:var(--create-head)!important;}
+html body[data-ui-theme] #create .creation-appearance .card b{font:700 var(--fs-body)/1.15 var(--display)!important;}
+html body[data-ui-theme] #create :is(#cBack,#rollCharacter,#begin,.creation-step-value,.creation-step-now,.creation-tutorial,.cards .card .choice-name,.pick-words .choice-name,.creation-ability .pick-words .choice-name,.build-fact>h2,.hero-stats b,#cname){font-family:var(--display)!important;font-weight:700!important;font-size:var(--create-word)!important;line-height:1.15!important;}
+html body[data-ui-theme] #create .creation-steps button>span{font-family:var(--mono)!important;font-weight:400!important;font-size:var(--create-body)!important;}
+html body[data-ui-theme] #create :is(.pick-words span,.hero-stats span,#reroll,.god-guidance,.carousel-position,.creation-ability-kind,.creation-appearance .card){font-family:var(--mono)!important;font-weight:400!important;font-size:var(--create-body)!important;}
+html body[data-ui-theme] #create .pick-words span{line-height:1.35!important;}
+html body[data-ui-theme] #create .hero-stats b{display:block;margin-top:2px;}
+
+@media(max-width:400px){html body[data-ui-theme] #create .wrap .creation-steps{gap:0 10px!important;padding-inline:8px!important;}html body[data-ui-theme] #create#create .wrap .creation-steps :is(.creation-step-value,.creation-step-now){font-size:var(--fs-body)!important;}}
+html body[data-ui-theme] #create h1{color:var(--ui-ink)!important;-webkit-text-fill-color:currentColor!important;}
+/* The heading bar keeps its drawn proportions, so it is never stretched wider
+   than the space between the two corner buttons. */
+html body[data-ui-theme] #create .creation-actions .creation-title{max-width:600px;justify-self:center;box-sizing:border-box;}
+@media(min-width:701px) and (max-width:1100px) and (min-height:721px){
+ html body[data-ui-theme] #create .creation-actions{grid-template-columns:auto minmax(0,1fr) auto!important;grid-template-rows:minmax(0,1fr)!important;gap:12px!important;}
+ html body[data-ui-theme] #create .creation-actions .creation-title{grid-column:2!important;grid-row:1!important;padding:14px 44px 12px!important;width:100%;}
+ html body[data-ui-theme] #create #rollCharacter{grid-column:3!important;}
+}
+@media(max-width:700px){html body[data-ui-theme] #create .creation-actions .creation-title{width:100%!important;max-width:460px;padding:10px 46px!important;}}
+/* Spot-check pass (10-14 night): short landscape phones and upright phones get
+   a tighter scale so the panel holds its text; the three-size rule still holds. */
+@media(max-height:500px) and (orientation:landscape){
+ html body[data-ui-theme] #create{--create-head:var(--fs-word);--create-word:var(--fs-body);--create-body:var(--fs-small);}
+ html body[data-ui-theme] #create .creation-record{padding:14px 18px 18px!important;gap:6px!important;}
+ html body[data-ui-theme] #create .pick-words{gap:4px!important;}
+ html body[data-ui-theme] #create .build-fact>h2{margin-bottom:4px!important;}
+ html body[data-ui-theme] #create .hero-stats{padding:4px 0!important;}
+}
+@media(max-width:700px) and (orientation:portrait){
+ html body[data-ui-theme] #create{--create-body:var(--fs-small);}
+ html body[data-ui-theme] #create .creation-record{padding:14px 16px 20px!important;gap:6px!important;}
+ html body[data-ui-theme] #create .pick-words{gap:5px!important;}
+ html body[data-ui-theme] #create .build-fact>h2{margin-bottom:4px!important;}
+ html body[data-ui-theme] #create .hero-stats{padding:4px 0!important;gap:4px!important;}
+ html body[data-ui-theme] #create#create .wrap .creation-steps :is(.creation-step-value,.creation-step-now){font-size:var(--fs-body)!important;}
+}
+html body[data-ui-theme] #create .wrap[data-review=true] .build-fact+.build-fact{margin-top:10px!important;padding-top:8px!important;}
+html body[data-ui-theme] #create .creation-ability{margin-bottom:6px!important;}
+
+/* The finished-choice strip centres over the hero stage, like the class row. */
+@media(min-width:701px) and (min-height:561px){html body[data-ui-theme] #create .creation-steps{grid-column:1!important;}}
+@media(max-height:500px) and (orientation:landscape){html body[data-ui-theme] #create .creation-steps{grid-column:1!important;}}
+/* Masculine and Feminine sit clear of the race names. */
+html body[data-ui-theme] #create .creation-scene .creation-step>.creation-appearance{margin-top:calc(var(--appearance-drop,24px) + 40px)!important;}
+@media(max-height:500px) and (orientation:landscape){html body[data-ui-theme] #create#create .creation-scene .creation-step>.creation-appearance{margin-top:calc(var(--appearance-drop,24px) + 6px)!important;}}

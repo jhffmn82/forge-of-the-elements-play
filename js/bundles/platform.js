@@ -27,7 +27,7 @@
     if(!badge){
       badge=document.createElement('div');
       badge.style.cssText='position:fixed;right:10px;bottom:10px;z-index:60;padding:6px 10px;border-radius:6px;'+
-        'background:rgba(16,13,11,.92);border:1px solid #332A24;color:#A79C93;font:calc(12px + var(--ui-mobile-text-add,0px)) "IBM Plex Mono",monospace;'+
+        'background:rgba(16,13,11,.92);border:1px solid #332A24;color:#A79C93;font:var(--text-12) "IBM Plex Mono",monospace;'+
         'pointer-events:none;max-width:60vw';
       document.body.appendChild(badge);
     }
@@ -224,7 +224,7 @@
       ' body.touch #ctl #fx{display:none}',                    /* the status tags float over the map instead */
       ' body.touch #dpad{grid-template-columns:repeat(3,44px)!important;grid-auto-rows:34px!important;gap:4px!important}',
       /* the log is the bottom row and gets the room the hotbar's second row used to take */
-      ' body.touch #log{order:3;grid-column:auto;contain:none;height:clamp(84px,12vh,112px)!important;font-size:calc(12.5px + var(--ui-mobile-text-add,0px));padding:6px 9px}',
+      ' body.touch #log{order:3;grid-column:auto;contain:none;height:clamp(84px,12vh,112px)!important;font-size:calc(calc(12.5px * var(--ui-text-scale,1)) + var(--ui-mobile-text-add,0px));padding:6px 9px}',
       '}',
       /* landscape: two columns, and the log floats over the map because height is what runs out */
       '@media (orientation:landscape){',
@@ -242,7 +242,7 @@
       'body.touch #shade{align-items:stretch}',
       'body.touch .sheet .bodyw{overscroll-behavior:contain}',
       'body.touch .sheet header{padding:7px 10px}',
-      'body.touch .sheet header h2{font-size:calc(16px + var(--ui-mobile-text-add,0px))}',
+      'body.touch .sheet header h2{font-size:var(--text-16)}',
       'body.touch .sheet .bodyw{padding:10px}',
       /* sheets.js writes three columns in the order totals, worn, bag. On a phone the worn doll and the bag
          share the top row and the totals run full width underneath, so both are on screen at once. */
@@ -254,10 +254,10 @@
       'body.touch .gcol-worn .sec span{display:none}',                     /* the "hover for details" hint is mouse talk */
       'body.touch .gdoll .art{min-height:120px!important}',
       'body.touch .gslot{width:42px!important;height:42px!important;border-width:1px}',
-      'body.touch .gslot .lab{bottom:-12px;font-size:calc(7.5px + var(--ui-mobile-text-add,0px))}',
-      'body.touch .gslot .ph{font-size:calc(16px + var(--ui-mobile-text-add,0px))}',
+      'body.touch .gslot .lab{bottom:-12px;font-size:var(--text-10)}',
+      'body.touch .gslot .ph{font-size:var(--text-16)}',
       'body.touch .gearwrap .invgrid{grid-template-columns:repeat(4,minmax(34px,1fr))!important;gap:5px}',
-      'body.touch .gearwrap .sec{margin:6px 0 3px;font-size:calc(9px + var(--ui-mobile-text-add,0px))}',
+      'body.touch .gearwrap .sec{margin:6px 0 3px;font-size:var(--text-10)}',
       'body.touch .stowrow{margin-top:16px;gap:8px}',
       'body.touch .stowrow span{display:none}',                            /* the caption does not fit a 150px column */
       'body.touch .invgrid{grid-template-columns:repeat(auto-fill,minmax(38px,1fr))}',
@@ -267,9 +267,9 @@
       'body.touch #tip{left:8px!important;top:auto!important;bottom:8px!important;right:auto!important;',
       '  max-width:min(78%,340px)!important;background:rgba(10,9,8,.93);backdrop-filter:blur(2px);padding:9px 11px!important}',
       /* pinned in a corner it is not fighting for room any more, so the type can come up a notch */
-      'body.touch #tip .nm{font-size:calc(16px + var(--ui-mobile-text-add,0px))!important}',
-      'body.touch #tip .row{font-size:calc(13px + var(--ui-mobile-text-add,0px))!important}',
-      'body.touch #tip .odds{font-size:calc(13.5px + var(--ui-mobile-text-add,0px))!important}',
+      'body.touch #tip .nm{font-size:calc(calc(16px * var(--ui-text-scale,1)) + var(--ui-mobile-text-add,0px))!important}',
+      'body.touch #tip .row{font-size:calc(calc(13px * var(--ui-text-scale,1)) + var(--ui-mobile-text-add,0px))!important}',
+      'body.touch #tip .odds{font-size:calc(calc(13.5px * var(--ui-text-scale,1)) + var(--ui-mobile-text-add,0px))!important}',
       '@media (orientation:landscape){ body.touch #tip{bottom:8px!important;left:8px!important} }',
       /* the touch targets in the top bar, and room for them: the game title is not needed mid-run */
       /* 2026-09-18: the menu tabs were too small to hit reliably with a finger. 52px tall, 60px minimum
@@ -278,12 +278,12 @@
       'body.touch #top{min-height:52px!important}',
       'body.touch #tabs{gap:4px!important;overflow-x:auto;scrollbar-width:none;flex:1 1 auto;justify-content:flex-end}',
       'body.touch #tabs::-webkit-scrollbar{display:none}',
-      'body.touch #tabs button{min-height:52px!important;min-width:60px;padding:0 16px!important;font-size:calc(13.5px + var(--ui-mobile-text-add,0px))!important;flex:0 0 auto}',
-      'body.touch #top button{min-height:48px;padding:8px 12px;font-size:calc(13px + var(--ui-mobile-text-add,0px))}',
+      'body.touch #tabs button{min-height:52px!important;min-width:60px;padding:0 16px!important;font-size:calc(calc(13.5px * var(--ui-text-scale,1)) + var(--ui-mobile-text-add,0px))!important;flex:0 0 auto}',
+      'body.touch #top button{min-height:48px;padding:8px 12px;font-size:calc(calc(13px * var(--ui-text-scale,1)) + var(--ui-mobile-text-add,0px))}',
       'body.touch #brand h1{display:none}',
       /* the chips (fed, essence, motes, faith) stay one row and scroll sideways if there are too many:
          wrapped, they were taking three lines out of the map */
-      'body.touch #hud2{flex-wrap:nowrap!important;gap:5px;font-size:calc(11.5px + var(--ui-mobile-text-add,0px));overflow-x:auto;overflow-y:hidden;',
+      'body.touch #hud2{flex-wrap:nowrap!important;gap:5px;font-size:calc(calc(11.5px * var(--ui-text-scale,1)) + var(--ui-mobile-text-add,0px));overflow-x:auto;overflow-y:hidden;',
       '  scrollbar-width:none;min-height:0;padding-bottom:1px}',
       'body.touch #hud2::-webkit-scrollbar{display:none}',
       'body.touch #hud2 .chip{flex:0 0 auto}',
@@ -360,8 +360,8 @@
     var st=document.createElement('style');
     st.textContent=[
       '.tgear{display:flex;flex-direction:column;gap:12px}',
-      '.tgear .tg-sec{font-size:calc(9.5px + var(--ui-mobile-text-add,0px));letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin:0 0 6px}',
-      '.tgear .tg-hint{font-size:calc(11.5px + var(--ui-mobile-text-add,0px));color:var(--dim);line-height:1.4;margin:0}',
+      '.tgear .tg-sec{font-size:var(--text-10);letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin:0 0 6px}',
+      '.tgear .tg-hint{font-size:var(--text-12);color:var(--dim);line-height:1.4;margin:0}',
       /* worn slots in two columns on the left, the bag filling the rest to the right */
       '.tgear .tg-top{display:grid;grid-template-columns:auto minmax(0,1fr);gap:12px;align-items:start}',
       '.tgear .tg-slots{display:grid;grid-template-columns:repeat(2,84px);gap:8px}',
@@ -375,9 +375,9 @@
       '.tgear .gslot.empty{border-style:dashed;opacity:.6}',
       '.tgear .gslot .ic{width:42px;height:42px;display:flex;align-items:center;justify-content:center}',
       '.tgear .gslot .ic canvas{display:block}',
-      '.tgear .gslot .ph{font-size:calc(22px + var(--ui-mobile-text-add,0px));color:var(--dim);line-height:42px}',
-      '.tgear .gslot .lab{position:static!important;font-size:calc(8px + var(--ui-mobile-text-add,0px));letter-spacing:.11em;text-transform:uppercase;color:var(--dim)}',
-      '.tgear .gslot .nm{font-size:calc(10.5px + var(--ui-mobile-text-add,0px));color:var(--ink);text-align:center;line-height:1.2;max-width:100%;',
+      '.tgear .gslot .ph{font-size:var(--text-20);color:var(--dim);line-height:42px}',
+      '.tgear .gslot .lab{position:static!important;font-size:var(--text-10);letter-spacing:.11em;text-transform:uppercase;color:var(--dim)}',
+      '.tgear .gslot .nm{font-size:var(--text-10);color:var(--ink);text-align:center;line-height:1.2;max-width:100%;',
       '  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}',
       '.tgear .gslot.over{border-color:var(--gold);background:#2A2015}',
       '.tgear .tg-portrait{min-height:170px;border:1px dashed var(--edge);border-radius:8px;',
@@ -386,11 +386,11 @@
       '.tgear .cell{position:relative;aspect-ratio:1;min-height:56px;border:1px solid var(--edge);border-radius:8px;',
       '  background:#161210;display:flex;align-items:center;justify-content:center}',
       '.tgear .cell.empty{border-style:dashed;opacity:.28}',
-      '.tgear .cell b{position:absolute;right:4px;bottom:2px;font-size:calc(10px + var(--ui-mobile-text-add,0px));color:var(--gold);z-index:2}',
+      '.tgear .cell b{position:absolute;right:4px;bottom:2px;font-size:var(--text-10);color:var(--gold);z-index:2}',
       '.tgear .tg-tot{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:4px 18px}',
-      '.tgear .tg-tot .kv{font-size:calc(12px + var(--ui-mobile-text-add,0px));gap:2px 10px}',
+      '.tgear .tg-tot .kv{font-size:var(--text-12);gap:2px 10px}',
       '.tgear .pouch{gap:7px}',
-      '.tgear .mote{font-size:calc(11.5px + var(--ui-mobile-text-add,0px));padding:3px 10px 3px 7px}',
+      '.tgear .mote{font-size:var(--text-12);padding:3px 10px 3px 7px}',
       '@media (max-width:420px){ .tgear .tg-slots{grid-template-columns:repeat(2,72px)} }'
     ].join('\n');
     document.head.appendChild(st);
@@ -423,12 +423,12 @@
         '<div><p class="tg-sec">Worn</p><div class="tg-slots">'+
           SLOTS.map(function(s){ return tile(s[0], s[1], s[2]); }).join('')+'</div></div>'+
         '<div><p class="tg-sec">Bag &middot; '+player.bag.length+' / '+BAG_MAX+'</p><div class="tg-cells">'+cells.join('')+'</div>'+
-          '<p class="tg-hint">Tap for details. Drag worn gear into the bag to take it off. Drag a bag item outside this panel to drop it.</p></div>'+
+          '</div>'+
       '</div>';
 
       /* below, scrolled to when wanted: the character and the totals */
       h+='<div class="tg-mid"><div class="tg-portrait" id="dollArt"></div><div class="tg-tot">'+
-         '<div><p class="tg-sec">Offense</p>'+kv([['Damage per hit',hr[0]+'-'+hr[1]],['Crit',Math.round(player.crit*100)+'%'],['Crit damage','&times;'+criticalMultiplier().toFixed(2)],
+         '<div><p class="tg-sec">Offense</p>'+kv([['Damage per hit',hr[0]+'-'+hr[1]],['Crit',Math.round(Math.max(0,player.crit)*100)+'%'],['Crit damage','&times;'+criticalMultiplier().toFixed(2)],
             ['Accuracy',player.acc],['Range',player.range],['Attack speed',playerSpeedPercent('attack')],['Movement speed',playerSpeedPercent('move')],['Spell power','&times;'+spellPower({}).toFixed(2)],['Divine Power','&times;'+divineStrength().toFixed(2)]])+'</div>'+
          '<div><p class="tg-sec">Defense</p>'+kv([['HP',Math.round(player.hp)+' / '+player.maxhp],['Shield',playerShield()],
             ['Armor',player.armor],['Evasion',evaOf(player)],['Block',Math.round(player.block*100)+'%'],['Mana',Math.floor(player.mp)+' / '+player.maxmp],['Stealth',Math.round(stealthScore()*100)+'%']])+'</div>'+
@@ -588,17 +588,11 @@
     'body.touch .tgear .cell[data-b]{touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}',
     'body.touch .tgear .cell .gear{width:74%;height:74%;display:flex;align-items:center;justify-content:center}',
     'body.touch .tgear .gslot .ic canvas,body.touch .tgear .cell canvas{width:100%!important;height:100%!important;display:block}',
-    'body.touch .tgear .cell b{font-size:calc(13px + var(--ui-mobile-text-add,0px))!important}',
-    'body.touch .tgear .tg-hint{font-size:calc(13px + var(--ui-mobile-text-add,0px))!important}',
-    'body.touch .tgear .tg-sec{font-size:calc(11px + var(--ui-mobile-text-add,0px))!important}',
-    'body.touch #bAmHot{margin-top:10px;min-height:44px;width:100%;max-width:100%;padding:4px;font-size:calc(12px + var(--ui-mobile-text-add,0px));white-space:normal}',
+    'body.touch .tgear .cell b{font-size:var(--text-14)!important}',
+    'body.touch .tgear .tg-hint{font-size:var(--text-14)!important}',
+    'body.touch .tgear .tg-sec{font-size:var(--text-12)!important}',
+    'body.touch #bAmHot{margin-top:10px;min-height:44px;width:100%;max-width:100%;padding:4px;font-size:calc(calc(12px * var(--ui-text-scale,1)) + var(--ui-mobile-text-add,0px));white-space:normal}',
 
-    /* Keep every title action reachable even on a short phone screen. 2026-09-28: the menu sits at the bottom, under
-       the logo painted into the title art (it ends about 31% down), instead of stretching over it. */
-    '@media (max-height:560px){',
-    ' body.touch #title .menu{top:auto;bottom:max(12px,env(safe-area-inset-bottom,0px));transform:none;overflow-y:auto;justify-content:flex-end;gap:6px}',
-    ' body.touch #title .menu button{font-size:calc(20px + var(--ui-mobile-text-add,0px));min-height:44px;padding:6px 14px;flex-shrink:0}',
-    '}',
     /* Landscape: vitals and controls | map and hotbar | menus and combat log.
        Keep the existing elements and handlers; sheets stay inside the map. */
     '@media (orientation:landscape) and (min-width:600px){',
@@ -619,11 +613,11 @@
     ' body.touch #tabs:has(button[data-p="Sand"]) #bMap{grid-column:auto}',
     ' body.touch #app #bars{grid-column:1;grid-row:1;display:grid!important;grid-template-columns:1fr;gap:3px}',
     ' body.touch #app #bars .bar{height:28px!important}',
-    ' body.touch #app #bars .bar span{font-size:calc(12px + var(--ui-mobile-text-add,0px))!important;padding:0 5px!important}',
-    ' body.touch #app #hud2{grid-column:1;grid-row:2;display:flex!important;flex-wrap:wrap!important;align-content:start;justify-content:flex-start;gap:3px;max-height:80px;overflow:auto;font-size:calc(11px + var(--ui-mobile-text-add,0px))}',
-    ' body.touch #app #hud2 .chip{padding:2px 4px!important;font-size:calc(11px + var(--ui-mobile-text-add,0px))!important;max-width:100%;overflow-x:auto}',
+    ' body.touch #app #bars .bar span{font-size:calc(calc(12px * var(--ui-text-scale,1)) + var(--ui-mobile-text-add,0px))!important;padding:0 5px!important}',
+    ' body.touch #app #hud2{grid-column:1;grid-row:2;display:flex!important;flex-wrap:wrap!important;align-content:start;justify-content:flex-start;gap:3px;max-height:80px;overflow:auto;font-size:calc(calc(11px * var(--ui-text-scale,1)) + var(--ui-mobile-text-add,0px))}',
+    ' body.touch #app #hud2 .chip{padding:2px 4px!important;font-size:calc(calc(11px * var(--ui-text-scale,1)) + var(--ui-mobile-text-add,0px))!important;max-width:100%;overflow-x:auto}',
     ' body.touch #app #ctl{display:contents!important}',
-    ' body.touch #app #log{grid-column:3;grid-row:2/5;display:flex!important;position:static!important;width:auto!important;height:auto!important;max-height:none!important;min-height:0;contain:size;pointer-events:auto;overflow:auto;font-size:calc(12px + var(--ui-mobile-text-add,0px));line-height:1.3;padding:6px;background:#151110;border:1px solid var(--edge)}',
+    ' body.touch #app #log{grid-column:3;grid-row:2/5;display:flex!important;position:static!important;width:auto!important;height:auto!important;max-height:none!important;min-height:0;contain:size;pointer-events:auto;overflow:auto;font-size:calc(calc(12px * var(--ui-text-scale,1)) + var(--ui-mobile-text-add,0px));line-height:1.3;padding:6px;background:#151110;border:1px solid var(--edge)}',
     ' body.touch #app #map #shade{position:absolute!important;inset:0!important;padding:0!important}',
     ' body.touch #shade .cols3{grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr))}',
     /* Ability details need the whole row; costs belong beneath the name. */
@@ -666,41 +660,41 @@
     'body.touch .tgear .cell.lifted,body.touch .tgear .gslot.lifted{opacity:.4}',
     '#hmenu{position:fixed;left:8px;right:8px;z-index:70;background:rgba(18,15,13,.97);border:1px solid var(--edge);border-radius:12px;',
     '  padding:12px;box-shadow:0 8px 30px rgba(0,0,0,.6);display:flex;flex-direction:column;gap:10px;max-width:520px;margin:0 auto}',
-    '#hmenu .hm-card .nm{font-size:calc(18px + var(--ui-mobile-text-add,0px));color:var(--gold);margin-bottom:4px}',
-    '#hmenu .hm-card .row,#hmenu .hm-card .hint,#hmenu .hm-card{font-size:calc(14px + var(--ui-mobile-text-add,0px));line-height:1.4}',
+    '#hmenu .hm-card .nm{font-size:calc(calc(18px * var(--ui-text-scale,1)) + var(--ui-mobile-text-add,0px));color:var(--gold);margin-bottom:4px}',
+    '#hmenu .hm-card .row,#hmenu .hm-card .hint,#hmenu .hm-card{font-size:calc(calc(14px * var(--ui-text-scale,1)) + var(--ui-mobile-text-add,0px));line-height:1.4}',
     '#hmenu .hm-card .row{display:flex;justify-content:space-between;gap:12px}',
     '#hmenu .hm-card .row b{color:var(--ink)}',
     '#hmenu .hm-btns{display:flex;flex-wrap:wrap;gap:8px}',
-    '#hmenu .hm-btns button{flex:1 1 auto;min-height:48px;font-size:calc(15px + var(--ui-mobile-text-add,0px));padding:0 14px}',
+    '#hmenu .hm-btns button{flex:1 1 auto;min-height:48px;font-size:calc(calc(15px * var(--ui-text-scale,1)) + var(--ui-mobile-text-add,0px));padding:0 14px}',
     '#hmenu .hm-btns button.on{border-color:var(--gold);color:var(--gold)}',
 
     /* ---- long-press cards: across the screen, on the half away from the finger (see showCard below) */
     /* 2026-09-22 (Justin): the card sits bottom-left, above the hotbar, over the empty lower part of the sheet, where it can be read; it carries the item's buttons */
-    'body.touch #dtip{left:var(--cardx,8px)!important;right:auto!important;top:auto!important;bottom:var(--cardb,8px)!important;width:var(--cardw,min(440px,calc(100vw - 16px)))!important;max-width:none!important;font-size:calc(14px + var(--ui-mobile-text-add,0px));padding:10px 12px!important;z-index:85!important;pointer-events:auto!important}',   /* over the docked hotbar and tabs (60) */
+    'body.touch #dtip{left:var(--cardx,8px)!important;right:auto!important;top:auto!important;bottom:var(--cardb,8px)!important;width:var(--cardw,min(440px,calc(100vw - 16px)))!important;max-width:none!important;font-size:var(--text-14);padding:10px 12px!important;z-index:85!important;pointer-events:auto!important}',   /* over the docked hotbar and tabs (60) */
     'body.touch #dtip .tc-btns{display:flex;gap:8px;margin-top:10px}',
-    'body.touch #dtip .tc-btns button{flex:1 1 auto;min-height:44px;font-size:calc(15px + var(--ui-mobile-text-add,0px))}',
-    'body.touch #dtip .nm{font-size:calc(18px + var(--ui-mobile-text-add,0px))!important}',
+    'body.touch #dtip .tc-btns button{flex:1 1 auto;min-height:44px;font-size:var(--text-16)}',
+    'body.touch #dtip .nm{font-size:var(--text-20)!important}',
 
     /* ---- one type size up across the strip (2026-09-18: it had room to spare) */
     'body.touch #mid .bar{height:26px!important}',
     'body.touch #mid .bar span{font-size:calc(clamp(14px,2.4vw,16px) + var(--ui-mobile-text-add,0px))!important;padding:0 9px!important}',
     'body.touch #hud2{font-size:calc(clamp(13px,2.1vw,15px) + var(--ui-mobile-text-add,0px))!important}',
     'body.touch #hud2 .chip{padding:3px 9px 3px 5px!important}',
-    'body.touch #tip .nm{font-size:calc(18px + var(--ui-mobile-text-add,0px))!important}',
-    'body.touch #tip .row{font-size:calc(14.5px + var(--ui-mobile-text-add,0px))!important}',
-    'body.touch #tip .odds{font-size:calc(15px + var(--ui-mobile-text-add,0px))!important}',
+    'body.touch #tip .nm{font-size:calc(calc(18px * var(--ui-text-scale,1)) + var(--ui-mobile-text-add,0px))!important}',
+    'body.touch #tip .row{font-size:calc(calc(14.5px * var(--ui-text-scale,1)) + var(--ui-mobile-text-add,0px))!important}',
+    'body.touch #tip .odds{font-size:calc(calc(15px * var(--ui-text-scale,1)) + var(--ui-mobile-text-add,0px))!important}',
     /* Portrait map cards use the free board between the HUD and controls. */
     '@media (orientation:portrait){ body.touch #tip{position:fixed;left:var(--maptip-x,8px)!important;top:var(--maptip-y,8px)!important;bottom:auto!important;right:auto!important;width:var(--maptip-w,calc(100vw - 16px));max-width:none!important;max-height:var(--maptip-h,50dvh);box-sizing:border-box;overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y;pointer-events:auto;z-index:60} }',
-    'body.touch .sheet{font-size:calc(15px + var(--ui-mobile-text-add,0px))}',
+    'body.touch .sheet{font-size:var(--text-16)}',
     /* Exit: a browser will not let a page (or an installed web app) close itself, so on a phone or tablet the
        button could only fail. Home / swipe away closes it there. */
-    'body.touch #tExit,body.touch #oExit{display:none!important}',
+    'body.touch #oExit,html body.touch[data-ui-theme] #app #shade :is(#mSave,#mHelp) #oExit{display:none!important}',
     /* Opts: key bindings mean nothing without a keyboard, and they pushed Audio/Display (map zoom) below the fold */
     'body.touch .optgrid{grid-template-columns:1fr!important}',
     'body.touch .optgrid>div:first-child{display:none}',
-    'body.touch .optrow{font-size:calc(14px + var(--ui-mobile-text-add,0px));padding:8px 0}',
-    'body.touch .seg button{padding:8px 12px;font-size:calc(13px + var(--ui-mobile-text-add,0px))}',
-    'body.touch .sheet header h2{font-size:calc(18px + var(--ui-mobile-text-add,0px))!important}'
+    'body.touch .optrow{font-size:var(--text-14);padding:8px 0}',
+    'body.touch .seg button{padding:8px 12px;font-size:var(--text-14)}',
+    'body.touch .sheet header h2{font-size:var(--text-20)!important}'
   ].join('\n');
   document.head.appendChild(st);
 

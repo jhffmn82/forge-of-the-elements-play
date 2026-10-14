@@ -1015,8 +1015,8 @@ SOFTWARE.
       shadow:{critMultiplier:curve(.10,.05)}
     },
     tome:{
-      fire:{spellPower:curve(.05,.03)},water:{evasion:curve(2,1,{round:true})},
-      air:{castTimeReduction:curve(.02,.01)},earth:{resistance:curve(.02,.01)},
+      fire:{spellPower:curve(.05,.03)},water:{evasion:curve(5,2,{round:true})},   /* 2026-10-13 (Justin): water was 2 +1, air 2% +1%; both trailed fire badly */
+      air:{castTimeReduction:curve(.05,.02)},earth:{resistance:curve(.02,.01)},
       light:{manaShield:curve(.10,.05),shieldCap:fixed(.30)},
       shadow:{killHeal:curve(0,.01,{minimum:.01})}
     },

@@ -5,7 +5,7 @@
 [Play in your browser](https://jhffmn82.github.io/forge-of-the-elements-play/)
 
 This update integrates dimensional lighting with a refactored foundation based on
-released 1.6. Original sprite artwork, audio, fonts and compatible saves remain.
+released 1.6. Original sprite artwork, audio and compatible saves remain.
 The accepted 1.7 gameplay and UI fixes are included. Lighting is enabled by default, with
 a Canvas fallback when WebGL2 is unavailable. Block art remains in Options.
 The update also fixes cross-floor fire attribution and releases retired Chaos
@@ -62,8 +62,15 @@ aligns spell/bow target marks around whole creatures, including multipart bosses
 Earth has natural mineral ribbons instead of closed polygon veins. Opaque natural
 terrain shares lighting batches to reduce mask uploads and draw calls.
 
+The approved interface update adds drawn steel windows and action plates,
+progressive character creation with explicit confirmation, larger primary
+actions, and bundled Grenze Gotisch and Spectral fonts. Options retains the
+controls tour and text sizing; Save / Exit has its own entry in the overlay
+menu. Equipment changes follow the creator's item-by-item rulings. Unused
+interface art and obsolete styling were removed after appearance checks.
+
 The export preserves script order and boundaries while packing loose modules
-into one download, reducing the browser package from 999 files to 891.
+into one download.
 
 Keyboard: WASD or arrows to move, QEZC diagonals, 1-8 hotbar, Tab character sheet,
 `i` equipment, `>` stairs. Mouse and phone touch controls remain available.
@@ -77,6 +84,6 @@ the repeatable export and an itch.io ZIP. Automated browser tests cover gameplay
 save compatibility, UI, dimensional compositing, recovery and nested-path play.
 Physical-phone GPU and memory performance still require device testing.
 
-Build: **2026-10-13T05:41:48.648Z**. Revision: `foundation17-20261013054148648`.
+Build: **2026-10-14T19:41:05.873Z**. Revision: `foundation17-20261014194105873`.
 
-Source integration: e9c62016b3220abfa2a5b57e05689ead789de1ec.
+Source integration: `9ee99300ea598a6026eff77a3f500240613ac5a6`.

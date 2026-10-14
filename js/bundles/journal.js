@@ -451,9 +451,11 @@
             if(copy.eva)values.push((copy.eva>0?'+':'')+copy.eva+' evasion');
             if(TIER_BLOCK[key])values.push(percent(TIER_BLOCK[key][tier])+' block');
             if(FOCUS_BONUS[key]&&key!=='orb')values.push('+'+percent(FOCUS_BONUS[key].base[tier])+' spell damage');
-            if(key==='orb')values.push('+'+percent(ORB_CRIT.base[tier])+' critical chance');
+            if(key==='orb')values.push('+'+percent(ORB_CRIT.base[tier])+' critical chance, +'+ORB_ACC.base[tier]+' accuracy');
             if(key==='wand')values.push(percent(WAND_THRIFT.base[tier])+' less spell Mana cost');
             if(key==='robe')values.push('+'+percent(TIER_ROBE.spell[tier])+' spell damage, +'+percent(TIER_ROBE.mana[tier])+' maximum Mana');
+            if(key==='buckler')values.push(percent(TIER_BUCKLER_DEFLECT.base[tier])+' chance to deflect ranged attacks');
+            if(key==='chain')values.push('+'+percent(TIER_CHAIN_RESIST.base[tier])+' elemental resistance');
             if(key==='tome')values.push('+'+percent(TIER_OFF.tome.base[tier])+' maximum Mana');
             if(key==='holy'||key==='censer')values.push('+'+percent(TIER_OFF.holy.base[tier])+' Divine Power');
             if(key==='mace')values.push('ignores '+MACE_PIERCE[tier]+' armor');
@@ -593,6 +595,8 @@
       if(key==='mending'){base=Number(value.toFixed(3))+'% of maximum HP per world turn';extra='Works while fed and not Poisoned; Rot prevents healing. A cursed Mending ring stops HP regeneration.';}
       else if(key==='wizardry'){base='+'+percent(value)+' maximum Mana; +'+percent(value/2)+' spell damage';}
       else if(key==='striking'){base='+'+value+' weapon damage; +'+value+'% critical chance';}
+      else if(key==='accuracy'){base='+'+value+' accuracy; +'+percent(ring.critPer)+' critical chance';}
+      else if(key==='sustenance'){base=percent(value)+' less hunger; food buffs last '+percent(ring.foodPer)+' longer';}
       else base+=' '+ring.unit.replace(/^%\s*/,ring.pct?'':'% ');
       return entry(ring.name,'Rings',para(ring.desc)+facts([['Ordinary +0 ring',base]])+para(extra)+para('A +0 ring has one point of power; each upgrade adds one. Cursed rings have negative power.'));
     });
@@ -601,7 +605,7 @@
     return Object.keys(AMULETS).map(function(key,i){
       if(!known(data,'amulets',key))return locked('Undiscovered amulet '+(i+1),'Amulets','Use or identify this amulet type in a run.');
       var amulet=AMULETS[key];
-      return entry(amulet.name,'Amulets',para(amulet.desc)+facts([['Charge capacity','1 at level I; 2 at level II; '+AMULET_MAX_CHARGES+' at level III'],['Base recharge',units(amulet.kills,'kill')+' per charge'],['Base range',amulet.range?units(amulet.range,'tile'):null]])+para('Elites and bosses count as three kills. Cursed amulets require 30% more kills and unleash a trap instead of their power.'));
+      return entry(amulet.name,'Amulets',para(amulet.desc)+facts([['Charge capacity','1 at level I; 2 at level II; '+AMULET_MAX_CHARGES+' at level III'],['Base recharge',units(amulet.kills,'kill')+' per charge'],['Base range',amulet.range?units(amulet.rangeBy?amulet.rangeBy[0]:amulet.range,'tile'):null]])+para('Elites and bosses count as three kills. Cursed amulets require 30% more kills and unleash a trap instead of their power.'));
     });
   }
   function sigilEntries(data){
@@ -808,27 +812,26 @@
   style.textContent=[
     '#modal .journal-modal{width:min(920px,calc(100vw - 24px));max-height:calc(100dvh - 24px)}',
     '.journal-modal .mbody{overflow-y:auto;min-height:0}',
-    '.journal-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-top:16px}.journal-tabs button{min-height:44px;padding:8px 4px;font:calc(12px + var(--ui-mobile-text-add,0px)) var(--mono)}#modal .journal-tabs button[aria-selected="true"]{border-color:var(--gold);color:var(--gold);background:var(--panel-2,#221d1a)}#modal .journal-tabs button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}',
-    '.journal-controls[hidden]{display:none}.journal-undiscovered{min-height:100px;display:flex;flex-direction:column;justify-content:center;border-style:dashed}.journal-undiscovered .journal-state{font-size:calc(10px + var(--ui-mobile-text-add,0px));color:var(--dim)}.journal-undiscovered h3{color:var(--dim)}',
-    '.journal-intro p,.journal-hint,.journal-count{color:var(--ash);line-height:1.6;font-size:calc(12px + var(--ui-mobile-text-add,0px))}',
-    '.journal-intro p{margin:0 0 12px}.journal-totals{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;border-block:1px solid var(--edge);padding:12px 0;font-size:calc(10px + var(--ui-mobile-text-add,0px));color:var(--ash)}',
-    '.journal-totals b{display:block;margin-bottom:5px;color:var(--gold);font-size:calc(17px + var(--ui-mobile-text-add,0px));font-variant-numeric:tabular-nums}',
-    '.journal-controls{display:flex;flex-wrap:wrap;gap:10px;margin:18px 0 10px}.journal-controls label{display:flex;flex:1 1 190px;flex-direction:column;gap:5px;color:var(--ash);font-size:calc(11px + var(--ui-mobile-text-add,0px))}',
-    '.journal-controls label[hidden]{display:none}.journal-controls input,.journal-controls select{width:100%;box-sizing:border-box;min-height:44px;border:1px solid var(--edge);border-radius:4px;background:var(--panel-2,#221d1a);color:var(--ink);padding:8px;font:calc(13px + var(--ui-mobile-text-add,0px)) var(--mono)}',
-    '.journal-controls input:focus,.journal-controls select:focus,.journal-entry summary:focus-visible,.journal-group:focus-visible{outline:2px solid var(--gold);outline-offset:2px}',
-    '.journal-count{font-size:calc(10px + var(--ui-mobile-text-add,0px));margin:5px 0 12px}.journal-hint{margin:0}',
+    '.journal-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-top:16px}.journal-tabs button{min-height:44px;padding:8px 4px;font:var(--text-12) var(--mono)}#modal .journal-tabs button[aria-selected="true"]{border-color:var(--gold);color:var(--gold);background:var(--panel-2,#221d1a)}#modal .journal-tabs button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}',
+    '.journal-controls[hidden]{display:none}.journal-undiscovered{min-height:100px;display:flex;flex-direction:column;justify-content:center;border-style:dashed}.journal-undiscovered .journal-state{font-size:var(--text-10);color:var(--dim)}.journal-undiscovered h3{color:var(--dim)}',
+    '.journal-intro p,.journal-hint,.journal-count{color:var(--ash);line-height:1.6;font-size:var(--text-12)}',
+    '.journal-intro p{margin:0 0 12px}.journal-totals{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;border-block:1px solid var(--edge);padding:12px 0;font-size:var(--text-10);color:var(--ash)}',
+    '.journal-totals b{display:block;margin-bottom:5px;color:var(--gold);font-size:var(--text-16);font-variant-numeric:tabular-nums}',
+    '.journal-controls{display:flex;flex-wrap:wrap;gap:10px;margin:18px 0 10px}.journal-controls label{display:flex;flex:1 1 190px;flex-direction:column;gap:5px;color:var(--ash);font-size:var(--text-12)}',
+    '.journal-controls label[hidden]{display:none}.journal-controls input,.journal-controls select{width:100%;box-sizing:border-box;min-height:44px;border:1px solid var(--edge);border-radius:4px;background:var(--panel-2,#221d1a);color:var(--ink);padding:8px;font:var(--text-14) var(--mono)}',
+    '.journal-count{font-size:var(--text-10);margin:5px 0 12px}.journal-hint{margin:0}',
     '.journal-achievements{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.journal-achievement{border:1px solid var(--edge);border-radius:5px;padding:13px;background:var(--panel-2,#221d1a)}',
-    '.journal-achievement.earned{border-color:var(--gold)}.journal-achievement-top{display:flex;justify-content:space-between;gap:10px;font-size:calc(10px + var(--ui-mobile-text-add,0px));color:var(--ash)}',
-    '.journal-achievement.earned .journal-state{color:var(--gold)}.journal-achievement h3{margin:10px 0 6px;color:var(--ink);font:calc(18px + var(--ui-mobile-text-add,0px)) var(--display)}',
-    '.journal-achievement p{margin:0 0 12px;color:var(--ash);font-size:calc(11px + var(--ui-mobile-text-add,0px));line-height:1.55}.journal-achievement progress{width:100%;height:5px;accent-color:var(--gold);display:block}',
-    '.journal-category{margin:10px 0;border-bottom:1px solid var(--edge)}.journal-group{color:var(--gold);font:calc(20px + var(--ui-mobile-text-add,0px)) var(--display);padding:10px 4px;min-height:44px;box-sizing:border-box;cursor:pointer;overflow-wrap:anywhere}.journal-category-entries{padding-bottom:8px}.journal-entry{border:1px solid var(--edge);border-radius:4px;margin:7px 0;overflow-wrap:anywhere}',
-    '.journal-entry summary{padding:12px;min-height:44px;box-sizing:border-box;cursor:pointer;font-size:calc(13px + var(--ui-mobile-text-add,0px));color:var(--ink)}',
+    '.journal-achievement.earned{border-color:var(--gold)}.journal-achievement-top{display:flex;justify-content:space-between;gap:10px;font-size:var(--text-10);color:var(--ash)}',
+    '.journal-achievement.earned .journal-state{color:var(--gold)}.journal-achievement h3{margin:10px 0 6px;color:var(--ink);font:var(--text-20) var(--display)}',
+    '.journal-achievement p{margin:0 0 12px;color:var(--ash);font-size:var(--text-12);line-height:1.55}.journal-achievement progress{width:100%;height:5px;accent-color:var(--gold);display:block}',
+    '.journal-category{margin:10px 0;border-bottom:1px solid var(--edge)}.journal-group{color:var(--gold);font:var(--text-20) var(--display);padding:10px 4px;min-height:44px;box-sizing:border-box;cursor:pointer;overflow-wrap:anywhere}.journal-category-entries{padding-bottom:8px}.journal-entry{border:1px solid var(--edge);border-radius:4px;margin:7px 0;overflow-wrap:anywhere}',
+    '.journal-entry summary{padding:12px;min-height:44px;box-sizing:border-box;cursor:pointer;font-size:var(--text-14);color:var(--ink)}',
     '.journal-enemy-heading{display:inline-flex;align-items:center;gap:12px;vertical-align:middle;max-width:calc(100% - 22px)}.journal-enemy-heading>span:last-child{min-width:0}',
     '.journal-enemy-sprite{display:inline-flex;align-items:center;justify-content:center;flex:0 0 48px;width:48px;height:48px;border-radius:4px;background:rgba(0,0,0,.18);color:var(--gold);font:24px var(--mono);overflow:hidden}.journal-enemy-sprite canvas{display:block;width:48px;height:48px}',
-    '.journal-detail{padding:0 14px 12px;font-size:calc(12px + var(--ui-mobile-text-add,0px));line-height:1.65;color:var(--ash)}.journal-detail p{margin:8px 0}.journal-detail h4{color:var(--ink)}',
+    '.journal-detail{padding:0 14px 12px;font-size:var(--text-12);line-height:1.65;color:var(--ash)}.journal-detail p{margin:8px 0}.journal-detail h4{color:var(--ink)}',
     '.journal-detail dl{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:5px 15px}.journal-detail dd{margin:0;color:var(--ink)}.journal-detail table{width:100%;border-collapse:collapse}.journal-detail td,.journal-detail th{text-align:left;border-bottom:1px solid var(--edge);padding:6px;vertical-align:top}',
-    '.journal-locked{padding:12px;border-style:dashed}.journal-locked h4{margin:0;color:var(--ash);font-size:calc(12px + var(--ui-mobile-text-add,0px));font-weight:normal}.journal-locked p,.journal-requirement{color:var(--dim);font-size:calc(11px + var(--ui-mobile-text-add,0px));margin:6px 0 0}',
-    '.journal-storage{color:#e5b785;font-size:calc(12px + var(--ui-mobile-text-add,0px));line-height:1.5}.journal-empty{padding:22px 4px;color:var(--ash);line-height:1.6}',
+    '.journal-locked{padding:12px;border-style:dashed}.journal-locked h4{margin:0;color:var(--ash);font-size:var(--text-12);font-weight:normal}.journal-locked p,.journal-requirement{color:var(--dim);font-size:var(--text-12);margin:6px 0 0}',
+    '.journal-storage{color:#e5b785;font-size:var(--text-12);line-height:1.5}.journal-empty{padding:22px 4px;color:var(--ash);line-height:1.6}',
     '@media(max-width:560px){.journal-tabs{grid-template-columns:repeat(2,minmax(0,1fr))}.journal-achievements{grid-template-columns:1fr}.journal-controls label{flex:1 1 45%;min-width:0}.journal-controls #journalGroupLabel{flex-basis:100%}.journal-totals{gap:6px}}'
   ].join('\n');
   document.head.appendChild(style);
