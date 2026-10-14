@@ -69,6 +69,10 @@ controls tour and text sizing; Save / Exit has its own entry in the overlay
 menu. Equipment changes follow the creator's item-by-item rulings. Unused
 interface art and obsolete styling were removed after appearance checks.
 
+The final interface follow-up restores dotted bag-slot boundaries, stacks the
+saved hero under Continue, hides Close history when the log is closed, keeps
+attributes in a 2x2 grid and retains the selected god when revisiting creation.
+
 The export preserves script order and boundaries while packing loose modules
 into one download.
 
@@ -84,6 +88,6 @@ the repeatable export and an itch.io ZIP. Automated browser tests cover gameplay
 save compatibility, UI, dimensional compositing, recovery and nested-path play.
 Physical-phone GPU and memory performance still require device testing.
 
-Build: **2026-10-14T19:41:05.873Z**. Revision: `foundation17-20261014194105873`.
+Build: **2026-10-14T20:19:47.362Z**. Revision: `foundation17-20261014201947362`.
 
-Source integration: `9ee99300ea598a6026eff77a3f500240613ac5a6`.
+Source integration: `2b61fdc008b9ff28e25ab622ecd89a094473efbd`.
