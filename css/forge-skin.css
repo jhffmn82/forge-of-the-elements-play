@@ -908,7 +908,7 @@ html body[data-ui-theme] #create .hero-stats b{display:block;margin-top:2px;}
 
 @container create-screen (max-width:400px){html body[data-ui-theme] #create .wrap .creation-steps{gap:0 10px!important;padding-inline:8px!important;}
 html body[data-ui-theme] #create#create .wrap .creation-steps :is(.creation-step-value,.creation-step-now){font-size:var(--fs-body)!important;}}
-html body[data-ui-theme] #create h1{color:var(--ui-ink)!important;-webkit-text-fill-color:currentColor!important;}
+html body[data-ui-theme] #create h1{color:#fff0cd!important;-webkit-text-fill-color:currentColor!important;}
 /* The heading bar keeps its drawn proportions, so it is never stretched wider
    than the space between the two corner buttons. */
 html body[data-ui-theme] #create .creation-actions .creation-title{max-width:600px;justify-self:center;box-sizing:border-box;}

@@ -104,7 +104,7 @@ removed under the creator's approved redesign.
 Character and Inventory now keep full stat labels readable, including Large text.
 Narrow mouse-input windows keep the menu header, worn gear and bag separated.
 
-Source integration: `6abe186`.
+Source integration: `620d2c5`.
 
 Keyboard: WASD or arrows to move, QEZC diagonals, 1-8 hotbar, Tab character sheet,
 `i` equipment, `>` stairs. Mouse and phone touch controls remain available.
@@ -118,4 +118,10 @@ the repeatable export and an itch.io ZIP. Automated browser tests cover gameplay
 save compatibility, UI, dimensional compositing, recovery and nested-path play.
 Physical-phone GPU and memory performance still require device testing.
 
-Build: **10/15/2026 15:09:48**. Revision: `foundation17-20261015150948766`.
+Build: **10/15/2026 15:40:39**. Revision: `foundation17-20261015154039214`.
+
+Fae Cleric warnings now follow the chosen court. Ability icons share their
+existing chip colours and wait for slow artwork through the native loader.
+Small-phone stat pairs have more separation. Into the Dark requires no
+adjacent enemies and refuses before cost, cooldown or turn advancement.
+The title and Choose your adventurer use the approved warm ivory lettering.
