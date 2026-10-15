@@ -39,11 +39,9 @@ body.fote-study[data-ui-theme] #app #log{
  box-shadow:inset 0 0 0 1px var(--ui-frame-line),inset 0 0 0 3px var(--ui-frame-inner);
 }
 /* Paint above the fill so a full resource cannot hide its inset rim. */
-body[data-ui-theme] #app #bars .bar::after,
-body.fote-study[data-ui-theme] #app #studyHunger .study-hunger-track::after,
-body.fote-study[data-ui-theme] #app #hud2 .faithchip .meter::after{
+body[data-ui-theme] #app #bars .bar::after{
  content:'';position:absolute;inset:0;pointer-events:none;border-radius:inherit;
- box-shadow:inset 0 0 0 1px var(--ui-frame-line),inset 0 0 0 2px var(--ui-frame-inner);
+ box-shadow:inset 0 0 0 1px #a07a46,inset 0 0 0 2px var(--ui-frame-inner);
 }
 
 /* The original character screen is the default visual language. Keep its
@@ -184,8 +182,8 @@ body.fote-study.study-minimal[data-ui-theme] #app :is(#studyMenuToggle,#studyExp
 }
 body.fote-study.study-minimal[data-ui-theme] #app #top{background:var(--ui-header-face);border-color:var(--ui-edge);box-shadow:0 4px 16px #0006;}
 body.fote-study.study-minimal[data-ui-theme] #app #top #studyNav button{font:var(--text-14) var(--mono);border-radius:5px!important;text-align:left;}
-body.fote-study.study-minimal[data-ui-theme] #app #studyPortraitStats{background:var(--ui-panel);color:var(--ui-ink);border:1px solid var(--ui-edge);text-shadow:none;}
-body.fote-study.study-minimal[data-ui-theme] #app #studyPortrait{background:var(--ui-log-tint);border-color:var(--ui-edge);}
+body.fote-study.study-minimal[data-ui-theme] #app #studyPortraitStats{background:var(--ui-panel);color:var(--ui-ink);border:1px solid #a07a46;text-shadow:none;}
+body.fote-study.study-minimal[data-ui-theme] #app #studyPortrait{background:var(--ui-log-tint);border-color:#a07a46;}
 body.fote-study.study-minimal[data-ui-theme] #app #bMap.on{color:var(--gold);border-color:var(--gold);}
 body.fote-study.study-minimal[data-ui-theme] #app #studyPietyBar{background:#171411c9;border:1px solid var(--ui-edge);box-shadow:none;}
 body.fote-study.study-minimal[data-ui-theme] #app #bars :is(.xp,#studyPietyBar)::after{box-shadow:none;}
@@ -539,7 +537,7 @@ html body[data-ui-theme] #create .creation-actions{grid-column:1/-1;grid-row:1;d
 html body[data-ui-theme] #create .creation-title{position:relative;isolation:isolate;text-align:center;grid-column:2;grid-row:1;padding:24px 96px 18px;}
 html body[data-ui-theme] #create .creation-title>span{display:none;}
 html body[data-ui-theme] #create h1{font:700 var(--fs-head)/1.1 var(--display)!important;color:var(--ui-ink);margin:0!important;padding-bottom:4px;text-shadow:0 2px 0 #000;}
-html body[data-ui-theme] #create :is(#cBack,#rollCharacter){position:relative;isolation:isolate;font:700 var(--fs-word)/1.15 var(--display)!important;color:var(--ui-ink)!important;padding:10px 20px 14px!important;min-height:48px;}
+html body[data-ui-theme] #create :is(#cBack,#rollCharacter){position:relative;isolation:isolate;font:700 var(--fs-word)/1.15 var(--display)!important;color:var(--ui-ink)!important;padding:6px 18px 9px!important;min-height:38px;}
 html body[data-ui-theme] #create #cBack{grid-column:1;grid-row:1;justify-self:start;}
 html body[data-ui-theme] #create #rollCharacter{grid-column:3;grid-row:1;justify-self:end;}
 html body[data-ui-theme] #create #creationRollResult{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;pointer-events:none;margin:0!important;}
@@ -563,15 +561,12 @@ html body[data-ui-theme] #create .cards .card .choice-name{font:700 var(--fs-wor
 html body[data-ui-theme] #create .cards .card.on .choice-name{color:var(--forge-ui-focus)!important;}
 html body[data-ui-theme] #create .creation-lineup{--cast-scale:var(--creation-cast-scale,1);width:100%;max-width:720px;gap:12px;padding:12px 0 0;}
 html body[data-ui-theme] #create .creation-lineup .card{flex:var(--choice-weight,1);order:var(--carousel-order,0);transform:none;--depth:1;}
-html body[data-ui-theme] #create [data-race=elf]{--choice-weight:.8;}
-html body[data-ui-theme] #create [data-race=dwarf]{--choice-weight:1.1;}
-html body[data-ui-theme] #create [data-race=fae]{--choice-weight:.9;}
-html body[data-ui-theme] #create [data-race=gloomling]{--choice-weight:1.45;}
+/* Races stand evenly spaced (Justin, 2026-10-15: "spacing between fae and gloomling seems uneven"): no per-race weights. */
 html body[data-ui-theme] #create :is([data-cls=cleric],[data-cls=mage]){--choice-weight:.9;}
 html body[data-ui-theme] #create [data-cls=scoundrel]{--choice-weight:1.3;}
 html body[data-ui-theme] #create .creation-lineup .port{position:relative;display:flex;align-items:flex-end;justify-content:center;width:100%;height:140px;padding:0;}
 html body[data-ui-theme] #create .creation-lineup .port::before{content:"";position:absolute;bottom:3px;left:50%;width:40px;height:8px;transform:translateX(-50%);border-radius:50%;background:#0009;filter:blur(3px);}
-html body[data-ui-theme] #create .creation-lineup .port canvas{position:relative;width:calc(var(--cast-width)*var(--cast-scale)*var(--depth))!important;height:calc(var(--cast-height)*var(--cast-scale)*var(--depth))!important;max-width:100%;object-fit:contain;filter:brightness(.78) saturate(.86);}
+html body[data-ui-theme] #create .creation-lineup .port canvas{position:relative;width:calc(var(--cast-width)*var(--cast-scale)*var(--depth))!important;height:calc(var(--cast-height)*var(--cast-scale)*var(--depth))!important;max-width:none;object-fit:contain;filter:brightness(.78) saturate(.86);}
 html body[data-ui-theme] #create .creation-lineup .card.on canvas{filter:none;}
 html body[data-ui-theme] #create .cards.creation-appearance{gap:24px;margin:12px 0 0;}
 html body[data-ui-theme] #create .cards.creation-appearance .card{min-height:40px;padding:5px 12px!important;border-bottom:1px solid #8f713d70!important;}
@@ -581,6 +576,8 @@ html body[data-ui-theme] #create [data-step=court] .choice-name{white-space:norm
 html body[data-ui-theme] #create .hero-stage{display:flex;justify-content:center;align-items:center;}
 html body[data-ui-theme] #create .hero-stage .big{display:flex;align-items:flex-end;justify-content:center;height:174px;width:180px;background:radial-gradient(ellipse 30% 5% at 50% 96%,#0009,transparent 100%);}
 html body[data-ui-theme] #create .hero-stage canvas{max-width:100%;max-height:100%;object-fit:contain;}
+/* Painted figures share the sprite canvas's 4px space below the feet. */
+html body[data-ui-theme] #create .hero-stage img.creation-hires{margin-bottom:4px;}
 html body[data-ui-theme] #create .creation-record{grid-column:2;grid-row:3/5;position:relative;isolation:isolate;min-height:0;min-width:0;max-height:100%;height:100%;box-sizing:border-box;align-self:start;display:flex;flex-direction:column;gap:18px;padding:30px 30px;background:none;box-shadow:none;}
 html body[data-ui-theme] #create .creation-record::before{content:"";display:block!important;position:absolute;inset:0;z-index:-1;pointer-events:none;border:26px solid transparent;background:none;mask-image:none;filter:var(--forge-ui-frame-tone);}
 html body[data-ui-theme] #create .creation-record.more-details::after{content:"More below ↓";position:absolute;bottom:12px;left:26px;right:26px;text-align:center;pointer-events:none;color:var(--gold);font:400 var(--text-14)/1.2 var(--mono);}
@@ -672,7 +669,7 @@ html body[data-ui-theme] #create #rollCharacter{grid-column:2;}}
 @container create-screen ((min-width:701px) and (max-width:1100px) and (min-height:721px)){html body[data-ui-theme] #create .creation-actions{grid-template-columns:1fr 1fr;grid-template-rows:40px minmax(0,1fr);gap:4px;}
 html body[data-ui-theme] #create .creation-title{grid-column:1/-1;grid-row:2;justify-self:center;padding:14px 84px 12px;}
 html body[data-ui-theme] #create h1{font-size:var(--fs-head)!important;}
-html body[data-ui-theme] #create :is(#cBack,#rollCharacter){min-height:44px;padding:6px 16px 10px!important;font-size:var(--fs-word)!important;}
+html body[data-ui-theme] #create :is(#cBack,#rollCharacter){min-height:38px;padding:5px 16px 8px!important;font-size:var(--fs-word)!important;}
 html body[data-ui-theme] #create #rollCharacter{grid-column:2;}
 html body[data-ui-theme] #create .creation-steps button{padding:5px 16px 9px!important;gap:8px;}
 html body[data-ui-theme] #create .creation-step-value{font-size:var(--forge-ui-body-size);line-height:1.1;}}
@@ -699,7 +696,7 @@ html body[data-ui-theme] #create .creation-title{grid-column:1/-1;grid-row:2;pad
 html body[data-ui-theme] #create .creation-title>span{display:none;}
 html body[data-ui-theme] #create h1{font-size:var(--fs-head)!important;margin:0!important;}
 html body[data-ui-theme] #create #rollCharacter{grid-column:2;}
-html body[data-ui-theme] #create :is(#cBack,#rollCharacter){font-size:var(--text-14)!important;min-height:40px;padding:6px 14px 10px!important;}
+html body[data-ui-theme] #create :is(#cBack,#rollCharacter){font-size:var(--text-14)!important;min-height:36px;padding:5px 14px 8px!important;}
 html body[data-ui-theme] #create .creation-steps{gap:6px;padding:0;}
 html body[data-ui-theme] #create .creation-steps button{min-height:44px;padding:5px 14px 9px!important;}
 html body[data-ui-theme] #create .creation-steps button:only-child{width:auto;}
@@ -763,8 +760,10 @@ html body[data-ui-theme] #create .creation-scene .creation-step{display:grid;gri
 html body[data-ui-theme] #create .creation-scene .creation-step>.step{display:block;visibility:visible;grid-row:1;align-self:center;margin:0;}
 html body[data-ui-theme] #create .creation-scene .creation-step>.creation-lineup{grid-row:2;align-self:stretch;height:100%;padding:0;}
 html body[data-ui-theme] #create .creation-scene .creation-step>.creation-lineup .card{position:relative;height:100%;padding:0!important;gap:0;}
-html body[data-ui-theme] #create .creation-scene .creation-step>.creation-lineup .port{box-sizing:border-box;height:100%;padding-bottom:calc(4px - 4px * var(--cast-scale));}
-html body[data-ui-theme] #create .creation-scene .creation-step>.creation-lineup .choice-name{position:absolute;top:calc(100% + 4px);left:0;right:0;min-height:0;margin:0;}
+html body[data-ui-theme] #create .creation-scene .creation-step>.creation-lineup .port{box-sizing:border-box;height:100%;padding-bottom:max(0px,calc(4px - 4px * var(--cast-scale)));}
+/* Above 1x the canvas's scaled 4px pad lifts the feet; padding cannot go negative, so a margin pulls them back to the floorline (2026-10-15). */
+html body[data-ui-theme] #create .creation-scene .creation-step>.creation-lineup .port canvas{margin-bottom:min(0px,calc(4px - 4px * var(--cast-scale)));}
+html body[data-ui-theme] #create .creation-scene .creation-step>.creation-lineup .choice-name{position:absolute;top:calc(100% + 4px);left:-12px;right:-12px;min-height:0;margin:0;overflow:visible;}
 html body[data-ui-theme] #create .creation-scene .creation-step>.hero-stage{grid-row:2;align-self:end;}
 html body[data-ui-theme] #create .creation-scene .creation-step>.creation-name-controls{grid-row:3;margin:0;}
 html body[data-ui-theme] #create .creation-scene .creation-step>.creation-appearance{grid-row:3;align-self:start;gap:14px;margin:var(--appearance-drop) 0 0;}
@@ -813,7 +812,7 @@ html body[data-ui-theme] #create .creation-class-tray{align-self:end;z-index:1;}
 html body[data-ui-theme] #create .creation-title>span{display:none;}
 html body[data-ui-theme] #create h1{font-size:var(--fs-head)!important;margin:0!important;}
 html body[data-ui-theme] #create .creation-title{padding:7px 26px;}
-html body[data-ui-theme] #create :is(#cBack,#rollCharacter){font-size:var(--text-14)!important;min-height:36px;padding:5px 14px 9px!important;}
+html body[data-ui-theme] #create :is(#cBack,#rollCharacter){font-size:var(--text-14)!important;min-height:34px;padding:4px 14px 7px!important;}
 html body[data-ui-theme] #create :where(.creation-title,.creation-steps button,#cBack,#rollCharacter)::before{border-width:10px;border-image-width:10px;}
 html body[data-ui-theme] #create .creation-steps{gap:10px;padding:0;}
 html body[data-ui-theme] #create .creation-steps button{min-height:44px;padding:5px 14px 9px!important;gap:8px;}

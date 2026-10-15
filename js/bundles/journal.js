@@ -174,10 +174,10 @@
   achievement('all-classes','A Resume Written in Scars','Win at least one run as each of the five classes.','classes',5);
   var RACE_TITLES={human:'Only Human, Somehow',elf:'A Long Life, Briefly Endangered',dwarf:'Short Stature, Long Odds',fae:'Terms and Conditions Apply',gloomling:'A Bright Future in Darkness'};
   RACES.forEach(function(race){
-    var name=label(race);
+    var name=race==='dwarf'?'Dwarve':label(race);
     achievement('victory-race-'+race,RACE_TITLES[race],'Win a run as '+(race==='elf'?'an ':'a ')+name+'.','raceWins',1,race);
   });
-  achievement('all-races','The Whole Adventuring Family','Win at least one run as each of the five races: Human, Elf, Dwarf, Fae and Gloomling.','races',RACES.length);
+  achievement('all-races','The Whole Adventuring Family','Win at least one run as each of the five races: Human, Elf, Dwarve, Fae and Gloomling.','races',RACES.length);
   var ELEMENTS=['fire','water','air','earth','light','shadow'],OPPOSITE={fire:'water',water:'fire',air:'earth',earth:'air',light:'shadow',shadow:'light'};
   var PATH_TITLES={
     fire:['An Unsupervised Spark','Playing with Matches','A Walking Fire Code Violation'],

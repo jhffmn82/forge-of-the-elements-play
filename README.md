@@ -13,6 +13,16 @@ art from animation caches.
 Character creation stays visible until the chosen hero and floor are drawn;
 artwork Retry remains available while a floor is loading.
 
+Creation now uses 126 painted figures covering 216 looks, with consistent
+line-up and preview sizes on desktop, tablets and phones. Paintings decode
+before appearing, failed artwork can recover on a later visit, and the original
+sprite fallback remains available. Secondary buttons are darker, status rims
+are bronze, and the tutorial toggle clearly shows its state. Letter keys ignore
+case while preserving assigned shortcuts; Double Strike faces its target.
+The displayed race name is Dwarve; existing save keys are unchanged.
+The export carries the unchanged paintings in 18 small resource packs and
+decodes only requested figures, keeping the complete build at 948 files.
+
 The phone rendering update raises the stationary scene target to 60 Hz while
 keeping effect speeds unchanged, batches exact animation imports, and reuses
 lighting textures. It also avoids unused lighting and black-bloom work. Automated
@@ -104,7 +114,7 @@ removed under the creator's approved redesign.
 Character and Inventory now keep full stat labels readable, including Large text.
 Narrow mouse-input windows keep the menu header, worn gear and bag separated.
 
-Source integration: `88a2e85`.
+Source integration: `1086bac46dfcbad7171bd817e8436684e65e3dbe`.
 
 Keyboard: WASD or arrows to move, QEZC diagonals, 1-8 hotbar, Tab character sheet,
 `i` equipment, `>` stairs. Mouse and phone touch controls remain available.
@@ -118,7 +128,7 @@ the repeatable export and an itch.io ZIP. Automated browser tests cover gameplay
 save compatibility, UI, dimensional compositing, recovery and nested-path play.
 Physical-phone GPU and memory performance still require device testing.
 
-Build: **10/15/2026 17:59:01**. Revision: `foundation17-20261015175901396`.
+Build: **10/15/2026 22:28:30**. Revision: `foundation17-20261015222830243`.
 
 Fae Cleric warnings now follow the chosen court. Ability icons share their
 existing chip colours and wait for slow artwork through the native loader.

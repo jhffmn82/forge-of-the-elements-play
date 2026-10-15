@@ -32,7 +32,7 @@ body.fote-study #app #studyReadouts{padding-inline:8px;box-sizing:border-box;}
 body.fote-study #app #bars{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:1px!important;padding:0!important;margin:0!important;}
 body.fote-study #app #bars .hp,body.fote-study #app #bars .mp{grid-column:1/-1;}
 body.fote-study #app #bars .xp,body.fote-study #app #bars .study-hunger{grid-column:1/-1;}
-body.fote-study #app #bars .bar{height:22px!important;min-height:0!important;border-radius:0;border:0;background:#100e0b;box-shadow:inset 0 0 0 1px #534332;padding:0!important;margin:0!important;}
+body.fote-study #app #bars .bar{height:22px!important;min-height:0!important;border-radius:0;border:0;background:#100e0b;padding:0!important;margin:0!important;}
 body.fote-study #app #bars .bar span{font:calc(calc(11px * var(--ui-text-scale,1)) + var(--ui-mobile-text-add,0px)) var(--mono)!important;padding:0 var(--study-label-inset)!important;}
 body.fote-study #app #bars .bar .l{font-size:calc(calc(10px * var(--ui-text-scale,1)) + var(--ui-mobile-text-add,0px));letter-spacing:.02em;}
 body.fote-study #app #studyHunger{position:relative;display:flex;align-items:center;gap:4px;min-height:0!important;height:14px!important;margin:0;padding:0 3px!important;border:0;border-radius:0;background:none;box-shadow:none;color:#c9ad81;overflow:hidden;text-align:left;}
@@ -325,7 +325,7 @@ body.fote-study #app #depth b,body.fote-study #app #hBiome{color:var(--ink);}
 body.fote-study.study-wide #app #studyLeft,body.fote-study.study-wide #app #studyRight,
 body.fote-study #app #studyHud,body.fote-study #app #hotbar{background:#15191c;border-color:#394249;}
 body.fote-study #app #log{background:#131719;color:#bac1c6;scrollbar-color:#46525a #131719;}
-body.fote-study #app #bars .bar{background:#101416;box-shadow:inset 0 0 0 1px #394249;}
+body.fote-study #app #bars .bar{background:#101416;}
 body.fote-study #app #studyHunger{color:#d0c7b5;}
 body.fote-study #app #studyHunger .study-hunger-track,
 body.fote-study #app #hud2 .faithchip .meter{background:#20262a;border-color:#424b51;}
@@ -524,7 +524,7 @@ body.fote-study[data-ui-theme] #app #log{background:var(--ui-log);color:var(--ui
 body.fote-study[data-ui-theme] #app #studyNav button,body.fote-study[data-ui-theme] #app #studyExplore,body.fote-study[data-ui-theme] #app #dpad button{background:linear-gradient(var(--ui-raised),var(--ui-panel-2));color:var(--ui-ink);border-color:var(--ui-edge) var(--ui-panel-2) var(--ui-bg) var(--ui-edge);}
 body.fote-study[data-ui-theme] #app #studyNav button.on{background:var(--ui-bg);box-shadow:inset 0 2px 3px #0009;}
 body.fote-study[data-ui-theme] #app #hud2 button.chip.study-motes{background:var(--ui-panel-2);border-color:var(--ui-edge);}
-body.fote-study[data-ui-theme] #app #studyHunger .study-hunger-track,body.fote-study[data-ui-theme] #app #hud2 .faithchip .meter{background:var(--ui-panel-2);border-color:var(--ui-edge);}
+body.fote-study[data-ui-theme] #app #studyHunger .study-hunger-track,body.fote-study[data-ui-theme] #app #hud2 .faithchip .meter{background:var(--ui-panel-2);border-color:#a07a46;}
 /* Leave a visible release gutter outside Gear, while keeping all slots in reach. */
 body.fote-study #app #shade:has(.tgear){padding:0 12px!important;}
 body.fote-study #app #shade:has(.gearwrap){padding:0 12px!important;}
