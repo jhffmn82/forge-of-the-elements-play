@@ -13,7 +13,8 @@
   for(const type of startupInputs)root.addEventListener(type,startupInput,{capture:true,passive:false});
   root.FoteLifecycle=Object.freeze({
     whenReady(fn){if(ready)fn();else initializers.push(fn);},
-    ready(){if(ready)return;ready=true;for(const fn of initializers.splice(0))fn();}
+    // 2026-10-14: the title can open while the preview behind it is still loading its art; from then on it takes input.
+    ready(){if(ready)return;ready=true;interactive=true;for(const type of startupInputs)root.removeEventListener(type,startupInput,{capture:true});for(const fn of initializers.splice(0))fn();}
   });
   const version=document.querySelector('meta[name="fote-build"]')?.content||'dev';
   const veil=document.createElement('div');veil.id='moduleLoadVeil';veil.setAttribute('data-fote-startup','');

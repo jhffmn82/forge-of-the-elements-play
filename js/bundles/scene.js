@@ -121,7 +121,7 @@
   // each kind in a fight, plus its props. At 4 MB a fight of four kinds rebuilt
   // two to three masks on nearly every frame; that fight needs about 13 MB.
   var CACHE_BYTES=32*1024*1024,MAX_MASKS=512,MAX_HISTORY=1024,MASK_SIZE=90;
-  var UNION_CACHE_BYTES=1024*1024,MAX_UNIONS=128,unions=new Map(),unionCacheBytes=0,unionCacheCount=0;
+  var UNION_CACHE_BYTES=8*1024*1024,MAX_UNIONS=128,unions=new Map(),unionCacheBytes=0,unionCacheCount=0;
   var cacheBytes=0,stats={frames:0,count:0,builds:0,hits:0,unionHits:0,unionBuilds:0,directionHits:0,directionBuilds:0,ms:0,errors:[]};
   function finite(v){return typeof v==='number'&&Number.isFinite(v);}
   function clamp(v,lo,hi){return Math.max(lo,Math.min(hi,v));}
@@ -453,6 +453,25 @@
     if(slots.length===1&&slots[0].share===1){delete slots[0].share;history.delete(key);history.set(key,slots[0]);return slots[0];}
     var entry={sources:slots,time:now};history.delete(key);history.set(key,entry);return entry;
   }
+  // 2026-10-14 (Justin: hang-ups in combat; he chose 'snap the shadow direction for standing creatures'). The lights
+  // that cast an actor's shadow are re-sampled every frame, so a creature standing still got a slightly different
+  // cast each frame and every shadow was restamped. A standing actor keeps the cast it drew until its light turns
+  // more than HOLD_ANGLE, or its reach or strength changes by more than a few percent; the exact union cache then
+  // redraws one image. Any movement of the actor takes the live light at once.
+  var held=new WeakMap(),HOLD_ANGLE=.035,HOLD_LENGTH=.03,HOLD_ALPHA=.04;
+  function steadyLight(a,b){
+    return a.key===b.key&&a.diffuse===b.diffuse&&Math.abs(Math.atan2(Math.sin(a.angle-b.angle),Math.cos(a.angle-b.angle)))<HOLD_ANGLE&&
+      Math.abs(a.length-b.length)<=HOLD_LENGTH*Math.max(a.length,b.length)&&Math.abs(a.alpha-b.alpha)<HOLD_ALPHA&&
+      (a.share===undefined?b.share===undefined:b.share!==undefined&&Math.abs(a.share-b.share)<HOLD_ALPHA);
+  }
+  function heldLight(key,surface,lit){
+    if(!key||typeof key!=='object')return {lit:lit,steady:false};
+    var prior=held.get(key),standing=!!prior&&prior.x===surface.x&&prior.y===surface.y;
+    if(!lit){held.delete(key);return {lit:lit,steady:false};}
+    var now=lit.sources||[lit],then=prior&&prior.lit&&(prior.lit.sources||[prior.lit]);
+    if(standing&&then&&now.length===then.length&&now.every(function(light,i){return steadyLight(light,then[i]);}))return {lit:prior.lit,steady:true};
+    held.set(key,{lit:lit,x:surface.x,y:surface.y});return {lit:lit,steady:standing};
+  }
   function six(matrix){return matrix&&matrix.length===9?[matrix[0],matrix[1],matrix[3],matrix[4],matrix[6],matrix[7]]:matrix||[1,0,0,1,0,0];}
   function diagnostics(){return {enabled:enabled&&!failed,frames:stats.frames,count:stats.count,builds:stats.builds,hits:stats.hits,cacheBytes:cacheBytes,cacheEntries:masks.size,historyEntries:history.size,unionCacheBytes:unionCacheBytes,unionCacheEntries:unionCacheCount,unionGroups:unions.size,directionHits:stats.directionHits,directionBuilds:stats.directionBuilds,unionHits:stats.unionHits,unionBuilds:stats.unionBuilds,ms:stats.ms,errors:stats.errors.slice()};}
   function render(records,frame,matrix,width,height){
@@ -513,6 +532,7 @@
         var heightHint=finite(s.height)?s.height*(mask.bottom-mask.top)/mask.h:bodyHeight/tile*.8;
         if(finite(s.zPerPixel))heightHint=bodyHeight*baseScale*s.zPerPixel;
         var lighting=lightFor(s,frame,group.key,now,heightHint,origin,maxReach,sourceKeys),batches=[];
+        if(s.kind==='actor'){var hold=heldLight(group.key,s,lighting);lighting=hold.lit;group.steady=hold.steady;}
         var lights=lighting?(lighting.sources||[lighting]):[null];
         lights.forEach(function(light){
         group.light=light;
@@ -655,7 +675,10 @@
         var width=Math.max(1,right-left),height=Math.max(1,bottom-top),scale=Math.min(resolution,256/width,256/height);
         var usedW=clamp(Math.ceil(width*scale),1,256),usedH=clamp(Math.ceil(height*scale),1,256),bucket=32;
         var tail=first.tail,multiple=batches.length>1||first.light&&first.light.share!==undefined&&first.light.share!==1;
-        var canReuse=UNION_CACHE_BYTES>0&&!group.contact&&s.kind!=='actor';
+        // A standing actor uses the exact cache too (every actor carries a contact, so before 2026-10-14 none did).
+        // The signature still holds every raster input: a new pose, a moved light or opacity rebuilds. An actor that
+        // moved this frame keeps the pooled path: caching a shadow that changes every frame only costs memory.
+        var canReuse=UNION_CACHE_BYTES>0&&(s.kind==='actor'?!!group.steady:!group.contact);
         var signature=null,cached=null;
         if(canReuse){
           // Only exact local raster inputs match. Visibility/source selection
@@ -676,6 +699,9 @@
         // Static unions render directly into their immutable cache target.
         // Copying through a smaller canvas changes edge sampling and alpha.
         var actorScratch=(canReuse||solid)&&!multiple?null:unionCanvases.get(bucket);
+        // A rebuilt bitmap union paints over its own previous canvas instead of allocating one per animation frame.
+        // Vector volumes keep a fresh target, as the direction pool below does: recycled targets alter path pixels.
+        if(canReuse&&!multiple&&cached&&cached.canvas&&cached.canvas.width===bucket&&!stamps.some(function(stamp){return !!stamp.volumeNodes;}))actorScratch=cached.canvas;
         if(!actorScratch){actorScratch=root.document.createElement('canvas');actorScratch.width=bucket;actorScratch.height=bucket;if(!canReuse&&!solid||multiple)unionCanvases.set(bucket,actorScratch);}
         var union=actorScratch.getContext('2d');
         union.setTransform(1,0,0,1,0,0);union.globalAlpha=1;union.globalCompositeOperation='source-over';union.clearRect(0,0,Math.min(bucket,usedW+1),Math.min(bucket,usedH+1));
@@ -729,7 +755,10 @@
               // Keep vector misses on the same fresh raster target as cached
               // directions; recycled bitmap targets alter native path pixels.
               // Actor/foliage bitmap directions retain their bounded pool.
-              if(canReuse||batch.stamps.some(function(stamp){return !!stamp.volumeNodes;})){
+              var vector=batch.stamps.some(function(stamp){return !!stamp.volumeNodes;}),previous=canReuse&&!vector&&cached&&cached.directions&&cached.directions.find(function(d){return d.key===light.key&&d.canvas.width===bucket;});
+              // A standing actor's rebuilt bitmap direction paints over its own previous canvas (see the union target above).
+              if(previous)image=previous.canvas;
+              else if(canReuse||vector){
                 image=root.document.createElement('canvas');image.width=bucket;image.height=bucket;
               }
               union=image.getContext('2d');
@@ -4948,13 +4977,17 @@ globalThis.UNMAKER_ATLAS={
     if(gateReady)return Promise.resolve();if(gateLoading)return gateLoading;
     gateLoading=atlReady(gateFile,{retry:true}).then(function(){gateReady=true;}).finally(function(){gateLoading=null;});return gateLoading;
   }
+  /* 2026-10-14 (Justin: "There's a hard line where the lighting changes across the portal"). The gateway stands 2.5
+     tiles and its card 2.0, while its own light sat at the default 1.1: everything above the light faced away from it
+     and went dark along a hard line, as the shrine statues did (5ca065f). The light and the card share one height. */
+  var GATE_LIGHT_HEIGHT=1.1;
   function drawGate(x,y,px,py,alpha){
     if(!materialGateAt(x,y))return false;
     var image=atl(gateFile);if(!image)return true;
     var h=TS*2.5,w=h*image.naturalWidth/image.naturalHeight;
     ctx.save();ctx.globalAlpha=alpha;ctx.drawImage(image,px+TS*.5-w*.5,py+TS*.96-h,w,h);
     if(typeof FoteNormalLighting!=='undefined')FoteNormalLighting.record(ctx,{img:image,sx:0,sy:0,sw:image.naturalWidth,sh:image.naturalHeight},{x:px+TS*.5-w*.5,y:py+TS*.96-h,w:w,h:h},
-      {normal:false,surface:{kind:'sprite',x:x,y:y,admissionX:x,admissionY:y,height:h/TS*.8,footV:1}});
+      {normal:false,surface:{kind:'sprite',x:x,y:y,admissionX:x,admissionY:y,height:h/TS*.8,footV:1,ownLight:GATE_LIGHT_HEIGHT}});
     ctx.restore();return true;
   }
   function gateShimmer(p,now){
@@ -5002,7 +5035,7 @@ globalThis.UNMAKER_ATLAS={
     var m=floorMeta&&floorMeta.chaosCampaign,entry=floorMeta&&floorMeta.chaosEntryPreview;
     (entry?[entry.portal]:m?[m.upAt,m.downAt]:[]).filter(Boolean).forEach(function(p){
       if(playerBlind()||!mapEmissionVisible(p.x,p.y))return;
-      lights.push({x:p.x,y:p.y,c:hexRGB('#9DEEFF'),r:3.2,s:.85,tx:p.x,ty:p.y});
+      lights.push({x:p.x,y:p.y,c:hexRGB('#9DEEFF'),r:3.2,s:.85,tx:p.x,ty:p.y,height:GATE_LIGHT_HEIGHT});
     });return lights;
   }
   function drawAll(now){

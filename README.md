@@ -69,12 +69,29 @@ controls tour and text sizing; Save / Exit has its own entry in the overlay
 menu. Equipment changes follow the creator's item-by-item rulings. Unused
 interface art and obsolete styling were removed after appearance checks.
 
-The final interface follow-up restores dotted bag-slot boundaries, stacks the
-saved hero under Continue, hides Close history when the log is closed, keeps
-attributes in a 2x2 grid and retains the selected god when revisiting creation.
-
 The export preserves script order and boundaries while packing loose modules
 into one download.
+
+Continue keeps the saved hero on a bright second line, long names stay inside
+the plate, and the bag has visible dotted slot boundaries. Creation retains
+the chosen god when revisited; attributes and history controls retain their
+approved layout and behavior.
+
+The October 15 update smooths near-60-Hz frame pacing, reuses standing-creature
+shadows, corrects the material gateway's light, and makes four plane centerpieces
+solid. Existing plane saves move overlapping actors and dropped loot safely.
+The title opens before hidden preview art finishes; background offline copying
+waits for a visible run and pauses while menus or floor loading are active.
+
+Approved loot changes reduce early surplus, use four equally likely build pools,
+split armor among heavy/leather/cloth, and advance quality by biome. Biome four
+gear is Masterwork; duplicate Masterworks reroll once while allowing wanted pairs.
+Equipment movement and repeated pickup count each physical Masterwork only once.
+Save/update/offline and focused gameplay/rendering checks passed. Physical-phone
+frame rate still requires device testing. Low-power and offline-delta work remain
+outside this build.
+
+Source integration: `b00ef01dfbfa3db53fc4c7c15584a64d8bc69f86`.
 
 Keyboard: WASD or arrows to move, QEZC diagonals, 1-8 hotbar, Tab character sheet,
 `i` equipment, `>` stairs. Mouse and phone touch controls remain available.
@@ -88,6 +105,4 @@ the repeatable export and an itch.io ZIP. Automated browser tests cover gameplay
 save compatibility, UI, dimensional compositing, recovery and nested-path play.
 Physical-phone GPU and memory performance still require device testing.
 
-Build: **2026-10-14T20:19:47.362Z**. Revision: `foundation17-20261014201947362`.
-
-Source integration: `2b61fdc008b9ff28e25ab622ecd89a094473efbd`.
+Build: **2026-10-15T06:42:57.860Z**. Revision: `foundation17-20261015064257860`.

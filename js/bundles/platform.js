@@ -73,6 +73,18 @@
     window.OFFLINE_READY={files:0,failed:failed,total:total,ready:false};
     say(message||'Offline copy incomplete. Reconnect and reopen the game to retry.',false);
   }
+  /* 2026-10-14 (Justin's son launched the home-screen copy on a Lenovo Tab M8, 3 GB: "loading the game struggled,
+     the starting video didn't start"). The full offline copy is 912 files, 187 MB, and it began 3 s after the title
+     came up, four files at a time, sharing the line with the title film and the first floor's art (on an emulated
+     tablet it was 75% stored before the player left the title). It now waits until a run is on screen with its
+     floor drawn, and pauses again while another floor's art is loading. */
+  function gameSettled(){
+    function settled(){
+      var covered=['title','create'].some(function(id){var el=document.getElementById(id);return !!el&&el.classList.contains('on');});
+      return !covered&&!(typeof floorArtPending==='function'&&floorArtPending());
+    }
+    return new Promise(function(resolve){(function wait(){if(settled())resolve();else setTimeout(wait,1000);})();});
+  }
   async function fill(){
     var reg=await navigator.serviceWorker.getRegistration();if(!reg)return;
     var cache=await caches.open(CACHE),have={};
@@ -100,6 +112,7 @@
       window.OFFLINE_READY={files:storedFiles,failed:0,total:storedFiles,built:built,ready:true};
       say('Offline copy ready: this device can play with no signal',true);return;
     }
+    await gameSettled();
     try{
       build=await (await verifiedFetch('build.json',built)).json();
       if(build.built!==built){incomplete(0,0,'A newer game is available. Reload online before storing it offline.');return;}
@@ -118,6 +131,7 @@
     var done=0,failed=0;
     say('Storing the game for offline play… 0%',false);
     for(var i=0;i<list.length;i+=BATCH){
+      await gameSettled();
       await Promise.all(list.slice(i,i+BATCH).map(async function(path){
         try{
           var res=path==='precache.json'?manifest.clone():await verifiedFetch(path,built);
@@ -792,7 +806,10 @@
   /* the top bar's height, for the full-screen sheets and the cards */
   function topH(){ var t=document.getElementById('top'); if(t) document.body.style.setProperty('--toph', t.getBoundingClientRect().bottom+'px'); }
   window.addEventListener('resize', function(){ setTimeout(topH, 50); });
-  setTimeout(topH, 300);
+  /* 2026-10-14: the title can now open before this timer and hide the bar; startup measures it just before the
+     title opens instead (boot.js), and a hidden bar is not measured over it. */
+  setTimeout(function(){ var title=document.getElementById('title'); if(!(title&&title.classList.contains('on'))) topH(); }, 300);
+  window.measureTopBar=topH;
 
   /* gear icons are painted at the size their tile shows them (ui.js paintIconArt), not at 72 and shrunk by CSS (2026-09-27) */
 

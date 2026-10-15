@@ -25,6 +25,7 @@ function addBag(icon,name,extra,onFailure){
   if(isGear)tierNormalize(fixNegativePlus(extra.data));
   var entry={icon:icon,name:name,n:1,uid:uid||'g'+nextId++,kind:kind,data:extra.data};player.bag.push(entry);
   if(isGear&&typeof FoteJournalEvents!=='undefined')FoteJournalEvents.gear(entry.data,entry.kind);
+  if(isGear&&typeof noteMasterwork==='function')noteMasterwork(entry.data);
   return entry;
 }
 function normalizeLoadedInventory(){
@@ -291,16 +292,51 @@ function transmutedGear(item,kind,key){
   }else if(kind!=='ring')tierNormalize(next);
   return next;
 }
+/* 2026-10-14 (Justin): weapons and off-hands come in four build pools, each equally likely whatever the hero's
+   class, because building stays open ended: "warrior (buckler, kite, mace, ax, spear), skirmisher (bow, dagger,
+   shortsword), mage (staff, wand, orb, tome) cleric (cerimonial knife, holy symbol)", and "What I wanted is for
+   each of the 'pools' to be equally likely. The reason being that some items like chain or mail are equivalent
+   or wand + orb vs staff." A drop picks a pool, then an item in it. The Long Sword was named in no pool; it sits
+   with the warrior's. Armor: a third heavy (Plate or Chain, half each), a third Leather, a third Cloth
+   ("it should really be 1/3 (plate or chain, 1/3 leather, 1/3 cloth"). */
+var GEAR_POOLS=[
+  [['off','buckler'],['off','kite'],['weapon','mace'],['weapon','axe'],['weapon','spear'],['weapon','longsword']],
+  [['weapon','bow'],['weapon','dagger'],['weapon','sword']],
+  [['weapon','staff'],['weapon','wand'],['off','orb'],['off','tome']],
+  [['weapon','censer'],['off','holy']]
+];
+function rollArmorKey(){ var r=rng()*3; return r<1 ? (rng()<.5?'plate':'chain') : r<2 ? 'leather' : 'robe'; }
 function rollEquipmentCandidate(){
   var roll=rng(),gear;
-  if(roll<.5){var w=pick(['sword','dagger','mace','longsword','axe','bow','staff','wand','spear','censer']);gear={kind:'weapon',it:clone(WEAPONS[w])};}
-  else if(roll<.8){var a=pick(['leather','chain','plate','robe']);gear={kind:'armor',it:clone(ARMORS[a])};}
-  else {var o=pick(['buckler','kite','orb','tome','holy']);gear={kind:'off',it:clone(OFFHANDS[o])};}
+  if(roll>=.5&&roll<.8){gear={kind:'armor',it:clone(ARMORS[rollArmorKey()])};}
+  else {var p=pick(pick(GEAR_POOLS));gear={kind:p[0],it:clone((p[0]==='off'?OFFHANDS:WEAPONS)[p[1]])};}
   rng(); // Reserved quality draw from existing seeds. Final quality is rolled after selection.
   gear.it.plus=rollEnhancement(0);
   if(gear.kind!=='off'&&rng()<.15+floorNo*.03)gear.it.enchant=pick(ELEMENTS);
   return gear;
 }
+/* 2026-10-14 (Justin): gear volume by biome, so builds finish in biome 4 without swamping the early floors.
+   About 3 pieces a floor in biomes 1-3 and 6 in biome 4 (all Masterwork there). GEAR_RATE is the share of gear
+   rolls that stay gear: floor gear outside puzzle rooms (thinGeneratedGear), chest gear and kill gear. */
+var GEAR_RATE=[0.45,0.4,0.5,1,1];
+function gearRate(){ return GEAR_RATE[Math.max(0,Math.min(GEAR_RATE.length-1,Math.floor((floorNo-1)/5)))]; }
+/* 2026-10-14 (Justin): a Masterwork drop that matches a Masterwork piece the hero has already picked up rerolls once,
+   so a build fills out without more items. Daggers and Ceremonial Knives are wanted twice (one in each hand):
+   "players may want 2 daggers or 2 cerimonial knives". RUN.mwFound counts pickups by item key. */
+var MASTERWORK_PAIRS={dagger:true,censer:true};
+function masterworkWanted(it){
+  var k=itemKey(it); if(!k||typeof RUN==='undefined'||!RUN) return true;
+  return ((RUN.mwFound||{})[k]||0) < (MASTERWORK_PAIRS[k]?2:1);
+}
+function noteMasterwork(it){
+  if(!it||tierNum(it)<3||typeof RUN==='undefined'||!RUN) return;
+  var k=itemKey(it); if(!k||it._mwFoundKey===k) return;
+  // Equipment displacement and drop/re-pick also pass through addBag. Keep the
+  // acquisition stamp on the saved item so one physical piece counts once.
+  it._mwFoundKey=k;
+  RUN.mwFound=RUN.mwFound||{}; RUN.mwFound[k]=(RUN.mwFound[k]||0)+1;
+}
+function curseGear(gear){gear.it.cursed=true;gear.it.plus=-ri(1,3);delete gear.it.enchant;if(gear.kind==='off')gear.it.cursedOff=true;}
 function randomGear(){
   var gear;
   for(var attempt=0;attempt<20;attempt++){
@@ -309,11 +345,15 @@ function randomGear(){
     if(roll<.12){makeRing(null,cursed);continue;}
     if(roll<.20){makeAmulet(null,cursed);continue;}
     gear=rollEquipmentCandidate();gear.it.unid=true;
-    if(cursed){gear.it.cursed=true;gear.it.plus=-ri(1,3);delete gear.it.enchant;if(gear.kind==='off')gear.it.cursedOff=true;}
+    if(cursed)curseGear(gear);
     break;
   }
   if(!gear)gear=rollEquipmentCandidate();
-  gear.it.tier=rollTier();tierNormalize(gear.it);return gear;
+  gear.it.tier=rollTier();
+  if(gear.it.tier>=3&&!masterworkWanted(gear.it)){
+    var again=rollEquipmentCandidate();again.it.unid=gear.it.unid;if(gear.it.cursed)curseGear(again);again.it.tier=3;gear=again;
+  }
+  tierNormalize(gear.it);return gear;
 }
 function spendAmulet(item){
   amuletSync(item);item.charges=Math.max(0,item.charges-1);amuletSync(item);
