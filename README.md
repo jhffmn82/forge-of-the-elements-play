@@ -20,7 +20,7 @@ checks preserve game state; overall physical-phone speed
 still needs device testing.
 
 Block mode now uses traditional roguelike symbols with clearer objects, creatures,
-hazards and remembered terrain. Options includes a symbol guide. Holding to inspect
+hazards and remembered terrain. Holding to inspect
 on touch screens no longer issues an accidental command on release. The HUD face
 becomes a race-colored `@`, with elemental court colors for Fae; switching to
 Sprites restores animated portraits. Cold Blocks startup skips unused scene and
@@ -91,7 +91,17 @@ Save/update/offline and focused gameplay/rendering checks passed. Physical-phone
 frame rate still requires device testing. Low-power and offline-delta work remain
 outside this build.
 
-Source integration: `b00ef01dfbfa3db53fc4c7c15584a64d8bc69f86`.
+The window update reorganizes Character, Inventory, Faith, Options, creation,
+Journal and the Forge into compact layouts with named abilities and inspection
+cards. Drawn tabs, close controls and segmented frames fit desktop, tablet and
+phone views. Equipment passives remain visible on Character; learned spells
+stay on the hotbar through repeated Forge visits. Keyboard creation inspection,
+small-phone Forge labels and hidden-actor beacon visibility are corrected.
+Music Off avoids loading a new score, and touch devices retain fewer decoded
+music tracks. The Options map legend and HUD color/transparency controls were
+removed under the creator's approved redesign.
+
+Source integration: `9ecff39`.
 
 Keyboard: WASD or arrows to move, QEZC diagonals, 1-8 hotbar, Tab character sheet,
 `i` equipment, `>` stairs. Mouse and phone touch controls remain available.
@@ -105,4 +115,4 @@ the repeatable export and an itch.io ZIP. Automated browser tests cover gameplay
 save compatibility, UI, dimensional compositing, recovery and nested-path play.
 Physical-phone GPU and memory performance still require device testing.
 
-Build: **2026-10-15T06:42:57.860Z**. Revision: `foundation17-20261015064257860`.
+Build: **2026-10-15T14:37:12.787Z**. Revision: `foundation17-20261015143712787`.

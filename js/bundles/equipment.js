@@ -227,8 +227,7 @@ function fuseMote(el){
   log('The mote takes root in you. <b>'+cap(el)+' '+player.aff[el]+'</b>: '+t1Text(el, player.aff[el])+'.','c-kill');
   sfx('forge-fuse'); sparkleFx(player.x,player.y,TRAIL_EL(el),50);
   if(typeof infuseFx==='function') infuseFx(el); else ringFx(player.x,player.y,AFF_COL[el],3);   /* 2026-10-12: the power-up plays on the map once the forge's panel closes (fx.js) */
-  player.abilities.forEach(function(k){ if(before.indexOf(k)<0){ log('Learned <b>'+ABILITIES[k].name+'</b>.','c-kill'); sfx('new-ability'); } });
-  player.hotbar=null; updateUI(); renderForge();
+  player.hotbar=null; updateUI(); announceLearned(before); renderForge();
   forgeSay('The <b>'+cap(el)+'</b> mote takes root in you: affinity <b>'+player.aff[el]+'</b>.');return true;
 }
 

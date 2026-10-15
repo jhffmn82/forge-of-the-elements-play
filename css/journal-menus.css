@@ -102,6 +102,4 @@ body.fote-journal #mFaith .action-facts dt{color:var(--journal-menu-label);}
  body.fote-journal :is(#app #shade #mHelp,#titleSettings) .binds button{min-width:40px;padding-inline:4px;}
  body.fote-journal :is(#app #shade #mHelp,#titleSettings) .binds>span{font-size:var(--text-14);}
 }
-@media(max-width:400px){
- body.fote-journal #create .wrap{padding-inline:12px;}
-}
+@container create-screen (max-width:400px){body.fote-journal #create .wrap{padding-inline:12px;}}

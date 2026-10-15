@@ -530,7 +530,7 @@ body.fote-study #app #shade:has(.tgear){padding:0 12px!important;}
 body.fote-study #app #shade:has(.gearwrap){padding:0 12px!important;}
 /* Sheets overlay the existing board; opening a tab never reparents the hotbar. */
 body.fote-study #app #map #shade{position:fixed!important;inset:auto!important;left:var(--sheet-x)!important;top:var(--sheet-y)!important;width:var(--sheet-w)!important;height:var(--sheet-h)!important;padding:0!important;box-sizing:border-box;z-index:65!important;}
-body.fote-study #app #map #shade:has(.tgear),body.fote-study #app #map #shade:has(.gearwrap){padding:0 8px!important;}
+body.fote-study #app #map #shade:has(.tgear),body.fote-study #app #map #shade:has(.gearwrap){padding:0!important;}
 body.fote-study #app #shade .sheet{width:100%!important;height:100%!important;max-height:100%!important;border-radius:6px;box-shadow:0 5px 16px #0007;}
 body.fote-study #app #shade .sheet header{padding:7px 10px;flex:0 0 auto;}
 body.fote-study #app #shade .sheet header h2{font-size:var(--text-20);}

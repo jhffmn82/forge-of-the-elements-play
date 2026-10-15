@@ -130,7 +130,7 @@ html body[data-ui-theme] :is(#title .menu button,#create #cBack,#create #rollCha
  content:""!important;display:block!important;position:absolute!important;inset:0!important;z-index:-1!important;pointer-events:none;
  border:16px solid transparent!important;border-radius:0!important;
  background:none!important;box-shadow:none!important;filter:none!important;}
-html body[data-ui-theme] :is(#create .creation-appearance .card.on,#create .creation-tutorial:has(#cTutorial:checked))::before{border-image-source:url(../art/ui/button-raised-subdued-clean-v1.png)!important;filter:brightness(1.35)!important;}
+html body[data-ui-theme] :is(#create .creation-appearance .card.on,#create .creation-tutorial:has(#cTutorial:checked))::before{border-image-source:url(../art/ui/button-raised-subdued-clean-v2.png)!important;filter:brightness(1.35)!important;}
 /* Masculine and Feminine are a small choice under the race names, not a second row of names. */
 html body[data-ui-theme] #create .creation-appearance .card{min-height:44px!important;padding:3px 14px 6px!important;}
 html body[data-ui-theme] #create .creation-appearance .card::before{inset:4px 0!important;}
@@ -151,14 +151,15 @@ html body[data-ui-theme] #create .creation-steps button:is(:hover,:focus-visible
 html body[data-ui-theme] #create .creation-steps .creation-step-now::before{filter:brightness(1.25)!important;}
 /* The Forge window wears the six-gem steel frame. */
 html body[data-ui-theme] #modal .forge-modal::before{border-image-slice:170 fill!important;border-width:34px!important;border-image-width:34px!important;filter:none!important;}
-@media(max-width:700px){
- html body[data-ui-theme] #create .wrap .creation-steps :is(button,.creation-step-now){padding:3px 14px 6px 22px!important;margin-left:-12px;min-height:40px!important;}
- html body[data-ui-theme] #create .wrap .creation-steps{justify-content:safe center!important;max-width:100%;}
- html body[data-ui-theme] #create .wrap .creation-steps>:first-child{margin-left:0;padding-left:14px!important;}
- html body[data-ui-theme] #create .wrap .creation-steps :is(button,.creation-step-now)::before{border-width:8px 18px!important;border-image-width:8px 18px!important;}
-}
-@media(max-width:400px){html body[data-ui-theme] #create .wrap .creation-steps :is(button,.creation-step-now){padding:3px 10px 6px 18px!important;margin-left:-11px;}html body[data-ui-theme] #create .wrap .creation-steps>:first-child{padding-left:10px!important;}html body[data-ui-theme] #create#create#create .wrap .creation-steps :is(.creation-step-value,.creation-step-now){font-size:var(--fs-body)!important;}}
-@media(max-width:900px){html body[data-ui-theme] #create .wrap .creation-steps button>span{position:absolute;left:16px;top:16px;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;font-size:1px!important;}html body[data-ui-theme] #create .wrap .creation-steps{justify-content:safe center!important;max-width:100%;}}
+@container create-screen (max-width:700px){html body[data-ui-theme] #create .wrap .creation-steps :is(button,.creation-step-now){padding:3px 14px 6px 22px!important;margin-left:-12px;min-height:40px!important;}
+html body[data-ui-theme] #create .wrap .creation-steps{justify-content:safe center!important;max-width:100%;}
+html body[data-ui-theme] #create .wrap .creation-steps>:first-child{margin-left:0;padding-left:14px!important;}
+html body[data-ui-theme] #create .wrap .creation-steps :is(button,.creation-step-now)::before{border-width:8px 18px!important;border-image-width:8px 18px!important;}}
+@container create-screen (max-width:400px){html body[data-ui-theme] #create .wrap .creation-steps :is(button,.creation-step-now){padding:3px 10px 6px 18px!important;margin-left:-11px;}
+html body[data-ui-theme] #create .wrap .creation-steps>:first-child{padding-left:10px!important;}
+html body[data-ui-theme] #create#create#create .wrap .creation-steps :is(.creation-step-value,.creation-step-now){font-size:var(--fs-body)!important;}}
+@container create-screen (max-width:900px){html body[data-ui-theme] #create .wrap .creation-steps button>span{position:absolute;left:16px;top:16px;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;font-size:1px!important;}
+html body[data-ui-theme] #create .wrap .creation-steps{justify-content:safe center!important;max-width:100%;}}
 html body[data-ui-theme] #create#create .creation-steps::before{display:none!important;}
 /* The end screen (victory and death) joins the house style: steel slate
    window, Spectral body, blackletter title and score, no boxes, rounded
@@ -175,7 +176,7 @@ html body[data-ui-theme] #over.end-screen .end-stats span{border:0!important;bac
 html body[data-ui-theme] #over.end-screen .end-stats b{font-family:var(--display)!important;font-size:var(--fs-word);color:var(--house-ink);}
 html body[data-ui-theme] #over.end-screen .end-actions button,html body[data-ui-theme] #over.end-screen #bAgain{position:relative;isolation:isolate;min-height:44px;padding:5px 18px 9px!important;border:0!important;border-radius:0!important;background:none!important;box-shadow:none!important;font:700 var(--fs-word)/1.15 var(--display)!important;color:var(--house-ink)!important;}
 html body[data-ui-theme] #over.end-screen .end-actions button::before,html body[data-ui-theme] #over.end-screen #bAgain::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;border:16px solid transparent;}
-html body[data-ui-theme] #over.end-screen .end-actions button:is(:hover,:focus-visible)::before{border-image-source:url(../art/ui/button-raised-subdued-clean-v1.png);}
+html body[data-ui-theme] #over.end-screen .end-actions button:is(:hover,:focus-visible)::before{border-image-source:url(../art/ui/button-raised-subdued-clean-v2.png);}
 html body[data-ui-theme] #over.end-screen .end-actions button:is(:hover,:focus-visible){color:var(--house-accent)!important;outline:none!important;}
 html body[data-ui-theme] #over.end-screen :is(.end-achievements b,.end-achievements strong,a){color:var(--house-accent);}
 /* The Forge window: drawn at its own proportions so the side gems and anvil never stretch. */
@@ -191,7 +192,7 @@ html body[data-ui-theme] #modal#modal .forge-modal>header{display:flex!important
 html body[data-ui-theme] #modal#modal .forge-modal #mTitle{flex:1 1 auto!important;min-width:0!important;justify-content:flex-start!important;text-align:left!important;white-space:normal!important;}
 html body[data-ui-theme] #modal#modal .forge-modal #mX{position:relative!important;top:auto!important;right:auto!important;flex:none!important;}
 html body[data-ui-theme] #modal#modal .mbox.forge-modal>header{margin:12px 0 4px!important;width:auto!important;}html body[data-ui-theme] #modal#modal .mbox.forge-modal>*{margin-left:0!important;margin-right:0!important;}html body[data-ui-theme] #modal#modal .mbox.forge-modal{padding-left:11%!important;padding-right:11%!important;}
-@media(max-width:700px) and (orientation:portrait){html body[data-ui-theme] #modal#modal .mbox.forge-modal{padding-top:58px!important;padding-bottom:56px!important;}html body[data-ui-theme] #modal#modal .forge-modal #mX{font-size:calc(var(--menu-word) * .85)!important;padding:3px 10px 7px!important;}html body[data-ui-theme] #modal#modal .forge-modal #mX::after{content:none!important;}}
+@media(max-width:700px) and (orientation:portrait){html body[data-ui-theme] #modal#modal .mbox.forge-modal{padding-top:max(58px,calc((100dvh - 24px) * .11 - 8px))!important;padding-bottom:max(56px,calc((100dvh - 24px) * .095))!important;}html body[data-ui-theme] #modal#modal .forge-modal #mX{font-size:calc(var(--menu-word) * .85)!important;padding:3px 10px 7px!important;}html body[data-ui-theme] #modal#modal .forge-modal #mX::after{content:none!important;}}
 @media(max-height:700px){html body[data-ui-theme] #modal#modal .mbox.forge-modal{padding-top:40px!important;padding-bottom:38px!important;}html body[data-ui-theme] #modal#modal .mbox.forge-modal>header{margin:4px 0 2px!important;}html body[data-ui-theme] #modal#modal .forge-modal #mTitle{font-size:var(--menu-word)!important;}}@media(max-height:500px) and (orientation:landscape){html body[data-ui-theme] #modal#modal .mbox.forge-modal{padding:42px 11% 26px!important;}}html body[data-ui-theme] #modal#modal .forge-modal #mX{width:auto!important;max-width:none!important;white-space:nowrap!important;}
 /* No blue (10-14): buttons and choices are grey at rest; the selected or
    hovered one is bright silver with a faint silver glow. */
@@ -211,7 +212,7 @@ html body[data-ui-theme] :is(#create #cBack,#create #rollCharacter,#create #begi
 html body[data-ui-theme] :is(#create #begin,#create#mFoot .primary){color:#ffffff!important;}
 /* Chevrons keep a minimum width; the live one (the confirm) is brighter. */
 html body[data-ui-theme] #create .wrap .creation-steps :is(button,.creation-step-now){min-width:110px;justify-content:center;}
-@media(max-width:700px){html body[data-ui-theme] #create .wrap .creation-steps :is(button,.creation-step-now){min-width:76px;}}
+@container create-screen (max-width:700px){html body[data-ui-theme] #create .wrap .creation-steps :is(button,.creation-step-now){min-width:76px;}}
 html body[data-ui-theme] #create#create .creation-steps #cConfirm{cursor:pointer;color:#ffffff!important;background:none!important;border:0!important;box-shadow:none!important;min-height:46px!important;font:inherit;}
 html body[data-ui-theme] #create#create .creation-steps #cConfirm .creation-step-value{color:#ffffff!important;text-shadow:0 0 8px #ffffff55!important;}
 html body[data-ui-theme] #create#create .creation-steps #cConfirm::before{filter:brightness(1.45)!important;}
@@ -235,14 +236,14 @@ html body[data-ui-theme] #title#title#title .menu button::before{border-width:28
 }
 @media(max-height:500px){html body[data-ui-theme] #title#title#title .menu{gap:2px!important;}html body[data-ui-theme] #title#title#title .menu button{min-height:40px!important;padding:3px 18px 7px!important;}html body[data-ui-theme] #title#title#title .menu #tNew{min-height:42px!important;}html body[data-ui-theme] #title#title#title .menu button::before{border-width:16px!important;border-image-width:16px!important;}}
 html body[data-ui-theme] #create#create .creation-steps button[aria-current=step]::before{filter:brightness(1.45)!important;}html body[data-ui-theme] #create#create .creation-steps button[aria-current=step] .creation-step-value{color:#fff!important;}
-@media(max-width:700px){html body[data-ui-theme] #create#create .creation-steps #cConfirm{min-height:40px!important;}}
-@media(max-width:400px){html body[data-ui-theme] #create .wrap .creation-steps :is(button,.creation-step-now){min-width:0!important;}}
+@container create-screen (max-width:700px){html body[data-ui-theme] #create#create .creation-steps #cConfirm{min-height:40px!important;}}
+@container create-screen (max-width:400px){html body[data-ui-theme] #create .wrap .creation-steps :is(button,.creation-step-now){min-width:0!important;}}
 /* Two button ranks from his art (10-14): the edged forged plate for prominent
    actions, the subdued angled plate for everything else. Both are 9-sliced so
    the corners never stretch. */
-html body[data-ui-theme] :is(#title#title#title .menu button,#create #cBack,#create #rollCharacter,#create #begin,#over.end-screen .end-actions button:first-child)::before{border-image:url(../art/ui/button-raised-prominent-clean-v1.png) 130 150 130 150 fill / 12px 16px 12px 16px / 0 stretch!important;border-width:12px 16px!important;border-style:solid!important;border-color:transparent!important;filter:none!important;background:none!important;}
+html body[data-ui-theme] :is(#title#title#title .menu button,#create #cBack,#create #rollCharacter,#create #begin,#over.end-screen .end-actions button:first-child)::before{border-image:url(../art/ui/button-raised-prominent-clean-v2.png) 130 150 130 150 fill / 12px 16px 12px 16px / 0 stretch!important;border-width:12px 16px!important;border-style:solid!important;border-color:transparent!important;filter:none!important;background:none!important;}
 html body[data-ui-theme] :is(#title#title#title .menu button,#create #cBack,#create #rollCharacter,#create #begin,#over.end-screen .end-actions button:first-child):is(:hover,:focus,:focus-visible)::before{filter:brightness(1.3)!important;}
-html body[data-ui-theme] :is(#mX,#app #shade .sheet #close,#mFoot button,#title .panel .panelfoot button,#mSave button,#mSave .slots button,#title .panel .slots button,#over.end-screen .end-actions button:not(:first-child),#create .creation-appearance .card,#create .creation-tutorial)::before{border-image:url(../art/ui/button-raised-subdued-clean-v1.png) 100 110 100 110 fill / 10px 12px 10px 12px / 0 stretch!important;border-width:10px 12px!important;border-style:solid!important;border-color:transparent!important;filter:none!important;background:none!important;}
+html body[data-ui-theme] :is(#mX,#app #shade .sheet #close,#mFoot button,#title .panel .panelfoot button,#mSave button,#mSave .slots button,#title .panel .slots button,#over.end-screen .end-actions button:not(:first-child),#create .creation-appearance .card,#create .creation-tutorial)::before{border-image:url(../art/ui/button-raised-subdued-clean-v2.png) 100 110 100 110 fill / 10px 12px 10px 12px / 0 stretch!important;border-width:10px 12px!important;border-style:solid!important;border-color:transparent!important;filter:none!important;background:none!important;}
 html body[data-ui-theme] :is(#mX,#app #shade .sheet #close,#mFoot button,#title .panel .panelfoot button,#mSave button,#title .panel .slots button,#over.end-screen .end-actions button,#create .creation-appearance .card,#create .creation-tutorial):is(:hover,:focus-visible,.on)::before{filter:brightness(1.35)!important;}
 html body[data-ui-theme] #create .creation-tutorial:has(#cTutorial:checked)::before{filter:brightness(1.35)!important;}
 /* Lettering is centred on the box; the plates' faces are centred too. */
@@ -269,8 +270,8 @@ html body[data-ui-theme] :is(#title#title#title .menu button,#create #cBack,#cre
 html body[data-ui-theme] :is(#title#title#title .menu button:is(:hover,:focus,#tNew),#create :is(#cBack,#rollCharacter,.creation-tutorial):is(:hover,:focus-visible),#create .creation-tutorial:has(#cTutorial:checked),#create .creation-appearance .card.on b,#create .cards .card:is(.on,:hover,:focus-visible) .choice-name,#create .creation-steps button:is(:hover,:focus-visible,[aria-current=step]) .creation-step-value,#create#create .creation-steps #cConfirm .creation-step-value,#create #begin,#mX:hover,#app #shade .sheet #close:hover,#mFoot :is(.primary,button:hover),#title .panel .panelfoot button:hover,#mSave button:hover,#over.end-screen .end-actions button:is(:hover,:focus-visible)){color:#ffffff!important;}
 html body[data-ui-theme] #app#app #shade .sheet{padding:max(48px,5.5%) max(72px,8.5%) max(40px,4.5%)!important;}
 html body[data-ui-theme] #create#create .creation-record{padding:max(56px,8%) 15% max(44px,6%)!important;}
-@media(max-width:700px){html body[data-ui-theme] #app#app #shade .sheet{padding:46px 40px 38px!important;}html body[data-ui-theme] #create#create .creation-record{padding:44px 40px 38px!important;}}
-html body[data-ui-theme] #app#app#app #shade .sheet{padding-top:max(60px,6.5%)!important;padding-bottom:max(54px,5.5%)!important;}html body[data-ui-theme] #create#create#create .creation-record{padding-top:max(70px,11%)!important;}@media(max-width:700px){html body[data-ui-theme] #create#create#create .creation-record{padding-top:48px!important;}html body[data-ui-theme] #app#app#app #shade .sheet{padding-top:50px!important;}}
+@media(max-width:700px){html body[data-ui-theme] #app#app #shade .sheet{padding:46px 40px 38px!important;}}@container create-screen (max-width:700px){html body[data-ui-theme] #create#create .creation-record{padding:44px 40px 38px!important;}}
+html body[data-ui-theme] #app#app#app #shade .sheet{padding-top:max(60px,6.5%)!important;padding-bottom:max(54px,5.5%)!important;}html body[data-ui-theme] #create#create#create .creation-record{padding-top:max(70px,11%)!important;}@media(max-width:700px){html body[data-ui-theme] #app#app#app #shade .sheet{padding-top:50px!important;}}@container create-screen (max-width:700px){html body[data-ui-theme] #create#create#create .creation-record{padding-top:48px!important;}}
 /* Title menu: New Game across the top, the other four in two rows of two. */
 html body[data-ui-theme] #title#title#title .menu{display:grid!important;grid-template-columns:1fr 1fr!important;width:clamp(320px,34vw,440px)!important;}
 html body[data-ui-theme] #title#title#title .menu #tNew,html body[data-ui-theme] #title#title#title .menu #tContinue{grid-column:1/-1;}
@@ -278,7 +279,7 @@ html body[data-ui-theme] #title#title#title .menu button:not(#tNew):not(#tContin
 /* The hero's statistics lead the panel. */
 html body[data-ui-theme] #create#create .wrap .hero-who{order:-1!important;margin:0 0 10px!important;padding-top:0!important;}
 /* On wide screens the choice strip sits level with the top of the panel. */
-@media(min-width:701px) and (min-height:561px){html body[data-ui-theme] #create#create .creation-steps{grid-row:3!important;align-self:start!important;z-index:3;position:relative;}}
+@container create-screen ((min-width:701px) and (min-height:561px)){html body[data-ui-theme] #create#create .creation-steps{grid-row:3!important;align-self:start!important;z-index:3;position:relative;}}
 /* Lighter windows (Load, Settings, About, popups, the character sheet) use his
    plain forged window, 9-sliced so its corner caps never stretch. The six-gem
    window stays on character creation, the Forge and the end screen. */
@@ -292,11 +293,11 @@ html body[data-ui-theme] :is(#create .creation-record-body,#modal .mbody,#app #s
 html body[data-ui-theme] :is(#create .creation-record-body,#modal .mbody,#app #shade .bodyw,#title .panel,#over.end-screen .box)::-webkit-scrollbar-thumb{background:#6f757d!important;border:0!important;border-radius:3px!important;min-height:40px;}
 html body[data-ui-theme] :is(#create .creation-record-body,#modal .mbody,#app #shade .bodyw,#title .panel,#over.end-screen .box)::-webkit-scrollbar-button{display:none!important;height:0!important;}
 html body[data-ui-theme] #create#create .creation-record-body{padding-right:6px!important;}
-@media(max-width:700px){html body[data-ui-theme] #create#create#create .creation-record{padding-left:48px!important;padding-right:42px!important;}}
+@container create-screen (max-width:700px){html body[data-ui-theme] #create#create#create .creation-record{padding-left:max(48px,12%)!important;padding-right:max(42px,12%)!important;}}
 /* Raised steel plates are lighter, so lettering carries a dark edge to stay crisp. */
 html body[data-ui-theme] :is(#title .menu button,#create #cBack,#create #rollCharacter,#create #begin,#mX,#app #shade .sheet #close,#mFoot button,#title .panel .panelfoot button,#mSave button,#over.end-screen .end-actions button,#create .creation-appearance .card b,#create .creation-tutorial){text-shadow:0 1px 0 #000,0 -1px 0 #0008,1px 0 0 #0008,-1px 0 0 #0008,0 2px 3px #000!important;}
 /* Title menu on the raised plates too; light plates need near-white lettering. */
-html body[data-ui-theme] #title#title#title#title .menu button::before{border:12px 16px solid transparent!important;border-width:12px 16px!important;border-image:url(../art/ui/button-raised-prominent-clean-v1.png) 130 150 130 150 fill / 12px 16px 12px 16px / 0 stretch!important;filter:brightness(.85)!important;}
+html body[data-ui-theme] #title#title#title#title .menu button::before{border:12px 16px solid transparent!important;border-width:12px 16px!important;border-image:url(../art/ui/button-raised-prominent-clean-v2.png) 130 150 130 150 fill / 12px 16px 12px 16px / 0 stretch!important;filter:brightness(.85)!important;}
 html body[data-ui-theme] #title#title#title#title .menu button:is(:hover,:focus)::before{filter:brightness(1.15)!important;}
 html body[data-ui-theme] :is(#title#title#title#title .menu button,#create#create :is(#cBack,#rollCharacter,.creation-tutorial,.creation-appearance .card b),#mX,#app #shade .sheet #close,#mFoot button,#title .panel .panelfoot button,#mSave button,#over.end-screen .end-actions button){color:#d9dde2!important;}
 html body[data-ui-theme] :is(#title#title#title#title .menu button:is(:hover,:focus,#tNew),#create#create :is(#cBack,#rollCharacter,.creation-tutorial):is(:hover,:focus-visible),#create#create .creation-appearance .card.on b,#create#create .creation-tutorial:has(#cTutorial:checked),#create #begin,#mFoot .primary){color:#ffffff!important;}
@@ -369,12 +370,14 @@ html body[data-ui-theme] #create#create#create .creation-steps :is(button,.creat
 html body[data-ui-theme] #create#create#create .creation-steps :is(button,.creation-step-now){margin-left:-16px;padding-left:30px!important;padding-right:28px!important;}
 html body[data-ui-theme] #create#create#create .creation-steps>:first-child{margin-left:0;padding-left:20px!important;}
 /* Show tutorial is a prominent button like the other three corners. */
-html body[data-ui-theme] #create#create#create .creation-tutorial::before{border-image:url(../art/ui/button-raised-prominent-clean-v1.png) 130 150 130 150 fill / 12px 16px 12px 16px / 0 stretch!important;border-width:12px 16px!important;}
-@media(max-width:700px){html body[data-ui-theme] #create#create#create .creation-steps :is(button,.creation-step-now){margin-left:-13px;padding-left:22px!important;padding-right:18px!important;}html body[data-ui-theme] #create#create#create .creation-steps :is(button,.creation-step-now)::before{border-width:7px 17px!important;border-image-width:7px 17px!important;}html body[data-ui-theme] #create#create#create .creation-steps>:first-child{padding-left:14px!important;margin-left:0;}}
-html body[data-ui-theme] #create#create .creation-record.more-details::after{bottom:max(38px,5.5%)!important;left:15%!important;right:15%!important;font-size:var(--fs-small)!important;color:var(--house-dim)!important;}@media(max-width:700px){html body[data-ui-theme] #create#create .creation-record.more-details::after{bottom:34px!important;left:44px!important;right:44px!important;}}
+html body[data-ui-theme] #create#create#create .creation-tutorial::before{border-image:url(../art/ui/button-raised-prominent-clean-v2.png) 130 150 130 150 fill / 12px 16px 12px 16px / 0 stretch!important;border-width:12px 16px!important;}
+@container create-screen (max-width:700px){html body[data-ui-theme] #create#create#create .creation-steps :is(button,.creation-step-now){margin-left:-13px;padding-left:22px!important;padding-right:18px!important;}
+html body[data-ui-theme] #create#create#create .creation-steps :is(button,.creation-step-now)::before{border-width:7px 17px!important;border-image-width:7px 17px!important;}
+html body[data-ui-theme] #create#create#create .creation-steps>:first-child{padding-left:14px!important;margin-left:0;}}
+html body[data-ui-theme] #create#create .creation-record.more-details::after{bottom:max(38px,5.5%)!important;left:15%!important;right:15%!important;font-size:var(--fs-small)!important;color:var(--house-dim)!important;}@container create-screen (max-width:700px){html body[data-ui-theme] #create#create .creation-record.more-details::after{bottom:34px!important;left:44px!important;right:44px!important;}}
 html body[data-ui-theme] #create#create .creation-record .creation-record-body{margin-bottom:24px!important;}html body[data-ui-theme] #create#create .creation-record.more-details::after{background:linear-gradient(transparent,#2a2d31 40%);padding-top:6px;}
-html body[data-ui-theme][data-ui-theme] #create .wrap .creation-steps :is(.creation-step-value,.creation-step-now){font-size:var(--fs-word)!important;}@media(max-width:400px){html body[data-ui-theme][data-ui-theme] #create .wrap .creation-steps :is(.creation-step-value,.creation-step-now){font-size:var(--fs-body)!important;}}
-html body[data-ui-theme][data-ui-theme] #create .creation-nav :is(#begin,.creation-tutorial){min-height:48px!important;height:48px!important;box-sizing:border-box!important;padding-top:0!important;padding-bottom:3px!important;}@media(max-height:720px),(max-width:700px){html body[data-ui-theme][data-ui-theme] #create .creation-nav :is(#begin,.creation-tutorial){min-height:44px!important;height:44px!important;}}
+html body[data-ui-theme][data-ui-theme] #create .wrap .creation-steps :is(.creation-step-value,.creation-step-now){font-size:var(--fs-word)!important;}@container create-screen (max-width:400px){html body[data-ui-theme][data-ui-theme] #create .wrap .creation-steps :is(.creation-step-value,.creation-step-now){font-size:var(--fs-body)!important;}}
+html body[data-ui-theme][data-ui-theme] #create .creation-nav :is(#begin,.creation-tutorial){min-height:48px!important;height:48px!important;box-sizing:border-box!important;padding-top:0!important;padding-bottom:3px!important;}@container create-screen (max-height:720px) or (max-width:700px){html body[data-ui-theme][data-ui-theme] #create .creation-nav :is(#begin,.creation-tutorial){min-height:44px!important;height:44px!important;}}
 /* Close is a drawn X on a small square plate (10-14), everywhere. */
 html body[data-ui-theme][data-ui-theme] :is(#mX,#app #shade .sheet #close,#modal#modal .forge-modal #mX){font-size:0!important;width:44px!important;min-width:44px!important;height:44px!important;min-height:44px!important;padding:0!important;display:inline-grid!important;place-items:center!important;}
 html body[data-ui-theme][data-ui-theme] :is(#mX,#app #shade .sheet #close)::after{content:"×"!important;display:block!important;font:700 30px/1 var(--mono)!important;color:#e4e8ec!important;text-shadow:0 1px 0 #000,0 2px 3px #000!important;margin-top:-3px;}
@@ -382,14 +385,14 @@ html body[data-ui-theme][data-ui-theme] :is(#mX,#app #shade .sheet #close):is(:h
 /* Sheet tabs are buttons: subdued plates, word size; the open tab is white on a brighter plate. */
 html body[data-ui-theme][data-ui-theme] #app #shade .sheet #studySheetTabs{gap:6px!important;flex-wrap:wrap!important;}
 html body[data-ui-theme][data-ui-theme] #app #shade .sheet #studySheetTabs button{position:relative!important;isolation:isolate;min-height:40px!important;padding:2px 16px 5px!important;font:700 var(--fs-word)/1 var(--display)!important;color:#9aa1a9!important;display:inline-flex!important;align-items:center;justify-content:center;}
-html body[data-ui-theme][data-ui-theme] #app #shade .sheet #studySheetTabs button::before{content:""!important;display:block!important;position:absolute;inset:0;z-index:-1;pointer-events:none;border:10px 12px solid transparent;border-style:solid;border-color:transparent;border-width:10px 12px;border-image:url(../art/ui/button-raised-subdued-clean-v1.png) 100 110 100 110 fill / 10px 12px 10px 12px / 0 stretch;}
+html body[data-ui-theme][data-ui-theme] #app #shade .sheet #studySheetTabs button::before{content:""!important;display:block!important;position:absolute;inset:0;z-index:-1;pointer-events:none;border:10px 12px solid transparent;border-style:solid;border-color:transparent;border-width:10px 12px;border-image:url(../art/ui/button-raised-subdued-clean-v2.png) 100 110 100 110 fill / 10px 12px 10px 12px / 0 stretch;}
 html body[data-ui-theme][data-ui-theme] #app #shade .sheet #studySheetTabs button:is(.on,[aria-pressed=true],[aria-selected=true]){color:#fff!important;}
 html body[data-ui-theme][data-ui-theme] #app #shade .sheet #studySheetTabs button:is(.on,[aria-pressed=true],[aria-selected=true],:hover)::before{filter:brightness(1.4);}
 @media(max-width:700px){html body[data-ui-theme][data-ui-theme] #app #shade .sheet #studySheetTabs button{padding:2px 12px 5px!important;}}
 /* Tiny phones at large text: strip words drop to small. */
-@media(max-width:400px){html body[data-ui-theme][data-ui-theme][data-ui-theme] #create .wrap .creation-steps :is(.creation-step-value,.creation-step-now){font-size:var(--fs-small)!important;}}
+@container create-screen (max-width:400px){html body[data-ui-theme][data-ui-theme][data-ui-theme] #create .wrap .creation-steps :is(.creation-step-value,.creation-step-now){font-size:var(--fs-small)!important;}}
 /* Wide screens give the details panel more room. */
-@media(min-width:1000px) and (min-height:561px){html body[data-ui-theme] #create#create .wrap{grid-template-columns:minmax(0,1fr) minmax(380px,46%)!important;}}
+@container create-screen ((min-width:1000px) and (min-height:561px)){html body[data-ui-theme] #create#create .wrap{grid-template-columns:minmax(0,1fr) minmax(380px,46%)!important;}}
 html body[data-ui-theme][data-ui-theme][data-ui-theme] #app #shade .sheet #studySheetTabs button::before{position:absolute!important;inset:0!important;width:auto!important;height:auto!important;margin:0!important;transform:none!important;background:none!important;border-radius:0!important;}
 html body[data-ui-theme][data-ui-theme][data-ui-theme] :is(#mX,#app #shade .sheet #close)::after{margin:0 0 3px 0!important;line-height:1!important;font-size:28px!important;}
 /* The in-game menu wears the plain window like the other light windows, with word-size items. */
@@ -410,17 +413,20 @@ html body[data-ui-theme] #over#over.end-screen .box{display:flex!important;flex-
 html body[data-ui-theme] #over#over.end-screen #overP{flex:1 1 auto;min-height:0;overflow-y:auto;scrollbar-width:thin;scrollbar-color:#6f757d transparent;}
 html body[data-ui-theme] #over#over.end-screen :is(#overT,.end-actions){flex:none;}
 html body[data-ui-theme] #over#over.end-screen .end-actions{position:static!important;margin:16px 0 0!important;padding:0!important;background:none!important;border:0!important;}
-@media(max-width:700px){html body[data-ui-theme] #over#over.end-screen .box{padding:84px 40px 64px!important;}}
+@media(max-width:700px){html body[data-ui-theme] #over#over.end-screen .box{padding:84px max(40px,12%) 64px!important;}}
 @media(max-height:560px) and (orientation:landscape){html body[data-ui-theme] #over#over.end-screen .box{padding:52px 64px 36px!important;}}
 /* Title windows (Load, Settings, About): the frame is the panel's own border, so it never scrolls away and text stops at the rail. */
 html body[data-ui-theme] #title#title#title .panel{border:34px solid transparent!important;border-image:url(../art/ui/window-plain-v1.png) 150 fill / 34px / 0 stretch!important;padding:0 4px 0 0!important;}
 html body[data-ui-theme] #title#title#title .panel::before{display:none!important;}
 @media(max-width:700px){html body[data-ui-theme] #title#title#title .panel{padding:10px 2px 2px!important;}}
 /* The choice strip fits beside the details panel at tablet and small desktop widths. */
-@media(min-width:701px) and (max-width:1100px){html body[data-ui-theme] #create#create#create .wrap .creation-steps:has(>:nth-child(3)) :is(button,.creation-step-now){min-width:0!important;padding-left:24px!important;padding-right:20px!important;}html body[data-ui-theme] #create#create#create .wrap .creation-steps:has(>:nth-child(3))>:first-child{padding-left:16px!important;}}
-@media(min-width:701px) and (max-width:900px){html body[data-ui-theme] #create#create#create .wrap .creation-steps:has(>:nth-child(4)){gap:0 16px!important;}html body[data-ui-theme][data-ui-theme][data-ui-theme] #create#create .wrap .creation-steps:has(>:nth-child(4)) :is(.creation-step-value,.creation-step-now){font-size:var(--fs-body)!important;}}
+@container create-screen ((min-width:701px) and (max-width:1100px)){html body[data-ui-theme] #create#create#create .wrap .creation-steps:has(>:nth-child(3)) :is(button,.creation-step-now){min-width:0!important;padding-left:24px!important;padding-right:20px!important;}
+html body[data-ui-theme] #create#create#create .wrap .creation-steps:has(>:nth-child(3))>:first-child{padding-left:16px!important;}}
+@container create-screen ((min-width:701px) and (max-width:900px)){html body[data-ui-theme] #create#create#create .wrap .creation-steps:has(>:nth-child(4)){gap:0 16px!important;}
+html body[data-ui-theme][data-ui-theme][data-ui-theme] #create#create .wrap .creation-steps:has(>:nth-child(4)) :is(.creation-step-value,.creation-step-now){font-size:var(--fs-body)!important;}}
 /* Phone landscape creation: the details panel gives its frame less padding, so a tap shows what it did. */
-@media(max-height:500px) and (orientation:landscape){html body[data-ui-theme] #create#create#create .creation-record{padding-top:34px!important;padding-bottom:26px!important;padding-left:12%!important;padding-right:12%!important;}html body[data-ui-theme] #create#create .creation-record.more-details::after{bottom:24px!important;}}
+@container create-screen ((max-height:500px) and (orientation:landscape)){html body[data-ui-theme] #create#create#create .creation-record{padding-top:34px!important;padding-bottom:26px!important;padding-left:12%!important;padding-right:12%!important;}
+html body[data-ui-theme] #create#create .creation-record.more-details::after{bottom:24px!important;}}
 /* Inventory: slot labels sit under the slot, at the small size. */
 /* Bag boundaries stay visible on the steel window; inline rarity colours and hover states still own their colour. */
 html body[data-ui-theme] #app #shade #mEquip :is(.invgrid,.tg-cells) .cell{--edge:var(--ui-dim);border-style:dotted;}
@@ -464,7 +470,7 @@ html body.study-log-history[data-ui-theme] #app#app #log>*{font:inherit!importan
 html body.study-log-history[data-ui-theme] #app#app #studyLogClose{border-radius:0!important;}
 /* Real actions inside windows sit on the subdued plate (Justin's rule: buttons are his drawn plates); toggles and keys stay words. */
 html body[data-ui-theme] :is(#app #shade #mHelp #resetUITheme,#app #shade #mHelp #bindReset,#app #shade #mHelp #howToPlay,#titleSettings #resetUITheme,#titleSettings #bindReset,#titleSettings #howToPlay,#app #shade #mHelp :is(#oJournal,#oExport,#oImport,#oTitle,#oExit,button[data-save]),#modal #forgeBody :is(button[data-fuse],button[data-up],button[data-craft],button[data-recycle],button[data-recycle-all]),#modal #mBody .run-report-button,#app #shade #mFaith button.prayer,body.study-log-history #app #studyLogClose,#app .tutorial-inline>button,#modal .tutorial-inline>button){position:relative;isolation:isolate;display:inline-flex!important;align-items:center!important;justify-content:center!important;min-height:44px!important;padding:0 16px 3px!important;border:0!important;background:none!important;box-shadow:none!important;font:700 var(--fs-word)/1 var(--display)!important;color:#d9dde2!important;text-shadow:0 1px 0 #000,0 -1px 0 #0008,1px 0 0 #0008,-1px 0 0 #0008,0 2px 3px #000!important;}
-html body[data-ui-theme] :is(#app #shade #mHelp #resetUITheme,#app #shade #mHelp #bindReset,#app #shade #mHelp #howToPlay,#titleSettings #resetUITheme,#titleSettings #bindReset,#titleSettings #howToPlay,#app #shade #mHelp :is(#oJournal,#oExport,#oImport,#oTitle,#oExit,button[data-save]),#modal #forgeBody :is(button[data-fuse],button[data-up],button[data-craft],button[data-recycle],button[data-recycle-all]),#modal #mBody .run-report-button,#app #shade #mFaith button.prayer,body.study-log-history #app #studyLogClose,#app .tutorial-inline>button,#modal .tutorial-inline>button)::before{content:""!important;display:block!important;position:absolute!important;inset:0!important;z-index:-1!important;pointer-events:none;border-style:solid!important;border-color:transparent!important;border-width:10px 12px!important;border-image:url(../art/ui/button-raised-subdued-clean-v1.png) 100 110 100 110 fill / 10px 12px 10px 12px / 0 stretch!important;filter:none!important;background:none!important;}
+html body[data-ui-theme] :is(#app #shade #mHelp #resetUITheme,#app #shade #mHelp #bindReset,#app #shade #mHelp #howToPlay,#titleSettings #resetUITheme,#titleSettings #bindReset,#titleSettings #howToPlay,#app #shade #mHelp :is(#oJournal,#oExport,#oImport,#oTitle,#oExit,button[data-save]),#modal #forgeBody :is(button[data-fuse],button[data-up],button[data-craft],button[data-recycle],button[data-recycle-all]),#modal #mBody .run-report-button,#app #shade #mFaith button.prayer,body.study-log-history #app #studyLogClose,#app .tutorial-inline>button,#modal .tutorial-inline>button)::before{content:""!important;display:block!important;position:absolute!important;inset:0!important;z-index:-1!important;pointer-events:none;border-style:solid!important;border-color:transparent!important;border-width:10px 12px!important;border-image:url(../art/ui/button-raised-subdued-clean-v2.png) 100 110 100 110 fill / 10px 12px 10px 12px / 0 stretch!important;filter:none!important;background:none!important;}
 html body[data-ui-theme] :is(#app #shade #mHelp #resetUITheme,#app #shade #mHelp #bindReset,#app #shade #mHelp #howToPlay,#titleSettings #resetUITheme,#titleSettings #bindReset,#titleSettings #howToPlay,#app #shade #mHelp :is(#oJournal,#oExport,#oImport,#oTitle,#oExit,button[data-save]),#modal #forgeBody :is(button[data-fuse],button[data-up],button[data-craft],button[data-recycle],button[data-recycle-all]),#modal #mBody .run-report-button,#app #shade #mFaith button.prayer,body.study-log-history #app #studyLogClose,#app .tutorial-inline>button,#modal .tutorial-inline>button):is(:hover,:focus-visible){color:#fff!important;}
 html body[data-ui-theme] :is(#app #shade #mHelp #resetUITheme,#app #shade #mHelp #bindReset,#app #shade #mHelp #howToPlay,#titleSettings #resetUITheme,#titleSettings #bindReset,#titleSettings #howToPlay,#app #shade #mHelp :is(#oJournal,#oExport,#oImport,#oTitle,#oExit,button[data-save]),#modal #forgeBody :is(button[data-fuse],button[data-up],button[data-craft],button[data-recycle],button[data-recycle-all]),#modal #mBody .run-report-button,#app #shade #mFaith button.prayer,body.study-log-history #app #studyLogClose,#app .tutorial-inline>button,#modal .tutorial-inline>button):is(:hover,:focus-visible)::before{filter:brightness(1.35)!important;}
 html body[data-ui-theme] :is(#app #shade #mHelp #resetUITheme,#app #shade #mHelp #bindReset,#app #shade #mHelp #howToPlay,#titleSettings #resetUITheme,#titleSettings #bindReset,#titleSettings #howToPlay,#app #shade #mHelp :is(#oJournal,#oExport,#oImport,#oTitle,#oExit,button[data-save]),#modal #forgeBody :is(button[data-fuse],button[data-up],button[data-craft],button[data-recycle],button[data-recycle-all]),#modal #mBody .run-report-button,#app #shade #mFaith button.prayer,body.study-log-history #app #studyLogClose,#app .tutorial-inline>button,#modal .tutorial-inline>button):disabled{color:#838c97!important;}
@@ -475,14 +481,15 @@ html body[data-ui-theme] #title#title#title#title#title .menu button{font-size:v
 @media(max-height:500px){html body[data-ui-theme] #title#title#title#title#title .menu button{font-size:var(--fs-word)!important;}}
 /* Creation on landscape, laptop and PC: the details panel runs from the choice strip to the bottom row, Enter the Dungeon
    sits to its left, and large screens are no longer held to the old 1080 x 820 box. */
-@media(min-width:701px){html body[data-ui-theme] #create#create#create .creation-record{grid-row:2/6!important;align-self:stretch!important;height:auto!important;max-height:none!important;}html body[data-ui-theme] #create#create#create .creation-nav{grid-column:1!important;}}
-@media(min-width:1300px) and (min-height:861px){html body[data-ui-theme] #create#create#create .wrap{max-width:1400px!important;max-height:1000px!important;}}
+@container create-screen (min-width:701px){html body[data-ui-theme] #create#create#create .creation-record{grid-row:2/6!important;align-self:stretch!important;height:auto!important;max-height:none!important;}
+html body[data-ui-theme] #create#create#create .creation-nav{grid-column:1!important;}}
+@container create-screen ((min-width:1300px) and (min-height:861px)){html body[data-ui-theme] #create#create#create .wrap{max-width:1400px!important;max-height:1000px!important;}}
 /* Gods keep their own colour (Justin, 2026-10-14): the god's name and the Faith sections take the god's colour, not the hero's affinity. */
 html body[data-ui-theme][data-ui-theme] #app #shade .sheet #mFaith#mFaith .faith :is(.godhead h3,.sec){color:var(--god-col,var(--aff-hi))!important;-webkit-text-fill-color:var(--god-col,var(--aff-hi))!important;}
 /* Confirm calls for the click (Justin, 2026-10-14): the choice strip is a full-size row, the live Confirm chevron is at
    least as wide as the Masculine / Feminine plates and glows slowly (steady for players who ask for reduced motion). */
 html body[data-ui-theme][data-ui-theme][data-ui-theme] #create#create#create#create .creation-steps :is(button,.creation-step-now){min-height:48px!important;}
-@media(max-width:700px){html body[data-ui-theme][data-ui-theme][data-ui-theme] #create#create#create#create .creation-steps:not(:has(>:nth-child(4))) :is(.creation-step-value,.creation-step-now){font-size:var(--fs-word)!important;}}
+@container create-screen (max-width:700px){html body[data-ui-theme][data-ui-theme][data-ui-theme] #create#create#create#create .creation-steps:not(:has(>:nth-child(4))) :is(.creation-step-value,.creation-step-now){font-size:var(--fs-word)!important;}}
 html body[data-ui-theme][data-ui-theme][data-ui-theme] #create#create#create#create .creation-steps :is(#cConfirm,button[aria-current=step]){min-width:124px!important;}
 html body[data-ui-theme][data-ui-theme][data-ui-theme] #create#create#create#create .creation-steps :is(#cConfirm,button[aria-current=step]) .creation-step-value{color:#fff!important;-webkit-text-fill-color:#fff!important;}
 @keyframes forgeConfirmGlow{0%,100%{filter:brightness(1.3) drop-shadow(0 0 0 #ffffff00);}50%{filter:brightness(1.75) drop-shadow(0 0 8px #ffffffb3);}}
@@ -495,6 +502,14 @@ html body[data-ui-theme][data-ui-theme][data-ui-theme] #create#create#create .cr
 html body[data-ui-theme][data-ui-theme][data-ui-theme] :is(#create#create#create#create #begin,#title#title#title#title#title .menu #tNew,#title#title#title#title#title .menu #tContinue)::before{filter:brightness(1.4) drop-shadow(0 0 6px #ffffff99)!important;}
 html body[data-ui-theme][data-ui-theme][data-ui-theme] #title#title#title#title#title .menu:has(#tContinue) #tNew::before{filter:none!important;animation:none!important;}
 @media(prefers-reduced-motion:no-preference){html body[data-ui-theme][data-ui-theme][data-ui-theme] :is(#create#create#create#create #begin,#title#title#title#title#title .menu #tNew,#title#title#title#title#title .menu #tContinue)::before{animation:forgeConfirmGlow 1.8s ease-in-out infinite!important;}html body[data-ui-theme][data-ui-theme][data-ui-theme] #title#title#title#title#title .menu:has(#tContinue) #tNew::before{animation:none!important;}}
+/* A faint blue halo on the word that calls for the click (Justin, 2026-10-15: "a faint blue glow around the word continue
+   to make it stand out more"; Confirm "needs to draw players attention to it"). Only these words take blue; Confirm's
+   plate breathes blue as well. */
+html body[data-ui-theme][data-ui-theme][data-ui-theme] :is(#title#title#title#title#title .menu #tContinue,#title#title#title#title#title .menu:not(:has(#tContinue)) #tNew,#create#create#create#create #begin,#create#create#create#create .creation-steps #cConfirm .creation-step-value){text-shadow:0 1px 0 #000,0 0 6px #6fb6ff,0 0 14px #3a8ad6b3!important;}
+html body[data-ui-theme][data-ui-theme][data-ui-theme] #title#title#title#title#title .menu #tContinue .sub{text-shadow:0 1px 0 #000!important;}
+@keyframes forgeConfirmBlue{0%,100%{filter:brightness(1.35) drop-shadow(0 0 3px #6fb6ff80);}50%{filter:brightness(1.75) drop-shadow(0 0 12px #6fb6ffe6);}}
+html body[data-ui-theme][data-ui-theme][data-ui-theme] #create#create#create#create .creation-steps #cConfirm::before{filter:brightness(1.55) drop-shadow(0 0 8px #6fb6ffcc)!important;}
+@media(prefers-reduced-motion:no-preference){html body[data-ui-theme][data-ui-theme][data-ui-theme] #create#create#create#create#create .creation-steps #cConfirm::before{animation:forgeConfirmBlue 1.6s ease-in-out infinite!important;}}
 /* Close history is the combat log window's own close: the drawn x on a 44px plate in the window's top-right corner, clear of the
    floor title (Justin, 2026-10-14: the plate sat on "Dungeon - Floor 1"). Its words stay as its accessible name. The window
    opens over the status block like every other window, instead of under the HP bars. */
@@ -504,7 +519,7 @@ html body.study-log-history[data-ui-theme] #app#app#app#app#app #studyLogClose::
 /* Spending attribute points: each + is a small drawn plate that glows while points wait (Justin, 2026-10-14: "the increasing
    attributes thing is terrible now, we need something better for that even if it's just the old buttons back"). */
 html body[data-ui-theme] #app#app#app #shade .sheet button.plus{position:relative;isolation:isolate;display:inline-flex!important;align-items:center!important;justify-content:center!important;width:36px!important;min-width:36px!important;height:32px!important;min-height:32px!important;margin-left:8px!important;padding:0 0 3px!important;border:0!important;background:none!important;box-shadow:none!important;font:700 var(--fs-word)/1 var(--display)!important;color:#fff!important;-webkit-text-fill-color:#fff!important;text-shadow:0 1px 0 #000,0 2px 3px #000!important;cursor:pointer;vertical-align:middle;}
-html body[data-ui-theme] #app#app#app #shade .sheet button.plus::before{content:""!important;display:block!important;position:absolute!important;inset:0!important;z-index:-1!important;pointer-events:none;border-style:solid!important;border-color:transparent!important;border-width:8px 10px!important;border-image:url(../art/ui/button-raised-prominent-clean-v1.png) 130 150 130 150 fill / 8px 10px 8px 10px / 0 stretch!important;filter:brightness(1.4) drop-shadow(0 0 5px #ffffff88)!important;}
+html body[data-ui-theme] #app#app#app #shade .sheet button.plus::before{content:""!important;display:block!important;position:absolute!important;inset:0!important;z-index:-1!important;pointer-events:none;border-style:solid!important;border-color:transparent!important;border-width:8px 10px!important;border-image:url(../art/ui/button-raised-prominent-clean-v2.png) 130 150 130 150 fill / 8px 10px 8px 10px / 0 stretch!important;filter:brightness(1.4) drop-shadow(0 0 5px #ffffff88)!important;}
 @media(prefers-reduced-motion:no-preference){html body[data-ui-theme] #app#app#app #shade .sheet button.plus::before{animation:forgeConfirmGlow 1.8s ease-in-out infinite!important;}}
 html body[data-ui-theme] #app#app#app #shade .sheet button.plus:is(:hover,:focus-visible)::before{animation:none!important;filter:brightness(1.85) drop-shadow(0 0 8px #ffffffb3)!important;}
 /* Close: a drawn x set exactly on the plate's centre (Justin, 2026-10-14: "the x's still aren't centered on the close menus";
@@ -526,3 +541,652 @@ html body[data-ui-theme] #app#app #shade .sheet .grid4:has(.plus){column-gap:12p
 html body[data-ui-theme] #app#app #shade .sheet .grid4:has(.plus) .stat{padding:3px 6px 3px 9px!important;gap:6px!important;}
 html body[data-ui-theme] #app#app#app #shade .sheet .grid4 button.plus{width:28px!important;min-width:28px!important;height:28px!important;min-height:28px!important;margin-left:6px!important;font-size:var(--fs-body)!important;}
 html body[data-ui-theme] #app#app#app #shade .sheet .grid4 button.plus::before{border-width:7px 8px!important;border-image-width:7px 8px 7px 8px!important;}
+/* The Elemental Forge, compact (Justin, 2026-10-14: "it's not using space very well ... it doesn't need to have all the text
+   there and the text is too big"). One row of motes, one short status line, tabs and rows a size down. */
+html body[data-ui-theme] #modal#modal #forgeBody .forge-top{display:flex!important;flex-wrap:wrap!important;align-items:center!important;gap:6px 18px!important;margin:0 0 6px!important;}
+html body[data-ui-theme] #modal#modal #forgeBody .pouch2{display:flex!important;flex-wrap:wrap!important;gap:4px!important;}
+html body[data-ui-theme] #modal#modal #forgeBody .pouch2 .mslot{width:auto!important;min-width:0!important;flex-direction:row!important;align-items:center!important;gap:4px!important;padding:2px 8px 2px 5px!important;border:0!important;border-radius:0!important;background:#0000004d!important;}
+html body[data-ui-theme] #modal#modal #forgeBody .pouch2 .mslot .mart{width:20px!important;height:20px!important;}
+html body[data-ui-theme] #modal#modal #forgeBody .pouch2 .mslot b{font:700 var(--fs-body)/1 "Spectral",Georgia,serif!important;}
+html body[data-ui-theme] #modal#modal #forgeBody .pouch2 .mslot>span:last-child{display:none!important;}
+html body[data-ui-theme] #modal#modal #forgeBody .forge-info{display:flex!important;flex-direction:row!important;flex-wrap:wrap!important;gap:2px 14px!important;font:600 var(--fs-small)/1.3 "Spectral",Georgia,serif!important;color:var(--house-ash)!important;}
+html body[data-ui-theme] #modal#modal #forgeBody .forge-info b{color:var(--house-ink)!important;}
+html body[data-ui-theme] #modal#modal #forgeBody .ftabs{margin:2px 0 6px!important;gap:2px 18px!important;flex-wrap:wrap!important;}
+html body[data-ui-theme] #modal#modal #forgeBody .ftabs button{font-size:var(--fs-body)!important;padding:4px 0!important;min-height:36px!important;}
+html body[data-ui-theme] #modal#modal #forgeBody :is(.frow,.enchcard){padding-top:5px!important;padding-bottom:5px!important;gap:8px!important;}
+html body[data-ui-theme] #modal#modal #forgeBody :is(.frow,.enchcard) :is(b,.ftext>b){font-size:var(--fs-body)!important;}
+html body[data-ui-theme] #modal#modal #forgeBody :is(.frow .d,.enchcard .new,.enchcard .now,.enchcard .d,.frow .val,.c-info){font-size:var(--fs-small)!important;line-height:1.3!important;}
+html body[data-ui-theme] #modal#modal #forgeBody .moterow{margin:0 0 6px!important;gap:4px!important;}
+html body[data-ui-theme] #modal#modal #forgeBody .moterow button{padding:3px 9px!important;min-height:34px!important;font-size:var(--fs-small)!important;}
+@media(min-width:1300px) and (min-height:700px){html body[data-ui-theme] #modal#modal .mbox.forge-modal{width:min(980px,calc(100vw - 80px))!important;max-width:min(980px,calc(100vw - 80px))!important;}}
+/* Inventory and Character, compact (Justin, 2026-10-14, of the Inventory: "same with this really"): stat lists at the small
+   size, the bag a grid of filled cells with no ruled lines (rarity borders kept), the hint sentences now hover tips. */
+html body[data-ui-theme] #app#app #shade .sheet :is(#mEquip,#mChar) .kv{font-size:var(--fs-small)!important;line-height:1.35!important;}
+html body[data-ui-theme] #app#app #shade .sheet :is(#mEquip,#mChar) .kv :is(span,b){font-size:var(--fs-small)!important;}
+html body[data-ui-theme] #app#app #shade .sheet .invgrid{gap:3px!important;}
+html body[data-ui-theme] #app#app #shade .sheet .invgrid .cell:not([style*="border"]){border-style:solid!important;border-color:transparent!important;background:#0000004d!important;}
+/* Less scrolling in every window (Justin, 2026-10-14: "We don't want text below a threshold, but we want to minimize scrolling").
+   Text stays at the four sizes (nothing under 14px); windows use the screen's height, lists use its width, spacing tightens. */
+/* Pop-up windows grow to the screen's height (they were capped at 760px). */
+html body[data-ui-theme] #modal#modal .mbox:is(.wide,.journal-modal){max-height:calc(100dvh - 24px)!important;}
+html body[data-ui-theme] #modal#modal .mbox.forge-modal{max-height:calc(100dvh - 24px)!important;}
+/* Options and Settings: up to three columns on wide screens, tighter rows, hints at the small size. */
+html body[data-ui-theme] :is(#app #shade #mHelp,#titleSettings) .optgrid{grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr))!important;gap:2px 36px!important;}
+html body[data-ui-theme] :is(#app #shade #mHelp,#titleSettings) .optrow{padding-top:2px!important;padding-bottom:2px!important;min-height:0!important;}
+html body[data-ui-theme] :is(#app #shade #mHelp,#titleSettings) :is(.c-info,.optrow+.c-info){font-size:var(--fs-small)!important;line-height:1.3!important;margin:0 0 4px!important;}
+html body[data-ui-theme] :is(#app #shade #mHelp,#titleSettings) .sec{margin:10px 0 4px!important;}
+html body[data-ui-theme] :is(#app #shade #mHelp,#titleSettings) .opt-how-to{margin-bottom:8px!important;}
+/* Journal: achievements fill the width in as many columns as fit. */
+html body[data-ui-theme] #modal .journal-modal :has(>article.journal-achievement){display:grid!important;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr))!important;gap:4px 22px!important;}
+html body[data-ui-theme] #modal .journal-modal article.journal-achievement{margin:0!important;padding-top:4px!important;padding-bottom:6px!important;}
+/* Sheets and windows: section headings and paragraphs take less height. */
+html body[data-ui-theme] #app#app #shade .sheet .sec{margin-top:10px!important;margin-bottom:4px!important;}
+html body[data-ui-theme] #app#app #shade .sheet .sec:first-child{margin-top:0!important;}
+html body[data-ui-theme] :is(#app#app #shade .sheet,#modal#modal .mbox) p{margin:0 0 6px!important;}
+html body[data-ui-theme] #app#app #shade .sheet :is(#mChar,#mFaith) :is(.arow,.prow){padding-top:3px!important;padding-bottom:3px!important;}
+html body[data-ui-theme] #app#app #shade .sheet :is(#mChar,#mFaith) :is(.arow .d,.prow .d,.boons,.c-info){font-size:var(--fs-small)!important;line-height:1.3!important;}
+/* An attribute at its cap (25) shows no + (Justin, 2026-10-14); the plate keeps its room so the 2x2 values stay in line. */
+html body[data-ui-theme] button.plus:disabled{visibility:hidden!important;pointer-events:none!important;}
+/* Phones: the details panel spends its room on reading (Justin, 2026-10-15: "we have to do a better job of using space in
+   this text box on small phones"). The four stats sit on one line as "Might 13", and "More below" lies over the
+   bottom edge of the text instead of keeping a line of its own. */
+@container create-screen (max-width:700px){html body[data-ui-theme][data-ui-theme] #create#create#create .creation-record .hero-stats{display:flex!important;justify-content:space-between!important;gap:6px!important;padding:2px 0 4px!important;}
+html body[data-ui-theme][data-ui-theme] #create#create#create .creation-record .hero-stats span{display:inline-flex!important;flex-direction:row!important;align-items:baseline!important;gap:4px;white-space:nowrap;font-size:var(--fs-small)!important;}
+html body[data-ui-theme][data-ui-theme] #create#create#create .creation-record .hero-stats b{display:inline!important;margin:0!important;font:700 var(--fs-small)/1.2 "Spectral",Georgia,serif!important;}
+html body[data-ui-theme][data-ui-theme] #create#create#create .creation-record .creation-record-body{margin-bottom:0!important;}}
+/* The details panel's frame is one drawing stretched to the panel, so its rim grows with the panel's height top and bottom
+   and with its width at the sides. Padding can only follow the width, which put the stats on the rim of a tall panel
+   (tablets, PC). The panel is a grid instead: its outer tracks are shares of its own height and width, so the words
+   always start inside the drawn rim. */
+html body[data-ui-theme][data-ui-theme] #create#create#create#create#create .creation-record{display:grid!important;padding:0!important;grid-template-columns:12.5% minmax(0,1fr) 12%;grid-template-rows:11.5% auto minmax(0,1fr) 10%;}
+html body[data-ui-theme][data-ui-theme] #create#create#create#create#create .creation-record>*{grid-column:2;min-height:0;}
+html body[data-ui-theme][data-ui-theme] #create#create#create#create#create .creation-record>.creation-name-controls{grid-row:2;}
+html body[data-ui-theme][data-ui-theme] #create#create#create#create#create .creation-record>.creation-record-body{grid-row:3;margin:0!important;}
+/* The creation box is the container every creation size rule measures, laid out at its design's size and scaled to the
+   window (fitCreationScale in create.js). */
+html body[data-ui-theme] #create{container:create-screen / size;}
+html body[data-ui-theme] #create#create.create-scaled{inset:0 auto auto 0!important;width:calc(100vw / var(--create-zoom))!important;height:calc(100vh / var(--create-zoom))!important;transform:scale(var(--create-zoom));transform-origin:0 0;}
+html body[data-ui-theme] #create#create .wrap{height:100%!important;}
+/* Phone windows spend their width on content (Justin, 2026-10-15: "the use of space in all these windows is so fucking
+   abysmal"). The drawn frame is drawn thinner and the padding hugs it. */
+@media(max-width:700px),(max-height:500px){
+ html body[data-ui-theme][data-ui-theme] :is(#modal#modal .mbox:not(.forge-modal),#app#app #shade .sheet)::before{border-image-width:22px!important;}
+ html body[data-ui-theme][data-ui-theme] #app#app#app#app #shade .sheet{padding:20px 16px 16px!important;}
+ html body[data-ui-theme][data-ui-theme] #modal#modal#modal .mbox:not(.forge-modal){padding:20px 16px 16px!important;}
+
+ html body[data-ui-theme][data-ui-theme] #app#app #shade .sheet #studySheetTabs{grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:4px!important;}
+ html body[data-ui-theme][data-ui-theme] #app#app#app #shade .sheet #studySheetTabs button{min-width:0!important;width:auto!important;height:38px!important;min-height:38px!important;padding:3px 2px 6px!important;font-size:var(--fs-small)!important;white-space:nowrap!important;}
+ html body[data-ui-theme][data-ui-theme] #app#app #shade .sheet>header{padding:0 0 4px!important;gap:6px!important;}
+}
+/* The Character sheet, rebuilt to the window rules (Justin, 2026-10-15): who the hero is on one strip, then Attributes,
+   Combat and Resistances side by side as space allows, then Abilities and Traits as name tiles whose words are on hover
+   or a tap. Spacing is only 4 (inside a row), 8 (between rows and tiles) and 16 (between sections). */
+html body[data-ui-theme] #app#app#app #shade #mChar .char-who{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 16px;margin:0 0 16px;}
+html body[data-ui-theme] #app#app#app #shade #mChar .char-who .head{margin:0!important;}
+html body[data-ui-theme] #app#app#app #shade #mChar .char-who .who{color:var(--house-ash);font-size:var(--fs-body);}
+html body[data-ui-theme] #app#app#app #shade #mChar .char-level{display:inline-flex;align-items:center;gap:8px;margin-left:auto;color:var(--house-ink);font-size:var(--fs-body);}
+html body[data-ui-theme] #app#app#app #shade #mChar .char-xp{display:inline-block;width:120px;height:6px;border-radius:3px;background:#ffffff1f;overflow:hidden;}
+html body[data-ui-theme] #app#app#app #shade #mChar .char-xp i{display:block;height:100%;background:var(--house-accent);}
+html body[data-ui-theme] #app#app#app #shade #mChar .char-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));gap:16px 24px;align-items:start;}
+html body[data-ui-theme] #app#app#app #shade #mChar .char-grid>section{margin:0;min-width:0;}
+html body[data-ui-theme] #app#app#app #shade #mChar .char-wide{grid-column:1/-1;}
+html body[data-ui-theme] #app#app#app #shade #mChar .sec{margin:0 0 8px!important;padding:0!important;}
+html body[data-ui-theme] #app#app#app #shade #mChar .sec small{font:400 var(--fs-small)/1 "Spectral",Georgia,serif;color:var(--house-dim);margin-left:8px;}
+html body[data-ui-theme] #app#app#app #shade #mChar .sec small.char-points{color:var(--house-accent);}
+html body[data-ui-theme] #app#app#app #shade #mChar .grid4{gap:8px!important;}
+html body[data-ui-theme] #app#app#app #shade #mChar .char-kv{display:grid!important;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr) auto!important;gap:4px 12px!important;font-size:var(--fs-body)!important;}
+html body[data-ui-theme] #app#app#app #shade #mChar .char-kv>span{color:var(--house-ash);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+html body[data-ui-theme] #app#app#app #shade #mChar .char-kv>b{text-align:right;white-space:nowrap;}
+html body[data-ui-theme] #app#app#app #shade #mChar .res{gap:4px 12px!important;font-size:var(--fs-body)!important;}
+html body[data-ui-theme] #app#app#app #shade #mChar .ctiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px;}
+html body[data-ui-theme] #app#app#app #shade #mChar .ctile{display:flex;align-items:center;gap:8px;min-width:0;min-height:40px;padding:4px 8px;border-radius:4px;background:#ffffff0d;cursor:help;}
+html body[data-ui-theme] #app#app#app #shade #mChar .ctile[draggable=true]{cursor:grab;}
+html body[data-ui-theme] #app#app#app #shade #mChar .ctile:is(:hover,:focus-visible){background:#ffffff1a;outline:0;}
+html body[data-ui-theme] #app#app#app #shade #mChar .ctile .ic{flex:none;width:28px;height:28px;border:0!important;background:none!important;display:flex;align-items:center;justify-content:center;}
+html body[data-ui-theme] #app#app#app #shade #mChar .ctile .k{flex:none;min-width:16px;text-align:center;color:var(--house-dim);font-variant-numeric:tabular-nums;font-size:var(--fs-small);}
+html body[data-ui-theme] #app#app#app #shade #mChar .ctile .k:empty{display:none;}
+html body[data-ui-theme] #app#app#app #shade #mChar .ctile .n{min-width:0;color:var(--house-ink);font-size:var(--fs-body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+@media(max-width:700px){html body[data-ui-theme] #app#app#app #shade #mChar .char-who{flex-wrap:nowrap;gap:8px;}html body[data-ui-theme] #app#app#app #shade #mChar .char-who .who{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}html body[data-ui-theme] #app#app#app #shade #mChar .char-level{flex:none;}html body[data-ui-theme] #app#app#app #shade #mChar .char-xp{width:48px;}}
+/* Character sheet arrangements on trial (2026-10-15, Justin: "it needs to be ordered better"); localStorage
+   fote-char-layout picks a, b or c until he chooses. Phones always stack: who, attributes, combat, resistances, abilities, traits. */
+html body[data-ui-theme] #app#app#app #shade #mChar .char-grid>*{margin:0;min-width:0;}
+html body[data-ui-theme] #app#app#app #shade #mChar .c-who{grid-area:who;margin:0!important;}
+html body[data-ui-theme] #app#app#app #shade #mChar .c-portrait{grid-area:portrait;align-self:stretch;min-height:0;border-radius:6px;background:radial-gradient(ellipse at 50% 70%,#2a2d31,#141619 70%);display:flex;align-items:flex-end;justify-content:center;overflow:hidden;}
+html body[data-ui-theme] #app#app#app #shade #mChar .c-attr{grid-area:attr}
+html body[data-ui-theme] #app#app#app #shade #mChar .c-combat{grid-area:combat}
+html body[data-ui-theme] #app#app#app #shade #mChar .c-res{grid-area:res}
+html body[data-ui-theme] #app#app#app #shade #mChar .c-abil{grid-area:abil}
+html body[data-ui-theme] #app#app#app #shade #mChar .c-traits{grid-area:traits}
+@media(min-width:701px){
+ html body[data-ui-theme] #app#app#app #shade #mChar .char-grid[data-layout=a]{grid-template-columns:220px minmax(0,1fr) minmax(0,1fr);grid-template-areas:"portrait who who" "portrait attr abil" "portrait combat abil" "portrait combat res" "traits traits traits";}
+ html body[data-ui-theme] #app#app#app #shade #mChar .char-grid[data-layout=b]{grid-template-columns:repeat(3,minmax(0,1fr));grid-template-areas:"who combat abil" "attr combat abil" "traits res abil";}
+ html body[data-ui-theme] #app#app#app #shade #mChar .char-grid[data-layout=c]{grid-template-columns:180px minmax(0,1fr) minmax(0,1fr);grid-template-areas:"portrait who who" "portrait attr res" "combat combat abil" "combat combat traits";}
+ html body[data-ui-theme] #app#app#app #shade #mChar .char-grid[data-layout=b] .c-portrait{display:none;}
+ html body[data-ui-theme] #app#app#app #shade #mChar .char-grid[data-layout=c] .c-portrait{height:180px;}
+ html body[data-ui-theme] #app#app#app #shade #mChar .char-grid[data-layout=b] .c-abil .ctiles{grid-template-columns:1fr;}
+}
+@media(max-width:700px){
+ html body[data-ui-theme] #app#app#app #shade #mChar .char-grid{grid-template-columns:minmax(0,1fr);grid-template-areas:"who" "attr" "combat" "res" "abil" "traits";}
+ html body[data-ui-theme] #app#app#app #shade #mChar .c-portrait{display:none;}
+}
+/* Justin's tab and close art (2026-10-15): "here is an x, this should be drawn flush in the corner and shrunk, here is a
+   tab that can go on top". Every window's close is the drawn x in its top-right corner; the sheet tabs are the drawn tab
+   plate along the window's top rim, the open one lit and the rest dimmed. */
+html body[data-ui-theme] :is(#app#app#app#app #shade .sheet #close,#modal#modal#modal #mX){position:absolute!important;top:12px!important;right:12px!important;left:auto!important;bottom:auto!important;width:36px!important;min-width:36px!important;height:36px!important;min-height:36px!important;margin:0!important;padding:0!important;font-size:0!important;color:transparent!important;background:url(../art/ui/close-x-v2.png) center/contain no-repeat!important;border:0!important;box-shadow:none!important;filter:none!important;z-index:5!important;}
+html body[data-ui-theme] :is(#app#app#app#app #shade .sheet #close,#modal#modal#modal #mX)::before,html body[data-ui-theme] :is(#app#app#app#app #shade .sheet #close,#modal#modal#modal #mX)::after{display:none!important;content:none!important;}
+html body[data-ui-theme] :is(#app#app#app#app #shade .sheet #close,#modal#modal#modal #mX):is(:hover,:focus-visible){filter:brightness(1.25)!important;outline:0!important;}
+html body[data-ui-theme] #app#app#app#app #shade .sheet #studySheetTabs button::before{border-width:5px 12px 6px!important;border-image:url(../art/ui/tab-steel-v1.png) 22 60 30 60 fill / 5px 12px 6px 12px / 0 stretch!important;filter:brightness(.62)!important;background:none!important;}
+html body[data-ui-theme] #app#app#app#app #shade .sheet #studySheetTabs button:is(.on,[aria-selected=true],[aria-pressed=true])::before{filter:brightness(1.1)!important;}
+html body[data-ui-theme] #app#app#app#app #shade .sheet #studySheetTabs button:not(.on):not([aria-selected=true]):not([aria-pressed=true]):hover::before{filter:brightness(.85)!important;}
+/* The tabs stand on top of the window, outside its frame (Justin, 2026-10-15: "put the tabs on top of the window"):
+   the window drops by one tab's height and the tab row sits on its top edge. */
+html body[data-ui-theme] #app#app#app#app #shade .sheet{margin-top:40px!important;max-height:calc(100% - 40px)!important;overflow:visible!important;}
+html body[data-ui-theme] #app#app#app#app #shade .sheet>header{position:absolute!important;top:-38px!important;left:28px!important;right:auto!important;height:40px!important;min-height:0!important;margin:0!important;padding:0!important;display:block!important;z-index:4!important;}
+html body[data-ui-theme] #app#app#app#app #shade .sheet #studySheetTabs{display:flex!important;flex-wrap:nowrap!important;gap:4px!important;align-items:flex-end!important;height:40px!important;}
+html body[data-ui-theme] #app#app#app#app #shade .sheet #studySheetTabs button{height:38px!important;min-height:38px!important;width:auto!important;min-width:0!important;margin:0!important;padding:4px 16px 8px!important;}
+html body[data-ui-theme] #app#app#app#app #shade .sheet #studySheetTabs button:is(.on,[aria-selected=true],[aria-pressed=true]){height:40px!important;min-height:40px!important;}
+html body[data-ui-theme] #app#app#app#app#app #shade .sheet{padding-top:max(36px,4%)!important;}
+@media(max-width:700px),(max-height:500px){
+ html body[data-ui-theme] #app#app#app#app #shade .sheet>header{left:12px!important;right:12px!important;}
+ html body[data-ui-theme] #app#app#app#app #shade .sheet #studySheetTabs button{flex:1 1 0!important;padding:4px 4px 8px!important;}
+ html body[data-ui-theme] #app#app#app#app#app #shade .sheet{padding-top:22px!important;}
+}
+/* the close x lives inside the tab row's markup: the row spans the window so the x can sit back in the window's corner */
+html body[data-ui-theme] #app#app#app#app #shade .sheet>header{right:28px!important;}
+html body[data-ui-theme] #app#app#app#app#app #shade .sheet>header #close{top:50px!important;right:-16px!important;}
+@media(max-width:700px),(max-height:500px){
+ html body[data-ui-theme] #app#app#app#app #shade .sheet>header{right:12px!important;}
+ html body[data-ui-theme] #app#app#app#app#app #shade .sheet>header #close{top:48px!important;right:-4px!important;width:32px!important;min-width:32px!important;height:32px!important;min-height:32px!important;}
+}
+/* Short landscape screens (phones on their side): two columns and no hero picture. */
+@media(min-width:701px) and (max-height:500px){
+ html body[data-ui-theme] #app#app#app #shade #mChar .char-grid[data-layout]{grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:none;grid-template-areas:"who who" "attr res" "combat abil" "combat traits";}
+ html body[data-ui-theme] #app#app#app #shade #mChar .char-grid[data-layout] .c-portrait{display:none;}
+}
+/* An end-game hero (Justin's level 20 run) has seven abilities and a dozen traits: tiles stay one line and a size shorter. */
+html body[data-ui-theme] #app#app#app #shade #mChar .ctile{min-height:34px!important;padding:2px 8px!important;}
+html body[data-ui-theme] #app#app#app #shade #mChar .c-traits .ctiles{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));}
+html body[data-ui-theme] #app#app#app #shade #mChar .c-portrait{align-items:center!important;}
+/* The Character sheet's three columns (Justin, 2026-10-15: "a column for activated abilities and a column for passives
+   ... make it clear where they come from"): the hero and the numbers, then abilities by source, then passives by source. */
+html body[data-ui-theme] #app#app#app#app #shade #mChar .char-grid{grid-template-columns:minmax(0,1.1fr) minmax(0,1fr) minmax(0,1fr);grid-template-areas:"who who who" "left abil traits";align-items:start;}
+html body[data-ui-theme] #app#app#app#app #shade #mChar .c-left{grid-area:left;display:flex;flex-direction:column;gap:16px;min-width:0;}
+html body[data-ui-theme] #app#app#app#app #shade #mChar .cgroup{margin:8px 0 4px;font:400 var(--fs-small)/1.2 "Spectral",Georgia,serif;color:var(--house-dim);}
+html body[data-ui-theme] #app#app#app#app #shade #mChar .sec+.cgroup{margin-top:0;}
+html body[data-ui-theme] #app#app#app#app #shade #mChar .ctiles{gap:4px 8px!important;}
+@media(min-width:701px) and (max-height:500px){html body[data-ui-theme] #app#app#app#app #shade #mChar .char-grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-areas:"who who" "left abil" "left traits";}}
+@media(max-width:700px){html body[data-ui-theme] #app#app#app#app #shade #mChar .char-grid{grid-template-columns:minmax(0,1fr);grid-template-areas:"who" "left" "abil" "traits";}}
+html body[data-ui-theme] #app#app#app#app #shade #mChar .res span{line-height:1.25!important;padding:0!important;min-height:0!important;}
+html body[data-ui-theme] #app#app#app#app #shade #mChar .char-kv>*{line-height:1.25!important;}
+@media(min-width:701px) and (min-height:501px){html body[data-ui-theme] #app#app#app#app #shade #mChar .char-grid{grid-template-columns:minmax(0,1fr) minmax(0,.85fr) minmax(0,1.25fr);column-gap:20px;}html body[data-ui-theme] #app#app#app#app #shade #mChar .ctiles{grid-template-columns:repeat(auto-fill,minmax(140px,1fr));}}
+html body[data-ui-theme] #app#app#app#app#app #shade #mChar .c-abil .ctiles{grid-template-columns:minmax(0,1fr)!important;}
+/* Measured at 4x (2026-10-15, Justin: "these are not aligned"): the drawn tab plate ends 8px above its box, so the row
+   drops 8px to rest the plates on the window's rim, every tab is one height, and the close x sits flush inside the
+   frame's corner rather than on its ornament. */
+html body[data-ui-theme] #app#app#app#app#app #shade .sheet>header{top:-30px!important;}
+html body[data-ui-theme] #app#app#app#app#app #shade .sheet #studySheetTabs button,html body[data-ui-theme] #app#app#app#app#app #shade .sheet #studySheetTabs button:is(.on,[aria-selected=true],[aria-pressed=true]){height:38px!important;min-height:38px!important;}
+html body[data-ui-theme] #app#app#app#app#app#app #shade .sheet>header #close{top:46px!important;right:-10px!important;width:34px!important;min-width:34px!important;height:34px!important;min-height:34px!important;}
+/* No block backgrounds behind abilities, passives and attributes: names and numbers stand on the window itself. */
+html body[data-ui-theme] #app#app#app#app#app #shade #mChar .ctile{background:none!important;padding:2px 0!important;min-height:30px!important;}
+html body[data-ui-theme] #app#app#app#app#app #shade #mChar .ctile:is(:hover,:focus-visible) .n{color:var(--house-accent)!important;}
+html body[data-ui-theme] #app#app#app#app#app #shade #mChar .grid4 .stat{background:none!important;padding:2px 0!important;}
+html body[data-ui-theme] #app#app#app#app#app#app#app #shade .sheet>header #close{top:47px!important;right:9px!important;}
+@media(max-width:700px),(max-height:500px){html body[data-ui-theme] #app#app#app#app#app #shade #mChar .char-who{padding-right:40px!important;}}
+/* Points to spend read green (Justin, 2026-10-15: "can we make the + sign like green to indicate points to spend?"). */
+html body[data-ui-theme] #app#app#app#app#app #shade .sheet button.plus{color:var(--house-good,#8fbd78)!important;-webkit-text-fill-color:var(--house-good,#8fbd78)!important;text-shadow:0 0 6px #8fbd7899,0 1px 0 #000!important;}
+html body[data-ui-theme] #app#app#app#app#app #shade #mChar .sec small.char-points{color:var(--house-good,#8fbd78)!important;}
+html body[data-ui-theme][data-ui-theme] #app#app#app#app#app#app#app #shade .sheet button.plus{font:700 22px/1 "Spectral",Georgia,serif!important;padding:0 0 2px!important;}
+html body[data-ui-theme][data-ui-theme] #app#app#app#app#app#app#app #shade #mChar .sec small.char-points,html body[data-ui-theme][data-ui-theme] #app#app#app#app#app#app#app #shade #mChar .sec small.char-points *{color:var(--house-good,#8fbd78)!important;-webkit-text-fill-color:var(--house-good,#8fbd78)!important;}
+html body[data-ui-theme] #app#app#app#app#app #shade #mChar .char-meters{flex-basis:100%;display:flex;flex-wrap:wrap;gap:4px 24px;margin-top:4px;}
+html body[data-ui-theme] #app#app#app#app#app #shade #mChar .cmeter{display:inline-flex;align-items:center;gap:8px;font-size:var(--fs-small);color:var(--house-ash);}
+html body[data-ui-theme] #app#app#app#app#app #shade #mChar .cmeter-l{color:var(--house-dim);}
+html body[data-ui-theme] #app#app#app#app#app #shade #mChar .cmeter-bar{display:inline-block;width:110px;height:6px;border-radius:3px;background:#ffffff1f;overflow:hidden;}
+html body[data-ui-theme] #app#app#app#app#app #shade #mChar .cmeter-bar i{display:block;height:100%;background:var(--house-accent);}
+html body[data-ui-theme] #app#app#app#app#app #shade #mChar .cmeter-n{color:var(--house-ink);font-variant-numeric:tabular-nums;}
+@media(max-width:700px),(max-height:500px){html body[data-ui-theme] #app#app#app#app#app#app #shade #mChar .char-who{flex-wrap:wrap!important;}html body[data-ui-theme] #app#app#app#app#app #shade #mChar .cmeter-bar{width:56px;}}
+/* The + is drawn art, not a typed glyph (Justin, 2026-10-15: "the green + just looks like a keyboard character"): his close
+   plate with its cross thickened and turned into a green plus. */
+html body[data-ui-theme][data-ui-theme] #app#app#app#app#app#app#app#app #shade .sheet button.plus{width:28px!important;min-width:28px!important;height:28px!important;min-height:28px!important;padding:0!important;font-size:0!important;color:transparent!important;-webkit-text-fill-color:transparent!important;text-shadow:none!important;background:url(../art/ui/plus-green-v1.png) center/contain no-repeat!important;border:0!important;box-shadow:none!important;}
+html body[data-ui-theme][data-ui-theme] #app#app#app#app#app#app#app#app #shade .sheet button.plus::before,html body[data-ui-theme][data-ui-theme] #app#app#app#app#app#app#app#app #shade .sheet button.plus::after{display:none!important;content:none!important;}
+html body[data-ui-theme][data-ui-theme] #app#app#app#app#app#app#app#app #shade .sheet button.plus:is(:hover,:focus-visible){filter:brightness(1.25) drop-shadow(0 0 6px #8fbd7880)!important;}
+html body[data-ui-theme] #app#app#app#app#app#app #shade #mChar .char-who{margin-bottom:8px!important;}
+@media(min-width:1100px){html body[data-ui-theme] #app#app#app#app#app#app #shade #mChar .char-who{flex-wrap:nowrap!important;align-items:center!important;}html body[data-ui-theme] #app#app#app#app#app#app #shade #mChar .char-meters{flex-basis:auto!important;margin:0!important;flex-wrap:nowrap!important;gap:20px!important;}html body[data-ui-theme] #app#app#app#app#app#app #shade #mChar .cmeter-bar{width:72px!important;}html body[data-ui-theme] #app#app#app#app#app#app #shade #mChar .who{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;}}
+/* Tabs stand on the window's edge and cover its rim, the open one in front; the close x sits on the window's corner
+   piece itself (Justin, 2026-10-15: "do you not know how to do tabs ... or what a corner is"). */
+html body[data-ui-theme] #app#app#app#app#app#app #shade .sheet>header{top:-24px!important;}
+html body[data-ui-theme] #app#app#app#app#app#app #shade .sheet #studySheetTabs button{position:relative!important;z-index:1!important;}
+html body[data-ui-theme] #app#app#app#app#app#app #shade .sheet #studySheetTabs button:is(.on,[aria-selected=true],[aria-pressed=true]){z-index:2!important;}
+html body[data-ui-theme] #app#app#app#app#app#app#app#app #shade .sheet>header #close{top:20px!important;right:-34px!important;width:38px!important;min-width:38px!important;height:38px!important;min-height:38px!important;}
+html body[data-ui-theme] #app#app#app#app #shade .sheet #mChar .char-who{padding-right:28px!important;}
+@media(max-width:700px),(max-height:500px){html body[data-ui-theme] #app#app#app#app#app#app#app#app#app #shade .sheet>header #close{top:22px!important;right:-16px!important;width:34px!important;min-width:34px!important;height:34px!important;min-height:34px!important;}}
+/* Tabs tucked behind the window (Justin, 2026-10-15: "you draw the ui window over the tabs, and then have the text show
+   above ... make them a bit taller"): the sheet is its own stacking layer, the tab row sits beneath the drawn frame, and
+   each tab is tall enough that its word clears the rim. The close x sits inside the corner, 4px off the frame's inner rims. */
+html body[data-ui-theme] #app#app#app#app #shade .sheet{isolation:isolate!important;}
+html body[data-ui-theme] #app#app#app#app#app#app#app #shade .sheet>header{top:-36px!important;z-index:-2!important;}
+html body[data-ui-theme] #app#app#app#app#app#app #shade .sheet::before{z-index:-1!important;}
+html body[data-ui-theme] #app#app#app#app#app#app#app #shade .sheet #studySheetTabs{height:56px!important;align-items:flex-start!important;}
+html body[data-ui-theme] #app#app#app#app#app#app#app #shade .sheet #studySheetTabs button,html body[data-ui-theme] #app#app#app#app#app#app#app #shade .sheet #studySheetTabs button:is(.on,[aria-selected=true],[aria-pressed=true]){height:56px!important;min-height:56px!important;padding:6px 16px 24px!important;align-items:flex-start!important;}
+html body[data-ui-theme] #app#app#app#app#app#app#app #shade .sheet>header #close{z-index:3!important;}
+html body[data-ui-theme] #app#app#app#app#app#app#app#app#app#app #shade .sheet>header #close{top:56px!important;right:-6px!important;width:34px!important;min-width:34px!important;height:34px!important;min-height:34px!important;}
+@media(max-width:700px),(max-height:500px){html body[data-ui-theme] #app#app#app#app#app#app#app#app#app#app #shade .sheet>header #close{top:51px!important;right:-3px!important;width:30px!important;min-width:30px!important;height:30px!important;min-height:30px!important;}}
+/* The + is a plain rounded plus in the house green, smaller than the number beside it (Justin, 2026-10-15: "the green
+   crosses should be smaller ... not that color but that idea"; "so they aren't taller than the text"). */
+html body[data-ui-theme][data-ui-theme] #app#app#app#app#app#app#app#app#app #shade .sheet button.plus{width:18px!important;min-width:18px!important;height:18px!important;min-height:18px!important;margin-left:6px!important;background:url(../art/ui/plus-green-v2.svg) center/contain no-repeat!important;vertical-align:-2px!important;}
+/* only the tabs go behind the frame; the close x shares their row in the markup and stays in front */
+html body[data-ui-theme] #app#app#app#app#app#app#app#app #shade .sheet>header{z-index:auto!important;}
+html body[data-ui-theme] #app#app#app#app#app#app#app#app #shade .sheet #studySheetTabs{position:relative!important;z-index:-2!important;}
+html body[data-ui-theme] #app#app#app#app#app#app#app#app #shade .sheet>header{pointer-events:none!important;}
+html body[data-ui-theme] #app#app#app#app#app#app#app#app #shade .sheet>header :is(#studySheetTabs button,#close){pointer-events:auto!important;}
+html body[data-ui-theme] #app#app#app#app#app#app#app#app #shade .sheet::before{pointer-events:none!important;}
+/* Tab words sit lower, nearer the rim, and the points count leaves the Character tab (the sheet says "2 to spend"). */
+html body[data-ui-theme] #app#app#app#app#app#app#app#app #shade .sheet #studySheetTabs button,html body[data-ui-theme] #app#app#app#app#app#app#app#app #shade .sheet #studySheetTabs button:is(.on,[aria-selected=true],[aria-pressed=true]){padding-top:12px!important;padding-bottom:18px!important;}
+html body[data-ui-theme] #app#app#app#app#app#app#app#app #shade .sheet #studySheetTabs .study-points{display:none!important;}
+/* Justin, 2026-10-15 (phone): the tab row a few pixels lower, its words lower still, and the x a few pixels in off the rim. */
+html body[data-ui-theme] #app#app#app#app#app#app#app#app#app #shade .sheet>header{top:-32px!important;}
+html body[data-ui-theme] #app#app#app#app#app#app#app#app#app #shade .sheet #studySheetTabs button,html body[data-ui-theme] #app#app#app#app#app#app#app#app#app #shade .sheet #studySheetTabs button:is(.on,[aria-selected=true],[aria-pressed=true]){padding-top:14px!important;padding-bottom:16px!important;}
+html body[data-ui-theme] #app#app#app#app#app#app#app#app#app#app#app #shade .sheet>header #close{top:52px!important;right:-2px!important;}
+@media(max-width:700px),(max-height:500px){html body[data-ui-theme] #app#app#app#app#app#app#app#app#app#app#app #shade .sheet>header #close{top:47px!important;right:3px!important;}}
+/* Inventory to the window rules (2026-10-15): no totals column (the Character sheet has the numbers). PC: the hero with
+   his worn slots, then the bag and pouch. Phones: the seven worn slots in one row, the bag full width, then the pouch. */
+html body[data-ui-theme] #app#app#app#app #shade #mEquip .gearwrap{grid-template-columns:minmax(0,1.15fr) minmax(0,1fr)!important;gap:16px 24px!important;}
+html body[data-ui-theme] #app#app#app#app #shade #mEquip .gearwrap .sec{margin:0 0 8px!important;}
+html body[data-ui-theme] #app#app#app#app #shade #mEquip .tgear .tg-top{display:block!important;}
+html body[data-ui-theme] #app#app#app#app #shade #mEquip .tgear .tg-top>div+div{margin-top:16px;}
+html body[data-ui-theme] #app#app#app#app #shade #mEquip .tgear .tg-slots{display:grid!important;grid-template-columns:repeat(7,minmax(0,1fr))!important;gap:4px!important;}
+html body[data-ui-theme] #app#app#app#app #shade #mEquip .tgear .tg-slots .gslot{width:auto!important;min-width:0!important;}
+html body[data-ui-theme] #app#app#app#app #shade #mEquip .tgear .tg-slots .gslot .lab{font-size:var(--fs-small)!important;}
+html body[data-ui-theme] #app#app#app#app #shade #mEquip .tgear .tg-cells{grid-template-columns:repeat(5,minmax(0,1fr))!important;}
+html body[data-ui-theme] #app#app#app#app #shade #mEquip .tgear>div:last-child{margin-top:16px;}
+html body[data-ui-theme] #app#app#app#app#app #shade #mEquip .gearwrap{grid-template-columns:minmax(0,1fr) minmax(300px,380px)!important;}
+html body[data-ui-theme] #app#app#app#app #shade #mEquip .gearwrap .invgrid .cell{aspect-ratio:1/1!important;height:auto!important;min-height:0!important;}
+html body[data-ui-theme] #app#app#app#app#app #shade #mEquip .gearwrap .sec:not(:first-child){margin-top:16px!important;}
+html body[data-ui-theme] #app#app#app#app#app #shade #mEquip .tgear .tg-slots .gslot .lab{white-space:nowrap!important;letter-spacing:-.2px;padding:0!important;}
+/* Phones on their side: worn, bag and pouch side by side instead of stacked. */
+@media(orientation:landscape) and (max-height:600px){
+ html body[data-ui-theme] #app#app#app#app#app #shade #mEquip .tgear{display:grid!important;grid-template-columns:auto minmax(0,260px) minmax(0,1fr)!important;gap:0 20px!important;align-items:start!important;}
+ html body[data-ui-theme] #app#app#app#app#app #shade #mEquip .tgear .tg-top{display:contents!important;}
+ html body[data-ui-theme] #app#app#app#app#app #shade #mEquip .tgear .tg-top>div+div{margin-top:0!important;}
+ html body[data-ui-theme] #app#app#app#app#app #shade #mEquip .tgear>div:last-child{margin-top:0!important;}
+ html body[data-ui-theme] #app#app#app#app#app#app #shade #mEquip .tgear .tg-slots{grid-template-columns:repeat(2,52px)!important;}
+ html body[data-ui-theme] #app#app#app#app#app#app #shade #mEquip .tgear .tg-slots .gslot{width:52px!important;}
+}
+@media(orientation:landscape) and (max-height:600px){html body[data-ui-theme] #app#app#app#app#app#app #shade #mEquip .tgear .tg-slots .gslot{height:auto!important;min-height:0!important;padding:2px 0!important;}}
+/* Inventory with its gear stats column: stats, then worn with the hero, then bag and pouch. Narrower windows drop the stats. */
+html body[data-ui-theme] #app#app#app#app#app#app #shade #mEquip .gearwrap{grid-template-columns:minmax(200px,240px) minmax(0,1fr) minmax(260px,340px)!important;gap:16px 24px!important;}
+html body[data-ui-theme] #app#app#app #shade #mEquip .gstats{min-width:0;}
+html body[data-ui-theme] #app#app#app #shade #mEquip .gstats .kv{display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;gap:2px 12px!important;font-size:var(--fs-small)!important;}
+html body[data-ui-theme] #app#app#app #shade #mEquip .gstats .kv>span{color:var(--house-ash);}
+html body[data-ui-theme] #app#app#app #shade #mEquip .gstats .kv>b{text-align:right;}
+html body[data-ui-theme] #app#app#app #shade #mEquip .gstats .res{font-size:var(--fs-small)!important;gap:2px 12px!important;}
+html body[data-ui-theme] #app#app#app #shade #mEquip .gstats .sec:not(:first-child){margin-top:16px!important;}
+@media(max-width:899px){html body[data-ui-theme] #app#app#app #shade #mEquip .gstats{display:none!important;}html body[data-ui-theme] #app#app#app#app#app#app#app #shade #mEquip .gearwrap{grid-template-columns:minmax(0,1fr) minmax(260px,340px)!important;}}
+/* Phone Inventory, below the pouch: the hero beside the gear numbers, side by side. */
+html body[data-ui-theme] #app#app#app#app#app #shade #mEquip .tgear .tg-mid{display:grid!important;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr)!important;gap:12px!important;margin-top:16px!important;align-items:start!important;}
+html body[data-ui-theme] #app#app#app#app#app #shade #mEquip .tgear .tg-portrait{min-height:220px!important;border:0!important;border-radius:6px!important;background:radial-gradient(ellipse at 50% 70%,#2a2d31,#141619 70%)!important;position:sticky;top:0;}
+html body[data-ui-theme] #app#app#app#app#app #shade #mEquip .tgear .tg-tot{display:block!important;}
+html body[data-ui-theme] #app#app#app#app#app #shade #mEquip .tgear .tg-tot .kv{display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;gap:2px 8px!important;font-size:var(--fs-small)!important;}
+html body[data-ui-theme] #app#app#app#app#app #shade #mEquip .tgear .tg-tot .res{grid-template-columns:minmax(0,1fr)!important;font-size:var(--fs-small)!important;gap:2px!important;}
+html body[data-ui-theme] #app#app#app#app#app #shade #mEquip .tgear .tg-tot .tg-sec:not(:first-child){margin-top:12px!important;}
+@media(orientation:landscape) and (max-height:600px){html body[data-ui-theme] #app#app#app#app#app#app #shade #mEquip .tgear .tg-mid{grid-column:1/-1!important;grid-template-columns:200px minmax(0,1fr)!important;}html body[data-ui-theme] #app#app#app#app#app#app #shade #mEquip .tgear .tg-tot{columns:2;column-gap:20px;}}
+/* the old two-up worn grid was capped at 184px wide (interface.css); the one-row worn strip spans the window */
+html body[data-ui-theme] #app#app#app#app#app #shade #mEquip .tgear .tg-slots{max-width:none!important;margin:0!important;}
+html body[data-ui-theme] #app#app#app#app#app #shade #mEquip .tgear .tg-top{max-width:none!important;}
+@media(orientation:landscape) and (max-height:600px){html body[data-ui-theme] #app#app#app#app#app#app #shade #mEquip .tgear .tg-slots{max-width:110px!important;}}
+/* tablets held upright: the bag uses the room under the worn row instead of a 350px block in the middle */
+@media(min-width:600px) and (orientation:portrait){html body[data-ui-theme] #app#app#app#app#app #shade #mEquip .tgear .tg-cells{width:min(100%,440px)!important;margin:0!important;}}
+/* Bigger tablets held upright (Justin, 2026-10-15: "inventory slots on the right and the equip slots on the left in
+   portrait without the paper doll"): worn two-up on the left, the bag on the right, then the pouch and the gear numbers. */
+@media(min-width:600px) and (orientation:portrait){
+ html body[data-ui-theme] #app#app#app#app#app#app #shade #mEquip .tgear .tg-top{display:grid!important;grid-template-columns:auto minmax(0,1fr)!important;gap:0 24px!important;align-items:start!important;}
+ html body[data-ui-theme] #app#app#app#app#app#app #shade #mEquip .tgear .tg-top>div+div{margin-top:0!important;}
+ html body[data-ui-theme] #app#app#app#app#app#app #shade #mEquip .tgear .tg-slots{grid-template-columns:repeat(2,72px)!important;}
+ html body[data-ui-theme] #app#app#app#app#app#app #shade #mEquip .tgear .tg-cells{width:min(100%,460px)!important;}
+ html body[data-ui-theme] #app#app#app#app#app#app #shade #mEquip .tgear .tg-portrait{display:none!important;}
+ html body[data-ui-theme] #app#app#app#app#app#app #shade #mEquip .tgear .tg-mid{grid-template-columns:minmax(0,1fr)!important;}
+ html body[data-ui-theme] #app#app#app#app#app#app #shade #mEquip .tgear .tg-tot{columns:2;column-gap:32px;}
+}
+/* Faith to the window rules (2026-10-15): the god and its numbers and rule on the left; boons and abilities on the right
+   as names (words on hover or a tap). Spacing 4 / 8 / 16. Phones stack the two. */
+html body[data-ui-theme] #app#app#app #shade #mFaith .faith-v2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px 32px;align-items:start;}
+html body[data-ui-theme] #app#app#app #shade #mFaith .faith-v2 .godhead{display:flex;gap:16px;align-items:center;margin:0 0 16px;}
+html body[data-ui-theme] #app#app#app #shade #mFaith .faith-v2 .faith-art{flex:0 0 80px;width:80px;height:80px;}
+html body[data-ui-theme] #app#app#app #shade #mFaith .faith-v2 h3{margin:0;font-size:var(--fs-head);}
+html body[data-ui-theme] #app#app#app #shade #mFaith .faith-v2 .faith-blurb{margin-top:4px;color:var(--house-dim);font-size:var(--fs-small);}
+html body[data-ui-theme] #app#app#app #shade #mFaith .faith-nums{display:flex;flex-wrap:wrap;gap:4px 24px;margin:0 0 16px;font-size:var(--fs-body);color:var(--house-ink);font-variant-numeric:tabular-nums;}
+html body[data-ui-theme] #app#app#app #shade #mFaith .faith-nums small{color:var(--house-dim);font-size:var(--fs-small);margin-right:4px;}
+html body[data-ui-theme] #app#app#app #shade #mFaith .faith-facts{display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px 16px;font-size:var(--fs-small);line-height:1.35;}
+html body[data-ui-theme] #app#app#app #shade #mFaith .faith-facts>span{color:var(--house-dim);white-space:nowrap;}
+html body[data-ui-theme] #app#app#app #shade #mFaith .faith-facts>div{color:var(--house-ash);}
+html body[data-ui-theme] #app#app#app #shade #mFaith .faith-v2 .sec{margin:0 0 8px!important;}
+html body[data-ui-theme] #app#app#app #shade #mFaith .faith-v2 .sec small{font:400 var(--fs-small)/1 "Spectral",Georgia,serif;color:var(--house-dim);margin-left:8px;}
+html body[data-ui-theme] #app#app#app #shade #mFaith .faith-v2 .ftiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:4px 16px;margin:0 0 16px;}
+html body[data-ui-theme] #app#app#app #shade #mFaith .faith-v2 :is(.ftile,.abrow){display:flex!important;align-items:center;gap:8px;min-height:32px;padding:2px 0!important;background:none!important;border:0!important;cursor:help;}
+html body[data-ui-theme] #app#app#app #shade #mFaith .faith-v2 .abrow{cursor:grab;min-height:40px;}
+html body[data-ui-theme] #app#app#app #shade #mFaith .faith-v2 :is(.ftile,.abrow) .k{min-width:14px;color:var(--god-col);font-size:var(--fs-small);text-align:center;}
+html body[data-ui-theme] #app#app#app #shade #mFaith .faith-v2 :is(.ftile,.abrow) .n{flex:1 1 auto;color:var(--house-ink);font-size:var(--fs-body);}
+html body[data-ui-theme] #app#app#app #shade #mFaith .faith-v2 :is(.ftile,.abrow):is(:hover,:focus-visible) .n{color:var(--house-accent);}
+html body[data-ui-theme] #app#app#app #shade #mFaith .faith-v2 .abrow .pico{flex:0 0 28px;width:28px;height:28px;}
+html body[data-ui-theme] #app#app#app #shade #mFaith .faith-v2 .abrow .prayer{margin-left:auto;}
+@media(max-width:700px){html body[data-ui-theme] #app#app#app #shade #mFaith .faith-v2{grid-template-columns:minmax(0,1fr);}}
+html body[data-ui-theme][data-ui-theme] #app#app#app#app #shade #mFaith .faith-v2 .abrow .prayer{min-height:30px!important;height:30px!important;padding:0 14px 3px!important;font-size:var(--fs-small)!important;}
+html body[data-ui-theme] #app#app#app #shade #mFaith .faith-v2 .fboons{display:flex;flex-direction:column;gap:8px;margin:0 0 16px;}
+html body[data-ui-theme] #app#app#app #shade #mFaith .faith-v2 .fboon{display:flex;gap:8px;align-items:baseline;}
+html body[data-ui-theme] #app#app#app #shade #mFaith .faith-v2 .fboon .k{min-width:14px;color:var(--god-col);font-size:var(--fs-small);text-align:center;}
+html body[data-ui-theme] #app#app#app #shade #mFaith .faith-v2 .fboon .n{color:var(--house-ink);font-size:var(--fs-body);}
+html body[data-ui-theme] #app#app#app #shade #mFaith .faith-v2 .fboon .d{color:var(--house-ash);font-size:var(--fs-small);line-height:1.35;margin-top:2px;}
+
+/* The six-gem window drawn in pieces (Justin, 2026-10-15: "it's just stretching out the base instead of cutting the edges
+   and lengthening them"): corners, anvil and side gems keep their drawn shape; only the plain rails stretch, along their
+   length. --fw is the drawn size of a corner. */
+html body[data-ui-theme][data-ui-theme] :is(#create#create .creation-record,#modal#modal .mbox.forge-modal,#over.end-screen .box)::before{--fw:72px;background:none!important;border:0!important;border-image:none!important;background-image:url(../art/ui/frame6/anvil.png),url(../art/ui/frame6/gem-left.png),url(../art/ui/frame6/gem-right.png),url(../art/ui/frame6/tl.png),url(../art/ui/frame6/tr.png),url(../art/ui/frame6/bl.png),url(../art/ui/frame6/br.png),url(../art/ui/frame6/top.png),url(../art/ui/frame6/bottom.png),url(../art/ui/frame6/left.png),url(../art/ui/frame6/right.png),url(../art/ui/frame6/face.png)!important;background-position:center top calc(var(--fw) * 20 / 230),left 0 center,right 0 center,left top,right top,left bottom,right bottom,left var(--fw) top 0,left var(--fw) bottom 0,left 0 top var(--fw),right 0 top var(--fw),center!important;background-size:calc(var(--fw) * 275 / 230) calc(var(--fw) * 210 / 230),var(--fw) calc(var(--fw) * 170 / 230),var(--fw) calc(var(--fw) * 170 / 230),var(--fw) var(--fw),var(--fw) var(--fw),var(--fw) var(--fw),var(--fw) var(--fw),calc(100% - 2 * var(--fw)) var(--fw),calc(100% - 2 * var(--fw)) var(--fw),var(--fw) calc(100% - 2 * var(--fw)),var(--fw) calc(100% - 2 * var(--fw)),calc(100% - 2 * var(--fw)) calc(100% - 2 * var(--fw))!important;background-repeat:no-repeat!important;}
+@media(max-width:700px),(max-height:500px){html body[data-ui-theme][data-ui-theme] :is(#create#create .creation-record,#modal#modal .mbox.forge-modal,#over.end-screen .box)::before{--fw:52px;}}
+/* The call-to-action glow is the words, not the plate (Justin, 2026-10-15: "it's just an overlay on the button that washes
+   it out. What i wanted was a glowing blue highlight to the actual text"). The plate stays as drawn; the lettering is lit
+   blue and breathes. */
+@keyframes forgeWordGlow{0%,100%{text-shadow:0 1px 0 #000,0 0 6px #6fb6ff,0 0 14px #3a8ad6b3;}50%{text-shadow:0 1px 0 #000,0 0 10px #8cc8ff,0 0 24px #3a8ad6;}}
+html body[data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme] :is(#title#title#title#title#title#title .menu #tNew,#title#title#title#title#title#title .menu #tContinue,#create#create#create#create#create #begin,#create#create#create#create#create .creation-steps :is(#cConfirm,button[aria-current=step]))::before{filter:none!important;animation:none!important;}
+html body[data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme] :is(#title#title#title#title#title#title .menu:not(:has(#tContinue)) #tNew,#title#title#title#title#title#title .menu #tContinue,#create#create#create#create#create #begin,#create#create#create#create#create .creation-steps #cConfirm .creation-step-value){color:#eaf4ff!important;-webkit-text-fill-color:#eaf4ff!important;text-shadow:0 1px 0 #000,0 0 6px #6fb6ff,0 0 14px #3a8ad6b3!important;}
+@media(prefers-reduced-motion:no-preference){html body[data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme] :is(#title#title#title#title#title#title .menu:not(:has(#tContinue)) #tNew,#title#title#title#title#title#title .menu #tContinue,#create#create#create#create#create #begin,#create#create#create#create#create .creation-steps #cConfirm .creation-step-value){animation:forgeWordGlow 1.8s ease-in-out infinite!important;}}
+html body[data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme] #title#title#title#title#title#title .menu #tContinue .sub{animation:none!important;text-shadow:0 1px 0 #000!important;color:var(--house-ash)!important;-webkit-text-fill-color:var(--house-ash)!important;}
+/* Character, phone on its side: three columns like the PC (Justin: "phone landscape doesn't have passives? can we do three columns") */
+@media(min-width:701px) and (max-height:500px){html body[data-ui-theme] #app#app#app#app#app #shade #mChar .char-grid{grid-template-columns:minmax(0,1fr) minmax(0,.8fr) minmax(0,1fr)!important;grid-template-areas:"who who who" "left abil traits"!important;gap:8px 16px!important;}}
+/* Creation panel order (Justin, 2026-10-15: "Dwarf should be above stats"): the choice's name and summary first, then the
+   four stats, then its abilities. Tighter rhythm so the panel fits without scrolling. */
+html body[data-ui-theme] #create#create#create .creation-record-body{display:flex!important;flex-direction:column!important;}
+html body[data-ui-theme] #create#create#create .creation-record-body>[data-record-panel=traits]{display:contents!important;}
+html body[data-ui-theme] #create#create#create .creation-record-body>[data-record-panel=traits]>:first-child{order:1;}
+html body[data-ui-theme] #create#create#create .creation-record-body>.hero-who{order:2;}
+html body[data-ui-theme] #create#create#create .creation-record-body>[data-record-panel=traits]>:not(:first-child){order:3;}
+html body[data-ui-theme] #create#create#create#create .creation-record .build-fact{margin:0!important;padding:8px 0!important;}
+html body[data-ui-theme] #create#create#create#create .creation-record .build-fact h2{margin:0 0 4px!important;}
+html body[data-ui-theme] #create#create#create#create .creation-record .hero-stats{margin:0!important;padding:8px 0!important;}
+html body[data-ui-theme][data-ui-theme] #create#create#create#create .creation-record-body>.hero-who{order:2!important;}
+/* Phones and short screens: creation abilities are names with icons, their words on a tap, so the panel needs no scroll. */
+@container create-screen (max-width:700px) or (max-height:500px){
+ html body[data-ui-theme][data-ui-theme] #create#create#create .creation-record .creation-ability .choice-copy{display:none!important;}
+ html body[data-ui-theme][data-ui-theme] #create#create#create .creation-record .creation-abilities{display:grid!important;grid-template-columns:1fr 1fr!important;gap:4px 12px!important;}
+ html body[data-ui-theme][data-ui-theme] #create#create#create .creation-record .creation-abilities>h2{grid-column:1/-1;}
+ html body[data-ui-theme][data-ui-theme] #create#create#create .creation-record .creation-ability{min-height:36px;align-items:center!important;cursor:help;}
+}
+/* Small screens: the panel's inner margin follows the drawn frame (52px corners), names stay on one line, stats fit. */
+@container create-screen (max-width:700px) or (max-height:500px){
+ html body[data-ui-theme][data-ui-theme] #create#create#create#create#create#create .creation-record{grid-template-columns:30px minmax(0,1fr) 28px!important;grid-template-rows:30px auto minmax(0,1fr) 22px!important;}
+ html body[data-ui-theme][data-ui-theme] #create#create#create#create .creation-record .creation-ability .choice-name{white-space:nowrap!important;overflow:hidden;text-overflow:ellipsis;font-size:var(--fs-body)!important;}
+ html body[data-ui-theme][data-ui-theme] #create#create#create#create .creation-record .creation-ability-icon{flex:0 0 26px!important;width:26px!important;height:26px!important;}
+ html body[data-ui-theme][data-ui-theme] #create#create#create#create .creation-record .hero-stats{gap:4px!important;font-size:var(--fs-small)!important;}
+ html body[data-ui-theme][data-ui-theme] #create#create#create#create .creation-record .build-fact{padding:4px 0!important;}
+ html body[data-ui-theme][data-ui-theme] #create#create#create#create .creation-record .build-fact h2{font-size:var(--fs-small)!important;}
+}
+@container create-screen (max-height:700px) and (max-width:700px){html body[data-ui-theme] #create#create#create .wrap{grid-template-rows:40px 64px 96px 66px minmax(0,1fr) 46px!important;}}
+/* Creation abilities are names everywhere, their words on hover or a tap (window rules); a two-column list of names. */
+html body[data-ui-theme][data-ui-theme] #create#create#create .creation-record .creation-ability .choice-copy{display:none!important;}
+html body[data-ui-theme][data-ui-theme] #create#create#create .creation-record .creation-abilities{display:grid!important;grid-template-columns:1fr 1fr!important;gap:4px 12px!important;}
+html body[data-ui-theme][data-ui-theme] #create#create#create .creation-record .creation-abilities>h2{grid-column:1/-1;}
+html body[data-ui-theme][data-ui-theme] #create#create#create .creation-record .creation-ability{min-height:36px;align-items:center!important;cursor:help;}
+/* the frame's corner size follows the creation design, not the window (tablets scale the phone design up) */
+@container create-screen (max-width:700px) or (max-height:500px){html body[data-ui-theme][data-ui-theme] #create#create .creation-record::before{--fw:52px!important;}}
+/* only a step's own name goes above the stats; the ready screen keeps stats first */
+html body[data-ui-theme][data-ui-theme][data-ui-theme] #create#create#create#create .creation-record-body>[data-record-panel=traits]>:first-child:not([data-build-fact=race],[data-build-fact=court],[data-build-fact=cls],[data-build-fact=god]){order:3!important;}
+/* the starting affinity is a name too ("Air 1"), its words on hover or a tap */
+html body[data-ui-theme][data-ui-theme] #create#create#create .creation-record [data-build-fact=affinity] .choice-copy{display:none!important;}
+@container create-screen (max-height:700px){
+ html body[data-ui-theme][data-ui-theme][data-ui-theme] #create#create#create#create .creation-record .build-fact{padding:2px 0!important;}
+ html body[data-ui-theme][data-ui-theme][data-ui-theme] #create#create#create#create .creation-record .build-fact h2{margin:0 0 2px!important;line-height:1.2!important;}
+ html body[data-ui-theme][data-ui-theme][data-ui-theme] #create#create#create#create .creation-record .hero-stats{padding:4px 0!important;}
+ html body[data-ui-theme][data-ui-theme][data-ui-theme] #create#create#create#create .creation-record .creation-ability{min-height:30px!important;}
+ html body[data-ui-theme][data-ui-theme][data-ui-theme] #create#create#create#create .creation-record .pick-words{line-height:1.3!important;}
+}
+@container create-screen (max-width:700px) or (max-height:500px){html body[data-ui-theme][data-ui-theme] #create#create#create#create .creation-record .creation-ability-kind{display:none!important;}}
+/* Save / Exit (Justin, 2026-10-15: "save exit text is redundant and over writes the save game text"): a small window of its
+   own with no sheet tabs and no title over its first heading; the x stays in its corner. */
+html body[data-ui-theme] #app#app#app#app#app#app #shade .sheet:has(#mSave.on){margin-top:0!important;}
+html body[data-ui-theme] #app#app#app#app#app#app #shade .sheet:has(#mSave.on) :is(#studySheetTabs,#sheetTitle){display:none!important;}
+html body[data-ui-theme] #app#app#app#app#app#app#app#app#app#app#app#app #shade .sheet:has(#mSave.on)>header #close{top:42px!important;}
+html body[data-ui-theme] #app#app#app #shade #mSave .sec:first-child{margin-top:0!important;padding-right:44px;}
+/* Every scrolling list inside a window shows its steel scrollbar (Justin, 2026-10-15, the Journal: "no scroll bar?"). The
+   Journal scrolls an inner panel the house rule did not reach; this covers every scroller in a window, a little wider. */
+html body[data-ui-theme] :is(#modal,#app #shade,#title .panel) *{scrollbar-width:thin!important;scrollbar-color:#8a9099 #ffffff12!important;}
+html body[data-ui-theme] :is(#modal,#app #shade,#title .panel) *::-webkit-scrollbar{width:8px!important;height:8px!important;background:#ffffff12!important;}
+html body[data-ui-theme] :is(#modal,#app #shade,#title .panel) *::-webkit-scrollbar-thumb{background:#8a9099!important;border:0!important;border-radius:4px!important;min-height:40px;}
+html body[data-ui-theme] :is(#modal,#app #shade,#title .panel) *::-webkit-scrollbar-button{display:none!important;}
+/* Plain popups (confirm, stairs, portals) are as big as their words (Justin, 2026-10-15: "too big of a window for this"). */
+html body[data-ui-theme][data-ui-theme] #modal#modal#modal .mbox:not(.wide):not(.forge-modal):not(.journal-modal){width:fit-content!important;min-width:min(300px,calc(100vw - 24px))!important;max-width:min(440px,calc(100vw - 24px))!important;padding:26px 28px 22px!important;}
+html body[data-ui-theme][data-ui-theme] #modal#modal#modal .mbox:not(.wide):not(.forge-modal):not(.journal-modal) #mBody p{margin:4px 0 12px!important;}
+html body[data-ui-theme][data-ui-theme] #modal#modal#modal .mbox:not(.wide):not(.forge-modal):not(.journal-modal) #mFoot{gap:8px!important;margin:0!important;padding:0!important;justify-content:flex-end!important;}
+html body[data-ui-theme][data-ui-theme] #modal#modal#modal .mbox:not(.wide):not(.forge-modal):not(.journal-modal) #mTitle{padding-right:36px!important;margin:0 0 4px!important;}
+/* The window body's own scrollbar sat under the drawn frame's right rail; it now sits inside the window, with a track. */
+html body[data-ui-theme][data-ui-theme] :is(#modal#modal .mbody,#app#app #shade .bodyw){scrollbar-color:#8a9099 #ffffff12!important;padding-right:6px!important;margin-right:4px!important;}
+html body[data-ui-theme][data-ui-theme] :is(#modal#modal .mbody,#app#app #shade .bodyw)::-webkit-scrollbar{width:8px!important;background:#ffffff12!important;}
+html body[data-ui-theme][data-ui-theme] :is(#modal#modal .mbody,#app#app #shade .bodyw)::-webkit-scrollbar-thumb{background:#8a9099!important;border-radius:4px!important;}
+/* End screen on small screens (Justin, 2026-10-15: "everything should fit without scrolling and the buttons are coming off
+   the ends"): short screens put the hero and score on the left and the numbers on the right; narrow ones drop the story
+   line and pack the numbers three across. The buttons wrap inside the frame. */
+html body[data-ui-theme][data-ui-theme] #over.end-screen .end-actions{flex-wrap:wrap!important;justify-content:center!important;gap:8px!important;max-width:100%!important;}
+html body[data-ui-theme][data-ui-theme] #over.end-screen .end-actions button{min-width:0!important;}
+@media(max-height:500px){
+ html body[data-ui-theme][data-ui-theme] #over#over.end-screen .box{width:min(760px,calc(100vw - 24px))!important;padding:26px 34px 20px!important;}
+ html body[data-ui-theme][data-ui-theme] #over#over.end-screen #overP{display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);grid-template-areas:"el stats" "name stats" "build stats" "score aff" "score why";gap:2px 20px;overflow:visible!important;align-items:start;}
+ html body[data-ui-theme] #over.end-screen .end-elements{grid-area:el}html body[data-ui-theme] #over.end-screen .end-name{grid-area:name}html body[data-ui-theme] #over.end-screen .run-build{grid-area:build}
+ html body[data-ui-theme] #over.end-screen .end-score{grid-area:score}html body[data-ui-theme] #over.end-screen .end-stats{grid-area:stats}html body[data-ui-theme] #over.end-screen .end-affinities{grid-area:aff}html body[data-ui-theme] #over.end-screen .run-breakdown{grid-area:why}
+ html body[data-ui-theme] #over.end-screen .end-story{display:none!important;}
+ html body[data-ui-theme][data-ui-theme] #over.end-screen .end-stats{grid-template-columns:repeat(3,minmax(0,1fr))!important;margin:0!important;}
+ html body[data-ui-theme][data-ui-theme] #over.end-screen .end-stats span{padding:4px!important;}
+ html body[data-ui-theme][data-ui-theme] #over.end-screen #overT{margin:0 0 4px!important;font-size:var(--fs-word)!important;}
+ html body[data-ui-theme][data-ui-theme] #over.end-screen .end-actions{margin-top:8px!important;}
+}
+@media(max-width:420px) and (max-height:760px){
+ html body[data-ui-theme] #over.end-screen .end-story{display:none!important;}
+ html body[data-ui-theme][data-ui-theme] #over.end-screen .end-stats{grid-template-columns:repeat(3,minmax(0,1fr))!important;}
+ html body[data-ui-theme][data-ui-theme] #over.end-screen .end-stats span{padding:4px!important;}
+ html body[data-ui-theme][data-ui-theme] #over#over.end-screen #overP{overflow:visible!important;}
+}
+@media(max-width:420px) and (max-height:760px){
+ html body[data-ui-theme][data-ui-theme] #over#over.end-screen .box{height:auto!important;max-height:calc(100dvh - 16px)!important;display:flex!important;flex-direction:column!important;padding:28px 26px 20px!important;}
+ html body[data-ui-theme][data-ui-theme] #over#over.end-screen #overP{flex:0 1 auto!important;display:flex!important;flex-direction:column!important;gap:2px!important;}
+ html body[data-ui-theme][data-ui-theme] #over#over.end-screen .end-actions{position:static!important;flex:none!important;margin-top:8px!important;}
+ html body[data-ui-theme][data-ui-theme] #over.end-screen .end-score{font-size:36px!important;line-height:1.1!important;}
+ html body[data-ui-theme][data-ui-theme] #over.end-screen .end-affinities{line-height:1.25!important;margin:2px 0!important;}
+ html body[data-ui-theme][data-ui-theme] #over.end-screen .run-breakdown{margin:2px 0!important;}
+}
+/* ---- The Elemental Forge, rebuilt to the window rules (Justin, 2026-10-15: "the worst interface in the game right now ...
+   such a poor use of space"). Header: motes, affinity, cap, essence on one line. Tabs on the drawn tab plate. Fuse: six
+   element tiles. Craft: sigil tiles. Enchant: gear cards showing what the chosen mote does. Words on hover or a tap. */
+html body[data-ui-theme] #modal#modal .forge-modal #forgeBody{display:flex;flex-direction:column;gap:12px;}
+html body[data-ui-theme] #modal#modal .forge-modal .forge-top{display:flex!important;flex-wrap:wrap;align-items:center;gap:8px 16px;margin:0!important;}
+html body[data-ui-theme] #modal#modal .forge-modal .forge-info{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:var(--fs-small);color:var(--house-ash);}
+html body[data-ui-theme] #modal#modal .forge-modal .ftabs{display:flex!important;flex-wrap:wrap;gap:4px!important;margin:0!important;border:0!important;}
+html body[data-ui-theme] #modal#modal#modal .forge-modal .ftabs button{position:relative;isolation:isolate;height:36px!important;min-height:36px!important;padding:4px 14px 6px!important;background:none!important;border:0!important;box-shadow:none!important;font:700 var(--fs-small)/1 "Grenze Gotisch",serif!important;color:var(--house-dim)!important;}
+html body[data-ui-theme][data-ui-theme] #modal#modal#modal .forge-modal .ftabs button::before{content:""!important;display:block!important;position:absolute!important;inset:0!important;z-index:-1!important;border:solid transparent!important;border-width:5px 12px 6px!important;border-image:url(../art/ui/tab-steel-v1.png) 22 60 30 60 fill / 5px 12px 6px 12px / 0 stretch!important;filter:brightness(.6)!important;}
+html body[data-ui-theme][data-ui-theme] #modal#modal#modal .forge-modal .ftabs button.on{color:var(--house-accent)!important;}
+html body[data-ui-theme][data-ui-theme] #modal#modal#modal .forge-modal .ftabs button.on::before{filter:brightness(1.1)!important;}
+html body[data-ui-theme] #modal#modal .forge-modal .forge-why{margin:0;font-size:var(--fs-small);color:var(--house-dim);}
+html body[data-ui-theme] #modal#modal .forge-modal :is(.fuse-grid,.craft-grid,.enchcards){display:grid!important;gap:8px!important;}
+html body[data-ui-theme] #modal#modal .forge-modal .fuse-grid{grid-template-columns:repeat(3,minmax(0,1fr));}
+html body[data-ui-theme] #modal#modal .forge-modal .craft-grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));}
+html body[data-ui-theme] #modal#modal .forge-modal .enchcards{grid-template-columns:repeat(auto-fill,minmax(220px,1fr));}
+html body[data-ui-theme][data-ui-theme] #modal#modal#modal .forge-modal :is(.fuse-tile,.craft-tile){all:unset;box-sizing:border-box;display:grid;gap:2px 10px;padding:8px 10px;border-radius:4px;background:#ffffff0d;cursor:pointer;color:var(--house-ink);font:400 var(--fs-body)/1.25 "Spectral",Georgia,serif;}
+html body[data-ui-theme][data-ui-theme] #modal#modal#modal .forge-modal :is(.fuse-tile,.craft-tile)::before{display:none!important;content:none!important;}
+html body[data-ui-theme][data-ui-theme] #modal#modal#modal .forge-modal :is(.fuse-tile,.craft-tile):is(:hover,:focus-visible):not(:disabled){background:#ffffff1f;}
+html body[data-ui-theme][data-ui-theme] #modal#modal#modal .forge-modal :is(.fuse-tile,.craft-tile):disabled{opacity:.5;cursor:help;}
+html body[data-ui-theme] #modal#modal .forge-modal .fuse-tile{grid-template-columns:32px minmax(0,1fr);grid-template-areas:"art el" "art next";align-items:center;border-left:3px solid var(--el)!important;}
+html body[data-ui-theme] #modal#modal .forge-modal .fuse-tile .mart{grid-area:art;width:32px;height:32px;}
+html body[data-ui-theme] #modal#modal .forge-modal .fuse-tile .fuse-el{grid-area:el;font-family:"Grenze Gotisch",serif;font-weight:700;font-size:var(--fs-word);}
+html body[data-ui-theme] #modal#modal .forge-modal .fuse-tile .fuse-el b{color:var(--el);}
+html body[data-ui-theme] #modal#modal .forge-modal .fuse-tile .fuse-next{grid-area:next;font-size:var(--fs-small);color:var(--house-ash);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+html body[data-ui-theme] #modal#modal .forge-modal .craft-tile{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"name name" "motes cost";}
+html body[data-ui-theme] #modal#modal .forge-modal .craft-tile .craft-name{grid-area:name;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+html body[data-ui-theme] #modal#modal .forge-modal .craft-tile .recipe-motes{grid-area:motes;display:flex;gap:4px;align-items:center;}
+html body[data-ui-theme] #modal#modal .forge-modal .craft-tile .recipe-motes .dot{width:10px;height:10px;border-radius:50%;}
+html body[data-ui-theme] #modal#modal .forge-modal .craft-tile .craft-cost{grid-area:cost;font-size:var(--fs-small);color:var(--house-ash);}
+html body[data-ui-theme] #modal#modal .forge-modal .craft-tile .craft-cost::after{content:" essence";}
+html body[data-ui-theme][data-ui-theme] #modal#modal .forge-modal .enchcard{border:0!important;border-radius:4px!important;background:#ffffff0d!important;padding:8px 10px!important;cursor:pointer;}
+html body[data-ui-theme][data-ui-theme] #modal#modal .forge-modal .enchcard .now{display:none!important;}
+html body[data-ui-theme][data-ui-theme] #modal#modal .forge-modal .enchcard .new{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:var(--fs-small)!important;}
+html body[data-ui-theme] #modal#modal .forge-modal .fpanel{margin:0!important;}
+@media(max-width:700px){html body[data-ui-theme] #modal#modal .forge-modal .fuse-grid{grid-template-columns:repeat(2,minmax(0,1fr));}html body[data-ui-theme] #modal#modal .forge-modal .craft-grid{grid-template-columns:repeat(2,minmax(0,1fr));}html body[data-ui-theme] #modal#modal .forge-modal .enchcards{grid-template-columns:minmax(0,1fr);}html body[data-ui-theme] #modal#modal .forge-modal .ftabs button{padding:4px 8px 6px!important;}}
+/* the tile layouts at the same weight as the reset above them */
+html body[data-ui-theme][data-ui-theme] #modal#modal#modal .forge-modal .fuse-tile{grid-template-columns:32px minmax(0,1fr)!important;grid-template-areas:"art el" "art next"!important;align-items:center!important;border-left:3px solid var(--el)!important;min-height:58px;}
+html body[data-ui-theme][data-ui-theme] #modal#modal#modal .forge-modal .craft-tile{grid-template-columns:minmax(0,1fr) auto!important;grid-template-areas:"name name" "motes cost"!important;min-height:54px;}
+html body[data-ui-theme][data-ui-theme] #modal#modal#modal .forge-modal .ftabs button{font-size:var(--fs-body)!important;padding:4px 16px 7px!important;height:38px!important;}
+@media(max-width:700px){html body[data-ui-theme][data-ui-theme] #modal#modal#modal .forge-modal .ftabs button{padding:4px 10px 7px!important;}}
+html body[data-ui-theme][data-ui-theme][data-ui-theme] #modal#modal#modal#modal .forge-modal :is(.fuse-tile,.craft-tile){display:grid!important;font:400 var(--fs-body)/1.25 "Spectral",Georgia,serif!important;text-align:left!important;height:auto!important;padding:8px 10px!important;color:var(--house-ink)!important;-webkit-text-fill-color:currentColor!important;text-shadow:none!important;}
+html body[data-ui-theme][data-ui-theme][data-ui-theme] #modal#modal#modal#modal .forge-modal .fuse-tile .fuse-el{font:700 var(--fs-word)/1.1 "Grenze Gotisch",serif!important;}
+html body[data-ui-theme][data-ui-theme][data-ui-theme] #modal#modal#modal#modal .forge-modal :is(.fuse-next,.craft-cost){font-size:var(--fs-small)!important;color:var(--house-ash)!important;}
+/* Craft on wide screens: five across, one line per sigil (name, motes, cost), so every recipe shows at once. */
+@media(min-width:701px){
+ html body[data-ui-theme][data-ui-theme][data-ui-theme] #modal#modal#modal#modal .forge-modal .craft-grid{grid-template-columns:repeat(5,minmax(0,1fr))!important;gap:6px!important;}
+ html body[data-ui-theme][data-ui-theme][data-ui-theme] #modal#modal#modal#modal .forge-modal .craft-tile{grid-template-columns:minmax(0,1fr) auto!important;grid-template-areas:"name motes" "cost cost"!important;min-height:0!important;padding:6px 8px!important;gap:0 6px!important;}
+ html body[data-ui-theme][data-ui-theme][data-ui-theme] #modal#modal#modal#modal .forge-modal .craft-tile .craft-cost::after{content:""!important;}
+ html body[data-ui-theme][data-ui-theme][data-ui-theme] #modal#modal#modal#modal .forge-modal .mbox.forge-modal,html body[data-ui-theme] #modal#modal .mbox.forge-modal{width:min(1080px,calc(100vw - 24px))!important;}
+}
+@media(min-width:701px){html body[data-ui-theme][data-ui-theme][data-ui-theme] #modal#modal#modal#modal .forge-modal .craft-tile{grid-template-areas:"name name" "motes cost"!important;}}
+/* Forge tabs: the drawn tab plate as the button's own picture */
+html body[data-ui-theme][data-ui-theme][data-ui-theme] #modal#modal#modal#modal .forge-modal .ftabs button::before{display:none!important;}
+html body[data-ui-theme][data-ui-theme][data-ui-theme] #modal#modal#modal#modal .forge-modal .ftabs button{background:url(../art/ui/tab-steel-v1.png) center/100% 100% no-repeat!important;filter:brightness(.7);min-width:96px!important;}
+html body[data-ui-theme][data-ui-theme][data-ui-theme] #modal#modal#modal#modal .forge-modal .ftabs button.on{filter:none;}
+/* The Forge's inside follows its frame: 72px corners on wide screens, 52px on phones, with no extra margin inside. */
+html body[data-ui-theme][data-ui-theme][data-ui-theme] #modal#modal#modal#modal .mbox.forge-modal{padding:56px 64px 48px!important;}
+html body[data-ui-theme][data-ui-theme][data-ui-theme] #modal#modal#modal#modal .mbox.forge-modal :is(header,#mBody,.mbody){padding-left:0!important;padding-right:0!important;margin-left:0!important;margin-right:0!important;}
+@media(max-width:700px),(max-height:500px){
+ html body[data-ui-theme][data-ui-theme][data-ui-theme] #modal#modal#modal#modal .mbox.forge-modal{padding:40px 34px 34px!important;}
+ html body[data-ui-theme][data-ui-theme][data-ui-theme] #modal#modal#modal#modal .forge-modal .ftabs{flex-wrap:nowrap!important;gap:2px!important;}
+ html body[data-ui-theme][data-ui-theme][data-ui-theme] #modal#modal#modal#modal .forge-modal .ftabs button{min-width:0!important;flex:1 1 0;padding:4px 2px 7px!important;font-size:var(--fs-small)!important;white-space:nowrap;}
+}
+/* Short screens (phones on their side): the title and motes share a line, the tabs sit beside them, tiles are one line. */
+@media(max-height:500px){
+ html body[data-ui-theme][data-ui-theme][data-ui-theme] #modal#modal#modal#modal .mbox.forge-modal{padding:30px 40px 26px!important;}
+ html body[data-ui-theme][data-ui-theme][data-ui-theme] #modal#modal#modal#modal .forge-modal>header{margin:0!important;}
+ html body[data-ui-theme][data-ui-theme][data-ui-theme] #modal#modal#modal#modal .forge-modal #mTitle{font-size:max(20px,var(--fs-word))!important;height:auto!important;padding:0!important;}
+ html body[data-ui-theme][data-ui-theme][data-ui-theme] #modal#modal#modal#modal .forge-modal #forgeBody{gap:6px!important;}
+ html body[data-ui-theme][data-ui-theme][data-ui-theme] #modal#modal#modal#modal .forge-modal .ftabs button{height:30px!important;min-height:30px!important;}
+ html body[data-ui-theme][data-ui-theme][data-ui-theme] #modal#modal#modal#modal .forge-modal .fuse-tile{min-height:0!important;padding:4px 8px!important;grid-template-areas:"art el" "art next"!important;}
+ html body[data-ui-theme][data-ui-theme][data-ui-theme] #modal#modal#modal#modal .forge-modal .fuse-tile .mart{width:24px;height:24px;}
+ html body[data-ui-theme][data-ui-theme][data-ui-theme] #modal#modal#modal#modal .forge-modal .fuse-tile .fuse-el{font-size:var(--fs-body)!important;}
+ html body[data-ui-theme][data-ui-theme][data-ui-theme] #modal#modal#modal#modal .forge-modal .craft-grid{grid-template-columns:repeat(5,minmax(0,1fr))!important;gap:4px!important;}
+ html body[data-ui-theme][data-ui-theme][data-ui-theme] #modal#modal#modal#modal .forge-modal .craft-tile{padding:3px 6px!important;font-size:var(--fs-small)!important;}
+ html body[data-ui-theme][data-ui-theme][data-ui-theme] #modal#modal#modal#modal .forge-modal .enchcards{grid-template-columns:repeat(3,minmax(0,1fr))!important;}
+}
+/* ---- Forge, round 2 (Justin, 2026-10-15). Motes: the picture with its count beneath, six across, never overlapping.
+   Fuse: a tile per element with its rank large; the chosen one says below what the next point does, with the Fuse button.
+   Enchant: the same, a card per piece of gear and the detail below. Upgrade: worn gear only, one line each. */
+html body[data-ui-theme][data-ui-theme] #modal#modal#modal .forge-modal .pouch2{display:grid!important;grid-template-columns:repeat(6,minmax(40px,52px));gap:4px!important;}
+html body[data-ui-theme][data-ui-theme] #modal#modal#modal .forge-modal .pouch2 .mslot{display:flex!important;flex-direction:column!important;align-items:center!important;gap:0!important;padding:4px 0!important;background:#0000003d!important;border:0!important;border-radius:4px!important;min-width:0!important;width:auto!important;height:auto!important;}
+html body[data-ui-theme][data-ui-theme] #modal#modal#modal .forge-modal .pouch2 .mslot .mart{position:static!important;width:28px!important;height:28px!important;}
+html body[data-ui-theme][data-ui-theme] #modal#modal#modal .forge-modal .pouch2 .mslot b{position:static!important;font:700 var(--fs-body)/1.1 "Spectral",Georgia,serif!important;color:var(--house-ink)!important;}
+html body[data-ui-theme][data-ui-theme] #modal#modal#modal .forge-modal .pouch2 .mslot>span:not(.mart){display:none!important;}
+html body[data-ui-theme][data-ui-theme] #modal#modal#modal .forge-modal .pouch2 .mslot.none{opacity:.45;}
+html body[data-ui-theme][data-ui-theme][data-ui-theme] #modal#modal#modal#modal .forge-modal .fuse-tile{grid-template-columns:32px minmax(0,1fr) auto!important;grid-template-areas:"art el rank"!important;align-items:center!important;min-height:52px!important;}
+html body[data-ui-theme][data-ui-theme][data-ui-theme] #modal#modal#modal#modal .forge-modal .fuse-tile .fuse-rank{grid-area:rank;font:700 var(--fs-head)/1 "Grenze Gotisch",serif!important;color:var(--el)!important;}
+html body[data-ui-theme][data-ui-theme][data-ui-theme] #modal#modal#modal#modal .forge-modal :is(.fuse-tile,.enchcard).on{background:#ffffff26!important;box-shadow:inset 0 0 0 2px var(--house-accent)!important;}
+html body[data-ui-theme] #modal#modal .forge-modal .forge-detail{display:flex;gap:16px;align-items:center;padding:10px 12px;border-radius:4px;background:#0000004d;border-left:3px solid var(--el,var(--house-accent));}
+html body[data-ui-theme] #modal#modal .forge-modal .forge-detail .fd-text{flex:1 1 auto;min-width:0;}
+html body[data-ui-theme] #modal#modal .forge-modal .forge-detail .fd-name{display:block;color:var(--house-ink);font-size:var(--fs-body);}
+html body[data-ui-theme] #modal#modal .forge-modal .forge-detail :is(.fd-words,.now,.new){margin-top:4px;color:var(--house-ash);font-size:var(--fs-small);line-height:1.35;display:block!important;-webkit-line-clamp:unset!important;}
+html body[data-ui-theme] #modal#modal .forge-modal .forge-detail .fd-why{margin-top:4px;color:var(--house-dim);font-size:var(--fs-small);}
+html body[data-ui-theme][data-ui-theme][data-ui-theme] #modal#modal#modal .forge-modal .forge-detail .fd-act{flex:none;}
+html body[data-ui-theme][data-ui-theme][data-ui-theme] #modal#modal#modal .forge-modal .moterow{display:grid!important;grid-template-columns:repeat(6,minmax(40px,52px));gap:4px!important;margin:0!important;}
+html body[data-ui-theme][data-ui-theme][data-ui-theme] #modal#modal#modal .forge-modal .moterow button{all:unset;box-sizing:border-box;display:flex!important;flex-direction:column;align-items:center;padding:4px 0;border-radius:4px;background:#0000003d;cursor:pointer;color:var(--house-ink);font:700 var(--fs-body)/1.1 "Spectral",Georgia,serif;}
+html body[data-ui-theme][data-ui-theme][data-ui-theme] #modal#modal#modal .forge-modal .moterow button::before{display:none!important;}
+html body[data-ui-theme][data-ui-theme][data-ui-theme] #modal#modal#modal .forge-modal .moterow button.on{box-shadow:inset 0 0 0 2px var(--house-accent);background:#ffffff1f;}
+html body[data-ui-theme][data-ui-theme][data-ui-theme] #modal#modal#modal .forge-modal .moterow button:disabled{opacity:.4;cursor:default;}
+html body[data-ui-theme][data-ui-theme][data-ui-theme] #modal#modal#modal .forge-modal .moterow .mart{width:28px;height:28px;}
+html body[data-ui-theme][data-ui-theme][data-ui-theme] #modal#modal#modal#modal .forge-modal .enchcard{all:unset;box-sizing:border-box;display:grid!important;grid-template-columns:40px minmax(0,1fr) auto;grid-template-areas:"ic s dot" "ic t dot";gap:0 10px;align-items:center;padding:6px 10px!important;border-radius:4px;background:#ffffff0d!important;cursor:pointer;}
+html body[data-ui-theme][data-ui-theme][data-ui-theme] #modal#modal#modal#modal .forge-modal .enchcard::before{display:none!important;}
+html body[data-ui-theme] #modal#modal .forge-modal .enchcard .ic{grid-area:ic;width:40px;height:40px;}
+html body[data-ui-theme] #modal#modal .forge-modal .enchcard .s{grid-area:s;color:var(--house-dim);font-size:var(--fs-small);}
+html body[data-ui-theme] #modal#modal .forge-modal .enchcard .t{grid-area:t;color:var(--house-ink);font-size:var(--fs-body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+html body[data-ui-theme] #modal#modal .forge-modal .enchcard .ench-dot{grid-area:dot;width:10px;height:10px;border-radius:50%;}
+html body[data-ui-theme] #modal#modal .forge-modal .enchcard.off{opacity:.5;}
+html body[data-ui-theme] #modal#modal .forge-modal .up-row{display:grid!important;grid-template-columns:90px minmax(0,1fr) 56px auto;gap:12px;align-items:center;padding:4px 0!important;border:0!important;}
+html body[data-ui-theme] #modal#modal .forge-modal .up-row .up-where{color:var(--house-dim);font-size:var(--fs-small);}
+html body[data-ui-theme] #modal#modal .forge-modal .up-row .up-name{color:var(--house-ink);font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+html body[data-ui-theme] #modal#modal .forge-modal .up-row .up-plus{color:var(--house-ash);text-align:right;}
+@media(max-width:700px){
+ html body[data-ui-theme][data-ui-theme][data-ui-theme] #modal#modal#modal .forge-modal :is(.pouch2,.moterow){grid-template-columns:repeat(6,minmax(0,1fr))!important;width:100%;}
+ html body[data-ui-theme] #modal#modal .forge-modal .up-row{grid-template-columns:minmax(0,1fr) auto auto;}
+ html body[data-ui-theme] #modal#modal .forge-modal .up-row .up-where{display:none;}
+ html body[data-ui-theme] #modal#modal .forge-modal .forge-detail{flex-wrap:wrap;}
+}
+@media(max-height:500px){html body[data-ui-theme] #modal#modal .forge-modal .up-row{padding:0!important;}html body[data-ui-theme][data-ui-theme][data-ui-theme] #modal#modal#modal#modal .forge-modal .fuse-tile{min-height:40px!important;}html body[data-ui-theme] #modal#modal .forge-modal .forge-detail{padding:6px 10px;}}
+/* Creation, round 2 (Justin, 2026-10-15): one rule above and one below the stats and no others ("too many line breaks");
+   no section headings; abilities show their words on larger screens; the god's ability always says what it does; the
+   Passive tag is gone; a starting affinity is a named line of its own. */
+html body[data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme] #create#create#create .creation-record :is(.build-fact,.build-fact+.build-fact,section){border:0!important;box-shadow:none!important;}
+html body[data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme] #create#create#create .creation-record :is(.build-fact,section)::before,html body[data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme] #create#create#create .creation-record :is(.build-fact,section)::after{display:none!important;}
+html body[data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme] #create#create#create .creation-record .hero-who{border:0!important;}
+html body[data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme] #create#create#create .creation-record .hero-stats{border-top:1px solid #ffffff1f!important;border-bottom:1px solid #ffffff1f!important;margin:4px 0!important;}
+html body[data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme] #create#create#create .creation-record .creation-ability-kind{display:none!important;}
+html body[data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme] #create#create#create .creation-record .creation-affinity{display:block!important;grid-column:1/-1;}
+html body[data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme] #create#create#create .creation-record .creation-god-ability .choice-copy,html body[data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme] #create#create#create .creation-record [data-build-fact=god]~section .choice-copy{display:block!important;}
+@container create-screen (min-width:701px) and (min-height:501px){
+ html body[data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme] #create#create#create .creation-record :is(.creation-ability,.creation-affinity) .choice-copy{display:block!important;}
+ html body[data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme] #create#create#create .creation-record .creation-abilities{grid-template-columns:minmax(0,1fr)!important;}
+}
+/* Tablets held upright have the room too: their abilities say what they do. A god's one ability spans the panel. */
+@container create-screen (min-width:600px) and (min-height:760px){
+ html body[data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme] #create#create#create .creation-record :is(.creation-ability,.creation-affinity) .choice-copy{display:block!important;}
+ html body[data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme] #create#create#create .creation-record .creation-abilities{grid-template-columns:minmax(0,1fr)!important;}
+}
+html body[data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme] #create#create#create .creation-record [data-build-fact=god]~.creation-abilities{grid-template-columns:minmax(0,1fr)!important;}
+/* Options, round 2 (Justin, 2026-10-15): two columns wherever the window is wide enough (tablet and phone on their side
+   too), rows closer together, and a setting's label and its choices on one line. */
+html body[data-ui-theme][data-ui-theme][data-ui-theme] :is(#app#app #shade #mHelp,#titleSettings) .optgrid{grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr))!important;gap:4px 28px!important;}
+html body[data-ui-theme][data-ui-theme][data-ui-theme] :is(#app#app #shade #mHelp,#titleSettings) .optrow{margin:0!important;padding:3px 0!important;min-height:0!important;gap:8px!important;}
+html body[data-ui-theme][data-ui-theme][data-ui-theme] :is(#app#app #shade #mHelp,#titleSettings) .opt-section .sec{margin:8px 0 4px!important;}
+html body[data-ui-theme][data-ui-theme][data-ui-theme] :is(#app#app #shade #mHelp,#titleSettings) .c-info{margin:0 0 4px!important;font-size:var(--fs-small)!important;}
+@media(max-height:500px){html body[data-ui-theme][data-ui-theme][data-ui-theme] :is(#app#app #shade #mHelp,#titleSettings) .optgrid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:2px 20px!important;}}
+/* Faith on wide screens: there is room, so each ability says what it does (Justin, 2026-10-15) */
+html body[data-ui-theme] #app#app#app #shade #mFaith .faith-v2 .abrow .ab-words{display:none;}
+@media(min-width:900px) and (min-height:600px){html body[data-ui-theme] #app#app#app #shade #mFaith .faith-v2 .abrow{align-items:flex-start!important;}html body[data-ui-theme] #app#app#app #shade #mFaith .faith-v2 .abrow .ab-words{display:block;color:var(--house-ash);font-size:var(--fs-small);line-height:1.35;margin-top:2px;}}
+/* Plain popups: one question and two buttons (Justin: "Get rid the the second line of text ... bring the buttons inside") */
+html body[data-ui-theme][data-ui-theme][data-ui-theme] #modal#modal#modal#modal .mbox:not(.wide):not(.forge-modal):not(.journal-modal):has(#mFoot button){padding:30px 30px 26px!important;}
+html body[data-ui-theme][data-ui-theme][data-ui-theme] #modal#modal#modal#modal .mbox:not(.wide):not(.forge-modal):not(.journal-modal) #mFoot{position:static!important;margin:12px 0 0!important;justify-content:center!important;}
+/* Journal achievements: an earned one has a white title; the rest stay grey until earned (Justin, 2026-10-15). */
+html body[data-ui-theme][data-ui-theme] #modal#modal .journal-achievement h3{color:var(--house-dim)!important;-webkit-text-fill-color:var(--house-dim)!important;}
+html body[data-ui-theme][data-ui-theme] #modal#modal .journal-achievement.earned h3{color:#fff!important;-webkit-text-fill-color:#fff!important;}
+/* ---- Forge, round 3 (Justin, 2026-10-15: "this looks even more AI since we went from the drawn buttons to weird lines and
+   highlighted rectangles"; "I don't like the red accent line"). Tiles and cards are drawn plates again: the subdued plate
+   at rest, the prominent plate when chosen. No accent lines, no outlined rectangles; the detail sits on the window. */
+html body[data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme] #modal#modal#modal#modal .forge-modal :is(.fuse-tile,.craft-tile,.enchcard,.moterow button){position:relative!important;isolation:isolate!important;background:none!important;border:0!important;border-left:0!important;box-shadow:none!important;border-radius:0!important;}
+html body[data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme] #modal#modal#modal#modal .forge-modal :is(.fuse-tile,.craft-tile,.enchcard,.moterow button)::before{content:""!important;display:block!important;position:absolute!important;inset:0!important;z-index:-1!important;border:solid transparent!important;border-width:10px 12px!important;border-image:url(../art/ui/button-raised-subdued-clean-v2.png) 100 110 100 110 fill / 10px 12px 10px 12px / 0 stretch!important;filter:brightness(.85)!important;background:none!important;}
+html body[data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme] #modal#modal#modal#modal .forge-modal :is(.fuse-tile,.enchcard,.moterow button):is(.on,[aria-pressed=true])::before{border-image:url(../art/ui/button-raised-prominent-clean-v2.png) 130 150 130 150 fill / 10px 12px 10px 12px / 0 stretch!important;filter:brightness(1.15)!important;}
+html body[data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme] #modal#modal#modal#modal .forge-modal :is(.fuse-tile,.enchcard,.moterow button):is(.on,[aria-pressed=true]) :is(.fuse-el,.t,b){color:#fff!important;}
+html body[data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme] #modal#modal#modal#modal .forge-modal :is(.fuse-tile,.craft-tile,.enchcard):is(:hover,:focus-visible)::before{filter:brightness(1.05)!important;}
+html body[data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme] #modal#modal#modal#modal .forge-modal :is(.fuse-tile,.craft-tile,.enchcard){padding:10px 14px!important;}
+@media(max-width:420px){
+ html body[data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme] #modal#modal#modal#modal .forge-modal .fuse-tile{grid-template-columns:20px minmax(0,1fr) auto!important;gap:4px!important;padding:8px!important;}
+ html body[data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme] #modal#modal#modal#modal .forge-modal .fuse-tile .mart,html body[data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme] #modal#modal#modal#modal .forge-modal .fuse-tile .mart canvas{width:20px!important;height:20px!important;}
+}
+html body[data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme] #modal#modal#modal#modal .forge-modal .forge-detail{background:none!important;border:0!important;border-left:0!important;padding:4px 2px!important;}
+html body[data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme] #modal#modal#modal#modal .forge-modal .pouch2 .mslot{background:none!important;}
+/* the core window: the Forge's layout with its Continue on the window */
+html body[data-ui-theme][data-ui-theme][data-ui-theme] #modal#modal#modal .mbox.core-modal #mFoot{position:static!important;margin:12px 0 0!important;justify-content:flex-end!important;}
+/* Popups and the end screen: the buttons sit inside the frame with room below them (Justin: "buttons are spilling out") */
+html body[data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme] #modal#modal#modal#modal .mbox:not(.wide):not(.forge-modal):not(.journal-modal){padding:30px 34px 36px!important;}
+html body[data-ui-theme][data-ui-theme][data-ui-theme] #modal#modal#modal .mbox:not(.wide):not(.forge-modal):not(.journal-modal) #mFoot button{min-width:0!important;}
+html body[data-ui-theme][data-ui-theme][data-ui-theme] #over#over.end-screen .box{padding-bottom:40px!important;}
+@media(max-height:500px){html body[data-ui-theme][data-ui-theme][data-ui-theme] #over#over.end-screen .box{padding:24px 40px 40px!important;}html body[data-ui-theme] #over.end-screen .end-score{font-size:40px!important;}html body[data-ui-theme][data-ui-theme] #over.end-screen .end-stats span{padding:2px 4px!important;}}
+html body[data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme] #modal#modal#modal#modal .forge-modal .fd-act{position:relative!important;isolation:isolate!important;min-height:40px!important;padding:4px 18px 8px!important;background:none!important;border:0!important;box-shadow:none!important;font:700 var(--fs-body)/1 "Grenze Gotisch",serif!important;color:var(--house-btn,#959ca5)!important;}
+html body[data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme] #modal#modal#modal#modal .forge-modal .fd-act::before{content:""!important;display:block!important;position:absolute!important;inset:0!important;z-index:-1!important;border:solid transparent!important;border-width:10px 12px!important;border-image:url(../art/ui/button-raised-subdued-clean-v2.png) 100 110 100 110 fill / 10px 12px 10px 12px / 0 stretch!important;}
+html body[data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme] #modal#modal#modal#modal .forge-modal .fd-act:not(:disabled):is(:hover,:focus-visible){color:#fff!important;}
+html body[data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme] #modal#modal#modal#modal .forge-modal .fd-act:disabled{opacity:.45;}
+html body[data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme] #modal#modal#modal#modal .forge-modal .moterow button{padding:7px 0 11px!important;gap:2px!important;}
+/* Round 4 (Justin, 2026-10-15): enchant mote buttons big enough for their picture and count; popup buttons up a few
+   pixels on wider screens. */
+html body[data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme] #modal#modal#modal#modal .forge-modal .moterow{grid-template-columns:repeat(6,minmax(52px,64px))!important;gap:6px!important;}
+html body[data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme] #modal#modal#modal#modal .forge-modal .moterow button{min-height:64px!important;padding:9px 0 13px!important;justify-content:center!important;overflow:visible!important;}
+html body[data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme] #modal#modal#modal#modal .forge-modal .moterow button .mart{width:26px!important;height:26px!important;}
+html body[data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme] #modal#modal#modal#modal .forge-modal .moterow button b{font-size:var(--fs-small)!important;line-height:1.1!important;}
+@media(max-width:700px){html body[data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme] #modal#modal#modal#modal .forge-modal .moterow{grid-template-columns:repeat(6,minmax(0,1fr))!important;gap:4px!important;}}
+@media(min-width:701px) and (min-height:501px){html body[data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme] #modal#modal#modal#modal .mbox:not(.wide):not(.forge-modal):not(.journal-modal){padding-bottom:44px!important;}}
+html body[data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme] #modal#modal#modal#modal .forge-modal .moterow button{width:100%!important;min-width:0!important;max-width:none!important;justify-self:stretch!important;}
+html body[data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme] #modal#modal#modal#modal .forge-modal .moterow button::before{left:0!important;right:0!important;top:0!important;bottom:0!important;width:auto!important;height:auto!important;max-width:none!important;}
+/* Popups: the buttons clear the frame's bottom rim by 16px or more at every size (Justin, 2026-10-15: "you never did fix the
+   pop ups to have the buttons inside the windows"). This outranks the earlier :has() rule, which had kept 26px of padding
+   against a 22px rim. */
+html body[data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme] #modal#modal#modal#modal#modal .mbox:not(.wide):not(.forge-modal):not(.journal-modal):has(#mFoot){padding:32px 36px 40px!important;}
+@media(min-width:701px) and (min-height:501px){html body[data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme] #modal#modal#modal#modal#modal .mbox:not(.wide):not(.forge-modal):not(.journal-modal):has(#mFoot){padding:36px 44px 50px!important;}}
+/* Popup close x clear of the rim (Justin, 2026-10-15: "the x to close is too crowded with the edge"). */
+html body[data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme] #modal#modal#modal#modal#modal .mbox:not(.wide):not(.forge-modal):not(.journal-modal) #mX{top:20px!important;right:20px!important;width:32px!important;min-width:32px!important;height:32px!important;min-height:32px!important;}
+@media(min-width:701px) and (min-height:501px){html body[data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme] #modal#modal#modal#modal#modal .mbox:not(.wide):not(.forge-modal):not(.journal-modal) #mX{top:26px!important;right:26px!important;}}

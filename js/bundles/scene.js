@@ -6336,7 +6336,8 @@ window.FOTE_ENVIRONMENT_DECO_META={"version":1,"file":"environment-deco.webp","c
     if(!meta)return Promise.reject(new Error('Environment decal metadata is missing'));
     pending=new Promise(function(resolve,reject){
       image=new Image();
-      image.onload=function(){loaded=true;redrawIfWorldReady();resolve(true);};
+      /* 2026-10-14 (the kids' tablet): decoded before first use, as the atlases are (render.js), not mid-frame */
+      image.onload=function(){(typeof image.decode==='function'?image.decode().catch(function(){}):Promise.resolve()).then(function(){loaded=true;redrawIfWorldReady();resolve(true);});};
       image.onerror=function(){error='Unable to load '+meta.file;pending=null;reject(new Error(error));};
       image.src='art/packed/'+meta.file+'?v='+(meta.atlasSha256||meta.masterSha256).slice(0,12);
     });
@@ -6565,7 +6566,8 @@ window.FOTE_ENVIRONMENT_VEGETATION_META={"version":1,"cell":128,"res":2,"file":"
     if(!meta)return Promise.reject(Error('Environment vegetation metadata is missing'));
     pending=Promise.all(meta.files.map(function(file){return new Promise(function(resolve,reject){
       var image=new Image();images[file]=image;
-      image.onload=resolve;image.onerror=function(){reject(Error('Unable to load '+file));};
+      /* 2026-10-14 (the kids' tablet): decoded before first use, as the atlases are (render.js), not mid-frame */
+      image.onload=function(){(typeof image.decode==='function'?image.decode().catch(function(){}):Promise.resolve()).then(resolve);};image.onerror=function(){reject(Error('Unable to load '+file));};
       image.src='art/packed/'+file+'?v='+meta.sha256[file].slice(0,12);
     });})).then(function(){loaded=true;redrawIfWorldReady();return true;}).catch(function(e){failure=e;pending=null;throw e;});
     return pending;

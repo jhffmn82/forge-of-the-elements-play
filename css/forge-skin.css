@@ -530,7 +530,7 @@ html body[data-ui-theme] :is(#title,#create){
 }
 /* Character creation: one stage, focused choices, and an equipped preview. */
 html body[data-ui-theme] #create{overflow:hidden!important;background:var(--ui-bg)!important;}
-html body[data-ui-theme] #create .wrap{position:absolute;inset:0;width:100%;height:100dvh;max-width:1080px;max-height:820px;min-height:0;margin:auto;box-sizing:border-box;display:grid;grid-template-columns:minmax(0,1fr) 420px;grid-template-rows:104px 84px minmax(0,1fr) 96px 60px;padding:24px 24px!important;gap:16px 24px;isolation:isolate;background:linear-gradient(#08060440,transparent 35%,#080604b8),url(../art/title/creation-hall.jpg) center/cover no-repeat;box-shadow:inset 0 0 70px #0009;}
+html body[data-ui-theme] #create .wrap{position:absolute;inset:0;width:100%;height:100cqh;max-width:1080px;max-height:820px;min-height:0;margin:auto;box-sizing:border-box;display:grid;grid-template-columns:minmax(0,1fr) 420px;grid-template-rows:104px 84px minmax(0,1fr) 96px 60px;padding:24px 24px!important;gap:16px 24px;isolation:isolate;background:linear-gradient(#08060440,transparent 35%,#080604b8),url(../art/title/creation-hall.jpg) center/cover no-repeat;box-shadow:inset 0 0 70px #0009;}
 html body[data-ui-theme] #create button{border-radius:0!important;text-decoration:none!important;text-shadow:none;}
 html body[data-ui-theme] #create :is(button,input,[tabindex]):focus-visible{outline:none!important;}
 html body[data-ui-theme] #create #creationHeading:focus{outline:none;}
@@ -666,103 +666,95 @@ html body[data-ui-theme] #create :where(.creation-title,.creation-steps button,#
 /* The six-gem heading bar keeps its own proportions, centred on the heading row. */
 html body[data-ui-theme] #create .creation-actions .creation-title::before{inset:auto 0!important;top:50%!important;aspect-ratio:2.5/1;transform:translateY(-49.4%);border:0;border-image:none;background:url(../art/ui/forge-heading-bar-v1.png) center/100% 100% no-repeat;filter:none;}
 html body[data-ui-theme] #create .creation-steps button::before{filter:var(--forge-ui-frame-tone) brightness(.62) contrast(.85);border-width:14px;border-image-width:14px;}
-@media(max-width:760px) and (orientation:landscape){
- html body[data-ui-theme] #create .creation-title{display:none;}
- html body[data-ui-theme] #create .creation-actions{grid-template-columns:1fr 1fr;}
- html body[data-ui-theme] #create #rollCharacter{grid-column:2;}
-}
-@media(min-width:701px) and (max-width:1100px) and (min-height:721px){
- html body[data-ui-theme] #create .creation-actions{grid-template-columns:1fr 1fr;grid-template-rows:40px minmax(0,1fr);gap:4px;}
- html body[data-ui-theme] #create .creation-title{grid-column:1/-1;grid-row:2;justify-self:center;padding:14px 84px 12px;}
- html body[data-ui-theme] #create h1{font-size:var(--fs-head)!important;}
- html body[data-ui-theme] #create :is(#cBack,#rollCharacter){min-height:44px;padding:6px 16px 10px!important;font-size:var(--fs-word)!important;}
- html body[data-ui-theme] #create #rollCharacter{grid-column:2;}
- html body[data-ui-theme] #create .creation-steps button{padding:5px 16px 9px!important;gap:8px;}
- html body[data-ui-theme] #create .creation-step-value{font-size:var(--forge-ui-body-size);line-height:1.1;}
-}
-@media(min-width:701px) and (min-height:561px){
- html body[data-ui-theme] #create .wrap{max-width:1180px;grid-template-columns:minmax(0,1fr) minmax(300px,42.4%);grid-template-rows:96px 80px minmax(0,1fr) 96px 60px;gap:12px 24px;}
- html body[data-ui-theme] #create .creation-record{padding:24px 28px 36px;gap:14px;}
- html body[data-ui-theme] #create .creation-step{display:grid;grid-template-rows:40px 174px 58px;align-content:center;justify-items:center;justify-content:stretch;gap:8px;padding:0;}
- html body[data-ui-theme] #create .creation-step>.step{grid-row:1;margin:0;align-self:center;}
- html body[data-ui-theme] #create .creation-step>.creation-lineup{grid-row:2;align-self:end;padding:0;}
- html body[data-ui-theme] #create .creation-step>.creation-appearance{grid-row:3;align-self:start;margin:0;}
- html body[data-ui-theme] #create .creation-step>.hero-stage{grid-row:2;align-self:end;}
- html body[data-ui-theme] #create .creation-step>.creation-name-controls{grid-row:3;margin:0;}
- html body[data-ui-theme] #create [data-step=cls]>.step{visibility:hidden;}
- html body[data-ui-theme] #create [data-step=god]{grid-template-rows:40px minmax(0,1fr);}
- html body[data-ui-theme] #create .god-guidance{display:none;}
- html body[data-ui-theme] #create .god-pick{grid-row:2;}
- html body[data-ui-theme] #create .creation-class-tray{align-self:start;padding-top:0;}
- html body[data-ui-theme] #create .creation-record-body:focus-visible{outline:none;}
- html body[data-ui-theme] #create .creation-actions{gap:12px;}
- html body[data-ui-theme] #create :is(#cBack,#rollCharacter){white-space:nowrap;}
-}
-@media(max-width:700px) and (orientation:portrait){
- html body[data-ui-theme] #create .wrap{--tray-height:0px;max-height:none;grid-template-columns:minmax(0,1fr);grid-template-rows:102px 134px 146px 82px minmax(0,1fr) 48px;padding:6px 10px!important;gap:6px;background-size:auto,auto 470px;background-position:center,center top;background-color:var(--ui-bg);}
- html body[data-ui-theme] #create .wrap[data-current-step=cls]{--tray-height:82px;}
- html body[data-ui-theme] #create .creation-actions{grid-template-columns:1fr 1fr;}
- html body[data-ui-theme] #create .creation-title{grid-column:1/-1;grid-row:2;padding:10px 8px;}
- html body[data-ui-theme] #create .creation-title>span{display:none;}
- html body[data-ui-theme] #create h1{font-size:var(--fs-head)!important;margin:0!important;}
- html body[data-ui-theme] #create #rollCharacter{grid-column:2;}
- html body[data-ui-theme] #create :is(#cBack,#rollCharacter){font-size:var(--text-14)!important;min-height:40px;padding:6px 14px 10px!important;}
- html body[data-ui-theme] #create .creation-steps{gap:6px;padding:0;}
- html body[data-ui-theme] #create .creation-steps button{min-height:44px;padding:5px 14px 9px!important;}
- html body[data-ui-theme] #create .creation-steps button:only-child{width:auto;}
- html body[data-ui-theme] #create .creation-steps button>span{font-size:var(--text-12);}
- html body[data-ui-theme] #create .creation-step-value{font-size:var(--text-18);}
- html body[data-ui-theme] #create .creation-step{padding:0;}
- html body[data-ui-theme] #create .creation-scene{grid-row:3/5;}
- html body[data-ui-theme] #create .creation-step{display:grid;grid-template-rows:30px 134px 58px;gap:3px;align-content:start;justify-items:center;justify-content:stretch;}
- html body[data-ui-theme] #create .creation-step>.step{grid-row:1;font-size:var(--text-20);margin:0;align-self:center;}
- html body[data-ui-theme] #create .creation-step>.creation-lineup{grid-row:2;align-self:end;}
- html body[data-ui-theme] #create .creation-step>.creation-appearance{grid-row:3;align-self:start;}
- html body[data-ui-theme] #create .creation-step>.hero-stage{grid-row:2;align-self:end;}
- html body[data-ui-theme] #create .creation-step>.creation-name-controls{grid-row:3;margin:0;}
- html body[data-ui-theme] #create .creation-class-tray{align-self:end;z-index:1;}
- html body[data-ui-theme] #create .creation-record-body:focus-visible{outline:none;}
- html body[data-ui-theme] #create [data-step=cls]>.step{display:none;}
- html body[data-ui-theme] #create .creation-lineup{padding:0;gap:2px;}
- html body[data-ui-theme] #create .creation-lineup .port{height:110px;}
- html body[data-ui-theme] #create .cards .card{padding:3px 0!important;gap:4px;}
- html body[data-ui-theme] #create .cards .card .choice-name{font-size:var(--text-14)!important;}
- html body[data-ui-theme] #create .cards.creation-appearance{gap:24px;margin:4px 0 0;}
- html body[data-ui-theme] #create .cards.creation-appearance .card{min-height:36px;}
- html body[data-ui-theme] #create .hero-stage .big{height:140px;width:150px;}
- html body[data-ui-theme] #create .creation-record{grid-column:1;grid-row:5;padding:18px 18px 30px;gap:12px;align-self:start;width:100%;}
- html body[data-ui-theme] #create .creation-record.more-details::after{bottom:8px;left:18px;right:18px;}
- html body[data-ui-theme] #create .creation-record::before{border-width:14px;border-image-width:14px;}
- html body[data-ui-theme] #create :where(.creation-title,.creation-steps button,#cBack,#rollCharacter)::before{border-width:12px;border-image-width:12px;}
- html body[data-ui-theme] #create .build-fact>h2{font-size:var(--text-12);margin-bottom:8px;}
- html body[data-ui-theme] #create .pick-words{gap:8px;}
- html body[data-ui-theme] #create .pick-words .choice-name{font-size:var(--text-20);}
- html body[data-ui-theme] #create .pick-words span{line-height:1.45;}
- html body[data-ui-theme] #create .creation-class-tray{grid-column:1;grid-row:4;padding:0;gap:0;}
- html body[data-ui-theme] #create .creation-class-tray .cards{gap:0;}
- html body[data-ui-theme] #create .creation-class-tray .choice-name{white-space:nowrap;letter-spacing:-.025em;}
- html body[data-ui-theme] #create .port.class-symbol{height:44px;}
- html body[data-ui-theme] #create .port.class-symbol canvas{width:44px!important;height:44px!important;}
- html body[data-ui-theme] #create .creation-nav{grid-column:1;grid-row:6;gap:4px;}
- html body[data-ui-theme] #create #begin{font-size:var(--text-18)!important;padding-inline:14px!important;}
- html body[data-ui-theme] #create .creation-tutorial{font-size:var(--text-12);}
- html body[data-ui-theme] #create .god-guidance{display:none;}
- html body[data-ui-theme] #create [data-step=god]{display:grid;grid-template-rows:auto minmax(0,1fr);}
- html body[data-ui-theme] #create .god-pick{height:100%;}
- html body[data-ui-theme] #create .creation-carousel{--shrine-size:112px;--shrine-recede:20px;height:100%;grid-template-columns:32px minmax(0,1fr) 32px;grid-template-rows:minmax(0,1fr) auto;gap:2px;}
- html body[data-ui-theme] #create .carousel-arrow{min-width:32px;min-height:48px;font-size:36px!important;}
- html body[data-ui-theme] #create .god-pick .creation-lineup{height:100%;min-height:0;align-items:stretch;}
- html body[data-ui-theme] #create .god-pick .card{min-height:0;}
- html body[data-ui-theme] #create .god-pick .port{flex:1;min-height:44px;height:auto;max-height:126px;}
- html body[data-ui-theme] #create .god-pick .choice-name{flex:none;}
- html body[data-ui-theme] #create .carousel-position{font-size:var(--text-12);min-height:18px;margin:2px 0;}
- html body[data-ui-theme] #create #cname{font-size:var(--text-24)!important;min-height:30px;}
- html body[data-ui-theme] #create #reroll{font-size:var(--text-12)!important;min-height:26px;}
- html body[data-ui-theme] #create .who{display:none;}
- html body[data-ui-theme] #create .hero-stats{padding:6px 0;margin:0;}
- html body[data-ui-theme] #create .hero-stats span{font-size:var(--text-12);}
- html body[data-ui-theme] #create .hero-stats b{font-size:var(--text-20);}
-}
+@container create-screen ((max-width:760px) and (orientation:landscape)){html body[data-ui-theme] #create .creation-title{display:none;}
+html body[data-ui-theme] #create .creation-actions{grid-template-columns:1fr 1fr;}
+html body[data-ui-theme] #create #rollCharacter{grid-column:2;}}
+@container create-screen ((min-width:701px) and (max-width:1100px) and (min-height:721px)){html body[data-ui-theme] #create .creation-actions{grid-template-columns:1fr 1fr;grid-template-rows:40px minmax(0,1fr);gap:4px;}
+html body[data-ui-theme] #create .creation-title{grid-column:1/-1;grid-row:2;justify-self:center;padding:14px 84px 12px;}
+html body[data-ui-theme] #create h1{font-size:var(--fs-head)!important;}
+html body[data-ui-theme] #create :is(#cBack,#rollCharacter){min-height:44px;padding:6px 16px 10px!important;font-size:var(--fs-word)!important;}
+html body[data-ui-theme] #create #rollCharacter{grid-column:2;}
+html body[data-ui-theme] #create .creation-steps button{padding:5px 16px 9px!important;gap:8px;}
+html body[data-ui-theme] #create .creation-step-value{font-size:var(--forge-ui-body-size);line-height:1.1;}}
+@container create-screen ((min-width:701px) and (min-height:561px)){html body[data-ui-theme] #create .wrap{max-width:1180px;grid-template-columns:minmax(0,1fr) minmax(300px,42.4%);grid-template-rows:96px 80px minmax(0,1fr) 96px 60px;gap:12px 24px;}
+html body[data-ui-theme] #create .creation-record{padding:24px 28px 36px;gap:14px;}
+html body[data-ui-theme] #create .creation-step{display:grid;grid-template-rows:40px 174px 58px;align-content:center;justify-items:center;justify-content:stretch;gap:8px;padding:0;}
+html body[data-ui-theme] #create .creation-step>.step{grid-row:1;margin:0;align-self:center;}
+html body[data-ui-theme] #create .creation-step>.creation-lineup{grid-row:2;align-self:end;padding:0;}
+html body[data-ui-theme] #create .creation-step>.creation-appearance{grid-row:3;align-self:start;margin:0;}
+html body[data-ui-theme] #create .creation-step>.hero-stage{grid-row:2;align-self:end;}
+html body[data-ui-theme] #create .creation-step>.creation-name-controls{grid-row:3;margin:0;}
+html body[data-ui-theme] #create [data-step=cls]>.step{visibility:hidden;}
+html body[data-ui-theme] #create [data-step=god]{grid-template-rows:40px minmax(0,1fr);}
+html body[data-ui-theme] #create .god-guidance{display:none;}
+html body[data-ui-theme] #create .god-pick{grid-row:2;}
+html body[data-ui-theme] #create .creation-class-tray{align-self:start;padding-top:0;}
+html body[data-ui-theme] #create .creation-record-body:focus-visible{outline:none;}
+html body[data-ui-theme] #create .creation-actions{gap:12px;}
+html body[data-ui-theme] #create :is(#cBack,#rollCharacter){white-space:nowrap;}}
+@container create-screen ((max-width:700px) and (orientation:portrait)){html body[data-ui-theme] #create .wrap{--tray-height:0px;max-height:none;grid-template-columns:minmax(0,1fr);grid-template-rows:102px 74px 120px 82px minmax(0,1fr) 48px;padding:6px 10px!important;gap:6px;background-size:auto,auto 470px;background-position:center,center top;background-color:var(--ui-bg);}
+html body[data-ui-theme] #create .wrap[data-current-step=cls]{--tray-height:82px;}
+html body[data-ui-theme] #create .creation-actions{grid-template-columns:1fr 1fr;}
+html body[data-ui-theme] #create .creation-title{grid-column:1/-1;grid-row:2;padding:10px 8px;}
+html body[data-ui-theme] #create .creation-title>span{display:none;}
+html body[data-ui-theme] #create h1{font-size:var(--fs-head)!important;margin:0!important;}
+html body[data-ui-theme] #create #rollCharacter{grid-column:2;}
+html body[data-ui-theme] #create :is(#cBack,#rollCharacter){font-size:var(--text-14)!important;min-height:40px;padding:6px 14px 10px!important;}
+html body[data-ui-theme] #create .creation-steps{gap:6px;padding:0;}
+html body[data-ui-theme] #create .creation-steps button{min-height:44px;padding:5px 14px 9px!important;}
+html body[data-ui-theme] #create .creation-steps button:only-child{width:auto;}
+html body[data-ui-theme] #create .creation-steps button>span{font-size:var(--text-12);}
+html body[data-ui-theme] #create .creation-step-value{font-size:var(--text-18);}
+html body[data-ui-theme] #create .creation-step{padding:0;}
+html body[data-ui-theme] #create .creation-scene{grid-row:3/5;}
+html body[data-ui-theme] #create .creation-step{display:grid;grid-template-rows:30px 134px 58px;gap:3px;align-content:start;justify-items:center;justify-content:stretch;}
+html body[data-ui-theme] #create .creation-step>.step{grid-row:1;font-size:var(--text-20);margin:0;align-self:center;}
+html body[data-ui-theme] #create .creation-step>.creation-lineup{grid-row:2;align-self:end;}
+html body[data-ui-theme] #create .creation-step>.creation-appearance{grid-row:3;align-self:start;}
+html body[data-ui-theme] #create .creation-step>.hero-stage{grid-row:2;align-self:end;}
+html body[data-ui-theme] #create .creation-step>.creation-name-controls{grid-row:3;margin:0;}
+html body[data-ui-theme] #create .creation-class-tray{align-self:end;z-index:1;}
+html body[data-ui-theme] #create .creation-record-body:focus-visible{outline:none;}
+html body[data-ui-theme] #create [data-step=cls]>.step{display:none;}
+html body[data-ui-theme] #create .creation-lineup{padding:0;gap:2px;}
+html body[data-ui-theme] #create .creation-lineup .port{height:110px;}
+html body[data-ui-theme] #create .cards .card{padding:3px 0!important;gap:4px;}
+html body[data-ui-theme] #create .cards .card .choice-name{font-size:var(--text-14)!important;}
+html body[data-ui-theme] #create .cards.creation-appearance{gap:24px;margin:4px 0 0;}
+html body[data-ui-theme] #create .cards.creation-appearance .card{min-height:36px;}
+html body[data-ui-theme] #create .hero-stage .big{height:140px;width:150px;}
+html body[data-ui-theme] #create .creation-record{grid-column:1;grid-row:5;padding:18px 18px 30px;gap:12px;align-self:start;width:100%;}
+html body[data-ui-theme] #create .creation-record.more-details::after{bottom:8px;left:18px;right:18px;}
+html body[data-ui-theme] #create .creation-record::before{border-width:14px;border-image-width:14px;}
+html body[data-ui-theme] #create :where(.creation-title,.creation-steps button,#cBack,#rollCharacter)::before{border-width:12px;border-image-width:12px;}
+html body[data-ui-theme] #create .build-fact>h2{font-size:var(--text-12);margin-bottom:8px;}
+html body[data-ui-theme] #create .pick-words{gap:8px;}
+html body[data-ui-theme] #create .pick-words .choice-name{font-size:var(--text-20);}
+html body[data-ui-theme] #create .pick-words span{line-height:1.45;}
+html body[data-ui-theme] #create .creation-class-tray{grid-column:1;grid-row:4;padding:0;gap:0;}
+html body[data-ui-theme] #create .creation-class-tray .cards{gap:0;}
+html body[data-ui-theme] #create .creation-class-tray .choice-name{white-space:nowrap;letter-spacing:-.025em;}
+html body[data-ui-theme] #create .port.class-symbol{height:44px;}
+html body[data-ui-theme] #create .port.class-symbol canvas{width:44px!important;height:44px!important;}
+html body[data-ui-theme] #create .creation-nav{grid-column:1;grid-row:6;gap:4px;}
+html body[data-ui-theme] #create #begin{font-size:var(--text-18)!important;padding-inline:14px!important;}
+html body[data-ui-theme] #create .creation-tutorial{font-size:var(--text-12);}
+html body[data-ui-theme] #create .god-guidance{display:none;}
+html body[data-ui-theme] #create [data-step=god]{display:grid;grid-template-rows:auto minmax(0,1fr);}
+html body[data-ui-theme] #create .god-pick{height:100%;}
+html body[data-ui-theme] #create .creation-carousel{--shrine-size:112px;--shrine-recede:20px;height:100%;grid-template-columns:32px minmax(0,1fr) 32px;grid-template-rows:minmax(0,1fr) auto;gap:2px;}
+html body[data-ui-theme] #create .carousel-arrow{min-width:32px;min-height:48px;font-size:36px!important;}
+html body[data-ui-theme] #create .god-pick .creation-lineup{height:100%;min-height:0;align-items:stretch;}
+html body[data-ui-theme] #create .god-pick .card{min-height:0;}
+html body[data-ui-theme] #create .god-pick .port{flex:1;min-height:44px;height:auto;max-height:126px;}
+html body[data-ui-theme] #create .god-pick .choice-name{flex:none;}
+html body[data-ui-theme] #create .carousel-position{font-size:var(--text-12);min-height:18px;margin:2px 0;}
+html body[data-ui-theme] #create #cname{font-size:var(--text-24)!important;min-height:30px;}
+html body[data-ui-theme] #create #reroll{font-size:var(--text-12)!important;min-height:26px;}
+html body[data-ui-theme] #create .who{display:none;}
+html body[data-ui-theme] #create .hero-stats{padding:6px 0;margin:0;}
+html body[data-ui-theme] #create .hero-stats span{font-size:var(--text-12);}
+html body[data-ui-theme] #create .hero-stats b{font-size:var(--text-20);}}
 
 /* One floorline for every choice: captions sit below the art, rather than
    moving its feet upward when a court or shrine name wraps to two lines. */
@@ -789,91 +781,81 @@ html body[data-ui-theme] #create .creation-scene .god-pick .port canvas{aspect-r
 html body[data-ui-theme] #create .creation-scene .god-pick .choice-name{position:absolute;top:calc(100% + 4px);left:0;right:0;min-height:0;margin:0;}
 html body[data-ui-theme] #create .creation-scene .god-unavailable{display:none;}
 html body[data-ui-theme] #create .creation-scene .carousel-position{margin:56px 0 0;}
-@media(max-width:700px) and (orientation:portrait){
- html body[data-ui-theme] #create .creation-scene{--creation-cast-scale:.73;--creation-heading-row:30px;--creation-body-row:134px;--creation-caption-row:58px;--creation-stage-gap:3px;}
- html body[data-ui-theme] #create .creation-scene .creation-step{align-content:start;}
- html body[data-ui-theme] #create .creation-scene .carousel-position{margin-top:50px;}
-}
-@media(max-width:700px) and (max-height:720px) and (orientation:portrait){
- html body[data-ui-theme] #create .creation-scene{--creation-cast-scale:.63;--creation-heading-row:26px;--creation-body-row:108px;--creation-caption-row:54px;--appearance-drop:22px;}
- html body[data-ui-theme] #create .creation-scene .creation-step>.creation-lineup .choice-name{top:calc(100% + 3px);}
-}
-@media(max-height:720px) and (orientation:landscape){
- html body[data-ui-theme] #create .creation-scene{--creation-cast-scale:.68;--creation-heading-row:26px;--creation-body-row:112px;--creation-caption-row:58px;--creation-stage-gap:4px;}
- html body[data-ui-theme] #create .creation-scene .creation-step{align-content:start;}
- html body[data-ui-theme] #create .creation-scene .carousel-position{margin-top:50px;}
-}
-@media(max-width:700px) and (max-height:720px) and (orientation:portrait){
- html body[data-ui-theme] #create .wrap{grid-template-rows:40px 122px 128px 66px minmax(0,1fr) 46px;}
- html body[data-ui-theme] #create .creation-title{display:none;}
- html body[data-ui-theme] #create .creation-steps{gap:6px;}
- html body[data-ui-theme] #create .creation-steps button{min-height:44px;}
- html body[data-ui-theme] #create .creation-step{grid-template-rows:26px 108px 54px;}
- html body[data-ui-theme] #create .creation-lineup .port{height:92px;}
- html body[data-ui-theme] #create .creation-step>.step{font-size:var(--text-18);margin-bottom:4px;}
- html body[data-ui-theme] #create .cards.creation-appearance{margin:0;}
- html body[data-ui-theme] #create .hero-stage .big{width:108px;height:108px;}
- html body[data-ui-theme] #create .creation-record{padding:16px 20px 30px;}
-}
-@media(max-height:720px) and (orientation:landscape){
- html body[data-ui-theme] #create .wrap{grid-template-columns:minmax(0,1fr) 43%;grid-template-rows:40px 50px minmax(0,1fr) 62px 44px;padding:4px 10px!important;gap:4px 12px;}
- html body[data-ui-theme] #create .creation-scene{grid-row:3/5;}
- html body[data-ui-theme] #create .creation-step{display:grid;grid-template-rows:26px 112px 58px;gap:4px;align-content:start;justify-items:center;justify-content:stretch;}
- html body[data-ui-theme] #create .creation-step>.step{grid-row:1;align-self:center;}
- html body[data-ui-theme] #create .creation-step>.creation-lineup{grid-row:2;align-self:end;}
- html body[data-ui-theme] #create .creation-step>.creation-appearance{grid-row:3;align-self:start;}
- html body[data-ui-theme] #create .creation-step>.hero-stage{grid-row:2;align-self:end;}
- html body[data-ui-theme] #create .creation-step>.creation-name-controls{grid-row:3;margin:0;}
- html body[data-ui-theme] #create [data-step=god]{grid-template-rows:26px minmax(0,1fr);}
- html body[data-ui-theme] #create .god-pick{grid-row:2;}
- html body[data-ui-theme] #create .creation-class-tray{align-self:end;z-index:1;}
- html body[data-ui-theme] #create .creation-title>span{display:none;}
- html body[data-ui-theme] #create h1{font-size:var(--fs-head)!important;margin:0!important;}
- html body[data-ui-theme] #create .creation-title{padding:7px 26px;}
- html body[data-ui-theme] #create :is(#cBack,#rollCharacter){font-size:var(--text-14)!important;min-height:36px;padding:5px 14px 9px!important;}
- html body[data-ui-theme] #create :where(.creation-title,.creation-steps button,#cBack,#rollCharacter)::before{border-width:10px;border-image-width:10px;}
- html body[data-ui-theme] #create .creation-steps{gap:10px;padding:0;}
- html body[data-ui-theme] #create .creation-steps button{min-height:44px;padding:5px 14px 9px!important;gap:8px;}
- html body[data-ui-theme] #create .creation-steps button>span{font-size:var(--text-12);}
- html body[data-ui-theme] #create .creation-step-value{font-size:var(--text-16);}
- html body[data-ui-theme] #create .creation-step{padding:0;}
- html body[data-ui-theme] #create .creation-step>.step{font-size:var(--text-18);margin-bottom:4px;}
- html body[data-ui-theme] #create [data-step=cls]>.step{display:none;}
- html body[data-ui-theme] #create .creation-lineup{padding:0;gap:2px;}
- html body[data-ui-theme] #create .creation-lineup .port{height:96px;}
- html body[data-ui-theme] #create .cards .card{padding:2px 0!important;gap:3px;}
- html body[data-ui-theme] #create .cards .card .choice-name{font-size:var(--text-14)!important;}
- html body[data-ui-theme] #create .cards.creation-appearance{margin:0;}
- html body[data-ui-theme] #create .cards.creation-appearance .card{min-height:32px;}
- html body[data-ui-theme] #create .hero-stage .big{height:112px;width:112px;}
- html body[data-ui-theme] #create .creation-record{padding:14px 20px 28px;gap:6px;}
- html body[data-ui-theme] #create .creation-steps{gap:8px;}
- html body[data-ui-theme] #create .creation-record-body:focus-visible{outline:none;}
- html body[data-ui-theme] #create .creation-record::before{border-width:12px;border-image-width:12px;}
- html body[data-ui-theme] #create .creation-record.more-details::after{bottom:6px;left:22px;right:22px;}
- html body[data-ui-theme] #create .build-fact>h2{font-size:var(--text-12);margin-bottom:6px;}
- html body[data-ui-theme] #create .pick-words{gap:8px;}
- html body[data-ui-theme] #create .pick-words span{line-height:1.45;}
- html body[data-ui-theme] #create .pick-words .choice-name{font-size:var(--text-20);}
- html body[data-ui-theme] #create .creation-class-tray{padding:0;}
- html body[data-ui-theme] #create .creation-class-tray .choice-name{white-space:nowrap;}
- html body[data-ui-theme] #create .port.class-symbol{height:40px;}
- html body[data-ui-theme] #create .port.class-symbol canvas{width:40px!important;height:40px!important;}
- html body[data-ui-theme] #create #begin{font-size:var(--text-18)!important;min-height:40px;padding:2px 16px 6px!important;}
- html body[data-ui-theme] #create .god-guidance{display:none;}
- html body[data-ui-theme] #create .creation-carousel{--shrine-size:108px;--shrine-recede:18px;grid-template-columns:32px minmax(0,1fr) 32px;gap:2px;}
- html body[data-ui-theme] #create .carousel-arrow{min-width:32px;min-height:44px;font-size:34px!important;}
- html body[data-ui-theme] #create .carousel-position{font-size:var(--text-12);min-height:16px;margin:2px 0;}
- html body[data-ui-theme] #create .god-pick .card{min-height:154px;}
- html body[data-ui-theme] #create .god-pick .port{height:104px;}
- html body[data-ui-theme] #create .god-unavailable{font-size:var(--text-12);}
- html body[data-ui-theme] #create #cname{font-size:var(--text-24)!important;min-height:30px;}
- html body[data-ui-theme] #create #reroll{font-size:var(--text-12)!important;min-height:26px;}
- html body[data-ui-theme] #create .who{display:none;}
- html body[data-ui-theme] #create .hero-stats{padding:6px 0;margin:0;}
- html body[data-ui-theme] #create .hero-stats span{font-size:var(--text-12);}
- html body[data-ui-theme] #create .hero-stats b{font-size:var(--text-20);}
-}
+@container create-screen ((max-width:700px) and (orientation:portrait)){html body[data-ui-theme] #create .creation-scene{--creation-cast-scale:.73;--creation-heading-row:30px;--creation-body-row:134px;--creation-caption-row:58px;--creation-stage-gap:3px;}
+html body[data-ui-theme] #create .creation-scene .creation-step{align-content:start;}
+html body[data-ui-theme] #create .creation-scene .carousel-position{margin-top:50px;}}
+@container create-screen ((max-width:700px) and (max-height:720px) and (orientation:portrait)){html body[data-ui-theme] #create .creation-scene{--creation-cast-scale:.63;--creation-heading-row:26px;--creation-body-row:108px;--creation-caption-row:54px;--appearance-drop:22px;}
+html body[data-ui-theme] #create .creation-scene .creation-step>.creation-lineup .choice-name{top:calc(100% + 3px);}}
+@container create-screen ((max-height:720px) and (orientation:landscape)){html body[data-ui-theme] #create .creation-scene{--creation-cast-scale:.68;--creation-heading-row:26px;--creation-body-row:112px;--creation-caption-row:58px;--creation-stage-gap:4px;}
+html body[data-ui-theme] #create .creation-scene .creation-step{align-content:start;}
+html body[data-ui-theme] #create .creation-scene .carousel-position{margin-top:50px;}}
+@container create-screen ((max-width:700px) and (max-height:720px) and (orientation:portrait)){html body[data-ui-theme] #create .wrap{grid-template-rows:40px 64px 116px 66px minmax(0,1fr) 46px;}
+html body[data-ui-theme] #create .creation-title{display:none;}
+html body[data-ui-theme] #create .creation-steps{gap:6px;}
+html body[data-ui-theme] #create .creation-steps button{min-height:44px;}
+html body[data-ui-theme] #create .creation-step{grid-template-rows:26px 108px 54px;}
+html body[data-ui-theme] #create .creation-lineup .port{height:92px;}
+html body[data-ui-theme] #create .creation-step>.step{font-size:var(--text-18);margin-bottom:4px;}
+html body[data-ui-theme] #create .cards.creation-appearance{margin:0;}
+html body[data-ui-theme] #create .hero-stage .big{width:108px;height:108px;}
+html body[data-ui-theme] #create .creation-record{padding:16px 20px 30px;}}
+@container create-screen ((max-height:720px) and (orientation:landscape)){html body[data-ui-theme] #create .wrap{grid-template-columns:minmax(0,1fr) 43%;grid-template-rows:40px 50px minmax(0,1fr) 62px 44px;padding:4px 10px!important;gap:4px 12px;}
+html body[data-ui-theme] #create .creation-scene{grid-row:3/5;}
+html body[data-ui-theme] #create .creation-step{display:grid;grid-template-rows:26px 112px 58px;gap:4px;align-content:start;justify-items:center;justify-content:stretch;}
+html body[data-ui-theme] #create .creation-step>.step{grid-row:1;align-self:center;}
+html body[data-ui-theme] #create .creation-step>.creation-lineup{grid-row:2;align-self:end;}
+html body[data-ui-theme] #create .creation-step>.creation-appearance{grid-row:3;align-self:start;}
+html body[data-ui-theme] #create .creation-step>.hero-stage{grid-row:2;align-self:end;}
+html body[data-ui-theme] #create .creation-step>.creation-name-controls{grid-row:3;margin:0;}
+html body[data-ui-theme] #create [data-step=god]{grid-template-rows:26px minmax(0,1fr);}
+html body[data-ui-theme] #create .god-pick{grid-row:2;}
+html body[data-ui-theme] #create .creation-class-tray{align-self:end;z-index:1;}
+html body[data-ui-theme] #create .creation-title>span{display:none;}
+html body[data-ui-theme] #create h1{font-size:var(--fs-head)!important;margin:0!important;}
+html body[data-ui-theme] #create .creation-title{padding:7px 26px;}
+html body[data-ui-theme] #create :is(#cBack,#rollCharacter){font-size:var(--text-14)!important;min-height:36px;padding:5px 14px 9px!important;}
+html body[data-ui-theme] #create :where(.creation-title,.creation-steps button,#cBack,#rollCharacter)::before{border-width:10px;border-image-width:10px;}
+html body[data-ui-theme] #create .creation-steps{gap:10px;padding:0;}
+html body[data-ui-theme] #create .creation-steps button{min-height:44px;padding:5px 14px 9px!important;gap:8px;}
+html body[data-ui-theme] #create .creation-steps button>span{font-size:var(--text-12);}
+html body[data-ui-theme] #create .creation-step-value{font-size:var(--text-16);}
+html body[data-ui-theme] #create .creation-step{padding:0;}
+html body[data-ui-theme] #create .creation-step>.step{font-size:var(--text-18);margin-bottom:4px;}
+html body[data-ui-theme] #create [data-step=cls]>.step{display:none;}
+html body[data-ui-theme] #create .creation-lineup{padding:0;gap:2px;}
+html body[data-ui-theme] #create .creation-lineup .port{height:96px;}
+html body[data-ui-theme] #create .cards .card{padding:2px 0!important;gap:3px;}
+html body[data-ui-theme] #create .cards .card .choice-name{font-size:var(--text-14)!important;}
+html body[data-ui-theme] #create .cards.creation-appearance{margin:0;}
+html body[data-ui-theme] #create .cards.creation-appearance .card{min-height:32px;}
+html body[data-ui-theme] #create .hero-stage .big{height:112px;width:112px;}
+html body[data-ui-theme] #create .creation-record{padding:14px 20px 28px;gap:6px;}
+html body[data-ui-theme] #create .creation-steps{gap:8px;}
+html body[data-ui-theme] #create .creation-record-body:focus-visible{outline:none;}
+html body[data-ui-theme] #create .creation-record::before{border-width:12px;border-image-width:12px;}
+html body[data-ui-theme] #create .creation-record.more-details::after{bottom:6px;left:22px;right:22px;}
+html body[data-ui-theme] #create .build-fact>h2{font-size:var(--text-12);margin-bottom:6px;}
+html body[data-ui-theme] #create .pick-words{gap:8px;}
+html body[data-ui-theme] #create .pick-words span{line-height:1.45;}
+html body[data-ui-theme] #create .pick-words .choice-name{font-size:var(--text-20);}
+html body[data-ui-theme] #create .creation-class-tray{padding:0;}
+html body[data-ui-theme] #create .creation-class-tray .choice-name{white-space:nowrap;}
+html body[data-ui-theme] #create .port.class-symbol{height:40px;}
+html body[data-ui-theme] #create .port.class-symbol canvas{width:40px!important;height:40px!important;}
+html body[data-ui-theme] #create #begin{font-size:var(--text-18)!important;min-height:40px;padding:2px 16px 6px!important;}
+html body[data-ui-theme] #create .god-guidance{display:none;}
+html body[data-ui-theme] #create .creation-carousel{--shrine-size:108px;--shrine-recede:18px;grid-template-columns:32px minmax(0,1fr) 32px;gap:2px;}
+html body[data-ui-theme] #create .carousel-arrow{min-width:32px;min-height:44px;font-size:34px!important;}
+html body[data-ui-theme] #create .carousel-position{font-size:var(--text-12);min-height:16px;margin:2px 0;}
+html body[data-ui-theme] #create .god-pick .card{min-height:154px;}
+html body[data-ui-theme] #create .god-pick .port{height:104px;}
+html body[data-ui-theme] #create .god-unavailable{font-size:var(--text-12);}
+html body[data-ui-theme] #create #cname{font-size:var(--text-24)!important;min-height:30px;}
+html body[data-ui-theme] #create #reroll{font-size:var(--text-12)!important;min-height:26px;}
+html body[data-ui-theme] #create .who{display:none;}
+html body[data-ui-theme] #create .hero-stats{padding:6px 0;margin:0;}
+html body[data-ui-theme] #create .hero-stats span{font-size:var(--text-12);}
+html body[data-ui-theme] #create .hero-stats b{font-size:var(--text-20);}}
 /* Creation uses the title's language: the dungeon fills the window, the
    current step is the gold plate closing the row of finished choices, and the
    hero's statistics hold the foot of the panel on every step. */
@@ -891,33 +873,31 @@ html body[data-ui-theme] #create .creation-tutorial::before{content:"";position:
 html body[data-ui-theme] #create .creation-tutorial:has(#cTutorial:checked){color:var(--forge-ui-focus);}
 html body[data-ui-theme] #create .creation-tutorial:has(#cTutorial:checked)::before{filter:var(--forge-ui-frame-tone) brightness(1);}
 html body[data-ui-theme] #create #cTutorial{position:absolute;opacity:0;width:1px;height:1px;}
-@media(min-width:701px) and (min-height:561px){
- html body[data-ui-theme] #create .wrap{max-height:none;grid-template-rows:96px 56px minmax(0,1fr) 112px 60px;}
- html body[data-ui-theme] #create .creation-scene{grid-row:3/5;}
- /* Every step stands on one floor line, just above the class tray's row. */
- html body[data-ui-theme] #create .creation-scene .creation-step{align-content:end;padding-bottom:124px;box-sizing:border-box;}
- html body[data-ui-theme] #create .creation-class-tray{position:relative;z-index:2;}
- html body[data-ui-theme] #create .wrap[data-current-step=cls] .creation-class-tray{align-self:start;padding-top:0;}
- html body[data-ui-theme] #create .creation-lineup{max-width:none;}
-}/* The finished choices sit on one forged strip; the step being chosen is gold
+@container create-screen ((min-width:701px) and (min-height:561px)){html body[data-ui-theme] #create .wrap{max-height:none;grid-template-rows:96px 56px minmax(0,1fr) 112px 60px;}
+html body[data-ui-theme] #create .creation-scene{grid-row:3/5;}
+html body[data-ui-theme] #create .creation-scene .creation-step{align-content:end;padding-bottom:124px;box-sizing:border-box;}
+html body[data-ui-theme] #create .creation-class-tray{position:relative;z-index:2;}
+html body[data-ui-theme] #create .wrap[data-current-step=cls] .creation-class-tray{align-self:start;padding-top:0;}
+html body[data-ui-theme] #create .creation-lineup{max-width:none;}}/* The finished choices sit on one forged strip; the step being chosen is gold
    text at its end. Each choice stays its own button. */
-html body[data-ui-theme] #create .creation-steps{position:relative;isolation:isolate;justify-self:center;align-self:center;flex-wrap:nowrap;gap:0 26px!important;padding:2px 28px 4px!important;min-height:48px;box-sizing:border-box;}
+html body[data-ui-theme] #create .creation-steps{position:relative;z-index:3;isolation:isolate;justify-self:center;align-self:center;flex-wrap:nowrap;gap:0 26px!important;padding:2px 28px 4px!important;min-height:48px;box-sizing:border-box;}
 html body[data-ui-theme] #create .creation-steps::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;border:14px solid transparent;filter:var(--forge-ui-frame-tone) brightness(.62) contrast(.85);}
 html body[data-ui-theme] #create .creation-steps :is(.creation-step-value,.creation-step-now,button>span){text-shadow:0 1px 0 #000,0 0 6px #000,0 0 12px #000c;}
 /* On a phone the strip keeps one row: the choices drop their small labels. */
-@media(max-width:700px){html body[data-ui-theme] #create .creation-steps{gap:0 14px!important;padding:2px 16px 4px!important;max-width:100%;}html body[data-ui-theme] #create .wrap .creation-steps button>span{position:absolute;left:16px;top:16px;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;font-size:1px!important;}}
+@container create-screen (max-width:700px){html body[data-ui-theme] #create .creation-steps{gap:0 14px!important;padding:2px 16px 4px!important;max-width:100%;}
+html body[data-ui-theme] #create .wrap .creation-steps button>span{position:absolute;left:16px;top:16px;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;font-size:1px!important;}}
 html body[data-ui-theme] #create .creation-steps button,html body[data-ui-theme] #create .creation-steps button:only-child{min-height:44px!important;max-height:44px;padding:3px 2px 7px!important;width:auto;}
 html body[data-ui-theme] #create .creation-steps button::before,html body[data-ui-theme] #create .creation-step-now::before{display:none!important;}
 html body[data-ui-theme] #create .creation-steps button:is(:hover,.on) .creation-step-value{color:var(--forge-ui-focus);}
 html body[data-ui-theme] #create .creation-step-now{min-height:44px;padding:3px 2px 7px;}
 /* Three sizes on this screen: the heading, every blackletter word, and body text. */
 html body[data-ui-theme] #create{--create-head:var(--fs-head);--create-word:var(--fs-word);--create-body:var(--fs-body);}
-@media(max-width:1100px){html body[data-ui-theme] #create{--create-head:var(--fs-head);}}
-@media(max-width:700px),(max-height:720px){html body[data-ui-theme] #create{--create-head:var(--fs-head);--create-word:var(--fs-word);--create-body:var(--fs-body);}}
-@media(max-width:400px){html body[data-ui-theme] #create{--create-word:var(--fs-word);--create-body:var(--fs-small);}}
+@container create-screen (max-width:1100px){html body[data-ui-theme] #create>*{--create-head:var(--fs-head);}}
+@container create-screen (max-width:700px) or (max-height:720px){html body[data-ui-theme] #create>*{--create-head:var(--fs-head);--create-word:var(--fs-word);--create-body:var(--fs-body);}}
+@container create-screen (max-width:400px){html body[data-ui-theme] #create>*{--create-word:var(--fs-word);--create-body:var(--fs-small);}}
 html body[data-ui-theme] #create :is(#cBack,#rollCharacter,[data-step=race] .creation-lineup .choice-name){white-space:nowrap;}
 html body[data-ui-theme] #create .creation-scene .creation-step>.creation-appearance{margin-top:calc(var(--appearance-drop,24px) + 4px)!important;}
-@media(max-width:700px),(max-height:720px){html body[data-ui-theme] #create .creation-scene .creation-step>.creation-appearance{margin-top:calc(var(--appearance-drop,24px) + 12px)!important;}}
+@container create-screen (max-width:700px) or (max-height:720px){html body[data-ui-theme] #create .creation-scene .creation-step>.creation-appearance{margin-top:calc(var(--appearance-drop,24px) + 12px)!important;}}
 html body[data-ui-theme] #create h1{font-size:var(--create-head)!important;}
 html body[data-ui-theme] #create .creation-appearance .card b{font:700 var(--fs-body)/1.15 var(--display)!important;}
 html body[data-ui-theme] #create :is(#cBack,#rollCharacter,#begin,.creation-step-value,.creation-step-now,.creation-tutorial,.cards .card .choice-name,.pick-words .choice-name,.creation-ability .pick-words .choice-name,.build-fact>h2,.hero-stats b,#cname){font-family:var(--display)!important;font-weight:700!important;font-size:var(--create-word)!important;line-height:1.15!important;}
@@ -926,40 +906,36 @@ html body[data-ui-theme] #create :is(.pick-words span,.hero-stats span,#reroll,.
 html body[data-ui-theme] #create .pick-words span{line-height:1.35!important;}
 html body[data-ui-theme] #create .hero-stats b{display:block;margin-top:2px;}
 
-@media(max-width:400px){html body[data-ui-theme] #create .wrap .creation-steps{gap:0 10px!important;padding-inline:8px!important;}html body[data-ui-theme] #create#create .wrap .creation-steps :is(.creation-step-value,.creation-step-now){font-size:var(--fs-body)!important;}}
+@container create-screen (max-width:400px){html body[data-ui-theme] #create .wrap .creation-steps{gap:0 10px!important;padding-inline:8px!important;}
+html body[data-ui-theme] #create#create .wrap .creation-steps :is(.creation-step-value,.creation-step-now){font-size:var(--fs-body)!important;}}
 html body[data-ui-theme] #create h1{color:var(--ui-ink)!important;-webkit-text-fill-color:currentColor!important;}
 /* The heading bar keeps its drawn proportions, so it is never stretched wider
    than the space between the two corner buttons. */
 html body[data-ui-theme] #create .creation-actions .creation-title{max-width:600px;justify-self:center;box-sizing:border-box;}
-@media(min-width:701px) and (max-width:1100px) and (min-height:721px){
- html body[data-ui-theme] #create .creation-actions{grid-template-columns:auto minmax(0,1fr) auto!important;grid-template-rows:minmax(0,1fr)!important;gap:12px!important;}
- html body[data-ui-theme] #create .creation-actions .creation-title{grid-column:2!important;grid-row:1!important;padding:14px 44px 12px!important;width:100%;}
- html body[data-ui-theme] #create #rollCharacter{grid-column:3!important;}
-}
-@media(max-width:700px){html body[data-ui-theme] #create .creation-actions .creation-title{width:100%!important;max-width:460px;padding:10px 46px!important;}}
+@container create-screen ((min-width:701px) and (max-width:1100px) and (min-height:721px)){html body[data-ui-theme] #create .creation-actions{grid-template-columns:auto minmax(0,1fr) auto!important;grid-template-rows:minmax(0,1fr)!important;gap:12px!important;}
+html body[data-ui-theme] #create .creation-actions .creation-title{grid-column:2!important;grid-row:1!important;padding:14px 44px 12px!important;width:100%;}
+html body[data-ui-theme] #create #rollCharacter{grid-column:3!important;}}
+@container create-screen (max-width:700px){html body[data-ui-theme] #create .creation-actions .creation-title{width:100%!important;max-width:460px;padding:10px 46px!important;}}
 /* Spot-check pass (10-14 night): short landscape phones and upright phones get
    a tighter scale so the panel holds its text; the three-size rule still holds. */
-@media(max-height:500px) and (orientation:landscape){
- html body[data-ui-theme] #create{--create-head:var(--fs-word);--create-word:var(--fs-body);--create-body:var(--fs-small);}
- html body[data-ui-theme] #create .creation-record{padding:14px 18px 18px!important;gap:6px!important;}
- html body[data-ui-theme] #create .pick-words{gap:4px!important;}
- html body[data-ui-theme] #create .build-fact>h2{margin-bottom:4px!important;}
- html body[data-ui-theme] #create .hero-stats{padding:4px 0!important;}
-}
-@media(max-width:700px) and (orientation:portrait){
- html body[data-ui-theme] #create{--create-body:var(--fs-small);}
- html body[data-ui-theme] #create .creation-record{padding:14px 16px 20px!important;gap:6px!important;}
- html body[data-ui-theme] #create .pick-words{gap:5px!important;}
- html body[data-ui-theme] #create .build-fact>h2{margin-bottom:4px!important;}
- html body[data-ui-theme] #create .hero-stats{padding:4px 0!important;gap:4px!important;}
- html body[data-ui-theme] #create#create .wrap .creation-steps :is(.creation-step-value,.creation-step-now){font-size:var(--fs-body)!important;}
-}
+@container create-screen ((max-height:500px) and (orientation:landscape)){html body[data-ui-theme] #create>*{--create-head:var(--fs-word);--create-word:var(--fs-body);--create-body:var(--fs-small);}
+html body[data-ui-theme] #create .creation-record{padding:14px 18px 18px!important;gap:6px!important;}
+html body[data-ui-theme] #create .pick-words{gap:4px!important;}
+html body[data-ui-theme] #create .build-fact>h2{margin-bottom:4px!important;}
+html body[data-ui-theme] #create .hero-stats{padding:4px 0!important;}}
+@container create-screen ((max-width:700px) and (orientation:portrait)){html body[data-ui-theme] #create>*{--create-body:var(--fs-small);}
+html body[data-ui-theme] #create .creation-record{padding:14px 16px 20px!important;gap:6px!important;}
+html body[data-ui-theme] #create .pick-words{gap:5px!important;}
+html body[data-ui-theme] #create .build-fact>h2{margin-bottom:4px!important;}
+html body[data-ui-theme] #create .hero-stats{padding:4px 0!important;gap:4px!important;}
+html body[data-ui-theme] #create#create .wrap .creation-steps :is(.creation-step-value,.creation-step-now){font-size:var(--fs-body)!important;}}
 html body[data-ui-theme] #create .wrap[data-review=true] .build-fact+.build-fact{margin-top:10px!important;padding-top:8px!important;}
 html body[data-ui-theme] #create .creation-ability{margin-bottom:6px!important;}
 
 /* The finished-choice strip centres over the hero stage, like the class row. */
-@media(min-width:701px) and (min-height:561px){html body[data-ui-theme] #create .creation-steps{grid-column:1!important;}}
-@media(max-height:500px) and (orientation:landscape){html body[data-ui-theme] #create .creation-steps{grid-column:1!important;}}
+@container create-screen ((min-width:701px) and (min-height:561px)){html body[data-ui-theme] #create .creation-steps{grid-column:1!important;}}
+@container create-screen ((max-height:560px) and (orientation:landscape)){html body[data-ui-theme] #create .creation-steps{grid-column:1!important;}}
 /* Masculine and Feminine sit clear of the race names. */
 html body[data-ui-theme] #create .creation-scene .creation-step>.creation-appearance{margin-top:calc(var(--appearance-drop,24px) + 40px)!important;}
-@media(max-height:500px) and (orientation:landscape){html body[data-ui-theme] #create#create .creation-scene .creation-step>.creation-appearance{margin-top:calc(var(--appearance-drop,24px) + 6px)!important;}}
+@container create-screen ((max-height:500px) and (orientation:landscape)){html body[data-ui-theme] #create#create .creation-scene .creation-step>.creation-appearance{margin-top:calc(var(--appearance-drop,24px) + 6px)!important;}}
+@container create-screen ((max-width:700px) and (orientation:portrait)){html body[data-ui-theme] #create#create .creation-scene .creation-step>.creation-appearance{margin-top:calc(var(--appearance-drop,24px) + 12px)!important;}}

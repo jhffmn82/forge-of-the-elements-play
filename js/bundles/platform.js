@@ -416,7 +416,7 @@
                  ['stow','Ranged','&#127993;']];
     function wornItem(key){ return (typeof slotItem==='function') ? slotItem(key) : null; }
     function tile(key, label, ph){
-      if(innerWidth<600&&innerHeight>innerWidth)label=({main:'Main',off:'Off',amulet:'Neck',stow:'Range'})[key]||label;
+      if(Math.min(innerWidth,innerHeight)<600)label=({main:'Main',off:'Off',amulet:'Neck',stow:'Range'})[key]||label;
       var it = wornItem(key);
       var both = key==='off' && player.twoHanded;
       /* 2026-10-05: a worn Holy Symbol shows its holder's god's disc (sheets.js wornIconName) */
@@ -428,7 +428,6 @@
              '<span class="nm">'+(it ? gearName(it) : both ? 'Both hands' : 'Empty')+'</span></div>';
     }
     function touchEquipHTML(){
-      var hr = (typeof hitRange==='function') ? hitRange() : [0,0];
       var cells=player.bag.map(function(it,idx){ return '<div class="cell" data-b="'+idx+'" draggable="true">'+(it.n>1?'<b>'+it.n+'</b>':'')+'</div>'; });
       while(cells.length<BAG_MAX) cells.push('<div class="cell empty"></div>');
 
@@ -440,16 +439,10 @@
           '</div>'+
       '</div>';
 
-      /* below, scrolled to when wanted: the character and the totals */
-      h+='<div class="tg-mid"><div class="tg-portrait" id="dollArt"></div><div class="tg-tot">'+
-         '<div><p class="tg-sec">Offense</p>'+kv([['Damage per hit',hr[0]+'-'+hr[1]],['Crit',Math.round(Math.max(0,player.crit)*100)+'%'],['Crit damage','&times;'+criticalMultiplier().toFixed(2)],
-            ['Accuracy',player.acc],['Range',player.range],['Attack speed',playerSpeedPercent('attack')],['Movement speed',playerSpeedPercent('move')],['Spell power','&times;'+spellPower({}).toFixed(2)],['Divine Power','&times;'+divineStrength().toFixed(2)]])+'</div>'+
-         '<div><p class="tg-sec">Defense</p>'+kv([['HP',Math.round(player.hp)+' / '+player.maxhp],['Shield',playerShield()],
-            ['Armor',player.armor],['Evasion',evaOf(player)],['Block',Math.round(player.block*100)+'%'],['Mana',Math.floor(player.mp)+' / '+player.maxmp],['Stealth',Math.round(stealthScore()*100)+'%']])+'</div>'+
-         '</div></div>';
-
       h+='<div>'+equipResourcesHTML('tg-sec')+'</div>';
-      h+='<div><p class="tg-sec">Resistances</p>'+resHTML()+'</div>';
+      /* scrolled to (Justin, 2026-10-15: "scroll down on phones and see the combat / paper doll side by side"): the hero
+         beside the numbers gear changes */
+      h+='<div class="tg-mid"><div class="tg-portrait" id="dollArt"></div><div class="tg-tot">'+gearStatsHTML('tg-sec')+'</div></div>';
       return h+'</div>';
     }
     var _equipHTMLDesk = equipHTML;

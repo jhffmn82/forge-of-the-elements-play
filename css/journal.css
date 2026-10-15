@@ -32,7 +32,7 @@ body.fote-journal.fote-study.study-minimal[data-ui-theme=ember] #app #studyPiety
 body.fote-journal.fote-study.study-minimal[data-ui-theme=ember] #app :is(#studyLevel,#hud2 .study-favor){color:#e2e3e1;}
 body.fote-journal.fote-study.study-minimal #app #studyRecentLog{
  text-align:left;
- font-family:var(--mono);font-weight:400;
+ font-family:"Spectral",Georgia,serif;font-weight:400;
  font-size:calc(max(14px,calc(14px * var(--ui-text-scale,1) * var(--study-interface-scale,1))) + var(--ui-mobile-text-add,0px));line-height:1.28;
  color:var(--polish-ink);--ash:var(--polish-secondary);--dim:#a99a87;
 }

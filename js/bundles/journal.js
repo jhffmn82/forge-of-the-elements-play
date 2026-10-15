@@ -767,6 +767,10 @@
       $('journalCount').textContent=filtered.length+' of '+entries.length+' entries';
       var html='',lastGroup=null;
       if(selected==='achievements'){
+        /* earned first, then in progress, then undiscovered, each keeping its order (Justin, 2026-10-15: "shouldn't the
+           journal show the achievements you've earned up top and indicated you've earned them via a white title?") */
+        var rank=function(a){return a.unlocked?0:a.visible?1:2;};
+        filtered=filtered.map(function(a,i){return {a:a,i:i};}).sort(function(x,y){return rank(x.a)-rank(y.a)||x.i-y.i;}).map(function(x){return x.a;});
         html='<div class="journal-achievements">'+filtered.map(function(a){
           if(!a.visible)return '<article class="journal-achievement journal-undiscovered"><span class="journal-state">Undiscovered</span><h3>???</h3></article>';
           var current=Math.min(a.current,a.target);
