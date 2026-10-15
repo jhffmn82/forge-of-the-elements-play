@@ -859,7 +859,7 @@ html body[data-ui-theme] #create .hero-stats b{font-size:var(--text-20);}}
 /* Creation uses the title's language: the dungeon fills the window, the
    current step is the gold plate closing the row of finished choices, and the
    hero's statistics hold the foot of the panel on every step. */
-html body[data-ui-theme] #create{background:linear-gradient(#08060440,transparent 35%,#080604b8),url(../art/title/creation-hall.jpg) center/cover no-repeat!important;}
+html body[data-ui-theme] #create{background:linear-gradient(#08060440,transparent 35%,#080604b8),var(--ui-bg) url(../art/title/creation-hall.jpg) center/cover no-repeat!important;}
 html body[data-ui-theme] #create .wrap{background:none;box-shadow:none;}
 html body[data-ui-theme] #create .creation-scene .creation-step>.step{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;}
 html body[data-ui-theme] #create .creation-scene{--creation-heading-row:0px;}
