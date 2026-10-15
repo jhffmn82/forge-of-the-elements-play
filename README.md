@@ -101,7 +101,10 @@ Music Off avoids loading a new score, and touch devices retain fewer decoded
 music tracks. The Options map legend and HUD color/transparency controls were
 removed under the creator's approved redesign.
 
-Source integration: `9ecff39`.
+Character and Inventory now keep full stat labels readable, including Large text.
+Narrow mouse-input windows keep the menu header, worn gear and bag separated.
+
+Source integration: `6abe186`.
 
 Keyboard: WASD or arrows to move, QEZC diagonals, 1-8 hotbar, Tab character sheet,
 `i` equipment, `>` stairs. Mouse and phone touch controls remain available.
@@ -115,4 +118,4 @@ the repeatable export and an itch.io ZIP. Automated browser tests cover gameplay
 save compatibility, UI, dimensional compositing, recovery and nested-path play.
 Physical-phone GPU and memory performance still require device testing.
 
-Build: **2026-10-15T14:37:12.787Z**. Revision: `foundation17-20261015143712787`.
+Build: **10/15/2026 15:09:48**. Revision: `foundation17-20261015150948766`.

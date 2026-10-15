@@ -813,7 +813,7 @@ html body[data-ui-theme] #app#app#app#app#app #shade #mEquip .tgear .tg-slots .g
 }
 @media(orientation:landscape) and (max-height:600px){html body[data-ui-theme] #app#app#app#app#app#app #shade #mEquip .tgear .tg-slots .gslot{height:auto!important;min-height:0!important;padding:2px 0!important;}}
 /* Inventory with its gear stats column: stats, then worn with the hero, then bag and pouch. Narrower windows drop the stats. */
-html body[data-ui-theme] #app#app#app#app#app#app #shade #mEquip .gearwrap{grid-template-columns:minmax(200px,240px) minmax(0,1fr) minmax(260px,340px)!important;gap:16px 24px!important;}
+html body[data-ui-theme] #app#app#app#app#app#app #shade #mEquip .gearwrap{grid-template-columns:minmax(200px,max-content) minmax(0,1fr) minmax(260px,340px)!important;gap:16px 24px!important;}
 html body[data-ui-theme] #app#app#app #shade #mEquip .gstats{min-width:0;}
 html body[data-ui-theme] #app#app#app #shade #mEquip .gstats .kv{display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;gap:2px 12px!important;font-size:var(--fs-small)!important;}
 html body[data-ui-theme] #app#app#app #shade #mEquip .gstats .kv>span{color:var(--house-ash);}
@@ -821,6 +821,7 @@ html body[data-ui-theme] #app#app#app #shade #mEquip .gstats .kv>b{text-align:ri
 html body[data-ui-theme] #app#app#app #shade #mEquip .gstats .res{font-size:var(--fs-small)!important;gap:2px 12px!important;}
 html body[data-ui-theme] #app#app#app #shade #mEquip .gstats .sec:not(:first-child){margin-top:16px!important;}
 @media(max-width:899px){html body[data-ui-theme] #app#app#app #shade #mEquip .gstats{display:none!important;}html body[data-ui-theme] #app#app#app#app#app#app#app #shade #mEquip .gearwrap{grid-template-columns:minmax(0,1fr) minmax(260px,340px)!important;}}
+@media(max-width:700px){html body[data-ui-theme] #app#app#app#app#app#app#app #shade #mEquip .gearwrap{grid-template-columns:minmax(0,1fr)!important;}}
 /* Phone Inventory, below the pouch: the hero beside the gear numbers, side by side. */
 html body[data-ui-theme] #app#app#app#app#app #shade #mEquip .tgear .tg-mid{display:grid!important;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr)!important;gap:12px!important;margin-top:16px!important;align-items:start!important;}
 html body[data-ui-theme] #app#app#app#app#app #shade #mEquip .tgear .tg-portrait{min-height:220px!important;border:0!important;border-radius:6px!important;background:radial-gradient(ellipse at 50% 70%,#2a2d31,#141619 70%)!important;position:sticky;top:0;}
@@ -1190,3 +1191,45 @@ html body[data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme][data-ui-th
 /* Popup close x clear of the rim (Justin, 2026-10-15: "the x to close is too crowded with the edge"). */
 html body[data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme] #modal#modal#modal#modal#modal .mbox:not(.wide):not(.forge-modal):not(.journal-modal) #mX{top:20px!important;right:20px!important;width:32px!important;min-width:32px!important;height:32px!important;min-height:32px!important;}
 @media(min-width:701px) and (min-height:501px){html body[data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme] #modal#modal#modal#modal#modal .mbox:not(.wide):not(.forge-modal):not(.journal-modal) #mX{top:26px!important;right:26px!important;}}
+/* Two-column number lists: each number sits just after its own label, and the gap falls between the pairs (Justin,
+   2026-10-15: "bring the numbers closer to the start of the column otherwise you get crowding"). */
+html body[data-ui-theme][data-ui-theme][data-ui-theme] #app#app#app#app#app #shade :is(#mChar .char-kv,#mChar .res,#mEquip .gstats .res){display:grid!important;grid-template-columns:max-content minmax(3.2em,max-content) max-content minmax(3.2em,max-content)!important;justify-content:start!important;column-gap:12px!important;}
+html body[data-ui-theme][data-ui-theme][data-ui-theme] #app#app#app#app#app #shade #mChar .char-kv>:nth-child(4n+3){margin-left:28px;}
+html body[data-ui-theme][data-ui-theme][data-ui-theme] #app#app#app#app#app #shade :is(#mChar .res,#mEquip .gstats .res) span{display:grid!important;grid-column:span 2!important;grid-template-columns:subgrid!important;column-gap:12px!important;}
+html body[data-ui-theme][data-ui-theme][data-ui-theme] #app#app#app#app#app #shade :is(#mChar .res,#mEquip .gstats .res) span:nth-child(even){margin-left:28px!important;}
+html body[data-ui-theme][data-ui-theme][data-ui-theme] #app#app#app#app#app #shade :is(#mChar .res,#mEquip .gstats .res) b{text-align:right;}
+html body[data-ui-theme][data-ui-theme][data-ui-theme] #app#app#app#app#app #shade #mChar .grid4{display:grid!important;grid-template-columns:max-content minmax(3.2em,max-content) max-content minmax(3.2em,max-content)!important;justify-content:start!important;column-gap:12px!important;row-gap:8px!important;}
+html body[data-ui-theme][data-ui-theme][data-ui-theme] #app#app#app#app#app #shade #mChar .grid4 .stat{display:grid!important;grid-column:span 2!important;grid-template-columns:subgrid!important;column-gap:12px!important;padding:0!important;align-items:baseline;}
+html body[data-ui-theme][data-ui-theme][data-ui-theme] #app#app#app#app#app #shade #mChar .grid4 .stat b{text-align:right;white-space:nowrap;}
+html body[data-ui-theme][data-ui-theme][data-ui-theme] #app#app#app#app#app #shade #mChar .grid4 .stat:nth-child(even){margin-left:28px!important;}
+html body[data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme] #app#app#app#app#app#app #shade #mChar .char-kv{grid-template-columns:max-content minmax(3.2em,max-content) max-content minmax(3.2em,max-content)!important;justify-content:start!important;column-gap:12px!important;}
+html body[data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme] #app#app#app#app#app#app #shade #mChar .char-kv>span{overflow:visible!important;}
+@media(max-width:420px){
+ html body[data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme] #app#app#app#app#app#app#app #shade #mChar :is(.char-kv,.grid4){grid-template-columns:minmax(0,1fr) auto minmax(0,1fr) auto!important;column-gap:8px!important;}
+ html body[data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme] #app#app#app#app#app#app#app #shade #mChar .char-kv>:nth-child(4n+3),html body[data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme] #app#app#app#app#app#app#app #shade #mChar .grid4 .stat:nth-child(even){margin-left:12px!important;}
+ html body[data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme] #app#app#app#app#app#app#app #shade :is(#mChar .res,#mEquip .gstats .res){grid-template-columns:minmax(0,1fr) auto minmax(0,1fr) auto!important;column-gap:8px!important;}
+ html body[data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme] #app#app#app#app#app#app#app #shade :is(#mChar .res,#mEquip .gstats .res) span:nth-child(even){margin-left:12px!important;}
+}
+/* Keep complete labels inside their column: multiword labels can wrap on compact screens and with Large text. */
+html body[data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme] #app#app#app#app#app#app#app #shade #mChar :is(.char-kv,.grid4,.res){grid-template-columns:minmax(0,max-content) auto minmax(0,max-content) auto!important;justify-content:start!important;max-width:100%!important;min-width:0!important;column-gap:8px!important;}
+html body[data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme] #app#app#app#app#app#app #shade #mChar :is(.char-kv>span,.grid4 .stat>span){min-width:0;overflow:visible;text-overflow:clip;white-space:normal;}
+/* Inventory's narrow totals column must measure both labels and values, including "immune". */
+html body[data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme] #app#app#app#app#app#app#app #shade #mEquip .gstats .res{grid-template-columns:repeat(4,max-content)!important;column-gap:8px!important;justify-content:start!important;}
+html body[data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme] #app#app#app#app#app#app#app #shade #mEquip .gstats .res span{column-gap:8px!important;}
+html body[data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme] #app#app#app#app#app#app #shade #mChar :is(.c-left,.c-left>section){min-width:0!important;overflow:hidden;}
+/* The space between the two pairs sits after the first pair's number (a margin on the second label squeezed it onto its
+   own number once labels could shrink). */
+html body[data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme] #app#app#app#app#app#app#app#app #shade #mChar .char-kv>:nth-child(4n+3),
+html body[data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme] #app#app#app#app#app#app#app#app #shade #mChar .grid4 .stat:nth-child(even),
+html body[data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme] #app#app#app#app#app#app#app#app #shade :is(#mChar .res,#mEquip .gstats .res) span:nth-child(even){margin-left:0!important;}
+html body[data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme] #app#app#app#app#app#app#app#app #shade #mChar .char-kv>:nth-child(4n+2),
+html body[data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme] #app#app#app#app#app#app#app#app #shade #mChar .grid4 .stat:nth-child(odd) b,
+html body[data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme] #app#app#app#app#app#app#app#app #shade :is(#mChar .res,#mEquip .gstats .res) span:nth-child(odd) b{margin-right:12px!important;}
+html body[data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme] #app#app#app#app#app#app#app#app #shade #mChar .char-kv>span{min-width:0!important;overflow:visible!important;text-overflow:clip!important;white-space:normal!important;}
+@media(max-width:420px){html body[data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme] #app#app#app#app#app#app#app#app #shade #mChar .char-kv>:nth-child(4n+2),html body[data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme] #app#app#app#app#app#app#app#app #shade #mChar .grid4 .stat:nth-child(odd) b,html body[data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme] #app#app#app#app#app#app#app#app #shade :is(#mChar .res,#mEquip .gstats .res) span:nth-child(odd) b{margin-right:12px!important;}}
+/* The numbers column gets the width two pairs need; Abilities has room to give. */
+@media(min-width:701px) and (min-height:501px){html body[data-ui-theme][data-ui-theme][data-ui-theme] #app#app#app#app#app#app #shade #mChar .char-grid{grid-template-columns:minmax(330px,1.15fr) minmax(0,.75fr) minmax(0,1.1fr)!important;}}
+@media(min-width:701px) and (max-height:500px){html body[data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme] #app#app#app#app#app#app#app #shade #mChar .char-grid{grid-template-columns:minmax(316px,1.35fr) minmax(0,.7fr) minmax(0,.85fr)!important;column-gap:14px!important;}html body[data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme] #app#app#app#app#app#app#app#app #shade #mChar :is(.char-kv>:nth-child(4n+2),.grid4 .stat:nth-child(odd) b,.res span:nth-child(odd) b){margin-right:14px!important;}html body[data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme][data-ui-theme] #app#app#app#app#app#app#app #shade #mChar :is(.char-kv,.grid4,.res){column-gap:8px!important;}}
+/* The open menu's header grows to hold its floor and turn lines (Justin, 2026-10-15: "what's going on here?" — on a narrow
+   window #brand was held to 28px and the lines lay over Character). */
+html body.study-menu-open[data-ui-theme] #app#app #top#top#top #brand{height:auto!important;min-height:0!important;max-height:none!important;flex:none!important;overflow:visible!important;}
