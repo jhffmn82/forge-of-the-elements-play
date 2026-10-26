@@ -1,0 +1,31 @@
+{
+ "made-by": "tools/lighting/make-normals.py",
+ "strength": 25,
+ "blur": 2.5,
+ "biomes": {
+  "crypt": {
+   "floor": "normal-crypt-floor.png",
+   "face": "normal-crypt-face.png"
+  },
+  "temple": {
+   "floor": "normal-temple-floor.png",
+   "face": "normal-temple-face.png"
+  },
+  "underdark": {
+   "floor": "normal-underdark-floor.png",
+   "face": "normal-underdark-face.png"
+  },
+  "volcanic": {
+   "floor": "normal-volcanic-floor.png",
+   "face": "normal-volcanic-face.png"
+  },
+  "cinder": {
+   "floor": "normal-cinder-floor.png",
+   "face": "normal-cinder-face.png"
+  },
+  "prism": {
+   "floor": "normal-prism-floor.png",
+   "face": "normal-prism-face.png"
+  }
+ }
+}

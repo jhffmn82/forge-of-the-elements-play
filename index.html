@@ -1,398 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
 <meta charset="utf-8">
-<link rel="stylesheet" href="css/fonts.css?v=1792103310">
-<link rel="stylesheet" href="css/interface.css?v=1792103310">
-<link rel="stylesheet" href="css/title-screen.css?v=1792103310">
-<link rel="stylesheet" href="css/journal.css?v=1792103310">
-<link rel="stylesheet" href="css/journal-menus.css?v=1792103310">
-<link rel="stylesheet" href="css/journal-cards.css?v=1792103310">
-<link id="paintedUi" rel="stylesheet" href="css/painted-ui.css?v=1792103310">
-<link id="responsiveHudStyles" rel="stylesheet" href="css/responsive-hud.css?v=1792103310">
-<link id="forgeSkin" rel="stylesheet" href="css/forge-skin.css?v=1792103310">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <title>Forge of the Elements</title>
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<!-- 1.7's home-screen install (index.html:14-24, CH-37): the app manifest, its icons and colour, the 'Forge' title, and
+     the standalone status bar. iOS installs from Safari's Share > Add to Home Screen and reads the apple- tags rather
+     than the manifest on older versions; it will not use a transparent icon, hence the opaque apple-touch-icon. -->
 <meta name="mobile-web-app-capable" content="yes">
-<!-- iOS installs from Safari's Share > Add to Home Screen; it reads these rather than the manifest on
-     older versions, and it will not use a transparent icon, hence the opaque apple-touch-icon. -->
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Forge">
-<link rel="apple-touch-icon" sizes="180x180" href="art/icons/apple-touch-icon-180.png">
-<link rel="apple-touch-icon" sizes="167x167" href="art/icons/apple-touch-icon-167.png">
-<link rel="apple-touch-icon" sizes="152x152" href="art/icons/apple-touch-icon-152.png">
-<meta name="theme-color" content="#0F0D0C">
-<meta name="fote-build" content="2026-10-15T22:28:30.243Z">
-<link rel="manifest" href="manifest.json?v=1792103310">
-<link rel="icon" type="image/png" sizes="192x192" href="art/icons/icon-192.png">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<link rel="apple-touch-icon" sizes="180x180" href="assets/images/icons/apple-touch-icon-180.png">
+<link rel="apple-touch-icon" sizes="167x167" href="assets/images/icons/apple-touch-icon-167.png">
+<link rel="apple-touch-icon" sizes="152x152" href="assets/images/icons/apple-touch-icon-152.png">
+<meta name="theme-color" content="#080b11">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="assets/images/icons/icon-192.png">
+<!-- The build stamp (O1): 'dev' here; tools/assets/stamp-build.mjs writes a release's time into its copy, and only a
+     stamped build registers sw.js and stores the offline copy (src/platform/offline.js). -->
+<meta name="forge-build" content="2026-10-26T05:29:56.000Z">
+<!-- The bundle's size in bytes, for the loading veil's percentage: stamp-build.mjs writes it into a release copy. -->
+<meta name="forge-bundle-bytes" content="3138941">
 <style>
-  :root{
-    --bg:#0F0D0C; --panel:#1B1715; --panel-2:#221D1A; --edge:#332A24;
-    --ink:#F2E8DC; --ash:#A79C93; --dim:#6E635B;
-    --ember:#E2622B; --gold:#E8B44A; --ice:#62A8D8; --moss:#7FA05A; --violet:#8A6FB0; --blood:#B8453A;
-    --mono:"IBM Plex Mono",monospace;
-    --display:"Grenze Gotisch",serif;
-  }
-  *{box-sizing:border-box}
-  html,body{height:100%;margin:0}
-  body{background:var(--bg);color:var(--ink);font-family:var(--mono);font-size:var(--text-14);overflow:hidden}
-  #app{display:flex;flex-direction:column;height:100%}
-
-  /* ---------- top bar: identity + tabs ---------- */
-  #top{flex:0 0 auto;display:flex;align-items:stretch;gap:14px;padding:0 12px;
-    padding-top:env(safe-area-inset-top,0px);
-    background:linear-gradient(180deg,#221D1A,#171310);border-bottom:1px solid var(--edge)}
-  #brand{display:flex;align-items:center;gap:10px;padding:7px 0}
-  h1{font-family:var(--display);font-weight:700;font-size:calc(calc(19px * var(--ui-text-scale,1)) + var(--ui-mobile-text-add,0px));margin:0;letter-spacing:.4px;white-space:nowrap;
-    background:linear-gradient(180deg,var(--gold),var(--ember));-webkit-background-clip:text;background-clip:text;color:transparent}
-  #depth{font-size:calc(calc(11.5px * var(--ui-text-scale,1)) + var(--ui-mobile-text-add,0px));color:var(--ash);white-space:nowrap}
-  #depth b{color:var(--ink)}
-  #tabs{display:flex;align-items:stretch;gap:2px;margin-left:auto}
-  #tabs button{border:none;background:none;border-bottom:2px solid transparent;border-radius:0;color:var(--dim);
-    font-family:var(--mono);font-size:var(--text-10);letter-spacing:.11em;text-transform:uppercase;padding:0 12px;cursor:pointer}
-  #tabs button:hover{color:var(--ash)}
-  #tabs button.on{color:var(--gold);border-bottom-color:var(--ember);background:rgba(226,98,43,.07)}
-  #tabs button:focus-visible{outline:2px solid var(--ember);outline-offset:-2px}
-
-  /* ---------- map ---------- */
-  #map{flex:1 1 auto;min-height:40vh;position:relative;background:#0B0A09;overflow:hidden}
-  #cv{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);image-rendering:pixelated}
-  #tip{position:absolute;z-index:4;display:none;max-width:min(270px,calc(100% - 16px));pointer-events:none;font-size:calc(calc(14px * var(--ui-text-scale,1)) + var(--ui-mobile-text-add,0px));line-height:1.4;overflow-wrap:anywhere;
-    background:rgba(16,13,11,.97);border:1px solid var(--edge);border-radius:5px;padding:7px 9px;box-shadow:0 6px 20px rgba(0,0,0,.5)}
-  #tip .nm{font-family:var(--display);font-size:calc(calc(16px * var(--ui-text-scale,1)) + var(--ui-mobile-text-add,0px));color:var(--gold);line-height:1.25}
-  #tip .row{display:flex;flex-wrap:wrap;justify-content:space-between;gap:0 14px;font-size:calc(calc(13px * var(--ui-text-scale,1)) + var(--ui-mobile-text-add,0px));color:var(--ash)}
-  #tip .row b{color:var(--ink);font-variant-numeric:tabular-nums;max-width:100%;text-align:right}
-  #tip .odds,#tip .tipstat{margin-top:4px;font-size:calc(calc(13px * var(--ui-text-scale,1)) + var(--ui-mobile-text-add,0px));color:var(--ink)}
-  #tip .odds em{font-style:normal;color:var(--gold);font-weight:600}
-  body.touch #tip{max-height:calc(100dvh - 16px);overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y;pointer-events:auto;z-index:60}
-
-  /* ---------- overlay sheet ---------- */
-  #shade{position:absolute;left:0;right:0;top:0;bottom:0;z-index:8;display:none;align-items:center;justify-content:center;
-    background:rgba(8,7,6,.72);padding:18px}
-  #shade.on{display:flex}
-  .sheet{width:min(860px,100%);max-height:min(78vh,620px);display:flex;flex-direction:column;
-    background:var(--panel);border:1px solid var(--edge);border-radius:8px;box-shadow:0 18px 50px rgba(0,0,0,.6)}
-  .sheet header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--edge)}
-  .sheet header h2{font-family:var(--display);font-size:var(--text-20);color:var(--gold);margin:0}
-  .sheet .bodyw{overflow-y:auto;padding:14px}
-  #close{background:var(--panel-2);border:1px solid var(--edge);color:var(--ash);border-radius:4px;padding:4px 9px;cursor:pointer;font-family:var(--mono)}
-  #close:hover{color:var(--gold);border-color:var(--ember)}
-  .msec{display:none}
-  .msec.on{display:block}
-
-  /* ---------- bottom strip ---------- */
-  #strip{flex:0 0 auto;display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:10px;
-    padding:8px 10px;padding-bottom:calc(8px + env(safe-area-inset-bottom,0px));
-    background:var(--panel);border-top:1px solid var(--edge)}
-  /* themed scrollbars: a thin brass thumb on a dark groove, instead of the browser's white bar */
-  @supports not selector(::-webkit-scrollbar){ *{scrollbar-width:thin;scrollbar-color:#6B5A3A #15110E} }   /* Firefox; Chromium uses the rules below (no arrow buttons) */
-  ::-webkit-scrollbar{width:9px;height:9px}
-  ::-webkit-scrollbar-track{background:#15110E;border-left:1px solid #2A231D}
-  ::-webkit-scrollbar-thumb{background:linear-gradient(90deg,#5A4A30,#7A6642);border:2px solid #15110E;border-radius:6px}
-  ::-webkit-scrollbar-thumb:hover{background:linear-gradient(90deg,#7A6642,#A08650)}
-  ::-webkit-scrollbar-button{display:none;width:0;height:0}
-  ::-webkit-scrollbar-corner{background:#15110E}
-  #log{height:clamp(96px,15vh,140px);overflow-y:auto;display:flex;flex-direction:column;gap:2px;
-    background:#151110;border:1px solid var(--edge);border-radius:5px;padding:7px 10px;font-size:var(--text-12);line-height:1.45}
-  .roll{color:var(--dim)}
-  .c-hit{color:var(--ink)} .c-miss{color:var(--dim)} .c-you{color:var(--blood)}
-  .c-kill{color:var(--gold)} .c-good{color:var(--moss)} .c-info{color:var(--ash)} .c-fire{color:var(--ember)}
-
-  #mid{display:flex;flex-direction:column;gap:5px;width:min(430px,46vw)}
-  #bars{display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px}
-  .bar{position:relative;height:14px;border:1px solid var(--edge);border-radius:3px;background:#120F0D;overflow:hidden}
-  .bar i{position:absolute;left:0;top:0;bottom:0;display:block;width:0}
-  .bar span{position:absolute;left:0;right:0;top:0;bottom:0;display:flex;align-items:center;justify-content:space-between;
-    padding:0 5px;font-size:var(--text-10);font-variant-numeric:tabular-nums;text-shadow:0 1px 2px #000}
-  .bar .l{color:var(--ash);letter-spacing:.08em}
-  .hp i{background:linear-gradient(90deg,#8E2F27,#C7503F)}
-  .hp #shFill{background:repeating-linear-gradient(135deg,rgba(150,215,255,.85) 0 4px,rgba(90,160,220,.85) 4px 8px);box-shadow:0 0 6px rgba(140,210,255,.6)}
-  .mp i{background:linear-gradient(90deg,#26506E,#4A8FBF)}
-  .xp i{background:linear-gradient(90deg,#6B5A22,#E8B44A)}
-  #hotbar{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));grid-template-rows:1fr 1fr;gap:5px;flex:1 1 auto;
-    min-height:clamp(78px,12vh,104px)}
-  .slot{position:relative;min-width:0;display:flex;flex-direction:column;justify-content:center;gap:1px;
-    padding:4px 7px;background:var(--panel-2);border:1px solid var(--edge);border-radius:5px;cursor:pointer;text-align:left}
-  .slot .k{position:absolute;top:2px;right:4px;font-size:calc(calc(9px * var(--ui-text-scale,1)) + var(--ui-mobile-text-add,0px));color:var(--dim)}
-  .slot .n{font-size:calc(calc(11px * var(--ui-text-scale,1)) + var(--ui-mobile-text-add,0px));color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .slot .row{display:flex;align-items:center;gap:5px;min-width:0}
-  .slot .ic{flex:0 0 auto;display:flex;align-items:center}
-  .slot.over{border-color:var(--gold);background:#2A2015}
-  .slot .c{font-size:calc(calc(9.5px * var(--ui-text-scale,1)) + var(--ui-mobile-text-add,0px));color:var(--ice);font-variant-numeric:tabular-nums}
-  .slot:hover:not(:disabled){border-color:var(--ember)}
-  .slot:disabled{opacity:.34;cursor:default}
-  .slot.armed{border-color:var(--gold);background:#2A2015;box-shadow:0 0 0 1px rgba(232,180,74,.35) inset}
-  .slot.armed .n{color:var(--gold)}
-  .slot.empty{background:#120F0D;border-style:dashed;opacity:.38;cursor:default}
-  .slot.empty .n{color:var(--dim)}
-
-  #ctl{display:flex;flex-direction:column;gap:5px;align-items:center}
-  #fx{display:flex;gap:4px;flex-wrap:wrap;justify-content:center;max-width:170px;min-height:16px}
-  .tag{font-size:calc(calc(9.5px * var(--ui-text-scale,1)) + var(--ui-mobile-text-add,0px));padding:1px 6px;border-radius:3px;border:1px solid;white-space:nowrap}
-  .t-burn{color:var(--ember);border-color:#5A2E18;background:#251610}
-  .t-root{color:var(--moss);border-color:#33452A;background:#151C12}
-  .t-chill{color:var(--ice);border-color:#23414F;background:#101A20}
-  .t-stun{color:var(--gold);border-color:#4D3D1C;background:#1F1A10}
-  .t-fear{color:var(--violet);border-color:#3D3050;background:#171226}
-  .t-blind{color:#F2E8DC;border-color:#4D4638;background:#1E1B16}
-  .t-hidden{color:var(--ash);border-color:#3A322B;background:#1C1815}
-  #dpad{display:grid;grid-template-columns:repeat(3,34px);grid-auto-rows:30px;gap:3px}
-  #dpad button{padding:0;font-size:calc(calc(13px * var(--ui-text-scale,1)) + var(--ui-mobile-text-add,0px))}
-
-  select,input[type=text],button{font-family:var(--mono);font-size:var(--text-12);color:var(--ink);
-    background:var(--panel-2);border:1px solid var(--edge);border-radius:4px;padding:5px 8px}
-  button{cursor:pointer}
-  button:hover{border-color:var(--ember);color:var(--gold)}
-  button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--ember);outline-offset:1px}
-  input[type=text]{width:92px}
-
-  /* ---------- sheet contents ---------- */
-  .cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px 22px}
-  .sub{font-size:var(--text-10);letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin:0 0 6px}
-  .head{font-family:var(--display);font-size:var(--text-16);color:var(--gold);margin:0}
-  .who{font-size:var(--text-12);color:var(--ash);margin-bottom:8px}
-  .grid4{display:grid;grid-template-columns:1fr 1fr;gap:5px}
-  .stat{display:flex;justify-content:space-between;background:var(--panel-2);border:1px solid var(--edge);border-radius:3px;padding:4px 8px;font-size:var(--text-12)}
-  .stat b{font-variant-numeric:tabular-nums}
-  .aff{display:flex;align-items:center;gap:8px;padding:2px 0;font-size:var(--text-12)}
-  .aff .nm{width:56px;color:var(--ash)}
-  .pips{display:flex;gap:3px}
-  .pip{width:11px;height:11px;border-radius:2px;border:1px solid var(--edge);background:#141110}
-  .kv{display:grid;grid-template-columns:auto 1fr;gap:3px 12px;font-size:var(--text-12);color:var(--ash);align-items:baseline}
-  .kv b{color:var(--ink);font-variant-numeric:tabular-nums;text-align:right}
-  .abrow{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:baseline;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.05)}
-  .abrow .k{color:var(--gold)} .abrow .d{color:var(--dim);font-size:var(--text-12)}
-  .equip{display:grid;grid-template-columns:minmax(240px,1fr) minmax(220px,1fr);gap:20px}
-  .doll{display:grid;grid-template-columns:1fr 64px 1fr;grid-template-rows:repeat(3,auto);gap:6px;align-items:center}
-  .body{grid-column:2;grid-row:1/4;align-self:stretch;border:1px dashed var(--edge);border-radius:8px;background:#151110;
-    display:flex;align-items:center;justify-content:center;color:var(--dim);font-size:var(--text-32);font-family:var(--display)}
-  .eslot{background:var(--panel-2);border:1px solid var(--edge);border-radius:4px;padding:5px 7px;min-height:42px;
-    display:flex;flex-direction:column;justify-content:center;gap:1px}
-  .eslot .l{font-size:var(--text-10);letter-spacing:.12em;text-transform:uppercase;color:var(--dim)}
-  .eslot .v{font-size:var(--text-12);color:var(--ink);line-height:1.2}
-  .eslot .v.none{color:var(--dim)}
-  .eslot[data-eq]{cursor:copy}
-  .eslot.over{border-color:var(--gold);background:#2A2015;box-shadow:0 0 0 1px rgba(232,180,74,.3) inset}
-  .abrow[data-ab]{cursor:grab}
-  .eslot.el-fire{border-color:#5A2E18} .eslot.el-earth{border-color:#33452A}
-  .eslot.el-shadow{border-color:#3D3050} .eslot.el-water{border-color:#23414F}
-  .invgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(48px,1fr));gap:6px;align-content:start}
-  .cell{position:relative;aspect-ratio:1;border:1px solid var(--edge);border-radius:4px;background:#161210;
-    display:flex;align-items:center;justify-content:center;font-size:var(--text-20)}
-  .cell.empty{border-style:dashed;opacity:.3}
-  .cell[data-b]:hover{border-color:var(--ember)}
-  .plus{margin-left:6px;padding:0 5px;font-size:var(--text-12);line-height:1.4;color:var(--gold);
-    background:#2A2015;border:1px solid var(--edge);border-radius:3px;cursor:pointer}
-  .cell b{position:absolute;right:3px;bottom:1px;font-size:var(--text-10);color:var(--gold);font-variant-numeric:tabular-nums;z-index:2}
-  .cell canvas{display:block}
-  .pouch{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
-  .mote{display:flex;align-items:center;gap:5px;font-size:var(--text-12);color:var(--ash);
-    border:1px solid var(--edge);border-radius:20px;padding:2px 9px 2px 6px;background:#161210}
-  .mote i{width:8px;height:8px;transform:rotate(45deg);display:block}
-  .sandbox{display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end}
-  .field{display:flex;flex-direction:column;gap:4px}
-  .field label{font-size:var(--text-10);letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}
-
-  #dtip{position:fixed;z-index:20;display:none;max-width:250px;pointer-events:none;
-    background:rgba(16,13,11,.98);border:1px solid var(--edge);border-radius:5px;padding:8px 10px;
-    box-shadow:0 10px 26px rgba(0,0,0,.55);font-size:var(--text-12)}
-  #dtip .nm{font-family:var(--display);font-size:var(--text-16);color:var(--gold);line-height:1.2;margin-bottom:3px}
-  #dtip .row{display:flex;justify-content:space-between;gap:16px;color:var(--ash)}
-  #dtip .row b{color:var(--ink);font-variant-numeric:tabular-nums}
-  #dtip .hint{color:var(--dim);margin-top:4px;line-height:1.4}
-  #over{position:absolute;left:0;right:0;top:0;bottom:0;z-index:9;display:none;align-items:center;justify-content:center;background:rgba(10,8,7,.9)}
-  #over h2{font-family:var(--display);font-size:var(--text-32);color:var(--blood);margin:0 0 8px}
-  #over p{color:var(--ash);margin:0 0 14px}
-  #over .box{text-align:center}
-
-  @media (max-width:900px){
-    #mid{width:min(300px,42vw)}
-    #hotbar{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(4,1fr)}
-    h1{font-size:calc(calc(16px * var(--ui-text-scale,1)) + var(--ui-mobile-text-add,0px))} #depth{display:none}
-    #tabs button{padding:0 8px;font-size:calc(calc(10px * var(--ui-text-scale,1)) + var(--ui-mobile-text-add,0px))}
-  }
-  @media (max-width:640px){
-    #strip{grid-template-columns:1fr auto}
-    #log{grid-column:1/-1;height:clamp(70px,12vh,110px)}
-    #mid{width:auto}
-    .equip{grid-template-columns:1fr}
-  }
-  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
-
-  /* ---------- phone and tablet: touch-sized bars ----------
-     A phone's scarce dimension in landscape is height, so the message log and the status tags move onto the
-     map as translucent overlays and the top and bottom bars carry nothing but controls, at finger size
-     (44px targets). js/platform/mobile.js adds body.touch and zooms the map in. */
-  body.touch{-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;touch-action:manipulation}
-  body.touch #app{position:relative}
-  body.touch #top{min-height:46px;gap:8px;padding:0 10px;align-items:center}
-  body.touch h1{font-size:calc(calc(17px * var(--ui-text-scale,1)) + var(--ui-mobile-text-add,0px))}
-  body.touch #depth{display:none}
-  body.touch #tabs{gap:0}
-  body.touch #tabs button{min-height:46px;padding:0 13px;font-size:calc(calc(12px * var(--ui-text-scale,1)) + var(--ui-mobile-text-add,0px));letter-spacing:.06em}
-  body.touch #top button{min-height:40px;font-size:calc(calc(12px * var(--ui-text-scale,1)) + var(--ui-mobile-text-add,0px));padding:6px 10px}
-  body.touch #tabs button[data-p="Sand"]{display:none}          /* no sandbox on the kids' build */
-
-  body.touch #map{min-height:0}
-  /* the log and the status tags float over the map instead of taking a column in the strip */
-  body.touch #log{position:absolute;z-index:5;left:8px;top:54px;width:min(44%,320px);height:auto;max-height:72px;
-    padding:5px 8px;font-size:var(--text-12);line-height:1.35;background:rgba(10,9,8,.55);border:none;border-radius:6px;
-    backdrop-filter:blur(2px);pointer-events:none}
-  body.touch #fx{position:absolute;z-index:5;right:8px;top:54px;max-width:44%;justify-content:flex-end;pointer-events:none}
-  body.touch .tag{font-size:calc(calc(11.5px * var(--ui-text-scale,1)) + var(--ui-mobile-text-add,0px));padding:2px 8px}
-
-  body.touch #strip{grid-template-columns:1fr auto;gap:8px;padding:6px 8px;
-    padding-bottom:calc(6px + env(safe-area-inset-bottom,0px))}
-  body.touch #mid{width:auto;gap:6px}
-  body.touch .bar{height:20px}
-  body.touch .bar span{font-size:calc(calc(12px * var(--ui-text-scale,1)) + var(--ui-mobile-text-add,0px));padding:0 7px}
-  body.touch #hotbar{grid-template-columns:repeat(8,minmax(0,1fr));grid-template-rows:1fr;min-height:54px;gap:6px}
-  body.touch .slot{padding:4px 5px;border-radius:6px}
-  body.touch .slot .n{font-size:calc(calc(11px * var(--ui-text-scale,1)) + var(--ui-mobile-text-add,0px))}
-  body.touch .slot .k{font-size:calc(calc(10px * var(--ui-text-scale,1)) + var(--ui-mobile-text-add,0px))}
-  body.touch #ctl{flex-direction:row;align-items:flex-end;gap:6px}
-  body.touch #dpad{grid-template-columns:repeat(3,44px);grid-auto-rows:34px;gap:4px}
-  body.touch #dpad button{font-size:calc(calc(17px * var(--ui-text-scale,1)) + var(--ui-mobile-text-add,0px))}
-
-  /* portrait is the phone's better shape: 360x800 gives a squarer map with bigger tiles than a 800x360
-     letterbox, and the bottom UI folds into rows that the thumbs reach. The bars stay their own row, the
-     hotbar becomes 4x2, and the d-pad sits beside the action buttons. */
-  @media (orientation:portrait){
-    body.touch #strip{grid-template-columns:minmax(0,1fr);gap:7px;padding:7px 8px;
-      padding-bottom:calc(7px + env(safe-area-inset-bottom,0px))}
-    body.touch #mid{width:auto}
-    body.touch #hotbar{grid-template-columns:repeat(4,minmax(0,1fr));grid-template-rows:1fr 1fr;min-height:118px;gap:7px}
-    body.touch .slot .n{font-size:calc(calc(12px * var(--ui-text-scale,1)) + var(--ui-mobile-text-add,0px))}
-    body.touch #ctl{flex-direction:row;align-items:stretch;justify-content:space-between;gap:8px}
-    body.touch #dpad{grid-template-columns:repeat(3,52px);grid-auto-rows:44px;gap:5px}
-    body.touch #dpad button{font-size:calc(calc(19px * var(--ui-text-scale,1)) + var(--ui-mobile-text-add,0px))}
-    /* the message log is the bottom row, under the controls, where it reads like a chat feed */
-    body.touch #log{position:static;order:3;width:auto;max-height:none;height:clamp(64px,9vh,88px);
-      background:#151110;border:1px solid var(--edge);padding:6px 9px;pointer-events:auto;backdrop-filter:none}
-    body.touch #mid{order:1}
-    body.touch #ctl{order:2}
-    body.touch #fx{max-width:60%}
-    body.touch .sheet{max-height:82vh}
-    body.touch .equip,body.touch .cols{grid-template-columns:1fr}
-  }
+  html, body { margin: 0; height: 100%; background: #080b11; overflow: hidden; touch-action: none; }
+  #game, #game canvas { position: fixed; inset: 0; display: block; }
+  #text-entry { position: fixed; left: -9999px; top: 0; opacity: 0; }
+  /* 1.7's loading screen (runtime/boot.js preloadArt, css/interface.css #loadVeil), here in the page so it paints before
+     the bundle arrives (sandbox item 44, Justin 2026-10-16: "in 1.7 there is a loading screen"). It comes down once the
+     title is drawn (main.js removes the veil then). */
+  @font-face { font-family: 'Grenze Gotisch'; font-weight: 700; font-display: swap; src: url(assets/fonts/grenze-gotisch-700.woff2) format('woff2'); }
+  @font-face { font-family: 'IBM Plex Mono'; font-weight: 400; font-display: swap; src: url(assets/fonts/ibm-plex-mono-400.woff2) format('woff2'); }
+  #loadVeil { position: fixed; inset: 0; z-index: 99; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
+    background: #080b11; color: #bdc2d8; font: 14px 'IBM Plex Mono', monospace; text-align: center; padding: 0 16px; }
+  #loadVeil h1 { font: 700 32px/1.1 'Grenze Gotisch', serif; color: #e8b44a; margin: 0; }
+  #loadVeil button { background: none; border: 0; border-radius: 0; box-shadow: none; color: #e8b44a; font: 400 16px 'IBM Plex Mono', monospace; cursor: pointer;
+    text-decoration: underline 1px; text-underline-offset: .3em; }
+  #loadVeil button:focus-visible { outline: 1px solid #e8b44a; outline-offset: 3px; }
+  /* 1.7 interface.css: a touch screen reads 2 px larger (--ui-mobile-text-add) */
+  @media (pointer: coarse) { #loadVeil { font-size: 16px; } #loadVeil h1 { font-size: 34px; } #loadVeil button { font-size: 18px; } }
 </style>
-
-<body class="fote-journal">
-<script>/* The theme is set before the first paint, so the title never shows in the unthemed style while the scripts load. */try{var savedTheme=localStorage.getItem("fote-ui-theme");document.body.dataset.uiTheme=/^(obsidian|night|moss|wine|tide|charcoal|slate|runestone|ember)$/.test(savedTheme)?savedTheme:"obsidian";}catch(error){document.body.dataset.uiTheme="obsidian";}</script>
-<div id="app">
-  <div id="top">
-    <div id="brand">
-      <h1>Forge of the Elements</h1>
-      <div id="depth">Floor <b id="hFloor">1</b> · <b id="hBiome">Dungeon</b> · Turn <b id="hTurn">0</b></div>
-    </div>
-    <nav id="tabs">
-      <button data-p="Char">Character</button>
-      <button data-p="Equip">Equipment</button>
-      <button data-p="Sand">Sandbox</button>
-    </nav>
-  </div>
-
-  <div id="map">
-    <canvas id="cv"></canvas>
-    <div id="tip"></div>
-
-    <div id="shade">
-      <div class="sheet">
-        <header><h2 id="sheetTitle">Character</h2><button id="close">Close &nbsp;esc</button></header>
-        <div class="bodyw">
-          <div id="mChar" class="msec"></div>
-          <div id="mEquip" class="msec"></div>
-          <div id="mSand" class="msec">
-            <div class="sandbox">
-              <div class="field"><label for="preset">Build</label>
-                <select id="preset">
-                  <option value="dwarf">Dwarve Fighter (no element)</option>
-                  <option value="elf">Elf Mage (no element)</option>
-                  <option value="human">Human Scoundrel (no element)</option>
-                  <option value="fae">Fae Scoundrel (Fire, locked)</option>
-                  <option value="faewater">Water Fae Scoundrel (Water, locked)</option>
-                  <option value="gloom">Gloomling Cleric of Mother Murk (Shadow, locked)</option>
-                </select></div>
-              <div class="field"><label for="seed">Seed</label><input id="seed" type="text" value="48213"></div>
-              <div class="field"><label>Floor</label><button id="bNew">New floor</button></div>
-              <div class="field"><label>Map</label><button id="bReveal">Reveal: off</button></div>
-              <div class="field"><label>Art</label><button id="bArt">Sprite / block</button></div>
-              <div class="field"><label>Motion</label><button id="bMotion">Motion: auto</button></div>
-              <div class="field"><label>Lighting</label><button id="bLight">Lighting: on</button></div>
-              <div class="field"><label for="zoom">Zoom</label>
-                <select id="zoom">
-                  <option value="close">Close</option>
-                  <option value="normal" selected>Normal</option>
-                  <option value="wide">Wide</option>
-                </select></div>
-              <div class="field"><label>Monster</label><button id="bSpawn">Spawn nearby</button></div>
-              <div class="field"><label>Loot</label><button id="bGive">Item to bag</button></div>
-              <div class="field"><label>Level</label><button id="bLevel">Gain a level</button></div>
-              <div class="field"><label for="numScale">Number scale</label>
-                <select id="numScale">
-                  <option value="0.6">Small</option>
-                  <option value="1" selected>Medium</option>
-                  <option value="1.8">Large</option>
-                </select></div>
-              <div class="field"><label for="lethal">Lethality</label>
-                <select id="lethal">
-                  <option value="0.7">Gentle</option>
-                  <option value="1" selected>Standard</option>
-                  <option value="1.45">Deadly</option>
-                </select></div>
-            </div>
-          </div>
-          <div id="mHelp" class="msec">
-            <div class="cols">
-              <div><p class="sub">Movement</p>
-                <div class="kv"><span>Arrows / WASD</span><b>step or attack</b>
-                  <span>Q E Z C</span><b>diagonals</b>
-                  <span>. or space</span><b>wait</b>
-                  <span>&gt; / &lt;</span><b>stairs down / up</b>
-                  <span>f</span><b>search for hidden doors and traps</b>
-                  <span>Click a tile</span><b>step that way</b></div></div>
-              <div><p class="sub">Abilities</p>
-                <div class="kv"><span>1 to 8</span><b>use that slot</b>
-                  <span>Hover a monster</span><b>odds and stats</b>
-                  <span>g</span><b>pick up an item</b>
-                  <span>Click a monster</span><b>shoot it (bow out)</b>
-                  <span>Drag bag &rarr; hotbar</span><b>assign a slot</b>
-                  <span>esc</span><b>close this sheet</b></div></div>
-              <div><p class="sub">Reading the map</p>
-                <div class="kv"><span>Dim tiles</span><b>remembered</b>
-                  <span>z</span><b>asleep: surprise it</b>
-                  <span>Red triangle</span><b>known trap</b>
-                  <span>Violet dot</span><b>essence</b>
-                  <span>Diamond</span><b>mote</b>
-                  <span>&#9874;</span><b>Elemental Forge</b></div></div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div id="over"><div class="box"><h2 id="overT">You died</h2><p id="overP"></p><button id="bAgain">New run</button></div></div>
-  </div>
-
-  <div id="strip">
-    <div id="log"></div>
-    <div id="mid">
-      <div id="bars">
-        <div class="bar hp"><i id="hpFill"></i><i id="shFill"></i><span><b class="l">HP</b><b id="hpTxt">66/66</b></span></div>
-        <div class="bar mp"><i id="mpFill"></i><span><b class="l">Mana</b><b id="mpTxt">27/27</b></span></div>
-        <div class="bar xp" id="xpBar"><i id="xpFill"></i><span><b class="l" id="lvTxt">LV 4</b></span></div>
-      </div>
-      <div id="hotbar"></div>
-    </div>
-    <div id="ctl">
-      <div id="fx"></div>
-      <div id="dpad">
-        <button data-d="7">&#8598;</button><button data-d="8">&#8593;</button><button data-d="9">&#8599;</button>
-        <button data-d="4">&#8592;</button><button data-d="5">&#183;</button><button data-d="6">&#8594;</button>
-        <button data-d="1">&#8601;</button><button data-d="2">&#8595;</button><button data-d="3">&#8600;</button>
-      </div>
-    </div>
-  </div>
-</div>
-<!-- Keep the preview module list current even after older local servers cached it. -->
-<script src="runtime-modules.js?v=1792103310"></script>
-<script src="js/engine/bootstrap.js?v=1792103310"></script>
+</head>
+<body>
+<div id="game"></div>
+<div id="loadVeil" data-fote-startup><h1>Forge of the Elements</h1><p role="status">Loading game… 0%</p><button hidden>Retry loading</button></div>
+<script>
+  // The veil leaves when the title is up; a boot that fails first says so, with 1.7's retry (a fresh load here).
+  (function () {
+    var veil = document.getElementById('loadVeil'), status = veil.querySelector('p'), retry = veil.querySelector('button');
+    retry.onclick = function () { location.reload(); };
+    // RB5 (1.7 bootstrap.js:77-80): the game's code still on its way after 10 s says so; main.js takes the words over.
+    setTimeout(function () { if (veil.isConnected && retry.hidden && status.textContent === 'Loading game… 0%') status.textContent = 'Loading game… (slow connection, still loading)'; }, 10000);
+    function failed(e) {
+      if (!veil.isConnected) return;
+      var why = e && (e.reason || e.error || e.message) || 'unknown error';
+      status.textContent = 'Could not prepare this scene: ' + String(why.message || why) + ' Retry loading.';
+      retry.hidden = false;
+    }
+    addEventListener('error', function (e) { var el = e.target; if (el && el.tagName === 'SCRIPT') failed({ message: 'the game script could not be loaded.' }); else if (!el || !el.tagName) failed(e); }, true);
+    addEventListener('unhandledrejection', failed);
+    // 1.7 bootstrap.js:66-74 (RB6): stalled means 60 s with no file at all arriving before the title is up. A slow
+    // file is only reported, never asked for again; Reload restarts cleanly. The next file to arrive takes it away.
+    var lastArrival = Date.now(), stalled = false, said = status.textContent;
+    function arrived() { lastArrival = Date.now(); if (stalled) { stalled = false; status.textContent = said; retry.hidden = true; retry.textContent = 'Retry loading'; } }
+    try { new PerformanceObserver(arrived).observe({ type: 'resource' }); } catch (e) { /* no observer: the timer alone */ }
+    addEventListener('forge-load-progress', arrived);   // the game code arriving piece by piece (the loader below)
+    var watch = setInterval(function () {
+      if (!veil.isConnected) { clearInterval(watch); return; }
+      if (!stalled && retry.hidden && Date.now() - lastArrival >= 60000) {
+        stalled = true; said = status.textContent;
+        status.textContent = 'Loading has stalled. Keep waiting, or reload to try again.';
+        retry.textContent = 'Reload'; retry.hidden = false;
+      }
+    }, 1000);
+  })();
+</script>
+<input id="text-entry" type="text" autocomplete="off" aria-hidden="true">
+<script>
+  // The game's code, counted as it arrives (Justin 2026-10-18: "the loading screen just says 0% and gives no indication
+  // of progress"; 1.7 bootstrap.js:22, :77-95 counted its module downloads). The bundle is fetched here, its bytes shown
+  // as 0-85% of "Loading game…" (main.js steps the rest: fonts, renderer, art list), then run from that one copy, so it
+  // is never downloaded twice. The total comes from the release stamp (meta forge-bundle-bytes), else the dev server's
+  // X-Decoded-Length, else an unpacked Content-Length; with none it counts megabytes. A failed download is asked again
+  // twice; the code itself never runs twice. A browser without streams loads it the plain way.
+  (function () {
+    var SRC = 'build/main.js', SHARE = 85, status = document.querySelector('#loadVeil p');
+    function say(w) { if (status && status.isConnected) status.textContent = w; }
+    function fail(m) { dispatchEvent(new ErrorEvent('error', { message: m })); }
+    function plain() { var s = document.createElement('script'); s.type = 'module'; s.src = SRC; document.body.appendChild(s); }
+    if (!window.fetch || !window.ReadableStream || !window.Blob || !URL.createObjectURL) return plain();
+    var stamp = Number((document.querySelector('meta[name="forge-bundle-bytes"]') || {}).content) || 0;
+    function download(tries) {
+      return fetch(SRC, { cache: 'no-cache' }).then(function (r) {
+        if (!r.ok) throw new Error('the game script could not be loaded (HTTP ' + r.status + ').');
+        var total = stamp || Number(r.headers.get('X-Decoded-Length')) || (!r.headers.get('content-encoding') && Number(r.headers.get('content-length'))) || 0;
+        var reader = r.body.getReader(), parts = [], got = 0;
+        return (function more() {
+          return reader.read().then(function (c) {
+            if (c.done) return parts;
+            parts.push(c.value); got += c.value.length;
+            dispatchEvent(new Event('forge-load-progress'));
+            say(total ? 'Loading game… ' + Math.min(SHARE, Math.floor(got / total * SHARE)) + '%' : 'Loading game… ' + (got / 1048576).toFixed(1) + ' MB');
+            return more();
+          });
+        })();
+      }).catch(function (e) {
+        if (tries >= 3) throw e;
+        return new Promise(function (wait) { setTimeout(wait, 800 * tries); }).then(function () { return download(tries + 1); });
+      });
+    }
+    download(1).then(function (parts) {
+      say('Loading game… ' + SHARE + '%');
+      // The source map named by its full address: the copy runs from a blob, not from build/.
+      return import(URL.createObjectURL(new Blob(parts, { type: 'text/javascript' }))).catch(function (e) { fail('the game script could not start: ' + (e && e.message || e)); });
+    }, function (e) { fail(e && e.message || 'the game script could not be loaded.'); });
+  })();
+</script>
+</body>
+</html>

@@ -1,0 +1,1483 @@
+{
+ "convention": "x-right-y-up-z-out",
+ "records": [
+  {
+   "id": "dungeon-floor",
+   "source": "environment-terrain-dungeon-floor.png",
+   "normal": "normal-floor.webp",
+   "width": 1792,
+   "height": 896,
+   "kind": "floor",
+   "atlas": true,
+   "opaque": true,
+   "mirroredRepeat": true
+  },
+  {
+   "id": "dungeon-face",
+   "source": "environment-terrain-dungeon-face.png",
+   "normal": "normal-wall.webp",
+   "width": 768,
+   "height": 128,
+   "kind": "wall",
+   "atlas": true,
+   "opaque": true
+  },
+  {
+   "id": "crystal-water",
+   "source": "environment-props-props.png",
+   "crop": [
+    2,
+    134,
+    86,
+    118
+   ],
+   "normal": "normal-crystal.webp",
+   "width": 86,
+   "height": 118,
+   "kind": "sprite"
+  },
+  {
+   "id": "forge-lit",
+   "source": "environment-props-set.png",
+   "crop": [
+    386,
+    2,
+    194,
+    308
+   ],
+   "normal": "normal-forge.webp",
+   "width": 194,
+   "height": 308,
+   "kind": "sprite"
+  },
+  {
+   "id": "brazier-lit",
+   "source": "environment-props-props.png",
+   "crop": [
+    2,
+    366,
+    100,
+    88
+   ],
+   "normal": "normal-prop-brazier-lit-2-366-100-88.webp",
+   "width": 100,
+   "height": 88,
+   "kind": "sprite"
+  },
+  {
+   "id": "stairs-down",
+   "source": "environment-props-structures.png",
+   "crop": [
+    2,
+    134,
+    124,
+    106
+   ],
+   "normal": "normal-prop-stairs-down-2-134-124-106.webp",
+   "width": 124,
+   "height": 106,
+   "kind": "sprite"
+  },
+  {
+   "id": "dungeon-sconce",
+   "source": "environment-deco-dungeon:9",
+   "crop": [
+    0,
+    0,
+    128,
+    128
+   ],
+   "normal": "normal-prop-wall-sconce-0-0-128-128.webp",
+   "width": 128,
+   "height": 128,
+   "kind": "sprite"
+  },
+  {
+   "id": "crypt-sconce",
+   "source": "environment-deco-crypt:9",
+   "crop": [
+    0,
+    0,
+    128,
+    128
+   ],
+   "normal": "normal-prop-wall-sconce-0-0-128-128.webp",
+   "width": 128,
+   "height": 128,
+   "kind": "sprite"
+  },
+  {
+   "id": "human-f-idle-run",
+   "source": "cast-human-f.png",
+   "region": [
+    0,
+    2048,
+    1152,
+    256
+   ],
+   "normal": "normal-cast-human-f-idle-run.webp",
+   "width": 1152,
+   "height": 256,
+   "kind": "sprite",
+   "atlas": true
+  },
+  {
+   "id": "mob-m-bat",
+   "source": "mob-m-bat.png",
+   "normal": "normal-mob-m-bat.webp",
+   "crop": [
+    0,
+    0,
+    1152,
+    640
+   ],
+   "width": 1152,
+   "height": 640,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-bone-archer",
+   "source": "mob-m-bone-archer.png",
+   "normal": "normal-mob-m-bone-archer.webp",
+   "crop": [
+    0,
+    0,
+    1152,
+    768
+   ],
+   "width": 1152,
+   "height": 768,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-burrower",
+   "source": "mob-m-burrower.png",
+   "normal": "normal-mob-m-burrower.webp",
+   "crop": [
+    0,
+    0,
+    1152,
+    768
+   ],
+   "width": 1152,
+   "height": 768,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-chaos-bile-spitter",
+   "source": "mob-m-chaos-bile-spitter.png",
+   "normal": "normal-mob-m-chaos-bile-spitter.webp",
+   "crop": [
+    0,
+    0,
+    1728,
+    1152
+   ],
+   "width": 1728,
+   "height": 1152,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-chaos-brood-carrier",
+   "source": "mob-m-chaos-brood-carrier.png",
+   "normal": "normal-mob-m-chaos-brood-carrier.webp",
+   "crop": [
+    0,
+    0,
+    1728,
+    1152
+   ],
+   "width": 1728,
+   "height": 1152,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-chaos-chain-reaver",
+   "source": "mob-m-chaos-chain-reaver.png",
+   "normal": "normal-mob-m-chaos-chain-reaver.webp",
+   "crop": [
+    0,
+    0,
+    1728,
+    1152
+   ],
+   "width": 1728,
+   "height": 1152,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-chaos-folded-horror",
+   "source": "mob-m-chaos-folded-horror.png",
+   "normal": "normal-mob-m-chaos-folded-horror.webp",
+   "crop": [
+    0,
+    0,
+    1728,
+    1152
+   ],
+   "width": 1728,
+   "height": 1152,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-chaos-gorehound",
+   "source": "mob-m-chaos-gorehound.png",
+   "normal": "normal-mob-m-chaos-gorehound.webp",
+   "crop": [
+    0,
+    0,
+    1728,
+    1152
+   ],
+   "width": 1728,
+   "height": 1152,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-chaos-hookfang",
+   "source": "mob-m-chaos-hookfang.png",
+   "normal": "normal-mob-m-chaos-hookfang.webp",
+   "crop": [
+    0,
+    0,
+    1728,
+    1152
+   ],
+   "width": 1728,
+   "height": 1152,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-chaos-horned-reaver",
+   "source": "mob-m-chaos-horned-reaver.png",
+   "normal": "normal-mob-m-chaos-horned-reaver.webp",
+   "crop": [
+    0,
+    0,
+    1728,
+    1152
+   ],
+   "width": 1728,
+   "height": 1152,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-chaos-ironbound",
+   "source": "mob-m-chaos-ironbound.png",
+   "normal": "normal-mob-m-chaos-ironbound.webp",
+   "crop": [
+    0,
+    0,
+    1728,
+    1152
+   ],
+   "width": 1728,
+   "height": 1152,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-chaos-lash-dancer",
+   "source": "mob-m-chaos-lash-dancer.png",
+   "normal": "normal-mob-m-chaos-lash-dancer.webp",
+   "crop": [
+    0,
+    0,
+    1728,
+    1152
+   ],
+   "width": 1728,
+   "height": 1152,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-chaos-lens-bearer",
+   "source": "mob-m-chaos-lens-bearer.png",
+   "normal": "normal-mob-m-chaos-lens-bearer.webp",
+   "crop": [
+    0,
+    0,
+    1728,
+    1152
+   ],
+   "width": 1728,
+   "height": 1152,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-chaos-plague-bloat",
+   "source": "mob-m-chaos-plague-bloat.png",
+   "normal": "normal-mob-m-chaos-plague-bloat.webp",
+   "crop": [
+    0,
+    0,
+    1728,
+    1152
+   ],
+   "width": 1728,
+   "height": 1152,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-chaos-prism-seer",
+   "source": "mob-m-chaos-prism-seer.png",
+   "normal": "normal-mob-m-chaos-prism-seer.webp",
+   "crop": [
+    0,
+    0,
+    1728,
+    1152
+   ],
+   "width": 1728,
+   "height": 1152,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-chaos-razor-dancer",
+   "source": "mob-m-chaos-razor-dancer.png",
+   "normal": "normal-mob-m-chaos-razor-dancer.webp",
+   "crop": [
+    0,
+    0,
+    1728,
+    1152
+   ],
+   "width": 1728,
+   "height": 1152,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-chaos-rift-skitter",
+   "source": "mob-m-chaos-rift-skitter.png",
+   "normal": "normal-mob-m-chaos-rift-skitter.webp",
+   "crop": [
+    0,
+    0,
+    1728,
+    1152
+   ],
+   "width": 1728,
+   "height": 1152,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-chaos-rotling",
+   "source": "mob-m-chaos-rotling.png",
+   "normal": "normal-mob-m-chaos-rotling.webp",
+   "crop": [
+    0,
+    0,
+    1728,
+    1152
+   ],
+   "width": 1728,
+   "height": 1152,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-chaos-silk-weaver",
+   "source": "mob-m-chaos-silk-weaver.png",
+   "normal": "normal-mob-m-chaos-silk-weaver.webp",
+   "crop": [
+    0,
+    0,
+    1728,
+    1152
+   ],
+   "width": 1728,
+   "height": 1152,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-chaos-spiderling",
+   "source": "mob-m-chaos-spiderling.png",
+   "normal": "normal-mob-m-chaos-spiderling.webp",
+   "crop": [
+    0,
+    0,
+    1152,
+    768
+   ],
+   "width": 1152,
+   "height": 768,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-cinder-imp",
+   "source": "mob-m-cinder-imp.png",
+   "normal": "normal-mob-m-cinder-imp.webp",
+   "crop": [
+    0,
+    0,
+    1152,
+    768
+   ],
+   "width": 1152,
+   "height": 768,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-cinderling",
+   "source": "mob-m-cinderling.png",
+   "normal": "normal-mob-m-cinderling.webp",
+   "crop": [
+    0,
+    0,
+    1152,
+    768
+   ],
+   "width": 1152,
+   "height": 768,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-cragling",
+   "source": "mob-m-cragling.png",
+   "normal": "normal-mob-m-cragling.webp",
+   "crop": [
+    0,
+    0,
+    1152,
+    768
+   ],
+   "width": 1152,
+   "height": 768,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-crypt-skeleton",
+   "source": "mob-m-crypt-skeleton.png",
+   "normal": "normal-mob-m-crypt-skeleton.webp",
+   "crop": [
+    0,
+    0,
+    1152,
+    768
+   ],
+   "width": 1152,
+   "height": 768,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-crystal-golem",
+   "source": "mob-m-crystal-golem.png",
+   "normal": "normal-mob-m-crystal-golem.webp",
+   "crop": [
+    0,
+    0,
+    1152,
+    768
+   ],
+   "width": 1152,
+   "height": 768,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-dawn-sentinel",
+   "source": "mob-m-dawn-sentinel.png",
+   "normal": "normal-mob-m-dawn-sentinel.webp",
+   "crop": [
+    0,
+    0,
+    1152,
+    768
+   ],
+   "width": 1152,
+   "height": 768,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-dawnling",
+   "source": "mob-m-dawnling.png",
+   "normal": "normal-mob-m-dawnling.webp",
+   "crop": [
+    0,
+    0,
+    1152,
+    768
+   ],
+   "width": 1152,
+   "height": 768,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-deep-maw",
+   "source": "mob-m-deep-maw.png",
+   "normal": "normal-mob-m-deep-maw.webp",
+   "crop": [
+    0,
+    0,
+    2048,
+    1280
+   ],
+   "width": 2048,
+   "height": 1280,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-drider",
+   "source": "mob-m-drider.png",
+   "normal": "normal-mob-m-drider.webp",
+   "crop": [
+    0,
+    0,
+    1152,
+    768
+   ],
+   "width": 1152,
+   "height": 768,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-drow-blade",
+   "source": "mob-m-drow-blade.png",
+   "normal": "normal-mob-m-drow-blade.webp",
+   "crop": [
+    0,
+    0,
+    1152,
+    768
+   ],
+   "width": 1152,
+   "height": 768,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-drow-priestess",
+   "source": "mob-m-drow-priestess.png",
+   "normal": "normal-mob-m-drow-priestess.webp",
+   "crop": [
+    0,
+    0,
+    1152,
+    768
+   ],
+   "width": 1152,
+   "height": 768,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-drowned-one",
+   "source": "mob-m-drowned-one.png",
+   "normal": "normal-mob-m-drowned-one.webp",
+   "crop": [
+    0,
+    0,
+    1152,
+    768
+   ],
+   "width": 1152,
+   "height": 768,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-ember-spider",
+   "source": "mob-m-ember-spider.png",
+   "normal": "normal-mob-m-ember-spider.webp",
+   "crop": [
+    0,
+    0,
+    1152,
+    768
+   ],
+   "width": 1152,
+   "height": 768,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-emberling",
+   "source": "mob-m-emberling.png",
+   "normal": "normal-mob-m-emberling.webp",
+   "crop": [
+    0,
+    0,
+    1280,
+    768
+   ],
+   "width": 1280,
+   "height": 768,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-emberlord",
+   "source": "mob-m-emberlord.png",
+   "normal": "normal-mob-m-emberlord.webp",
+   "crop": [
+    0,
+    0,
+    2304,
+    1280
+   ],
+   "width": 2304,
+   "height": 1280,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-fire-imp",
+   "source": "mob-m-fire-imp.png",
+   "normal": "normal-mob-m-fire-imp.webp",
+   "crop": [
+    0,
+    0,
+    1152,
+    768
+   ],
+   "width": 1152,
+   "height": 768,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-flame-dancer",
+   "source": "mob-m-flame-dancer.png",
+   "normal": "normal-mob-m-flame-dancer.webp",
+   "crop": [
+    0,
+    0,
+    1152,
+    768
+   ],
+   "width": 1152,
+   "height": 768,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-galeling",
+   "source": "mob-m-galeling.png",
+   "normal": "normal-mob-m-galeling.webp",
+   "crop": [
+    0,
+    0,
+    1152,
+    768
+   ],
+   "width": 1152,
+   "height": 768,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-ghoul",
+   "source": "mob-m-ghoul.png",
+   "normal": "normal-mob-m-ghoul.webp",
+   "crop": [
+    0,
+    0,
+    2016,
+    1568
+   ],
+   "width": 2016,
+   "height": 1568,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-gleamling",
+   "source": "mob-m-gleamling.png",
+   "normal": "normal-mob-m-gleamling.webp",
+   "crop": [
+    0,
+    0,
+    1152,
+    768
+   ],
+   "width": 1152,
+   "height": 768,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-gloom-moth",
+   "source": "mob-m-gloom-moth.png",
+   "normal": "normal-mob-m-gloom-moth.webp",
+   "crop": [
+    0,
+    0,
+    1152,
+    768
+   ],
+   "width": 1152,
+   "height": 768,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-goblin-archer",
+   "source": "mob-m-goblin-archer.png",
+   "normal": "normal-mob-m-goblin-archer.webp",
+   "crop": [
+    0,
+    0,
+    2016,
+    1344
+   ],
+   "width": 2016,
+   "height": 1344,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-goblin-brute",
+   "source": "mob-m-goblin-brute.png",
+   "normal": "normal-mob-m-goblin-brute.webp",
+   "crop": [
+    0,
+    0,
+    2016,
+    1344
+   ],
+   "width": 2016,
+   "height": 1344,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-goblin-shaman",
+   "source": "mob-m-goblin-shaman.png",
+   "normal": "normal-mob-m-goblin-shaman.webp",
+   "crop": [
+    0,
+    0,
+    2016,
+    1344
+   ],
+   "width": 2016,
+   "height": 1344,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-goblin-warchief",
+   "source": "mob-m-goblin-warchief.png",
+   "normal": "normal-mob-m-goblin-warchief.webp",
+   "crop": [
+    0,
+    0,
+    2016,
+    1344
+   ],
+   "width": 2016,
+   "height": 1344,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-goblin",
+   "source": "mob-m-goblin.png",
+   "normal": "normal-mob-m-goblin.webp",
+   "crop": [
+    0,
+    0,
+    2016,
+    1344
+   ],
+   "width": 2016,
+   "height": 1344,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-grave-beetle",
+   "source": "mob-m-grave-beetle.png",
+   "normal": "normal-mob-m-grave-beetle.webp",
+   "crop": [
+    0,
+    0,
+    1152,
+    768
+   ],
+   "width": 1152,
+   "height": 768,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-grave-bloat",
+   "source": "mob-m-grave-bloat.png",
+   "normal": "normal-mob-m-grave-bloat.webp",
+   "crop": [
+    0,
+    0,
+    1152,
+    768
+   ],
+   "width": 1152,
+   "height": 768,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-gustling",
+   "source": "mob-m-gustling.png",
+   "normal": "normal-mob-m-gustling.webp",
+   "crop": [
+    0,
+    0,
+    1152,
+    768
+   ],
+   "width": 1152,
+   "height": 768,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-halo-wisp",
+   "source": "mob-m-halo-wisp.png",
+   "normal": "normal-mob-m-halo-wisp.webp",
+   "crop": [
+    0,
+    0,
+    1152,
+    768
+   ],
+   "width": 1152,
+   "height": 768,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-leviathan-eel",
+   "source": "mob-m-leviathan-eel.png",
+   "normal": "normal-mob-m-leviathan-eel.webp",
+   "crop": [
+    0,
+    0,
+    1792,
+    1536
+   ],
+   "width": 1792,
+   "height": 1536,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-lich",
+   "source": "mob-m-lich.png",
+   "normal": "normal-mob-m-lich.webp",
+   "crop": [
+    0,
+    0,
+    1152,
+    640
+   ],
+   "width": 1152,
+   "height": 640,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-lumenling",
+   "source": "mob-m-lumenling.png",
+   "normal": "normal-mob-m-lumenling.webp",
+   "crop": [
+    0,
+    0,
+    1280,
+    768
+   ],
+   "width": 1280,
+   "height": 768,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-magma-crawler",
+   "source": "mob-m-magma-crawler.png",
+   "normal": "normal-mob-m-magma-crawler.webp",
+   "crop": [
+    0,
+    0,
+    1152,
+    768
+   ],
+   "width": 1152,
+   "height": 768,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-matron",
+   "source": "mob-m-matron.png",
+   "normal": "normal-mob-m-matron.webp",
+   "crop": [
+    0,
+    0,
+    3328,
+    1536
+   ],
+   "width": 3328,
+   "height": 1536,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-mimic",
+   "source": "mob-m-mimic.png",
+   "normal": "normal-mob-m-mimic.webp",
+   "crop": [
+    0,
+    0,
+    1152,
+    640
+   ],
+   "width": 1152,
+   "height": 640,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-morty",
+   "source": "mob-m-morty.png",
+   "normal": "normal-mob-m-morty.webp",
+   "crop": [
+    0,
+    0,
+    1408,
+    768
+   ],
+   "width": 1408,
+   "height": 768,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-moss-troll",
+   "source": "mob-m-moss-troll.png",
+   "normal": "normal-mob-m-moss-troll.webp",
+   "crop": [
+    0,
+    0,
+    1152,
+    768
+   ],
+   "width": 1152,
+   "height": 768,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-mossling",
+   "source": "mob-m-mossling.png",
+   "normal": "normal-mob-m-mossling.webp",
+   "crop": [
+    0,
+    0,
+    1152,
+    768
+   ],
+   "width": 1152,
+   "height": 768,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-mountain-heart",
+   "source": "mob-m-mountain-heart.png",
+   "normal": "normal-mob-m-mountain-heart.webp",
+   "crop": [
+    0,
+    0,
+    2304,
+    1280
+   ],
+   "width": 2304,
+   "height": 1280,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-myconid",
+   "source": "mob-m-myconid.png",
+   "normal": "normal-mob-m-myconid.webp",
+   "crop": [
+    0,
+    0,
+    1152,
+    768
+   ],
+   "width": 1152,
+   "height": 768,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-necro-acolyte",
+   "source": "mob-m-necro-acolyte.png",
+   "normal": "normal-mob-m-necro-acolyte.webp",
+   "crop": [
+    0,
+    0,
+    1152,
+    768
+   ],
+   "width": 1152,
+   "height": 768,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-night-warden",
+   "source": "mob-m-night-warden.png",
+   "normal": "normal-mob-m-night-warden.webp",
+   "crop": [
+    0,
+    0,
+    1152,
+    768
+   ],
+   "width": 1152,
+   "height": 768,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-phylactery",
+   "source": "mob-m-phylactery.png",
+   "normal": "normal-mob-m-phylactery.webp",
+   "crop": [
+    0,
+    0,
+    1152,
+    512
+   ],
+   "width": 1152,
+   "height": 512,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-prism-scarab",
+   "source": "mob-m-prism-scarab.png",
+   "normal": "normal-mob-m-prism-scarab.webp",
+   "crop": [
+    0,
+    0,
+    1152,
+    768
+   ],
+   "width": 1152,
+   "height": 768,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-pyreling",
+   "source": "mob-m-pyreling.png",
+   "normal": "normal-mob-m-pyreling.webp",
+   "crop": [
+    0,
+    0,
+    1152,
+    768
+   ],
+   "width": 1152,
+   "height": 768,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-radiant-warden",
+   "source": "mob-m-radiant-warden.png",
+   "normal": "normal-mob-m-radiant-warden.webp",
+   "crop": [
+    0,
+    0,
+    1152,
+    768
+   ],
+   "width": 1152,
+   "height": 768,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-rat",
+   "source": "mob-m-rat.png",
+   "normal": "normal-mob-m-rat.webp",
+   "crop": [
+    0,
+    0,
+    1792,
+    1792
+   ],
+   "width": 1792,
+   "height": 1792,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-rippleling",
+   "source": "mob-m-rippleling.png",
+   "normal": "normal-mob-m-rippleling.webp",
+   "crop": [
+    0,
+    0,
+    1152,
+    768
+   ],
+   "width": 1152,
+   "height": 768,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-rock-slime",
+   "source": "mob-m-rock-slime.png",
+   "normal": "normal-mob-m-rock-slime.webp",
+   "crop": [
+    0,
+    0,
+    1024,
+    768
+   ],
+   "width": 1024,
+   "height": 768,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-rootbound",
+   "source": "mob-m-rootbound.png",
+   "normal": "normal-mob-m-rootbound.webp",
+   "crop": [
+    0,
+    0,
+    1152,
+    768
+   ],
+   "width": 1152,
+   "height": 768,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-shade",
+   "source": "mob-m-shade.png",
+   "normal": "normal-mob-m-shade.webp",
+   "crop": [
+    0,
+    0,
+    1152,
+    640
+   ],
+   "width": 1152,
+   "height": 640,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-shambler",
+   "source": "mob-m-shambler.png",
+   "normal": "normal-mob-m-shambler.webp",
+   "crop": [
+    0,
+    0,
+    1152,
+    768
+   ],
+   "width": 1152,
+   "height": 768,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-shock-eel",
+   "source": "mob-m-shock-eel.png",
+   "normal": "normal-mob-m-shock-eel.webp",
+   "crop": [
+    0,
+    0,
+    1152,
+    768
+   ],
+   "width": 1152,
+   "height": 768,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-siren",
+   "source": "mob-m-siren.png",
+   "normal": "normal-mob-m-siren.webp",
+   "crop": [
+    0,
+    0,
+    1152,
+    768
+   ],
+   "width": 1152,
+   "height": 768,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-slime",
+   "source": "mob-m-slime.png",
+   "normal": "normal-mob-m-slime.webp",
+   "crop": [
+    0,
+    0,
+    1024,
+    768
+   ],
+   "width": 1024,
+   "height": 768,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-spark-jelly",
+   "source": "mob-m-spark-jelly.png",
+   "normal": "normal-mob-m-spark-jelly.webp",
+   "crop": [
+    0,
+    0,
+    1152,
+    768
+   ],
+   "width": 1152,
+   "height": 768,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-spiderling",
+   "source": "mob-m-spiderling.png",
+   "normal": "normal-mob-m-spiderling.webp",
+   "crop": [
+    0,
+    0,
+    1024,
+    768
+   ],
+   "width": 1024,
+   "height": 768,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-sporecaller",
+   "source": "mob-m-sporecaller.png",
+   "normal": "normal-mob-m-sporecaller.webp",
+   "crop": [
+    0,
+    0,
+    1152,
+    768
+   ],
+   "width": 1152,
+   "height": 768,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-stalker",
+   "source": "mob-m-stalker.png",
+   "normal": "normal-mob-m-stalker.webp",
+   "crop": [
+    0,
+    0,
+    1152,
+    768
+   ],
+   "width": 1152,
+   "height": 768,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-stoneling",
+   "source": "mob-m-stoneling.png",
+   "normal": "normal-mob-m-stoneling.webp",
+   "crop": [
+    0,
+    0,
+    1152,
+    768
+   ],
+   "width": 1152,
+   "height": 768,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-storm-beetle",
+   "source": "mob-m-storm-beetle.png",
+   "normal": "normal-mob-m-storm-beetle.webp",
+   "crop": [
+    0,
+    0,
+    1152,
+    768
+   ],
+   "width": 1152,
+   "height": 768,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-storm-hawk",
+   "source": "mob-m-storm-hawk.png",
+   "normal": "normal-mob-m-storm-hawk.webp",
+   "crop": [
+    0,
+    0,
+    1152,
+    768
+   ],
+   "width": 1152,
+   "height": 768,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-stormling",
+   "source": "mob-m-stormling.png",
+   "normal": "normal-mob-m-stormling.webp",
+   "crop": [
+    0,
+    0,
+    1152,
+    768
+   ],
+   "width": 1152,
+   "height": 768,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-thought-eater",
+   "source": "mob-m-thought-eater.png",
+   "normal": "normal-mob-m-thought-eater.webp",
+   "crop": [
+    0,
+    0,
+    1152,
+    768
+   ],
+   "width": 1152,
+   "height": 768,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-thunder-totem",
+   "source": "mob-m-thunder-totem.png",
+   "normal": "normal-mob-m-thunder-totem.webp",
+   "crop": [
+    0,
+    0,
+    1152,
+    640
+   ],
+   "width": 1152,
+   "height": 640,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-tide-crab",
+   "source": "mob-m-tide-crab.png",
+   "normal": "normal-mob-m-tide-crab.webp",
+   "crop": [
+    0,
+    0,
+    1152,
+    768
+   ],
+   "width": 1152,
+   "height": 768,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-tideling-tier3",
+   "source": "mob-m-tideling-tier3.png",
+   "normal": "normal-mob-m-tideling-tier3.webp",
+   "crop": [
+    0,
+    0,
+    1152,
+    768
+   ],
+   "width": 1152,
+   "height": 768,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-tideling",
+   "source": "mob-m-tideling.png",
+   "normal": "normal-mob-m-tideling.webp",
+   "crop": [
+    0,
+    0,
+    1152,
+    768
+   ],
+   "width": 1152,
+   "height": 768,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-umbral-hound",
+   "source": "mob-m-umbral-hound.png",
+   "normal": "normal-mob-m-umbral-hound.webp",
+   "crop": [
+    0,
+    0,
+    1152,
+    768
+   ],
+   "width": 1152,
+   "height": 768,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-unmaker-heart",
+   "source": "mob-m-unmaker-heart.png",
+   "normal": "normal-mob-m-unmaker-heart.webp",
+   "crop": [
+    0,
+    0,
+    1728,
+    1152
+   ],
+   "width": 1728,
+   "height": 1152,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-unmaker-tyrant",
+   "source": "mob-m-unmaker-tyrant.png",
+   "normal": "normal-mob-m-unmaker-tyrant.webp",
+   "crop": [
+    0,
+    0,
+    1728,
+    1152
+   ],
+   "width": 1728,
+   "height": 1152,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-unmaker-unbound",
+   "source": "mob-m-unmaker-unbound.png",
+   "normal": "normal-mob-m-unmaker-unbound.webp",
+   "crop": [
+    0,
+    0,
+    1728,
+    1152
+   ],
+   "width": 1728,
+   "height": 1152,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-web-spitter",
+   "source": "mob-m-web-spitter.png",
+   "normal": "normal-mob-m-web-spitter.webp",
+   "crop": [
+    0,
+    0,
+    1152,
+    768
+   ],
+   "width": 1152,
+   "height": 768,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-wind-wisp",
+   "source": "mob-m-wind-wisp.png",
+   "normal": "normal-mob-m-wind-wisp.webp",
+   "crop": [
+    0,
+    0,
+    1152,
+    768
+   ],
+   "width": 1152,
+   "height": 768,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-wisp",
+   "source": "mob-m-wisp.png",
+   "normal": "normal-mob-m-wisp.webp",
+   "crop": [
+    0,
+    0,
+    1152,
+    768
+   ],
+   "width": 1152,
+   "height": 768,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-worm-tender",
+   "source": "mob-m-worm-tender.png",
+   "normal": "normal-mob-m-worm-tender.webp",
+   "crop": [
+    0,
+    0,
+    1152,
+    768
+   ],
+   "width": 1152,
+   "height": 768,
+   "kind": "sprite"
+  }
+ ]
+}

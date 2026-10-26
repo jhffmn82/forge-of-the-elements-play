@@ -1,0 +1,15 @@
+{
+ "about": "Magic Missile re-pick, Justin on the board 2026-10-16 after asking for a review (\"i want something that looks like the spell icon\"). Levelled to the mix-pass spell levels.",
+ "cues": {
+  "spell-missile-cast": {
+   "file": "audio/spell-missile-cast.mp3",
+   "pick": "candidates/spell-missile-cast/L.mp3",
+   "level": -21.1
+  },
+  "spell-missile-hit": {
+   "file": "audio/spell-missile-hit.mp3",
+   "pick": "candidates/spell-missile-hit/D.mp3",
+   "level": -22.0
+  }
+ }
+}

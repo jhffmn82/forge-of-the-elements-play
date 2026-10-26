@@ -1,9 +1,5 @@
 {
-  "version": "Beta 1.7",
-  "built": "2026-10-15T22:28:30.243Z",
-  "epoch": 1792103310,
-  "source": "1.7 foundation playtest based on released 1.6",
-  "candidate": true,
-  "releaseState": "playtest",
-  "revision": "foundation17-20261015222830243"
+  "version": "1.8.1",
+  "built": "2026-10-26T05:29:56.000Z",
+  "revision": "e4ef71758256d4c45dc2fdd7ab8b6c956574e344"
 }

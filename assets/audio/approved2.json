@@ -1,0 +1,33 @@
+{
+ "about": "Second batch Justin approved, 2026-10-16: three board picks plus Grukk music picked in chat (\"use the one i gave you?\").",
+ "cues": {
+  "amb-fire": {
+   "file": "audio/amb-fire.mp3",
+   "kind": "ambience",
+   "new": false,
+   "pick": "candidates/amb-fire/F.mp3",
+   "source": "ElevenLabs Sound Effects"
+  },
+  "goblin-attack": {
+   "file": "audio/goblin-attack.mp3",
+   "kind": "effect",
+   "new": false,
+   "pick": "candidates/goblin-attack/F.mp3",
+   "source": "ElevenLabs Sound Effects"
+  },
+  "spell-shadowbolt-cast": {
+   "file": "audio/spell-shadowbolt-cast.mp3",
+   "kind": "effect",
+   "new": true,
+   "pick": "candidates/spell-shadowbolt-cast/F.mp3",
+   "source": "ElevenLabs Sound Effects"
+  },
+  "boss-grukk": {
+   "file": "audio/music-boss-grukk.mp3",
+   "kind": "music",
+   "new": false,
+   "pick": "candidates/boss-grukk/A.mp3",
+   "source": "ElevenLabs Music app, made by Justin (\"Beneath the Torchlit Arch\"), trimmed, looped and levelled to -24.4 LUFS"
+  }
+ }
+}

@@ -1,0 +1,688 @@
+{
+ "about": "Mix pass Justin approved 2026-10-16 (\"The after mix sounds right. Install the levelled versions.\"): each new or replaced effect levelled to the median 1.7 level of its kind. Replace the file in place; cue mapping unchanged.",
+ "medians": {
+  "hero": -14.5,
+  "combat": -20.4,
+  "creature alert": -15.2,
+  "creature attack": -16.3,
+  "creature death": -14.2,
+  "world": -22.5,
+  "pickup": -17.1,
+  "spell cast": -20.6,
+  "spell hit": -21.5,
+  "ui": -19.4,
+  "faith and forge": -13.6,
+  "trap": -19.0,
+  "creature move": -17.05,
+  "status": -18.6,
+  "other": -29.3
+ },
+ "cues": {
+  "ally-death": {
+   "file": "audio/ally-death.mp3",
+   "mixed": "mixed/ally-death.mp3",
+   "kind": "hero",
+   "level": -15.0
+  },
+  "bat-alert": {
+   "file": "audio/bat-alert.mp3",
+   "mixed": "mixed/bat-alert.mp3",
+   "kind": "creature alert",
+   "level": -15.9
+  },
+  "bat-attack": {
+   "file": "audio/bat-attack.mp3",
+   "mixed": "mixed/bat-attack.mp3",
+   "kind": "creature attack",
+   "level": -17.9
+  },
+  "brute-alert": {
+   "file": "audio/brute-alert.mp3",
+   "mixed": "mixed/brute-alert.mp3",
+   "kind": "creature alert",
+   "level": -15.6
+  },
+  "brute-death": {
+   "file": "audio/brute-death.mp3",
+   "mixed": "mixed/brute-death.mp3",
+   "kind": "creature death",
+   "level": -14.6
+  },
+  "dark-cast": {
+   "file": "audio/dark-cast.mp3",
+   "mixed": "mixed/dark-cast.mp3",
+   "kind": "spell cast",
+   "level": -21.0
+  },
+  "djinn-attack": {
+   "file": "audio/djinn-attack.mp3",
+   "mixed": "mixed/djinn-attack.mp3",
+   "kind": "creature attack",
+   "level": -16.9
+  },
+  "door-secret": {
+   "file": "audio/door-secret.mp3",
+   "mixed": "mixed/door-secret.mp3",
+   "kind": "world",
+   "level": -23.0
+  },
+  "door-unlock": {
+   "file": "audio/door-unlock.mp3",
+   "mixed": "mixed/door-unlock.mp3",
+   "kind": "world",
+   "level": -23.2
+  },
+  "drow-death": {
+   "file": "audio/drow-death.mp3",
+   "mixed": "mixed/drow-death.mp3",
+   "kind": "creature death",
+   "level": -14.6
+  },
+  "earth-cast": {
+   "file": "audio/earth-cast.mp3",
+   "mixed": "mixed/earth-cast.mp3",
+   "kind": "spell cast",
+   "level": -21.0
+  },
+  "elementaling-alert": {
+   "file": "audio/elementaling-alert.mp3",
+   "mixed": "mixed/elementaling-alert.mp3",
+   "kind": "creature alert",
+   "level": -15.7
+  },
+  "elementaling-attack": {
+   "file": "audio/elementaling-attack.mp3",
+   "mixed": "mixed/elementaling-attack.mp3",
+   "kind": "creature attack",
+   "level": -16.8
+  },
+  "elementaling-death": {
+   "file": "audio/elementaling-death.mp3",
+   "mixed": "mixed/elementaling-death.mp3",
+   "kind": "creature death",
+   "level": -14.6
+  },
+  "explosion": {
+   "file": "audio/explosion.mp3",
+   "mixed": "mixed/explosion.mp3",
+   "kind": "combat",
+   "level": -20.8
+  },
+  "forge-craft": {
+   "file": "audio/forge-craft.mp3",
+   "mixed": "mixed/forge-craft.mp3",
+   "kind": "faith and forge",
+   "level": -14.2
+  },
+  "forge-fuse": {
+   "file": "audio/forge-fuse.mp3",
+   "mixed": "mixed/forge-fuse.mp3",
+   "kind": "faith and forge",
+   "level": -14.0
+  },
+  "forge-open": {
+   "file": "audio/forge-open.mp3",
+   "mixed": "mixed/forge-open.mp3",
+   "kind": "faith and forge",
+   "level": -14.1
+  },
+  "goblin-attack": {
+   "file": "audio/goblin-attack.mp3",
+   "mixed": "mixed/goblin-attack.mp3",
+   "kind": "creature attack",
+   "level": -16.8
+  },
+  "hit-crit": {
+   "file": "audio/hit-crit.mp3",
+   "mixed": "mixed/hit-crit.mp3",
+   "kind": "combat",
+   "level": -20.7
+  },
+  "ice-hit": {
+   "file": "audio/ice-hit.mp3",
+   "mixed": "mixed/ice-hit.mp3",
+   "kind": "spell hit",
+   "level": -22.2
+  },
+  "ice-melt": {
+   "file": "audio/ice-melt.mp3",
+   "mixed": "mixed/ice-melt.mp3",
+   "kind": "world",
+   "level": -23.7
+  },
+  "lever": {
+   "file": "audio/lever.mp3",
+   "mixed": "mixed/lever.mp3",
+   "kind": "trap",
+   "level": -19.4
+  },
+  "light-cast": {
+   "file": "audio/light-cast.mp3",
+   "mixed": "mixed/light-cast.mp3",
+   "kind": "spell cast",
+   "level": -21.1
+  },
+  "light-hit": {
+   "file": "audio/light-hit.mp3",
+   "mixed": "mixed/light-hit.mp3",
+   "kind": "spell hit",
+   "level": -22.0
+  },
+  "lightning-cast": {
+   "file": "audio/lightning-cast.mp3",
+   "mixed": "mixed/lightning-cast.mp3",
+   "kind": "spell cast",
+   "level": -21.3
+  },
+  "lightning-hit": {
+   "file": "audio/lightning-hit.mp3",
+   "mixed": "mixed/lightning-hit.mp3",
+   "kind": "spell hit",
+   "level": -22.0
+  },
+  "magic-missile": {
+   "file": "audio/magic-missile.mp3",
+   "mixed": "mixed/magic-missile.mp3",
+   "kind": "spell cast",
+   "level": -21.1
+  },
+  "magic-missile-hit": {
+   "file": "audio/magic-missile-hit.mp3",
+   "mixed": "mixed/magic-missile-hit.mp3",
+   "kind": "spell hit",
+   "level": -22.0
+  },
+  "mimic-alert": {
+   "file": "audio/mimic-alert.mp3",
+   "mixed": "mixed/mimic-alert.mp3",
+   "kind": "creature alert",
+   "level": -15.7
+  },
+  "mimic-attack": {
+   "file": "audio/mimic-attack.mp3",
+   "mixed": "mixed/mimic-attack.mp3",
+   "kind": "creature attack",
+   "level": -16.8
+  },
+  "mimic-reveal": {
+   "file": "audio/mimic-reveal.mp3",
+   "mixed": "mixed/mimic-reveal.mp3",
+   "kind": "creature alert",
+   "level": -15.7
+  },
+  "morty-attack": {
+   "file": "audio/morty-attack.mp3",
+   "mixed": "mixed/morty-attack.mp3",
+   "kind": "creature attack",
+   "level": -16.8
+  },
+  "pickup-essence": {
+   "file": "audio/pickup-essence.mp3",
+   "mixed": "mixed/pickup-essence.mp3",
+   "kind": "pickup",
+   "level": -17.6
+  },
+  "portal": {
+   "file": "audio/portal.mp3",
+   "mixed": "mixed/portal.mp3",
+   "kind": "world",
+   "level": -23.0
+  },
+  "pray": {
+   "file": "audio/pray.mp3",
+   "mixed": "mixed/pray.mp3",
+   "kind": "faith and forge",
+   "level": -14.1
+  },
+  "sap": {
+   "file": "audio/sap.mp3",
+   "mixed": "mixed/sap.mp3",
+   "kind": "combat",
+   "level": -20.9
+  },
+  "shadow-cast": {
+   "file": "audio/shadow-cast.mp3",
+   "mixed": "mixed/shadow-cast.mp3",
+   "kind": "spell cast",
+   "level": -21.1
+  },
+  "shadow-hit": {
+   "file": "audio/shadow-hit.mp3",
+   "mixed": "mixed/shadow-hit.mp3",
+   "kind": "spell hit",
+   "level": -22.0
+  },
+  "shaman-attack": {
+   "file": "audio/shaman-attack.mp3",
+   "mixed": "mixed/shaman-attack.mp3",
+   "kind": "creature attack",
+   "level": -16.7
+  },
+  "shaman-cast": {
+   "file": "audio/shaman-cast.mp3",
+   "mixed": "mixed/shaman-cast.mp3",
+   "kind": "spell cast",
+   "level": -21.1
+  },
+  "sigil-use": {
+   "file": "audio/sigil-use.mp3",
+   "mixed": "mixed/sigil-use.mp3",
+   "kind": "spell cast",
+   "level": -21.0
+  },
+  "slime-alert": {
+   "file": "audio/slime-alert.mp3",
+   "mixed": "mixed/slime-alert.mp3",
+   "kind": "creature alert",
+   "level": -15.7
+  },
+  "slime-attack": {
+   "file": "audio/slime-attack.mp3",
+   "mixed": "mixed/slime-attack.mp3",
+   "kind": "creature attack",
+   "level": -16.7
+  },
+  "spider-alert": {
+   "file": "audio/spider-alert.mp3",
+   "mixed": "mixed/spider-alert.mp3",
+   "kind": "creature alert",
+   "level": -15.7
+  },
+  "spider-attack": {
+   "file": "audio/spider-attack.mp3",
+   "mixed": "mixed/spider-attack.mp3",
+   "kind": "creature attack",
+   "level": -16.9
+  },
+  "status-slow": {
+   "file": "audio/status-slow.mp3",
+   "mixed": "mixed/status-slow.mp3",
+   "kind": "status",
+   "level": -19.1
+  },
+  "step-grass": {
+   "file": "audio/step-grass.mp3",
+   "mixed": "mixed/step-grass.mp3",
+   "kind": "world",
+   "level": -17.2
+  },
+  "summon": {
+   "file": "audio/summon.mp3",
+   "mixed": "mixed/summon.mp3",
+   "kind": "world",
+   "level": -22.9
+  },
+  "trap-spot": {
+   "file": "audio/trap-spot.mp3",
+   "mixed": "mixed/trap-spot.mp3",
+   "kind": "trap",
+   "level": -19.5
+  },
+  "trap-web": {
+   "file": "audio/trap-web.mp3",
+   "mixed": "mixed/trap-web.mp3",
+   "kind": "trap",
+   "level": -19.8
+  },
+  "vanish": {
+   "file": "audio/vanish.mp3",
+   "mixed": "mixed/vanish.mp3",
+   "kind": "world",
+   "level": -22.9
+  },
+  "wrath": {
+   "file": "audio/wrath.mp3",
+   "mixed": "mixed/wrath.mp3",
+   "kind": "faith and forge",
+   "level": -14.0
+  },
+  "zombie-attack": {
+   "file": "audio/zombie-attack.mp3",
+   "mixed": "mixed/zombie-attack.mp3",
+   "kind": "creature attack",
+   "level": -16.7
+  },
+  "zombie-death": {
+   "file": "audio/zombie-death.mp3",
+   "mixed": "mixed/zombie-death.mp3",
+   "kind": "creature death",
+   "level": -14.6
+  },
+  "sigil-firestorm": {
+   "file": "audio/sigil-firestorm.mp3",
+   "mixed": "mixed/sigil-firestorm.mp3",
+   "kind": "spell cast",
+   "level": -21.1
+  },
+  "sigil-identify": {
+   "file": "audio/sigil-identify.mp3",
+   "mixed": "mixed/sigil-identify.mp3",
+   "kind": "spell cast",
+   "level": -21.1
+  },
+  "sigil-levitate": {
+   "file": "audio/sigil-levitate.mp3",
+   "mixed": "mixed/sigil-levitate.mp3",
+   "kind": "spell cast",
+   "level": -21.1
+  },
+  "sigil-stoneskin": {
+   "file": "audio/sigil-stoneskin.mp3",
+   "mixed": "mixed/sigil-stoneskin.mp3",
+   "kind": "spell cast",
+   "level": -21.0
+  },
+  "sigil-heal": {
+   "file": "audio/sigil-heal.mp3",
+   "mixed": "mixed/sigil-heal.mp3",
+   "kind": "spell cast",
+   "level": -21.1
+  },
+  "sigil-vanish": {
+   "file": "audio/sigil-vanish.mp3",
+   "mixed": "mixed/sigil-vanish.mp3",
+   "kind": "spell cast",
+   "level": -21.0
+  },
+  "sigil-haste": {
+   "file": "audio/sigil-haste.mp3",
+   "mixed": "mixed/sigil-haste.mp3",
+   "kind": "spell cast",
+   "level": -21.0
+  },
+  "sigil-cinder": {
+   "file": "audio/sigil-cinder.mp3",
+   "mixed": "mixed/sigil-cinder.mp3",
+   "kind": "spell cast",
+   "level": -20.8
+  },
+  "sigil-magma": {
+   "file": "audio/sigil-magma.mp3",
+   "mixed": "mixed/sigil-magma.mp3",
+   "kind": "spell cast",
+   "level": -21.0
+  },
+  "sigil-sunburst": {
+   "file": "audio/sigil-sunburst.mp3",
+   "mixed": "mixed/sigil-sunburst.mp3",
+   "kind": "spell cast",
+   "level": -21.1
+  },
+  "sigil-smoke": {
+   "file": "audio/sigil-smoke.mp3",
+   "mixed": "mixed/sigil-smoke.mp3",
+   "kind": "spell cast",
+   "level": -21.0
+  },
+  "sigil-storm": {
+   "file": "audio/sigil-storm.mp3",
+   "mixed": "mixed/sigil-storm.mp3",
+   "kind": "spell cast",
+   "level": -21.2
+  },
+  "sigil-mire": {
+   "file": "audio/sigil-mire.mp3",
+   "mixed": "mixed/sigil-mire.mp3",
+   "kind": "spell cast",
+   "level": -21.2
+  },
+  "sigil-purify": {
+   "file": "audio/sigil-purify.mp3",
+   "mixed": "mixed/sigil-purify.mp3",
+   "kind": "spell cast",
+   "level": -21.2
+  },
+  "sigil-mana": {
+   "file": "audio/sigil-mana.mp3",
+   "mixed": "mixed/sigil-mana.mp3",
+   "kind": "spell cast",
+   "level": -21.0
+  },
+  "sigil-recall": {
+   "file": "audio/sigil-recall.mp3",
+   "mixed": "mixed/sigil-recall.mp3",
+   "kind": "spell cast",
+   "level": -21.1
+  },
+  "sigil-blink": {
+   "file": "audio/sigil-blink.mp3",
+   "mixed": "mixed/sigil-blink.mp3",
+   "kind": "spell cast",
+   "level": -21.0
+  },
+  "sigil-mapping": {
+   "file": "audio/sigil-mapping.mp3",
+   "mixed": "mixed/sigil-mapping.mp3",
+   "kind": "spell cast",
+   "level": -21.1
+  },
+  "sigil-rot": {
+   "file": "audio/sigil-rot.mp3",
+   "mixed": "mixed/sigil-rot.mp3",
+   "kind": "spell cast",
+   "level": -21.9
+  },
+  "sigil-aegis": {
+   "file": "audio/sigil-aegis.mp3",
+   "mixed": "mixed/sigil-aegis.mp3",
+   "kind": "spell cast",
+   "level": -21.1
+  },
+  "sigil-naturesbounty": {
+   "file": "audio/sigil-naturesbounty.mp3",
+   "mixed": "mixed/sigil-naturesbounty.mp3",
+   "kind": "spell cast",
+   "level": -21.2
+  },
+  "sigil-ascension": {
+   "file": "audio/sigil-ascension.mp3",
+   "mixed": "mixed/sigil-ascension.mp3",
+   "kind": "spell cast",
+   "level": -21.2
+  },
+  "sigil-transmutation": {
+   "file": "audio/sigil-transmutation.mp3",
+   "mixed": "mixed/sigil-transmutation.mp3",
+   "kind": "spell cast",
+   "level": -21.1
+  },
+  "sigil-wisdom": {
+   "file": "audio/sigil-wisdom.mp3",
+   "mixed": "mixed/sigil-wisdom.mp3",
+   "kind": "spell cast",
+   "level": -21.0
+  },
+  "spell-missile-cast": {
+   "file": "audio/spell-missile-cast.mp3",
+   "mixed": "mixed/spell-missile-cast.mp3",
+   "kind": "spell cast",
+   "level": -21.1
+  },
+  "spell-missile-hit": {
+   "file": "audio/spell-missile-hit.mp3",
+   "mixed": "mixed/spell-missile-hit.mp3",
+   "kind": "spell hit",
+   "level": -21.9
+  },
+  "spell-firebolt-cast": {
+   "file": "audio/spell-firebolt-cast.mp3",
+   "mixed": "mixed/spell-firebolt-cast.mp3",
+   "kind": "spell cast",
+   "level": -21.0
+  },
+  "spell-firebolt-hit": {
+   "file": "audio/spell-firebolt-hit.mp3",
+   "mixed": "mixed/spell-firebolt-hit.mp3",
+   "kind": "spell hit",
+   "level": -22.0
+  },
+  "spell-frostshard-cast": {
+   "file": "audio/spell-frostshard-cast.mp3",
+   "mixed": "mixed/spell-frostshard-cast.mp3",
+   "kind": "spell cast",
+   "level": -21.3
+  },
+  "spell-frostshard-hit": {
+   "file": "audio/spell-frostshard-hit.mp3",
+   "mixed": "mixed/spell-frostshard-hit.mp3",
+   "kind": "spell hit",
+   "level": -22.0
+  },
+  "spell-spark-cast": {
+   "file": "audio/spell-spark-cast.mp3",
+   "mixed": "mixed/spell-spark-cast.mp3",
+   "kind": "spell cast",
+   "level": -21.4
+  },
+  "spell-spark-hit": {
+   "file": "audio/spell-spark-hit.mp3",
+   "mixed": "mixed/spell-spark-hit.mp3",
+   "kind": "spell hit",
+   "level": -22.2
+  },
+  "spell-root-cast": {
+   "file": "audio/spell-root-cast.mp3",
+   "mixed": "mixed/spell-root-cast.mp3",
+   "kind": "spell cast",
+   "level": -21.0
+  },
+  "spell-root-hit": {
+   "file": "audio/spell-root-hit.mp3",
+   "mixed": "mixed/spell-root-hit.mp3",
+   "kind": "spell hit",
+   "level": -22.0
+  },
+  "spell-smite-cast": {
+   "file": "audio/spell-smite-cast.mp3",
+   "mixed": "mixed/spell-smite-cast.mp3",
+   "kind": "spell cast",
+   "level": -21.0
+  },
+  "spell-smite-hit": {
+   "file": "audio/spell-smite-hit.mp3",
+   "mixed": "mixed/spell-smite-hit.mp3",
+   "kind": "spell hit",
+   "level": -22.0
+  },
+  "spell-shadowbolt-hit": {
+   "file": "audio/spell-shadowbolt-hit.mp3",
+   "mixed": "mixed/spell-shadowbolt-hit.mp3",
+   "kind": "spell hit",
+   "level": -22.0
+  },
+  "spell-fireball-cast": {
+   "file": "audio/spell-fireball-cast.mp3",
+   "mixed": "mixed/spell-fireball-cast.mp3",
+   "kind": "spell cast",
+   "level": -21.0
+  },
+  "spell-fireball-hit": {
+   "file": "audio/spell-fireball-hit.mp3",
+   "mixed": "mixed/spell-fireball-hit.mp3",
+   "kind": "spell hit",
+   "level": -21.9
+  },
+  "spell-frostcone-cast": {
+   "file": "audio/spell-frostcone-cast.mp3",
+   "mixed": "mixed/spell-frostcone-cast.mp3",
+   "kind": "spell cast",
+   "level": -21.1
+  },
+  "spell-frostcone-hit": {
+   "file": "audio/spell-frostcone-hit.mp3",
+   "mixed": "mixed/spell-frostcone-hit.mp3",
+   "kind": "spell hit",
+   "level": -22.0
+  },
+  "spell-chainbolt-cast": {
+   "file": "audio/spell-chainbolt-cast.mp3",
+   "mixed": "mixed/spell-chainbolt-cast.mp3",
+   "kind": "spell cast",
+   "level": -21.2
+  },
+  "spell-chainbolt-hit": {
+   "file": "audio/spell-chainbolt-hit.mp3",
+   "mixed": "mixed/spell-chainbolt-hit.mp3",
+   "kind": "spell hit",
+   "level": -22.1
+  },
+  "spell-earthquake-cast": {
+   "file": "audio/spell-earthquake-cast.mp3",
+   "mixed": "mixed/spell-earthquake-cast.mp3",
+   "kind": "spell cast",
+   "level": -21.0
+  },
+  "spell-radiantbeam-cast": {
+   "file": "audio/spell-radiantbeam-cast.mp3",
+   "mixed": "mixed/spell-radiantbeam-cast.mp3",
+   "kind": "spell cast",
+   "level": -21.1
+  },
+  "spell-radiantbeam-hit": {
+   "file": "audio/spell-radiantbeam-hit.mp3",
+   "mixed": "mixed/spell-radiantbeam-hit.mp3",
+   "kind": "spell hit",
+   "level": -22.0
+  },
+  "spell-shadowswarm-cast": {
+   "file": "audio/spell-shadowswarm-cast.mp3",
+   "mixed": "mixed/spell-shadowswarm-cast.mp3",
+   "kind": "spell cast",
+   "level": -21.0
+  },
+  "spell-livingflame-cast": {
+   "file": "audio/spell-livingflame-cast.mp3",
+   "mixed": "mixed/spell-livingflame-cast.mp3",
+   "kind": "spell cast",
+   "level": -21.1
+  },
+  "spell-glacialtomb-cast": {
+   "file": "audio/spell-glacialtomb-cast.mp3",
+   "mixed": "mixed/spell-glacialtomb-cast.mp3",
+   "kind": "spell cast",
+   "level": -21.1
+  },
+  "spell-glacialtomb-hit": {
+   "file": "audio/spell-glacialtomb-hit.mp3",
+   "mixed": "mixed/spell-glacialtomb-hit.mp3",
+   "kind": "spell hit",
+   "level": -22.4
+  },
+  "spell-stormform-cast": {
+   "file": "audio/spell-stormform-cast.mp3",
+   "mixed": "mixed/spell-stormform-cast.mp3",
+   "kind": "spell cast",
+   "level": -21.2
+  },
+  "spell-upheaval-cast": {
+   "file": "audio/spell-upheaval-cast.mp3",
+   "mixed": "mixed/spell-upheaval-cast.mp3",
+   "kind": "spell cast",
+   "level": -21.1
+  },
+  "spell-upheaval-hit": {
+   "file": "audio/spell-upheaval-hit.mp3",
+   "mixed": "mixed/spell-upheaval-hit.mp3",
+   "kind": "spell hit",
+   "level": -21.9
+  },
+  "spell-dawn-cast": {
+   "file": "audio/spell-dawn-cast.mp3",
+   "mixed": "mixed/spell-dawn-cast.mp3",
+   "kind": "spell cast",
+   "level": -21.0
+  },
+  "spell-umbral-cast": {
+   "file": "audio/spell-umbral-cast.mp3",
+   "mixed": "mixed/spell-umbral-cast.mp3",
+   "kind": "spell cast",
+   "level": -21.0
+  },
+  "spell-shadowbolt-cast": {
+   "file": "audio/spell-shadowbolt-cast.mp3",
+   "mixed": "mixed/spell-shadowbolt-cast.mp3",
+   "kind": "spell cast",
+   "level": -21.1
+  }
+ }
+}

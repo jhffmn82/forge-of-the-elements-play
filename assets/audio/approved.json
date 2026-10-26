@@ -1,0 +1,1095 @@
+{
+ "about": "Sounds Justin approved on the sound board, 2026-10-16. Each file is <cue>.mp3, mono 44.1 kHz 96 kb/s, levelled to -14 dB loudest 100 ms (ambience keeps its old level).",
+ "cues": {
+  "sigil-use": {
+   "file": "audio/sigil-use.mp3",
+   "kind": "effect",
+   "new": false,
+   "replaces": "audio/sigil-use.mp3",
+   "source": "synthesized (numpy + ffmpeg)",
+   "seconds": null,
+   "loud100ms": null,
+   "pick": "candidates/sigil-use/c-glass-chord.mp3"
+  },
+  "sigil-firestorm": {
+   "file": "audio/sigil-firestorm.mp3",
+   "kind": "effect",
+   "new": true,
+   "replaces": null,
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 1.13,
+   "loud100ms": -14.0,
+   "pick": "candidates/sigil-firestorm/A.mp3"
+  },
+  "sigil-identify": {
+   "file": "audio/sigil-identify.mp3",
+   "kind": "effect",
+   "new": true,
+   "replaces": null,
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 0.65,
+   "loud100ms": -14.0,
+   "pick": "candidates/sigil-identify/B.mp3"
+  },
+  "sigil-levitate": {
+   "file": "audio/sigil-levitate.mp3",
+   "kind": "effect",
+   "new": true,
+   "replaces": null,
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 0.53,
+   "loud100ms": -14.0,
+   "pick": "candidates/sigil-levitate/C.mp3"
+  },
+  "sigil-stoneskin": {
+   "file": "audio/sigil-stoneskin.mp3",
+   "kind": "effect",
+   "new": true,
+   "replaces": null,
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 0.83,
+   "loud100ms": -14.0,
+   "pick": "candidates/sigil-stoneskin/A.mp3"
+  },
+  "sigil-heal": {
+   "file": "audio/sigil-heal.mp3",
+   "kind": "effect",
+   "new": true,
+   "replaces": null,
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 1.13,
+   "loud100ms": -14.0,
+   "pick": "candidates/sigil-heal/B.mp3"
+  },
+  "sigil-vanish": {
+   "file": "audio/sigil-vanish.mp3",
+   "kind": "effect",
+   "new": true,
+   "replaces": null,
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 0.75,
+   "loud100ms": -14.0,
+   "pick": "candidates/sigil-vanish/A.mp3"
+  },
+  "sigil-haste": {
+   "file": "audio/sigil-haste.mp3",
+   "kind": "effect",
+   "new": true,
+   "replaces": null,
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 0.34,
+   "loud100ms": -14.0,
+   "pick": "candidates/sigil-haste/B.mp3"
+  },
+  "sigil-cinder": {
+   "file": "audio/sigil-cinder.mp3",
+   "kind": "effect",
+   "new": true,
+   "replaces": null,
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 0.87,
+   "loud100ms": -18.3,
+   "pick": "candidates/sigil-cinder/B.mp3"
+  },
+  "sigil-magma": {
+   "file": "audio/sigil-magma.mp3",
+   "kind": "effect",
+   "new": true,
+   "replaces": null,
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 0.68,
+   "loud100ms": -14.0,
+   "pick": "candidates/sigil-magma/C.mp3"
+  },
+  "sigil-sunburst": {
+   "file": "audio/sigil-sunburst.mp3",
+   "kind": "effect",
+   "new": true,
+   "replaces": null,
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 1.2,
+   "loud100ms": -14.0,
+   "pick": "candidates/sigil-sunburst/A.mp3"
+  },
+  "sigil-smoke": {
+   "file": "audio/sigil-smoke.mp3",
+   "kind": "effect",
+   "new": true,
+   "replaces": null,
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 0.94,
+   "loud100ms": -14.0,
+   "pick": "candidates/sigil-smoke/C.mp3"
+  },
+  "sigil-storm": {
+   "file": "audio/sigil-storm.mp3",
+   "kind": "effect",
+   "new": true,
+   "replaces": null,
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 1.28,
+   "loud100ms": -14.1,
+   "pick": "candidates/sigil-storm/C.mp3"
+  },
+  "sigil-mire": {
+   "file": "audio/sigil-mire.mp3",
+   "kind": "effect",
+   "new": true,
+   "replaces": null,
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 0.93,
+   "loud100ms": -14.0,
+   "pick": "candidates/sigil-mire/A.mp3"
+  },
+  "sigil-purify": {
+   "file": "audio/sigil-purify.mp3",
+   "kind": "effect",
+   "new": true,
+   "replaces": null,
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 0.99,
+   "loud100ms": -14.0,
+   "pick": "candidates/sigil-purify/A.mp3"
+  },
+  "sigil-mana": {
+   "file": "audio/sigil-mana.mp3",
+   "kind": "effect",
+   "new": true,
+   "replaces": null,
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 1.08,
+   "loud100ms": -14.0,
+   "pick": "candidates/sigil-mana/B.mp3"
+  },
+  "sigil-recall": {
+   "file": "audio/sigil-recall.mp3",
+   "kind": "effect",
+   "new": true,
+   "replaces": null,
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 1.19,
+   "loud100ms": -14.0,
+   "pick": "candidates/sigil-recall/A.mp3"
+  },
+  "sigil-blink": {
+   "file": "audio/sigil-blink.mp3",
+   "kind": "effect",
+   "new": true,
+   "replaces": null,
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 0.24,
+   "loud100ms": -14.0,
+   "pick": "candidates/sigil-blink/C.mp3"
+  },
+  "sigil-mapping": {
+   "file": "audio/sigil-mapping.mp3",
+   "kind": "effect",
+   "new": true,
+   "replaces": null,
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 0.93,
+   "loud100ms": -15.2,
+   "pick": "candidates/sigil-mapping/C.mp3"
+  },
+  "sigil-rot": {
+   "file": "audio/sigil-rot.mp3",
+   "kind": "effect",
+   "new": true,
+   "replaces": null,
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 0.96,
+   "loud100ms": -22.5,
+   "pick": "candidates/sigil-rot/A.mp3"
+  },
+  "sigil-aegis": {
+   "file": "audio/sigil-aegis.mp3",
+   "kind": "effect",
+   "new": true,
+   "replaces": null,
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 1.11,
+   "loud100ms": -14.0,
+   "pick": "candidates/sigil-aegis/A.mp3"
+  },
+  "sigil-naturesbounty": {
+   "file": "audio/sigil-naturesbounty.mp3",
+   "kind": "effect",
+   "new": true,
+   "replaces": null,
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 1.2,
+   "loud100ms": -14.0,
+   "pick": "candidates/sigil-naturesbounty/B.mp3"
+  },
+  "sigil-ascension": {
+   "file": "audio/sigil-ascension.mp3",
+   "kind": "effect",
+   "new": true,
+   "replaces": null,
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 1.64,
+   "loud100ms": -14.0,
+   "pick": "candidates/sigil-ascension/B.mp3"
+  },
+  "sigil-transmutation": {
+   "file": "audio/sigil-transmutation.mp3",
+   "kind": "effect",
+   "new": true,
+   "replaces": null,
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 1.31,
+   "loud100ms": -14.0,
+   "pick": "candidates/sigil-transmutation/A.mp3"
+  },
+  "sigil-wisdom": {
+   "file": "audio/sigil-wisdom.mp3",
+   "kind": "effect",
+   "new": true,
+   "replaces": null,
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 1.05,
+   "loud100ms": -14.0,
+   "pick": "candidates/sigil-wisdom/B.mp3"
+  },
+  "spell-missile-cast": {
+   "file": "audio/spell-missile-cast.mp3",
+   "kind": "effect",
+   "new": true,
+   "replaces": null,
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 0.33,
+   "loud100ms": -16.3,
+   "pick": "candidates/spell-missile-cast/A.mp3"
+  },
+  "spell-missile-hit": {
+   "file": "audio/spell-missile-hit.mp3",
+   "kind": "effect",
+   "new": true,
+   "replaces": null,
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 0.35,
+   "loud100ms": -14.0,
+   "pick": "candidates/spell-missile-hit/B.mp3"
+  },
+  "spell-firebolt-cast": {
+   "file": "audio/spell-firebolt-cast.mp3",
+   "kind": "effect",
+   "new": true,
+   "replaces": null,
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 0.4,
+   "loud100ms": -14.0,
+   "pick": "candidates/spell-firebolt-cast/A.mp3"
+  },
+  "spell-firebolt-hit": {
+   "file": "audio/spell-firebolt-hit.mp3",
+   "kind": "effect",
+   "new": true,
+   "replaces": null,
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 0.6,
+   "loud100ms": -14.0,
+   "pick": "candidates/spell-firebolt-hit/A.mp3"
+  },
+  "spell-frostshard-cast": {
+   "file": "audio/spell-frostshard-cast.mp3",
+   "kind": "effect",
+   "new": true,
+   "replaces": null,
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 0.4,
+   "loud100ms": -16.5,
+   "pick": "candidates/spell-frostshard-cast/B.mp3"
+  },
+  "spell-frostshard-hit": {
+   "file": "audio/spell-frostshard-hit.mp3",
+   "kind": "effect",
+   "new": true,
+   "replaces": null,
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 0.41,
+   "loud100ms": -18.2,
+   "pick": "candidates/spell-frostshard-hit/A.mp3"
+  },
+  "spell-spark-cast": {
+   "file": "audio/spell-spark-cast.mp3",
+   "kind": "effect",
+   "new": true,
+   "replaces": null,
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 0.42,
+   "loud100ms": -14.1,
+   "pick": "candidates/spell-spark-cast/A.mp3"
+  },
+  "spell-spark-hit": {
+   "file": "audio/spell-spark-hit.mp3",
+   "kind": "effect",
+   "new": true,
+   "replaces": null,
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 0.4,
+   "loud100ms": -14.0,
+   "pick": "candidates/spell-spark-hit/C.mp3"
+  },
+  "spell-root-cast": {
+   "file": "audio/spell-root-cast.mp3",
+   "kind": "effect",
+   "new": true,
+   "replaces": null,
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 0.68,
+   "loud100ms": -14.0,
+   "pick": "candidates/spell-root-cast/A.mp3"
+  },
+  "spell-root-hit": {
+   "file": "audio/spell-root-hit.mp3",
+   "kind": "effect",
+   "new": true,
+   "replaces": null,
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 0.53,
+   "loud100ms": -14.0,
+   "pick": "candidates/spell-root-hit/B.mp3"
+  },
+  "spell-smite-cast": {
+   "file": "audio/spell-smite-cast.mp3",
+   "kind": "effect",
+   "new": true,
+   "replaces": null,
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 0.59,
+   "loud100ms": -14.0,
+   "pick": "candidates/spell-smite-cast/A.mp3"
+  },
+  "spell-smite-hit": {
+   "file": "audio/spell-smite-hit.mp3",
+   "kind": "effect",
+   "new": true,
+   "replaces": null,
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 0.46,
+   "loud100ms": -14.0,
+   "pick": "candidates/spell-smite-hit/C.mp3"
+  },
+  "spell-shadowbolt-hit": {
+   "file": "audio/spell-shadowbolt-hit.mp3",
+   "kind": "effect",
+   "new": true,
+   "replaces": null,
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 0.45,
+   "loud100ms": -14.0,
+   "pick": "candidates/spell-shadowbolt-hit/A.mp3"
+  },
+  "spell-fireball-cast": {
+   "file": "audio/spell-fireball-cast.mp3",
+   "kind": "effect",
+   "new": true,
+   "replaces": null,
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 0.6,
+   "loud100ms": -14.0,
+   "pick": "candidates/spell-fireball-cast/B.mp3"
+  },
+  "spell-fireball-hit": {
+   "file": "audio/spell-fireball-hit.mp3",
+   "kind": "effect",
+   "new": true,
+   "replaces": null,
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 0.85,
+   "loud100ms": -14.0,
+   "pick": "candidates/spell-fireball-hit/B.mp3"
+  },
+  "spell-frostcone-cast": {
+   "file": "audio/spell-frostcone-cast.mp3",
+   "kind": "effect",
+   "new": true,
+   "replaces": null,
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 0.63,
+   "loud100ms": -14.0,
+   "pick": "candidates/spell-frostcone-cast/B.mp3"
+  },
+  "spell-frostcone-hit": {
+   "file": "audio/spell-frostcone-hit.mp3",
+   "kind": "effect",
+   "new": true,
+   "replaces": null,
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 0.45,
+   "loud100ms": -18.6,
+   "pick": "candidates/spell-frostcone-hit/A.mp3"
+  },
+  "spell-chainbolt-cast": {
+   "file": "audio/spell-chainbolt-cast.mp3",
+   "kind": "effect",
+   "new": true,
+   "replaces": null,
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 0.8,
+   "loud100ms": -14.0,
+   "pick": "candidates/spell-chainbolt-cast/C.mp3"
+  },
+  "spell-chainbolt-hit": {
+   "file": "audio/spell-chainbolt-hit.mp3",
+   "kind": "effect",
+   "new": true,
+   "replaces": null,
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 0.28,
+   "loud100ms": -14.0,
+   "pick": "candidates/spell-chainbolt-hit/C.mp3"
+  },
+  "spell-earthquake-cast": {
+   "file": "audio/spell-earthquake-cast.mp3",
+   "kind": "effect",
+   "new": true,
+   "replaces": null,
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 1.18,
+   "loud100ms": -14.0,
+   "pick": "candidates/spell-earthquake-cast/A.mp3"
+  },
+  "spell-radiantbeam-cast": {
+   "file": "audio/spell-radiantbeam-cast.mp3",
+   "kind": "effect",
+   "new": true,
+   "replaces": null,
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 1.0,
+   "loud100ms": -14.0,
+   "pick": "candidates/spell-radiantbeam-cast/A.mp3"
+  },
+  "spell-radiantbeam-hit": {
+   "file": "audio/spell-radiantbeam-hit.mp3",
+   "kind": "effect",
+   "new": true,
+   "replaces": null,
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 0.6,
+   "loud100ms": -14.0,
+   "pick": "candidates/spell-radiantbeam-hit/C.mp3"
+  },
+  "spell-shadowswarm-cast": {
+   "file": "audio/spell-shadowswarm-cast.mp3",
+   "kind": "effect",
+   "new": true,
+   "replaces": null,
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 0.79,
+   "loud100ms": -14.0,
+   "pick": "candidates/spell-shadowswarm-cast/C.mp3"
+  },
+  "spell-livingflame-cast": {
+   "file": "audio/spell-livingflame-cast.mp3",
+   "kind": "effect",
+   "new": true,
+   "replaces": null,
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 0.68,
+   "loud100ms": -14.0,
+   "pick": "candidates/spell-livingflame-cast/C.mp3"
+  },
+  "spell-glacialtomb-cast": {
+   "file": "audio/spell-glacialtomb-cast.mp3",
+   "kind": "effect",
+   "new": true,
+   "replaces": null,
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 0.98,
+   "loud100ms": -14.0,
+   "pick": "candidates/spell-glacialtomb-cast/C.mp3"
+  },
+  "spell-glacialtomb-hit": {
+   "file": "audio/spell-glacialtomb-hit.mp3",
+   "kind": "effect",
+   "new": true,
+   "replaces": null,
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 0.41,
+   "loud100ms": -16.3,
+   "pick": "candidates/spell-glacialtomb-hit/C.mp3"
+  },
+  "spell-stormform-cast": {
+   "file": "audio/spell-stormform-cast.mp3",
+   "kind": "effect",
+   "new": true,
+   "replaces": null,
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 1.05,
+   "loud100ms": -14.0,
+   "pick": "candidates/spell-stormform-cast/C.mp3"
+  },
+  "spell-upheaval-cast": {
+   "file": "audio/spell-upheaval-cast.mp3",
+   "kind": "effect",
+   "new": true,
+   "replaces": null,
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 0.57,
+   "loud100ms": -14.0,
+   "pick": "candidates/spell-upheaval-cast/A.mp3"
+  },
+  "spell-upheaval-hit": {
+   "file": "audio/spell-upheaval-hit.mp3",
+   "kind": "effect",
+   "new": true,
+   "replaces": null,
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 0.8,
+   "loud100ms": -14.0,
+   "pick": "candidates/spell-upheaval-hit/A.mp3"
+  },
+  "spell-dawn-cast": {
+   "file": "audio/spell-dawn-cast.mp3",
+   "kind": "effect",
+   "new": true,
+   "replaces": null,
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 1.4,
+   "loud100ms": -14.0,
+   "pick": "candidates/spell-dawn-cast/C.mp3"
+  },
+  "spell-umbral-cast": {
+   "file": "audio/spell-umbral-cast.mp3",
+   "kind": "effect",
+   "new": true,
+   "replaces": null,
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 0.67,
+   "loud100ms": -14.0,
+   "pick": "candidates/spell-umbral-cast/A.mp3"
+  },
+  "ally-death": {
+   "file": "audio/ally-death.mp3",
+   "kind": "effect",
+   "new": false,
+   "replaces": "audio/ally-death.mp3",
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 0.72,
+   "loud100ms": -14.0,
+   "pick": "candidates/ally-death/C.mp3"
+  },
+  "hit-crit": {
+   "file": "audio/hit-crit.mp3",
+   "kind": "effect",
+   "new": false,
+   "replaces": "audio/hit-crit.mp3",
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 0.42,
+   "loud100ms": -14.0,
+   "pick": "candidates/hit-crit/B.mp3"
+  },
+  "explosion": {
+   "file": "audio/explosion.mp3",
+   "kind": "effect",
+   "new": false,
+   "replaces": "audio/explosion.mp3",
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 0.74,
+   "loud100ms": -14.0,
+   "pick": "candidates/explosion/A.mp3"
+  },
+  "lever": {
+   "file": "audio/lever.mp3",
+   "kind": "effect",
+   "new": false,
+   "replaces": "audio/lever.mp3",
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 0.5,
+   "loud100ms": -14.0,
+   "pick": "candidates/lever/B.mp3"
+  },
+  "door-secret": {
+   "file": "audio/door-secret.mp3",
+   "kind": "effect",
+   "new": false,
+   "replaces": "audio/door-secret.mp3",
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 1.08,
+   "loud100ms": -14.0,
+   "pick": "candidates/door-secret/A.mp3"
+  },
+  "door-unlock": {
+   "file": "audio/door-unlock.mp3",
+   "kind": "effect",
+   "new": false,
+   "replaces": "audio/door-unlock.mp3",
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 0.45,
+   "loud100ms": -14.2,
+   "pick": "candidates/door-unlock/A.mp3"
+  },
+  "portal": {
+   "file": "audio/portal.mp3",
+   "kind": "effect",
+   "new": false,
+   "replaces": "audio/summon.mp3",
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 0.68,
+   "loud100ms": -14.0,
+   "pick": "candidates/portal/A.mp3"
+  },
+  "pray": {
+   "file": "audio/pray.mp3",
+   "kind": "effect",
+   "new": false,
+   "replaces": "audio/pray.mp3",
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 0.9,
+   "loud100ms": -14.0,
+   "pick": "candidates/pray/B.mp3"
+  },
+  "wrath": {
+   "file": "audio/wrath.mp3",
+   "kind": "effect",
+   "new": false,
+   "replaces": "audio/wrath.mp3",
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 0.88,
+   "loud100ms": -14.0,
+   "pick": "candidates/wrath/A.mp3"
+  },
+  "summon": {
+   "file": "audio/summon.mp3",
+   "kind": "effect",
+   "new": false,
+   "replaces": "audio/summon.mp3",
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 0.79,
+   "loud100ms": -14.0,
+   "pick": "candidates/summon/B.mp3"
+  },
+  "vanish": {
+   "file": "audio/vanish.mp3",
+   "kind": "effect",
+   "new": false,
+   "replaces": "audio/vanish.mp3",
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 0.5,
+   "loud100ms": -14.0,
+   "pick": "candidates/vanish/C.mp3"
+  },
+  "sap": {
+   "file": "audio/sap.mp3",
+   "kind": "effect",
+   "new": false,
+   "replaces": "audio/sap.mp3",
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 0.46,
+   "loud100ms": -14.0,
+   "pick": "candidates/sap/B.mp3"
+  },
+  "trap-spot": {
+   "file": "audio/trap-spot.mp3",
+   "kind": "effect",
+   "new": false,
+   "replaces": "audio/trap-spot.mp3",
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 0.41,
+   "loud100ms": -14.5,
+   "pick": "candidates/trap-spot/C.mp3"
+  },
+  "trap-web": {
+   "file": "audio/trap-web.mp3",
+   "kind": "effect",
+   "new": false,
+   "replaces": "audio/trap-web.mp3",
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 0.68,
+   "loud100ms": -14.2,
+   "pick": "candidates/trap-web/A.mp3"
+  },
+  "forge-open": {
+   "file": "audio/forge-open.mp3",
+   "kind": "effect",
+   "new": false,
+   "replaces": "audio/forge-open.mp3",
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 0.38,
+   "loud100ms": -14.0,
+   "pick": "candidates/forge-open/B.mp3"
+  },
+  "forge-craft": {
+   "file": "audio/forge-craft.mp3",
+   "kind": "effect",
+   "new": false,
+   "replaces": "audio/forge-craft.mp3",
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 1.2,
+   "loud100ms": -14.0,
+   "pick": "candidates/forge-craft/B.mp3"
+  },
+  "forge-fuse": {
+   "file": "audio/forge-fuse.mp3",
+   "kind": "effect",
+   "new": false,
+   "replaces": "audio/forge-fuse.mp3",
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 0.78,
+   "loud100ms": -14.0,
+   "pick": "candidates/forge-fuse/B.mp3"
+  },
+  "pickup-essence": {
+   "file": "audio/pickup-essence.mp3",
+   "kind": "effect",
+   "new": false,
+   "replaces": "audio/pickup-essence.mp3",
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 0.4,
+   "loud100ms": -14.0,
+   "pick": "candidates/pickup-essence/B.mp3"
+  },
+  "step-grass": {
+   "file": "audio/step-grass.mp3",
+   "kind": "effect",
+   "new": false,
+   "replaces": "audio/step-grass.mp3",
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 0.48,
+   "loud100ms": -14.0,
+   "pick": "candidates/step-grass/B.mp3"
+  },
+  "status-slow": {
+   "file": "audio/status-slow.mp3",
+   "kind": "effect",
+   "new": false,
+   "replaces": "audio/status-slow.mp3",
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 0.59,
+   "loud100ms": -14.0,
+   "pick": "candidates/status-slow/B.mp3"
+  },
+  "ice-melt": {
+   "file": "audio/ice-melt.mp3",
+   "kind": "effect",
+   "new": false,
+   "replaces": "audio/ice-melt.mp3",
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 0.57,
+   "loud100ms": -15.8,
+   "pick": "candidates/ice-melt/B.mp3"
+  },
+  "magic-missile": {
+   "file": "audio/magic-missile.mp3",
+   "kind": "effect",
+   "new": false,
+   "replaces": "audio/magic-missile.mp3",
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 0.48,
+   "loud100ms": -14.0,
+   "pick": "candidates/magic-missile/C.mp3"
+  },
+  "magic-missile-hit": {
+   "file": "audio/magic-missile-hit.mp3",
+   "kind": "effect",
+   "new": false,
+   "replaces": "audio/magic-missile-hit.mp3",
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 0.32,
+   "loud100ms": -14.0,
+   "pick": "candidates/magic-missile-hit/B.mp3"
+  },
+  "earth-cast": {
+   "file": "audio/earth-cast.mp3",
+   "kind": "effect",
+   "new": false,
+   "replaces": "audio/earth-cast.mp3",
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 0.56,
+   "loud100ms": -14.0,
+   "pick": "candidates/earth-cast/B.mp3"
+  },
+  "ice-hit": {
+   "file": "audio/ice-hit.mp3",
+   "kind": "effect",
+   "new": false,
+   "replaces": "audio/ice-hit.mp3",
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 0.6,
+   "loud100ms": -14.4,
+   "pick": "candidates/ice-hit/A.mp3"
+  },
+  "light-cast": {
+   "file": "audio/light-cast.mp3",
+   "kind": "effect",
+   "new": false,
+   "replaces": "audio/light-cast.mp3",
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 0.8,
+   "loud100ms": -14.0,
+   "pick": "candidates/light-cast/C.mp3"
+  },
+  "light-hit": {
+   "file": "audio/light-hit.mp3",
+   "kind": "effect",
+   "new": false,
+   "replaces": "audio/light-hit.mp3",
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 0.4,
+   "loud100ms": -14.0,
+   "pick": "candidates/light-hit/A.mp3"
+  },
+  "lightning-cast": {
+   "file": "audio/lightning-cast.mp3",
+   "kind": "effect",
+   "new": false,
+   "replaces": "audio/lightning-cast.mp3",
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 0.52,
+   "loud100ms": -14.0,
+   "pick": "candidates/lightning-cast/C.mp3"
+  },
+  "lightning-hit": {
+   "file": "audio/lightning-hit.mp3",
+   "kind": "effect",
+   "new": false,
+   "replaces": "audio/lightning-hit.mp3",
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 0.46,
+   "loud100ms": -14.0,
+   "pick": "candidates/lightning-hit/B.mp3"
+  },
+  "shadow-cast": {
+   "file": "audio/shadow-cast.mp3",
+   "kind": "effect",
+   "new": false,
+   "replaces": "audio/shadow-cast.mp3",
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 0.57,
+   "loud100ms": -14.0,
+   "pick": "candidates/shadow-cast/C.mp3"
+  },
+  "shadow-hit": {
+   "file": "audio/shadow-hit.mp3",
+   "kind": "effect",
+   "new": false,
+   "replaces": "audio/shadow-hit.mp3",
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 0.41,
+   "loud100ms": -14.0,
+   "pick": "candidates/shadow-hit/B.mp3"
+  },
+  "dark-cast": {
+   "file": "audio/dark-cast.mp3",
+   "kind": "effect",
+   "new": false,
+   "replaces": "audio/shadow-cast.mp3",
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 0.68,
+   "loud100ms": -14.0,
+   "pick": "candidates/dark-cast/B.mp3"
+  },
+  "bat-alert": {
+   "file": "audio/bat-alert.mp3",
+   "kind": "effect",
+   "new": false,
+   "replaces": "audio/bat-attack.mp3",
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 0.43,
+   "loud100ms": -14.2,
+   "pick": "candidates/bat-alert/A.mp3"
+  },
+  "bat-attack": {
+   "file": "audio/bat-attack.mp3",
+   "kind": "effect",
+   "new": false,
+   "replaces": "audio/bat-attack.mp3",
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 0.34,
+   "loud100ms": -19.8,
+   "pick": "candidates/bat-attack/C.mp3"
+  },
+  "brute-alert": {
+   "file": "audio/brute-alert.mp3",
+   "kind": "effect",
+   "new": false,
+   "replaces": "audio/brute-attack.mp3",
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 0.64,
+   "loud100ms": -14.0,
+   "pick": "candidates/brute-alert/A.mp3"
+  },
+  "brute-death": {
+   "file": "audio/brute-death.mp3",
+   "kind": "effect",
+   "new": false,
+   "replaces": "audio/brute-death.mp3",
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 0.82,
+   "loud100ms": -14.0,
+   "pick": "candidates/brute-death/A.mp3"
+  },
+  "djinn-attack": {
+   "file": "audio/djinn-attack.mp3",
+   "kind": "effect",
+   "new": false,
+   "replaces": "audio/lightning-cast.mp3",
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 0.68,
+   "loud100ms": -14.0,
+   "pick": "candidates/djinn-attack/B.mp3"
+  },
+  "drow-death": {
+   "file": "audio/drow-death.mp3",
+   "kind": "effect",
+   "new": false,
+   "replaces": "audio/drow-death.mp3",
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 0.68,
+   "loud100ms": -14.0,
+   "pick": "candidates/drow-death/A.mp3"
+  },
+  "elementaling-alert": {
+   "file": "audio/elementaling-alert.mp3",
+   "kind": "effect",
+   "new": false,
+   "replaces": "audio/elementaling-appear.mp3",
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 0.46,
+   "loud100ms": -14.0,
+   "pick": "candidates/elementaling-alert/A.mp3"
+  },
+  "elementaling-attack": {
+   "file": "audio/elementaling-attack.mp3",
+   "kind": "effect",
+   "new": false,
+   "replaces": "audio/elementaling-attack.mp3",
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 0.43,
+   "loud100ms": -15.9,
+   "pick": "candidates/elementaling-attack/C.mp3"
+  },
+  "elementaling-death": {
+   "file": "audio/elementaling-death.mp3",
+   "kind": "effect",
+   "new": false,
+   "replaces": "audio/elementaling-death.mp3",
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 0.71,
+   "loud100ms": -14.0,
+   "pick": "candidates/elementaling-death/B.mp3"
+  },
+  "mimic-alert": {
+   "file": "audio/mimic-alert.mp3",
+   "kind": "effect",
+   "new": false,
+   "replaces": "audio/mimic-reveal.mp3",
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 0.66,
+   "loud100ms": -14.0,
+   "pick": "candidates/mimic-alert/A.mp3"
+  },
+  "mimic-attack": {
+   "file": "audio/mimic-attack.mp3",
+   "kind": "effect",
+   "new": false,
+   "replaces": "audio/mimic-attack.mp3",
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 0.39,
+   "loud100ms": -14.0,
+   "pick": "candidates/mimic-attack/A.mp3"
+  },
+  "mimic-reveal": {
+   "file": "audio/mimic-reveal.mp3",
+   "kind": "effect",
+   "new": false,
+   "replaces": "audio/mimic-reveal.mp3",
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 0.68,
+   "loud100ms": -14.0,
+   "pick": "candidates/mimic-reveal/A.mp3"
+  },
+  "morty-attack": {
+   "file": "audio/morty-attack.mp3",
+   "kind": "effect",
+   "new": false,
+   "replaces": "audio/morty-attack.mp3",
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 0.6,
+   "loud100ms": -14.0,
+   "pick": "candidates/morty-attack/A.mp3"
+  },
+  "shaman-attack": {
+   "file": "audio/shaman-attack.mp3",
+   "kind": "effect",
+   "new": false,
+   "replaces": "audio/shaman-cast.mp3",
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 0.43,
+   "loud100ms": -14.0,
+   "pick": "candidates/shaman-attack/B.mp3"
+  },
+  "shaman-cast": {
+   "file": "audio/shaman-cast.mp3",
+   "kind": "effect",
+   "new": false,
+   "replaces": "audio/shaman-cast.mp3",
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 0.69,
+   "loud100ms": -14.9,
+   "pick": "candidates/shaman-cast/A.mp3"
+  },
+  "slime-alert": {
+   "file": "audio/slime-alert.mp3",
+   "kind": "effect",
+   "new": false,
+   "replaces": "audio/slime-attack.mp3",
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 0.49,
+   "loud100ms": -14.0,
+   "pick": "candidates/slime-alert/C.mp3"
+  },
+  "slime-attack": {
+   "file": "audio/slime-attack.mp3",
+   "kind": "effect",
+   "new": false,
+   "replaces": "audio/slime-attack.mp3",
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 0.48,
+   "loud100ms": -14.0,
+   "pick": "candidates/slime-attack/A.mp3"
+  },
+  "spider-alert": {
+   "file": "audio/spider-alert.mp3",
+   "kind": "effect",
+   "new": false,
+   "replaces": "audio/spider-alert.mp3",
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 0.41,
+   "loud100ms": -14.0,
+   "pick": "candidates/spider-alert/B.mp3"
+  },
+  "spider-attack": {
+   "file": "audio/spider-attack.mp3",
+   "kind": "effect",
+   "new": false,
+   "replaces": "audio/spider-attack.mp3",
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 0.28,
+   "loud100ms": -14.0,
+   "pick": "candidates/spider-attack/A.mp3"
+  },
+  "zombie-attack": {
+   "file": "audio/zombie-attack.mp3",
+   "kind": "effect",
+   "new": false,
+   "replaces": "audio/zombie-attack.mp3",
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 0.61,
+   "loud100ms": -14.0,
+   "pick": "candidates/zombie-attack/C.mp3"
+  },
+  "zombie-death": {
+   "file": "audio/zombie-death.mp3",
+   "kind": "effect",
+   "new": false,
+   "replaces": "audio/zombie-death.mp3",
+   "source": "ElevenLabs Sound Effects",
+   "seconds": 0.82,
+   "loud100ms": -14.0,
+   "pick": "candidates/zombie-death/C.mp3"
+  }
+ }
+}

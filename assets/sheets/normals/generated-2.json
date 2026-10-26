@@ -1,0 +1,9 @@
+{
+ "made-by": "tools/lighting/make-normals.py",
+ "strength": 25,
+ "blur": 2.5,
+ "biomes": {
+  "stone-detail": "normal-stone-detail.png",
+  "cave-rock": "normal-cave-rock.png"
+ }
+}
