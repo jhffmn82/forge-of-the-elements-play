@@ -122,6 +122,12 @@
    "atlas": true
   },
   {
+   "id": "environment-prop-fallen-anvil",
+   "source": "environment-prop-fallen-anvil.png",
+   "normal": "normal-fallen-anvil.webp",
+   "kind": "sprite"
+  },
+  {
    "id": "mob-m-bat",
    "source": "mob-m-bat.png",
    "normal": "normal-mob-m-bat.webp",
@@ -203,6 +209,62 @@
    ],
    "width": 1728,
    "height": 1152,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-chaos-elite-chain-marshal",
+   "source": "mob-m-chaos-elite-chain-marshal.png",
+   "normal": "normal-mob-m-chaos-elite-chain-marshal.webp",
+   "crop": [
+    0,
+    0,
+    2304,
+    1536
+   ],
+   "width": 2304,
+   "height": 1536,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-chaos-elite-curator",
+   "source": "mob-m-chaos-elite-curator.png",
+   "normal": "normal-mob-m-chaos-elite-curator.webp",
+   "crop": [
+    0,
+    0,
+    2304,
+    1536
+   ],
+   "width": 2304,
+   "height": 1536,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-chaos-elite-moonthread-queen",
+   "source": "mob-m-chaos-elite-moonthread-queen.png",
+   "normal": "normal-mob-m-chaos-elite-moonthread-queen.webp",
+   "crop": [
+    0,
+    0,
+    2304,
+    1536
+   ],
+   "width": 2304,
+   "height": 1536,
+   "kind": "sprite"
+  },
+  {
+   "id": "mob-m-chaos-elite-rootmother",
+   "source": "mob-m-chaos-elite-rootmother.png",
+   "normal": "normal-mob-m-chaos-elite-rootmother.webp",
+   "crop": [
+    0,
+    0,
+    2304,
+    1536
+   ],
+   "width": 2304,
+   "height": 1536,
    "kind": "sprite"
   },
   {

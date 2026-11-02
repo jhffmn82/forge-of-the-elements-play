@@ -30,7 +30,7 @@
     "biome-dungeon",
     "audio-biome-dungeon"
    ],
-   "bytes": 13021465,
+   "bytes": 13046056,
    "note": "new game; title-, creation-, look- and body- count the largest one"
   },
   "beforeFloor1Continue": {
@@ -46,7 +46,7 @@
     "biome-dungeon",
     "audio-biome-dungeon"
    ],
-   "bytes": 11844504,
+   "bytes": 11869095,
    "note": "continuing a saved run: no creation"
   }
  },
@@ -358,7 +358,7 @@
   },
   "play": {
    "when": "before floor 1, and with creation: shared map art, props, items, held gear, icons, window frames, summons",
-   "bytes": 5428972,
+   "bytes": 5453563,
    "sheets": [
     "sheets/debris.json",
     "sheets/environment-deco.json",
@@ -367,6 +367,7 @@
     "sheets/environment-mushroom-spreads.json",
     "sheets/environment-prop-banner-stand.json",
     "sheets/environment-prop-exit-gate.json",
+    "sheets/environment-prop-fallen-anvil.json",
     "sheets/environment-prop-lever-down.json",
     "sheets/environment-prop-lever-up.json",
     "sheets/environment-prop-table-candle.json",
@@ -419,6 +420,7 @@
     "sheets/environment-mushroom-spreads.webp",
     "sheets/environment-prop-banner-stand.webp",
     "sheets/environment-prop-exit-gate.webp",
+    "sheets/environment-prop-fallen-anvil.webp",
     "sheets/environment-prop-lever-down.webp",
     "sheets/environment-prop-lever-up.webp",
     "sheets/environment-prop-table-candle.webp",
@@ -1629,7 +1631,7 @@
   },
   "normals": {
    "when": "after floor 1 shows: optional normal maps for lighting relief (1.7 falls back without them)",
-   "bytes": 1763492,
+   "bytes": 1771524,
    "sheets": [],
    "files": [
     "sheets/normals/generated-2.json",
@@ -1640,6 +1642,7 @@
     "sheets/normals/normal-dungeon-rim-n.webp",
     "sheets/normals/normal-dungeon-rim-v.webp",
     "sheets/normals/normal-face-ends.webp",
+    "sheets/normals/normal-fallen-anvil.webp",
     "sheets/normals/normal-fix-alchemy-table.webp",
     "sheets/normals/normal-fix-banner-stand-loop.webp",
     "sheets/normals/normal-fix-banner-stand.webp",
@@ -2357,7 +2360,7 @@
   },
   "chaos": {
    "when": "on entering chaos",
-   "bytes": 11060875,
+   "bytes": 14435716,
    "sheets": [
     "sheets/environment-terrain-cinder-face.json",
     "sheets/environment-terrain-cinder-floor.json",
@@ -2391,6 +2394,10 @@
     "sheets/mob-m-chaos-bile-spitter.json",
     "sheets/mob-m-chaos-brood-carrier.json",
     "sheets/mob-m-chaos-chain-reaver.json",
+    "sheets/mob-m-chaos-elite-chain-marshal.json",
+    "sheets/mob-m-chaos-elite-curator.json",
+    "sheets/mob-m-chaos-elite-moonthread-queen.json",
+    "sheets/mob-m-chaos-elite-rootmother.json",
     "sheets/mob-m-chaos-folded-horror.json",
     "sheets/mob-m-chaos-hookfang.json",
     "sheets/mob-m-chaos-ironbound.json",
@@ -2442,6 +2449,10 @@
     "sheets/mob-m-chaos-bile-spitter.webp",
     "sheets/mob-m-chaos-brood-carrier.webp",
     "sheets/mob-m-chaos-chain-reaver.webp",
+    "sheets/mob-m-chaos-elite-chain-marshal.webp",
+    "sheets/mob-m-chaos-elite-curator.webp",
+    "sheets/mob-m-chaos-elite-moonthread-queen.webp",
+    "sheets/mob-m-chaos-elite-rootmother.webp",
     "sheets/mob-m-chaos-folded-horror.webp",
     "sheets/mob-m-chaos-hookfang.webp",
     "sheets/mob-m-chaos-ironbound.webp",
@@ -2459,6 +2470,10 @@
     "sheets/normals/normal-mob-m-chaos-bile-spitter.webp",
     "sheets/normals/normal-mob-m-chaos-brood-carrier.webp",
     "sheets/normals/normal-mob-m-chaos-chain-reaver.webp",
+    "sheets/normals/normal-mob-m-chaos-elite-chain-marshal.webp",
+    "sheets/normals/normal-mob-m-chaos-elite-curator.webp",
+    "sheets/normals/normal-mob-m-chaos-elite-moonthread-queen.webp",
+    "sheets/normals/normal-mob-m-chaos-elite-rootmother.webp",
     "sheets/normals/normal-mob-m-chaos-folded-horror.webp",
     "sheets/normals/normal-mob-m-chaos-hookfang.webp",
     "sheets/normals/normal-mob-m-chaos-ironbound.webp",
@@ -2684,6 +2699,7 @@
   "sheets/environment-prop-candelabra-floor.json": "catalogs/biome-dungeon.json",
   "sheets/environment-prop-crypt-funeral-bell.json": "catalogs/biome-crypt.json",
   "sheets/environment-prop-exit-gate.json": "catalogs/play.json",
+  "sheets/environment-prop-fallen-anvil.json": "catalogs/play.json",
   "sheets/environment-prop-lever-down.json": "catalogs/play.json",
   "sheets/environment-prop-lever-up.json": "catalogs/play.json",
   "sheets/environment-prop-resonance-crystal.json": "catalogs/biome-caverns.json",
@@ -2777,6 +2793,10 @@
   "sheets/mob-m-chaos-bile-spitter.json": "catalogs/chaos.json",
   "sheets/mob-m-chaos-brood-carrier.json": "catalogs/chaos.json",
   "sheets/mob-m-chaos-chain-reaver.json": "catalogs/chaos.json",
+  "sheets/mob-m-chaos-elite-chain-marshal.json": "catalogs/chaos.json",
+  "sheets/mob-m-chaos-elite-curator.json": "catalogs/chaos.json",
+  "sheets/mob-m-chaos-elite-moonthread-queen.json": "catalogs/chaos.json",
+  "sheets/mob-m-chaos-elite-rootmother.json": "catalogs/chaos.json",
   "sheets/mob-m-chaos-folded-horror.json": "catalogs/chaos.json",
   "sheets/mob-m-chaos-gorehound.json": "catalogs/biome-underdark.json",
   "sheets/mob-m-chaos-hookfang.json": "catalogs/chaos.json",
